@@ -1,0 +1,60 @@
+<tool id="gops_subtract_1" name="Subtract">
+  <description>the intervals of two queries</description>
+  <command interpreter="python2.4">gops_subtract.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol -m $min $returntype</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Return intervals of</label>
+    </param>
+    <param format="interval" name="input2" type="data">
+      <label>that do not intersect intervals of</label>
+    </param>
+    <param name="min" size="4" type="integer" value="1">
+      <label>Where overlap is at least</label>
+    </param>
+	<param name="returntype" type="select" label="Return">
+		<option value="">Intervals with no overlap</option>
+		<option value="-p">Non-overlapping pieces of intervals</option>
+	</param>
+   </inputs>
+  <outputs>
+    <data format="input" name="output" metadata_source="input1" />
+  </outputs>
+  <code file="operation_filter.py"/>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="min" value="1" />
+      <param name="returntype" value="" />
+      <output name="output" file="gops-subtract.dat" />
+    </test>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="min" value="10" />
+      <param name="returntype" value="-p" />
+      <output name="output" file="gops-subtract-p.dat" />     
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Syntax**
+
+- **Where overlap is at least** sets the minimum length (in base pairs) of overlap between elements of the two queries.
+- **Intervals with no overlap** returns entire intervals from the first query that do not overlap the second query.  The returned intervals are completely unchanged, and this option only filters out intervals that overlap with the second query.
+- **Non-overlapping pieces of intervals** returns intervals from the first query that have the intervals from the second query removed.  Any overlapping base pairs are removed from the range of the interval.  All fields besides start and end are guaranteed to remain unchanged.
+
+-----
+
+**Example**
+
+.. image:: ../static/operation_icons/gops_subtract.gif
+
+</help>
+</tool>

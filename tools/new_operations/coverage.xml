@@ -1,0 +1,71 @@
+<tool id="gops_coverage_1" name="Coverage">
+  <description>of a set of intervals on second set of intervals</description>
+  <command interpreter="python2.4">gops_coverage.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Find coverage of</label>
+    </param>
+    <param format="interval" name="input2" type="data">
+      <label>on regions in</label>
+    </param>
+   </inputs>
+  <outputs>
+    <data format="input" name="output" metadata_source="input1" />
+  </outputs>
+  <code file="operation_filter.py"/>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <output name="output" file="gops-coverage.dat" />
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+Find the coverage of intervals in the first query on intervals in the second query.  The coverage is added as two columns, the first being bases covered, and the second being the fraction of bases covered by that interval.
+
+**Example**
+
+
+    if Query1 are genes ::
+
+      chr11 5203271 5204877 NM_000518 0 -
+      chr11 5210634 5212434 NM_000519 0 -
+      chr11 5226077 5227663 NM_000559 0 -
+      chr11 5226079 5232587 BC020719  0 -
+      chr11 5230996 5232587 NM_000184 0 -
+
+    and Query2 are repeats::
+
+       chr11      5203895 5203991 L1MA6     500 +
+       chr11      5204163 5204239 A-rich    219 +
+       chr11      5211034 5211167 (CATATA)n 245 +
+       chr11      5211642 5211673 AT_rich    24 +
+       chr11      5226551 5226606 (CA)n     303 +
+       chr11      5228782 5228825 (TTTTTG)n 208 +
+       chr11      5229045 5229121 L1PA11    440 +
+       chr11      5229133 5229319 MER41A   1106 +
+       chr11      5229374 5229485 L2        244 -
+       chr11      5229751 5230083 MLT1A     913 -
+       chr11      5231469 5231526 (CA)n     330 +
+
+    the Result is the coverage density of repeats in the genes::
+
+       chr11 5203271 5204877 NM_000518 0 - 172   0.107098
+       chr11 5210634 5212434 NM_000519 0 - 164   0.091111
+       chr11 5226077 5227663 NM_000559 0 -  55   0.034678
+       chr11 5226079 5232587 BC020719  0 - 860   0.132145
+       chr11 5230996 5232587 NM_000184 0 -  57   0.035827
+
+    For example, the following line of output::
+
+      chr11 5203271 5204877 NM_000518 0 - 172   0.107098
+
+   implies that 172 nucleotides accounting for 10.7% of the this interval (chr11:5203271-5204877) overlap with repetitive elements.
+
+</help>
+</tool>

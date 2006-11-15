@@ -1,0 +1,59 @@
+<tool id="EMBOSS: eseqboot24" name="EMBOSS: eseqboot">
+  <description>Bootstrap, Jackknife, or Permutation Resampling of Molecular Sequence, Restriction Site, Gene Frequency or Character Data</description>
+  <command>eseqboot -datafile $input1 -outfile $out_file1 -randseed "$randseed" -method $method -test $test -reps "$reps" -inter $inter -enzymes $enzymes -all $all -printdata $printdata -progress no
+  -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Input file</label>
+    </param>
+    <param name="randseed" size="5" type="text" value="3">
+      <label>Random number seed (must be odd)</label>
+    </param>
+    <param name="method" type="select">
+      <label>Method</label>
+      <option value="Seq">Molecular sequences</option>
+      <option value="Mor">Discrete Morphology</option>
+      <option value="Res">Restriction Sites</option>
+      <option value="Gen">Gene Frequencies</option>
+    </param>
+    <param name="test" type="select">
+      <label>Test</label>
+      <option value="Boot">Bootstrap</option>
+      <option value="Jack">Delete-half Jackknife</option>
+      <option value="Perm">Permute species for each character</option>
+    </param>
+    <param name="reps" size="5" type="text" value="100">
+      <label>How many replicates</label>
+    </param>
+    <param name="inter" type="select">
+      <label>Interleaved input</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="enzymes" type="select">
+      <label>Enzymes present in input file</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="all" type="select">
+      <label>All alleles present at each locus</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print out the data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="phylip" name="out_file1" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/eseqboot.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/eseqboot.html if you are not automatically redirected.
+</help>
+</tool>

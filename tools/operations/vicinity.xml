@@ -1,0 +1,102 @@
+<tool id="Vicinity1" name="Compute Vicinity">
+  <description>around start or end points of every interval</description>
+  <command interpreter="perl">vicinity.pl -i $input -pos $edge -up $up -down $down -o $out_file1</command>
+  <inputs>
+<!--    <display>
+        <hr size="1"/>
+        <img src="static/operation_icons/vicinity_s.png" />
+        <img src="static/operation_icons/vicinity_e.png" />
+        <hr size="1" />
+        <br />
+        <table border="0">
+           <tr>
+               <td>Create vicinities</td>
+               <td>
+                     <table border="0" cellspacing="2">
+                         <tr>
+                            <td>$up</td>
+                            <td> bp upstream </td>
+                         </tr>
+                     </table>
+               </td> 
+           </tr>
+           <tr>
+               <td>and</td>
+               <td>
+                     <table border="0" cellspacing="2">
+                         <tr>
+                            <td>$down</td>
+                            <td> bp downstream </td>
+                         </tr>
+                     </table>
+               </td> 
+           </tr>
+           <tr>
+               <td>of</td>
+               <td>$edge</td>
+           </tr>
+           <tr>
+               <td>for query</td>
+               <td>$input</td>
+           </tr>           
+        </table>
+        <span class="ok_bgr">
+        <span class="smaller">
+        <b>TIP:</b>If your query does not appear in the pull down menu - it is not in BED format. 
+        <a href="http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/NotBed">Click here</a> to learn how to convert your data
+        </span>
+        </span>
+        <br />
+        <br />
+    </display> 
+-->
+    <param name="up" size="5" type="text" value="100">
+      <label>Create vicinity upsteam</label>
+    </param>
+    <param name="down" size="5" type="text" value="100">
+      <label>and downstream</label>
+    </param>
+    <param name="edge" type="select">
+      <option value="start">start</option>
+      <option value="end">end</option>
+      <label>of</label>
+    </param>
+    <param format="bed" name="input" type="data">
+      <label>for Query</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="bed" name="out_file1" />
+  </outputs>
+  <help>
+
+|INFO| **TIP:** *If your query does not appear in the pull down menu - it is not in BED format.* ClickHere_ to learn how to convert your data.
+
+.. |INFO| image:: ../static/images/icon_info_sml.gif
+
+.. _ClickHere: http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/NotBed
+
+-----
+
+**Syntax**
+
+- **upstream** and **downstream** set the size (in basepairs) of vicinities to be crteated around start or endpoints of the Query
+- **Restrict to chromosome** accepts values in the form **chrN**. For example, chr1, chrX, chrW, or all (any chromosome)
+
+-----
+
+**Example**
+
+In some instances it is useful to create a range around start (or end) of a genomic regions.
+For example, if one wants to extract alignments surronding transcription start sites it is
+necessary to first generate a list of coordinates that can be used to extract such alignments.
+Vicinity tools allows to generate such ranges. For the following bed line::
+
+    chr1 1000 1200 exon1 0 +
+
+Vicinity including 500 bp upstream and 500 bp downstream of the start will look::
+
+    chr1 500 1500 exon1 0 +
+
+</help>
+</tool>

@@ -1,0 +1,398 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Input Files for Gmaj</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<link rel="stylesheet" type="text/css" href="gmaj.css">
+</head>
+<body>
+<p class=vvlarge>
+<h2>Input Files for Gmaj</h2>
+<p class=vvlarge>
+TABLE OF CONTENTS
+<p class=small>
+<ul class=notop>
+<li><a href="#intro">Introduction</a>
+<li><a href="#param">Parameters File</a>
+<li><a href="#zip">Compression and Bundling</a>
+<li><a href="#coord">Coordinate Systems</a>
+<li><a href="#align">Alignments</a>
+<li><a href="#exon">Exons</a>
+<li><a href="#repeat">Repeats</a>
+<li><a href="#annot">Annotation Links</a>
+<li><a href="#under">Underlays</a>
+<li><a href="#high">Highlights</a>
+<li><a href="#color">Color List</a>
+</ul>
+<p class=vlarge>
+
+<h3><a name="intro">Introduction</a></h3>
+<p>
+This page describes the input files supported by Gmaj, and their
+formats.  Only the <a href="#align">alignment file</a> is
+required; the others are optional.  Except where noted, all
+information applies to both the stand-alone and applet modes of
+Gmaj.
+<p>
+The annotation formats (exons, etc.) are essentially the same as
+those used by <a href="http://globin.bx.psu.edu/dist/laj/">Laj</a>
+and <a href="http://pipmaker.bx.psu.edu/pipmaker/">PipMaker</a>,
+and you may find that PipMaker's associated utilities, such as
+<a href="http://pipmaker.bx.psu.edu/piphelper/">PipHelper</a> and the
+<a href="http://pipmaker.bx.psu.edu/pipmaker/tools.html">PipTools</a>,
+can greatly facilitate the preparation of your files.
+<p>
+<center>
+<table width=55%>
+<tr>
+<td valign=top align=right><img class=lower src="hand14.gif">
+<!-- Pointing hand icon is from Clip Art Warehouse,
+	at http://www.clipart.co.uk/ -->
+</td>
+<td valign=top>
+<ul class="notop lessindent">
+<li><b>All files must consist solely of plain text ASCII characters.</b>
+(For example, no Word documents.)
+<li><b>All <a href="#coord">coordinates</a> for annotations are 1-based.</b>
+</ul>
+</td>
+</tr>
+</table>
+</center>
+<p>
+
+<h3><a name="param">Parameters File</a></h3>
+<p>
+The annotation files are optional, but because in some alignments
+any of the sequences can be viewed as the reference sequence,
+there are potentially a large number of annotation files to
+provide, too many to type their names on the command line or
+paste them into a dialog box every time you want to view the data.
+For this reason, Gmaj uses a meta-level <b>parameters file</b>
+that lists the names of all the data files, plus a few other
+data-related options.  Then when running Gmaj, you only have to
+specify that one file name.  However, if you don't want to use
+any of these annotations or options, you can specify the
+<a href="#align">alignment file</a> directly in place of a
+parameters file.
+<p>
+A sample parameters file that you can use as a template is
+provided at <code><a href="sample.gmaj">sample.gmaj</a></code>.
+It contains detailed comments at the bottom explaining the syntax
+and meaning of the parameters.
+<p>
+
+<h3><a name="zip">Compression and Bundling</a></h3>
+<p>
+Gmaj supports a "bundle" option, which allows you to collect and
+compress some or all of the data files into a single file in
+<code>.zip</code> or <code>.jar</code> format (not
+<code>.tar</code>, sorry).  This is especially useful for
+streamlining the applet's data download, but is also supported in
+stand-alone mode.  A few tips:
+<ul>
+<li>	If the <a href="#param">parameters file</a> is included in
+	the bundle it must be the first file in it, since Gmaj reads
+	the bundle sequentially and needs the parameters file to
+	process the others.  In this case, there is no need to
+	mention the parameters file on the command line or in the
+	applet tags; just specify the bundle.  But if the parameters
+	file is not in the bundle, specify both.
+<li>	Data files in the bundle should be referred to within the
+	parameters file using their plain filenames, without paths.
+	Any data files outside the bundle should be referred to
+	normally, using the rules described in
+	<code><a href="sample.gmaj">sample.gmaj</a></code>.
+<li>	Do not use filenames containing "<code>/</code>",
+	"<code>\</code>", or "<code>:</code>" in the bundle.  Gmaj
+	needs to remove the path that may have been added to each
+	name by the zip or jar program, and since it doesn't know
+	what platform that program was run on, it treats all of
+	these characters as path separators.
+<li>	If you are not using a parameters file (i.e., you want to
+	specify the <a href="#align">alignment file</a> directly,
+	without any annotations or other data-related options),
+	then the alignment file must be listed in place of the
+	parameters file, not as a bundle (there's nothing else
+	to bundle with it anyway).
+</ul>
+<p>
+As an alternative to bundling, data files can be compressed
+individually in <code>.zip</code>, <code>.jar</code>, or
+<code>.gz</code> format; this gains the compact size for storage
+and transfer, but still requires overhead for multiple HTTP
+connections in applet mode.  The file name must end with the
+corresponding extension for the compression format to be
+recognized.
+<p>
+
+<h3><a name="coord">Coordinate Systems</a></h3>
+<p>
+If you supply any <a href="#exon">exons</a>,
+<a href="#under">underlays</a>, or other annotations for Gmaj to
+display, these files must all use position coordinates that refer
+to the same original sequences identified in the <code>.maf</code>
+<a href="#align">alignment file</a> (ignoring any display offsets
+specified in the <a href="#param">parameters file</a>).  However,
+even though the <code>.maf</code> coordinates are 0-based, the
+annotation files use a 1-based coordinate system (i.e., the first
+nucleotide in the sequence is called "1").  This is for consistency
+with PipMaker, which uses virtually the same annotation formats.
+Gmaj adjusts the <code>.maf</code> coordinates to convert
+everything to a 1-based system for display.
+<p>
+
+<h3><a name="align">Alignments</a></h3>
+<p>
+Gmaj is designed to display multiple alignments in
+<code><a href="http://genome.ucsc.edu/FAQ/FAQformat">.maf</a></code>
+format.  It is especially suited for sequence-symmetric alignments
+from programs such as <a href="http://www.bx.psu.edu/miller_lab/"
+>TBA</a>, but can also display <code>.maf</code> files that have
+a fixed reference sequence.  (In the latter case it is a good idea
+to set the <code>refseq</code> field in your <a href="#param"
+>parameters file</a>, to avoid displaying the alignments with an
+inappropriate reference sequence.)  Gmaj displays only one
+alignment file at a time.
+<p>
+
+<h3><a name="exon">Exons</a></h3>
+<p>
+Each of these files lists the locations of genes, exons, and
+coding regions in a particular reference sequence.  The
+directionality of a gene ("<code>&gt;</code>", "<code>&lt;</code>",
+or "<code>|</code>"), its start and end positions, and name should
+be on one line, followed by an optional line beginning with a
+"<code>+</code>" character that indicates the first and last
+nucleotides of the translated region (including the initiation
+codon, <i>Met</i>, and the stop codon).  These are followed by
+lines specifying the start and end positions of each exon, which
+must be listed in order of increasing address even if the gene
+is on the reverse strand ("<code>&lt;</code>").  By default Gmaj
+will supply exon numbers, but you can override this by specifying
+your own name or number for individual exons.  Blank lines are
+ignored, and you can put an optional title line at the top.
+Thus, the file might begin as follows:
+<pre>
+     My favorite genomic region
+
+     < 100 800 XYZZY
+     + 150 750
+     100 200
+     600 800
+
+     > 1000 2000 Frobozz gene
+     1000 1200 exon 1
+     1400 1500 alt. spliced exon
+     1800 2000 exon 2
+
+     ... etc.
+</pre>
+<p>
+
+<h3><a name="repeat">Repeats</a></h3>
+<p>
+Each of these files lists interspersed repeats and other features
+in a particular reference sequence.  The first line identifies
+this as a simplified repeats file (as opposed to RepeatMasker
+output); it is ignored by Gmaj, which only accepts this simplified
+format.  Each subsequent line specifies the start, end, direction,
+and type of an individual feature.
+<pre>
+     %:repeats
+
+     1081 1364 Right Alu
+     1365 1405 Simple
+     ... etc.
+</pre>
+The allowed types are:
+<code>Alu</code>, <code>B1</code>, <code>B2</code>,
+<code>SINE</code>, <code>LINE1</code>, <code>LINE2</code>,
+<code>MIR</code>, <code>LTR</code>, <code>DNA</code>,
+<code>RNA</code>, <code>Simple</code>, <code>CpG60</code>,
+<code>CpG75</code>, and <code>Other</code>.  Of these, all except
+<code>Simple</code>, <code>CpG60</code>, and <code>CpG75</code>
+require a direction (<code>Right</code> or <code>Left</code>).
+<p>
+
+<h3><a name="annot">Annotation Links</a></h3>
+<p>
+Each of these files contains reference annotations, i.e., links
+to web sites providing information about noteworthy regions in a
+particular reference sequence, which are drawn as colored bars.
+In applet mode Gmaj opens a new browser window to visit the
+linked site when the user clicks on a bar.  In stand-alone mode
+Gmaj is not running within a web browser, so it just displays the
+URL for the user to visit manually via cut-and-paste.
+<p>
+The format first defines various types of hyperlinks and
+associates a color with each of them, then specifies the type,
+position, description, and URL for each annotated region.
+<pre>
+     # annotations for part of the mouse MHC class II region
+
+     %define type
+     %name PubMed
+     %color Blue
+
+     %define type
+     %name LocusLink
+     %color Orange
+
+     %define annotation
+     %type PubMed
+     %range 1 2000
+     %label Yang et al. 1997.  Daxx, a novel Fas-binding protein...
+     %summary Yang, X., Khosravi-Far, R. Chang, H., and Baltimore, D. (1997).
+       Daxx, a novel Fas-binding protein that activates JNK and apoptosis.
+       Cell 89(7):1067-76.
+     %url http://www.ncbi.nlm.nih.gov:80/entrez/
+     query.fcgi?cmd=Retrieve&db=PubMed&list_uids=9215629&dopt=Abstract
+
+     ... etc.
+</pre>
+Here, for example, the first stanza requests that each feature
+subsequently identified as a PubMed entry be colored blue.
+The name must be a single word, perhaps containing underline
+characters (e.g., <code>Entry_in_GenBank</code>), and the color
+must come from Gmaj's <a href="#color">color list</a>.
+<p>
+The third stanza associates a PubMed annotation with positions
+1-2000 in this sequence.  The label should be kept fairly
+short, as it will be displayed on Gmaj's position indicator line
+when the user points at this annotation.  The summary is optional;
+it is used only by PipMaker and will be ignored by Gmaj.  Also,
+while PipMaker allows several summary/URL pairs within a single
+annotation, Gmaj expects each field to occur at most once.  If
+Gmaj encounters extra URLs, it will just use the first one and
+display a warning message.
+<p>
+Note that summaries and URLs (but not labels) can be broken into
+several lines for convenience; the line breaks are removed when
+the file is read, but they are not replaced with spaces.  Thus
+a continuation line for a summary typically begins with a space
+to separate it from the last word of the previous line, while
+a URL continuation does not.
+<p>
+Also note that stanzas should be separated by blank lines, and
+lines beginning with a "<code>#</code>" character are comments
+that will be ignored.  The annotations can appear in the file in
+any order, and several can overlap at the same position with no
+problem, since Gmaj will display them in multiple rows if
+necessary.
+<p>
+
+<h3><a name="under">Underlays</a></h3>
+<p>
+Each of these files specifies color underlays (i.e., colored
+bands) to be painted on a particular pairwise pip.  The format
+supported by Gmaj looks like this:
+<pre>
+     # partial underlays for the BTK region
+
+     LightYellow Gene
+     Green Exon
+     Red Strongly_conserved
+
+     35324 72009 (BTK gene) Gene
+     49781 49849 (exon 4) Exon
+     51403 51484 Exon
+     50350 50513 (conserved 84%) Strongly_conserved +
+     52376 52603 (Kilroy was here) Strongly_conserved
+     ... etc.
+</pre>
+The first group of lines describes the intended meaning of the
+colors, while the second group specifies the location of each band.
+Colors must come from Gmaj's <a href="#color">color list</a>, but
+the meaning of each color can be any single word chosen by you.
+The text in parentheses is an optional label which will be
+displayed on Gmaj's position indicator line when the user points
+the mouse at that band.  The parentheses must be present if the
+label is, and the label itself cannot contain any additional
+parentheses.  (The label is an extra feature not supported by
+PipMaker.)  A "<code>+</code>" or "<code>-</code>" character at
+the end of a location line will paint just the upper or lower
+half of the band, respectively.  This allows you to differentiate
+between the two strands, or to plot potentially overlapping
+features like gene predictions and database matches.
+<p>
+Note that if two bands overlap, the one that was specified last
+in the file appears "on top" and obscures the earlier one (except
+for the special <code><a href="#hatch">Hatch</a></code> color).
+Thus in this example, the green exons and red strongly conserved
+regions cover up parts of the long yellow band representing the
+gene.  As in the links file, lines beginning with a
+"<code>#</code>" character are comments that will be ignored.
+<p>
+
+<h3><a name="high">Highlights</a></h3>
+<p>
+These files are analogous to the <a href="#under">underlay</a>
+files, but each of these specifies colored regions for a
+particular sequence in the text view rather than for a pip.
+They use the same format as the underlay files, except that any
+"<code>+</code>" or "<code>-</code>" indicators will be ignored,
+and the <code>Hatch</code> color is not supported for highlights.
+Just as with underlays, labels can be included which will be
+displayed when the user points at the highlight, and highlights
+that are listed later in the file will cover up those that appear
+earlier.
+<p>
+If you do not specify a highlight file for a particular sequence,
+Gmaj will automatically provide default highlights based on the
+<a href="#exon">exons</a> file (if you provided one).  These will
+use different colors to indicate the forward vs. reverse strand.
+If the exons file specifies a gene's translated region, then the
+5&acute; and 3&acute; UTRs will be shaded using lighter colors.
+These default highlights make it easy to examine the putative
+start/stop codons and splice junctions, as well as providing a
+visual connection between the graphical and text views.  But if
+for some reason you do not want any text highlights, you can
+suppress them by specifying an empty highlight file.
+<p>
+
+<h3><a name="color">Color List</a></h3>
+<p>
+For Gmaj, the available colors are:
+<pre>
+    Black   White        Clear
+    Gray    LightGray    DarkGray
+    Red     LightRed     DarkRed
+    Green   LightGreen   DarkGreen
+    Blue    LightBlue    DarkBlue
+    Yellow  LightYellow  DarkYellow
+    Pink    LightPink    DarkPink
+    Cyan    LightCyan    DarkCyan
+    Purple  LightPurple  DarkPurple
+    Orange  LightOrange  DarkOrange
+    Brown   LightBrown   DarkBrown
+</pre>
+These names are case-sensitive (i.e., capitalization matters).
+Not all of these are supported by PipMaker.  Also, be aware that
+the appearance of the colors may vary between PipMaker and Gmaj,
+and from one printer or monitor to the next.
+<p>
+<a name="hatch"><b><code>Hatch</code></b></a>
+<p>
+In addition to the regular colors listed above, Gmaj supports a
+special "color" for underlays called <code>Hatch</code>, which
+is drawn as a pattern of diagonal gray lines.  Normally if two
+underlays overlap, the one that was specified last in the file
+appears "on top" and obscures the earlier one.  However,
+<code>Hatch</code> underlays have the special property that they
+are always drawn after the other colors, and since the space
+between the diagonal lines is transparent, they allow the other
+colors to show through.  Currently <code>Hatch</code> is only
+supported for underlays, not for highlights or hyperlink
+annotations.
+<p>
+
+<p class=vvlarge>
+<hr>
+<i>Cathy Riemer, June 2006</i>
+
+<p class=scrollspace>
+</body>
+</html>

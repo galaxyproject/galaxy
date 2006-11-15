@@ -1,0 +1,102 @@
+body
+{
+    background: white;
+    color: #303030;
+    background-image: url(/static/style/menu_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    margin-top: 5px;
+    margin-right: 0;
+    margin-left: 0;
+    border: 0;
+    padding: 0;
+}
+
+a
+{
+    color: #base_text;
+}
+
+div.historyItem
+{
+    padding: 5px;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-bottom: 5px;
+}
+
+div.historyItem-ok
+{
+    padding: 5px;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-bottom: 5px;
+    border-top: solid #66AA66 1px;
+    border-bottom: solid #66AA66 1px;
+    background: #CCFFCC;
+    background-image: url(/static/style/ok_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    
+}
+
+div.historyItem-error
+{
+    padding: 5px;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-bottom: 5px;
+    border-top: solid #AA6666 1px;
+    border-bottom: solid #AA6666 1px;
+    background: #FFCCCC;
+    background-image: url(/static/style/error_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+}
+
+div.historyItem-running
+{
+    padding: 5px;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-bottom: 5px;
+    border-top: solid #AAAA66 1px;
+    border-bottom: solid #AAAA66 1px;
+    background: #FFFFCC;
+    background-image: url(/static/style/warn_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+}
+
+div.historyItem-queued
+{
+    padding: 5px;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-bottom: 5px;
+    border-top: solid #888888 1px;
+    border-bottom: solid #888888 1px;
+    background: #EEEEEE;
+    background-image: url(/static/style/gray_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+}
+
+div.historyItemBody div
+{
+    padding-top: 2px;
+}
+
+pre.peek
+{
+    background: white;
+    color: black;
+    width: 100%; 
+    overflow: auto;
+}
+
+pre.peek th
+{
+    color: white;
+    background: #023858;
+}

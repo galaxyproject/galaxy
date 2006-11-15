@@ -1,0 +1,84 @@
+<tool id="EMBOSS: erestml23" name="EMBOSS: erestml">
+  <description>Embossified restriction sites Maximum Likelihood program</description>
+  <command>erestml -datafile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -random $random -randseed "$randseed" -randtimes "$randtimes" -outgnum "$outgnum" -datasets "$datasets"
+  -besttree $besttree -og $og -lengths $lengths -sitelen "$sitelen" -extrap "$extrap" -global $global -progress no -multsets $multsets -printdata $printdata -drawtree $drawtree -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Input file</label>
+    </param>
+    <param name="random" type="select">
+      <label>Randomize input order of species</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="randseed" size="5" type="text" value="3">
+      <label>Random number seed (must be odd)</label>
+    </param>
+    <param name="randtimes" size="5" type="text" value="3">
+      <label>How many times to randomise</label>
+    </param>
+    <param name="og" type="select">
+      <label>Outgroup root</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="outgnum" size="5" type="text" value="1">
+      <label>Number of the outgroup</label>
+    </param>
+    <param name="datasets" size="5" type="text" value="2">
+      <label>Number of data sets</label>
+    </param>
+    <param name="besttree" type="select">
+      <label>Search for best tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="allsites" type="select">
+      <label>Are all sites detected</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="lengths" type="select">
+      <label>Use lengths from user trees</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="sitelen" size="5" type="text" value="6">
+      <label>Site length</label>
+    </param>
+    <param name="extrap" size="5" type="text" value="100.0">
+      <label>Extrapolation factor</label>
+    </param>
+    <param name="global" type="select">
+      <label>Global rearrangements</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="multsets" type="select">
+      <label>Analyze multiple data sets</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print out the data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="drawtree" type="select">
+      <label>Draw tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="treefile" name="out_file2" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/erestml.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/erestml.html if you are not automatically redirected.
+</help>
+</tool>

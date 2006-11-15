@@ -1,0 +1,51 @@
+<tool id="EMBOSS: epestfind29" name="epestfind">
+  <description>Finds PEST motifs as potential proteolytic cleavage sites</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl epestfind -sequence $input1 -outfile $out_file1 -goutfile $out_file2 -window $window -order $order -potential $potential -poor $poor
+  -invalid $invalid -map $map -graph png -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="window" size="4" type="text" value="10">
+      <label>Minimal distance between positively charged amino acids</label>
+    </param>
+    <param name="order" type="select">
+      <label>Sort by</label>
+      <option value="3">Score</option>
+      <option value="1">Length</option>
+      <option value="2">Position</option>
+    </param>
+    <param name="threshold" size="4" type="text" value="5.0">
+      <label>Threshold value to discriminate weak from potential PEST motifs.</label>
+    </param>
+    <param name="potential" type="select">
+      <label>Decide whether potential PEST motifs should be printed</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="poor" type="select">
+      <label>Decide whether poor PEST motifs should be printed</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="invalid" type="select">
+      <label>Decide whether invalid PEST motifs should be printed</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="map" type="select">
+      <label>Decide whether PEST motifs should be mapped to sequence</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="png" name="out_file2" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/epestfind.html
+  </help>
+</tool>

@@ -1,0 +1,43 @@
+<tool id="EMBOSS: tcode97" name="tcode">
+  <description>Fickett TESTCODE statistic to identify protein-coding DNA</description>
+  <command>tcode -sequence $input1 -outfile $out_file1 -window "$window" -step "$step" -rformat $out_format1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="window" size="5" type="text" value="200">
+      <label>Window size</label>
+    </param>
+    <param name="step" size="5" type="text" value="3">
+      <label>Step size</label>
+    </param>
+    <param name="out_format1" type="select">
+      <label>Output Report File Format</label>
+      <option value="table">Table</option>
+      <option value="embl">EMBL</option>
+      <option value="genbank">GENBANK</option>
+      <option value="gff">GFF</option>
+      <option value="pir">PIR</option>
+      <option value="swiss">SwissProt</option>
+      <option value="dbmotif">DbMotif</option>
+      <option value="diffseq">Diffseq</option>
+      <option value="excel">Excel (tab delimited)</option>
+      <option value="feattable">FeatTable</option>
+      <option value="motif">Motif</option>
+      <option value="regions">Regions</option>
+      <option value="seqtable">SeqTable</option>
+      <option value="simple">SRS Simple</option>
+      <option value="srs">SRS</option>
+      <option value="tagseq">TagSeq</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="table" name="out_file1" />
+  </outputs>
+  <code file="emboss_format_corrector.py" />
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/tcode.html
+  </help>
+</tool>

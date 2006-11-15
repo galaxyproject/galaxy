@@ -1,0 +1,27 @@
+<tool id="EMBOSS: compseq14" name="compseq">
+  <description>Count composition of dimer/trimer/etc words in a sequence</description>
+  <command>compseq -sequence $input1 -outfile $out_file1 -word $word -frame $frame -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>On query</label>
+    </param>
+    <param name="word" size="4" type="text" value="2">
+      <label>Size of word (window) to count</label>
+    </param>
+    <param name="frame" type="select">
+      <label>Frame to inspect</label>
+      <option value="0">All Frames</option>
+      <option value="1">Frame 1</option>
+      <option value="2">Frame 2</option>
+      <option value="3">Frame 3</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/compseq.html
+  </help>
+</tool>

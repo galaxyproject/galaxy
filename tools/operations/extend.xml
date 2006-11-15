@@ -1,0 +1,53 @@
+<tool id="Extend1" name="Extend">
+  <description>coordinates upstream or downstream</description>
+  <command interpreter="perl">extend.pl $input $where $len $input_startCol $input_endCol $input_strandCol > $out_file1</command>
+  <inputs>
+    <param format="interval" name="input" type="data">
+      <label>Extend coordinates of query</label>
+    </param>
+    <param name="len" size="5" type="integer" value="100" help="(in bp)">
+      <label>by</label>
+    </param>
+    <param name="where" type="select">
+      <option value="u">Upstream</option>
+      <option value="d">Downstream</option>
+      <option value="ud">Both</option>
+      <label>to</label>
+    </param>
+  </inputs>
+
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input" />
+  </outputs>
+  <help>
+
+.. class:: warningmark
+
+**Notice the difference** between handling of *plus* and *minus* strands.  If **no strand** is specified, regions are handled as if they are on the *plus* strand.
+
+.. class:: infomark
+
+**TIP:** *If your query does not appear in the pull down menu - it is not in INTERVAL format*
+
+-----
+
+**Syntax**
+
+This tools extends coordinates of each genomic region by a specified number of bases. You can choose extending in only one direction (upstream or downstream) or both directions simultaneously.
+
+-----
+
+**Example**
+
+- Input dataset::
+
+    chr1 1000 2000 gene1 0 +
+    chr1 5000 6000 gene2 0 -
+
+- Extending it upstream by 100 bp will yield::
+
+    chr1  900 2000 gene1 0 +
+    chr1 5000 6100 gene2 0 -
+
+</help>
+</tool>

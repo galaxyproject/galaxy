@@ -1,0 +1,71 @@
+<tool id="MAF_To_Fasta_Concat1" name="Maf to concatenated FASTA">
+    <description>Converts a MAF formated file to FASTA format</description>
+    <command interpreter="python2.4">maf_to_fasta_concat.py $species $input1 $out_file1</command>
+    <inputs>
+        <page>
+            <param format="maf" name="input1" type="data" label="MAF file"/>
+        </page>
+        <page>
+            <param name="species" type="select" label="Species to extract" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true"/>
+        </page>
+    </inputs>
+    <outputs>
+        <data format="fasta" name="out_file1" />
+    </outputs>
+    <tests>
+      <test>
+        <param name="input1" value="3.maf"/>
+        <param name="species" values="canFam1,hg17,mm5,panTro1,rn3"/>
+        <output name="out_file1" file="cf_maf2fasta_concat.dat"/>
+      </test>
+    </tests>
+    <help>
+
+**Syntax**
+
+This tool converts a MAF formated file to the FASTA format, and concatenates the results in the same organism.
+
+- **MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes.
+
+  - The .maf format is line-oriented. Each multiple alignment ends with a blank line.
+  - Each sequence in an alignment is on a single line.
+  - Lines starting with # are considered to be comments.
+  - Each multiple alignment is in a separate paragraph that begins with an "a" line and contains an "s" line for each sequence in the multiple alignment.
+  - Some MAF files may contain two optional line types:
+
+    - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line;
+    - An "e" line containing information about the size of the gap between the alignments that span the current block.
+
+- **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
+
+  - This format contains a one line header. It starts with a " >" symbol. The first word on this line is the name of the sequence. The rest of the line is a description of the sequence.
+  - The remaining lines contain the sequence itself.
+  - Blank lines in a FASTA file are ignored, and so are spaces or other gap symbols (dashes, underscores, periods) in a sequence.
+  - Fasta files containing multiple sequences are just the same, with one sequence listed right after another. This format is accepted for many multiple sequence alignment programs.
+
+-----
+
+**Example**
+
+- MAF format::
+
+    ##maf version=1 scoring=multiz.v7
+    # multiz.v7 R=10 M=0 /cluster/bluearc/hg17/multiz.2004-07-13/danRer1/chrY.maf /cluster/bluearc/hg17/multiz.2004-07-13/panTro1mm5rn3canFam1galGal2fr1/chrY.maf -
+
+    a score=236.0
+    s hg17.chrY          3757 13 +  57701691 GATCCACTGTTCC
+    s galGal2.chrUn 101379810 13 + 165033910 GCCCCGCTCACCC
+
+    a score=418.0
+    s hg17.chrY          3770 3 +  57701691 TGT
+    s galGal2.chrUn 101379823 3 + 165033910 TTT
+    s danRer1.chrUn 354601716 3 + 367113659 TGT
+
+- Converts the hg17 in the above file to concatenated FASTA format::
+
+    &gt;hg17
+    GATCCACTGTTCCTGT
+
+    </help>
+    <code file="maf_to_fasta_code.py"/>
+</tool>

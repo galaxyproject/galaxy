@@ -1,0 +1,357 @@
+<?xml version="1.0"?>
+<toolbox>
+  <section name="Get Data" id="getext">
+    <tool file="data_source/upload.xml"/>
+    <tool file="data_source/ucsc_proxy.xml"/> 
+    <tool file="data_source/ucsc_testproxy.xml" />
+    <tool file="data_source/ucsc_archaea.xml" />
+    <tool file="data_source/microbial_import.xml" />
+    <tool file="data_source/biomart.xml" />
+    <tool file="data_source/encode_db.xml" />
+  </section>
+  <section name="Get ENCODE Data" id="encode">
+    <tool file="data_source/encode_import_chromatin_and_chromosomes.xml"/>
+    <tool file="data_source/encode_import_genes_and_transcripts.xml"/>
+    <tool file="data_source/encode_import_multi-species_sequence_analysis.xml"/>
+    <tool file="data_source/encode_import_transcription_regulation.xml"/>
+    <tool file="data_source/encode_import_all_latest_datasets.xml" />
+    <tool file="data_source/encode_import_gencode.xml" />
+  </section>
+  <section name="ENCODE Tools" id="EncodeTools">
+    <tool file="extract/interval2maf.xml" />
+    <tool file="extract/phastOdds/phastOdds_tool.xml" />
+    <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
+    <tool file="encode/gencode_partition.xml" />
+    <tool file="encode/random_intervals.xml" />
+  </section>
+  <section name="Edit Queries" id="textutil">
+    <tool file="filters/fixedValueColumn.xml" />
+<!--    <tool file="operations/combineLists.xml" /> -->
+    <tool file="stats/column_maker.xml" />
+    <tool file="filters/catWrapper.xml" />
+    <tool file="filters/condense_characters.xml" />
+    <tool file="filters/convert_characters.xml" />
+    <tool file="filters/CreateInterval.xml" />
+    <tool file="filters/cutWrapper.xml" />
+    <tool file="filters/pasteWrapper.xml" />
+    <tool file="filters/remove_beginning.xml" />
+    <tool file="filters/headWrapper.xml" />
+    <tool file="filters/tailWrapper.xml" />
+  </section>
+  <section name="Filter, Sort, Join and Compare" id="filter">
+    <tool file="stats/filtering.xml" />
+    <tool file="filters/sorter.xml" />
+    <tool file="filters/grep.xml" />
+    <tool file="filters/joiner.xml" />
+    <tool file="filters/compare.xml"/>
+  </section>
+  <section name="Convert Formats" id="convert">
+    <tool file="filters/maf/maf_to_fasta_multiple_sets.xml" />
+    <tool file="filters/maf/maf_to_fasta_concat.xml" />
+    <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
+    <tool file="filters/gff2bed.xml" />
+    <tool file="filters/bed2gff.xml" />
+    <tool file="filters/axt_to_fasta.xml" />
+    <tool file="filters/axt_to_concat_fasta.xml" />
+    <tool file="filters/axt_to_lav.xml" />
+  </section>
+  <section name="Fetch Sequences and Alignments" id="extract">
+    <tool file="extract/fasta-subseq-wrapper.xml" />
+    <tool file="extract/extractAxt_wrapper.xml" />
+    <tool file="extract/interval2maf.xml" />
+    <tool file="extract/user_interval2maf.xml" />
+  </section>
+  <section name="Alignment Viewers" id="align_view">
+    <tool file="visualization/GMAJ.xml" />
+    <tool file="visualization/LAJ.xml" />
+  </section>
+  <section name="Get Genomic Scores" id="scores">
+    <tool file="stats/wiggle_to_simple.xml" />
+    <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
+    <tool file="extract/phastOdds/phastOdds_tool.xml" />
+  </section>
+  <section name="Operate on Genomic Intervals" id="operation">
+    <tool file="operations/cluster.xml" />
+    <tool file="operations/clusterMerge.xml" />
+    <tool file="operations/interval_complement.xml" />
+    <tool file="operations/complement.xml" />
+    <tool file="operations/interval_coverage.xml" />
+    <tool file="operations/covDensity.xml" />
+    <tool file="operations/difference.xml" /> 
+    <tool file="operations/intersect.xml" />
+    <tool file="operations/joinLists.xml" />
+    <tool file="operations/merge.xml" />
+    <tool file="operations/overlap.xml" />   
+    <tool file="operations/proximity.xml" /> 
+    <tool file="operations/subtract.xml" />
+    <tool file="operations/unionWrapper.xml" />
+    <tool file="operations/extend.xml" />
+  </section>
+  <section name="Operate on Genomic Intervals (bx)" id="bxops">
+    <tool file="new_operations/intersect.xml" id="intersect" />  
+    <tool file="new_operations/subtract.xml" id="subtract" />
+    <tool file="new_operations/merge.xml" id="merge" />
+    <tool file="new_operations/concat.xml" id="concat" />
+    <tool file="new_operations/basecoverage.xml" id="basecoverage" />
+    <tool file="new_operations/coverage.xml" id="coverage" />
+    <tool file="new_operations/complement.xml" id="complement" />
+    <tool file="new_operations/cluster.xml" id="cluster" />
+    <tool file="new_operations/join.xml" id="join" />
+  </section>
+  <section name="Statistics" id="stats">
+    <tool file="stats/gsummary.xml" />
+    <tool file="filters/uniq.xml" /> 
+    <tool file="stats/cor.xml" /> 
+  </section>
+  <section name="Graph Data" id="plots">
+    <tool file="plotting/histogram2.xml" />
+    <tool file="plotting/scatterplot.xml" />
+  </section>
+ <section name="EMBOSS" id="EMBOSSLite">
+    <tool file="emboss/emboss_cai.xml" />
+    <tool file="emboss/emboss_cai_custom.xml" />
+<!--    <tool file="emboss/emboss_codcmp.xml" /> -->
+    <tool file="emboss/emboss_compseq.xml" />
+<!--    <tool file="emboss/emboss_cpgplot.xml" /> -->
+    <tool file="emboss/emboss_cpgreport.xml" />
+    <tool file="emboss/emboss_cusp.xml" />
+    <tool file="emboss/emboss_cutseq.xml" />
+<!--    <tool file="emboss/emboss_dan.xml" /> -->
+    <tool file="emboss/emboss_einverted.xml" />
+    <tool file="emboss/emboss_equicktandem.xml" />
+    <tool file="emboss/emboss_est2genome.xml" />
+    <tool file="emboss/emboss_etandem.xml" />
+<!--    <tool file="emboss/emboss_freak.xml" /> -->
+    <tool file="emboss/emboss_fuzznuc.xml" />
+    <tool file="emboss/emboss_fuzztran.xml" />
+    <tool file="emboss/emboss_getorf.xml" />
+    <tool file="emboss/emboss_isochore.xml" />
+    <tool file="emboss/emboss_msbar.xml" />
+    <tool file="emboss/emboss_needle.xml" />
+<!--    <tool file="emboss/emboss_newcpgreport.xml" /> -->
+    <tool file="emboss/emboss_newcpgseek.xml" />
+    <tool file="emboss/emboss_newseq.xml" />
+    <tool file="emboss/emboss_notseq.xml" />
+    <tool file="emboss/emboss_nthseq.xml" />
+    <tool file="emboss/emboss_palindrome.xml" />
+    <tool file="emboss/emboss_pasteseq.xml" />
+    <tool file="emboss/emboss_plotorf.xml" />
+    <tool file="emboss/emboss_polydot.xml" />
+    <tool file="emboss/emboss_prettyseq.xml" />
+    <tool file="emboss/emboss_primersearch.xml" />
+    <tool file="emboss/emboss_revseq.xml" />
+    <tool file="emboss/emboss_seqmatchall.xml" />
+<!--    <tool file="emboss/emboss_showorf.xml" /> -->
+    <tool file="emboss/emboss_shuffleseq.xml" />
+    <tool file="emboss/emboss_sirna.xml" />
+    <tool file="emboss/emboss_sixpack.xml" />
+    <tool file="emboss/emboss_splitter.xml" />
+<!--    <tool file="emboss/emboss_stretcher.xml" /> -->
+    <tool file="emboss/emboss_supermatcher.xml" />
+    <tool file="emboss/emboss_syco.xml" />
+    <tool file="emboss/emboss_tranalign.xml" />
+    <tool file="emboss/emboss_transeq.xml" />
+    <tool file="emboss/emboss_trimest.xml" />
+    <tool file="emboss/emboss_trimseq.xml" />
+    <tool file="emboss/emboss_union.xml" />
+    <tool file="emboss/emboss_vectorstrip.xml" />
+    <tool file="emboss/emboss_water.xml" />
+    <tool file="emboss/emboss_wobble.xml" />
+    <tool file="emboss/emboss_wordcount.xml" />
+    <tool file="emboss/emboss_wordmatch.xml" />
+    <tool file="emboss/emboss_backtranseq.xml" />
+    <tool file="emboss/emboss_biosed.xml" />
+    <tool file="emboss/emboss_charge.xml" />
+    <tool file="emboss/emboss_checktrans.xml" />
+  </section>
+<!--
+  <section name="Run EMBOSS nucleotide" id="EMBOSSnucleotide">
+    <tool file="emboss/emboss_biosed.xml" />
+    <tool file="emboss/emboss_btwisted.xml" />
+    <tool file="emboss/emboss_cai.xml" />
+    <tool file="emboss/emboss_chaos.xml" />
+    <tool file="emboss/emboss_chips.xml" />
+    <tool file="emboss/emboss_codcmp.xml" />
+    <tool file="emboss/emboss_coderet.xml" />
+    <tool file="emboss/emboss_compseq.xml" />
+    <tool file="emboss/emboss_cpgplot.xml" />
+    <tool file="emboss/emboss_cpgreport.xml" />
+    <tool file="emboss/emboss_cusp.xml" />
+    <tool file="emboss/emboss_cutseq.xml" />
+    <tool file="emboss/emboss_dan.xml" />
+    <tool file="emboss/emboss_degapseq.xml" />
+    <tool file="emboss/emboss_descseq.xml" />
+    <tool file="emboss/emboss_diffseq.xml" />
+    <tool file="emboss/emboss_dotmatcher.xml" />
+    <tool file="emboss/emboss_dotpath.xml" />
+    <tool file="emboss/emboss_dottup.xml" />
+    <tool file="emboss/emboss_einverted.xml" />
+    <tool file="emboss/emboss_equicktandem.xml" />
+    <tool file="emboss/emboss_est2genome.xml" />
+    <tool file="emboss/emboss_etandem.xml" />
+    <tool file="emboss/emboss_extractfeat.xml" />
+    <tool file="emboss/emboss_extractseq.xml" />
+    <tool file="emboss/emboss_freak.xml" />
+    <tool file="emboss/emboss_fuzznuc.xml" />
+    <tool file="emboss/emboss_fuzztran.xml" />
+    <tool file="emboss/emboss_geecee.xml" />
+    <tool file="emboss/emboss_getorf.xml" />
+    <tool file="emboss/emboss_helixturnhelix.xml" />
+    <tool file="emboss/emboss_infoseq.xml" />
+    <tool file="emboss/emboss_isochore.xml" />
+    <tool file="emboss/emboss_marscan.xml" />
+    <tool file="emboss/emboss_maskfeat.xml" />
+    <tool file="emboss/emboss_maskseq.xml" />
+    <tool file="emboss/emboss_matcher.xml" />
+    <tool file="emboss/emboss_megamerger.xml" />
+    <tool file="emboss/emboss_merger.xml" />
+    <tool file="emboss/emboss_msbar.xml" />
+    <tool file="emboss/emboss_needle.xml" />
+    <tool file="emboss/emboss_newcpgreport.xml" />
+    <tool file="emboss/emboss_newcpgseek.xml" />
+    <tool file="emboss/emboss_newseq.xml" />
+    <tool file="emboss/emboss_noreturn.xml" />
+    <tool file="emboss/emboss_notseq.xml" />
+    <tool file="emboss/emboss_nthseq.xml" />
+    <tool file="emboss/emboss_palindrome.xml" />
+    <tool file="emboss/emboss_pasteseq.xml" />
+    <tool file="emboss/emboss_plotorf.xml" />
+    <tool file="emboss/emboss_polydot.xml" />
+    <tool file="emboss/emboss_prettyseq.xml" />
+    <tool file="emboss/emboss_primersearch.xml" />
+    <tool file="emboss/emboss_revseq.xml" />
+    <tool file="emboss/emboss_seqmatchall.xml" />
+    <tool file="emboss/emboss_seqret.xml" />
+    <tool file="emboss/emboss_showfeat.xml" />
+    <tool file="emboss/emboss_showorf.xml" />
+    <tool file="emboss/emboss_shuffleseq.xml" />
+    <tool file="emboss/emboss_sirna.xml" />
+    <tool file="emboss/emboss_sixpack.xml" />
+    <tool file="emboss/emboss_skipseq.xml" />
+    <tool file="emboss/emboss_splitter.xml" />
+    <tool file="emboss/emboss_stretcher.xml" />
+    <tool file="emboss/emboss_stssearch.xml" />
+    <tool file="emboss/emboss_supermatcher.xml" />
+    <tool file="emboss/emboss_syco.xml" />
+    <tool file="emboss/emboss_tcode.xml" />
+    <tool file="emboss/emboss_textsearch.xml" />
+    <tool file="emboss/emboss_tranalign.xml" />
+    <tool file="emboss/emboss_transeq.xml" />
+    <tool file="emboss/emboss_trimest.xml" />
+    <tool file="emboss/emboss_trimseq.xml" />
+    <tool file="emboss/emboss_twofeat.xml" />
+    <tool file="emboss/emboss_union.xml" />
+    <tool file="emboss/emboss_vectorstrip.xml" />
+    <tool file="emboss/emboss_water.xml" />
+    <tool file="emboss/emboss_wobble.xml" />
+    <tool file="emboss/emboss_wordcount.xml" />
+    <tool file="emboss/emboss_wordmatch.xml" />
+  </section>
+  <section name="Run EMBOSS protein" id="EMBOSSprotein">
+    <tool file="emboss/emboss_antigenic.xml" />
+    <tool file="emboss/emboss_backtranseq.xml" />
+    <tool file="emboss/emboss_biosed.xml" />
+    <tool file="emboss/emboss_chaos.xml" />
+    <tool file="emboss/emboss_charge.xml" />
+    <tool file="emboss/emboss_checktrans.xml" />
+    <tool file="emboss/emboss_coderet.xml" />
+    <tool file="emboss/emboss_compseq.xml" />
+    <tool file="emboss/emboss_cutseq.xml" />
+    <tool file="emboss/emboss_degapseq.xml" />
+    <tool file="emboss/emboss_descseq.xml" />
+    <tool file="emboss/emboss_diffseq.xml" />
+    <tool file="emboss/emboss_digest.xml" />
+    <tool file="emboss/emboss_dotmatcher.xml" />
+    <tool file="emboss/emboss_dotpath.xml" />
+    <tool file="emboss/emboss_dottup.xml" />
+    <tool file="emboss/emboss_epestfind.xml" />
+    <tool file="emboss/emboss_extractfeat.xml" />
+    <tool file="emboss/emboss_extractseq.xml" />
+    <tool file="emboss/emboss_freak.xml" />
+    <tool file="emboss/emboss_fuzzpro.xml" />
+    <tool file="emboss/emboss_garnier.xml" />
+    <tool file="emboss/emboss_hmoment.xml" />
+    <tool file="emboss/emboss_iep.xml" />
+    <tool file="emboss/emboss_infoseq.xml" />
+    <tool file="emboss/emboss_maskfeat.xml" />
+    <tool file="emboss/emboss_maskseq.xml" />
+    <tool file="emboss/emboss_matcher.xml" />
+    <tool file="emboss/emboss_msbar.xml" />
+    <tool file="emboss/emboss_needle.xml" />
+    <tool file="emboss/emboss_newseq.xml" />
+    <tool file="emboss/emboss_noreturn.xml" />
+    <tool file="emboss/emboss_notseq.xml" />
+    <tool file="emboss/emboss_nthseq.xml" />
+    <tool file="emboss/emboss_octanol.xml" />
+    <tool file="emboss/emboss_oddcomp.xml" />
+    <tool file="emboss/emboss_pasteseq.xml" />
+    <tool file="emboss/emboss_patmatdb.xml" />
+    <tool file="emboss/emboss_pepcoil.xml" />
+    <tool file="emboss/emboss_pepinfo.xml" />
+    <tool file="emboss/emboss_pepstats.xml" />
+    <tool file="emboss/emboss_pepwheel.xml" />
+    <tool file="emboss/emboss_pepwindow.xml" />
+    <tool file="emboss/emboss_pepwindowall.xml" />
+    <tool file="emboss/emboss_polydot.xml" />
+    <tool file="emboss/emboss_seqmatchall.xml" />
+    <tool file="emboss/emboss_seqret.xml" />
+    <tool file="emboss/emboss_showfeat.xml" />
+    <tool file="emboss/emboss_shuffleseq.xml" />
+    <tool file="emboss/emboss_sigcleave.xml" />
+    <tool file="emboss/emboss_skipseq.xml" />
+    <tool file="emboss/emboss_splitter.xml" />
+    <tool file="emboss/emboss_stretcher.xml" />
+    <tool file="emboss/emboss_supermatcher.xml" />
+    <tool file="emboss/emboss_textsearch.xml" />
+    <tool file="emboss/emboss_tmap.xml" />
+    <tool file="emboss/emboss_tranalign.xml" />
+    <tool file="emboss/emboss_trimseq.xml" />
+    <tool file="emboss/emboss_twofeat.xml" />
+    <tool file="emboss/emboss_union.xml" />
+    <tool file="emboss/emboss_water.xml" />
+    <tool file="emboss/emboss_wordmatch.xml" />
+  </section>
+-->
+<!--
+ <section id="ePHYLIP" name="Run ePHYLIP">
+    <tool file="emboss/phylip/emboss_eclique.xml" />
+    <tool file="emboss/phylip/emboss_econsense.xml" />
+    <tool file="emboss/phylip/emboss_econtml.xml" />
+    <tool file="emboss/phylip/emboss_econtrast.xml" />
+    <tool file="emboss/phylip/emboss_ednacomp.xml" />
+    <tool file="emboss/phylip/emboss_ednadist.xml" />
+    <tool file="emboss/phylip/emboss_ednainvar.xml" />
+    <tool file="emboss/phylip/emboss_ednaml.xml" />
+    <tool file="emboss/phylip/emboss_ednamlk.xml" />
+    <tool file="emboss/phylip/emboss_ednapars.xml" />
+    <tool file="emboss/phylip/emboss_ednapenny.xml" />
+    <tool file="emboss/phylip/emboss_edollop.xml" />
+    <tool file="emboss/phylip/emboss_edolpenny.xml" />
+    <tool file="emboss/phylip/emboss_efactor.xml" />
+    <tool file="emboss/phylip/emboss_efitch.xml" />
+    <tool file="emboss/phylip/emboss_egendist.xml" />
+    <tool file="emboss/phylip/emboss_ekitsch.xml" />
+    <tool file="emboss/phylip/emboss_emix.xml" />
+    <tool file="emboss/phylip/emboss_eneighbor.xml" />
+    <tool file="emboss/phylip/emboss_epenny.xml" />
+    <tool file="emboss/phylip/emboss_eprotdist.xml" />
+    <tool file="emboss/phylip/emboss_eprotpars.xml" />
+    <tool file="emboss/phylip/emboss_erestml.xml" />
+    <tool file="emboss/phylip/emboss_eseqboot.xml" />
+  </section>
+-->
+ <section name="PHYLIP" id="phylipnew">
+    <tool file="emboss/phylipnew/emboss_fdnadist.xml" />
+    <tool file="emboss/phylipnew/emboss_fdnapars.xml" />
+    <tool file="emboss/phylipnew/emboss_fdrawgram.xml" />
+    <tool file="emboss/phylipnew/emboss_ffitch.xml" />
+    <tool file="emboss/phylipnew/emboss_fseqboot.xml" />
+    <tool file="emboss/phylipnew/emboss_fneighbor.xml" />
+    <tool file="emboss/phylipnew/emboss_fprotdist.xml" />
+    <tool file="emboss/phylipnew/emboss_fprotpars.xml" />
+ </section>
+ <section name="PAML" id="mdea">
+    <tool file="mdea/BaseML.xml" />
+    <tool file="mdea/AlphaSubst.xml" />
+ </section>
+</toolbox>

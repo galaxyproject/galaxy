@@ -1,0 +1,23 @@
+<tool id="phastOdds_for_intervals" name="Compute phastOdds score">
+    <description>for each interval</description>
+    <command interpreter="python2.4">get_scores_galaxy.py $per_col ${score_file}.h5 ${score_file}.mapping.bed $input $output $input_chromCol $input_startCol $input_endCol</command>
+    <code file="phastOdds_tool.py"/>
+    <inputs>
+        <page>
+            <param format="interval" name="input" type="data" label="Interval file"/>
+        </page>
+        <page>
+            <param name="score_file" type="select" label="Available datasets" dynamic_options="get_scores_for_build( input.dbkey )"/>
+			<param name="per_col" type="boolean" label="Standardize" help="Standardizes the score to be per alignment column" checked="yes" truevalue="-p" falsevalue=""/>
+        </page>
+    </inputs>
+    <outputs>
+        <data format="interval" name="output" metadata_source="input"/>
+    </outputs>
+    <help>
+
+Append a column to each line of an interval file containing the 
+phastOdds score for that interval.
+
+    </help>
+</tool>

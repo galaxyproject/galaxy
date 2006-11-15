@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+<title>Galaxy</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link href="/static/style/base.css" rel="stylesheet" type="text/css" />
+<link href="/static/style/tool_menu.css" rel="stylesheet" type="text/css" />
+<script language="JavaScript" type="text/javascript" src="/static/dojo.js"></script>
+<script language="JavaScript" type="text/javascript" src="/static/wipe.js"></script>
+<script language="JavaScript" type="text/javascript">
+
+    var wipe_DURATION = 150;
+    var last_expanded = null;
+    
+    function toggle( id )
+    {
+        var elem = document.getElementById( id );
+        
+        if ( elem.style.display == "none" )
+        {
+            // Comment these two lines to allow seperate expansion/collapse
+            if ( last_expanded ) wipeOut( last_expanded, wipe_DURATION );
+            last_expanded  = elem;
+            wipeIn(elem, wipe_DURATION);	
+        } 
+        else 
+        {
+            wipeOut(elem, wipe_DURATION);	  
+        }
+    }
+
+</script>
+<style type="text/css">
+#footer {
+  /* Netscape 4, IE 4.x-5.0/Win and other lesser browsers will use this */
+  position: absolute; left: 0px; bottom: 0px;
+}
+body > div#footer {
+  /* used by Opera 5+, Netscape6+/Mozilla, Konqueror, Safari, OmniWeb 4.5+, iCab, ICEbrowser */
+  position: fixed;
+}
+</style>
+<!--[if gte IE 5.5]>
+<![if lt IE 7]>
+<style type="text/css">
+div#footer {
+  /* IE5.5+/Win - this is more specific than the IE 5.0 version */
+  width:110%;
+  left: auto; bottom: auto;
+  left:0px;
+  lefta: expression( ( -0 - footer.offsetWidth + ( document.documentElement.clientWidth ? document.documentElement.clientWidth : document.body.clientWidth ) + ( ignoreMe2 = document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft ) ) + 'px' );
+  top: expression( ( - footer.offsetHeight + ( document.documentElement.clientHeight ? document.documentElement.clientHeight : document.body.clientHeight ) + ( ignoreMe = document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop ) ) + 'px' );
+}
+</style>
+<![endif]>
+<![endif]-->
+
+</head>
+
+<body class="toolMenuPage">
+
+<div class="toolMenu">
+
+<div class="toolSectionList">
+#for $i, $section in enumerate( $toolbox.sections )
+   #if $i > 0 
+      <hr> 
+   #end if
+   <div class="toolSectionTitle" id="title_$section.id">
+      <a href="javascript:toggle('$section.id')">$section.name</a>
+   </div>
+   <div style="display: none;" id="$section.id">
+      <div class="toolSectionBg">
+         #for $tool in $section.tools
+            <div class="toolTitle">
+							 #if $tool.input_required
+							   #set $link = $h.url_for( 'tool_runner', tool_id=$tool.id )
+							 #else
+							   #set $link = $h.url_for( $tool.action, ** $tool.get_static_param_values( $t ) )
+							 #end if
+
+               #if "[[" in $tool.description and "]]" in $tool.description
+               $tool.description.replace( '[[', '<a href="$link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
+               #elif $tool.name
+               <a href="$link" target="galaxy_main">$tool.name</a> $tool.description 
+               #else
+               <a href="$link" target="galaxy_main">$tool.description</a>
+               #end if
+            </div>
+        #end for
+      </div>
+   </div>
+#end for
+</div>
+
+</div>
+
+<div style="height: 20px"></div>
+
+<div id="footer">
+<div class="footerheader"><b>Tools</b></div>
+</div>
+</body>
+
+</html>

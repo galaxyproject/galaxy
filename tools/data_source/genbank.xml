@@ -1,0 +1,25 @@
+<tool id="genbank" name="Connect to Genbank">
+<!--  <description>queries genbank</description> -->
+  <command interpreter="python">genbank.py $mode "$text" $output</command>
+  <inputs>
+    <param name="mode" type="select">
+      <option value="nucleotide">nucleotide database</option>
+      <option value="protein">proteins database</option>
+      <label>Get sequences from the</label>
+    </param>
+    <param name="text" size="40" type="text" value="6273291">
+      <label>with accession ID</label>
+    </param>   
+  </inputs>
+  <outputs>
+    <data format="fasta" name="output" />
+  </outputs>
+  <help>
+At the moment this tool allows the following simple searches:
+
+- by GI: **51594135**
+- by accession: **CF622840**
+- using text: **human hbb1** (this feature is experimental)
+  </help>
+
+</tool>

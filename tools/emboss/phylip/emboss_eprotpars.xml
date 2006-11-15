@@ -1,0 +1,73 @@
+<tool id="EMBOSS: eprotpars22" name="EMBOSS: eprotpars">
+  <description>Embossified Protein Sequence Parsimony Method</description>
+  <command>eprotpars -sequence $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -random $random -randseed "$randseed" -randtimes "$randtimes" -outgnum "$outgnum" -valthresh "$valthresh"
+  -besttree $besttree -og $og -progress no -printdata $printdata -steps $steps -seqatnodes $seqatnodes -drawtree $drawtree -thresh $thresh -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Alignment file</label>
+    </param>
+    <param name="random" type="select">
+      <label>Randomize input order of species</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="randseed" size="5" type="text" value="3">
+      <label>Random number seed (must be odd)</label>
+    </param>
+    <param name="randtimes" size="5" type="text" value="3">
+      <label>How many times to randomize</label>
+    </param>
+    <param name="og" type="select">
+      <label>Outgroup root</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="outgnum" size="5" type="text" value="1">
+      <label>Number of the outgroup</label>
+    </param>
+    <param name="valthresh" size="5" type="text" value="1.0">
+      <label>Threshold value</label>
+    </param>
+    <param name="besttree" type="select">
+      <label>Search for best tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print out the data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="steps" type="select">
+      <label>Print out steps in each site</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="seqatnodes" type="select">
+      <label>Print sequences at all nodes of tree</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="drawtree" type="select">
+      <label>Draw tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="thresh" type="select">
+      <label>Use Threshold parsimony</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="treefile" name="out_file2" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/eprotpars.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/eprotpars.html if you are not automatically redirected.
+</help>
+</tool>

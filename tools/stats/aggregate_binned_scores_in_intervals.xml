@@ -1,0 +1,67 @@
+<tool id="aggregate_scores_in_intervals" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints">
+    <description>Appends the average, min, max, sum, and count of datapoints per interval</description>
+    <command interpreter="python2.4">aggregate_binned_scores_in_intervals.py $input1 $datasets -o $out_file1 -S static/score_repository/encode/hg16/ </command>
+    <code file="aggregate_binned_scores_in_intervals_code.py"/>
+    <inputs>
+        <page>
+            <param format="interval" name="input1" type="data" label="Interval file"/>
+        </page>
+        <page>
+            <param name="datasets" type="select" label="Available datasets" dynamic_options="get_scores_for_build( input1.dbkey )" multiple="true" display="checkboxes">
+            </param>
+        </page>
+    </inputs>
+    <outputs>
+        <data format="interval" name="out_file1" metadata_source="input1"/>
+    </outputs>
+    <tests>
+      <test>
+        <param name="input1" value="1.bed" />
+        <param name="datasets" value="hg17/rp_hg17panTro1mm5rn3canFam1" />
+        <output name="out_file1" file="ggs_aggregate_datapoints.dat" />
+      </test>
+    </tests>
+    <help>
+
+**Syntax**
+
+This tool add columns of summary info for each interval against a provided dataset. For each of the given intervals, compute the average, minimum, maximum, sum, and count of data falling within the interval. The five columns representing these values are appended to the input file.
+
+- Several quantitative scores are provided for the ENCODE regions.
+
+  - Various Scores
+      - Regulatory Potential
+      - Neutral rate (Ancestral Repeats)
+      - GC fraction
+  - Conservation Scores
+      - PhastCons
+      - binCons
+      - GERP
+
+-----
+
+**Example**
+
+If your original query has the following format:
+
++-----+-----+---+-----+
+|chrom|start|end|other|
++-----+-----+---+-----+
+
+and you choose to aggregate phastCons scores, your output will look like this:
+
++-----+-----+---+-----+---+---+---+---+-----+
+|chrom|start|end|other|ave|min|max|sum|count|
++-----+-----+---+-----+---+---+---+---+-----+
+
+where:
+
+* **ave** - average phastCons score for each region
+* **min** - minimal phastCons score for each region
+* **max** - maximum phastCons score for each region
+* **sum** - sum of phastCons scores for each region
+* **count** - count of phastCons datapoints for each region
+
+
+    </help>
+</tool>

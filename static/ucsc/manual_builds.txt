@@ -1,0 +1,383 @@
+campJeju_RM1221_1	Campylobacter jejuni RM1221	chr=1777831
+13086	Salmonella enterica subsp. enterica serovar Paratyphi A str. ATCC 9150	NC_006511=4585229
+13082	Bacillus licheniformis ATCC 14580	NC_006322=4222645
+13242	Azoarcus sp. EbN1	NC_006513=4296230,NC_006823=207355,NC_006824=223670
+97	Mycoplasma genitalium G37	NC_000908=580076
+13162	Streptococcus thermophilus LMG 18311	NC_006448=1796846
+13163	Streptococcus thermophilus CNRZ1066	NC_006449=1796226
+12931	Xanthomonas oryzae pv. oryzae KACC10331	NC_006834=4941439
+15751	Rhodopseudomonas palustris BisA53	NC_008435=5505494
+15750	Rhodopseudomonas palustris BisB18	NC_007925=5513844
+13603	Ralstonia eutropha H16	NC_008313=4052032
+aerPer1	Aeropyrum pernix K1	chr=1669695
+13014	Syntrophomonas wolfei subsp. wolfei str. Goettingen	NC_008346=2936195
+13012	Pelodictyon luteolum DSM 273	NC_007512=2364842
+298	Caulobacter crescentus CB15	NC_002696=4016947
+296	Xanthomonas campestris pv. campestris str. ATCC 33913	NC_003902=5076188
+297	Xanthomonas axonopodis pv. citri str. 306	NC_003922=64920,NC_003921=33700,NC_003919=5175554
+295	Fusobacterium nucleatum subsp. nucleatum ATCC 25586	NC_003454=2174500
+293	Leptospira interrogans serovar Lai str. 56601	NC_004342=4332241,NC_004343=358943
+13018	Thiomicrospira crunogena XCL-2	NC_007520=2427734
+13019	Thiomicrospira denitrificans ATCC 33889	NC_007575=2201561
+therMari1	Thermotoga maritima MSB8	chr=1860725
+196	Bartonella henselae str. Houston-1	NC_005956=1931047
+16252	Synechococcus sp. JA-2-3B'a(2-13)	NC_007776=3046682
+16251	Synechococcus sp. JA-3-3Ab	NC_007775=2932766
+274	Wigglesworthia glossinidia endosymbiont of Glossina brevipalpis	NC_004344=697724,NC_003425=5280
+275	Colwellia psychrerythraea 34H	NC_003910=5373180
+276	Listeria monocytogenes EGD-e	NC_003210=2944528
+16375	Shigella flexneri 5 str. 8401	NC_008258=4574284
+278	Streptococcus pneumoniae R6	NC_003098=2038615
+16313	Staphylococcus aureus subsp. aureus USA300	NC_007790=3125,NC_007791=4439,NC_007792=37136,NC_007793=2872769
+16259	Escherichia coli UTI89	NC_007946=5065741,NC_007941=114230
+16258	Syntrophus aciditrophicus SB	NC_007759=3179300
+13423	Deinococcus geothermalis DSM 11300	NC_008025=2467205,NC_008010=574127
+13904	Shewanella sp. MR-4	NC_008321=4706287
+13907	Sphingopyxis alaskensis RB2256	NC_008048=3345170,NC_008036=28543
+13903	Shewanella sp. MR-7	NC_008320=6499,NC_008322=4792610
+443	Candidatus Blochmannia floridanus	NC_005061=705557
+methBurt2	Methanococcoides burtonii DSM 6242	chr=2575032
+10700	Candidatus Protochlamydia amoebophila UWE25	NC_005861=2414465
+13908	Rhodoferax ferrireducens T118	NC_007901=257447,NC_007908=4712337
+445	Wolinella succinogenes DSM 1740	NC_005090=2110355
+444	Chromobacterium violaceum ATCC 12472	NC_005085=4751080
+100	Mycoplasma pulmonis UAB CTIP	NC_002771=963879
+101	Ureaplasma parvum serovar 3 str. ATCC 700970	NC_002162=751719
+39	Pasteurella multocida subsp. multocida str. Pm70	NC_002663=2257487
+38	Haemophilus ducreyi 35000HP	NC_002940=1698955
+13337	Pelobacter carbinolicus DSM 2380	NC_007498=3665893
+34	Yersinia pestis CO92	NC_003134=96210,NC_003143=4653728,NC_003131=70305,NC_003132=9612
+10639	Mycoplasma hyopneumoniae 7448	NC_007332=920079
+10638	Yersinia pestis biovar Microtus str. 91001	NC_005810=4595065,NC_005813=70159,NC_005815=106642,NC_005814=21742,NC_005816=9609
+241	Salmonella typhimurium LT2	NC_003277=93939,NC_003197=4857432
+334	Streptococcus agalactiae NEM316	NC_004368=2211485
+336	Anaplasma phagocytophilum HZ	NC_007797=1471282
+331	Pseudomonas aeruginosa PAO1	NC_002516=6264404
+330	Streptococcus agalactiae 2603V/R	NC_004116=2160267
+333	Streptococcus mutans UA159	NC_004350=2030921
+9638	Lactobacillus johnsonii NCC 533	NC_005362=1992676
+9633	Psychrobacter arcticus 273-4	NC_007204=2650701
+10790	Idiomarina loihiensis L2TR	NC_006512=2839318
+9635	Dechloromonas aromatica RCB	NC_007298=4501104
+9637	Bdellovibrio bacteriovorus HD100	NC_005363=3782950
+therTeng1	Thermoanaerobacter tengcongensis MB4	chr=2689445
+13435	Lactobacillus sakei subsp. sakei 23K	NC_007576=1884661
+15713	Pseudoalteromonas haloplanktis TAC125	NC_007481=3214944,NC_007482=635328
+methMaze1	Methanosarcina mazei Go1	chr=4096345
+99	Mycoplasma pneumoniae M129	NC_000912=816394
+13643	Synechococcus sp. CC9605	NC_007516=2510659
+91	Mycobacterium avium subsp. paratuberculosis K-10	NC_002944=4829781
+90	Mycobacterium leprae TN	NC_002677=3268203
+95	Tropheryma whipplei str. Twist	NC_004572=927303
+13649	Xanthomonas campestris pv. vesicatoria str. 85-10	NC_007505=19146,NC_007504=1852,NC_007507=182572,NC_007506=38116,NC_007508=5178466
+13885	Chlamydia trachomatis A/HAR-13	NC_007430=7510,NC_007429=1044459
+13884	Rickettsia felis URRWXCal2	NC_007109=1485148,NC_007110=62829,NC_007111=39263
+13887	Streptococcus pyogenes MGAS6180	NC_007296=1897573
+13760	Corynebacterium glutamicum ATCC 13032	NC_006958=3282708
+13888	Streptococcus pyogenes MGAS5005	NC_007297=1838554
+13117	Nocardia farcinica IFM 10152	NC_006362=184026,NC_006363=87093,NC_006361=6021225
+16217	Magnetospirillum magneticum AMB-1	NC_007626=4967148
+geobSulf1	Geobacter sulfurreducens PCA	chr=3814139
+238	Staphylococcus aureus subsp. aureus COL	NC_002951=2809422,NC_006629=4440
+237	Staphylococcus aureus subsp. aureus NCTC 8325	NC_007795=2821361
+230	Synechococcus sp. WH 8102	NC_005070=2434428
+haloHalo1	Halobacterium sp. NRC-1	chr=2014239,plasmid_pNRC100=191346,plasmid_pNRC200=365425
+vibrVuln_CMCP6_1	Vibrio vulnificus CMCP6	chrII=1844853,chrI=3281945
+therTher_HB8_1	Thermus thermophilus HB8	chr=1849742,plasmid_pTT27=256992,plasmid_pTT8=9322
+16363	Streptococcus pyogenes MGAS9429	NC_008021=1836467
+16366	Streptococcus pyogenes MGAS10750	NC_008024=1937111
+16365	Streptococcus pyogenes MGAS2096	NC_008023=1860355
+13473	Nitrobacter hamburgensis X14	NC_007961=121408,NC_007964=4406967,NC_007960=188318,NC_007959=294829
+13478	Aster yellows witches'-broom phytoplasma AYWB	NC_007718=4009,NC_007719=5104,NC_007720=4316,NC_007716=706569,NC_007717=3972
+methBark1	Methanosarcina barkeri str. fusaro	chr=4837408,plasmid1=36358
+metMar1	Methanococcus maripaludis S2	chr=1661137
+17265	Francisella tularensis subsp. holarctica OSU18	NC_008369=1895727
+10690	Mesorhizobium sp. BNC1	NC_008254=4412446,NC_008242=343931,NC_008243=131247,NC_008244=47561
+10695	Burkholderia sp. 383	NC_007509=1395069,NC_007510=3694126,NC_007511=3587082
+10694	Ehrlichia canis str. Jake	NC_007354=1315030
+10697	Mycoplasma mobile 163K	NC_006908=777079
+13932	Rhizobium etli CFN 42	NC_007765=505334,NC_007764=250948,NC_007766=642517,NC_007761=4381608,NC_007763=184338,NC_007762=194229
+24	Bordetella bronchiseptica RB50	NC_002927=5339179
+25	Bordetella parapertussis 12822	NC_002928=4773551
+26	Bordetella pertussis Tohama I	NC_002929=4086189
+21	Methylococcus capsulatus str. Bath	NC_002977=3304561
+22	Legionella pneumophila subsp. pneumophila str. Philadelphia 1	NC_002942=3397754
+23	Neisseria gonorrhoeae FA 1090	NC_002946=2153922
+sulfToko1	Sulfolobus tokodaii str. 7	chr=2694756
+17403	Frankia alni ACN14a	NC_008278=7497934
+desuPsyc_LSV54_1	Desulfotalea psychrophila LSv54	chr=3523383,plasmid_small=14664,plasmid_large=121587
+13480	Erythrobacter litoralis HTCC2594	NC_007722=3052398
+409	Mycoplasma gallisepticum R	NC_004829=996422
+408	Shigella flexneri 2a str. 2457T	NC_004741=4599354
+heliHepa1	Helicobacter hepaticus ATCC 51449	chr=1799146
+13875	Candidatus Blochmannia pennsylvanicus str. BPEN	NC_007292=791654
+12352	Acinetobacter sp. ADP1	NC_005966=3598621
+13151	Shigella sonnei Ss046	NC_007385=214396,NC_007384=4825265
+13391	Shewanella frigidimarina NCIMB 400	NC_008345=4845257
+13390	Shewanella denitrificans OS217	NC_007954=4545906
+371	Salmonella enterica subsp. enterica serovar Typhi Ty2	NC_004631=4791961
+370	Chlamydophila felis Fe/C-56	NC_007900=7552,NC_007899=1166239
+15747	Rhodopseudomonas palustris HaA2	NC_007778=5331656
+15749	Rhodopseudomonas palustris BisB5	NC_007958=4892717
+89	Mycobacterium bovis AF2122/97	NC_002945=4345492
+82	Lactobacillus acidophilus NCFM	NC_006814=1993564
+399	Bacteroides thetaiotaomicron VPI-5482	NC_004703=33038,NC_004663=6260361
+81	Clostridium tetani E88	NC_004557=2799251,NC_004565=74082
+86	Listeria innocua Clip11262	NC_003383=81905,NC_003212=3011208
+87	Corynebacterium diphtheriae NCTC 13129	NC_002935=2488635
+85	Listeria monocytogenes str. 4b F2365	NC_002973=2905187
+baciHalo1	Bacillus halodurans C-125	chr=4202352
+16064	Hahella chejuensis KCTC 2396	NC_007645=7215267
+10878	Bacillus anthracis str. Sterne	NC_005945=5228663
+13025	Thiobacillus denitrificans ATCC 25259	NC_007404=2909809
+10877	Bacillus thuringiensis serovar konkukian str. 97-27	NC_006578=77112,NC_005957=5237682
+therTher_HB27_1	Thermus thermophilus HB27	chr=1894877,plasmid_pTT27=232605
+413	Rhodopirellula baltica SH 1	NC_005027=7145576
+245	Buchnera aphidicola str. APS (Acyrthosiphon pisum)	NC_002252=7258,NC_002528=640681,NC_002253=7786
+244	Nostoc sp. PCC 7120	NC_003267=101965,NC_003276=408101,NC_003240=186614,NC_003241=5584,NC_003273=55414,NC_003272=6413771,NC_003270=40340
+247	Chlamydophila pneumoniae AR39	NC_002179=1229853
+12994	Symbiobacterium thermophilum IAM 14863	NC_006177=3566135
+242	Streptomyces coelicolor A3(2)	NC_003904=31317,NC_003888=8667507,NC_003903=356023
+248	Chlamydophila pneumoniae CWL029	NC_000922=1230230
+13474	Nitrobacter winogradskyi Nb-255	NC_007406=3402093
+11752	Haemophilus influenzae 86-028NP	NC_007146=1913428
+methKand1	Methanopyrus kandleri AV19	chr=1694969
+16364	Streptococcus pyogenes MGAS10270	NC_008022=1928252
+10650	Mesoplasma florum L1	NC_006055=793224
+13325	Gluconobacter oxydans 621H	NC_006674=14547,NC_006675=13223,NC_006676=2687,NC_006677=2702173,NC_006672=163186,NC_006673=26568
+178	Burkholderia pseudomallei K96243	NC_006351=3173005,NC_006350=4074542
+176	Mycoplasma penetrans HF-2	NC_004432=1358633
+13282	Synechococcus elongatus PCC 6301	NC_006576=2696255
+171	Burkholderia mallei ATCC 23344	NC_006348=3510148,NC_006349=2325379
+13280	Lactobacillus salivarius subsp. salivarius UCC118	NC_007930=242436,NC_006529=20417,NC_007929=1827111,NC_006530=44013
+saliRube_D13855_1	Salinibacter ruber DSM 13855	chr=3551823,plasmid_pSR35=35505
+16800	Pseudomonas entomophila L48	NC_008027=5888780
+picrTorr1	Picrophilus torridus DSM 9790	chr=1545895
+183	Lawsonia intracellularis PHE/MN1-00	NC_008014=194553,NC_008012=27048,NC_008013=39794,NC_008011=1457619
+180	Brucella melitensis 16M	NC_003318=1177787,NC_003317=2117144
+189	Streptomyces avermitilis MA-4680	NC_004719=94287,NC_003155=9025608
+baciSubt1	Bacillus subtilis subsp. subtilis str. 168	chr=4214630
+17057	Borrelia afzelii PKo	NC_008277=905394,NC_008274=26533,NC_008273=30017
+13	Ralstonia solanacearum GMI1000	NC_003295=3716413,NC_003296=2094509
+12	Pseudomonas fluorescens PfO-1	NC_007492=6438405
+15	Xanthomonas campestris pv. campestris str. 8004	NC_007086=5148708
+12475	Wolbachia endosymbiont strain TRS of Brugia malayi	NC_006833=1080084
+271	Xylella fastidiosa 9a5c	NC_002490=51158,NC_002489=1286,NC_002488=2679306
+19	Sinorhizobium meliloti 1021	NC_003078=1683333,NC_003037=1354226,NC_003047=3654135
+18	Mesorhizobium loti MAFF303099	NC_002678=7036071,NC_002679=351911,NC_002682=208315
+272	Wolbachia endosymbiont of Drosophila melanogaster	NC_002978=1267782
+277	Streptococcus pneumoniae TIGR4	NC_003028=2160837
+13655	Synechococcus sp. CC9902	NC_007513=2234828
+279	Staphylococcus epidermidis ATCC 12228	NC_005008=4439,NC_004461=2499279,NC_005003=6585,NC_005006=8007,NC_005007=4679,NC_005004=24365,NC_005005=17261
+13067	Bacteroides fragilis YCH46	NC_006297=33716,NC_006347=5277274
+heliAcin_SHEEBA_1	Helicobacter acinonychis str. Sheeba	chr=1553927,plasmid_pHac1=3661
+13068	Mannheimia succiniciproducens MBEL55E	NC_006300=2314078
+322	Haemophilus somnus 129PT	NC_006298=5178,NC_008309=2007700
+323	Pseudomonas syringae pv. syringae B728a	NC_007005=6093698
+320	Brucella suis 1330	NC_004311=1207381,NC_004310=2107794
+326	Streptococcus agalactiae A909	NC_007432=2127839
+327	Pseudomonas fluorescens Pf-5	NC_004129=7074893
+325	Ehrlichia chaffeensis str. Arkansas	NC_007799=1176248
+328	Bifidobacterium longum NCC2705	NC_004307=2256640,NC_004943=3626
+329	Desulfovibrio desulfuricans G20	NC_007519=3730232
+16203	Brucella melitensis biovar Abortus 2308	NC_007624=1156948,NC_007618=2121359
+12950	Yersinia pseudotuberculosis IP 32953	NC_006153=68525,NC_006155=4744671,NC_006154=27702
+204	Novosphingobium aromaticivorans DSM 12444	NC_007794=3561584
+16208	Mycoplasma capricolum subsp. capricolum ATCC 27343	NC_007633=1010023
+17375	Francisella tularensis subsp. tularensis FSC 198	NC_008245=1892616
+77	Clostridium acetobutylicum ATCC 824	NC_003030=3940880,NC_001988=192000
+74	Bacillus cereus ATCC 10987	NC_005707=208369,NC_003909=5224283
+72	Lactococcus lactis subsp. lactis Il1403	NC_002662=2365589
+70	Enterococcus faecalis V583	NC_004669=66320,NC_004668=3218031,NC_004670=17963,NC_004671=57660
+15771	Acidobacteria bacterium Ellin345	NC_008009=5650368
+79	Clostridium perfringens str. 13	NC_003042=54310,NC_003366=3031430
+13145	Shigella dysenteriae Sd197	NC_007606=4369232,NC_007607=182726
+bradJapo1	Bradyrhizobium japonicum USDA 110	chr=9105828
+therKoda1	Thermococcus kodakarensis KOD1	chr=2088737
+16297	Xanthomonas oryzae pv. oryzae MAFF 311018	NC_007705=4940217
+212	Leifsonia xyli subsp. xyli str. CTCB07	NC_006087=2584158
+15604	Dehalococcoides sp. CBDB1	NC_007356=1395502
+eschColi_O157H7EDL933_1	Escherichia coli O157:H7 EDL933	chr=5528445
+pyrAer1	Pyrobaculum aerophilum str. IM2	chr=2222430
+heliPylo_HPAG1_1	Helicobacter pylori HPAG1	chr=1596366,plasmid_pHPAG1=9370
+salmEnte_CHOLERAESUIS_1	Salmonella enterica subsp. enterica serovar Choleraesuis str. SC-B67	chr=4755700,plasmid_pSCV50=49558,plasmid_pSC138=138742
+10687	Leptospira interrogans serovar Copenhageni str. Fiocruz L1-130	NC_005823=4277185,NC_005824=350181
+13920	Psychrobacter cryohalolentis K5	NC_007969=3059876,NC_007968=41221
+13921	Chlorobium chlorochromatii CaD3	NC_007514=2572079
+16871	Lactobacillus delbrueckii subsp. bulgaricus ATCC 11842	NC_008054=1864998
+12388	Bacillus licheniformis ATCC 14580	NC_006270=4222334
+10616	Mycoplasma mycoides subsp. mycoides SC str. PG1	NC_005364=1211703
+13490	Burkholderia cepacia AMMD	NC_008385=43581,NC_008391=2646969,NC_008390=3556545,NC_008392=1281472
+419	Prochlorococcus marinus subsp. marinus str. CCMP1375	NC_005042=1751080
+318	Trichodesmium erythraeum IMS101	NC_008312=7750108
+13693	Rhodococcus sp. RHA1	NC_008269=1123075,NC_008268=7804765,NC_008270=442536,NC_008271=332361
+312	Buchnera aphidicola str. Sg (Schizaphis graminum)	NC_004061=641454
+311	Streptococcus pyogenes MGAS315	NC_004070=1900521
+310	Shigella flexneri 2a str. 301	NC_004337=4607203,NC_004851=221618
+316	Saccharophagus degradans 2-40	NC_007912=5057531
+methStad1	Methanosphaera stadtmanae DSM 3091	chr=1767403
+13993	Nitrosococcus oceani ATCC 19707	NC_007484=3481691,NC_007483=40420
+13996	Rickettsia bellii RML369-C	NC_007940=1522076
+13146	Shigella boydii Sb227	NC_007613=4519823,NC_007608=126697
+nanEqu1	Nanoarchaeum equitans Kin4-M	chr=490885
+12508	Staphylococcus haemolyticus JCSC1435	NC_007168=2685015
+3	Borrelia burgdorferi B31	NC_001904=9386,NC_001903=26498,NC_001849=16823,NC_000957=5228,NC_000956=52971,NC_000955=18753,NC_000954=30651,NC_000953=30885,NC_000952=30800,NC_000951=29838,NC_000950=30299,NC_001851=26921,NC_001850=24177,NC_001853=28601,NC_001852=29766,NC_001855=36849,NC_001854=27323,NC_001857=53561,NC_001856=38829,NC_001318=910724,NC_000948=30750,NC_000949=30223
+therElon1	Thermosynechococcus elongatus BP-1	chr=2593857
+salmTyph1	Salmonella enterica subsp. enterica serovar Typhi str. CT18	plasmid_pHCM2=106516,chr=4809037,plasmid_pHCM1=218160
+therVolc1	Thermoplasma volcanium GSS1	chr=1584804
+haloWals1	Haloquadratum walsbyi DSM 16790	plasmid_PL47=46867,chr=3132494
+vibrChol1	Vibrio cholerae O1 biovar eltor str. N16961	chrII=1072315,chrI=2961149
+methJann1	Methanocaldococcus jannaschii DSM 2661	large_extrachrom=58407,small_extrachrom=16550,chr1=1664970
+384	Bacillus cereus ATCC 14579	NC_004721=15274,NC_004722=5411809
+386	Pseudomonas aeruginosa UCBPP-PA14	NC_008463=6537648
+shewOnei1	Shewanella oneidensis MR-1	chr=4969803,megaplasmid_pMR-1=161613
+vibrFisc_ES114_1	Vibrio fischeri ES114	chrII=1332022,plasmid_pES100=45849,chrI=2906179
+vibrPara1	Vibrio parahaemolyticus RIMD 2210633	chrII=1877212,chrI=3288558
+60	Synechocystis sp. PCC 6803	NC_005231=44343,NC_005230=103307,NC_000911=3573470,NC_005229=119895,NC_005232=106004
+63	Staphylococcus aureus RF122	NC_007622=2742531
+64	Staphylococcus epidermidis RP62A	NC_006663=27310,NC_002976=2616530
+252	Neisseria meningitidis Z2491	NC_003116=2184406
+250	Ralstonia metallidurans CH34	NC_007974=2580084,NC_007971=233720,NC_007972=171459,NC_007973=3928089
+251	Neisseria meningitidis MC58	NC_003112=2272360
+16235	Escherichia coli 536	NC_008253=4938920
+257	Chlamydophila pneumoniae J138	NC_002491=1226565
+254	Burkholderia xenovorans LB400	NC_007952=3363523,NC_007953=1471779,NC_007951=4895836
+1421	Myxococcus xanthus DK 1622	NC_008095=9139763
+heliPylo_26695_1	Helicobacter pylori 26695	chr=1667867
+deinRadi1	Deinococcus radiodurans R1	plasmid_CP1=45704,plasmid_MP1=177466,chr2=412348,chr1=2648638
+sulfAcid1	Sulfolobus acidocaldarius DSM 639	chr=2225959
+17333	Maricaulis maris MCS10	NC_008347=3368780
+13963	Frankia sp. CcI3	NC_007777=5433628
+13954	Burkholderia pseudomallei 1710b	NC_007435=3181762,NC_007434=4126292
+13967	Corynebacterium jeikeium K411	NC_003080=14323,NC_007164=2462499
+17111	Granulobacter bethesdensis CGDNIH1	NC_008343=2708355
+10646	Ralstonia eutropha JMP134	NC_007336=634917,NC_007347=3806533,NC_007337=87688,NC_007348=2726152
+10647	Methylobacillus flagellatus KT	NC_007947=2971517
+10645	Synechococcus elongatus PCC 7942	NC_007604=2695903,NC_007595=46366
+10642	Anabaena variabilis ATCC 29413	NC_007413=6365727,NC_007412=300758,NC_007411=35762,NC_007410=366354
+13355	Ehrlichia ruminantium str. Welgevonden	NC_006832=1512977
+13356	Ehrlichia ruminantium str. Gardel	NC_006831=1499920
+13291	Bacillus clausii KSM-K16	NC_006582=4303871
+16426	Roseobacter denitrificans OCh 114	NC_008386=106469,NC_008387=69269,NC_008388=16575,NC_008209=4133097,NC_008389=5824
+16421	Francisella tularensis subsp. holarctica	NC_007880=1895994
+methTher1	Methanothermobacter thermautotrophicus str. Delta H	chr=1751377
+13454	Pseudoalteromonas atlantica T6c	NC_008228=5187005
+9614	Ehrlichia ruminantium str. Welgevonden	NC_005295=1516355
+9615	Onion yellows phytoplasma OY-M	NC_005303=860631
+halMar1	Haloarcula marismortui ATCC 43049	chrII=288050,plasmid_pNG600=155300,plasmid_pNG100=33303,plasmid_pNG200=33452,plasmid_pNG500=132678,plasmid_pNG400=50060,plasmid_pNG300=39521,chrI=3131724,plasmid_pNG700=410554
+9619	Brucella abortus biovar 1 str. 9-941	NC_006933=1162204,NC_006932=2124241
+12468	Bacillus cereus E33L	NC_007103=466370,NC_007105=53501,NC_007104=5108,NC_007107=9150,NC_007106=8191,NC_006274=5300915
+12469	Streptococcus pyogenes MGAS10394	NC_006086=1899877
+carbHydr1	Carboxydothermus hydrogenoformans Z-2901	chr=2401520
+12460	Propionibacterium acnes KPA171202	NC_006085=2560265
+9	Francisella tularensis subsp. tularensis SCHU S4	NC_006570=1892819
+12354	Zymomonas mobilis subsp. mobilis ZM4	NC_006526=2056416
+geobMeta_GS15_1	Geobacter metallireducens GS-15	chr=3997420,plasmid_unnamed=13762
+263	Staphylococcus aureus subsp. aureus Mu50	NC_002774=25107,NC_002758=2878529
+357	Neorickettsia sennetsu str. Miyayama	NC_007798=859006
+356	Lactobacillus plantarum WCFS1	NC_006375=1917,NC_004567=3308274,NC_006377=36069,NC_006376=2365
+355	Chlamydophila abortus S26/3	NC_004552=1144377
+354	Tropheryma whipplei TW08/27	NC_004551=925938
+350	Erwinia carotovora subsp. atroseptica SCRI1043	NC_004547=5064019
+359	Pseudomonas syringae pv. tomato str. DC3000	NC_004632=67473,NC_004578=6397126,NC_004633=73661
+214	Dehalococcoides ethenogenes 195	NC_002936=1469720
+sulSol1	Sulfolobus solfataricus P2	chr=2992245
+213	Prochlorococcus marinus subsp. pastoris str. CCMP1986	NC_005072=1657990
+methHung1	Methanospirillum hungatei JF-1	chr=3544738
+219	Haemophilus influenzae Rd KW20	NC_000907=1830138
+15762	Mycobacterium sp. MCS	NC_008146=5705448,NC_008147=215075
+15763	Alkalilimnicola ehrlichei MLHE-1	NC_008340=3275944
+heliPylo_J99_1	Helicobacter pylori J99	chr=1643831
+13005	Alcanivorax borkumensis SK2	NC_008260=3120143
+288	Yersinia pestis KIM	NC_004838=100990,NC_004088=4600755
+4	Treponema denticola ATCC 35405	NC_002967=2843201
+eschColi_K12_1	Escherichia coli K12	chr=4639675
+281	Silicibacter pomeroyi DSS-3	NC_006569=491611,NC_003911=4109442
+283	Agrobacterium tumefaciens str. C58	NC_003062=2841581,NC_003063=2074782,NC_003064=542869,NC_003065=214233
+282	Agrobacterium tumefaciens str. C58	NC_003306=542780,NC_003305=2075560,NC_003304=2841490,NC_003308=214234
+285	Xylella fastidiosa Temecula1	NC_004556=2519802,NC_004554=1346
+284	Oceanobacillus iheyensis HTE831	NC_004193=3630528
+286	Streptococcus pyogenes MGAS8232	NC_003485=1895017
+16309	Sodalis glossinidius str. 'morsitans'	NC_007712=4171146,NC_007713=83306,NC_007714=27240,NC_007715=10810
+267	Pseudomonas putida KT2440	NC_002947=6181863
+266	Staphylococcus aureus subsp. aureus MSSA476	NC_005951=20652,NC_002953=2799802
+265	Staphylococcus aureus subsp. aureus MRSA252	NC_002952=2902619
+264	Staphylococcus aureus subsp. aureus N315	NC_003140=24653,NC_002745=2814816
+269	Streptococcus pyogenes M1 GAS	NC_002737=1852441
+archFulg1	Archaeoglobus fulgidus DSM 4304	chr=2178400
+58	Rhodospirillum rubrum ATCC 11170	NC_007643=4352825,NC_007641=53732
+54	Cytophaga hutchinsonii ATCC 33406	NC_008255=4433218
+57	Rhodopseudomonas palustris CGA009	NC_005297=8427,NC_005296=5459213
+56	Rhodobacter sphaeroides 2.4.1	NC_007493=3188609,NC_007490=100828,NC_007488=114178,NC_007489=105284,NC_007494=943016
+51	Desulfovibrio vulgaris subsp. vulgaris str. Hildenborough	NC_002937=3570858,NC_005863=202301
+52	Nitrosomonas europaea ATCC 19718	NC_004757=2812094
+metAce1	Methanosarcina acetivorans C2A	chr=5751492
+15596	Staphylococcus saprophyticus subsp. saprophyticus ATCC 15305	NC_007350=2516575,NC_007351=38454,NC_007352=22870
+aquiAeol1	Aquifex aeolicus VF5	chr=1551335,plasmid_ece1=39456
+13919	Burkholderia cenocepacia AU 1054	NC_008062=1196094,NC_008061=2788459,NC_008060=3294563
+13913	Nitrosomonas eutropha C71	NC_008342=55635,NC_008341=65132,NC_008344=2661057
+13912	Nitrosospira multiformis ATCC 25196	NC_007615=18871,NC_007614=3184243,NC_007617=14159,NC_007616=17036
+13911	Prochlorococcus marinus str. NATL2A	NC_007335=1842899
+13910	Prochlorococcus marinus str. MIT 9312	NC_007577=1709204
+256	Buchnera aphidicola str. Bp (Baizongia pistaciae)	NC_004545=615980
+420	Chlamydophila pneumoniae TW-183	NC_005043=1225935
+309	Bacillus anthracis str. Ames	NC_003997=5227293
+301	Streptococcus pyogenes SSI-1	NC_004606=1894275
+302	Chlorobium tepidum TLS	NC_002932=2154946
+304	Clostridium perfringens ATCC 13124	NC_008261=3256683
+305	Corynebacterium efficiens YS-314	NC_004369=3147090
+306	Staphylococcus aureus subsp. aureus MW2	NC_003923=2820462
+307	Corynebacterium glutamicum ATCC 13032	NC_003450=3309401
+natrPhar1	Natronomonas pharaonis DSM 2160	plasmid_PL23=23486,chr=2595221,plasmid_PL131=130989
+10784	Bacillus anthracis str. 'Ames Ancestor'	NC_007530=5227419,NC_007323=94830,NC_007322=181677
+therFusc_YX_1	Thermobifida fusca YX	chr=3642249
+13989	Candidatus Pelagibacter ubique HTCC1062	NC_007205=1308759
+pyrHor1	Pyrococcus horikoshii OT3	chr=1738505
+campJeju1	Campylobacter jejuni subsp. jejuni NCTC 11168	chr=1641481
+12513	Baumannia cicadellinicola str. Hc (Homalodisca coagulata)	NC_007984=686194
+15721	Hyphomonas neptunium ATCC 15444	NC_008358=3705021
+pyrFur2	Pyrococcus furiosus DSM 3638	chr=1908256
+16645	Yersinia pestis Antiqua	NC_008121=10777,NC_008122=70299,NC_008120=96471,NC_008150=4702289
+16646	Yersinia pestis Nepal516	NC_008149=4534590,NC_008119=10778,NC_008118=100918
+12634	Anaeromyxobacter dehalogenans 2CP-C	NC_007760=5013479
+12636	Chromohalobacter salexigens DSM 3043	NC_007963=3696649
+12733	Jannaschia sp. CCS1	NC_007801=86072,NC_007802=4317977
+vibrVuln_YJ016_1	Vibrio vulnificus YJ016	plasmid_pYJ016=48508,chrII=1857073,chrI=3354505
+13126	Legionella pneumophila str. Lens	NC_006369=3345687,NC_006366=59832
+13127	Legionella pneumophila str. Paris	NC_006368=3503610,NC_006365=131885
+13120	Mycoplasma hyopneumoniae 232	NC_006360=892758
+13121	Polaromonas sp. JS666	NC_007949=360405,NC_007948=5200264,NC_007950=338007
+13040	Silicibacter sp. TM1040	NC_008043=821788,NC_008042=130973,NC_008044=3200938
+geobKaus_HTA426_1	Geobacillus kaustophilus HTA426	chr=3544776,plasmid_pHTA426=47890
+13128	Photobacterium profundum SS9	NC_006371=2237943,NC_006370=4085304,NC_005871=80033
+therAcid1	Thermoplasma acidophilum DSM 1728	chr=1564906
+16639	Desulfitobacterium hafniense Y51	NC_007907=5727534
+229	Chlamydia muridarum Nigg	NC_002182=7501,NC_002620=1072950
+228	Chlamydophila caviae GPIC	NC_004720=7966,NC_003361=1173390
+224	Mycobacterium tuberculosis H37Rv	NC_000962=4411532
+223	Mycobacterium tuberculosis CDC1551	NC_002755=4403837
+220	Prochlorococcus marinus str. MIT 9313	NC_005071=2410873
+eschColi_O157H7_1	Escherichia coli O157:H7 str. Sakai	plasmid_pOSAK1=3306,chr=5498450,plasmid_pO157=92721
+10679	Rickettsia typhi str. Wilmington	NC_006142=1111496
+10670	Rubrobacter xylanophilus DSM 9941	NC_008148=3225748
+10676	Mycoplasma synoviae 53	NC_007294=799476
+10675	Mycoplasma hyopneumoniae J	NC_007295=897405
+16351	Escherichia coli W3110	AC_000091=4646332
+10648	Moorella thermoacetica ATCC 39073	NC_007644=2628784
+48	Porphyromonas gingivalis W83	NC_002950=2343476
+46	Bacteroides fragilis NCTC 9343	NC_003228=5205140,NC_006873=36560
+44	Bartonella quintana str. Toulouse	NC_005955=1581384
+45	Chlamydia trachomatis D/UW-3/CX	NC_000117=1042519
+42	Rickettsia conorii str. Malish 7	NC_003103=1268755
+43	Rickettsia prowazekii str. Madrid E	NC_000963=1111523
+40	Anaplasma marginale str. St. Maries	NC_004842=1197687
+41	Coxiella burnetii RSA 493	NC_002971=1995281,NC_004704=37393
+5	Treponema pallidum subsp. pallidum str. Nichols	NC_000919=1138011
+eschColi_CFT073_1	Escherichia coli CFT073	chr=5231428
+pyrAby1	Pyrococcus abyssi GE5	chr=1765118,plasmid_pGT5=3444
+9605	Photorhabdus luminescens subsp. laumondii TTO1	NC_005126=5688987
+9606	Gloeobacter violaceus PCC 7421	NC_005125=4659019
+12554	Borrelia garinii PBi	NC_006128=27108,NC_006129=55560,NC_006156=904246
+12530	Synechococcus sp. CC9311	NC_008319=2606748
+12416	Pseudomonas syringae pv. phaseolicola 1448A	NC_005773=5928787,NC_007275=51711,NC_007274=131950
+10774	Burkholderia thailandensis E264	NC_007651=3809201,NC_007650=2914771

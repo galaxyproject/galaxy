@@ -1,0 +1,76 @@
+<tool id="EMBOSS: fdrawgram10" name="fdrawgram">
+  <description>Plots a cladogram- or phenogram-like rooted tree diagram</description>
+  <command interpreter="perl">fdrawgram_multiple_images.pl $mode fdrawgram -intreefile $input1 -plotfile $out_file1 -grows $grows -style $style -plotter l -lengths $lengths -labelrotation "$labelrotation" -rescaled $rescaled -bscale "$bscale" -treedepth "$treedepth" -stemlength "$stemlength" -nodespace "$nodespace" -nodeposition $nodeposition -pagesheight "$pagesheight" -pageswidth "$pageswidth" -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Phylogenetic tree</label>
+    </param>
+    <param name="grows" type="select">
+      <label>Tree grows horizontally</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="style" type="select">
+      <label>Tree style output</label>
+      <option value="o">Circular tree</option>
+      <option value="c">Cladogram (v-shaped)</option>
+      <option value="p">Phenogram (branches are square)</option>
+      <option value="v">Curvogram (branches are 1/4 out of an ellipse)</option>
+      <option value="e">Eurogram (branches angle outward, then up)</option>
+      <option value="s">Swooporam (branches curve outward then reverse)</option>
+    </param>
+    <param name="lengths" type="select">
+      <label>Use branch lengths from user trees</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="labelrotation" size="5" type="text" value="90.0">
+      <label>Angle of labels (0 degrees is horizontal for a tree growing vertically)</label>
+    </param>
+    <param name="rescaled" type="select">
+      <label>Automatically rescale branch lengths</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="bscale" size="5" type="text" value="1.0">
+      <label>Centimeters per unit branch length</label>
+    </param>
+    <param name="treedepth" size="5" type="text" value="0.53">
+      <label>Depth of tree as fraction of its breadth</label>
+    </param>
+    <param name="stemlength" size="5" type="text" value="0.05">
+      <label>Stem length as fraction of tree depth</label>
+    </param>
+    <param name="nodespace" size="5" type="text" value="0.3333">
+      <label>Character height as fraction of tip spacing</label>
+    </param>
+    <param name="nodeposition" type="select">
+      <label>Position of interior nodes</label>
+      <option value="c">Centered among their ultimate descendants</option>
+      <option value="i">Intermediate between their immediate descendants</option>
+      <option value="w">Weighted average of tip positions</option>
+      <option value="n">Innermost of immediate descendants</option>
+      <option value="v">So tree is v shaped</option>
+    </param>
+    <param name="pagesheight" size="5" type="text" value="1">
+      <label>Number of trees across height of page</label>
+    </param>
+    <param name="pageswidth" size="5" type="text" value="1">
+      <label>Number of trees across width of page</label>
+    </param>
+    <param name="mode" type="select">
+      <label>Treat empty lines as alignment set delimiters</label>
+      <option value="multipleset">Yes</option>
+      <option value="singleset">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/embassy/phylipnew/fdrawgram.html
+</help>
+<!-- <code file="ps_to_png.py" /> -->
+</tool>

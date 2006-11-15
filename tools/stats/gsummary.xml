@@ -1,0 +1,65 @@
+<tool id="Summary Statistics1" name="Summary Statistics">
+  <description>for any numerical column</description>
+  <command interpreter="python">gsummary.py $input $out_file1 "$cond" "none"</command>
+  <inputs>
+    <param name="cond" size="40" type="text" value="c5" label="expression" help="Columns are specified as c1, c2, c3 ... First column is c1"/>
+<!--    <param name="groups" size="40" type="text" value="none" label="group terms (c1,c4,etc.)"/>
+ -->
+    <param format="tabular" name="input" type="data" label="summary statistics on" help="Query missing? See TIP below"/>
+
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="cond" value="c2"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" value="sta_summary.dat"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+.. class:: infomark
+
+**USING R FUNCTIONS:** Most functions (like *abs*) take only a single expression. *log* can take one or two parameters, like *log(expression,base)*
+
+Currently, these R functions are supported: *abs, sign, sqrt, floor, ceiling, trunc, round, signif, exp, log, cos, sin, tan, acos, asin, atan, cosh, sinh, tanh, acosh, asinh, atanh, lgamma, gamma, gammaCody, digamma, trigamma, cumsum, cumprod, cummax, cummin*
+
+-----
+
+**Syntax**
+
+This tool computes basic summary statistics on a given column, or on an expression containing those columns.
+
+- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file.
+
+- Examples of expression:
+
+  - **log(c5)** calculates the summary statistics for the natural log of column 5
+  - **(c5 + c6 + c7) / 3** calculates the summary statistics on the average of columns 5-7
+  - **log(c5,10)** summary statistics of the base 10 log of column 5
+  - **sqrt(c5+c9)** summary statistics of the square root of column 5 + column 9
+
+-----
+
+**Examples**
+
+- Input Dataset::
+
+    586     chrX    161416  170887  41108_at        16990
+    73      chrX    505078  532318  35073_at        1700
+    595     chrX    1361578 1388460 33665_s_at      1960
+    74      chrX    1420620 1461919 1185_at 8600
+
+- Summary Statistics on the above input file::
+
+    #sum    mean    stdev   0%      25%     50%     75%     100%
+    29250.000  7312.500  7198.636  1700.000  1895.000  5280.000  10697.500  16990.000
+
+</help>
+</tool>

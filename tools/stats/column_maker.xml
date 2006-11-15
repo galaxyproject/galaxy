@@ -1,0 +1,43 @@
+<tool id="Add a column1" name="Compute">
+  <description>an expression on every row</description>
+  <command interpreter="python">
+    column_maker.py $input $out_file1 "$cond"
+  </command>
+  <inputs>
+    <param name="cond" size="40" type="text" value="c3-c2" 
+           label="Add expression"/>
+    <param format="tabular" name="input" type="data" 
+           label="as a new column to" help="Query missing? See TIP below"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="cond" value="c3-c2"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-compute.dat"/>
+    </test>
+  </tests>
+  <help>
+
+ .. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+**Syntax**
+
+This tool allows to compute an expression for every row of a query and add result as a new column (field) 
+
+Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
+
+-----
+
+**Example**
+
+- **c3-c2** will add a length column to the query if **c2** and **c3** are start and end position
+
+</help>
+</tool>

@@ -1,0 +1,80 @@
+<tool id="Restrict1" name="Filter">
+  <description>Query based on region size and chromosome name</description>
+  <command>galaxyOps $dbkey $input -restrict -chrom=$chrom -minSize=$min -maxSize=$max -bed=$out_file1</command>
+  <inputs>
+<!--    <display>
+        <table border="0">
+           <tr>
+               <td>Filter query</td>
+               <td>$input</td>
+           </tr>
+           <tr>
+               <td>Return regions between</td>
+               <td>$min and $max bp in length</td>
+           </tr>           
+           <tr>
+               <td>Restrict to chromosome</td>
+               <td>$chrom Examples: <b>chr1</b>, <b>chrX</b>, <b>all</b> (no restriction)</td>
+           </tr>
+        </table>
+        <span class="ok_bgr">
+        <span class="smaller">
+        <b>TIP:</b>If your query does not appear in the pull down menu - it is not in BED format. 
+        <a href="http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/NotBed">Click here</a> to learn how to convert your data
+        </span>
+        </span>
+        <br />
+        <br />
+</display>
+-->
+    <param format="bed" name="input" type="data">
+       <label>Filter query</label>
+    </param>
+    <param name="min" size="4" type="text" value="1">
+       <label>Return from as short as</label>
+    </param>
+    <param name="max" size="4" type="text" value="1000">
+       <label>To as long as</label>
+    </param>
+    <param name="chrom" size="5" type="text" value="all">
+       <label>Restrict to chromosome</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="bed" name="out_file1" />
+  </outputs>
+  <help>
+
+|INFO| **TIP:** *If your query does not appear in the pull down menu - it is not in BED format.* ClickHere_ to learn how to convert your data.
+
+.. |INFO| image:: ../static/images/icon_info_sml.gif
+
+.. _ClickHere: http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/NotBed
+
+-----
+
+**Syntax**
+
+- **Return from as short as** and **To as long as** are in base pairs (bp)
+- **Restrict to chromosome** accepts values in the form **chrN**. For example, chr1, chrX, chrW, or all (any chromosome)
+
+.. |CHROM| image:: ../static/images/chrom_param.png
+
+-----
+
+**Example**
+
+If the input data look like this::
+
+   chr7    10       100       chr7_exon1    0       +
+   chr7    500      700       chr7_exon2    0       +
+   chr8    2000     2347      chr8_exon1    0       +
+   chr8    4000     4075      chr8_exon2    0       +
+
+then restricting to chr7 and minimal length of 100 bp will yield::
+
+   chr7    500      700       chr7_exon2    0       +
+
+To restrict only by length type "all" in the chromosome box
+</help>
+</tool>

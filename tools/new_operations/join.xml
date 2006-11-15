@@ -1,0 +1,111 @@
+<tool id="gops_join_1" name="Join">
+  <description>the intervals of two queries side-by-side</description>
+  <command interpreter="python2.4">gops_join.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol -m $min -f $fill</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Return intervals of</label>
+    </param>
+    <param format="interval" name="input2" type="data">
+      <label>joined to the intervals of</label>
+    </param>
+    <param name="min" size="4" type="integer" value="1">
+      <label>Minimum overlap</label>
+    </param>
+	<param name="fill" type="select" label="Join Type">
+		<option value="none">Return only records that are joined (INNER JOIN)</option>
+		<option value="right">Return all records of first query (fill null with ".")</option>
+		<option value="left">Return all records of second query (fill null with ".")</option>
+		<option value="both">Return all records of both queries (fill nulls with ".")</option>
+	</param>
+   </inputs>
+  <outputs>
+    <data format="input" name="output" metadata_source="input1" />
+  </outputs>
+  <code file="operation_filter.py"/>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="min" value="1" />
+      <param name="fill" value="none" />
+      <output name="output" file="gops-join-none.dat" />
+    </test>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="min" value="1" />
+      <param name="fill" value="right" />
+      <output name="output" file="gops-join-right.dat" />
+    </test>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="min" value="1" />
+      <param name="fill" value="left" />
+      <output name="output" file="gops-join-left.dat" />
+    </test>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="min" value="1" />
+      <param name="fill" value="both" />
+      <output name="output" file="gops-join-both.dat" />
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Syntax**
+
+- **Where overlap** specifies the minimum overlap between intervals that allows them to be joined.
+- **Return only records that are joined** returns only the records of the first query that join to a recond in the second query.  This is analogous to an INNER JOIN.
+- **Return all records of first query (fill null with &quot;.&quot;)** returns all intervals of the first query, and any intervals that do not join an interval from the second query are filled in with a period(.).  This is analogous to a LEFT JOIN.
+- **Return all records of second query (fill null with &quot;.&quot;)** returns all intervals of the second query, and any intervals that do not join an interval from the first query are filled in with a period(.).  **Note that this may produce an invalid interval file, since a period(.) is not a valid chrom, start, end or strand.**
+- **Return all records of both queries (fill nulls with &quot;.&quot;)** returns all records from both queries, and fills on either the right or left with periods.  **Note that this may produce an invalid interval file, since a period(.) is not a valid chrom, start, end or strand.**
+
+-----
+
+**Example**
+
+Query 1::
+
+   chr1 10   100  Query1.1
+   chr1 500  1000 Query1.2
+   chr1 1100 1250 Query1.3
+
+Query 2::
+
+   chr1 20   80   Query2.1
+   chr1 2000 2204 Query2.2
+   chr1 2500 3000 Query2.3
+
+Will return::
+
+   (Return only records that are joined)
+   chr1 10 100 Query1.1 chr1 20 80 Query2.1
+
+   (Return all records of first query)
+   chr1 10   100  Query1.1 chr1 20 80 Query2.1
+   chr1 500  1000 Query1.2 .    .  .  .
+   chr1 1100 1250 Query1.3 .    .  .  .
+
+   (Return all records of second query)
+   chr1 10 100 Query1.1 chr1 20   80   Query2.1
+   .    .  .   .        chr1 2000 2204 Query2.2
+   .    .  .   .        chr1 2500 3000 Query2.3
+
+   (Return all records of both queries)
+   chr1 10   100  Query1.1 chr1 20   80   Query2.1
+   chr1 500  1000 Query1.2 .    .    .    .
+   chr1 1100 1250 Query1.3 .    .    .    .
+   .    .    .    .        chr1 2000 2204 Query2.2
+   .    .    .    .        chr1 2500 3000 Query2.3
+   
+
+</help>
+</tool>

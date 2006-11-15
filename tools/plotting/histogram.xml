@@ -1,0 +1,31 @@
+<tool id="Histogram1" name="Histogram">
+  <description>for any numeric column</description>
+  <command interpreter="python">plotter.py $input $col $bins $out_file1 hist</command>
+  <inputs>
+    <!-- <display>on column $col of $input with $bins bins</display> -->
+    <param format="text" name="input" type="data" label="Select Query" />
+    <param name="col" size="4" type="integer" value="5" label="Column to plot" />
+    <param name="bins" size="4" type="integer" value="10" label="Number of bins" />
+  </inputs>
+  <outputs>
+    <data format="png" name="out_file1" />
+  </outputs>
+  <code file="plot_filter.py"/>
+  <help>
+This tool builds a simple histogram for a given data column using a specified number of bins:
+
+-----
+
+**Syntax**
+
+- **Column to plot** is an integer. The first column is **1**
+- **Number of bins** is an integer between 1 and 99
+
+-----
+
+**Example**
+
+.. image:: ../static/images/histogram.png
+
+</help>
+</tool>

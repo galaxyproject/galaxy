@@ -1,0 +1,15 @@
+<tool id="Pearson&apos;s Correlation1" name="Pearson&apos;s Correlation">
+  <description>between any two numeric columns</description>
+  <command interpreter="perl">correlation.pl $input $out_file1 $col1 $col2</command>
+  <inputs>
+<!--    <display>on column $col1 and column $col2 of $input</display> -->
+    <param name="col1" size="3" type="text" value="5" label="Correlate data in column"/>
+    <param name="col2" size="3" type="text" value="6" label="with data in column"/>
+    <param format="txt" name="input" type="data" label="in Query"/>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>Computes Pearsons correlation coefficient between any two numerical columns. Column numbers start at 1.
+</help>
+</tool>

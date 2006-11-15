@@ -1,0 +1,83 @@
+# The HTTP server to use, this loads a simple WSGI server from Paste
+
+# [server:main]
+# paste.server_runner = galaxy.web.server:serve
+# port = 8080
+# # Change this to 0.0.0.0 to make public
+# host = 127.0.0.1
+# # Size of worker thread pool for web server
+# nworkers = 10
+
+[server:main]
+use = egg:Paste#http
+port = 8080
+host = 127.0.0.1
+use_threadpool = true
+threadpool_workers = 10
+
+# The base application dispatches some queries to universe and others to 
+# static files
+
+[composite:main]
+use = egg:Paste#urlmap
+/ = universe
+/static = static
+/images = static_images
+/static/style = static_style
+/favicon.ico = static_favicon
+
+# The universe web interface
+
+[app:universe]
+# Specifies the factory for the universe WSGI application
+paste.app_factory = universe_wsgi:app_factory
+# Configuration for the universe application
+job_queue_workers = 5
+template_path = templates
+database_file = database/universe.sqlite
+#You may use a SQLAlchemy connection string to specify an external database
+#database_connection = postgres:///database_name
+file_path = database/files
+tool_config_file = tool_conf.xml
+tool_path = tools
+test_conf = test.conf
+# Session support (flup)
+use_session = False
+# session_type = shelve
+# session_file = %(here)s/database/flup_session.shelve
+# Session support (beaker)
+use_beaker_session = True
+session_type = file
+session_data_dir = %(here)s/database/beaker_sessions
+session_key = galaxysessions
+session_secret = changethisinproduction
+# Configuration for debugging middleware
+debug = true
+# NEVER enable this on a public site (even test or QA)
+use_interactive = True
+# Admin Password
+admin_pass = "galaxy"
+# path to sendmail
+sendmail_path = /usr/sbin/sendmail
+# Address to join mailing list
+mailing_join_addr = galaxy-user-join@bx.psu.edu
+# Write thread status periodically to 'heartbeat.log'
+use_heartbeat = True
+
+# Static files
+
+[app:static]
+use = egg:Paste#static
+document_root = %(here)s/static/
+[app:static_images]
+use = egg:Paste#static
+document_root = %(here)s/static/images/
+[app:static_favicon]
+use = egg:Paste#static
+document_root = %(here)s/static/favicon.ico
+[app:static_style]
+paste.app_factory = galaxy.web.static:make_static
+cache_seconds = 360
+document_root = %(here)s/static/light_hatched_style/blue
+#document_root = %(here)s/static/light_hatched_style/green
+#document_root = %(here)s/static/old_blue_style

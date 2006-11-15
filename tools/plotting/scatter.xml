@@ -1,0 +1,32 @@
+<tool id="Scatterplot1" name="Scatterplot">
+  <description>for any numeric column</description>
+  <command interpreter="python">plotter.py $input $col $style $out_file1 scatter</command>
+  <inputs>
+<!--    <display>on column $col of $input show $style</display> -->
+    <param format="text" name="input" type="data" label="Select Query"/>
+    <param name="col" size="4" type="integer" value="5" label="Column to plot"/>
+    <param name="style" type="select" label="Plot style">
+      <option value="L">Lines</option>
+      <option value="P">Points</option>
+      <option value="LP">Lines&amp;Points</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="out_file1" />
+  </outputs>
+  <help>This tool creates a simple scatterplot for a selected Query
+
+-----
+
+**Syntax**
+
+- **Column to plot** is an integer. The first column is **1**
+
+-----
+
+**Example**
+
+.. image:: ../static/images/scatter.png
+ 
+</help>
+</tool>

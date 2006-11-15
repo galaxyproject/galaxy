@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.3.9: http://docutils.sourceforge.net/" />
+<title>HELP</title>
+<link rel="stylesheet" href="/static/help.css" type="text/css" />
+</head>
+<body>
+<div class="document" id="help">
+<h1 class="title">HELP</h1>
+<p><strong>What to do if I have a problem?</strong></p>
+<p>E-mail us at <a class="reference" href="mailto:galaxy&#64;bx.psu.edu">galaxy&#64;bx.psu.edu</a></p>
+<hr class="docutils" />
+<p><strong>What do I do first?</strong></p>
+<p>To start your Galaxy session you first need to initialize history by adding some data. You can do this by using <em>Data</em> tool on the laft pane of the Galaxy window.</p>
+<p>Once you have at least one item in the history, you will be able to run appropriate tools.</p>
+<hr class="docutils" />
+<p><strong>Datatypes</strong></p>
+<p>Galaxy supports the following datatypes:</p>
+<blockquote>
+<ul class="simple">
+<li>text - any text file</li>
+<li>tabular - tab delimited text</li>
+<li>interval - tab delimited file containing information about genome features</li>
+<li>BED - a special case of the interval type</li>
+<li>FASTA - nucleotide or protein sequences</li>
+<li>AXT - blastZ-style pairwise alignments</li>
+<li>MAF - TBA and multiZ multiple alignments</li>
+</ul>
+</blockquote>
+<hr class="docutils" />
+<p><strong>What is the difference between Interval and BED?</strong></p>
+<p><a class="reference" target="_blank" href="http://genome.ucsc.edu/goldenPath/help/customTrack.html#BED">BED format</a> always contains <em>chromosome</em>, <em>start</em>, and <em>end</em> as the first three fields. Interval is more generic and does not require these fields to be in any strict order.  Here is the formal description of interval format used in Galaxy:</p>
+<ul>
+<li><p class="first">Tab delimited format</p>
+</li>
+<li><p class="first">File must start with definition line in the following format (columns may be in any order).:</p>
+<pre class="literal-block">
+#CHROM START END STRAND
+</pre>
+</li>
+<li><p class="first">CHROM - The name of the chromosome (e.g. chr3, chrY, chr2_random) or contig (e.g. ctgY1).</p>
+</li>
+<li><p class="first">START - The starting position of the feature in the chromosome or contig. The first base in a chromosome is numbered 0.</p>
+</li>
+<li><p class="first">END - The ending position of the feature in the chromosome or contig. The chromEnd base is not included in the display of the feature. For example, the first 100 bases of a chromosome are defined as chromStart=0, chromEnd=100, and span the bases numbered 0-99.</p>
+</li>
+<li><p class="first">STRAND - Defines the strand - either '+' or '-'.</p>
+</li>
+<li><p class="first">Example.:</p>
+<pre class="literal-block">
+#CHROM START END   STRAND NAME COMMENT
+chr1   10    100   +      exon myExon
+chrX   1000  10050 -      gene myGene     
+</pre>
+</li>
+</ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title> User Login </title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link href="/static/style/base.css" rel="stylesheet" type="text/css">
+</head>
+<script type="text/javascript">
+#if 'masthead' in $refresh_frames
+if ( parent.parent && parent.parent.frames && parent.parent.frames.galaxy_masthead )
+{
+    parent.parent.frames.galaxy_masthead.location.href="$request.base/masthead";
+}
+#end if
+#if 'history' in $refresh_frames
+if ( parent.frames && parent.frames.galaxy_history )
+{
+    parent.frames.galaxy_history.location.href="$request.base/history";
+}
+#end if
+</script>
+
+<body>
+
+<div class="${getVar( 'type', 'info' )}message">$message</div>
+
+</body>
+</html>

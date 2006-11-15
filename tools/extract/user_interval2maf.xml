@@ -1,0 +1,63 @@
+<tool id="User_Interval2Maf1" name="Extract User MAF blocks">
+  <description>given a set of genomic intervals and a MAF file</description>
+  <command interpreter="python2.4">user_interval2maf.py --dbkey=$dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafFile=$mafFile --interval_file=$input1 --output_file=$out_file1</command>
+  <inputs>
+    <page>
+        <param format="interval" name="input1" type="data" label="Interval File"/>
+        <param format="maf" name="mafFile" label="Choose MAF source" type="data"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="maf" name="out_file1" />
+  </outputs>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not work, you need to ensure that you have specified a database build for your data.
+ 
+-----
+
+**Syntax**
+
+This tool uses coordinate and strand information to extract multiple sequence alignments in MAF format from a user specified source.
+
+- **MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes.
+
+  - The .maf format is line-oriented. Each multiple alignment ends with a blank line.
+  - Each sequence in an alignment is on a single line.
+  - Lines starting with # are considered to be comments.
+  - Each multiple alignment is in a separate paragraph that begins with an "a" line and contains an "s" line for each sequence in the multiple alignment.
+  - Some MAF files may contain two optional line types:
+
+    - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line;
+    - An "e" line containing information about the size of the gap between the alignments that span the current block.
+
+-----
+
+**Example**
+
+- Input file::
+
+    chr7        127475281       127475310       NM_000230       0       +
+    chr7        127486011       127486166       D49487  0       +
+
+- If chose 8-way multiZ alignments file as the MAF source, this tool will fetch the 8-way multiZ alignments in MAF format from above file::
+
+    ##maf version=1
+    a score=301244.0
+    s hg17.chr7     127475281 29 + 158628139 GTAGGAATCGCAGCGCCAGCGGTTGCAAG
+    s panTro1.chr6  129889135 29 + 161576975 GTAGGAATCGCAGCGCCAGCGGTTGCAAG
+    s mm5.chr6       28912407 29 + 149721531 GGAGGGATCCCTGCTCCAGCAGCTGCAAG
+    s rn3.chr4       56185364 29 + 187371129 GGAGGAATCCCTGCTCCAGCAGCTGCAAG
+    s canFam1.chr14  52867501 29 -  63549963 GGAGGAGTCGCGGCGCCAGCAGCTGCGAG
+
+    a score=407957.0
+    s hg17.chr7     127486011 155 + 158628139 TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
+    s panTro1.chr6  129900247 155 + 161576975 TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
+    s mm5.chr6       28921128 155 + 149721531 CAGGGAGGAAAATGTGCTGGAGACCCCTGTGTCGGTTCCTGTGGCTTTGGTCCTATCTGTCTTATGTTCAAGCAGTGCCTATCCAGAAAGTCCAGGATGACACCAAAACCCTCATCAAGACCATTGTCACCAGGATCAATGACATTTCACACACG
+    s rn3.chr4       56195007 155 + 187371129 CAGCGAGGAAAATGTGCTGGAGACCCCTGTGCCGGTTCCTGTGGCTTTGGTCCTATCTGTCCTATGTTCAAGCTGTGCCTATCCACAAAGTCCAGGATGACACCAAAACCCTCATCAAGACCATTGTCACCAGGATCAATGACATTTCACACACG
+    s canFam1.chr14  52877854 155 -  63549963 GGGGAAGGAAAATGCGTTGTGGACCTCTGTGCCGATTCCTGTGGCTTTGGCCCTATCTGTCCTGTGTTGAAGCTGTGCCAATCCGAAAAGTCCAGGATGACACCAAAACCCTCATCAAGACGATTGTCGCCAGGATCAATGACATTTCACACACG
+
+  </help>
+</tool>

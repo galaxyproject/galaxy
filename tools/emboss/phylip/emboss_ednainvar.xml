@@ -1,0 +1,24 @@
+<tool id="EMBOSS: ednainvar7" name="EMBOSS: ednainvar">
+  <description>Embossified program to compute Lake's and Cavender's phylogenetic invariants from nucleotide sequences</description>
+  <command>ednainvar -sequence $input1 -outfile $out_file1 -printdata $printdata -progress no -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Alignment file</label>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print out the data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/ednainvar.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/ednainvar.html if you are not automatically redirected.
+</help>
+</tool>

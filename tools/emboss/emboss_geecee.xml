@@ -1,0 +1,17 @@
+<tool id="EMBOSS: geecee41" name="geecee">
+  <description>Calculates fractional GC content of nucleic acid sequences</description>
+  <command>geecee -sequence $input1 -outfile $out_file1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/geecee.html
+  </help>
+</tool>

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+
+<tool name="EncodeDB" id="encode_db1">
+
+	<description>
+		at NHGRI 
+	</description>
+
+	<command interpreter="python">
+		fetch.py "$url" $output
+	</command>
+
+	<inputs action="http://research.nhgri.nih.gov/projects/ENCODEdb/cgi-bin/power_query.cgi" target="_top"> 
+<!--	<inputs action="http://localhost:9000/prepared"> -->
+		<display>go to EncodeDB $GALAXY_URL</display>
+		<param name="GALAXY_URL" type="baseurl" value="/async/encode_db1" />
+	</inputs>
+	
+	<code file="encodedb_filter.py"/>
+
+</tool>

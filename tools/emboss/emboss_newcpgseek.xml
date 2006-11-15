@@ -1,0 +1,20 @@
+<tool id="EMBOSS: newcpgseek58" name="newcpgseek">
+  <description>Reports CpG rich region</description>
+  <command>newcpgseek -sequence $input1 -outfile $out_file1 -score $score -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="score" size="4" type="text" value="17">
+      <label>CpG score</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/newcpgseek.html
+  </help>
+</tool>

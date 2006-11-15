@@ -1,0 +1,53 @@
+<tool id="scatterplot_rpy" name="Scatterplot">
+  <description>of two numeric columns</description>
+  <command interpreter="python">scatterplot.py $input $out_file1 $col1 $col2 "$title" "$xlab" "$ylab"</command>
+  <inputs>
+    <param format="text" name="input" type="data" label="Dataset" help="Query missing? See TIP below"/>  
+    <param name="col1" size="4" type="integer" value="5" label="Column for x axis"/>
+    <param name="col2" size="4" type="integer" value="6" label="Column for y axis"/>
+    <param name="title" size="30" type="text" value="Scatterplot" label="Plot title"/>
+    <param name="xlab" size="30" type="text" value="V1" label="Label for x axis"/>
+    <param name="ylab" size="30" type="text" value="V2" label="Label for y axis"/>
+  </inputs>
+  <outputs>
+    <data format="pdf" name="out_file1" />
+  </outputs>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+**Syntax**
+
+A scatter plot reveals relationships or association between two variables. This tool creates a simple scatterplot between two variables of a selected Query.
+
+- **Column for x axis** and **Column for x axis** columns are referenced with a number, it start with 1.
+- **Plot title** The scatterplot title
+- **Label for x axis** and **Label for y axis** The labels for x and y axis of the scatterplot.
+
+-----
+
+**Example**
+
+- Input file::
+
+    1   68  4.1
+    2   71  4.6
+    3   62  3.8
+    4   75  4.4
+    5   58  3.2
+    6   60  3.1
+    7   67  3.8
+    8   68  4.1
+    9   71  4.3
+    10  69  3.7 
+
+- Create a simple scatterplot between the variables in column 2 and column 3 of the above dataset.
+
+.. image:: ../static/images/scatterplot.png
+
+</help>
+</tool>

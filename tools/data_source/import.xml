@@ -1,0 +1,27 @@
+<tool id="Featured datasets4" name="Featured datasets">
+  <description>(PSU prepared queries)</description>
+  <command interpreter="python">import.py $data $output</command>
+  <inputs>
+	<display>$data</display>		
+	<param name="data" type="select" display="radio">
+      <option value="eryth">Erythroid predicted cis-regulatory modules</option>
+      <option value="exons">Exons of protein-coding genes in the mouse genome, assembly mm3</option>
+      <option value="cishg16 ">Known cis-regulatory modules in the human HBB gene complex (hg16)</option>
+      <option value="cishg17">Known cis-regulatory modules in the human HBB gene complex (hg17)</option>
+      <option value="krhg16">Known regulatory regions (hg16)</option>
+      <option value="krhg17">Known regulatory regions (hg17)</option>
+      <option value="tARhg16mmc">Human (hg16) evolutionary cold region (vs mouse)</option>
+      <option value="tARhg16mmm">Human (hg16) evolutionary medium region (vs mouse)</option>
+      <option value="tARhg16mmh">Human (hg16) evolutionary hot region (vs mouse)</option>
+      <option value="tARhg16rnc">Human (hg16) evolutionary cold region (vs rat)</option>
+      <option value="tARhg16rnm">Human (hg16) evolutionary medium region (vs rat)</option>
+      <option value="tARhg16rnh">Human (hg16) evolutionary hot region (vs rat)</option>
+      <option value="phastConsHg16">phastCons hg16 (stringent, top ~5%) from UCSC</option>
+      <option value="omimhg16">OMIM disorders (hg16)</option>
+      <option value="omimhg17">OMIM disorders (hg17)</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="bed" name="output" />
+  </outputs>
+</tool>

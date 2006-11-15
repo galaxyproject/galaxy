@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<tool name="Echo" id="echo1">
+
+	<description>
+		echoes parameters  
+	</description>
+	
+	<command interpreter="python">echo.py $input $output </command>
+
+	<inputs>
+		<param format="tabular" name="input" type="data" label="Input stuff"/>
+	</inputs>
+
+	<outputs>
+		<data format="input" name="output" />
+	</outputs>
+
+</tool>

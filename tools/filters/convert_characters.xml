@@ -1,0 +1,38 @@
+<tool id="Convert characters1" name="Convert">
+  <description>delimiters to TAB</description>
+  <command interpreter="perl">convert_characters.pl $input $convert_from T $out_file1</command>
+  <inputs>
+    <param name="convert_from" type="select" label="Convert all">
+      <option value="s">Whitespaces</option>
+      <option value="T">Tabs</option>
+      <option value="Sp">Spaces</option>
+      <option value="Dt">Dots</option>
+      <option value="C">Commas</option>
+      <option value="D">Dashes</option>
+      <option value="U">Underscores</option>
+      <option value="P">Pipes</option>
+    </param>
+<!--    <param name="convert_to" type="select" label="to">
+      <option value="T">Tabs</option>
+      <option value="Sp">Spaces</option>
+      <option value="Dt">Dots</option>
+      <option value="C">Commas</option>
+      <option value="D">Dashes</option>
+      <option value="U">Underscores</option>
+      <option value="P">Pipes</option>
+    </param> -->
+    <param format="text" name="input" type="data" lable="in Query"/>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="convert_from" value="s"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-convert.dat"/>
+    </test>
+  </tests>
+  <help>Converts all delimiters of a specified type into TABs.  Consecutive characters are condensed. For example, if columns are separated by 5 spaces they will converted into 1 tab
+</help>
+</tool>

@@ -1,0 +1,8 @@
+div.historyItem, div.historyItem-ok, div.historyItem-running, div.historyItem-error, div.historyItem-queued, div.historyItem-empty
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-right: 10px;
+    margin-left: 10px;
+    border-bottom: dotted #d0d1e6 1px;
+}

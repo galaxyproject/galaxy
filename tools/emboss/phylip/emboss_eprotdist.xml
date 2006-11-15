@@ -1,0 +1,68 @@
+<tool id="EMBOSS: eprotdist21" name="EMBOSS: eprotdist">
+  <description>Embossified program to compute distance matrix from protein sequences</description>
+  <command>eprotdist -sequence $input1 -outfile $out_file1 -method $method -categ "$categ" -gencode $gencode -prob "$prob" -tranrate "$tranrate" -basefrequency $basefrequency -freqa "$freqa" -freqc
+  "$freqc" -freqg "$freqg" -freqt "$freqt" -printdata $printdata -progress no -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Alignment file</label>
+    </param>
+    <param name="method" type="select">
+      <label>Method to use</label>
+      <option value="Pam">Dayhoff PAM matrix</option>
+      <option value="Kim">Kimura formula</option>
+      <option value="Cat">Categories model</option>
+    </param>
+    <param name="categ" type="select">
+      <label>Category to use</label>
+      <option value="G">George/Hunt/Barker (Cys), (Met Val Leu Ileu), (Gly Ala Ser Thr Pro)</option>
+      <option value="C">Chemical (Cys Met), (Val Leu Ileu Gly Ala Ser Thr), (Pro)</option>
+      <option value="H">Hall (Cys), (Met Val Leu Ileu), (Gly Ala Ser Thr), (Pro)</option>
+    </param>
+    <param name="gencode" type="select">
+      <label>Genetic code</label>
+      <option value="U">Universal</option>
+      <option value="M">Mitochondrial</option>
+      <option value="V">Vertebrate mitochondrial</option>
+      <option value="F">Fly mitochondrial</option>
+      <option value="Y">Yeast mitochondrial</option>
+    </param>
+    <param name="prob" size="5" type="text" value="0.457">
+      <label>Prob change category (1.0=easy)</label>
+    </param>
+    <param name="tranrate" size="5" type="text" value="2.0">
+      <label>Transition/transversion ratio</label>
+    </param>
+    <param name="basefrequency" type="select">
+      <label>Use empirical base frequencies</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="freqa" size="5" type="text" value="0.25">
+      <label>Frequency for A</label>
+    </param>
+    <param name="freqc" size="5" type="text" value="0.25">
+      <label>Frequency for C</label>
+    </param>
+    <param name="freqg" size="5" type="text" value="0.25">
+      <label>Frequency for G</label>
+    </param>
+    <param name="freqt" size="5" type="text" value="0.25">
+      <label>Frequency for T/U</label>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print out the data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/eprotdist.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/eprotdist.html if you are not automatically redirected.
+</help>
+</tool>

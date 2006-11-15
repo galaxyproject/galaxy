@@ -1,0 +1,18 @@
+<tool id="Show tail1" name="Select last">
+  <description>lines from a Query</description>
+  <command interpreter="perl">tailWrapper.pl $input $lineNum $out_file1</command>
+  <inputs>
+    <param name="lineNum" size="5" type="integer" value="10" label="Show last"/>
+    <param format="text" name="input" type="data" label="lines of"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="lineNum" value="10"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-showtail.dat"/>
+    </test>
+  </tests>
+</tool>

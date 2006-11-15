@@ -1,0 +1,77 @@
+<tool id="interval_complement1" name="Interval Complement">
+<description>genome-wide complement a set of intervals</description>
+  <command interpreter="python2.4">interval_complement.py /depot/data1/cache/chrominfo.txt $dbkey $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol</command>
+  <inputs>
+    <param name="input1" type="data" format="interval" label="File to Complement"/>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="bed"/>
+  </outputs>
+<help>
+
+.. class:: infomark
+
+**TIP:**  If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+**Syntax**
+
+This tool returns a BED file with the genome wide complement to a user specified set of intervals.
+
+-----
+
+**Example**
+
+- Input File of hg16::
+
+    chr7	117400000	127500000
+
+- Finds all regions (genome wide) that are not in the given query::
+
+    chr15	0	100256656
+    chr19_random	0	92689
+    chr8_random	0	1499381
+    chrY	0	50286555
+    chrX	0	153692391
+    chr13	0	113042980
+    chr12	0	132078379
+    chr11	0	134482954
+    chr5_random	0	143687
+    chr17	0	81860266
+    chr16	0	90041932
+    chr6_random	0	2055751
+    chr14	0	105311216
+    chrM	0	16571
+    chr18	0	76115139
+    chr19	0	63811651
+    chr1_random	0	6515988
+    chr13_random	0	189598
+    chr3_random	0	749256
+    chr9_random	0	2766341
+    chrUn_random	0	3349625
+    chr4_random	0	648024
+    chr18_random	0	4262
+    chr2_random	0	1104831
+    chr22	0	49396972
+    chr20	0	63741868
+    chr21	0	46976097
+    chr10_random	0	1043775
+    chr7	0	117400000
+    chr7	127500000	158545518
+    chr6	0	170914576
+    chr5	0	181034922
+    chr4	0	191731959
+    chr3	0	199344050
+    chr2	0	243615958
+    chr1	0	246127941
+    chr7_random	0	632637
+    chrX_random	0	3403558
+    chr9	0	136372045
+    chr8	0	146308819
+    chr10	0	135037215
+    chr17_random	0	2549222
+    chr15_random	0	1132826
+
+</help>
+</tool>

@@ -1,0 +1,24 @@
+<tool id="EMBOSS: wobble108" name="wobble">
+  <description>Wobble base plot</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl wobble -sequence $input1 -graph png -goutfile $out_file2 -outfile $out_file1 -window "$window" -bases "$bases" -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="window" size="5" type="text" value="30">
+      <label>Window size, in codons</label>
+    </param>
+    <param name="bases" size="6" type="text" value="GC">
+      <label>Bases used</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="png" name="out_file2" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/wobble.html
+  </help>
+</tool>

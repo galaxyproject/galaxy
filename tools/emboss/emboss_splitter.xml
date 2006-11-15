@@ -1,0 +1,61 @@
+<tool id="EMBOSS: splitter92" name="splitter">
+  <description>Split a sequence into (overlapping) smaller sequences</description>
+  <command>splitter -sequence $input1 -outseq $out_file1 -size "$size" -overlap "$overlap" -addoverlap $addoverlap -osformat2 $out_format1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="size" size="10" type="text" value="10000">
+      <label>Size to split at</label>
+    </param>
+    <param name="overlap" size="4" type="text" value="0">
+      <label>Overlap between split sequences</label>
+    </param>
+    <param name="addoverlap" type="select">
+      <label>Add overlap to size</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="out_format1" type="select">
+      <label>Output Sequence File Format</label>
+      <option value="fasta">FASTA (m)</option>
+      <option value="acedb">ACeDB (m)</option>
+      <option value="asn1">ASN.1 (m)</option>
+      <option value="clustal">Clustal (m)</option>
+      <option value="codata">CODATA (m)</option>
+      <option value="embl">EMBL (m)</option>
+      <option value="fitch">Fitch (m)</option>
+      <option value="gcg">Wisconsin Package GCG 9.x and 10.x (s)</option>
+      <option value="genbank">GENBANK (m)</option>
+      <option value="gff">GFF (m)</option>
+      <option value="hennig86">Hennig86 (m)</option>
+      <option value="ig">Intelligenetics (m)</option>
+      <option value="jackknifer">Jackknifer (m)</option>
+      <option value="jackknifernon">Jackknifernon (m)</option>
+      <option value="mega">Mega (m)</option>
+      <option value="meganon">Meganon (m)</option>
+      <option value="msf">Wisconsin Package GCG's MSF (m)</option>
+      <option value="pir">NBRF (PIR) (m)</option>
+      <option value="ncbi">NCBI style FASTA (m)</option>
+      <option value="nexus">Nexus/PAUP (m)</option>
+      <option value="nexusnon">Nexusnon/PAUPnon (m)</option>
+      <option value="phylip">PHYLIP interleaved (m)</option>
+      <option value="phylipnon">PHYLIP non-interleaved (m)</option>
+      <option value="selex">SELEX (m)</option>
+      <option value="staden">Staden (s)</option>
+      <option value="strider">DNA strider (m)</option>
+      <option value="swiss">SwisProt entry (m)</option>
+      <option value="text">Plain sequence (s)</option>
+      <option value="treecon">Treecon (m)</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="fasta" name="out_file1" />
+  </outputs>
+  <code file="emboss_format_corrector.py" />
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/splitter.html
+  </help>
+</tool>

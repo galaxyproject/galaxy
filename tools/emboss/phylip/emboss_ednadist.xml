@@ -1,0 +1,60 @@
+<tool id="EMBOSS: ednadist6" name="EMBOSS: ednadist">
+  <description>Embossified program to compute distance matrix from nucleotide sequences</description>
+  <command>ednadist -sequence $input1 -outfile $out_file1 -method $method -ttratio "$ttratio" -matrix $matrix -categories "$categories" -basefrequency $basefrequency -printinitial $printinitial -freqa
+  "$freqa" -freqc "$freqc" -freqg "$freqg" -freqt "$freqt" -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Alignment file</label>
+    </param>
+    <param name="method" type="select">
+      <label>Choose the method to use</label>
+      <option value="Kimura">Kimura 2-parameter distance</option>
+      <option value="JinNei">Jin and Nei distance</option>
+      <option value="ML">Maximum Likelihood distance</option>
+      <option value="Jukes">Jukes-Cantor distance</option>
+    </param>
+    <param name="ttratio" size="5" type="text" value="2.0">
+      <label>Transition/transversion ratio</label>
+    </param>
+    <param name="matrix" type="select">
+      <label>Form</label>
+      <option value="S">Square</option>
+      <option value="L">Lower-triangular</option>
+    </param>
+    <param name="categories" size="5" type="text" value="1">
+      <label>Number of categories of substitution rates</label>
+    </param>
+    <param name="basefrequency" type="select">
+      <label>Use empirical base frequencies</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="printinitial" type="select">
+      <label>Print out the data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="freqa" size="5" type="text" value="0.25">
+      <label>Frequency for A</label>
+    </param>
+    <param name="freqc" size="5" type="text" value="0.25">
+      <label>Frequency for C</label>
+    </param>
+    <param name="freqg" size="5" type="text" value="0.25">
+      <label>Frequency for G</label>
+    </param>
+    <param name="freqt" size="5" type="text" value="0.25">
+      <label>Frequency for T/U</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/ednadist.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/ednadist.html if you are not automatically redirected.
+</help>
+</tool>

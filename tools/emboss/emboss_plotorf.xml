@@ -1,0 +1,23 @@
+<tool id="EMBOSS: plotorf76" name="plotorf">
+  <description>Plot potential open reading frames</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl plotorf -sequence $input1 -graph png -goutfile $out_file1 -start $start -stop $stop -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="start" size="15" type="text" value="ATG">
+      <label>Start codons</label>
+    </param>
+    <param name="stop" size="15" type="text" value="TAA,TAG,TGA">
+      <label>Stop codons</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/plotorf.html
+  </help>
+</tool>

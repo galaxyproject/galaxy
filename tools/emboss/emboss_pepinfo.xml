@@ -1,0 +1,26 @@
+<tool id="EMBOSS: pepinfo69" name="pepinfo">
+  <description>Plots simple amino acid properties in parallel</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl pepinfo -sequence $input1 -outfile $out_file1 -goutfile $out_file2 -graph png -hwindow $hwindow $plot_type -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="hwindow" size="4" type="text" value="9">
+      <label>Window size for hydropathy averaging</label>
+    </param>
+    <param name="plot_type" type="select">
+      <label>Choose a plot type</label>
+      <option value="-generalplot yes -hydropathyplot no">Histogram of general properties</option>
+      <option value="-generalplot no -hydropathyplot yes">Graphs of hydropathy</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="png" name="out_file2" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/pepinfo.html
+  </help>
+</tool>

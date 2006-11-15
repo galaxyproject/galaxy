@@ -1,0 +1,57 @@
+<tool id="EMBOSS: eclique1" name="EMBOSS: eclique">
+  <description>Embossified Compatibility Program</description>
+  <command>eclique -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -cliqminnum "$cliqminnum" -og $og -outgnum "$outgnum" -drawtree $drawtree -ancestral $ancestral -minclique
+  $minclique -printdata $printdata -progress no -matrixout $matrixout -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Input file</label>
+    </param>
+    <param name="cliqminnum" size="5" type="text" value="1">
+      <label>Minimum clique size</label>
+    </param>
+    <param name="og" type="select">
+      <label>Outgroup root</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="outgnum" size="5" type="text" value="1">
+      <label>Number of the outgroup</label>
+    </param>
+    <param name="drawtree" type="select">
+      <label>Draw tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="ancestral" type="select">
+      <label>Use ancestral states in input file</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="minclique" type="select">
+      <label>Use minimum clique size</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print out the data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="matrixout" type="select">
+      <label>Print out compatibility matrix</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="treefile" name="out_file2" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/eclique.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/eclique.html if you are not automatically redirected.
+</help>
+</tool>

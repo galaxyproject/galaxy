@@ -1,0 +1,60 @@
+<tool id="EMBOSS: fneighbor19" name="fneighbor">
+  <description>Phylogenies from distance matrix by N-J or UPGMA method</description>
+  <command interpreter="perl">multiple_fasta_alignment_input_2_outputs.pl $mode fneighbor -datafile $input1 -outfile $out_file1 -trout yes -outtreefile $out_file2 -matrixtype $matrixtype -treetype $treetype -outgrno "$outgrno" -jumble $jumble -seed "$seed" -replicates $replicates -printdata $printdata -progress no -treeprint $treeprint -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Distance matrix</label>
+    </param>
+    <param name="matrixtype" type="select">
+      <label>Type of data matrix</label>
+      <option value="s">Square</option>
+      <option value="u">Upper triangular</option>
+      <option value="l">Lower triangular</option>
+    </param>
+    <param name="treetype" type="select">
+      <label>Neighbor-joining or UPGMA tree</label>
+      <option value="n">Neighbor-joining</option>
+      <option value="u">UPGMA</option>
+    </param>
+    <param name="outgrno" size="5" type="text" value="0">
+      <label>Species number to use as outgroup</label>
+    </param>
+    <param name="jumble" type="select">
+      <label>Randomize input order of species</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="seed" size="5" type="text" value="1">
+      <label>Random number seed between 1 and 32767 (must be odd)</label>
+    </param>
+    <param name="replicates" type="select">
+      <label>Subreplicates</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="treeprint" type="select">
+      <label>Print out tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="mode" type="select">
+      <label>Treat empty lines as alignment set delimiters</label>
+      <option value="multipleset">Yes</option>
+      <option value="singleset">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="txt" name="out_file2" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/embassy/phylipnew/fneighbor.html
+</help>
+</tool>

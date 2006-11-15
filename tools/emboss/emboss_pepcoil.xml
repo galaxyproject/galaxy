@@ -1,0 +1,35 @@
+<tool id="EMBOSS: pepcoil68" name="pepcoil">
+  <description>Predicts coiled coil regions</description>
+  <command>pepcoil -sequence $input1 -outfile $out_file1 -window $window -coil $coil -frame $frame -other $other -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="window" size="4" type="text" value="28">
+      <label>Window size</label>
+    </param>
+    <param name="coil" type="select">
+      <label>Report coiled coil regions</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="frame" type="select">
+      <label>Show coil frameshifts</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="other" type="select">
+      <label>Report non coiled coil regions</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/pepcoil.html
+  </help>
+</tool>

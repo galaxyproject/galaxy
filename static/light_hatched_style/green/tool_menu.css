@@ -1,0 +1,38 @@
+body
+{
+    background: white;
+    color: #303030;
+    background: white url(/static/style/menu_bg.png) top repeat-x;
+    margin: 10px;
+    margin-right: 15px;
+    margin-left: 15px;
+}
+
+hr
+{
+    border: none;
+    height: 0px;
+    margin-top: 2px;
+}
+
+div.toolSectionDetailsInner
+{ 
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+div.toolSectionTitle
+{
+  padding-bottom: 5px;
+  font-weight: bold;
+}
+
+div.toolTitle
+{
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-left: 16px;
+  margin-right: 10px;
+  display: list-item;
+  list-style: square outside;
+}

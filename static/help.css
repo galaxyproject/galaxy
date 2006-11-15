@@ -1,0 +1,250 @@
+body 
+{
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font: smaller verdana, "Bitstream Vera Sans", geneva, arial, helvetica, helve, sans-serif; 
+    background: #3690c0;
+
+}
+
+body.toolMenuPage
+{
+    background: #0570b0;
+    color: #d0d1e6;
+    background-image: url(/static/images/tools.gif);
+    background-repeat: no-repeat;
+    background-position: bottom right;
+}
+
+body.toolMenuPage a
+{
+    color: #ece7f2;
+}
+
+body.toolMenuPage a:hover
+{
+    color: white;
+}
+
+body.historyPage
+{
+    background: #045a8d;
+    color: #d0d1e6;
+    background-image: url(/static/images/history.gif);
+    background-repeat: no-repeat;
+    background-position: bottom right;
+}
+
+body.historyPage a
+{
+    color: #ece7f2;
+}
+
+body.mastheadPage
+{
+    background: #023858;
+    color: white;
+}
+
+body.mastheadPage a
+{
+    color: #ece7f2;
+}
+
+div.pageTitle
+{
+    font-size: x-large;
+    font-weight: bold;
+}
+
+/*
+6 class diverging BrBG
+
+br2: #8c510a
+br1: #d8b365
+br0: #f6e8c3
+gr0:  #c7eae5
+gr1:  #5ab4ac
+gr2:  #01665e
+*/
+
+/* 
+
+Dark to light: 
+
+Blues
+-----
+
+0: #023858
+1: #045a8d
+3: #0570b0
+4: #3690c0
+5: #74a9cf
+6: #a6bddb
+7: #d0d1e6
+8: #ece7f2
+
+
+*/
+
+h1, h2, h3 
+{ 
+    color: white;
+}    
+
+hr
+{
+    border: none;
+    border-bottom: dotted white 1px;
+}
+
+a:link {color: black}     /* unvisited link */
+a:visited {color: black}  /* visited link */
+a:hover {color: white}   /* mouse over link */
+a:active {color: black}   /* selected link */
+
+div.toolSectionList
+{ 
+  padding: 0px;
+  padding-top: 10px;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  background: #045a8d;
+}
+
+div.toolSectionTitle
+{ 
+  padding-left: 10px;
+  padding-right: 22px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  text-weight: bold;
+}
+
+div.toolSectionDetailsInner
+{ 
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+div.toolTitle
+{ 
+  padding-bottom: 10px;
+}
+
+div.toolForm
+{ 
+  margin: 10px;
+}
+
+div.toolFormTitle
+{ 
+  background: #d8b365;
+  font-weight: bold;
+  padding: 5px;
+}
+
+div.toolFormBody
+{ 
+  background: #f6e8c3;
+  padding: 5px;
+}
+
+td.errorMessage
+{
+    color: #b30000;
+}
+
+div.toolHelp
+{ 
+  margin: 10px;
+}
+
+div.toolHelpBody
+{ 
+  background: white;
+  padding: 5px;
+}
+
+div.historyItem
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-right: 10px;
+    margin-left: 10px;
+    border-bottom: dotted #d0d1e6 1px;
+}
+
+pre.peek
+{
+    background: #f6e8c3;
+    color: black;
+    width: 100%; 
+    overflow: auto;
+}
+
+div.document
+{
+    margin: 10px;
+}
+
+select
+{
+    max-width: 300px;
+}
+
+.errormessage, .warningmessage, .donemessage, .infomessage 
+{
+    margin: 10px;
+    padding: .33em 0 .67em 42px;
+    min-height: 32px;
+    border-top: 5px solid #900;
+    border-bottom: 5px solid #900;
+    /* border-left: 1px solid #900; */
+    /* border-right: 1px solid #900; */
+    background: white;
+    background-image: url(/images/icon_error_lrg.gif);
+    background-repeat: no-repeat;
+    background-position: 5px 5px;
+}
+
+.warningmessage 
+{
+    background-image: url(/images/icon_warning_lrg.gif);
+    border-color: #c60;
+}
+
+.donemessage 
+{
+    background-image: url(/images/icon_success_lrg.gif);
+    border-color: #090;
+}
+
+.infomessage 
+{
+    background-image: url(/images/icon_info_lrg.gif);
+    border-color: #069;
+}
+
+.errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr
+{
+    padding-left: 20px;
+    min-height: 15px;
+    background: url(/images/icon_error_sml.gif) no-repeat;
+}
+
+.warningmark 
+{
+    background-image: url(/images/icon_warning_sml.gif);
+}
+
+.donemark 
+{
+    background-image: url(/images/icon_success_sml.gif);
+}
+
+.infomark, .ok_bgr
+{
+    background-image: url(/images/icon_info_sml.gif);
+}

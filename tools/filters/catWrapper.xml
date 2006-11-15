@@ -1,0 +1,27 @@
+<tool id="cat1" name="Concatenate queries">
+  <description>tail-to-head</description>
+  <command>cat $input1 $input2 > $out_file1</command>
+  <inputs>
+    <param name="input1" type="data" label="Concatenate Query1"/>
+    <param name="input2" type="data" label="with Query2" />
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="input" metadata_source="input1"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed"/>
+      <param name="input2" value="2.bed"/>
+      <output name="out_file1" file="eq-cat.dat"/>
+    </test>
+  </tests>
+  <help>
+
+Appends Query2 to the end of Query1
+
+.. class:: warningmark
+
+**WARNING:** Be careful not to concatenate queries of different kinds (e.g., sequences with intervals). This tool does not check if the two queries being concatenated are in the same format. 
+
+</help>
+</tool>

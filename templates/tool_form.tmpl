@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+<title>Galaxy</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link href="/static/style/base.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="/static/universe.js">var dummy1=0;</script>
+</head>
+
+<body onLoad="frame_dw();">
+
+#if $getVar( 'error_message', None )
+   <div class="errormessagesmall">$error_message</div>
+   <p></p>
+#end if
+
+<div class="toolForm" id="$tool.id">
+  #if $tool.has_multiple_pages 
+  <div class="toolFormTitle">$tool.name (step #echo $tool_state.page+1 # of $tool.npages)</div>
+  #else
+  <div class="toolFormTitle">$tool.name</div>
+  #end if
+  <div class="toolFormBody">
+  <form name="tool_form" action="$tool.action" enctype="$tool.enctype" target="$tool.target" method="$tool.method">
+    <input type="hidden" name="tool_id" value="$tool.id">
+    <input type="hidden" name="tool_state" value="$util.object_to_string( $tool_state )">
+    
+    #if $tool.display_by_page[$tool_state.page]
+        
+        $caller.fill_template_string( $tool.display_by_page[$tool_state.page], context=$tool.get_param_html_map( $caller, $tool_state.page ) )
+        <input type="submit" name="runtool_btn" value="Execute">
+        
+    #else
+    
+        <table>
+        #for $name, $param in $tool.param_map_by_page[$tool_state.page].items()
+            <tr valign="top">
+              <td>$param.get_label():</td>
+              <td>
+                <div>$param.get_html( $caller, $param_values.get( $param.name, None ), $param_values )</div>
+                #if $errors and $errors.has_key( $param.name ):
+                <div style="color: red; font-style: italic; padding-top: 1px; padding-bottom: 3px;">$errors[$param.name]</div>
+                #elif $param.help
+                <div class="toolParamHelp">$param.help</div>
+                #end if
+              </td>
+            </tr>
+        #end for
+        <tr><td></td><td>
+            #if $tool_state.page == $tool.last_page
+            <input type="submit" name="runtool_btn" value="Execute">
+            #else
+            <input type="submit" name="runtool_btn" value="Next step">
+            #end if
+        </td></tr>    
+        </table>
+    
+    #end if    
+
+  </form>
+  </div>
+</div>
+
+#if $tool.help
+<div class="toolHelp">
+     <div class="toolHelpBody">
+     #if $tool.has_multiple_pages
+     $tool.help_by_page[$tool_state.page]
+     #else
+     $tool.help
+     #end if
+     </div>        
+</div>
+#end if
+
+</body>
+
+</html>

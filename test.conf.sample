@@ -1,0 +1,19 @@
+#
+# example configuration
+#
+doctest: galaxy.obj
+doctest: galaxy.datatypes.data
+doctest: galaxy.util
+doctest: galaxy.form_builder
+doctest: galaxy.tools.parameters
+doctest: galaxy.tools.validation
+unittest: tests.base_test
+unittest: tests.edit_test
+unittest: tests.filter_test
+unittest: tests.fetch_test
+unittest: tests.ucsc_test
+unittest: tests.plot_test
+unittest: tests.oper_test
+unittest: tests.noper_test
+unittest: tests.test_util
+unittest: tests.genomic_test

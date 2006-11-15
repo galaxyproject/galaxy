@@ -1,0 +1,57 @@
+<tool id="histogram_rpy" name="Histogram">
+  <description>of a numeric columns</description>
+  <command interpreter="python">histogram.py $input $out_file1 $col1 "$title" "$xlab" $breaks $density $header</command>
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Dataset" help="Query missing? See TIP below"/>
+    <param name="col1" size="4" type="integer" value="5" label="Column for x axis"/>
+    <param name="breaks" size="4" type="integer" value="0" label="Number of breaks (bars)"/>
+    <param name="title" size="30" type="text" value="Histogram" label="Plot title"/>
+    <param name="xlab" size="30" type="text" value="V1" label="Label for x axis"/>
+    <param name="density" type="boolean" checked="yes" label="Include smoothed density"/>
+    <param name="header" type="boolean" checked="no" label="Header line?"/>
+  </inputs>
+  <outputs>
+    <data format="pdf" name="out_file1" />
+  </outputs>
+  <help>
+
+ .. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+**Syntax**
+
+This tool computes a histogram of a selected dataset.
+
+- **Column for x axis** column is referenced with a number, it start with 1.
+- **Number of breaks(bars)** breakpoints between histogram cells. Value of '0' will determine breaks automatically.
+- **Plot title** The histogram title.
+- **Label for x axis** The label for x axis of the histogram.
+- **Include smoothed density** If checked, the output graph will join the given corresponding points with line segments.
+- **Header line?** Check this box if your dataset contains a header line, so that this tool skips that line.
+
+-----
+
+**Example**
+
+- Input file::
+
+    1	68	4.1
+    2	71	4.6
+    3	62	3.8
+    4	75	4.4
+    5	58	3.2
+    6	60	3.1
+    7	67	3.8
+    8	68	4.1
+    9	71	4.3
+    10	69	3.7 
+
+- Create a histogram on column 2 of the above dataset. 
+
+.. image:: ../static/images/histogram2.png
+
+</help>
+</tool>

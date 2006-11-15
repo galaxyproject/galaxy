@@ -1,0 +1,26 @@
+body
+{
+    background: #025838 url(/static/style/masthead_bg.png) bottom;
+    color: white;
+    padding: 0;
+    border: 0;
+    margin: 3px;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+div.pageTitle
+{
+    font-size: x-large;
+    font-weight: bold;
+}
+
+div.pageTitle a:link, div.pageTitle a:visited, div.pageTitle a:active, div.pageTitle a:hover
+{
+    text-decoration: none;
+}
+
+a:link, a:visited, a:active
+{
+    color: #ecf2e7;
+}

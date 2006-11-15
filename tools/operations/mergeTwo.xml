@@ -1,0 +1,31 @@
+<tool id="Union1" name="Union">
+  <description>Merge regions of two different queries</description>
+  <command>galaxyOps3 $dbkey -chromCol=$input1_chromCol -startCol=$input1_startCol -stopCol=$input1_endCol -strandCol=$input1_strandCol -chromCol2=$input2_chromCol -startCol2=$input2_startCol -stopCol2=$input2_endCol $input1 $input2 -or -chrom=all -bed=$out_file1</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Compute union between Query1</label>
+    </param>
+    <param format="interval" name="input2" type="data">
+      <label>and Query2</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1"/>
+  </outputs>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Example**
+
+Merge regions that appear in the two given queries. 
+
+.. image:: ../static/operation_icons/union.png
+
+
+</help>
+</tool>

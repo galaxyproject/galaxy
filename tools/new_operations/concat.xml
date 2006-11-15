@@ -1,0 +1,45 @@
+<tool id="gops_concat_1" name="Concatenate">
+  <description>two queries into one query</description>
+  <command interpreter="python2.4">gops_concat.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol $sameformat</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Concatenate (using this file format)</label>
+    </param>
+    <param format="interval" name="input2" type="data">
+      <label>with</label>
+    </param>
+    <param name="sameformat" type="boolean" truevalue="--sameformat" falsevalue="" label="Both queries are exactly the same filetype" checked="true">
+    </param>
+   </inputs>
+  <outputs>
+    <data format="input" name="output" metadata_source="input1" />
+  </outputs>
+  <code file="operation_filter.py"/>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="sameformat" value="true" />
+      <output name="output" file="gops-concat.dat" />     
+    </test>    
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Syntax**
+
+- **Both queries are exactly the same filetype** will preserve all extra fields in both files.  Leaving this unchecked will force the second query to use the same column assignments for chrom, start, end and strand, but will fill extra fields with a period(.).  In both cases, the output fields are truncated or padded with fields of periods to maintain a truly tabular output.
+
+-----
+
+**Example**
+
+.. image:: ../static/operation_icons/gops_concatenate.gif
+
+</help>
+</tool>

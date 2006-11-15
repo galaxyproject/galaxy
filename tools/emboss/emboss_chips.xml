@@ -1,0 +1,22 @@
+<tool id="EMBOSS: chips10" name="chips">
+  <description>Codon usage statistics</description>
+  <command>chips -seqall $input1 -outfile $out_file1 -sum $sum -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>On query</label>
+    </param>
+    <param name="sum" type="select">
+      <label>Sum codons over all sequences</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/chips.html
+  </help>
+</tool>

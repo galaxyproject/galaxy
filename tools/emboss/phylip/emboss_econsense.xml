@@ -1,0 +1,43 @@
+<tool id="EMBOSS: econsense2" name="EMBOSS: econsense">
+  <description>Embossified consensus tree program</description>
+  <command>econsense -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -og $og -outgnum "$outgnum" -drawtree $drawtree -root $root -progress no -printsets $printsets -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Input file</label>
+    </param>
+    <param name="og" type="select">
+      <label>Outgroup root</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="outgnum" size="5" type="text" value="1">
+      <label>Number of the outgroup</label>
+    </param>
+    <param name="drawtree" type="select">
+      <label>Draw tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="root" type="select">
+      <label>Trees to be treated as Rooted</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="printsets" type="select">
+      <label>Print out the sets of species</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="treefile" name="out_file2" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/econsense.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/econsense.html if you are not automatically redirected.
+</help>
+</tool>

@@ -1,0 +1,60 @@
+#!/bin/sh 
+#
+# Script to update UCSC static tables.  The idea is to update, but if
+# the update fails, not replace current data/tables with error
+# messages.
+
+# Edit this line to refer to galaxy's path:
+GALAXY=/galaxy/path
+export PYTHONPATH=${GALAXY}/modules:${GALAXY}/eggs
+
+# setup directories
+mkdir ${GALAXY}/static/ucsc/new
+mkdir ${GALAXY}/static/ucsc/chrom/new
+
+date
+echo "Updating UCSC static tables."
+
+# Try to build "builds.txt"
+echo "Updating builds.txt"
+python2.4 ${GALAXY}/cron/parse_builds.py > ${GALAXY}/static/ucsc/new/builds.txt
+if [ $? -eq 0 ]
+then
+    cp -uf ${GALAXY}/static/ucsc/new/builds.txt ${GALAXY}/static/ucsc/builds.txt
+else
+    echo "Failed to update builds.txt" >&2
+fi
+
+# Try to build ucsc_build_sites.txt
+echo "Updating ucsc_build_sites.txt"
+python2.4 ${GALAXY}/cron/parse_builds_3_sites.py > ${GALAXY}/static/ucsc/new/ucsc_build_sites.txt
+if [ $? -eq 0 ]
+then
+    cp -uf ${GALAXY}/static/ucsc/new/ucsc_build_sites.txt ${GALAXY}/static/ucsc/ucsc_build_sites.txt
+else
+    echo "Failed to update builds.txt" >&2
+fi
+
+# Try to build chromInfo tables
+echo "Building chromInfo tables."
+python2.4 ${GALAXY}/cron/build_chrom_db.py ${GALAXY}/static/ucsc/chrom/new/ ${GALAXY}/static/ucsc/builds.txt
+if [ $? -eq 0 ]
+then
+    cp -uf ${GALAXY}/static/ucsc/chrom/new/*.len ${GALAXY}/static/ucsc/chrom/
+else
+    echo "Failed to update chromInfo tables." >&2
+fi
+
+rm -rf ${GALAXY}/static/ucsc/new
+rm -rf ${GALAXY}/static/ucsc/chrom/new
+echo "Update complete."
+
+#Perform Manual Additions here
+echo "Adding Manual Builds."
+python2.4 ${GALAXY}/cron/add_manual_builds.py ${GALAXY}/static/ucsc/manual_builds.txt ${GALAXY}/static/ucsc/builds.txt ${GALAXY}/static/ucsc/chrom/
+if [ $? -eq 0 ]
+then
+    echo "Manual addition was successful."
+else
+    echo "Manual addition failed" >&2
+fi

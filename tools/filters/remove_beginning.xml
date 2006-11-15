@@ -1,0 +1,21 @@
+<tool id="Remove beginning1" name="Remove beginning">
+  <description>of a file</description>
+  <command interpreter="perl">remove_beginning.pl $input $num_lines $out_file1</command>
+  <inputs>
+    <param name="num_lines" size="5" type="integer" value="5" label="Remove first"/>
+    <param format="text" name="input" type="data" label="lines from"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="num_lines" value="5"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-removebeginning.dat"/>
+    </test>
+  </tests>
+  <help>Removes the specified number of lines from the beginning of the file
+
+</help>
+</tool>

@@ -1,0 +1,49 @@
+<tool id="Filter1" name="Filter">
+  <description>data on any column using simple expressions</description>
+  <command interpreter="python">
+    filtering.py $input $out_file1 "$cond"
+  </command>
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Filter" help="Query missing? See TIP below."/>
+    <param name="cond" size="40" type="text" value="c1 == 'chr22'" label="With following condition" help="Double equal signs, ==, must be used as shown above.  To filter for an arbitrary string, use the Select tool."/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="cond" value="c1=='chr22'"/>
+      <output name="out_file1" file="fs-filter.dat"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+Double equal signs, ==, must be used as *"equal to"* (e.g., **c1 == 'chr22'**)
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+**Syntax**
+
+The filter tool allows you to restrict the datset using simple conditional statements 
+
+- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
+- When using 'equal-to' operator **double equal sign (==) must be used** (e.g., **c1 == 'chr1'**)
+- Non-numerical values must be included in single or double quotes (e.g., **c6 == '+'**)
+
+-----
+
+**Example**
+
+- **c1 == 'chr1'** selects lines in which the first column is chr1
+- **c3 - c2 &lt; 100 * c4** selects lines where subtracting column 3 from column 2 is less than the value of column 4 times 100
+- **len(c2.split(',')) &lt; 4** will select lines where the second column has less than four comma separated elements
+
+</help>
+</tool>

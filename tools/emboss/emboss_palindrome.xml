@@ -1,0 +1,34 @@
+<tool id="EMBOSS: palindrome65" name="palindrome">
+  <description>Looks for inverted repeats in a nucleotide sequence</description>
+  <command>palindrome -sequence $input1 -outfile $out_file1 -minpallen $minpallen -maxpallen $maxpallen -gaplimit $gaplimit -nummismatches $nummismatches -overlap $overlap -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="minpallen" size="4" type="text" value="10">
+      <label>Minimum length of palindrome</label>
+    </param>
+    <param name="maxpallen" size="4" type="text" value="100">
+      <label>Maximum length of palindrome</label>
+    </param>
+    <param name="gaplimit" size="4" type="text" value="100">
+      <label>Maximum gap between repeated regions</label>
+    </param>
+    <param name="nummismatches" size="4" type="text" value="0">
+      <label>Number of mismatches allowed</label>
+    </param>
+    <param name="overlap" type="select">
+      <label>Report overlapping matches</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/palindrome.html
+  </help>
+</tool>

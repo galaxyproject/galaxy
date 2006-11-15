@@ -1,0 +1,43 @@
+<tool id="gops_complement_1" name="Complement">
+  <description>intervals of a query</description>
+  <command interpreter="python2.4">gops_complement.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -d $dbkey $allchroms</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Complement regions of</label>
+    </param>
+    <param name="allchroms" type="boolean" truevalue="--all" falsevalue="" label="Genome-wide complement">
+    </param>
+   </inputs>
+  <outputs>
+    <data format="input" name="output" metadata_source="input1" />
+  </outputs>
+  <code file="operation_filter.py"/>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="allchroms" value="true" />
+      <output name="output" file="gops-complement.dat" />
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+This operation complements the regions of a set of intervals.  Regions are returned that represent the empty space in the input interval.
+
+-----
+
+**Syntax**
+
+- **Genome-wide complement** will complement all chromosomes of the genome.  Leaving this option unchecked will only complement chromosomes present in the query.
+
+-----
+
+**Example**
+
+.. image:: ../static/operation_icons/gops_complement.gif
+
+</help>
+</tool>

@@ -1,0 +1,30 @@
+<tool id="EMBOSS: polydot77" name="polydot">
+  <description>Displays all-against-all dotplots of a set of sequences</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl polydot -sequence $input1 -graph png -goutfile $out_file2 -outfeat $out_file1 -wordsize $wordsize -boxit $boxit -dumpfeat yes -gap
+  $gap -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="wordsize" size="10" type="text" value="6">
+      <label>Word size</label>
+    </param>
+    <param name="boxit" type="select">
+      <label>Draw a box around each dotplot</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="gap" size="10" type="text" value="10">
+      <label>Size of gap</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="png" name="out_file2" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/polydot.html
+  </help>
+</tool>

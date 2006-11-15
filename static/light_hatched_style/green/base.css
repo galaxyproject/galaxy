@@ -1,0 +1,231 @@
+body 
+{
+    font: 75% verdana, "Bitstream Vera Sans", geneva, arial, helvetica, helve, sans-serif; 
+    background: white;
+    color: #303030;
+    background-image: url(/static/style/base_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    margin: 10px;
+    margin-right: 15px;
+    margin-left: 15px;
+}
+
+a:link, a:visited, a:active
+{
+    color: #303030;
+}
+
+h1, h2, h3, h4 
+{
+    color: #025838;
+    /*text-shadow: #bbb 2px 2px 1px;*/
+}
+
+hr
+{
+    border: none;
+    border-bottom: dotted #303030 1px;
+}
+
+div.toolForm
+{
+    margin-right: -5px;
+    margin-left: -5px;
+}
+
+div.toolFormTitle
+{ 
+  background: #ebd9b2;
+  background-image: url(/static/style/form_title_bg.png);
+  background-repeat: repeat-x;
+  background-position: top;  
+  border-top: solid #d8b365 1px;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+  padding: 5px;
+}
+
+div.toolParamHelp
+{
+  font-style: italic;
+}
+
+div.toolFormBody
+{ 
+  background: white;
+  border-bottom: solid #d8b365 1px;
+  padding: 5px;
+}
+
+div.toolHelp
+{ 
+}
+
+div.toolHelpBody
+{ 
+}
+
+select
+{
+    max-width: 300px;
+}
+
+.errormessage, .warningmessage, .donemessage, .infomessage 
+{
+    padding: 10px;
+    padding-left: 52px;
+    min-height: 32px;
+    border-top: 1px solid #AA6666;
+    border-bottom: 1px solid #AA6666;
+    background-color: #FFCCCC;
+    background-image: url(/static/style/error_large.png);
+    background-repeat: no-repeat;
+    background-position: 10px 10px;
+}
+
+.warningmessage 
+{
+    background-image: url(/static/style/warn_large.png);
+    border-color: #AAAA66;
+    background-color: #FFFFCC;
+}
+
+.donemessage 
+{
+    background-image: url(/static/style/ok_large.png);
+    border-color: #66AA66;
+    background-color: #CCFFCC;
+}
+
+.infomessage 
+{
+    background-image: url(/static/style/info_large.png);
+    border-color: #6666AA;
+    background-color: #CCCCFF;
+}
+
+.errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall 
+{
+    padding: 5px;
+    padding-left: 25px;
+    min-height: 25px;
+    border-top: 1px solid #AA6666;
+    border-bottom: 1px solid #AA6666;
+    background-color: #FFCCCC;
+    background-image: url(/static/style/error_small.png);
+    background-repeat: no-repeat;
+    background-position: 5px 5px;
+}
+
+.warningmessagesmall
+{
+    background-image: url(/static/style/warn_small.png);
+    border-color: #AAAA66;
+    background-color: #FFFFCC;
+}
+
+.donemessagesmall
+{
+    background-image: url(/static/style/ok_small.png);
+    border-color: #66AA66;
+    background-color: #CCFFCC;
+}
+
+.infomessagesmall
+{
+    background-image: url(/static/style/info_small.png);
+    border-color: #6666AA;
+    background-color: #CCCCFF;
+}
+
+.errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr
+{
+    padding-left: 20px;
+    min-height: 15px;
+    background: url(/static/style/error_small.png) no-repeat;
+}
+
+.warningmark 
+{
+    background-image: url(/static/style/warn_small.png);
+}
+
+.donemark 
+{
+    background-image: url(/static/style/ok_small.png);
+}
+
+.infomark, .ok_bgr
+{
+    background-image: url(/static/style/info_small.png);
+}
+
+table.colored td
+{
+    padding: 5px;
+}
+
+table.colored tr.header
+{ 
+  background: #ebb2d9;
+  font-weight: bold;
+}
+
+table.colored tr
+{ 
+  background: white;
+}
+
+div.debug
+{
+    margin: 10px;
+    padding: 5px;
+    background: #FFFF99;
+    border: solid #FFFF33 1px;
+    color: black;
+}
+    
+#footer {
+  position: fixed;
+  background: #025838;
+  width: 100%;
+  left: 0px;
+  bottom: 0px;
+  color: white;
+  z-index:10000;
+  opacity:0.9;
+  filter:alpha(opacity:90);
+}
+
+#footer a {
+    color: white;
+}
+
+.footerheader
+{
+  padding: 5px;
+  text-align:center;
+  background-image: url(/static/style/footer_title_bg.png);
+  background-position: bottom;
+}
+
+.footermenu
+{
+  /*border-top: solid white 1px; */
+}
+
+.footermenuitem
+{
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-right: 5px;
+    margin-left: 25px;
+    display: list-item;
+    list-style: square outside;
+}
+
+.footermenumessage
+{
+    margin: 5px;
+}

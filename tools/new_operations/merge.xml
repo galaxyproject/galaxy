@@ -1,0 +1,32 @@
+<tool id="gops_merge_1" name="Merge">
+  <description>the overlapping intervals of a query</description>
+  <command interpreter="python2.4">gops_merge.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Merge overlaping regions of</label>
+    </param>
+   </inputs>
+  <outputs>
+    <data format="input" name="output" metadata_source="input1" />
+  </outputs>
+  <code file="operation_filter.py"/>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed" />
+      <output name="output" file="gops-merge.dat" />     
+    </test>    
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+This operation merges all overlaping intervals into single intervals.
+
+**Example**
+
+.. image:: ../static/operation_icons/gops_merge.gif
+
+</help>
+</tool>

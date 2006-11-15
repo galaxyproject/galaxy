@@ -1,0 +1,76 @@
+<tool id="Proximity1" name="Proximity">
+  <description>find proximal regions between two Queries</description>
+  <command>galaxyOps3 $dbkey -chromCol=$input2_chromCol -startCol=$input2_startCol -stopCol=$input2_endCol -strandCol=$input2_strandCol -chromCol2=$input1_chromCol -startCol2=$input1_startCol -stopCol2=$input1_endCol $input2 $input1 -proximity -upstream=$up -downstream=$down $within -chrom=all -bed=$out_file1</command>
+  <inputs>
+    <param format="interval" name="input1" type="data" help="Query missing? See TIP below">
+      <label>Return regions of Query1</label>
+    </param>
+    <param name="within" type="select">
+      <option value="-within">inside (inclusion)</option>
+      <option value=" ">outside (exclusion)</option>
+      <label>that are</label>
+    </param>
+    <param format="interval" name="input2" type="data" help="Query missing? See TIP below">
+      <label>of regions from Query2</label>
+    </param>
+    <param name="up" size="4" type="integer" value="0">
+      <label>extending upstream</label>
+    </param>
+    <param name="down" size="4" type="integer" value="0">
+      <label>and downstream</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1" />
+  </outputs>
+  <code file="operation_filter.py"/>
+  <help>
+
+.. class:: warningmark
+
+Both Queries must be from the same genome build.
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Syntax**
+
+This tool finds regions in the first query that either (**inclusion**) lie within a specified distance from some region in the second query, or (**exclusion**) lie farther than the specified distance from all regions in the second query.
+
+- **extending upstream and downstream** set extensions (proximities) around each region of query 1 (in base pairs)
+
+-----
+
+**Image illustration of Inclusion and Exclusion**
+
+  .. image:: ../static/operation_icons/proximityInc.png  
+
+  .. image:: ../static/operation_icons/proximityEx.png
+
+-----
+
+**Example**
+
+- **Inclusion**:  Return regions from query 1 that lie within 40 bp of any region in query 2 (each dash and star is 20 bp)::
+
+    Query1:  ----     -------    -------    --
+    Query2:          ------              ---
+
+    Search:        **********          *******
+
+    Result:           -------    -------    --
+
+- **Exclusion**:  Return regions from query 1 that lie more than 40 bp from all regions in query 2 (each dash and star is 20 bp)::
+
+    Query1:  ----     -------    -------    --
+    Query2:          ------              ---
+
+    Search:  &lt;*****          **********       ********&gt;
+
+    Result:  ----                -------
+
+</help>
+</tool>

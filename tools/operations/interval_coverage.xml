@@ -1,0 +1,37 @@
+<tool id="interval_coverage" name="Base Coverage">
+<description>of a set of intervals</description>
+  <command interpreter="python2.4">interval_coverage.py $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol</command>
+  <inputs>
+    <param name="input1" type="data" format="interval" label="Interval File"/>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="txt"/>
+  </outputs>
+<help>
+
+.. class:: infomark
+
+**TIP** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Syntax**
+
+This tool returns the total number of bases covered by user specified intervals.
+
+-----
+
+**Example**
+
+- Input file::
+
+    #chrom	start	stop	name	score	strand
+    chr7	127475281	127475310	NM_000230	0	+
+    chr7	127486011	127486166	D49487	0	+
+
+- The base coverage of the above file::
+
+    184
+
+</help>
+</tool>

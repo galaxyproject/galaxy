@@ -1,0 +1,72 @@
+<tool id="covDensity1" name="Coverage">
+  <description>density of the regions of two queries</description>
+  <command>galaxyOps3 $dbkey -chromCol=$input1_chromCol -startCol=$input1_startCol -stopCol=$input1_endCol -strandCol=$input1_strandCol -chromCol2=$input2_chromCol -startCol2=$input2_startCol -stopCol2=$input2_endCol $input1 $input2 -covDensity -chrom=all -bed=$out_file1</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Within Query1</label>
+    </param>
+    <param format="interval" name="input2" type="data" help="Queries missing? See TIP below">
+      <label>Find the density of elements of Query2</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input2"/>
+  </outputs>
+  <code file="operation_filter.py"/>
+  <help>
+
+.. class:: warningmark
+
+Both Queries must be from the same genome build.
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Syntax**
+
+This tool returns entire regions from query 1 that overlap query2, and append two more fields at the end of the returned region.
+
+- the number of nucleotides for each returned region from query 1 that overlap a region from query 2 and 
+- the percentage of the overlap for each region of query1:
+
+-----
+
+**Example**
+
+- Query1 are genes::
+
+    chr11 5203271 5204877 NM_000518 0 -
+    chr11 5210634 5212434 NM_000519 0 -
+    chr11 5226077 5227663 NM_000559 0 -
+    chr11 5226079 5232587 BC020719  0 -
+    chr11 5230996 5232587 NM_000184 0 -
+
+- Query2 are repeats::
+
+    chr11      5203895 5203991 L1MA6     500 +
+    chr11      5204163 5204239 A-rich    219 +
+    chr11      5211034 5211167 (CATATA)n 245 +
+    chr11      5211642 5211673 AT_rich    24 +
+    chr11      5226551 5226606 (CA)n     303 +
+    chr11      5228782 5228825 (TTTTTG)n 208 +
+    chr11      5229045 5229121 L1PA11    440 +
+    chr11      5229133 5229319 MER41A   1106 +
+    chr11      5229374 5229485 L2        244 -
+    chr11      5229751 5230083 MLT1A     913 -
+    chr11      5231469 5231526 (CA)n     330 +
+
+- the Result of the coverage density of repeats in the genes::
+
+    chr11 5203271 5204877 NM_000518 0 - 172   0.107098
+    chr11 5210634 5212434 NM_000519 0 - 164   0.091111
+    chr11 5226077 5227663 NM_000559 0 -  55   0.034678
+    chr11 5226079 5232587 BC020719  0 - 860   0.132145
+    chr11 5230996 5232587 NM_000184 0 -  57   0.035827
+
+    The first line of the output impplies that 172 nucleotides accounting for 10.7% of the this interval (chr11:5203271-5204877) overlap with repetitive elements.
+
+</help>
+</tool>

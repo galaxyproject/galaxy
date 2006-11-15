@@ -1,0 +1,61 @@
+<tool id="Extract genomic DNA 1" name="Extract genomic DNA">
+  <description>corresponding to query coordinates</description>
+  <command interpreter="perl">fasta-subseq-wrapper.pl -i $input -o $out_file1 -p $input_chromCol $input_startCol $input_endCol $input_strandCol -g $dbkey</command>
+  <inputs>
+    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"/>
+  </inputs>
+  <outputs>
+    <data format="fasta" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="fsa_extract_genomic_dna.dat" />
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+Make sure the input data has been specified a database build. 
+
+-----
+
+**Syntax**
+
+This tool uses coordinate, strand, and build information to fetch genomic DNAs in FASTA format.
+
+- **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
+
+  - This format contains a one line header. It starts with a " >" symbol. The first word on this line is the name of the sequence. The rest of the line is a description of the sequence.
+  - The remaining lines contain the sequence itself.
+  - Blank lines in a FASTA file are ignored, and so are spaces or other gap symbols (dashes, underscores, periods) in a sequence.
+  - Fasta files containing multiple sequences are just the same, with one sequence listed right after another. This format is accepted for many multiple sequence alignment programs.
+
+-----
+
+**Example**
+
+- Input dataset::
+
+    chr7	127475281	127475310	NM_000230	0	+
+    chr7	127485994	127486166	NM_000230	0	+
+    chr7	127486011	127486166	D49487	0	+
+
+- Fetch genomic DNAs of the above data::
+
+    &gt;hg17_chr7_127475281_127475310_+
+    GTAGGAATCGCAGCGCCAGCGGTTGCAAG
+    &gt;hg17_chr7_127485994_127486166_+
+    GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCG
+    GATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATC
+    CAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAG
+    GATCAATGACATTTCACACACG
+    &gt;hg17_chr7_127486011_127486166_+
+    TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGG
+    CCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGA
+    CACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCAC
+    ACACG
+
+</help>
+</tool>

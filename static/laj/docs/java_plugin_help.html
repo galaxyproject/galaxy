@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>Installing the Java Plug-in</title>
+</head>
+<body bgcolor=#FFFFFF>
+<br>
+<p>
+<h2>Installing the Java Plug-in</h2>
+<br>
+<p>
+
+The Laj and Maj applets are written for Java 1.2 (a.k.a.
+J2SE 1.2), and theoretically any web browser that fully supports
+this (or any higher version) should work.  However, for best
+compatibility we recommend that you download and install the official
+<b>Java Plug-in</b> software from Sun Microsystems.
+This plug-in generally works with a variety of web browsers,
+including Internet Explorer, Netscape, and Mozilla.
+<p>
+The main overview page for the Java Plug-in product is
+<a href="http://java.sun.com/products/plugin/">
+http://java.sun.com/products/plugin/</a>, and an assortment
+of download links is available at
+<a href="http://java.sun.com/j2se/downloads/">
+http://java.sun.com/j2se/downloads/</a>.
+Sun also provides a simplified download facility (latest version
+only), which is accessible via the "Download NOW" button at
+<a href="http://java.com/">http://java.com/</a>.
+For details about exactly which platforms are supported, see
+<a href="http://java.sun.com/j2se/1.5.0/system-configurations.html">
+http://java.sun.com/j2se/1.5.0/system-configurations.html</a>.
+<p>
+The plug-in is
+usually bundled with the Java 2 Runtime Environment (JRE) and the
+Java 2 Software Development Kit (JDK/SDK).  If you are given a choice
+between these, either will do; the JRE is smaller because it
+doesn't include developer tools, but both of them contain the
+plug-in.  Note that even though Laj does not currently use any Java
+features beyond 1.2, as of this writing it is compiled with version
+1.3.1 of Sun's SDK, so running it with the corresponding version
+(or higher) of the plug-in is recommended.  We have, however,
+observed some drawing anomalies with the 1.4.x series on some
+platforms (including "phantom repeats" in the symbol panel and
+failure to draw the zoom box and crosshairs), so you may want to
+stick with 1.3.x or 1.5.x.
+<p>
+Each download should come with installation instructions
+(read them!), but here are some additional platform-specific
+tips.
+<p>
+
+<h3>Windows</h3>
+<p>
+We recommend that you <b>delete any previously installed versions</b>
+of the plug-in, JRE, JDK, and/or
+SDK before you install the new one, to avoid getting them mixed.
+For example, in Windows 98 you can do this by opening the Start
+menu and choosing Settings - Control Panel - Add/Remove Programs,
+then selecting from the list the items you want to uninstall.
+After the new installation is complete, you may need to close
+and restart your browser to make it recognize the new plug-in,
+or even reboot your computer.
+<p>
+Note that versions of Sun's Java above 1.3.x will not work on
+Windows 95.
+<p>
+
+<h3>Macintosh</h3>
+<p>
+Currently Sun does not have a Java Plug-in for Macs, but Mac OS X
+ships with a sufficiently recent version of Java already included,
+and further updates may be available via Apple's Software Update
+mechanism (depending on your version of OS X).  We have observed
+display anomalies in some versions (e.g., red circle has a black
+background), but Laj et al. should still be usable.
+For Mac OS Classic, Apple has a Java runtime called MRJ 2.2.5, but
+unfortunately it only supports Java 1.1.8 (not Java 1.2) and thus
+will not work with our applets.
+<p>
+For more information about Java on the Mac, see
+<a href="http://www.apple.com/java/">
+http://www.apple.com/java/</a> and 
+<a href="http://developer.apple.com/java/">
+http://developer.apple.com/java/</a>.
+<p>
+
+<h3>Linux</h3>
+<p>
+Sun now provides versions of the Java Plug-in for Linux, in
+either RPM or self-extracting binary format.
+Be sure to read the installation notes first,
+for system requirements and detailed instructions.
+<p>
+
+<h3>Solaris</h3>
+<p>
+Note that Solaris 8 already includes Java 1.2, though you may
+want to install a newer version.  Sun provides versions of the
+Java Plug-in for Solaris on both Sparc and x86 processors.
+Be sure to read the installation notes first,
+for system requirements and detailed instructions.  In particular,
+note that you may need to apply some Solaris patches to your
+system before installing Java, and possibly obtain additional
+fonts.  You might also want to uninstall any previous versions of
+the plug-in, JRE, JDK, and/or SDK to avoid getting them mixed.  After
+the installation, you may need to close and restart your browser
+to make it recognize the new plug-in.
+<p>
+One last bit of advice: at one point during our installation,
+we were instructed to enter the command &nbsp;<tt>xhost +</tt>&nbsp;,
+but this is a <b>bad idea</b> because it seriously compromises your
+system security.  If this message appears, we recommend using proper
+security protocols instead.
+<p>
+
+<!--
+<h3>Other Platforms</h3>
+<p>
+For availability of the Java Plug-in on other computers, see
+<a href="http://java.sun.com/j2se/1.4/ports.html">
+http://java.sun.com/j2se/1.4/ports.html</a>.
+<p>
+-->
+
+<br>
+<p>
+<hr>
+<i>Cathy Riemer, December 2005</i>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<tool id="gencode_partition1" name="Gencode Partition">
+<description>partition an interval file</description>
+  <command interpreter="python2.4">split_by_partitions.py /home/james/work/encode/feature_partitions/partition_list.txt $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol</command>
+  <inputs>
+    <param name="input1" type="data" format="interval" label="File to Partition"/>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="bed"/>
+  </outputs>
+<help>
+For detailed information about partitioning, click here_.
+
+.. _here: http://genome.imim.es/gencode/wiki/index.php/Collecting_Feature_Sets_from_All_Analysis_Groups
+
+Datasets are partitioned according to the protocol below:
+
+A partition scheme has been defined that is similar to what has previously been done with TARs/TRANSFRAGs such that any feature can be cla ssified as falling into one of the following 6 categories:
+  1. **Coding** -- coding exons defined from the GENCODE experimentally verified coding set (coding in any transcript)
+  2. **5UTR** -- 5' UTR exons defined from the GENCODE experimentally verified coding set (5' UTR in some transcript but never coding in any other)
+  3. **3UTR** -- 3' UTR exons defined from the GENCODE experimentally verified coding set (3' UTR in some transcript but never coding in any other)
+  4. **Intronic Proximal** -- intronic and no more than 5kb away from an exon.
+  5. **Intergenic Proximal** -- between genes and no more than 5kb away from an exon.
+  6. **Intronic Distal** -- intronic and greater than 5kb away from an exon.
+  7. **Intergenic Distal** -- between genes and greater than 5kb away from an exon.
+
+-----
+
+.. class:: infomark
+
+**Note:** Features overlapping more than one partition will take the identity of the lower-numbered partition. 
+
+
+  </help>
+</tool>

@@ -1,0 +1,14 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">
+<HTML>
+<HEAD>
+<TITLE>Galaxy</TITLE>
+</HEAD>
+<FRAMESET rows="40,*" border="0" framespacing="0" frameborder="0">
+    <FRAME name="galaxy_masthead" src="/masthead" frameborder="0" border="0" framespacing="0">
+    #if $mode =="stacked"
+      <FRAME name="mainframe" src="/static/index_frame_stacked.html" border="3" framespacing="3" frameborder="1">
+    #else
+      <FRAME name="mainframe" src="/static/index_frame_three_col.html" border="3" framespacing="3" frameborder="1">
+    #end if
+</FRAMESET>
+</HTML>

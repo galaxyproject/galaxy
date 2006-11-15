@@ -1,0 +1,180 @@
+body {
+  margin-top:   10px;
+  margin-left:  50px;
+  margin-right: 30px;
+  padding: 0;
+  border: 0;
+  font: smaller verdana, "Bitstream Vera Sans", geneva, arial, helvetica, helve, sans-serif; 
+}
+
+a         {text-decoration: underline}
+a:link    {text-decoration: underline}
+a:visited {text-decoration: underline}
+a:active  {text-decoration: none}
+a:hover   {text-decoration: underline; background: #CCCCFF}
+
+.indent1 {
+  margin-left: 30px;
+}
+
+.tool_area { 
+  margin:10px;
+  margin-left: 30px;
+}
+
+.tool_name a { 
+  font-weight: bold;
+}
+
+.tool_form { 
+	background-color: #FFFFCC;
+	border: 1px solid #EEEEEE;
+	margin: 5px;
+}
+
+.info { 
+	color: #990000;
+	font-style: italic;
+}
+
+.border {
+   border: 1px solid #8cacbb;
+   background: #FFFFFF;
+}
+
+.rline {
+	border-bottom: 1px solid #EEEEEE;
+}
+
+.bline {
+	border-bottom: 1px solid #999999;
+}
+
+.tline {
+	padding-top: 5pt;
+	border-top: 1px solid #999999;
+}
+
+.grey { 
+	border: 1px #FFFFFF solid;
+}
+
+.greyborder { 
+	background: #EFEFEF; 
+	border: 1px #CCCCCC solid;
+}
+
+.big { font-size: large; font-weight: bold; color: #000066}
+.mark {color: #CC3300}
+
+.smaller {font-size: smaller}
+.larger {font-size: larger}
+
+.larger {font-size: larger; color: #000066}
+.head {
+	font-size: large;
+	font-weight: bold;
+	color: #CC0000;
+}
+
+.ok_bgr { 
+	background: #AEFF5E; 
+	border: 1px #76EC00 solid; 
+	border-color: #66CC00 #66CC00 #66CC00 #66CC00;
+}
+
+.err_bgr {
+	background: #FFCE7B;
+	border: 1px solid #FFA500;
+	border-color:#FFA500 #FFA500 #FFA500 #FFA500;
+}
+
+.grey { 
+	background: #EFEFEF; 
+}
+
+.greyborder { 
+	background: #EFEFEF; 
+	border: 1px #CCCCCC solid; 
+}
+
+
+.utextarea {
+    font: 110% "Courier New", Courier, monospace; 
+    border: 1px solid #8cacbb;  
+    color: Black;
+    background-color: white;
+    width: 95%;
+	padding: 5pt;
+}
+.uinput {
+    font-family: "Lucida Grande", Verdana, Lucida, Helvetica, Arial, sans-serif;
+    visibility: visible;
+    border: 1px solid #8cacbb;  
+    color: Black;
+    background-color: white;
+    vertical-align: middle;
+}
+
+.hg17 { color: #FF6600; }
+.hg16 { color: #02AC20; }
+.bed { color: #009999; }
+.xbed { color: #006666; }
+.txt { color: #0066FF; }
+.text { color: #0066FF; }
+.png { color: #33CC33; }
+.gif { color: #009900; }
+.html { color: #3399FF; }
+.htm { color: #3399FF; }
+.jpg { color: #006600; }
+.jpeg { color: #006600; }
+.fasta { color: #0066CC; }
+.pdf { color: #003366; }
+.wig { color: #3366CC; }
+.gff { color: #0000FF; }
+.fa { color: #FF3333; }
+.acedb  { color: #FF6666; }
+.asn1 { color: #CC6666; }
+.clustal { color: #993333; }
+.codata { color: #FF0000; }
+.embl { color: #009999; }
+.fitch { color: #FF3300; }
+.gcg { color: #66CC00; }
+.genbank { color: #999900; }
+.hennig86 { color: #666633; }
+.ig { color: #CCCC99; }
+.jackknifer { color: #FFCC99; }
+.jackknifernon { color: #FFCC99; }
+.mega { color: #99FF00; }
+.meganon { color: #99FF00; }
+.msf { color: #66FF33; }
+.pir { color: #009933; }
+.ncbi { color: #339933; }
+.nexus { color: #009900; }
+.nexusnon { color: #CCFF99; }
+.phylip { color: #99CC66; }
+.phylipnon { color: #336600; }
+.selex { color: #99FF33; }
+.staden { color: #00CC66; }
+.strider { color: #33FF99; }
+.swiss  { color: #006633; }
+.dbmotif { color: #339966; }
+.diffseq { color: #66CC99; }
+.excel { color: #99FFCC; }
+.feattable { color: #99CCFF; }
+.motif { color: #6699CC; }
+.regions { color: #336699; }
+.seqtable { color: #663300; }
+.simple { color: #996633; }
+.srs { color: #CC9966; }
+.table { color: #CC6600; }
+.tagseq { color: #FF9933; }
+.pair { color: #FFCC66; }
+.markx0 { color: #CC9933; }
+.markx1 { color: #CC9933; }
+.markx2 { color: #CC9933; }
+.markx3 { color: #CC9933; }
+.markx10 { color: #CC9933; }
+.srspair { color: #CC9966; }
+.score { color: #663333; }
+.nametable { color: #00CC33; }

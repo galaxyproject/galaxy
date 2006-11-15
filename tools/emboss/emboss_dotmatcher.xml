@@ -1,0 +1,27 @@
+<tool id="EMBOSS: dotmatcher24" name="dotmatcher">
+  <description>Displays a thresholded dotplot of two sequences</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl dotmatcher -asequence $input1 -bsequence $input2 -goutfile $out_file1 -windowsize $windowsize -threshold $threshold -graph png
+  -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence 1</label>
+    </param>
+    <param format="data" name="input2" type="data">
+      <label>Sequence 2</label>
+    </param>
+    <param name="windowsize" size="4" type="text" value="10">
+      <label>Window size</label>
+    </param>
+    <param name="threshold" size="4" type="text" value="23">
+      <label>Threshold</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/dotmatcher.html
+  </help>
+</tool>

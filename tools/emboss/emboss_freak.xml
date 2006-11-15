@@ -1,0 +1,26 @@
+<tool id="EMBOSS: freak36" name="freak">
+  <description>Residue/base frequency table or plot</description>
+  <command>freak -seqall $input1 -outfile $out_file1 -window $window -letters $letters -step $step -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="letters" size="5" type="text" value="gc">
+      <label>Residue letters</label>
+    </param>
+    <param name="step" size="5" type="text" value="1">
+      <label>Stepping value</label>
+    </param>
+    <param name="window" size="5" type="text" value="30">
+      <label>Averaging window</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/freak.html
+  </help>
+</tool>

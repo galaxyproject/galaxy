@@ -1,0 +1,28 @@
+<tool id="gops_basecoverage_1" name="Base Coverage">
+  <description>of all intervals</description>
+  <command interpreter="python2.4">gops_basecoverage.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Count total bases covered by</label>
+    </param>
+   </inputs>
+  <outputs>
+    <data format="text" name="output" />
+  </outputs>
+  <code file="operation_filter.py"/>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed" />
+      <output name="output" file="gops-basecoverage.dat" />     
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+This operation counts the total bases covered by a set of intervals.  Bases that are covered by more than one interval are **not** counted more than once towards the total.
+
+</help>
+</tool>

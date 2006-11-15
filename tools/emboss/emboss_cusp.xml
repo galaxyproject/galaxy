@@ -1,0 +1,17 @@
+<tool id="EMBOSS: cusp17" name="cusp">
+  <description>Create a codon usage table</description>
+  <command>cusp -sequence $input1 -outfile $out_file1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>On query</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/cusp.html
+  </help>
+</tool>

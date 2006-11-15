@@ -1,0 +1,236 @@
+#import inspect
+#import cherrypy
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+<title>An application error occurred</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link href="/static/index_jt.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+  html * { padding:0; margin:0; }
+  body { font:small sans-serif;}
+  body>div { margin: 10px; padding-top: 10px; padding-bottom: 10px }
+  h1, h2, h3, h4, h5, h6 { padding-top: .5em; padding-bottom: .5em }
+  #djangowrapper { border-top: dotted white 1px; } 
+  table { border:1px solid black; border-collapse: collapse; background:white; }
+  tbody td, tbody th { vertical-align:top; padding: 5px; }
+  thead th { padding: 5px; background:#fefefe; text-align:left; font-weight: bold }
+  tbody th { text-align:right; padding-right:.5em; }
+  div.vars { margin-left: 30px; font-family:monospace; }
+  table.vars td, table.req td { font-family:monospace; }
+  table td.code div { overflow:hidden; }
+  table.source th { color:#666; }
+  table.source td { font-family:monospace; white-space:pre; border-bottom:1px solid #eee; }
+  div.frame { border-top: dotted white 1px; padding-top: 5px; padding-bottom: 5px; }
+  div.context { margin: 10px 0; }
+  div.context ol { padding-left:10px; margin:0 10px; list-style-position: inside; }
+  div.context ol li { font-family:monospace; white-space:pre; color:#black; cursor:pointer; }
+  div.context ol.context-line li { color:black; background: #aa5555 }
+  div.context ol.context-line li span { float: right; }
+  div.commands { margin-left: 20px; }
+  div.commands a { color:black; text-decoration:none; }
+  #traceback { border-bottom: dotted white 1px; }
+  #summary table { border:none; background:transparent; }
+  .error { background: #ffc; }
+  .specific { color:#cc3300; font-weight:bold; }
+  p.req { background: white; border: solid black 1px; padding: 5px; }
+</style>
+<script type="text/javascript">
+//<!--
+  function getElementsByClassName(oElm, strTagName, strClassName){
+      // Written by Jonathan Snook, http://www.snook.ca/jon; Add-ons by Robert Nyman, http://www.robertnyman.com
+      var arrElements = (strTagName == "*" && document.all)? document.all :
+      oElm.getElementsByTagName(strTagName);
+      var arrReturnElements = new Array();
+      strClassName = strClassName.replace(/\-/g, "\\-");
+      var oRegExp = new RegExp("(^|\\s)" + strClassName + "(\\s|$)");
+      var oElement;
+      for(var i=0; i<arrElements.length; i++){
+          oElement = arrElements[i];
+          if(oRegExp.test(oElement.className)){
+              arrReturnElements.push(oElement);
+          }
+      }
+      return (arrReturnElements)
+  }
+  function hideAll(elems) {
+    for (var e = 0; e < elems.length; e++) {
+      elems[e].style.display = 'none';
+    }
+  }
+  window.onload = function() {
+    hideAll(getElementsByClassName(document, 'div', 'vars'));
+    hideAll(getElementsByClassName(document, 'ol', 'pre-context'));
+    hideAll(getElementsByClassName(document, 'ol', 'post-context'));
+  }
+  function toggle() {
+    for (var i = 0; i < arguments.length; i++) {
+      var e = document.getElementById(arguments[i]);
+      if (e) {
+        e.style.display = e.style.display == 'none' ? 'block' : 'none';
+      }
+    }
+    return false;
+  }
+  function varToggle(link, id) {
+    toggle('v' + id);
+    var s = link.getElementsByTagName('span')[0];
+    var uarr = String.fromCharCode(0x25b6);
+    var darr = String.fromCharCode(0x25bc);
+    s.innerHTML = s.innerHTML == uarr ? darr : uarr;
+    return false;
+  }
+  //-->
+</script>
+
+
+<script>
+function expand(name){
+	var elem = document.getElementById(name)
+	if (elem) {
+		if (elem.style.display=="none"){
+			elem.style.display="block"
+		} else {
+			elem.style.display="none"
+		}
+	}
+}
+</script>
+</head>
+
+<body>
+    <h1 style="margin: 10px;">Application Error</h1>
+    
+    <div class="errormessage">An unexpected error occurred in the Galaxy framework. The error has
+    been logged.</div>
+    
+    <div><a href="javascript:expand('djangowrapper')">Show details? (for developers)</a></div>
+    <div id="djangowrapper" style="display: none; padding: 0, margin: 0">
+        <div id="summary">
+          <h1>$exception_type at $cherrypy.request.path</h1>
+          <h2>$exception_value</h2>
+          <table><tr>
+            <th>Python</th>
+            <td>$lastframe.filename in $lastframe.function, line $lastframe.lineno</td>
+          </tr><tr>
+            <th>Web</th>
+            <td>$cherrypy.request.method ${cherrypy.request.base}${cherrypy.request.path}</td>
+          </tr></table>
+        </div>
+
+		<h2>Traceback <span>(innermost first)</span></h2>
+
+        <div id="traceback">
+          <div class="traceback">
+            #for frame in $frames
+              <div class="frame">
+                <code>$frame.filename</code> in <code>$frame.function</code>
+
+                #if $frame.context_line
+                  <div class="context" id="c$frame.id">
+                    #if $frame.pre_context
+                      <ol start="$frame.pre_context_lineno" class="pre-context" id="pre$frame.id">#for line in $frame.pre_context#<li onclick="toggle('pre$frame.id', 'post$frame.id')">$line</li>#end for#</ol>
+                    #end if
+                    <ol start="$frame.lineno" class="context-line"><li onclick="toggle('pre$frame.id', 'post$frame.id')">$frame.context_line <span>...</span></li></ol>
+                    #if $frame.post_context
+                      <ol start='$(frame.lineno+1)' class="post-context" id="post$frame.id">#for line in $frame.post_context#<li onclick="toggle('pre$frame.id', 'post$frame.id')">$line</li>#end for#</ol>
+                    #end if
+                  </div>
+                #end if
+
+                #if $frame.vars
+                  <div class="commands">
+                      <a href='#' onclick="return varToggle(this, '$frame.id')"><span style="font-size: x-small;">&#x25b6;</span> Local vars</a>## $inspect.formatargvalues(*inspect.getargvalues(frame['tb'].tb_frame))
+                  </div>
+                  <div class="vars" id="v$frame.id">
+                      #set frameitems = $frame.vars
+                      #silent frameitems.sort(lambda x,y: cmp(x[0], y[0]))
+                      #for (key, val) in frameitems
+                        <div>$key = $prettify(val)</div>
+                        </tr>
+                      #end for
+                  </div>
+                #end if
+              </div>
+            #end for
+          </div>
+        </div>
+
+        <div id="requestinfo">
+          #if $cherrypy.response.body or $cherrypy.response.headerMap
+            <h2>Response so far</h2>
+            <h3>HEADERS</h3>
+            #if $cherrypy.response.headerMap
+              <p class="req"><code>
+              #for (k, v) in $cherrypy.response.headerMap.items()
+                $k: $v<br />
+              #end for
+
+              </code></p>
+            #else
+              <p>No headers.</p>
+            #end if
+            <h3>BODY</h3>
+            <p class="req" style="padding-bottom: 2em"><code>
+            $cherrypy.response.body
+            </code></p>
+          #end if
+
+          <h2>Request information</h2>
+
+          <h3>INPUT</h3>
+          #if $cherrypy.request.paramMap
+            <table class="req">
+              <thead>
+                <tr>
+                  <th>Variable</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                #set myitems = $cherrypy.request.paramMap.items()
+                #silent myitems.sort(lambda x,y: cmp(x[0], y[0]))
+                #for (key, val) in myitems
+                  <tr>
+                    <td>$key</td>
+                    <td class="code"><div>$val</div></td>
+                  </tr>
+                #end for
+              </tbody>
+            </table>
+          #else
+          <p>No input data.</p>
+          #end if
+
+          <h3 id="cookie-info">COOKIES</h3>
+          #if $cherrypy.request.simpleCookie
+            <table class="req">
+              <thead>
+                <tr>
+                  <th>Variable</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                #for (key, val) in $cherrypy.request.simpleCookie.items()
+                  <tr>
+                    <td>$key</td>
+                    <td class="code"><div>$val</div></td>
+                  </tr>
+                #end for
+              </tbody>
+            </table>
+          #else
+            <p>No cookie data</p>
+          #end if
+
+
+
+        </div>
+    </div>
+        
+</body>
+
+</html>

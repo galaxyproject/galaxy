@@ -1,0 +1,14 @@
+<tool id="BED File Converter1" name="BED File Converter">
+  <description>creates a bed or xbed file containing from text query</description>
+  <command>noop</command>
+  <inputs>
+    <display>creates a bed or xbed file containing user assigned input of $input</display>
+    <param format="tabular" name="input" type="data" />
+    <param name="chrom" size="4" type="text" value="all" />
+  </inputs>
+  <outputs>
+    <data format="bed" name="out_file1" />
+  </outputs>
+  <help>User specifies delimiter, header information, and column assignments and the file will be converted to BED or xBED.
+</help>
+</tool>

@@ -1,0 +1,76 @@
+<tool id="EMBOSS: fuzztran39" name="fuzztran">
+  <description>Protein pattern search after translation</description>
+  <command>fuzztran -sequence $input1 -outfile $out_file1 -pattern "$pattern" -mismatch $mismatch -frame $frame -table $table -rformat2 $out_format1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="pattern" size="5" type="text" value="">
+      <label>Search pattern</label>
+    </param>
+    <param name="mismatch" size="5" type="text" value="0">
+      <label>Number of mismatches</label>
+    </param>
+    <param name="frame" type="select">
+      <label>Frame(s) to translate</label>
+      <option value="1">Frame 1</option>
+      <option value="2">Frame 2</option>
+      <option value="3">Frame 3</option>
+      <option value="F">Forward three frames</option>
+      <option value="-1">Frame -1</option>
+      <option value="-2">Frame -2</option>
+      <option value="-3">Frame -3</option>
+      <option value="R">Reverse three frames</option>
+      <option value="6">All six frames</option>
+    </param>
+    <param name="table" type="select">
+      <label>Code to use</label>
+      <option value="0">Standard</option>
+      <option value="1">Standard (with alternative initiation codons)</option>
+      <option value="2">Vertebrate Mitochondrial</option>
+      <option value="3">Yeast Mitochondrial</option>
+      <option value="4">Mold, Protozoan, Coelenterate Mitochondrial and Mycoplasma/Spiroplasma</option>
+      <option value="5">Invertebrate Mitochondrial</option>
+      <option value="6">Ciliate Macronuclear and Dasycladacean</option>
+      <option value="9">Echinoderm Mitochondrial</option>
+      <option value="10">Euplotid Nuclear</option>
+      <option value="11">Bacterial</option>
+      <option value="12">Alternative Yeast Nuclear</option>
+      <option value="13">Ascidian Mitochondrial</option>
+      <option value="14">Flatworm Mitochondrial</option>
+      <option value="15">Blepharisma Macronuclear</option>
+      <option value="16">Chlorophycean Mitochondrial</option>
+      <option value="21">Trematode Mitochondrial</option>
+      <option value="22">Scenedesmus obliquus</option>
+      <option value="23">Thraustochytrium Mitochondrial</option>
+    </param>
+    <param name="out_format1" type="select">
+      <label>Output Report File Format</label>
+      <option value="table">Table</option>
+      <option value="embl">EMBL</option>
+      <option value="genbank">GENBANK</option>
+      <option value="gff">GFF</option>
+      <option value="pir">PIR</option>
+      <option value="swiss">SwissProt</option>
+      <option value="dbmotif">DbMotif</option>
+      <option value="diffseq">Diffseq</option>
+      <option value="excel">Excel (tab delimited)</option>
+      <option value="feattable">FeatTable</option>
+      <option value="motif">Motif</option>
+      <option value="regions">Regions</option>
+      <option value="seqtable">SeqTable</option>
+      <option value="simple">SRS Simple</option>
+      <option value="srs">SRS</option>
+      <option value="tagseq">TagSeq</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="table" name="out_file1" />
+  </outputs>
+  <code file="emboss_format_corrector.py" />
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/fuzztran.html
+  </help>
+</tool>

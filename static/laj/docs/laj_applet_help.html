@@ -1,0 +1,331 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>Help Page for the Laj Applet</title>
+</head>
+<body bgcolor=#FFFFFF>
+<br>
+<p>
+<h2>Help Page for the Laj Applet</h2>
+<br>
+<p>
+TABLE OF CONTENTS
+<ul>
+<li><a href="#intro">Introduction</a>
+<li><a href="#prep">Preparing Your Browser</a>
+<li><a href="#screen">Screen Layout</a>
+<li><a href="#mouse">Mouse Controls</a>
+<li><a href="#menu">Menus and Buttons</a>
+<li><a href="#notes">Footnotes</a>
+</ul>
+<p>
+<br>
+
+<h3><a name="intro">Introduction</a></h3>
+<p>
+Laj is a tool for viewing and manipulating the output from
+pairwise alignment programs such as
+<a href="http://bio.cse.psu.edu/">blastz</a>.  It can display
+interactive dotplot, pip, and text representations of the
+alignments, a diagram showing the locations of exons and
+repeats, and annotation links to other web sites containing
+additional information about particular regions.
+<p>
+The program is written in Java in order to provide a
+graphical user interface that is portable across a variety
+of computer platforms; indeed its name stands for "Local
+Alignments with Java".  Currently it exists in two forms,
+a stand-alone application and a web-based applet, with
+slightly different capabilities.  However, this help page
+will only discuss the applet.
+<p>
+
+<h3><a name="prep">Preparing Your Browser</a></h3>
+<p>
+This applet requires at least Java 1.2, and preferably Java 1.3
+or higher.  For best compatibility, Sun's Java Plug-in
+is recommended.  Please see
+<a href="java_plugin_help.html">Installing the Java Plug-in</a>
+for more information.
+<p>
+
+<h3><a name="screen">Screen Layout</a></h3>
+<p>
+The Laj window is divided into several sections.
+Across the top you will see a menu/control bar, and below
+that two indicator lines for displaying information about the
+positions of the mouse pointer and the "mark"
+(<a href="#red">red</a> circle)
+respectively.  The controls will be discussed individually
+in the <a href="#menu">Menus and Buttons</a> section of this
+document.
+<p>
+<i>Ruler:</i><br>
+The first graphical panel is a horizontal ruler that displays
+tick marks corresponding to positions in the first aligned
+sequence.  These are intended to give you an immediate
+general feel for the location and scale of the region being
+displayed.  Precise locations can be determined via the
+position indicator, which displays the exact coordinate of
+the mouse pointer.
+<p>
+<i>Dotplot:</i><br>
+The large middle panel displays a dotplot view of the
+alignments, with the first sequence (often human) along
+the horizontal <tt>x</tt>-axis and the second sequence
+(e.g., mouse) along the vertical <tt>y</tt>-axis.  If the
+second sequence contains multiple contigs, they will appear
+as separate horizontal bands across the plot, each with its
+own <tt>y</tt>-axis coordinate system.  Whenever
+the mouse pointer is in this panel, the position indicator
+displays its location in the format "<tt>x,y</tt>", where
+<tt>x</tt> is the position in the horizontal sequence and
+<tt>y</tt> is the position in the vertical sequence.  If
+there are multiple contigs, then the first word of the
+contig name will be displayed as well.
+<p>
+<i>Annotation links:</i><br>
+Below the dotplot is a panel that provides links to
+additional information about various sequence regions.  Each
+annotation is represented by a color-coded bar spanning the
+region's position in the first sequence.  The bars'
+vertical positions are not meaningful; they are placed in
+rows only for convenience, to keep them from overlapping.
+Pointing to a particular bar will cause the position
+indicator to display the <tt>x</tt> coordinate of the
+pointer, and also the type and description of that bar's
+annotation; otherwise only the <tt>x</tt> coordinate will be
+shown.  Clicking on a bar will open a separate browser
+window to visit the corresponding web site.  If no annotation
+file was provided, this panel will not appear.
+<p>
+<i>Sequence features:</i><br>
+The next panel contains a schematic diagram of the
+known exons, repeats, and other features in the first
+sequence, if these files were provided.  Again, the position
+indicator displays the <tt>x</tt> coordinate of the mouse
+pointer, and also identifies any features at that position.
+<p>
+<i>Pip:</i><br>
+The next panel displays a pip (percent identity plot) view
+of the alignments.  This is similar to the dotplot,
+except that the vertical scale represents the percentage of
+matching nucleotides in each gap-free segment of a local
+alignment, instead of its position in the second sequence.
+Only the top half of the plot is shown, since segments
+matching less than 50% are not very interesting.  An
+additional feature of this panel is that colored backgrounds,
+or "underlays", may be used to highlight regions of interest.
+The position indicator displays the horizontal coordinate
+and vertical percentage position of the mouse pointer, and
+it can also display labels for the colored regions if these
+were provided.
+<p>
+<i>Text view:</i><br>
+The bottom panel displays a nucleotide-level view of a single
+selected local alignment.  (Initially it is blank, since you
+haven't selected anything yet.)  The top row of this display
+shows the nucleotide sequence from the first species
+(<tt>x</tt>-axis in the dotplot), while the bottom row shows
+the sequence from the second one (<tt>y</tt>-axis).  Both
+sequences will likely have had gaps inserted by the alignment
+program.  The middle row contains symbols to
+indicate how well the nucleotides match at each position;
+this matching is case-insensitive to deal with soft masking,
+but non-nucleotide characters such as <tt>X</tt> or <tt>N</tt>
+never match anything, even themselves.
+Note that most
+of the local alignments will be much too long to fit across
+this window, so a scrollbar is provided; the
+relative size of the scrollbar's slider indicates what fraction
+of the alignment is shown in the window.  Shaded "highlights"
+similar to the pip underlays may also appear.  Whenever
+the mouse pointer is in this bottom panel, the position
+indicator displays its location in the
+format "<tt>n:x,y</tt>", where <tt>n</tt> is the column position
+in the text representation of the alignment (starting with 0),
+while <tt>x</tt> and <tt>y</tt> are the sequence positions
+in the top and bottom rows, respectively (starting with 1).
+Note that <tt>x</tt> and <tt>y</tt> do not include the gaps,
+but <tt>n</tt> does.  Labels for any highlights at that
+position are also displayed.
+<p>
+With the exception of the text view, all of these panels
+use the same horizontal coordinate scale (i.e., position in
+the first sequence), and they are always kept vertically
+aligned so they can be compared easily.
+<p>
+
+<h3><a name="mouse">Mouse Controls</a></h3>
+<p>
+You can select a particular local alignment in the dotplot
+or pip by clicking on one of its segments with the left mouse
+button.  (Actually you don't have to click exactly on it,
+because Laj will automatically jump to the nearest point in
+the same contig if you miss.)  The spot will be marked with a
+small <a href="#red">red</a> circle
+in both the dotplot and the pip, and the entire local
+alignment containing the mark will change color from black
+to <a href="#red">red</a>
+(each local alignment typically spans several
+gap-free "segments").  Also, the corresponding text view for
+that alignment will appear in the bottom panel with the
+selected position highlighted.  This requires loading the
+sequence files, so it may take a few moments.  Lastly, the
+mark indicator line will be filled in with information about
+the marked alignment and position, including the contig name
+if the second sequence is fragmented.  Note that there is only
+one mark at a time, so the previous one, if any, will be
+unmarked.
+<p>
+In a similar fashion, clicking the left mouse button in the
+text view will move the mark (both the highlight and the
+<a href="#red">red</a> circle) to that position
+(though sometimes you have to click twice).
+However, gap positions cannot be selected in this manner
+because they do not correspond to pip segments; if
+you click in a gap, the left end of the gap is selected
+instead.
+<p>
+As mentioned earlier, clicking on an annotation bar will
+open a separate browser window to visit the corresponding
+web site, but clicking in the ruler or feature panel has no
+effect.
+<p>
+You can "zoom in" on a particular region by dragging out a
+rectangle with the left mouse button in any of the white
+panels (ruler, dotplot, annotations, features, or pip).  All
+of these panels will always zoom together, to keep them lined
+up.  This can be repeated until the maximum resolution is
+reached; after that Laj will display an error message.
+Note that selecting your zoom in a non-dotplot panel only
+zooms horizontally (the zoom rectangle is always
+full-height), so to keep the dotplot looking nice it is best
+to select your zoom there, and keep the zoom rectangle
+roughly proportional to the dimensions of the existing
+dotplot panel.
+<p>
+Holding down the right mouse button over any of the white
+panels adds crosshairs at the mouse pointer's location, which
+is convenient for determining whether two regions really line
+up.  If you have a one-button mouse, you can achieve the same
+effect by applying the <code>Shift</code> key when initially
+pressing the mouse button.
+<p>
+
+<h3><a name="menu">Menus and Buttons</a></h3>
+<p>
+<dl>
+<dt>File - Save:
+<dd>
+Allows you to save the alignments that you have flagged (see below)
+by sending them back to the server in a format similar to the input.
+What the server does with them depends on the site.  For example,
+if you are running Laj via <a href="http://www.bx.psu.edu/">Galaxy</a>,
+they will be stored as a new dataset in your history for further
+analysis.  A different site might email the file to you, reflect
+it to your browser, or use it in some other way.  If the site does
+not specify a URL for sending the alignments, this menu item will not
+appear.
+<p>
+<dt>File - Exit:
+<dd>
+Closes the Laj window.
+<p>
+<dt>Tools - Flag:
+<dd>
+Flags the currently selected local alignment (the one containing the
+<a href="#red">red</a> mark circle) by changing its color.  You can
+repeat this on other alignments to build a flagged set.  The flagged
+alignments are normally green, but if one is also the currently
+selected alignment (e.g. when you have just flagged it), it can't be
+both green and red so it is orange instead.  Also, just like the
+<a href="#red">red</a> circle, all of these colors will be displayed
+differently against colored backgrounds.  
+<p>
+<dt>Tools - Unflag:
+<dd>
+Changes the local alignment containing the <a href="#red">red</a>
+circle back to its original color.
+<p>
+<dt>Tools - Unzoom:
+<dd>
+Restores all of the white panels back to the original, unzoomed view.
+<p>
+<dt>Help - About:
+<dd>
+Displays a message window with information about Laj, including
+version, author, etc.
+<p>
+<dt>Help - Manual:
+<dd>
+Displays this help page in a separate browser window.
+<p>
+<dt>Help - Keys:
+<dd>
+Displays a message window listing Laj's keyboard shortcuts.  No
+<i>Alt</i> key is needed, since Laj doesn't use the keyboard for
+much else.
+</dl>
+<p>
+
+<!-- <hr align=left noshade size=1 width="20%" color=black> -->
+<h3><a name="notes">Footnotes</a></h3>
+<p>
+<a name="red"></a>
+[1]&nbsp;
+The circular mark and its local alignment are red
+when the background is white, but are displayed in different
+colors against other backgrounds to ensure good contrast.
+<p>
+
+<br>
+<p>
+<hr>
+<i>Cathy Riemer, August 2006</i>
+
+<!-- These blank lines allow the browser to scroll properly
+     to the last anchor target. -->
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>

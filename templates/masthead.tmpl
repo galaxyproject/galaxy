@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+<title>Galaxy</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link href="/static/style/base.css" rel="stylesheet" type="text/css" />
+<link href="/static/style/masthead.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body class="mastheadPage">
+<table width="100%" cellspacing="0" border="0">
+<tr valign="middle">
+<td><div class="pageTitle"><a target="_blank" href="http://www.bx.psu.edu/cgi-bin/trac.cgi">Galaxy</a></div></td>
+<td align="right" valign="middle">
+	  #*
+    Display as: <a target="_top" href="/index?mode=three">columns</a>
+    | <a target="_top" href="/index?mode=stacked">stack</a>    
+    &nbsp;&nbsp;&nbsp;
+    *#
+     
+    Info: <a href="mailto:galaxy-bugs@bx.psu.edu">report bugs</a>
+    | <a target="_blank" href="http://www.bx.psu.edu/cgi-bin/trac.cgi">help</a>
+    
+    <!-- | <a target="mainframe" href="/static/index_frame_tools.html">tools</a>
+    | <a target="mainframe" href="/static/index_frame_history.html">history</a> -->
+    &nbsp;&nbsp;&nbsp;
+    #if $caller.user
+        Logged in as $caller.user.email: <a target="galaxy_main" href="/user/index">manage</a>
+        | <a target="galaxy_main" href="/user/logout">logout</a> 
+    #else
+        Account: <a target="galaxy_main" href="/user/create">create</a>
+        | <a target="galaxy_main" href="/user/login">login</a>
+    #end if
+    &nbsp;
+</td>
+</tr>
+</table>
+</body>
+
+</html>

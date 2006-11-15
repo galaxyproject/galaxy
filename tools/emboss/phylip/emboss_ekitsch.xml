@@ -1,0 +1,78 @@
+<tool id="EMBOSS: ekitsch17" name="EMBOSS: ekitsch">
+  <description>Embossified Fitch-Margoliash and Least Squares Methods with Evolutionary Clock</description>
+  <command>ekitsch -infile $input1 -outfile $out_file1 -treefile $out_file2 -besttree $besttree -randseed "$randseed" -randtimes "$randtimes" -datasets $datasets -power "$power" -negbranch $negbranch
+  -random $random -lt $lt -ut $ut -replicates $replicates -multsets $multsets -printdata $printdata -progress no -drawtree $drawtree -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Data file</label>
+    </param>
+    <param name="besttree" type="select">
+      <label>Search for best tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="randseed" size="5" type="text" value="0">
+      <label>Random number seed (must be odd)</label>
+    </param>
+    <param name="randtimes" size="5" type="text" value="0">
+      <label>Number of times to jumble</label>
+    </param>
+    <param name="datasets" size="5" type="text" value="0">
+      <label>How many data sets</label>
+    </param>
+    <param name="power" size="5" type="text" value="3.0">
+      <label>Power</label>
+    </param>
+    <param name="negbranch" type="select">
+      <label>Negative branch lengths allowed</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="random" type="select">
+      <label>Randomize input order of species</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="lt" type="select">
+      <label>Lower-triangular data matrix</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="ut" type="select">
+      <label>Upper-triangular data matrix</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="replicates" type="select">
+      <label>Subreplicates</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="multsets" type="select">
+      <label>Analyze multiple data sets</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print out the data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="drawtree" type="select">
+      <label>Draw tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="treefile" name="out_file2" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/ekitsch.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/ekitsch.html if you are not automatically redirected.
+</help>
+</tool>

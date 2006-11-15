@@ -1,0 +1,99 @@
+<tool id="EMBOSS: fprotdist21" name="fprotdist">
+  <description>Protein distance algorithm</description>
+  <command interpreter="perl">multiple_fasta_alignment_input.pl $mode fprotdist -sequence $input1 -outfile $out_file1 -model $model -gamma $gamma -gammacoefficient "$gammacoefficient" -invarcoefficient "$invarcoefficient" -aacateg $aacateg -whichcode $whichcode -ease "$ease" -ttratio "$ttratio" -basefreq "$freqa $freqc $freqg $freqt" -printdata $printdata -progress no -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence file</label>
+    </param>
+<!--
+    <param name="ncategories" type="select">
+      <label>Number of substitution rate categories</label>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+    </param>
+    <param name="rate" size="20" type="text" value="0.25">
+      <label>Rate for each category (space separated list)</label>
+    </param>
+-->
+    <param name="model" type="select">
+      <label>Method to use</label>
+      <option value="j">Jones-Taylor-Thornton matrix</option>
+      <option value="h">Henikoff/Tiller PMB matrix</option>
+      <option value="d">Dayhoff PAM matrix</option>
+      <option value="k">Kimura formula</option>
+      <option value="s">Similarity table</option>
+      <option value="c">Categories model</option>
+    </param>
+    <param name="gamma" type="select">
+      <label>Rate variation among sites</label>
+      <option value="g">Gamma distributed rates</option>
+      <option value="i">Gamma+invariant sites</option>
+      <option value="c" selected="true">Constant rate</option>
+    </param>
+    <param name="gammacoefficient" size="5" type="text" value="1">
+      <label>Coefficient of variation of substitution rate among sites (gammacoefficient)</label>
+    </param>
+    <param name="invarcoefficient" size="5" type="text" value="1">
+      <label>Coefficient of variation of substitution rate among sites (invarcoefficient)</label>
+    </param>
+    <param name="aacateg" type="select">
+      <label>Category to use</label>
+      <option value="G">George/Hunt/Barker (Cys), (Met Val Leu Ileu), (Gly Ala Ser Thr Pro)</option>
+      <option value="C">Chemical (Cys Met), (Val Leu Ileu Gly Ala Ser Thr), (Pro)</option>
+      <option value="H">Hall (Cys), (Met Val Leu Ileu), (Gly Ala Ser Thr), (Pro)</option>
+    </param>
+    <param name="whichcode" type="select">
+      <label>Genetic code</label>
+      <option value="u">Universal</option>
+      <option value="c">Ciliate</option>
+      <option value="m">Universal Mitochondrial</option>
+      <option value="v">Vertebrate mitochondrial</option>
+      <option value="f">Fly mitochondrial</option>
+      <option value="y">Yeast mitochondrial</option>
+    </param>
+    <param name="ease" size="5" type="text" value="0.457">
+      <label>Prob change category (1.0=easy)</label>
+    </param>
+    <param name="ttratio" size="5" type="text" value="2.0">
+      <label>Transition/transversion ratio</label>
+    </param>
+    <param name="freqa" size="5" type="text" value="0.25">
+      <label>Frequency for A</label>
+    </param>
+    <param name="freqc" size="5" type="text" value="0.25">
+      <label>Frequency for C</label>
+    </param>
+    <param name="freqg" size="5" type="text" value="0.25">
+      <label>Frequency for G</label>
+    </param>
+    <param name="freqt" size="5" type="text" value="0.25">
+      <label>Frequency for T/U</label>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="mode" type="select">
+      <label>Treat empty lines as alignment set delimiters</label>
+      <option value="multipleset">Yes</option>
+      <option value="singleset">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/embassy/phylipnew/fprotdist.html
+</help>
+<!-- <code file="remove_first_2_lines.py" /> -->
+</tool>

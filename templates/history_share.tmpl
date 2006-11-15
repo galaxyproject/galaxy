@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title> Share History </title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link href="/static/style/base.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" type="text/javascript" src="/static/universe.js"></script>
+</head>
+<body>
+    
+    #if $user
+
+    	
+    	<div class="toolForm">
+         <div class="toolFormTitle">Share Histories</div>
+  <table>
+  <form action="/history_share" method="post" >
+        <tr><th>History Name:</td><th>Number of Datasets:</th><th>Share Link</th></tr>
+        #for $history in $histories:
+        <tr><td align="center">$history.name<input type="hidden" name="id" value="$history.id"></td><td align="center">
+    	
+    	#if $len($history.datasets) < 1:
+    	<div class="warningmessage">
+    	    This history contains no data.
+    	</div>
+	#else:
+        $len($history.datasets)
+    	#end if
+        </td>
+        <td align="center"><a href="/history_import?id=$history.id">copy link to share</a></td>
+        </tr>
+        #end for
+        <tr><td>Email of User to share with:</td><td><input type="text" name="email" value="$email" size="40"></td></tr>
+        #if $send_to_err:
+        <tr><td colspan="100%"><div class="errormessage">$send_to_err</div></td></tr>
+        #end if
+	<tr><td colspan="2" align="right"><input type="submit" name="history_share_btn" value="Submit"></td></tr>
+  </form>
+  </table>
+	#else
+	
+	<div class="errormessage">
+	You must be logged in to send histories to other users.
+	</div>
+	<p>You may copy and send this <a href="/history_import?id=$histories[0].id">link</a> to users if you wish to share your history with them.</p>
+	#end if
+
+</body>
+</html>

@@ -1,0 +1,93 @@
+<tool id="EMBOSS: emix18" name="EMBOSS: emix">
+  <description>Embossified mixed method parsimony</description>
+  <command>emix -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -besttree $besttree -method $method -randseed "$randseed" -randtimes "$randtimes" -og $og -outgnum "$outgnum"
+  -valthresh "$valthresh" -datasets $datasets -random $random -ancestral $ancestral -multsets $multsets -printdata $printdata -progress no -statesatnodes $statesatnodes -steps $steps -drawtree
+  $drawtree -thresh $thresh -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Data file</label>
+    </param>
+    <param name="besttree" type="select">
+      <label>Search for best tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="method" type="select">
+      <label>Method</label>
+      <option value="Wag">Wagner</option>
+      <option value="Cam">Camin-Sokal</option>
+      <option value="Mix">Mixed</option>
+    </param>
+    <param name="randseed" size="5" type="text" value="0">
+      <label>Random number seed (must be odd)</label>
+    </param>
+    <param name="randtimes" size="5" type="text" value="0">
+      <label>Number of times to jumble</label>
+    </param>
+    <param name="og" type="select">
+      <label>Outgroup root</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="outgnum" size="5" type="text" value="1">
+      <label>Number of the outgroup</label>
+    </param>
+    <param name="valthresh" size="5" type="text" value="1.0">
+      <label>Threshold value</label>
+    </param>
+    <param name="datasets" size="5" type="text" value="0">
+      <label>How many data sets</label>
+    </param>
+    <param name="random" type="select">
+      <label>Randomize input order of species</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="ancestral" type="select">
+      <label>Use ancestral states in input file</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="multsets" type="select">
+      <label>Analyze multiple data sets</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="printdata" type="select">
+      <label>Print out the data at start of run</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="statesatnodes" type="select">
+      <label>Print states at all nodes of tree</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="steps" type="select">
+      <label>Print out steps in each character</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="drawtree" type="select">
+      <label>Draw tree</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="thresh" type="select">
+      <label>Use Threshold parsimony</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="treefile" name="out_file2" />
+  </outputs>
+  <help>.. meta::
+   :HTTP-EQUIV=Refresh: 0; URL=http://emboss.sourceforge.net/embassy/phylip/emix.html
+
+You are now being redirected to the original documentation.
+
+Please click http://emboss.sourceforge.net/embassy/phylip/emix.html if you are not automatically redirected.
+</help>
+</tool>

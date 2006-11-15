@@ -1,0 +1,70 @@
+<tool id="gops_cluster_1" name="Cluster">
+  <description>the intervals of a query</description>
+  <command interpreter="python2.4">gops_cluster.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -d $distance -m $minregions -o $returntype</command>
+  <inputs>
+    <param format="interval" name="input1" type="data">
+      <label>Cluster intervals of</label>
+    </param>
+    <param name="distance" size="4" type="integer" value="1">
+      <label>Maximum distance</label>
+    </param>
+    <param name="minregions" size="4" type="integer" value="2">
+      <label>Minimum intervals per cluster</label>
+    </param>
+	<param name="returntype" type="select" label="Return type">
+		<option value="1">Merge clusters into single intervals</option>
+		<option value="2">Find cluster intervals; preserve comments and order</option>
+		<option value="3">Find cluster intervals; output grouped by clusters</option>
+	</param>
+   </inputs>
+  <outputs>
+    <data format="input" name="output" metadata_source="input1" />
+  </outputs>
+  <code file="operation_filter.py"/>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="distance" value="1" />
+      <param name="minregions" value="2" />
+      <param name="returntype" value="1" />
+      <output name="output" file="gops-cluster-1.dat" />     
+    </test>    
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="distance" value="1" />
+      <param name="minregions" value="2" />
+      <param name="returntype" value="2" />
+      <output name="output" file="gops-cluster-2.dat" />     
+    </test>    
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="distance" value="1" />
+      <param name="minregions" value="2" />
+      <param name="returntype" value="3" />
+      <output name="output" file="gops-cluster-3.dat" />     
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Syntax**
+
+- **Maximum distance** is greatest distance in base pairs allowed between intervals that will be considered &quot;clustered&quot;.  **Negative** values for distance are allowed, and are useful for clustering intervals that overlap.
+- **Minimum intervals per cluster** allow a threshold to be set on the minimum number of intervals to be considered a cluster.  Any area with less than this minimum will not be included in the ouput.
+- **Merge clusters into single intervals** outputs intervals that span the entire cluster.
+- **Find cluster intervals; preserve comments and order** filters out non-cluster intervals while maintaining the original ordering and comments in the file.
+- **Find cluster intervals; output grouped by clusters** filters out non-cluster intervals, but outputs the cluster intervals so that they are grouped together. Comments and original ordering in the file are lost.
+
+-----
+
+**Example**
+
+.. image:: ../static/operation_icons/gops_cluster.gif
+
+</help>
+</tool>

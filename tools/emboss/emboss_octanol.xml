@@ -1,0 +1,36 @@
+<tool id="EMBOSS: octanol63" name="octanol">
+  <description>Displays protein hydropathy</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl octanol -sequence $input1 -graph png -goutfile $out_file1 -width $width -octanolplot $octanolplot -interfaceplot $interfaceplot
+  -differenceplot $differenceplot -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="width" size="4" type="text" value="19">
+      <label>Window size</label>
+    </param>
+    <param name="octanolplot" type="select">
+      <label>Display the octanol plot</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="interfaceplot" type="select">
+      <label>Display the interface plot</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="differenceplot" type="select">
+      <label>Display the difference plot</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/octanol.html
+  </help>
+</tool>

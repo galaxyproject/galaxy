@@ -1,0 +1,24 @@
+<tool id="EMBOSS: isochore47" name="isochore">
+  <description>Plots isochores in large DNA sequences</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl isochore -sequence $input1 -outfile $out_file1 -goutfile $out_file2 -graph png -window $window -shift $shift -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="window" size="4" type="text" value="1000">
+      <label>Window size</label>
+    </param>
+    <param name="shift" size="4" type="text" value="100">
+      <label>Shift increment</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+    <data format="png" name="out_file2" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/isochore.html
+  </help>
+</tool>

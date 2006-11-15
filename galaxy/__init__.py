@@ -1,0 +1,3 @@
+"""
+Galaxy root package.
+"""
