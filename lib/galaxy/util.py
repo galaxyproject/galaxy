@@ -4,6 +4,13 @@ Utility functions used systemwide.
 """
 import logging
 import threading, sets, random, string, md5, re, binascii, pickle
+
+import pkg_resources
+
+pkg_resources.require( 'docutils' )
+import docutils.core
+
+pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree
 
 log   = logging.getLogger(__name__)
@@ -192,7 +199,6 @@ class Params:
         self.__dict__.update(values)
 
 def rst_to_html( s ):
-    import docutils.core
     """Convert a blob of reStructuredText to HTML"""
     log = logging.getLogger( "docutils" )
     class FakeStream( object ):
