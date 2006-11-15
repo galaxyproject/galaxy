@@ -1,6 +1,6 @@
 import sys
 import new
-from galaxy.test.base.twilltestcase import TwillTestCase
+from base.twilltestcase import TwillTestCase
 
 toolbox = None
 

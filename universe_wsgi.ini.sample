@@ -30,7 +30,7 @@ use = egg:Paste#urlmap
 
 [app:universe]
 # Specifies the factory for the universe WSGI application
-paste.app_factory = universe_wsgi:app_factory
+paste.app_factory = galaxy.app:app_factory
 # Configuration for the universe application
 job_queue_workers = 5
 template_path = templates

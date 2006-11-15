@@ -7,9 +7,10 @@ pkg_resources.require( "Paste" )
 pkg_resources.require( "PasteDeploy" )
 pkg_resources.require( "Cheetah" )
 
-import universe_wsgi, twill, unittest, time
+import twill, unittest, time
 import os, os.path, subprocess, sys, threading
 import galaxy.web.server
+import galaxy.app
 from galaxy.app import UniverseApplication
 
 log = logging.getLogger( __name__ )
@@ -56,9 +57,9 @@ def setup():
                                    
         log.info( "Embedded Universe application started" )
 
-        webapp = universe_wsgi.app_factory( dict(),
-                                            use_translogger = False,
-                                            app=app )
+        webapp = galaxy.app.app_factory( dict(),
+                                         use_translogger = False,
+                                         app=app )
 
         server = galaxy.web.server.serve( webapp, dict(), 
                                           host=galaxy_test_host, 

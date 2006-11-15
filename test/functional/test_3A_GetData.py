@@ -1,4 +1,4 @@
-from galaxy.test.base.twilltestcase import TwillTestCase
+from base.twilltestcase import TwillTestCase
 #from twilltestcase import TwillTestCase
 
 class UcscTests(TwillTestCase):

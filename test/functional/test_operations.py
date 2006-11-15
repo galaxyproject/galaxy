@@ -1,4 +1,4 @@
-from galaxy.test.base.twilltestcase import TwillTestCase
+from base.twilltestcase import TwillTestCase
 
 # the numbering of the tests is essential as they
 # will be executed in order, sorted by name
