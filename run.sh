@@ -17,4 +17,4 @@ export PYTHONPATH=$UNIVERSE_HOME/lib:$UNIVERSE_HOME/modules:$UNIVERSE_HOME/eggs:
 
 echo "python path: $PYTHONPATH"
 
-python2.4 paster.py serve universe_wsgi.ini $@
+python2.4 ./scripts/paster.py serve universe_wsgi.ini $@

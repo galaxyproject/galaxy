@@ -17,4 +17,4 @@ export PYTHONPATH=$UNIVERSE_HOME/lib:$UNIVERSE_HOME/modules:$UNIVERSE_HOME/eggs:
 
 echo "python path: $PYTHONPATH"
 
-python2.4 nosetests.py $@
+python2.4 ./scripts/nosetests.py $@
