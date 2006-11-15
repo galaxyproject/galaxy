@@ -49,7 +49,7 @@ def setup():
                                    template_path = "templates",
                                    database_connection = database_connection,
                                    file_path = file_path,
-                                   tool_config_file = "tool_conf.xml",
+                                   tool_config_file = "tool_conf.xml.sample",
                                    tool_path = "tools",
                                    test_conf = "test.conf",
                                    log_destination = "stdout",
