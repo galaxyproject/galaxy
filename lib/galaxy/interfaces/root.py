@@ -6,7 +6,7 @@ import re, socket
 
 from galaxy import util, datatypes, jobs, web, util
 import common
-from cgi import escape
+from cgi import escape, FieldStorage
 
 log = logging.getLogger( __name__ )
 
@@ -203,7 +203,7 @@ class Universe(common.Root):
                    assert data in history.datasets, "Data does not belong to current history"
                    assert data.parent == None, "You must delete the primary dataset first."
                    history.datasets.remove( data )
-                   data.delete()
+                   data.deleted = True
                    trans.log_event( "Data delete: %s" % str(id) )
             self.app.model.flush()
         return self.history( trans )
@@ -217,21 +217,10 @@ class Universe(common.Root):
                assert data in history.datasets, "Data does not belong to current history"
                assert data.parent == None, "You must delete the primary dataset first."
                history.datasets.remove( data )
-               data.delete()
+               data.deleted = True
                trans.log_event( "Data delete async: %s" % str(id) )
             self.app.model.flush()
         return "OK"
-
-    # @web.expose
-    # def delete(self, trans, id ):
-    #     """Deletes a data from the user history"""
-    #     history = trans.get_history()
-    #     data = self.app.model.Dataset.get( id )
-    #     if data:
-    #         assert data in history.datasets, "Data does not belong to current history"
-    #         data.delete()
-    #         self.app.model.flush()
-    #     return self.history( trans )
 
     @web.expose
     def history_delete( self, trans, id = None, **kwd):
@@ -249,15 +238,13 @@ class Universe(common.Root):
                     if history.user_id != None and user:
                         assert user.id == history.user_id, "History does not belong to current user"
                     history_names.append(history.name)
-                    # FIXME: this is probably not neccesary, cascading deletes!
-                    for data in history.datasets:
-                        if data:
-                            assert data in history.datasets, "Data does not belong to current history"
-                            history.datasets.remove( data )
-                            data.delete()
+                    history.deleted = True
+                    # If deleting the current history, make a new current.
+                    if history == trans.get_history():
+                        trans.new_history()
                 trans.log_event( "History delete: %s" % str(hid) )
-                history.delete()
                 self.app.model.flush()
+            
         else:
             return trans.show_message( "You must select at least one history to delete." )
         return trans.show_message( "History deleted: %s" % ",".join(history_names),
@@ -268,7 +255,7 @@ class Universe(common.Root):
         """Clears the history for a user"""
         history = trans.get_history()
         for dataset in history.datasets:
-            dataset.delete()
+            dataset.deleted = True
         self.app.model.flush()
         trans.log_event( "History clear" )
         trans.response.send_redirect("/index")
@@ -506,7 +493,14 @@ class Universe(common.Root):
     @web.expose
     def echo(self, trans, **kwd):
         """Echos parameters (debugging)"""
-        return "%s" % kwd
+        rval = ""
+        for k in trans.request.headers:
+            rval += "%s: %s <br/>" % ( k, trans.request.headers[k] )
+        for k in kwd:
+            rval += "%s: %s <br/>" % ( k, kwd[k] )
+            if isinstance( kwd[k], FieldStorage ):
+                rval += "-> %s" % kwd[k].file.read()
+        return rval
 
     # ---- Work methods -----------------------------------------------------
     

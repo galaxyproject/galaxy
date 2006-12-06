@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
-#set $refresh= bool ( [ data for data in $history.datasets if data.state in ['running', 'queued','',None] ] )
+#set $refresh= bool ( [ data for data in $history.active_datasets if data.state in ['running', 'queued','',None] ] )
 
 <html>
 
@@ -122,14 +122,20 @@ main();">
       #end if
 </div>
 
+#if $history.deleted 
+  <div class="warningmessagesmall">
+    You are currently viewing a deleted history!
+  </div>
+  <p></p>
+#end if
 
-#if $len($history.datasets)<1
+#if $len($history.active_datasets)<1
 	<div class="infomessagesmall">
       Your history is empty. Click 'Get Data' on the left pane to start
 	</div>
 #else    
 
-#for $data in reversed($history.datasets)
+#for $data in reversed($history.active_datasets)
 	#if $data.parent
 	#continue
 	#end if
@@ -330,7 +336,7 @@ main();">
 <div class="footermenuitem"><a href="/history_store" target="galaxy_main">store</a> this history for later</div>
 #end if
 <div class="footermenuitem"><a href="/history_available" target="galaxy_main">view</a> previously stored histories</div>
-#if $len($history.datasets)>0 and $history.user not in [None,""]:
+#if $len($history.active_datasets)>0 and $history.user not in [None,""]:
 <div class="footermenuitem"><a href="/history_new">create</a> a new empty history</div>
 #end if
 </div>

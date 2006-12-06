@@ -5,6 +5,12 @@
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <link href="/static/style/base.css" rel="stylesheet" type="text/css">
 <script language="JavaScript" type="text/javascript" src="/static/universe.js"></script>
+<style>
+tr.history_row_deleted td
+{
+  background-color: #EEEEEE;
+}
+</style>
 </head>
 <body>
 <SCRIPT language="JavaScript">
@@ -46,13 +52,30 @@ function OnSubmitForm()
         <h1>Stored Histories</h1>
     	<form name="history_actions" onSubmit="return OnSubmitForm();" method="post" >
 	    <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-	        <tr class="header" align="center"><td>Name</td><td># Datasets<td>Created</td><td>Modified</td><td>Action</td></tr>
-	    #for $history in $user.histories:
-	        <tr><td><input type=checkbox name="id" value="$history.id"
-	        #if $str($history.id) in $ids:
-	        checked 
+	        <tr class="header" align="center"><td>Name</td><td>Size</td><td>Last modified</td><td>Actions</td></tr>
+	    #for $history in $user.histories
+	        #set $c = ""
+	        #if $history.deleted 
+	          #set $c = "history_row_deleted"
 	        #end if
-	        >$history.name </td><td>${len(history.datasets)}<td>${str($history.create_time)[0:19]}</td><td>${str($history.update_time)[0:19]}</td><td><table><tr align="center"><td><a href="history_rename?id=$history.id">rename</a></td><td><a href="history_switch?id=$history.id">switch to</a></td></tr><tr align="center"><td colspan="2"><a href="/history_delete?id=$history.id" onclick="confirm_click('/history_delete?id=$history.id');return false;">delete</a></td></tr></table></td></tr>
+	        <tr class="$c">
+	          <td><input type=checkbox name="id" value="$history.id"
+  	        #if $str($history.id) in $ids:
+  	        checked 
+  	        #end if
+  	        >$history.name 
+  	        #if $history.deleted
+  	        (deleted)
+  	        #end if
+  	        </td>
+  	        <td>${len(history.active_datasets)}</td>
+  	        <td>${str(history.update_time)[:19]}</td>
+  	        <td>
+  	          <a href="history_rename?id=$history.id">rename</a><br />
+  	          <a href="history_switch?id=$history.id">switch to</a><br />
+  	          <a href="/history_delete?id=$history.id" onclick="confirm_click('/history_delete?id=$history.id');return false;">delete</a>
+  	        </td>
+	        </tr>
 	    #end for
          <tr><th colspan="100%">Action</th></tr>
          <tr><td colspan="100%" align="center"><input type="radio" name="operation" value="1" checked>Share <input type="radio" name="operation" value="2">Rename <input type="radio" name="operation" value="3">Delete </td></tr>

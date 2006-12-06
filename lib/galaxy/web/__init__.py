@@ -3,6 +3,7 @@ import pkg_resources; pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 import framework
 import pickle
+from galaxy import util
 
 import pkg_resources
 pkg_resources.require( "WebHelpers" )
@@ -172,7 +173,7 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         Fill in a template, putting any keyword arguments on the context.
         """
         template = Template( file=os.path.join(self.app.config.template_path, file_name), 
-                             searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, request=self.request, response=self.response, app=self.app)] )
+                             searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app)] )
         return str(template)
     def fill_template_string(self, template_string, context=None, **kwargs):
         """

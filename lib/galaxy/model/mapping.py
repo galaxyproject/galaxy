@@ -40,7 +40,8 @@ History.table = Table( "history", metadata,
     Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ) ),
     Column( "name", TrimmedString( 255 ) ),
-    Column( "hid_counter", Integer, default=1 ) )
+    Column( "hid_counter", Integer, default=1 ),
+    Column( "deleted", Boolean ) )
 
 # model.Query.table = Table( "query", engine,
 #             Column( "id", Integer, primary_key=True),
@@ -65,6 +66,7 @@ Dataset.table = Table( "dataset", metadata,
     Column( "metadata", PickleType() ),
     Column( "parent_id", Integer, nullable=True ),
     Column( "designation", TrimmedString( 255 ) ),
+    Column( "deleted", Boolean ),
     ForeignKeyConstraint(['parent_id'],['dataset.id'], ondelete="CASCADE") )
     
 Job.table = Table( "job", metadata,
@@ -111,8 +113,8 @@ assign_mapper( context, Dataset, Dataset.table,
 #     properties=dict( datasets=relation( model.Dataset.mapper, backref="query") ) )
 
 assign_mapper( context, History, History.table,
-    properties=dict( datasets=relation( Dataset, backref="history", lazy=False, 
-                                        order_by=asc(Dataset.table.c.hid) ) ) )
+    properties=dict( datasets=relation( Dataset, backref="history", order_by=asc(Dataset.table.c.hid) ),
+                     active_datasets=relation( Dataset, primaryjoin=( ( Dataset.c.history_id == History.table.c.id ) & ( Dataset.c.deleted == False ) ), order_by=asc( Dataset.table.c.hid ), lazy=False, viewonly=True ) ) )
 
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user", 
@@ -143,7 +145,7 @@ def db_next_hid( self ):
     conn = self.table.engine.contextual_connect()
     trans = conn.begin()
     try:
-        next_hid = self.table.select( self.c.hid_counter, self.c.id == self.id, for_update=True ).scalar()
+        next_hid = select( [self.c.hid_counter], self.c.id == self.id, for_update=True ).scalar()
         self.table.update( self.c.id == self.id ).execute( hid_counter = ( next_hid + 1 ) )
         trans.commit()
         return next_hid
@@ -151,7 +153,7 @@ def db_next_hid( self ):
         trans.rollback()
         raise
 
-History.__next_hid = db_next_hid
+History._next_hid = db_next_hid
     
 def init( file_path, url, **kwargs ):
     """

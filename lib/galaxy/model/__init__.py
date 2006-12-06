@@ -68,11 +68,12 @@ class History( object ):
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
         self.name = name or "Unnamed history"
+        self.deleted = False
         # Relationships
         self.user = user
         self.datasets = []
         
-    def __next_hid( self ):
+    def _next_hid( self ):
         # TODO: override this with something in the database that ensures 
         # better integrity
         if len( self.datasets ) == 0:
@@ -91,9 +92,9 @@ class History( object ):
                     dataset.hid = data.hid
                     break
             else:
-                dataset.hid = self.__next_hid()
+                dataset.hid = self._next_hid()
         else:
-            dataset.hid = self.__next_hid()
+            dataset.hid = self._next_hid()
         self.datasets.append( dataset )
 
 # class Query( object ):
@@ -129,6 +130,7 @@ class Dataset( object ):
         self.metadata = metadata or Bunch()
         self.parent_id = parent_id
         self.designation = designation
+        self.deleted = False
         # Relationships
         self.history = history
     def mark_metadata_changed( self ):
