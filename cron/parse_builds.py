@@ -8,6 +8,7 @@ build   description
 
 import sys
 import urllib
+import pkg_resources; pkg_resources.require( "elementtree" )
 from elementtree import ElementTree
 
 URL = "http://genome-test.cse.ucsc.edu/cgi-bin/das/dsn"

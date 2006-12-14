@@ -5,6 +5,7 @@ Connects to sites and determines which builds are available at each.
 
 import sys
 import urllib
+import pkg_resources; pkg_resources.require( "elementtree" )
 from elementtree import ElementTree
 
 sites = ['http://genome.ucsc.edu/cgi-bin/',
