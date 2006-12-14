@@ -54,7 +54,7 @@
     <tool file="filters/bed2gff.xml" />
     <tool file="filters/axt_to_fasta.xml" />
     <tool file="filters/axt_to_concat_fasta.xml" />
-<!--    <tool file="filters/axt_to_lav.xml" /> -->
+    <tool file="filters/axt_to_lav.xml" />
     <tool file="filters/lav_to_bed.xml" />
   </section>
   <section name="Fetch Sequences and Alignments" id="extract">
