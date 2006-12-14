@@ -74,7 +74,10 @@ Job.table = Table( "job", metadata,
     Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
     Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
     Column( "history_id", Integer, ForeignKey( "history.id" ) ),
-    Column( "tool_id", String( 255 ) ) )
+    Column( "tool_id", String( 255 ) ),
+    Column( "state", String( 64 ) ),
+    Column( "command_line", String() ), 
+    Column( "param_filename", String( 1024 ) ) )
     
 JobParameter.table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -172,6 +175,7 @@ def init( file_path, url, **kwargs ):
     result = Bunch( **globals() )
     result.engine = metadata.engine
     result.flush = lambda *args, **kwargs: context.current.flush( *args, **kwargs )
+    result.context = context
     result.create_tables = create_tables
     return result
     

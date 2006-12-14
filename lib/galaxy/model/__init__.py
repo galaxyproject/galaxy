@@ -38,6 +38,8 @@ class Job( object ):
                     ERROR = 'error' )
     def __init__( self ):
         self.tool_id = None
+        self.command_line = None
+        self.param_filename = None
         self.parameters = []
         self.input_datasets = []
         self.output_datasets = []
@@ -48,7 +50,12 @@ class Job( object ):
         self.input_datasets.append( JobToInputDatasetAssociation( name, dataset ) )
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
-  
+    def set_state( self, state ):
+        self.state = state
+        # For historical reasons state propogates down to datasets
+        for da in self.output_datasets:
+            da.dataset.state = state
+                
 class JobParameter( object ):
     def __init__( self, name, value ):
         self.name = name

@@ -24,7 +24,7 @@ class UniverseApplication( object ):
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path )
         # Start the job queue
-        self.job_queue = jobs.JobQueue( self.config.job_queue_workers, self )
+        self.job_queue = jobs.JobQueue( self )
         self.heartbeat = None
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:

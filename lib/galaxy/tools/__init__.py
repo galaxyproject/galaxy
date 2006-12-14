@@ -2,7 +2,7 @@
 Classes encapsulating galaxy tools and tool configuration.
 """
 
-import logging, os, string, sys
+import logging, os, string, sys, tempfile
 from cookbook.odict import odict
 from cookbook.patterns import Bunch
 from galaxy import util, jobs
@@ -380,6 +380,82 @@ class Tool:
             else:
                 rval[ key ] = value
         return rval
+        
+    def build_param_dict( self, incoming, input_datasets, output_datasets ):
+        """
+        Build the dictionary of parameters for substituting into the command
+        line.
+        """
+        param_dict = dict()
+        # All converted posted parameters go int the param dict
+        param_dict.update( incoming )
+        # Additionally, datasets go in the param dict. We wrap them such that
+        # if the bare variable name is used it returns the filename (for
+        # backwards compatibility). We also add any child datasets to the
+        # the param dict encoded as:
+        #   "_CHILD___{dataset_name}___{child_designation}",
+        # but this should be considered DEPRECATED, instead use:
+        #   $dataset.get_child( 'name' ).filename
+        for name, data in input_datasets.items():
+            param_dict[name] = DatasetFilenameWrapper( data )
+            for child in data.children:
+                key = "_CHILD___%s___%s" % ( name, child.designation ) 
+                param_dict[ key ] = DatasetFilenameWrapper( child )
+        for name, data in output_datasets.items():
+            param_dict[name] = DatasetFilenameWrapper( data )
+            for child in data.children:
+                key = "_CHILD___%s___%s" % ( name, child.designation ) 
+                param_dict[ key ] = DatasetFilenameWrapper( child )
+        # Return the dictionary of parameters
+        return param_dict
+    
+    def build_param_file( self, param_dict ):
+        """
+        Build temporary file for file based parameter transfer if needed
+        """
+        if self.command and "$param_file" in self.command:
+            fd, param_filename = tempfile.mkstemp()
+            os.close( fd )
+            f = open( param_filename, "wt" )
+            for key, value in param_dict.items():
+                # parameters can be strings or lists of strings, coerce to list
+                if type(value) != type([]):
+                    value = [ value ]
+                for elem in value:
+                    f.write( '%s=%s\n' % (key, elem) ) 
+            f.close()
+            param_dict['param_file'] = param_filename
+            return param_filename
+        else:
+            return None
+        
+    def build_command_line( self, param_dict ):
+        """
+        Build command line to invoke this tool given a populated param_dict
+        """
+        command_line = None
+        if self.command:
+            try:                
+                # Substituting parameters into the command
+                # TODO: replace with a real template (Cheetah)
+                command_line = string.Template( self.command ).substitute( param_dict )
+            except Exception, e:
+                # Modify exception message to be more clear
+                e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ) )
+                raise
+        return command_line
+        
+    def call_hook( self, hook_name, *args, **kwargs ):
+        """
+        Call the custom code hook function identified by 'hook_name' if any,
+        and return the results
+        """
+        try:
+            code = self.get_hook( hook_name )
+            if code:
+                return code( *args, **kwargs )
+        except Exception, e:
+            raise Exception, "Error in '%s' hook: %s" % ( hook_name, e )
 
 class ToolAction( object ):
     """
@@ -411,6 +487,8 @@ class DefaultToolAction( object ):
                         inp_data[name] = value
         
         # input metadata
+        # FIXME: does this need to modify 'incoming' or should this be 
+        #        moved into 'build_param_dict'?
         input_names, input_ext, input_dbkey, input_meta = [ ], 'data', incoming.get("dbkey", "?"), Bunch()
         for name, data in inp_data.items():
             #fix for fake incoming data
@@ -494,20 +572,28 @@ class DefaultToolAction( object ):
                 data.parent_id = name_id[child_parent[name]]
                 trans.history.add_dataset( data, parent_id=data.parent_id )
                 data.flush()
-        
-        # custom pre-job setup
-        try:
-            # FIXME: this hook should probably be called exec_before_job_queued
-            code = tool.get_hook( 'exec_before_job' )
-            if code:
-                code( trans, inp_data=inp_data, out_data=out_data, tool=tool, param_dict=incoming )
-        except Exception, e:
-            raise Exception, 'error in exec_before_job function %s' % e
-        # store data after custom code runs 
+            
+        # Store data after custom code runs 
         trans.app.model.flush()
+        
+        # Build the job's command line
+        param_dict = tool.build_param_dict( incoming, inp_data, out_data )
+        param_filename = tool.build_param_file( param_dict )
+        command_line = tool.build_command_line( param_dict )
+        
+        # Run the before queue ("exec_before_job") hook
+        # FIXME: this hook should probably be called exec_before_job_queued
+        tool.call_hook( 'exec_before_job', trans, inp_data=inp_data, 
+                        out_data=out_data, tool=tool, param_dict=param_dict )
+        
         # Create the job object
         job = trans.app.model.Job()
         job.tool_id = tool.id
+        job.command_line = command_line
+        job.param_filename = param_filename
+        # FIXME: Don't need all of incoming here, just the defined parameters
+        #        from the tool. We need to deal with tools that pass all post
+        #        parameters to the command as a special case.
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
         for name, dataset in inp_data.iteritems():
@@ -515,10 +601,21 @@ class DefaultToolAction( object ):
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
         trans.app.model.flush()
-        # Build object for passing to job queue
-        inp_data_ids = dict( ( key, d.id ) for ( key, d ) in inp_data.items() )
-        out_data_ids = dict( ( key, d.id ) for ( key, d ) in out_data.items() )
-        job = jobs.Job(trans, command=tool.command, inp_data_ids=inp_data_ids, 
-                       out_data_ids=out_data_ids, incoming=incoming, tool=tool)
-        trans.app.job_queue.put( job )
+        
+        # Queue the job for execution
+        trans.app.job_queue.put( job.id, tool )
         return out_data
+        
+# ---- Utility classes to be factored out -----------------------------------
+
+class DatasetFilenameWrapper( object ):
+    """
+    Wraps a dataset so that __str__ returns the filename, but all other
+    attributes are accessible.
+    """
+    def __init__( self, dataset ):
+        self.dataset = dataset
+    def __str__( self ):
+        return self.dataset.file_name
+    def __getattr__( self, key ):
+        return getattr( self.dataset, key )
