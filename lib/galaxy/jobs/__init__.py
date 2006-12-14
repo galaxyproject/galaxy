@@ -121,6 +121,7 @@ class JobWrapper( object ):
         # default post job setup
         mapping.context.current.clear()
         job = model.Job.get( self.job_id )
+        job.state = 'ok'
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset
             dataset.refresh()
