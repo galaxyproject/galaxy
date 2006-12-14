@@ -21,6 +21,8 @@ def get_available_species( input_filename ):
             l = m.components
             for c in l:
                 spec,chrom = maf.src_split( c.src )
+                if not spec or not chrom:
+                    spec = chrom = c.src
                 species[spec]=spec
         
         file_in.close()

@@ -142,7 +142,7 @@ class SelectField(BaseField):
             assert not( multiple ), "Radio display only supported for single select"
         elif display is not None:
             raise Exception, "Unknown display type: %s" % display
-        self.display = display        
+        self.display = display
     def add_option( self, text, value, selected = False ):
         self.options.append( ( text, value, selected ) )
     def get_html( self ):
@@ -154,19 +154,29 @@ class SelectField(BaseField):
             return self.get_html_default()
     def get_html_checkboxes( self ):
         rval = []
+        ctr = 0
         for text, value, selected in self.options:
+            style = ""
+            if len(self.options) > 2 and ctr % 2 == 1:
+                style = " class=\"odd_row\""
             if selected:
-                rval.append( '<div><input type="checkbox" name="%s" value="%s" checked>%s</div>' % ( self.name, value, text) )
+                rval.append( '<div%s><input type="checkbox" name="%s" value="%s" checked>%s</div>' % ( style, self.name, value, text) )
             else:
-                rval.append( '<div><input type="checkbox" name="%s" value="%s">%s</div>' % ( self.name, value, text) )
+                rval.append( '<div%s><input type="checkbox" name="%s" value="%s">%s</div>' % ( style, self.name, value, text) )
+            ctr += 1
         return "\n".join( rval )
     def get_html_radio( self ):
         rval = []
+        ctr = 0
         for text, value, selected in self.options:
+            style = ""
+            if len(self.options) > 2 and ctr % 2 == 1:
+                style = " class=\"odd_row\""
             if selected:
-                rval.append( '<div><input type="radio" name="%s" value="%s" checked>%s</div>' % ( self.name, value, text) )
+                rval.append( '<div%s><input type="radio" name="%s" value="%s" checked>%s</div>' % ( style, self.name, value, text) )
             else:
-                rval.append( '<div><input type="radio" name="%s" value="%s">%s</div>' % ( self.name, value, text) )
+                rval.append( '<div%s><input type="radio" name="%s" value="%s">%s</div>' % ( style, self.name, value, text) )
+            ctr += 1
         return "\n".join( rval )    
     def get_html_default( self ):
         if self.multiple: multiple = " multiple"

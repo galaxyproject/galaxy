@@ -35,6 +35,8 @@ def __main__():
         if len(l) < num_species and partial == "partial_disallowed": continue
         for c in l:
             spec,chrom = maf.src_split( c.src )
+            if not spec or not chrom:
+                    spec = chrom = c.src
             file_out.write(">"+c.src+"("+c.strand+"):"+str(c.start)+"-"+str(c.end)+"|"+spec+"_"+str(block_num)+"\n")
             file_out.write(c.text+"\n")
         file_out.write("\n")

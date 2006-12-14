@@ -14,10 +14,10 @@ log = logging.getLogger(__name__)
 # list aliases on the right side of the : in decreasing order of priority
 #
 alias_spec = { 
-    'chromCol'  : [ 'chrom' , 'CHROMOSOME' , 'CHROM' ],  
-    'startCol'  : [ 'start' , 'START', 'chromStart', 'txStart' ],
-    'endCol'    : [ 'end'   , 'END'  , 'STOP', 'chromEnd', 'txEnd'  ], 
-    'strandCol' : [ 'strand', 'STRAND' ],
+    'chromCol'  : [ 'chrom' , 'CHROMOSOME' , 'CHROM', 'Chromosome Name' ],  
+    'startCol'  : [ 'start' , 'START', 'chromStart', 'txStart', 'Start Position (bp)' ],
+    'endCol'    : [ 'end'   , 'END'  , 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'  ], 
+    'strandCol' : [ 'strand', 'STRAND', 'Strand' ],
 }
 
 # a little faster lookup
@@ -92,13 +92,13 @@ class Interval( Tabular ):
         dataset.blurb = util.commaify( str( data.get_line_count( dataset.file_name ) ) ) + " regions"
         self.set_meta( dataset )
     
-    def set_meta( self, dataset ):
+    def set_meta( self, dataset, first_line_is_header=False ):
         """
         Tries to guess from the line the location number of the column for the chromosome, region start-end and strand
         """
         if dataset.has_data():
             line = file(dataset.file_name).readline().strip()
-            if line[0] == '#':
+            if first_line_is_header or line[0] == '#':
                 self.init_meta(dataset)
                 line  = line.strip("#")
                 elems = line.split("\t")

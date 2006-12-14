@@ -13,6 +13,10 @@
         
         <param name="url_paste" type="text" area="true" size="5x35" label="URL/Text" help="Here you may specify a list of URLs (one per line) or paste the contents of a file."/> 
         
+        <param name="space_to_tab" type="select" display="checkboxes" multiple="True" label="Convert spaces to tabs" help="Use this option if you are entering intervals by hand."> 
+        	<option value="Yes">Yes</option>
+        </param>
+		
 		<param type="select" name="file_type" label="File Format" help="BED or Interval? See help below">
 			<option value="auto" selected="yes">Auto-detect</option>
 			<option value="bed">BED</option>
@@ -24,6 +28,7 @@
 			<option value="gff">Gff</option>
 			<option value="text">Other text type</option>
 		</param>
+		
 		<param label="Genome" name="dbkey" type="select" dynamic_options="get_available_builds()"/>
 
 	</inputs>

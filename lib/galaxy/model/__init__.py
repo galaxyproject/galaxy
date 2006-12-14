@@ -218,6 +218,8 @@ class Dataset( object ):
         return self.datatype.set_peek( self )
     def init_meta( self ):
         return self.datatype.init_meta( self )
+    def set_meta( self, first_line_is_header=False ):
+        return self.datatype.set_meta( self, first_line_is_header )
     def missing_meta( self ):
         return self.datatype.missing_meta( self )
     def bed_viewport( self ):

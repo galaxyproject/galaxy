@@ -12,6 +12,10 @@ class UploadToolAction( object ):
         file_type = incoming['file_type']
         dbkey = incoming['dbkey']
         url_paste = incoming['url_paste']
+        space_to_tab = False 
+        if 'space_to_tab' in incoming:
+            if incoming['space_to_tab']  not in ["None", None]:
+                space_to_tab = True
         info = "uploaded file"
         temp_name = ""
         data_list = []
@@ -20,7 +24,7 @@ class UploadToolAction( object ):
                 file_name = data_file.filename
                 file_name = file_name.split('\\')[-1]
                 file_name = file_name.split('/')[-1]
-                data_list.append( self.add_file(trans, data_file.file, file_name, file_type, dbkey, "uploaded file") )
+                data_list.append( self.add_file(trans, data_file.file, file_name, file_type, dbkey, "uploaded file",space_to_tab=space_to_tab) )
             except:
                 pass
         
@@ -29,12 +33,12 @@ class UploadToolAction( object ):
                 url_paste = url_paste.replace("\r","").split("\n")
                 for line in url_paste:
                     try:
-                        data_list.append( self.add_file(trans, urllib.urlopen(line), line, file_type, dbkey, "uploaded url") )
+                        data_list.append( self.add_file(trans, urllib.urlopen(line), line, file_type, dbkey, "uploaded url",space_to_tab=space_to_tab) )
                     except:
                         pass
             else:
                 try:
-                    data_list.append( self.add_file(trans, StringIO.StringIO(url_paste), 'Pasted Entry', file_type, dbkey, "pasted entry") )
+                    data_list.append( self.add_file(trans, StringIO.StringIO(url_paste), 'Pasted Entry', file_type, dbkey, "pasted entry",space_to_tab=space_to_tab) )
                 except:
                     pass
         
@@ -54,9 +58,13 @@ class UploadToolAction( object ):
         trans.app.model.flush()
         return dict( output=data )
 
-    def add_file(self, trans, file_obj, file_name, file_type, dbkey, info ):
+    def add_file(self, trans, file_obj, file_name, file_type, dbkey, info, space_to_tab = False ):
         temp_name = sniff.stream_to_file(file_obj)
         sniff.convert_newlines(temp_name)
+        
+        if space_to_tab:
+            sniff.sep2tabs(temp_name)
+        
         if file_type == 'auto':
             ext = sniff.guess_ext(temp_name)    
         else:

@@ -39,19 +39,18 @@ def __main__():
     # Going to leave a bunch of James's original functionality commented out in here, maybe add some back later.
     
     #dictionary of available maf files
-    
     maf_sets = {}
     try:
         for line in open( "/cache/maf/maf_index.loc" ):
             if line[0:1] == "#" : continue
-            
             fields = line.split('\t')
             #read each line, if not enough fields, go to next line
             try:
                 maf_desc = fields[0]
                 maf_uid = fields[1]
                 builds = fields[2]
-                build_list ={}
+                build_to_common_list = {}
+                common_to_build_list = {}
                 split_builds = builds.split(",")
                 for build in split_builds:
                     this_build = build.split("=")[0]
@@ -59,12 +58,14 @@ def __main__():
                         this_common = build.split("=")[1]
                     except:
                         this_common = this_build
-                    build_list[this_build]=this_common
+                    build_to_common_list[this_build]=this_common
+                    common_to_build_list[this_common]=this_build
                     
                 paths = fields[3].replace("\n","").replace("\r","")
                 maf_sets[maf_uid]={}
                 maf_sets[maf_uid]['description']=maf_desc
-                maf_sets[maf_uid]['builds']=build_list
+                maf_sets[maf_uid]['builds']=build_to_common_list
+                maf_sets[maf_uid]['common']=common_to_build_list
                 maf_sets[maf_uid]['paths']=paths.split(",")
             except:
                 continue
@@ -226,6 +227,12 @@ def __main__():
                     if strand != ref.strand: sliced = sliced.reverse_complement()
                     # restore old score, may not be accurate, but it is better than 0 for everything
                     sliced.score = old_score
+                    for c in sliced.components:
+                        spec,chrom = bx.align.src_split( c.src )
+                        if not spec or not chrom:
+                            spec = chrom = c.src
+                        if spec in maf_sets[mafType]['common']:
+                            c.src = bx.align.src_merge(maf_sets[mafType]['common'][spec],chrom)
                     out.write( sliced )
                     num_blocks+=1
             #else:
