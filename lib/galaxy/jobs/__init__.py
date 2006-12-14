@@ -17,7 +17,8 @@ JOB_WAIT, JOB_ERROR, JOB_OK, JOB_READY = 'wait', 'error', 'ok', 'ready'
 
 class JobQueue( object ):
     """
-    Job queue backed by a finite pool of worker threads. FIFO scheduling
+    Job manager, waits for jobs to be runnable and then dispatches to 
+    a JobRunner.
     """
     STOP_SIGNAL = object()
     def __init__( self, app ):
@@ -56,15 +57,16 @@ class JobQueue( object ):
         self.queue.put( JobWrapper( job_id, tool, self ) )
     
     def shutdown( self ):
-        """Attempts to gracefully shut down the worker threads"""
-        log.info( "sending stop signal to worker threads" )
+        """Attempts to gracefully shut down the worker thread"""
+        log.info( "sending stop signal to worker thread" )
         self.queue.put( self.STOP_SIGNAL )
         log.info( "job queue stopped" )
         self.dispatcher.shutdown()
 
 class JobWrapper( object ):
     """
-    A galaxy job -- an external process that will update one or more 'data'
+    Wraps a 'model.Job' with convience methods for running processes and 
+    state management.
     """
     def __init__(self, job_id, tool, queue ):
         self.job_id = job_id
