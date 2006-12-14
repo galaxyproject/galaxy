@@ -366,6 +366,7 @@ class DataToolParameter( ToolParameter ):
     >>> from galaxy.model import History, Dataset
     >>> from cookbook.patterns import Bunch
     >>> hist = History()
+    >>> hist.flush()
     >>> hist.add_dataset( Dataset( id=1, extension='text' ) )
     >>> hist.add_dataset( Dataset( id=2, extension='bed' ) )
     >>> hist.add_dataset( Dataset( id=3, extension='fasta' ) )
