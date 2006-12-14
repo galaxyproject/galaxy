@@ -1,11 +1,15 @@
 import logging
+import threading
+import os
+import random
 from Queue import Queue
 
 from galaxy import model
 
 import pkg_resources
 pkg_resources.require( "pbs_python" )
-import pbs, random
+pbs = __import__( "pbs" )
+
 
 log = logging.getLogger( __name__ )
 
@@ -21,7 +25,8 @@ class PBSJobState( object ):
         self.job_wrapper = None
         self.pbs_job_id = None
         self.old_state = None
-        self.running = running
+        self.running = False
+        self.job_file = None
         self.ofile = None
         self.efile = None
 
@@ -34,17 +39,17 @@ class PBSJobRunner( object ):
         """Start the job queue with 'nworkers' worker threads"""
         self.app = app
         self.queue = Queue()
+        self.init_pbs()
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
-        self.threads.append( worker )
-        log.debug( "%d workers ready", nworkers )
+        log.debug( "ready" )
 
     def init_pbs( self ):
         if self.app.config.pbs_server:
-            pbs_server = self.app.config.pbs_server
+            self.pbs_server = self.app.config.pbs_server
         else:
-            pbs_server = pbs.pbs_default()
-        if pbs_server is None:
+            self.pbs_server = pbs.pbs_default()
+        if self.pbs_server is None:
             raise Exception( "Could not find torque server" )
 
     def queue_job( self, job_wrapper ):
@@ -68,6 +73,10 @@ class PBSJobRunner( object ):
             else:
                 bit = random.randint(65,90)
             job_name += chr(bit)
+
+        conn = pbs.pbs_connect( self.pbs_server )
+        if conn <= 0:
+            raise Exception( "Connection to PBS server for submit failed" )
 
         # set up the job file
         script = pbs_template % (os.environ['PATH'], os.environ['PYTHONPATH'], os.getcwd(), command_line)
@@ -104,7 +113,7 @@ class PBSJobRunner( object ):
         # Get initial job state
         stat_attrl = pbs.new_attrl(1)
         stat_attrl[0].name = 'job_state'
-        conn = pbs.pbs_connect(pbs_server)
+        conn = pbs.pbs_connect( self.pbs_server )
         if conn > 0:
             jobs = pbs.pbs_statjob(conn, job_id, stat_attrl, 'NULL')
             pbs.pbs_disconnect(conn)
@@ -121,10 +130,7 @@ class PBSJobRunner( object ):
 
         # ran immediately
         if old_state == "R":
-            for data in out_data.values():
-                data.state = data.states.RUNNING
-                data.blurb = "running"
-                data.flush()
+            job_wrapper.change_state( "running" )
             running = True
             log.debug("(%s) job is now running" % job_id)
 
@@ -134,10 +140,12 @@ class PBSJobRunner( object ):
             
         # Store PBS related state information for job
         pbs_job_state = PBSJobState()
+        pbs_job_state.job_wrapper = job_wrapper
         pbs_job_state.job_name = job_name
         pbs_job_state.job_id = job_id
         pbs_job_state.ofile = ofile
         pbs_job_state.efile = efile
+        pbs_job_state.job_file = job_file
         pbs_job_state.old_state = old_state
         pbs_job_state.running = running
         
@@ -147,7 +155,7 @@ class PBSJobRunner( object ):
     def monitor( self ):
         while 1:
             pbs_job_state = self.queue.get()
-            if pbs_job_state is STOP_SIGNAL:
+            if pbs_job_state is self.STOP_SIGNAL:
                 return   
             job_id = pbs_job_state.job_id
             old_state = pbs_job_state.old_state
@@ -159,22 +167,25 @@ class PBSJobRunner( object ):
             stat_attrl[0].name = 'job_state'
             jobs = pbs.pbs_statjob(conn, pbs_job_state.job_id, stat_attrl, 'NULL')
             pbs.pbs_disconnect(conn)    
-            if not jobs:
+            if len( jobs ) < 1:
+                log.debug("(%s) job has left queue" % job_id)
                 self.finish_job( pbs_job_state )
-            try:
-                if (jobs[0].attribs[0].name == "job_state"):
-                    state = jobs[0].attribs[0].value
-                    if state != old_state:
-                        log.debug("(%s) job state changed from %s to %s" % ( job_id, old_state, state ) )
-                    if state == "R" and not running:
-                        running = True
-                        pbs_job_state.job_wrapper.change_state( "running" )
-                        log.debug("(%s) job is now running" % job_id)
-                    old_state = state
-                pbs_job_state.old_state = old_state
-                pbs_job_state.running = running
-            except:
-                log.info("(%s) unable to check state" % job_id)
+            else:    
+                try:
+                    if (jobs[0].attribs[0].name == "job_state"):
+                        state = jobs[0].attribs[0].value
+                        if state != old_state:
+                            log.debug("(%s) job state changed from %s to %s" % ( job_id, old_state, state ) )
+                        if state == "R" and not running:
+                            running = True
+                            pbs_job_state.job_wrapper.change_state( "running" )
+                            log.debug("(%s) job is now running" % job_id)
+                        old_state = state
+                    pbs_job_state.old_state = old_state
+                    pbs_job_state.running = running
+                except:
+                    log.exception("(%s) unable to check state" % job_id)
+                self.queue.put( pbs_job_state )    
 
     def finish_job( self, pbs_job_state ):
         ofile = pbs_job_state.ofile

@@ -33,6 +33,7 @@ class Configuration( object ):
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
         self.use_pbs = kwargs.get('use_pbs', False )
+        self.pbs_server = kwargs.get('pbs_server', "" )
         self.use_heartbeat = kwargs.get( 'use_heartbeat', False )
     def get( self, key, default ):
         return self.config_dict.get( key, default )

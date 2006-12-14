@@ -179,7 +179,7 @@ class DefaultJobDispatcher( object ):
         self.local_job_runner.put( job_wrapper )
             
     def dispatch_pbs( self, job_wrapper ):
-        if "/tools/data_source" not in job_wrapper.get_command_line():
+        if "/tools/data_source" in job_wrapper.get_command_line():
             self.local_job_runner.put( job_wrapper )
         else:
             self.pbs_job_runner.put( job_wrapper )
