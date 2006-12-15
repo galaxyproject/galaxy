@@ -36,16 +36,24 @@ def setup():
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ   
     
     if start_server:
-        
-        tempdir = tempfile.mkdtemp()
-        file_path = os.path.join( tempdir, 'database', 'files' )
-        os.makedirs( file_path )
+
+        if 'GALAXY_TEST_DBPATH' in os.environ:
+            db_path = os.environ['GALAXY_TEST_DBPATH']
+        else: 
+            tempdir = tempfile.mkdtemp()
+            db_path = os.path.join( tempdir, 'database' )
+        file_path = os.path.join( db_path, 'files' )
+        try:
+            os.makedirs( file_path )
+        except OSError:
+            pass
         if 'GALAXY_TEST_DBURI' in os.environ:
             database_connection = os.environ['GALAXY_TEST_DBURI']
         else:
-            database_connection = 'sqlite:///' + os.path.join( tempdir, 'database', 'universe.sqlite' )
+            database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
     
         app = UniverseApplication( job_queue_workers = 5,
+                                   use_pbs = ( 'GALAXY_TEST_USE_PBS' in os.environ ),
                                    template_path = "templates",
                                    database_connection = database_connection,
                                    file_path = file_path,
@@ -53,7 +61,7 @@ def setup():
                                    tool_path = "tools",
                                    test_conf = "test.conf",
                                    log_destination = "stdout",
-                                   use_heartbeat=True )
+                                   use_heartbeat=False )
                                    
         log.info( "Embedded Universe application started" )
 
