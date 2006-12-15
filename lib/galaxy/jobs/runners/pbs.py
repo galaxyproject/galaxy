@@ -22,6 +22,10 @@ cd %s
 
 class PBSJobState( object ):
     def __init__( self ):
+        """
+        Encapsulates state related to a job that is being run via PBS and 
+        that we need to monitor.
+        """
         self.job_wrapper = None
         self.pbs_job_id = None
         self.old_state = None
@@ -36,15 +40,16 @@ class PBSJobRunner( object ):
     """
     STOP_SIGNAL = object()
     def __init__( self, app ):
-        """Start the job queue with 'nworkers' worker threads"""
+        """Initialize this job runner and start the monitor thread"""
         self.app = app
         self.queue = Queue()
-        self.init_pbs()
+        self.determine_pbs_server()
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
         log.debug( "ready" )
 
-    def init_pbs( self ):
+    def determine_pbs_server( self ):
+        """Determine what PBS server we are connecting to"""
         if self.app.config.pbs_server:
             self.pbs_server = self.app.config.pbs_server
         else:
@@ -53,7 +58,7 @@ class PBSJobRunner( object ):
             raise Exception( "Could not find torque server" )
 
     def queue_job( self, job_wrapper ):
-        """Run the next job, waiting until one is available if neccesary"""
+        """Create PBS script for a job and submit it to the PBS queue"""
         command_line = job_wrapper.get_command_line()
         
         # This is silly, why would we queue a job with no command line?
@@ -153,6 +158,10 @@ class PBSJobRunner( object ):
         self.queue.put( pbs_job_state )
 
     def monitor( self ):
+        """
+        Watches jobs currently in the PBS queue and deals with state changes
+        (queued to running) and job completion
+        """
         while 1:
             pbs_job_state = self.queue.get()
             if pbs_job_state is self.STOP_SIGNAL:
@@ -188,6 +197,10 @@ class PBSJobRunner( object ):
                 self.queue.put( pbs_job_state )    
 
     def finish_job( self, pbs_job_state ):
+        """
+        Get the output/error for a finished job, pass to `job_wrapper.finish`
+        and cleanup all the PBS temporary files.
+        """
         ofile = pbs_job_state.ofile
         efile = pbs_job_state.efile
         job_file = pbs_job_state.job_file
@@ -217,7 +230,7 @@ class PBSJobRunner( object ):
         self.queue_job( job_wrapper )
     
     def shutdown( self ):
-        """Attempts to gracefully shut down the worker threads"""
+        """Attempts to gracefully shut down the monitor thread"""
         log.info( "sending stop signal to worker threads" )
         self.queue.put( self.STOP_SIGNAL )
         log.info( "pbs job runner stopped" )

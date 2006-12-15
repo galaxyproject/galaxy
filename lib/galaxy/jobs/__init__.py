@@ -26,12 +26,15 @@ class JobQueue( object ):
         self.app = app
         self.queue = Queue()
         self.dispatcher = DefaultJobDispatcher( app )
-        self.monitor_thread = threading.Thread( target=self.run_next )
+        self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
         log.debug( "job manager started" )
 
-    def run_next( self ):
-        """Run the next job, waiting until one is available if neccesary"""
+    def monitor( self ):
+        """
+        Continually iterate the waiting jobs, checking is each is ready to 
+        run and dispatching if so.
+        """
         while 1:
             job = self.queue.get()
             if job is self.STOP_SIGNAL:

@@ -13,7 +13,7 @@ class LocalJobRunner( object ):
     """
     STOP_SIGNAL = object()
     def __init__( self, app ):
-        """Start the job queue with 'nworkers' worker threads"""
+        """Start the job runner with 'nworkers' worker threads"""
         self.app = app
         self.queue = Queue()
         self.threads = []
