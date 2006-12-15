@@ -8,12 +8,28 @@ pkg_resources.require( "PasteDeploy" )
 
 from paste.deploy.converters import asbool
 
-from Queue import Queue
+from Queue import Queue, Empty
 
 log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
 JOB_WAIT, JOB_ERROR, JOB_OK, JOB_READY = 'wait', 'error', 'ok', 'ready'
+
+class Sleeper( object ):
+    """
+    Provides a 'sleep' method that sleeps for a number of seconds *unless*
+    the notify method is called (from a different thread).
+    """
+    def __init__( self ):
+        self.condition = threading.Condition()
+    def sleep( self, seconds ):
+        self.condition.acquire()
+        self.condition.wait( seconds )
+        self.condition.release()
+    def wake( self ):
+        self.condition.acquire()
+        self.condition.notify()
+        self.condition.release()
 
 class JobQueue( object ):
     """
@@ -22,9 +38,14 @@ class JobQueue( object ):
     """
     STOP_SIGNAL = object()
     def __init__( self, app ):
-        """Start the job queue with 'nworkers' worker threads"""
+        """Start the job manager"""
         self.app = app
+        # Contains new jobs
         self.queue = Queue()
+        # Contains jobs that are waiting (only use from monitor thread)
+        self.waiting = []
+        # Helper for interruptable sleep
+        self.sleeper = Sleeper()
         self.dispatcher = DefaultJobDispatcher( app )
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
@@ -36,28 +57,45 @@ class JobQueue( object ):
         run and dispatching if so.
         """
         while 1:
-            job = self.queue.get()
-            if job is self.STOP_SIGNAL:
-                break
+            # Pull all new jobs from the queue at once
+            new_jobs = []
             try:
-                # Run the job, requeue if not complete                    
-                job_state = job.check_if_ready_to_run()
-                if job_state == JOB_WAIT: 
-                    self.put( job )
-                    #log.debug( "the job has been requeued" )
-                elif job_state == JOB_ERROR:
-                    log.info( "job ended with an error" )
-                elif job_state == JOB_READY:
-                    self.dispatcher.put( job )
-                else:
-                    raise Exception( "Unknown Job State" )
-            except:
-                job.fail("failure running job")
-                log.exception( "failure running job id: %d" % job.job_id  )
+                while 1:
+                    job = self.queue.get_nowait()
+                    if job is self.STOP_SIGNAL:
+                        return
+                    new_jobs.append( job )
+            except Empty:
+                pass
+            # Iterate over new and waiting jobs and look for any that are 
+            # ready to run
+            new_waiting = []
+            for job in ( new_jobs + self.waiting ):
+                try:
+                    # Run the job, requeue if not complete                    
+                    job_state = job.check_if_ready_to_run()
+                    if job_state == JOB_WAIT: 
+                        new_waiting.append( job )
+                        #log.debug( "the job has been requeued" )
+                    elif job_state == JOB_ERROR:
+                        log.info( "job %d ended with an error" % job.job_id )
+                    elif job_state == JOB_READY:
+                        self.dispatcher.put( job )
+                        log.debug( "job %d dispatched" % job.job_id )
+                    else:
+                        log.error( "unknown job state '%s' for job '%d'", job_state, job.job_id )
+                except:
+                    job.fail("failure running job")
+                    log.exception( "failure running job %d" % job.job_id  )
+            # Update the waiting list
+            self.waiting = new_waiting
+            # Sleep
+            self.sleeper.sleep( 1 )
             
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""
         self.queue.put( JobWrapper( job_id, tool, self ) )
+        self.sleeper.wake()
     
     def shutdown( self ):
         """Attempts to gracefully shut down the worker thread"""
@@ -180,12 +218,15 @@ class DefaultJobDispatcher( object ):
             
     def dispatch_default( self, job_wrapper ):
         self.local_job_runner.put( job_wrapper )
+        log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
             
     def dispatch_pbs( self, job_wrapper ):
         if "/tools/data_source" in job_wrapper.get_command_line():
+            log.debug( "dispatching job %d to pbs runner", job_wrapper.job_id )
             self.local_job_runner.put( job_wrapper )
         else:
             self.pbs_job_runner.put( job_wrapper )
+            log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
         
     def shutdown( self ):
         self.local_job_runner.shutdown()

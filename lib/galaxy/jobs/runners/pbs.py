@@ -2,7 +2,7 @@ import logging
 import threading
 import os
 import random
-from Queue import Queue
+from Queue import Queue, Empty
 
 from galaxy import model
 
@@ -42,6 +42,12 @@ class PBSJobRunner( object ):
     def __init__( self, app ):
         """Initialize this job runner and start the monitor thread"""
         self.app = app
+        # 'watching' and 'queue' are both used to keep track of jobs to watch.
+        # 'queue' is used to add new watched jobs, and can be called from
+        # any thread (usually by the 'queue_job' method). 'watching' must only
+        # be modified by the monitor thread, which will move items from 'queue'
+        # to 'watching' and then manage the watched jobs.
+        self.watching = []
         self.queue = Queue()
         self.determine_pbs_server()
         self.monitor_thread = threading.Thread( target=self.monitor )
@@ -163,9 +169,27 @@ class PBSJobRunner( object ):
         (queued to running) and job completion
         """
         while 1:
-            pbs_job_state = self.queue.get()
-            if pbs_job_state is self.STOP_SIGNAL:
-                return   
+            # Take any new watched jobs and put them on the monitor list
+            try:
+                while 1: 
+                    pbs_job_state = self.queue.get_nowait()
+                    if pbs_job_state is self.STOP_SIGNAL:
+                        # TODO: This is where any cleanup would occur
+                        return
+                    self.watched.append( pbs_job_state )
+            except Empty:
+                pass
+            # Iterate over the list of watched jobs and check state
+            self.check_watched_items()
+            # Sleep a bit before the next state check
+            time.sleep( 1 )
+            
+    def check_watched_items( self ):
+        """
+        Called by the monitor thread to look at each watched job and deal
+        with state changes.
+        """
+        for pbs_job_state in self.watched:
             job_id = pbs_job_state.job_id
             old_state = pbs_job_state.old_state
             running = pbs_job_state.running         
@@ -194,8 +218,10 @@ class PBSJobRunner( object ):
                     pbs_job_state.running = running
                 except:
                     log.exception("(%s) unable to check state" % job_id)
-                self.queue.put( pbs_job_state )    
-
+                new_watched.append( pbs_job_state )
+            # Replace the watch list with the updated version
+            self.watched = new_watched
+        
     def finish_job( self, pbs_job_state ):
         """
         Get the output/error for a finished job, pass to `job_wrapper.finish`
