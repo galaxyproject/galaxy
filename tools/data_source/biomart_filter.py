@@ -26,9 +26,9 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
     MAX_SIZE   = CHUNK_SIZE * 100
     
     try:
-        # damn you stupid sanitizer!
-        URL = URL.replace('martX', 'mart&')
-        URL = URL.replace('0X_', '0&_')
+        # damn you stupid sanitizer! - URL is now in the NEVER_SANITIZE list in util.py
+        #URL = URL.replace('martX', 'mart&')
+        #URL = URL.replace('0X_', '0&_')
         page = urllib.urlopen(URL)
     except Exception, exc:
         raise Exception('Problems connecting to %s (%s)' % (URL, exc) )
