@@ -2,6 +2,7 @@ import logging
 import threading
 import os
 import random
+import time
 from Queue import Queue, Empty
 
 from galaxy import model
@@ -42,12 +43,12 @@ class PBSJobRunner( object ):
     def __init__( self, app ):
         """Initialize this job runner and start the monitor thread"""
         self.app = app
-        # 'watching' and 'queue' are both used to keep track of jobs to watch.
+        # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
-        # any thread (usually by the 'queue_job' method). 'watching' must only
+        # any thread (usually by the 'queue_job' method). 'watched' must only
         # be modified by the monitor thread, which will move items from 'queue'
-        # to 'watching' and then manage the watched jobs.
-        self.watching = []
+        # to 'watched' and then manage the watched jobs.
+        self.watched = []
         self.queue = Queue()
         self.determine_pbs_server()
         self.monitor_thread = threading.Thread( target=self.monitor )
@@ -189,6 +190,7 @@ class PBSJobRunner( object ):
         Called by the monitor thread to look at each watched job and deal
         with state changes.
         """
+        new_watched = []
         for pbs_job_state in self.watched:
             job_id = pbs_job_state.job_id
             old_state = pbs_job_state.old_state
@@ -219,8 +221,8 @@ class PBSJobRunner( object ):
                 except:
                     log.exception("(%s) unable to check state" % job_id)
                 new_watched.append( pbs_job_state )
-            # Replace the watch list with the updated version
-            self.watched = new_watched
+        # Replace the watch list with the updated version
+        self.watched = new_watched
         
     def finish_job( self, pbs_job_state ):
         """

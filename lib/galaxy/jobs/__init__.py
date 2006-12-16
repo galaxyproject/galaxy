@@ -222,11 +222,11 @@ class DefaultJobDispatcher( object ):
             
     def dispatch_pbs( self, job_wrapper ):
         if "/tools/data_source" in job_wrapper.get_command_line():
-            log.debug( "dispatching job %d to pbs runner", job_wrapper.job_id )
+            log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
             self.local_job_runner.put( job_wrapper )
         else:
             self.pbs_job_runner.put( job_wrapper )
-            log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
+            log.debug( "dispatching job %d to pbs runner", job_wrapper.job_id )
         
     def shutdown( self ):
         self.local_job_runner.shutdown()
