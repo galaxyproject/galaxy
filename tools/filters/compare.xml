@@ -1,19 +1,24 @@
 <tool id="comp1" name="Compare two Queries">
-  <description>using a specified field to find common or unique rows</description>
+  <description>to find common or distinct rows</description>
   <command interpreter="perl">joinWrapper.pl $input1 $input2 $field1 $field2 $mode "Y" $out_file1</command>
   <inputs>
-      <param name="field1" size="2" type="integer" value="1" label="Use field" />
+    <page>
       <param format="tabular" name="input1" type="data" label="of Query1"/>
-      <param name="field2" size="2" type="integer" value="1" label="and field"/>
-      <param format="tabular" name="input2" type="data" label="of Query2"/>
+      <param format="tabular" name="input2" type="data" label="of Query2" help="Click [Next Step] to select columns and return type" />
+    </page>
+    <page>
+      <param name="field1" label="Using column" size="4" type="select" dynamic_options="get_available_columns( input1.file_name )" help="of First query"/>
+      <param name="field2" label="and column" size="4" type="select" dynamic_options="get_available_columns( input2.file_name )" help="of Second query"/>
       <param name="mode" type="select" label="To find" help="See examples below for explanation of these options">
-        <option value="N">Matching rows of Query1</option>
-        <option value="V">Not Matching rows of Query1</option>
+	<option value="N">Matching rows of 1st query</option>
+	<option value="V">Non Matching rows of 1st query</option>
       </param>
+    </page>
   </inputs>
   <outputs>
      <data format="input" name="out_file1" metadata_source="input1" />
   </outputs>
+  <code file="countColumns.py"/>
   <tests>
     <test>
       <param name="input1" value="1.bed"/>
@@ -42,25 +47,25 @@ This tool finds lines in one query that HAVE or DO NOT HAVE a common field with 
 
 **Example**
 
-Query1::
+If this is **First query**::
 
   chr1 10 20 geneA 
   chr1 50 80 geneB
   chr5 10 40 geneL
 
-Query2::
+and this is **Second query**::
 
   geneA tumor-supressor
   geneB Foxp2
   geneC Gnas1
   geneE INK4a
 
-Finding lines in Query1 whose 4th column matching the 1st column of Query2::
+Finding lines of the **First query** whose 4th column matching the 1st column of the **Second query**::
 
   chr1 10 20 geneA 
   chr1 50 80 geneB
 
-Converesely, using options **Not Matching rows of Query1** on same fields will yield::
+Converesely, using options **Non Matching rows of First query** on same fields will yield::
 
   chr5 10 40 geneL
 

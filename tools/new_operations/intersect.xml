@@ -2,19 +2,20 @@
   <description>the intervals of two queries</description>
   <command interpreter="python2.4">gops_intersect.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol -m $min $returntype</command>
   <inputs>
-    <param format="interval" name="input1" type="data">
-      <label>Return intervals of</label>
+    <param name="returntype" type="select" label="Return" help="(see figure below)">
+      <option value="">Overlapping Intervals</option>
+      <option value="-p">Overlapping pieces of Intervals</option>
     </param>
-    <param format="interval" name="input2" type="data">
-      <label>that intersect intervals of</label>
+    <param format="interval" name="input1" type="data" help="First query">
+      <label>of</label>
     </param>
-    <param name="min" size="4" type="integer" value="1">
-      <label>Where overlap is at least</label>
+    <param format="interval" name="input2" type="data" help="Second query">
+      <label>that intersect</label>
     </param>
-	<param name="returntype" type="select" label="Return">
-		<option value="">Overlapping Intervals</option>
-		<option value="-p">Overlapping pieces of Intervals</option>
-	</param>
+    <param name="min" size="4" type="integer" value="1" help="(bp)">
+      <label>for at least</label>
+    </param>
+
    </inputs>
   <outputs>
     <data format="input" name="output" metadata_source="input1" />
@@ -41,6 +42,14 @@
 .. class:: infomark
 
 **TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Screencasts!**
+
+See Galaxy Interval Operation Screencasts_ (right click to open this link in another window).
+
+.. _Screencasts: http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/GopsDesc
 
 -----
 

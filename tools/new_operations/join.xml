@@ -2,24 +2,24 @@
   <description>the intervals of two queries side-by-side</description>
   <command interpreter="python2.4">gops_join.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol -m $min -f $fill</command>
   <inputs>
-    <param format="interval" name="input1" type="data">
-      <label>Return intervals of</label>
+    <param format="interval" name="input1" type="data" help="First query">
+      <label>Join</label>
     </param>
-    <param format="interval" name="input2" type="data">
-      <label>joined to the intervals of</label>
+    <param format="interval" name="input2" type="data" help="Second query">
+      <label>with</label>
     </param>
-    <param name="min" size="4" type="integer" value="1">
-      <label>Minimum overlap</label>
+    <param name="min" size="4" type="integer" value="1" help="(bp)">
+      <label>with min overlap</label>
     </param>
-	<param name="fill" type="select" label="Join Type">
-		<option value="none">Return only records that are joined (INNER JOIN)</option>
-		<option value="right">Return all records of first query (fill null with ".")</option>
-		<option value="left">Return all records of second query (fill null with ".")</option>
-		<option value="both">Return all records of both queries (fill nulls with ".")</option>
+	<param name="fill" type="select" label="Return">
+		<option value="none">Only records that are joined (INNER JOIN)</option>
+		<option value="right">All records of first query (fill null with ".")</option>
+		<option value="left">All records of second query (fill null with ".")</option>
+		<option value="both">All records of both queries (fill nulls with ".")</option>
 	</param>
    </inputs>
   <outputs>
-    <data format="input" name="output" metadata_source="input1" />
+    <data format="interval" name="output" metadata_source="input1" />
   </outputs>
   <code file="operation_filter.py"/>
   <tests>
@@ -60,6 +60,14 @@
 
 -----
 
+**Screencasts!**
+
+See Galaxy Interval Operation Screencasts_ (right click to open this link in another window).
+
+.. _Screencasts: http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/GopsDesc
+
+-----
+
 **Syntax**
 
 - **Where overlap** specifies the minimum overlap between intervals that allows them to be joined.
@@ -72,34 +80,40 @@
 
 **Example**
 
-Query 1::
+If **First query** is::
 
    chr1 10   100  Query1.1
    chr1 500  1000 Query1.2
    chr1 1100 1250 Query1.3
 
-Query 2::
+and **Second query** is::
 
    chr1 20   80   Query2.1
    chr1 2000 2204 Query2.2
    chr1 2500 3000 Query2.3
 
-Will return::
 
-   (Return only records that are joined)
+The four return options will generate:
+
+
+- **Return only records that are joined**::
+
    chr1 10 100 Query1.1 chr1 20 80 Query2.1
 
-   (Return all records of first query)
+- **Return all records of first query**::
+
    chr1 10   100  Query1.1 chr1 20 80 Query2.1
    chr1 500  1000 Query1.2 .    .  .  .
    chr1 1100 1250 Query1.3 .    .  .  .
 
-   (Return all records of second query)
+- **Return all records of second query**::
+
    chr1 10 100 Query1.1 chr1 20   80   Query2.1
    .    .  .   .        chr1 2000 2204 Query2.2
    .    .  .   .        chr1 2500 3000 Query2.3
 
-   (Return all records of both queries)
+- **Return all records of both queries**::
+
    chr1 10   100  Query1.1 chr1 20   80   Query2.1
    chr1 500  1000 Query1.2 .    .    .    .
    chr1 1100 1250 Query1.3 .    .    .    .

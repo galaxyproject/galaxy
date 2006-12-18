@@ -22,6 +22,16 @@
 
 **TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
 
+-----
+
+**Screencasts!**
+
+See Galaxy Interval Operation Screencasts_ (right click to open this link in another window).
+
+.. _Screencasts: http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/GopsDesc
+
+-----
+
 This operation merges all overlaping intervals into single intervals.
 
 **Example**

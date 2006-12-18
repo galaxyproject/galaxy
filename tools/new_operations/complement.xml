@@ -29,6 +29,14 @@ This operation complements the regions of a set of intervals.  Regions are retur
 
 -----
 
+**Screencasts!**
+
+See Galaxy Interval Operation Screencasts_ (right click to open this link in another window).
+
+.. _Screencasts: http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/GopsDesc
+
+-----
+
 **Syntax**
 
 - **Genome-wide complement** will complement all chromosomes of the genome.  Leaving this option unchecked will only complement chromosomes present in the query.

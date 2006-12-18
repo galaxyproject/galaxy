@@ -2,13 +2,13 @@
   <description>two queries into one query</description>
   <command interpreter="python2.4">gops_concat.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol $sameformat</command>
   <inputs>
-    <param format="interval" name="input1" type="data">
-      <label>Concatenate (using this file format)</label>
+    <param format="interval" name="input1" type="data" help="First query">
+      <label>Concatenate</label>
     </param>
-    <param format="interval" name="input2" type="data">
+    <param format="interval" name="input2" type="data" help="Second query">
       <label>with</label>
     </param>
-    <param name="sameformat" type="boolean" truevalue="--sameformat" falsevalue="" label="Both queries are exactly the same filetype" checked="true">
+    <param name="sameformat" type="boolean" truevalue="--sameformat" falsevalue="" label="Both queries are same filetype?" checked="true" help="If unchecked Second query will be forced into format of First query">
     </param>
    </inputs>
   <outputs>
@@ -28,6 +28,14 @@
 .. class:: infomark
 
 **TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+
+-----
+
+**Screencasts!**
+
+See Galaxy Interval Operation Screencasts_ (right click to open this link in another window).
+
+.. _Screencasts: http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/GopsDesc
 
 -----
 

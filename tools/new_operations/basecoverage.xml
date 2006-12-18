@@ -3,7 +3,7 @@
   <command interpreter="python2.4">gops_basecoverage.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol</command>
   <inputs>
     <param format="interval" name="input1" type="data">
-      <label>Count total bases covered by</label>
+      <label>Compute coverage for</label>
     </param>
    </inputs>
   <outputs>
@@ -23,6 +23,15 @@
 **TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
 
 This operation counts the total bases covered by a set of intervals.  Bases that are covered by more than one interval are **not** counted more than once towards the total.
+
+-----
+
+**Screencasts!**
+
+See Galaxy Interval Operation Screencasts_ (right click to open this link in another window).
+
+.. _Screencasts: http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/GopsDesc
+
 
 </help>
 </tool>

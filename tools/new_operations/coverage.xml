@@ -2,11 +2,11 @@
   <description>of a set of intervals on second set of intervals</description>
   <command interpreter="python2.4">gops_coverage.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
   <inputs>
-    <param format="interval" name="input1" type="data">
-      <label>Find coverage of</label>
+    <param format="interval" name="input1" type="data" help="First query">
+      <label>What portion of</label>
     </param>
-    <param format="interval" name="input2" type="data">
-      <label>on regions in</label>
+    <param format="interval" name="input2" type="data" help="Second query">
+      <label>is covered by</label>
     </param>
    </inputs>
   <outputs>
@@ -28,10 +28,20 @@
 
 Find the coverage of intervals in the first query on intervals in the second query.  The coverage is added as two columns, the first being bases covered, and the second being the fraction of bases covered by that interval.
 
+-----
+
+**Screencasts!**
+
+See Galaxy Interval Operation Screencasts_ (right click to open this link in another window).
+
+.. _Screencasts: http://www.bx.psu.edu/cgi-bin/trac.cgi/wiki/GopsDesc
+
+-----
+
 **Example**
 
 
-    if Query1 are genes ::
+    if **First query** are genes ::
 
       chr11 5203271 5204877 NM_000518 0 -
       chr11 5210634 5212434 NM_000519 0 -
@@ -39,7 +49,7 @@ Find the coverage of intervals in the first query on intervals in the second que
       chr11 5226079 5232587 BC020719  0 -
       chr11 5230996 5232587 NM_000184 0 -
 
-    and Query2 are repeats::
+    and **Second query** are repeats::
 
        chr11      5203895 5203991 L1MA6     500 +
        chr11      5204163 5204239 A-rich    219 +
