@@ -77,7 +77,11 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
                     int(fields[chromCol])
                     fields[chromCol] = "chr%s" % fields[chromCol]
                 except:
-                    pass
+                    try:
+                        if fields[chromCol].upper()== "X" or fields[chromCol].upper()== "Y":
+                            fields[chromCol] = "chr%s" % fields[chromCol].upper()
+                    except:
+                        pass
                     
                 #change to BED coordinate system
                 try:
