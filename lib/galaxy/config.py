@@ -34,6 +34,8 @@ class Configuration( object ):
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
         self.use_pbs = kwargs.get('use_pbs', False )
         self.pbs_server = kwargs.get('pbs_server', "" )
+        self.pbs_instance_path = kwargs.get('pbs_instance_path', os.getcwd() )
+        self.pbs_application_server = kwargs.get('pbs_application_server', "" )
         self.use_heartbeat = kwargs.get( 'use_heartbeat', False )
     def get( self, key, default ):
         return self.config_dict.get( key, default )

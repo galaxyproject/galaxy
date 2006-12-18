@@ -90,28 +90,56 @@ class PBSJobRunner( object ):
         if conn <= 0:
             raise Exception( "Connection to PBS server for submit failed" )
 
-        # set up the job file
-        script = pbs_template % (os.environ['PATH'], os.environ['PYTHONPATH'], os.getcwd(), command_line)
+        # define job attributes
+        ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_name)
+        efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_name)
+
+        # to get returned via scp/rcp we need this
+        if self.app.config.pbs_application_server:
+            # separate vars because we need un-munged ofile/efile for collection/cleanup
+            pbs_ofile = self.app.config.pbs_application_server + ':' + ofile
+            pbs_efile = self.app.config.pbs_application_server + ':' + efile
+            stagein = stageout = ''
+            for input_fname in job_wrapper.get_input_fnames():
+                if stagein != '':
+                    stagein += ','
+                stagein += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, input_fname, self.app.config.pbs_application_server, os.getcwd(), input_fname)
+            for output_fname in job_wrapper.get_output_fnames():
+                if stageout != '':
+                    stageout += ','
+                stageout += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, output_fname, self.app.config.pbs_application_server, os.getcwd(), output_fname)
+            job_attrs = pbs.new_attropl(4)
+            job_attrs[0].name = pbs.ATTR_o
+            job_attrs[0].value = pbs_ofile
+            job_attrs[1].name = pbs.ATTR_e
+            job_attrs[1].value = pbs_efile
+            job_attrs[2].name = pbs.ATTR_stagein
+            job_attrs[2].value = stagein
+            job_attrs[3].name = pbs.ATTR_stageout
+            job_attrs[3].value = stageout
+            exec_dir = self.app.config.pbs_instance_path
+            # FIXME: pbs_instance_path is broken until we munge PATH and PYTHONPATH here
+        else:
+            job_attrs = pbs.new_attropl(2)
+            job_attrs[0].name = pbs.ATTR_o
+            job_attrs[0].value = ofile
+            job_attrs[1].name = pbs.ATTR_e
+            job_attrs[1].value = efile
+            exec_dir = os.getcwd()
+
+        # write the job script
+        script = pbs_template % (os.environ['PATH'], os.environ['PYTHONPATH'], exec_dir, command_line)
         job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job_name)
         fh = file(job_file, "w")
         fh.write(script)
         fh.close()
-
-        # define job attributes
-        ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_name)
-        efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_name)
-        job_attrs = pbs.new_attropl(2)
-        job_attrs[0].name = pbs.ATTR_o
-        job_attrs[0].value = ofile
-        job_attrs[1].name = pbs.ATTR_e
-        job_attrs[1].value = efile
 
         # Attempt to queue
         if not( os.access(job_file, os.R_OK) and conn > 0 ):
             # FIXME: More information here?
             stderr = stdout = ''
                     
-        log.debug("submitting file %s with output %s and error %s" % (job_file, ofile, efile) )
+        log.debug("submitting file %s" % job_file )
         log.debug("command is: %s" % command_line)
         job_id = pbs.pbs_submit(conn, job_attrs, job_file, None, None)
         log.debug("queued: %s" % job_id)

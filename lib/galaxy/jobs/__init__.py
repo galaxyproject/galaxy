@@ -202,7 +202,15 @@ class JobWrapper( object ):
     def get_command_line( self ):
         job = model.Job.get( self.job_id )
         return job.command_line
-        
+
+    def get_input_fnames( self ):
+        job = model.Job.get( self.job_id )
+        return [ da.dataset.file_name for da in job.input_datasets ]
+
+    def get_output_fnames( self ):
+        job = model.Job.get( self.job_id )
+        return [ da.dataset.file_name for da in job.output_datasets ]
+
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app
