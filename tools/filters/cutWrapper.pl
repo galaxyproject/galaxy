@@ -4,47 +4,59 @@ use strict;
 use warnings;
 
 my @columns = ();
-my $columnList = "";
+my $del = "";
+my @in = ();
+my @out = ();
 my $command = "";
+my $field = 0;
 
 # a wrapper for cut for use in galaxy
 # cutWrapper.pl [filename] [columns] [delim] [output]
 
-die "Check arguments $ARGV[1]\n" unless @ARGV == 4;
+die "Check arguments\n" unless @ARGV == 4;
 
 $ARGV[1] =~ s/\s+//g;
-@columns = split /,/, $ARGV[1];
-
-foreach (@columns) {
-    $columnList .= "$_," if m/^c\d{1,}$/i;
+foreach ( split /,/, $ARGV[1] ) {
+  if (m/^c\d{1,}$/i) {
+    push (@columns, $_);
+    $columns[@columns-1] =~s/c//ig;
+  }
 }
-$columnList =~s/c//ig;
 
-die "<font color=\"yellow\">No columns specified or bad syntax: $ARGV[1]</font>\n" if length($columnList) == 0;
+die "No columns specified, columns are not preceded with 'c', or commas are not used to separate column numbers: $ARGV[1]\n" if @columns == 0;
 
 if ($ARGV[2] eq 'T') {
-    $command = "cut -f $columnList $ARGV[0]";
-} elsif ($ARGV[2] eq 'C') {
-    $command = "cut -f $columnList -d \",\" $ARGV[0]";
-} elsif ($ARGV[2] eq 'D') {
-    $command = "cut -f $columnList -d \"-\" $ARGV[0]";
-} elsif ($ARGV[2] eq 'U') {
-    $command = "cut -f $columnList -d \"_\" $ARGV[0]";
-} elsif ($ARGV[2] eq 'P') {
-    $command = "cut -f $columnList -d \"|\" $ARGV[0]";
+    $del = "\t";
+} elsif ($ARGV[2] eq 'C')  {
+    $del = ",";
+} elsif ($ARGV[2] eq 'D')  {
+    $del = "-";
+} elsif ($ARGV[2] eq 'U')  {
+    $del = "_";
+} elsif ($ARGV[2] eq 'P')  {
+    $del = "|";
 } elsif ($ARGV[2] eq 'Dt') {
-    $command = "cut -f $columnList -d \".\" $ARGV[0]";
+    $del = ".";
 } elsif ($ARGV[2] eq 'Sp') {
-    $command = "cut -f $columnList -d \" \" $ARGV[0]";
+    $del = " ";
 }
-
-
 
 open (OUT, ">$ARGV[3]") or die "Cannot create $ARGV[2]:$!\n";
-open (CUT, "$command |") or die "Cannot run cut:$!\n";
-while (<CUT>) {
-    print OUT;
+open (IN,  "<$ARGV[0]") or die "Cannot open $ARGV[0]:$!\n";
+while (<IN>) {
+  chop;
+  @in = split /$del/; 
+  foreach $field (@columns) {
+    if (defined($in[$field-1])) {
+      push(@out, $in[$field-1]);
+    } else {
+      push(@out, ".");
+    }
+  }
+  print OUT join("$del",@out), "\n";
+  @out = ();
 }
+close IN;
+
 close OUT;
-close CUT;
     
