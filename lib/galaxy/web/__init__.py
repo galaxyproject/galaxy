@@ -39,7 +39,10 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         such)
         """
         event = self.app.model.Event()
-        event.message = message % kwargs 
+        try:
+            event.message = message % kwargs
+        except:
+            event.message = message
         event.history = self.history
         try:
             event.history_id = self.history.id
