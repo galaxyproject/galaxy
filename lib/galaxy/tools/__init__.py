@@ -369,7 +369,7 @@ class Tool:
             if key in self.param_map:
                 rval[ key ] = self.param_map[key].to_string( value, app )
             else:
-                rval[ key ] = value
+                rval[ key ] = str( value )
         return rval
         
     def params_to_python( self, params, app ):

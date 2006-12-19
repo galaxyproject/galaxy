@@ -229,7 +229,8 @@ class DefaultJobDispatcher( object ):
         log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
             
     def dispatch_pbs( self, job_wrapper ):
-        if "/tools/data_source" in job_wrapper.get_command_line():
+        command_line = job_wrapper.get_command_line()
+        if ( command_line is None ) or ( "/tools/data_source" in command_line ):
             log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
             self.local_job_runner.put( job_wrapper )
         else:
