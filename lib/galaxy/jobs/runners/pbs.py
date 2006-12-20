@@ -108,6 +108,10 @@ class PBSJobRunner( object ):
                 if stageout != '':
                     stageout += ','
                 stageout += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, output_fname, self.app.config.pbs_application_server, os.getcwd(), output_fname)
+                # also stage in the empty output dataset files so the stageout doesn't fail when the tool outputs nothing
+                if stagein != '':
+                    stagein += ','
+                stagein += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, output_fname, self.app.config.pbs_application_server, os.getcwd(), output_fname)
             job_attrs = pbs.new_attropl(4)
             job_attrs[0].name = pbs.ATTR_o
             job_attrs[0].value = pbs_ofile
