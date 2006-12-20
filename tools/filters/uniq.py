@@ -1,6 +1,6 @@
 # Filename: uniq.py
 # Author: Ian N. Schenck
-# Version: 9/06/2005
+# Version: 12/19/2006
 #
 # This script accepts an input file, an output file, a column
 # delimiter, and a list of columns.  The script then grabs unique
@@ -122,7 +122,7 @@ def main():
         intcolumns = intcolumns[1:]
     commandline += str(intcolumns[0])
 
-    commandline += " " + inputfile + " | sort | uniq -c | tr \" \" \"\t\" > " + outputfile
+    commandline += " " + inputfile + " | sort | uniq -c | sed s/^\ *// | tr \" \" \"\t\" > " + outputfile
 
     errorcode, stdout = commands.getstatusoutput(commandline)
     
