@@ -18,7 +18,7 @@ my %seen = ();
 my @locFields = ();
 my %seqLocation = ();
 
-die "<font color=\"yellow\">Cannot fetch sequences for unspecified genome</font>\n" unless @ARGV == 11;
+die "Cannot fetch sequences for unspecified genome\n" unless @ARGV == 11;
 
 # Read /depot/data2/galaxy/alignseq.loc
 
@@ -87,7 +87,7 @@ close (FASTA);
 if (@errors > 0) {
   @errors = grep { ! $seen{$_} ++ } @errors;
   foreach (@errors) {
-    print STDERR "<font color=\"yellow\">$_</font>\n";
+    print STDERR "$_\n";
   }
 }
 

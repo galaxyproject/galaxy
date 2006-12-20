@@ -6,7 +6,7 @@ use warnings;
 # converts all characters of one type into another 
 # convert_characters.pl [input] [convert_from] [convert_to] [output]
 
-die "Check arguments" unless @ARGV == 4;
+die "Check argument\n" unless @ARGV == 4;
 
 my $inputfile = $ARGV[0];
 my $convert_from = $ARGV[1];
@@ -97,5 +97,5 @@ while (<$fhIn>)
     $thisLine =~ s/$convert_from{1,}/$convert_to/g;
     print $fhOut $thisLine,"\n";    
 }
-close ($fhIn) or die "Cannot close source file";
-close ($fhOut) or die "Cannot close output file";
+close ($fhIn) or die "Cannot close source file\n";
+close ($fhOut) or die "Cannot close output fil\n";

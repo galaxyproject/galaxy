@@ -5,14 +5,14 @@
 # directory of universe's tools section
 # Takes the following parameters:
 # extractorAxt_wrapper.pl -i $inp_file1 -o $out_file1 --species $species -g $dbkey $chroCol $startCol $endCol $strandCol
-# Location of alignment files is taken from /depot/data1/cache/alignseq.loc
+# Location of alignment files is taken from /depot/data1/cache/alignseq.loc (to change -> edit line 19)
 
 use strict;
 use warnings;
 use File::Temp "tempfile";
 
 
-die "<font color=\"yellow\">Your query genome, $ARGV[7], is the same as your target genome, $ARGV[5]. Please go back and select different target genome</font>\n" if ($ARGV[5] eq $ARGV[7]);
+die "Your query genome, $ARGV[7], is the same as your target genome, $ARGV[5]. Please go back and select different target genome\n" if ($ARGV[5] eq $ARGV[7]);
 
 die "Not enough params -> check\n" unless @ARGV == 12;
 
@@ -41,7 +41,7 @@ close LOC;
 
 $alignDir = $alignLocation{"$ARGV[7]-$ARGV[5]"};
 
-die "No alignments between $ARGV[7] and $ARGV[5] are presently stored on Galaxy site. E-mail to galaxy-user\@bx.psu.edu to request them\n" if !defined($alignDir);
+die "No alignments between $ARGV[7] and $ARGV[5] are presently stored on Galaxy site. E-mail to galaxy-bugs\@bx.psu.edu to request them\n" if !defined($alignDir);
 
 if ($ARGV[8] == 1 and $ARGV[9] == 2 and $ARGV[10] == 3 and $ARGV[11] == 6) {
   $extractAxtStatus = system("extractAxt -b $ARGV[1] -c -n -o $ARGV[3] $alignDir");
@@ -62,5 +62,5 @@ if ($ARGV[8] == 1 and $ARGV[9] == 2 and $ARGV[10] == 3 and $ARGV[11] == 6) {
   `rm -f $filename`;
 }
 
-die "axt extractor exited abnormally: $?. E-mail to galaxy-user\@bx.psu.edu to report this problem\n" unless $extractAxtStatus == 0;
+die "axt extractor exited abnormally: $?. E-mail to galaxy-bugs\@bx.psu.edu to report this problem\n" unless $extractAxtStatus == 0;
 

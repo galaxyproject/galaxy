@@ -122,7 +122,7 @@ def main():
         intcolumns = intcolumns[1:]
     commandline += str(intcolumns[0])
 
-    commandline += " " + inputfile + " | sort | uniq -c | sed s/^\ *// | tr \" \" \"\t\" > " + outputfile
+    commandline += " " + inputfile + " | sed s/\ //g | sort | uniq -c | sed s/^\ *// | tr \" \" \"\t\" > " + outputfile
     errorcode, stdout = commands.getstatusoutput(commandline)
     
     return errorcode
