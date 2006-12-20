@@ -170,7 +170,7 @@ def init( file_path, url, **kwargs ):
     Dataset.file_path = file_path
     # Connect the metadata the database. 
     metadata.connect( url, **kwargs )
-    metadata.engine.echo = True
+    ##metadata.engine.echo = True
     # Create tables if needed
     if create_tables:
         metadata.create_all()
