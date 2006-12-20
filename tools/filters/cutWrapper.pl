@@ -53,7 +53,7 @@ while (<IN>) {
       push(@out, ".");
     }
   }
-  print OUT join("$del",@out), "\n";
+  print OUT join("\t",@out), "\n";
   @out = ();
 }
 close IN;

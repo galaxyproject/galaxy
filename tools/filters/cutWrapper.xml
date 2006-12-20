@@ -15,7 +15,7 @@
     <param format="text" name="input" type="data" label="From"/>
   </inputs>
   <outputs>
-    <data format="text" name="out_file1" />
+    <data format="tabular" name="out_file1" />
   </outputs>
   <tests>
     <test>
@@ -30,6 +30,20 @@
 .. class:: warningmark
 
 **WARNING: This tool breaks column assignments.** To re-establish column assignments run the tools and click on "edit attributes" link in the latest history item.
+
+.. class:: infomark
+
+The output of this tools is always in tabular format (e.g., if your original delimeter was comma, it will be replaced with tab). For example:
+
+  Cutting columns 1 and 3 from::
+
+     apple,is,good
+     windows,is,bad
+
+  will give::
+
+    apple   good
+    windows bad
 
 -----
 
