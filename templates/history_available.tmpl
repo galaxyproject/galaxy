@@ -54,11 +54,8 @@ function OnSubmitForm()
 	    <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
 	        <tr class="header" align="center"><td>Name</td><td>Size</td><td>Last modified</td><td>Actions</td></tr>
 	    #for $history in $user.histories
-	        #set $c = ""
-	        #if $history.deleted 
-	          #set $c = "history_row_deleted"
-	        #end if
-	        <tr class="$c">
+	      #if not( $history.deleted )
+	        <tr>
 	          <td><input type=checkbox name="id" value="$history.id"
   	        #if $str($history.id) in $ids:
   	        checked 
@@ -76,6 +73,7 @@ function OnSubmitForm()
   	          <a href="/history_delete?id=$history.id" onclick="confirm_click('/history_delete?id=$history.id');return false;">delete</a>
   	        </td>
 	        </tr>
+	      #end if
 	    #end for
          <tr><th colspan="100%">Action</th></tr>
          <tr><td colspan="100%" align="center"><input type="radio" name="operation" value="1" checked>Share <input type="radio" name="operation" value="2">Rename <input type="radio" name="operation" value="3">Delete </td></tr>

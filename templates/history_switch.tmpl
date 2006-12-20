@@ -24,7 +24,9 @@
 	    <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
 	        <tr class="header"><td>Name</td><td># datasets<td>created</td><td></td></tr>
 	    #for $history in $user.histories:
+	      #if not( $history.deleted )
 	        <tr><td>$history.name </td><td>${len(history.datasets)}<td>$history.create_time</td><td><a href="history_switch?id=$history.id">switch to</a></td></tr>
+	      #end if
 	    #end for
 	    </table>
 	    #else
