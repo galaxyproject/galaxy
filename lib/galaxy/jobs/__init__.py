@@ -181,6 +181,13 @@ class JobWrapper( object ):
                     job.state = "error"
                 else:
                     dataset.blurb = "empty"
+        # Save stdout and stderr    
+        if len( stdout ) > 32768:
+            log.error( "stdout for job '%d' is greater than 32K, only first part will be logged to database", job.id )
+        job.stdout = stdout[:32768]
+        if len( stderr ) > 32768:
+            log.error( "stderr for job '%d' is greater than 32K, only first part will be logged to database", job.id )
+        job.stderr = stderr[:32768]  
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )

@@ -77,7 +77,10 @@ Job.table = Table( "job", metadata,
     Column( "tool_id", String( 255 ) ),
     Column( "state", String( 64 ) ),
     Column( "command_line", String() ), 
-    Column( "param_filename", String( 1024 ) ) )
+    Column( "param_filename", String( 1024 ) ),
+    Column( "runner_name", String( 255 ) ),
+    Column( "stdout", String() ),
+    Column( "stderr", String() ) )
     
 JobParameter.table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -109,7 +112,7 @@ Event.table = Table( "event", metadata,
 # relationships between the model objects.
 
 assign_mapper( context, Dataset, Dataset.table,
-    properties=dict( children=relation( Dataset, cascade="delete", 
+    properties=dict( children=relation( Dataset, cascade="delete",
                                         backref=backref("parent", foreignkey=Dataset.table.c.id ) ) ) )
 
 # assign_mapper( model.Query, model.Query.table,
@@ -167,6 +170,7 @@ def init( file_path, url, **kwargs ):
     Dataset.file_path = file_path
     # Connect the metadata the database. 
     metadata.connect( url, **kwargs )
+    metadata.engine.echo = True
     # Create tables if needed
     if create_tables:
         metadata.create_all()
