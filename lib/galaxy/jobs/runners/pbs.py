@@ -15,6 +15,7 @@ pbs = __import__( "pbs" )
 log = logging.getLogger( __name__ )
 
 pbs_template = """#!/bin/sh
+export LC_ALL='%s'
 export PATH='%s'
 export PYTHONPATH='%s'
 cd %s
@@ -132,7 +133,7 @@ class PBSJobRunner( object ):
             exec_dir = os.getcwd()
 
         # write the job script
-        script = pbs_template % (os.environ['PATH'], os.environ['PYTHONPATH'], exec_dir, command_line)
+        script = pbs_template % (os.environ['LC_ALL'], os.environ['PATH'], os.environ['PYTHONPATH'], exec_dir, command_line)
         job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job_name)
         fh = file(job_file, "w")
         fh.write(script)
