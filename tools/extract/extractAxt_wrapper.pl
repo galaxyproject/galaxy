@@ -5,7 +5,7 @@
 # directory of universe's tools section
 # Takes the following parameters:
 # extractorAxt_wrapper.pl -i $inp_file1 -o $out_file1 --species $species -g $dbkey $chroCol $startCol $endCol $strandCol
-# Location of alignment files is taken from /depot/data1/cache/alignseq.loc (to change -> edit line 19)
+# Location of alignment files is taken from /depot/data2/galaxy/alignseq.loc (to change -> edit line 19)
 
 use strict;
 use warnings;

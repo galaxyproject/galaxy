@@ -38,7 +38,7 @@ def read_scores( f ):
     return scores_by_chrom
 
 # FIXME: Handle different builds better
-DATA_SEARCH_PATH=['/depot/data1/cache/universe/binned_scores','.']
+DATA_SEARCH_PATH=['/cache/universe/binned_scores','.']
 #DATA_SEARCH_PATH=['.']
 
 class DataSet( object ):

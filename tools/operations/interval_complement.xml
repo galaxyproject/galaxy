@@ -1,6 +1,6 @@
 <tool id="interval_complement1" name="Interval Complement">
 <description>genome-wide complement a set of intervals</description>
-  <command interpreter="python2.4">interval_complement.py /depot/data1/cache/chrominfo.txt $dbkey $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol</command>
+  <command interpreter="python2.4">interval_complement.py /cache/chrominfo.txt $dbkey $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol</command>
   <inputs>
     <param name="input1" type="data" format="interval" label="File to Complement"/>
   </inputs>

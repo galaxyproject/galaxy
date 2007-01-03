@@ -4,7 +4,7 @@
 Complement the regions of a bed file. Requires a file that maps source names
 to sizes. This should be in the simple LEN file format (each line contains
 source build, a source name(chr), followed by a size, separated by whitespace).
-The file: /depot/data1/cache/chrominfo.txt appears to be acceptable
+The file: /cache/chrominfo.txt appears to be acceptable
 
 usage: %prog len_fname build in_fname out_fname chrom_col start_col end_col strand_col
 """
