@@ -85,11 +85,11 @@ try:
         if org['kingdom'] not in microbe_info:
             microbe_info[org['kingdom']]={}
         
-        if org['group'] not in microbe_info[org['kingdom']]:
-            microbe_info[org['kingdom']][org['group']]={}
+        #if org['group'] not in microbe_info[org['kingdom']]:
+        #    microbe_info[org['kingdom']][org['group']]={}
         
-        if org_num not in microbe_info[org['kingdom']][org['group']]:
-            microbe_info[org['kingdom']][org['group']][org_num]=org
+        if org_num not in microbe_info[org['kingdom']]:
+            microbe_info[org['kingdom']][org_num]=org
             
 except Exception, exc:
     print >>sys.stdout, 'microbial_import_code.py initialization error -> %s' % exc 
@@ -103,6 +103,40 @@ def get_kingdoms():
     if ret_val:
         ret_val[0]= (ret_val[0][0],ret_val[0][1],True)
     return ret_val
+
+def get_orgs_by_kingdom(kingdom):
+    ret_val = []
+    orgs = microbe_info[kingdom].keys()
+    
+    #need to sort by name
+    swap_test = False
+    for i in range(0, len(orgs) - 1):
+        for j in range(0, len(orgs) - i - 1):
+            if microbe_info[kingdom][orgs[j]]['name'] >  microbe_info[kingdom][orgs[j + 1]]['name']:
+                orgs[j], orgs[j + 1] = orgs[j + 1], orgs[j]
+            swap_test = True
+        if swap_test == False:
+            break
+    
+    for org in orgs:
+         if microbe_info[kingdom][org]['link_site'] == "UCSC":
+            ret_val.append(("<b>"+microbe_info[kingdom][org]['name']+"</b> <a href=\""+microbe_info[kingdom][org]['info_url']+"\" target=\"_blank\">(about)</a>",org,False))
+         else:
+            ret_val.append((microbe_info[kingdom][org]['name']+" <a href=\""+microbe_info[kingdom][org]['info_url']+"\" target=\"_blank\">(about)</a>",org,False))
+    if ret_val:
+        ret_val[0]= (ret_val[0][0],ret_val[0][1],True)
+    return ret_val
+    
+def get_data(kingdom,group,org,feature):
+    ret_val = []
+    chroms = microbe_info[kingdom][group][org]['chrs'].keys()
+    chroms.sort()
+    for chr in chroms:
+         for data in microbe_info[kingdom][group][org]['chrs'][chr]['data']:
+             if microbe_info[kingdom][group][org]['chrs'][chr]['data'][data]['feature']==feature:
+                 ret_val.append((microbe_info[kingdom][group][org]['chrs'][chr]['name']+" <a href=\""+microbe_info[kingdom][group][org]['chrs'][chr]['info_url']+"\" target=\"_blank\">(about)</a>",data,False))
+    return ret_val
+
 
 def get_groups(kingdom):
     ret_val = []
@@ -147,6 +181,16 @@ def get_data(kingdom,group,org,feature):
                  ret_val.append((microbe_info[kingdom][group][org]['chrs'][chr]['name']+" <a href=\""+microbe_info[kingdom][group][org]['chrs'][chr]['info_url']+"\" target=\"_blank\">(about)</a>",data,False))
     return ret_val
     
+def get_data_by_kingdom_org_feature(kingdom,org,feature):
+    ret_val = []
+    chroms = microbe_info[kingdom][org]['chrs'].keys()
+    chroms.sort()
+    for chr in chroms:
+         for data in microbe_info[kingdom][org]['chrs'][chr]['data']:
+             if microbe_info[kingdom][org]['chrs'][chr]['data'][data]['feature']==feature:
+                 ret_val.append((microbe_info[kingdom][org]['chrs'][chr]['name']+" <a href=\""+microbe_info[kingdom][org]['chrs'][chr]['info_url']+"\" target=\"_blank\">(about)</a>",data,False))
+    return ret_val
+    
     
 #post processing, set build for data and add additional data to history
 from galaxy import datatypes, config, jobs 
@@ -175,7 +219,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             file_type = fields[4]
             name, data = out_data.items()[0]
             basic_name = data.name
-            data.name = data.name + " (" + microbe_info[kingdom][group][org]['chrs'][chr]['data'][description]['feature'] +" for "+microbe_info[kingdom][group][org]['name']+":"+chr + ")"
+            data.name = data.name + " (" + microbe_info[kingdom][org]['chrs'][chr]['data'][description]['feature'] +" for "+microbe_info[kingdom][org]['name']+":"+chr + ")"
             data.dbkey = dbkey
             data.info = data.name
             datatypes.change_datatype( data, file_type )
@@ -190,7 +234,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             file_type = fields[5]
             newdata = app.model.Dataset()
             newdata.extension = file_type
-            newdata.name = basic_name + " (" + microbe_info[kingdom][group][org]['chrs'][chr]['data'][description]['feature'] +" for "+microbe_info[kingdom][group][org]['name']+":"+chr + ")"
+            newdata.name = basic_name + " (" + microbe_info[kingdom][org]['chrs'][chr]['data'][description]['feature'] +" for "+microbe_info[kingdom][org]['name']+":"+chr + ")"
             newdata.flush()
             history.add_dataset( newdata )
             newdata.flush()
