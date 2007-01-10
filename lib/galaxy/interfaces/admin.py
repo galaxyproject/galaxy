@@ -44,7 +44,8 @@ class Admin( common.Root ):
                     last = time.mktime( time.strptime( value.update_time.strftime('%a %b %d %H:%M:%S %Y') ))
                     diff = (now - last) /3600/24 # days
                     if diff>days:
-                        value.delete()
+                        #value.delete()
+                        value.deleted = True
                         count += 1
                 try:
                     self.app.model.flush()

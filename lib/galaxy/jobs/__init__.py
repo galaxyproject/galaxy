@@ -202,7 +202,7 @@ class JobWrapper( object ):
         for dataset_assoc in job.input_datasets:
             data = dataset_assoc.dataset
             if data.state == data.states.FAKE:
-                data.delete()
+                data.deleted = True
         mapping.context.current.flush()
         log.debug('job ended, id: %d' % self.job_id )
         
