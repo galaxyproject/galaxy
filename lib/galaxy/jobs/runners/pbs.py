@@ -102,17 +102,19 @@ class PBSJobRunner( object ):
             pbs_efile = self.app.config.pbs_application_server + ':' + efile
             stagein = stageout = ''
             for input_fname in job_wrapper.get_input_fnames():
-                if stagein != '':
-                    stagein += ','
-                stagein += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, input_fname, self.app.config.pbs_application_server, os.getcwd(), input_fname)
+                if os.access(input_fname, os.R_OK):
+                    if stagein != '':
+                        stagein += ','
+                    stagein += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, input_fname, self.app.config.pbs_application_server, os.getcwd(), input_fname)
             for output_fname in job_wrapper.get_output_fnames():
-                if stageout != '':
-                    stageout += ','
-                stageout += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, output_fname, self.app.config.pbs_application_server, os.getcwd(), output_fname)
-                # also stage in the empty output dataset files so the stageout doesn't fail when the tool outputs nothing
-                if stagein != '':
-                    stagein += ','
-                stagein += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, output_fname, self.app.config.pbs_application_server, os.getcwd(), output_fname)
+                if os.access(output_fname, os.R_OK):
+                    if stageout != '':
+                        stageout += ','
+                    stageout += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, output_fname, self.app.config.pbs_application_server, os.getcwd(), output_fname)
+                    # also stage in the empty output dataset files so the stageout doesn't fail when the tool outputs nothing
+                    if stagein != '':
+                        stagein += ','
+                    stagein += "%s/%s@%s:%s/%s" % (self.app.config.pbs_instance_path, output_fname, self.app.config.pbs_application_server, os.getcwd(), output_fname)
             job_attrs = pbs.new_attropl(4)
             job_attrs[0].name = pbs.ATTR_o
             job_attrs[0].value = pbs_ofile
