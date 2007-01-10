@@ -2,8 +2,8 @@
 Contains the UCSC proxy
 
 """
-
-from galaxy import web
+import sys
+from galaxy import web, util
 import common
 import re, urllib, logging
 
@@ -27,17 +27,23 @@ class UCSCProxy(common.Root):
     @web.expose 
     def index(self, trans, init=False, **kwd):
         base_url = None
+        params = dict(kwd)
         try:
-            session  = trans.session
-            PARAM_STORE = 'UCSC_PARAMS'
+            store = params.get("__GALAXY__", None)
+            if store:
+                store = util.string_to_object(store)
+            else:
+                store = {}
             UCSC_URL = 'UCSC_URL'
-            store    = session.get(PARAM_STORE, {})
-            base_url = session.get(UCSC_URL, "http://genome.ucsc.edu/cgi-bin/hgTables?")
+            base_url = store.get(UCSC_URL, "http://genome.ucsc.edu/cgi-bin/hgTables?")
             params   = dict(kwd)
             params['init'] = init
                    
             if not init:
-                store.update(kwd)        
+                for key, value in kwd.items():
+                    store[key] = value
+                try: del store["__GALAXY__"]
+                except: pass
             else:
                 store = {}
             
@@ -50,13 +56,10 @@ class UCSCProxy(common.Root):
             if init == "3":
                 base_url = "http://archaea.ucsc.edu/cgi-bin/hgTables?"
 
-            session[PARAM_STORE] = store
-            session[UCSC_URL] = base_url
+            store[UCSC_URL] = base_url
             
-            # Save the changed session if neccesary
-            if hasattr( session, 'save' ):
-                session.save()
-
+            try: del params["__GALAXY__"]
+            except: pass
             url = base_url + urllib.urlencode(params)
             
             page = urllib.urlopen(url)
@@ -77,13 +80,18 @@ class UCSCProxy(common.Root):
         else:
             try:        
                 text = page.read()
+
+                # Serialize store into a form element
+                store_text = "<INPUT TYPE=\"HIDDEN\" NAME=\"__GALAXY__\" ID=\"__GALAXY__\" VALUE=\"" \
+                             + util.object_to_string(store) + "\" \>"
+                
                 # Remove text regions that should not be exposed
                 for key,value in altered_regions.items():
                     text = text.replace(key,value)
                 # Capture only the forms
                 newtext = beginning
-                for form in re.finditer("(?s)(<FORM.*?</FORM>)",text):
-                    newtext = newtext + form.group(1)
+                for form in re.finditer("(?s)(<FORM.*?)(</FORM>)",text):
+                    newtext = newtext + form.group(1) + store_text + form.group(2)
                 if 'hgta_doLookupPosition' in params:
                     lookup = re.search("(?s).*?(<H2>.*</PRE>)",text)
                     if lookup:
@@ -137,24 +145,12 @@ ending = '''
 # galaxy users.
 altered_regions = { 
         '"../cgi-bin/hgTables' : '"/ucsc_proxy/index',
-        '<TR><TD>\n<B>output file:</B>&nbsp;<INPUT TYPE=TEXT NAME="hgta_outFileName" SIZE=29 VALUE="">&nbsp;(leave blank to keep output in browser)</TD></TR>\n<TR><TD>\n<B>file type returned:&nbsp;</B><INPUT TYPE=RADIO NAME="hgta_compressType" VALUE="hgta_compressNone" CHECKED>&nbsp;plain text&nbsp&nbsp<INPUT TYPE=RADIO NAME="hgta_compressType" VALUE="hgta_compressGzip" >&nbsp;gzip compressed</TD></TR>' : '<INPUT TYPE=HIDDEN NAME="hgta_compressType" VALUE="hgta_compressNone" /><INPUT TYPE=HIDDEN NAME="hgta_outFileName" VALUE="" />',
+        '<TR><TD>\n<B>output file:</B>&nbsp;<INPUT TYPE=TEXT NAME="hgta_outFileName" SIZE=29 VALUE="">&nbsp;(leave blank to keep output in browser)</TD></TR>\n<TR><TD>\n<B>file type returned:&nbsp;</B><INPUT TYPE=RADIO NAME="hgta_compressType" VALUE="none" CHECKED>&nbsp;plain text&nbsp&nbsp<INPUT TYPE=RADIO NAME="hgta_compressType" VALUE="gzip" >&nbsp;gzip compressed</TD></TR>' : '<INPUT TYPE=HIDDEN NAME="hgta_compressType" VALUE="none" /><INPUT TYPE=HIDDEN NAME="hgta_outFileName" VALUE="" />',
         ' <P>To reset <B>all</B> user cart settings (including custom tracks), \n<A HREF="/cgi-bin/cartReset?destination=/cgi-bin/hgTables">click here</A>.' : '',
         'ACTION="../cgi-bin/hgTables"' : 'ACTION="/ucsc_proxy/index"',
         '<A HREF="/goldenPath/help/customTrack.html" TARGET=_blank>custom track</A>' : '<A HREF="http://genome.ucsc.edu/goldenPath/help/customTrack.html" TARGET=_blank>custom track</A>',
         '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="genome" onClick="regionType=\'genome\';" CHECKED>' : '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="genome" onClick="regionType=\'genome\';">',
         '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="range" onClick="regionType=\'range\';">' : '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="range" onClick="regionType=\'range\';" CHECKED>',
         "<OPTION VALUE=bed>" : "<OPTION VALUE=bed SELECTED>" , 
-	'<FORM ACTION="/ucsc_proxy/index" NAME="mainForm" METHOD=POST>' : '<FORM ACTION="/ucsc_proxy/index" NAME="mainForm" METHOD="POST">',
-	'<FORM ACTION="/ucsc_proxy/index" METHOD="GET" NAME="hiddenForm">' : '<FORM ACTION="/ucsc_proxy/index" METHOD="GET" NAME="hiddenForm" style="visibility:hidden">',
-        '<INPUT TYPE=SUBMIT NAME="hgta_doSchema" VALUE="describe table schema">' : '<INPUT TYPE=SUBMIT NAME="hgta_doSchema" VALUE="describe table schema" onClick="changeTarget(\'_blank\')" onMouseOut="changeTarget(\'_self\')">',
-	'<input type="hidden" name="clade" value="">' : '<input type="text" size=1 name="clade" value="" >',
-	'<input type="hidden" name="org" value="">' : '<input type="text" size=1 name="org" value="" >',
-	'<input type="hidden" name="db" value="">':'<input type="text" size=1 name="db" value="" >',
-	'<input type="hidden" name="hgta_group" value="">':'<input type="text" size=1 name="hgta_group" value="" >' ,
-	'<input type="hidden" name="hgta_track" value="">' : '<input type="text" size=1 name="hgta_track" value="" >',
-	'<input type="hidden" name="hgta_table" value="">' : '<input type="text" size=1 name="hgta_table" value="" >',
-	'<input type="hidden" name="hgta_regionType" value="">' : '<input type="text" size=1 name="hgta_regionType" value="" >',
-	'<input type="hidden" name="position" value="">' : '<input type="text" size=1 name="position" value="" >',
-	'<input type="hidden" name="hgta_outputType" value="">' : '<input type="text" size=1 name="hgta_outputType" value="" >',
-	'<input type="hidden" name="hgta_outFileName" value=""></FORM>' : '<input type="text" size=1 name="hgta_outFileName" value=""></FORM>'
+        '<INPUT TYPE=SUBMIT NAME="hgta_doSchema" VALUE="describe table schema">' : '<INPUT TYPE=SUBMIT NAME="hgta_doSchema" VALUE="describe table schema" onClick="changeTarget(\'_blank\')" onMouseOut="changeTarget(\'_self\')">'
 	}
