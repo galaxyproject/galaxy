@@ -45,6 +45,6 @@
   <help>
     You can view the original documentation here_.
     
-    .. _here: http://emboss.sourceforge.net/apps/supermatcher.html
+    .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/supermatcher.html
   </help>
 </tool>

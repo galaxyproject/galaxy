@@ -71,6 +71,6 @@
   <help>
     You can view the original documentation here_.
     
-    .. _here: http://emboss.sourceforge.net/apps/trimseq.html
+    .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/trimseq.html
   </help>
 </tool>
