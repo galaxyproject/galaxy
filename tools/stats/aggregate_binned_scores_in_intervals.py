@@ -24,7 +24,7 @@ from bx.binned_array import BinnedArray, FileBinnedArray
 from bx import intervals
 from fpconst import isNaN
 import cookbook.doc_optparse
-import misc
+#import misc
 import os
 
 from Numeric import *
