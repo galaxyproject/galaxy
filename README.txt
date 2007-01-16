@@ -16,7 +16,6 @@ are loaded see tool.conf.sample To customize the way your server is ran edit
 universe.conf 
 
 *Note* certain tools may require certain libraries to be present.
-We have included a binary copy of galaxyOps for linux systems. 
 (See run.sh for more details)
 
 
