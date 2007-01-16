@@ -72,24 +72,7 @@
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
-  <section name="Operate on Genomic Intervals" id="operation">
-    <tool file="operations/cluster.xml" />
-    <tool file="operations/clusterMerge.xml" />
-    <tool file="operations/interval_complement.xml" />
-    <tool file="operations/complement.xml" />
-    <tool file="operations/interval_coverage.xml" />
-    <tool file="operations/covDensity.xml" />
-    <tool file="operations/difference.xml" /> 
-    <tool file="operations/intersect.xml" />
-    <tool file="operations/joinLists.xml" />
-    <tool file="operations/merge.xml" />
-    <tool file="operations/overlap.xml" />   
-    <tool file="operations/proximity.xml" /> 
-    <tool file="operations/subtract.xml" />
-    <tool file="operations/unionWrapper.xml" />
-    <tool file="operations/extend.xml" />
-  </section>
-  <section name="Operate on Genomic Intervals (bx)" id="bxops">
+  <section name="Operate on Genomic Intervals" id="bxops">
     <tool file="new_operations/intersect.xml" id="intersect" />  
     <tool file="new_operations/subtract.xml" id="subtract" />
     <tool file="new_operations/merge.xml" id="merge" />
