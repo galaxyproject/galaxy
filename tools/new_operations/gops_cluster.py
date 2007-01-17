@@ -54,7 +54,10 @@ def main():
     out_file = open( out_fname, "w" )
 
     # Get the cluster tree
-    clusters, extra = find_clusters( g1, mincols=distance, minregions=minregions)
+    try:
+        clusters, extra = find_clusters( g1, mincols=distance, minregions=minregions)
+    except ParseError, exc:
+        print >> sys.stderr, "Invalid file format: ", str( exc )
     f1.close()
 
     f1 = open( in_fname, "r" )

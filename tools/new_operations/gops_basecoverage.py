@@ -43,7 +43,10 @@ def main():
 
     out_file = open( out_fname, "w" )
 
-    bases = base_coverage(g1)
+    try:
+        bases = base_coverage(g1)
+    except ParseError, exc:
+        print >> sys.stderr, "Invalid file format: ", str( exc )
     print >> out_file, str(bases)
 
 if __name__ == "__main__":

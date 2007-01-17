@@ -59,12 +59,14 @@ def main():
                                 strand_col=strand_col_2)
     out_file = open( out_fname, "w" )
 
-
-    for outfields in join(g1, g2, mincols=mincols, rightfill=rightfill, leftfill=leftfill):
-        if type( outfields ) is list:
-            print >> out_file, "\t".join(outfields)
-        else:
-            print >> out_file, outfields
+    try:
+        for outfields in join(g1, g2, mincols=mincols, rightfill=rightfill, leftfill=leftfill):
+            if type( outfields ) is list:
+                print >> out_file, "\t".join(outfields)
+            else:
+                print >> out_file, outfields
+    except ParseError, exc:
+        print >> sys.stderr, "Invalid file format: ", str( exc )
 
 if __name__ == "__main__":
     main()

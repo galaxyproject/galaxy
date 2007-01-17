@@ -59,11 +59,14 @@ def main():
     
     out_file = open( out_fname, "w" )
 
-    for line in concat([g1, g2], sameformat=sameformat):
-        if type( line ) is GenomicInterval:
-            print >> out_file, "\t".join( line.fields )
-        else:
-            print >> out_file, line
+    try:
+        for line in concat([g1, g2], sameformat=sameformat):
+            if type( line ) is GenomicInterval:
+                print >> out_file, "\t".join( line.fields )
+            else:
+                print >> out_file, line
+    except ParseError, exc:
+        print >> sys.stderr, "Invalid file format: ", str( exc )
 
 if __name__ == "__main__":
     main()

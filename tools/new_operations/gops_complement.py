@@ -78,12 +78,15 @@ def main():
         generator = subtract([chromReader, g1])
     else:
         generator = complement(g1, lens)
-        
-    for interval in generator:
-        if type( interval ) is GenomicInterval:
-            print >> out_file, "\t".join( interval )
-        else:
-            print >> out_file, interval
+
+    try:
+        for interval in generator:
+            if type( interval ) is GenomicInterval:
+                print >> out_file, "\t".join( interval )
+            else:
+                print >> out_file, interval
+    except ParseError, exc:
+        print >> sys.stderr, "Invalid file format: ", str( exc )
 
 if __name__ == "__main__":
     main()

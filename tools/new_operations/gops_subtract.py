@@ -54,11 +54,14 @@ def main():
                                 strand_col=strand_col_2)
     out_file = open( out_fname, "w" )
 
-    for line in subtract([g1,g2], pieces=pieces, mincols=mincols):
-        if type( line ) is GenomicInterval:
-            print >> out_file, "\t".join( line.fields )
-        else:
-            print >> out_file, line
+    try:
+        for line in subtract([g1,g2], pieces=pieces, mincols=mincols):
+            if type( line ) is GenomicInterval:
+                print >> out_file, "\t".join( line.fields )
+            else:
+                print >> out_file, line
+    except ParseError, exc:
+        print >> sys.stderr, "Invalid file format: ", str( exc )
 
 if __name__ == "__main__":
     main()
