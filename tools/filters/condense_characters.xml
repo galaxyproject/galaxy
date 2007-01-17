@@ -24,19 +24,31 @@
       <output name="out_file1" file="eq-condense.dat"/>
     </test>
   </tests>
-  <help>Condenses all consecutive characters of a specified type
+  <help>
+
+.. class:: warningmark
+
+**WARNING:** This tool might condense some consecutive character, which is useful.
+
+-----
+
+**Syntax**
+
+This tool condenses all consecutive characters of a specified type.
 
 -----
 
 **Example**
 
-::
+- Input file::
 
-  geneX,,,10,,,,,20
+    geneX,,,10,,,,,20
+    geneY,,5,,,,,12,15,9,
 
-Will be converted into::
+- Condense all consecutive commas. The above file will be converted into::
 
-  geneX,10,20
+    geneX,10,20
+    geneY,5,12,15,9
 
 </help>
 </tool>

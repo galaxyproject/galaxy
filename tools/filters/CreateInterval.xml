@@ -26,15 +26,31 @@
   </tests>
   <help>
 
-Allows you to enter a single interval as a new history item
+.. class:: warningmark
+
+**WARNING:** Once your interval appears in history, you must tell Galaxy which genome it belongs to by clicking "edit attributes" link or the "?" link in the history item.
 
 -----
 
-.. class:: infomark
+**Syntax**
 
-**TIP:** Once your interval appears in history you must tell Galaxy which genome it belong to by clicking as shown below
+This tool allows you to enter a single interval as a new history item. The new item is tab delimitated bed format.
 
-.. image:: ../static/images/SetGenome.png
+-----
+
+**Example**
+
+- Your input::
+
+    Chromosome: chrX
+    Start position: 151087187
+    End position: 151370486
+    Name: NM_000808
+    Strand: minus
+
+- Creating single interval will be::
+
+    chrX  151087187  151370486  NM_000808  0  -
 
 </help>
 </tool>

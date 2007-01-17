@@ -33,6 +33,35 @@
       <output name="out_file1" file="eq-convert.dat"/>
     </test>
   </tests>
-  <help>Converts all delimiters of a specified type into TABs.  Consecutive characters are condensed. For example, if columns are separated by 5 spaces they will converted into 1 tab
+  <help>
+
+.. class:: warningmark
+
+**WARNING:** This tool might convert some character which is meaningful.
+
+-----
+
+**Syntax**
+
+Converts all delimiters of a specified type into TABs.  Consecutive characters are condensed. For example, if columns are separated by 5 spaces they will converted into 1 tab.
+
+-----
+
+**Example**
+
+- Input file::
+
+    chrX||151283558|151283724|NM_000808_exon_8_0_chrX_151283559_r|0|-
+    chrX|151370273|151370486|NM_000808_exon_9_0_chrX_151370274_r|0|-
+    chrX|151559494|151559583|NM_018558_exon_1_0_chrX_151559495_f|0|+
+    chrX|151564643|151564711|NM_018558_exon_2_0_chrX_151564644_f||||0|+
+
+- Converting all pipe delimiters of the above file to TABs will get::
+
+    chrX  151283558  151283724  NM_000808_exon_8_0_chrX_151283559_r  0  -
+    chrX  151370273  151370486  NM_000808_exon_9_0_chrX_151370274_r  0  -
+    chrX  151559494  151559583  NM_018558_exon_1_0_chrX_151559495_f  0  +
+    chrX  151564643  151564711  NM_018558_exon_2_0_chrX_151564644_f  0  +
+
 </help>
 </tool>

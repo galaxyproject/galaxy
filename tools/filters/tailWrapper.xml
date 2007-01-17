@@ -15,4 +15,30 @@
       <output name="out_file1" file="eq-showtail.dat"/>
     </test>
   </tests>
+  <help>
+
+**Syntax**
+
+This tool output the last part of the input file.
+
+- **Show last** sets the number of lines to output. For example, **10** refers to output the last 10 lines of the selected query.
+
+-----
+
+**Example**
+
+- Input File::
+
+    chr7    57134   57154   D17003_CTCF_R7  356     -
+    chr7    57247   57267   D17003_CTCF_R4  207     +
+    chr7    57314   57334   D17003_CTCF_R5  269     +
+    chr7    57341   57361   D17003_CTCF_R7  375     +
+    chr7    57457   57477   D17003_CTCF_R3  188     +
+
+- Show last two lines of above file. The result is::
+
+    chr7    57341   57361   D17003_CTCF_R7  375     +
+    chr7    57457   57477   D17003_CTCF_R3  188     +
+
+  </help>
 </tool>
