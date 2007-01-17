@@ -29,15 +29,25 @@
 
 **Syntax**
 
-This tool allows to compute an expression for every row of a query and add result as a new column (field) 
+This tool allows to compute an expression for every row of a query and add result as a new column (field).
 
-Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
+- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
+
+- **c3-c2** will add a length column to the query if **c2** and **c3** are start and end position
 
 -----
 
 **Example**
 
-- **c3-c2** will add a length column to the query if **c2** and **c3** are start and end position
+- Input file::
+
+    chr1	151077881	151077918	2	200	-
+    chr1	151081985	151082078	3	500	+
+
+- Compute "c4*c5" of the above file. The result is::
+
+    chr1	151077881	151077918	2	200	-	400.0
+    chr1	151081985	151082078	3	500	+	1500.0
 
 </help>
 </tool>
