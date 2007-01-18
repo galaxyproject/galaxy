@@ -7,7 +7,6 @@ class UploadToolAction( object ):
     Action for uploading files
     """
     def execute( self, tool, trans, incoming={} ):
-        
         data_file = incoming['file_data']
         file_type = incoming['file_type']
         dbkey = incoming['dbkey']

@@ -80,7 +80,7 @@ class UCSCProxy(common.Root):
         else:
             try:        
                 text = page.read()
-
+                
                 # Serialize store into a form element
                 store_text = "<INPUT TYPE=\"HIDDEN\" NAME=\"__GALAXY__\" ID=\"__GALAXY__\" VALUE=\"" \
                              + util.object_to_string(store) + "\" \>"

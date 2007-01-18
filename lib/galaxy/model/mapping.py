@@ -73,6 +73,7 @@ Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
     Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
+    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ) ),
     Column( "tool_id", String( 255 ) ),
     Column( "state", String( 64 ) ),
@@ -104,9 +105,25 @@ Event.table = Table( "event", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
     Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
-    Column( "history_id", Integer, nullable=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), nullable=True ),
+    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True ),
+    Column( "tool_id", String( 255 ) ),
     Column( "message", TrimmedString( 1024 ) ) )
+
+GalaxySession.table = Table( "galaxy_session", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
+    Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True ),
+    Column( "remote_host", String( 255 ) ),
+    Column( "remote_addr", String( 255 ) ) )
+
+GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
+    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ) ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ) ) )
 
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
@@ -119,7 +136,8 @@ assign_mapper( context, Dataset, Dataset.table,
 #     properties=dict( datasets=relation( model.Dataset.mapper, backref="query") ) )
 
 assign_mapper( context, History, History.table,
-    properties=dict( datasets=relation( Dataset, backref="history", order_by=asc(Dataset.table.c.hid) ),
+    properties=dict( galaxy_sessions=relation( GalaxySessionToHistoryAssociation ),
+                     datasets=relation( Dataset, backref="history", order_by=asc(Dataset.table.c.hid) ),
                      active_datasets=relation( Dataset, primaryjoin=( ( Dataset.c.history_id == History.table.c.id ) & ( Dataset.c.deleted == False ) ), order_by=asc( Dataset.table.c.hid ), lazy=False, viewonly=True ) ) )
 
 assign_mapper( context, User, User.table, 
@@ -135,13 +153,24 @@ assign_mapper( context, JobToOutputDatasetAssociation, JobToOutputDatasetAssocia
 assign_mapper( context, JobParameter, JobParameter.table )
 
 assign_mapper( context, Job, Job.table, 
-    properties=dict( history=relation( History ),
+    properties=dict( galaxy_session=relation( GalaxySession ),
+                     history=relation( History ),
                      parameters=relation( JobParameter ),
                      input_datasets=relation( JobToInputDatasetAssociation ),
                      output_datasets=relation( JobToOutputDatasetAssociation ) ) )
 
 assign_mapper( context, Event, Event.table,
-    properties=dict( user=relation( User.mapper ) ) )
+    properties=dict( history=relation( History ),
+                     galaxy_session=relation( GalaxySession ),
+                     user=relation( User.mapper ) ) )
+
+assign_mapper( context, GalaxySession, GalaxySession.table,
+    properties=dict( histories=relation( GalaxySessionToHistoryAssociation ),
+                     user=relation( User.mapper ) ) )
+
+assign_mapper( context, GalaxySessionToHistoryAssociation, GalaxySessionToHistoryAssociation.table,
+    properties=dict( galaxy_session=relation( GalaxySession ), 
+                     history=relation( History ) ) )
     
 def db_next_hid( self ):
     """

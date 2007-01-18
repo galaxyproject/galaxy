@@ -37,6 +37,8 @@ class ToolRunner(common.Root):
             return "Tool '%s' does not exist, kwd=%s " % (tool_id, kwd)
         params = util.Params(kwd)
         history = trans.get_history()
+        if not trans.galaxy_session_is_valid():
+            trans.new_galaxy_session()
         template, vars = tool.handle_input( trans, params.__dict__ )
-        trans.log_event( "Tool View: %s; %s" % (str(tool),str(params)) )
+        trans.log_event( "Tool View: %s; %s" % (str(tool),str(params)), tool_id=tool_id )
         return trans.fill_template( template, history=history, toolbox=toolbox, tool=tool, util=util, **vars )

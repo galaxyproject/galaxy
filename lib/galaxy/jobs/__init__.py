@@ -209,6 +209,10 @@ class JobWrapper( object ):
     def get_command_line( self ):
         job = model.Job.get( self.job_id )
         return job.command_line
+    
+    def get_session_id( self ):
+        job = model.Job.get( self.job_id )
+        return job.session_id
 
     def get_input_fnames( self ):
         job = model.Job.get( self.job_id )

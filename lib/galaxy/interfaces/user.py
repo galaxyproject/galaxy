@@ -88,6 +88,13 @@ class User( common.Root ):
                 password_error = "Invalid password"
             else:
                 trans.set_user( user )
+                if not trans.galaxy_session_is_valid():          
+                    trans.new_galaxy_session()
+                else:
+                    """
+                    Associate user with galaxy_session and history
+                    """
+                    trans.make_associations()
                 trans.log_event( "User logged in" )
                 return trans.show_ok_message( "Now logged in as " + user.email, \
                     refresh_frames=['masthead', 'history'] )
@@ -98,12 +105,12 @@ class User( common.Root ):
 
     @web.expose
     def logout( self, trans ):
-        # If the current history is saved for the current user it should be
-        # disconnected.
+        trans.log_event( "User logged out" )
+        # If the current history is saved for the current user it should be disconnected.
         if trans.history.user == trans.user:
             trans.set_history( None )
-        trans.log_event( "User logged out" )
         trans.set_user( None )
+        trans.end_galaxy_session()
         return trans.show_ok_message( "You are no longer logged in", \
             refresh_frames=['masthead', 'history'] )
             
@@ -126,7 +133,14 @@ class User( common.Root ):
                 user.set_password_cleartext( password )
                 user.flush()
                 trans.set_user( user )
-                trans.log_event( "User new" )
+                if not trans.galaxy_session_is_valid():
+                    trans.new_galaxy_session()
+                else:
+                    """
+                    Associate user with galaxy_session and history
+                    """
+                    trans.make_associations()
+                trans.log_event( "User created a new account" )
                 trans.log_event( "User logged in" )
                 #subscribe user to email list
                 if subscribe:

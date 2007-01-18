@@ -8,6 +8,7 @@ class MappingTests( unittest.TestCase ):
         assert model.engine is not None
         # Make some changes and commit them
         u = model.User( email="james@foo.bar.baz", password="password" )
+        # gs = model.GalaxySession()
         h1 = model.History( name="History 1", user=u)
         #h1.queries.append( model.Query( "h1->q1" ) )
         #h1.queries.append( model.Query( "h1->q2" ) )
@@ -39,6 +40,7 @@ class MappingTests( unittest.TestCase ):
         hists = model.History.select()
         assert hists[0].name == "History 1"
         assert hists[1].name == "History 2b"
+        # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
         
 def get_suite():
     suite = unittest.TestSuite()

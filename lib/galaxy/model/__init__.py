@@ -37,6 +37,7 @@ class Job( object ):
                     OK = 'ok',
                     ERROR = 'error' )
     def __init__( self ):
+        self.session_id = None
         self.tool_id = None
         self.command_line = None
         self.param_filename = None
@@ -79,6 +80,7 @@ class History( object ):
         # Relationships
         self.user = user
         self.datasets = []
+        self.galaxy_sessions = []
         
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures 
@@ -91,6 +93,9 @@ class History( object ):
                 if dataset.hid > last_hid:
                     last_hid = dataset.hid
             return last_hid + 1
+
+    def add_galaxy_session( self, galaxy_session ):
+        self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
     
     def add_dataset( self, dataset, parent_id=None ):
         if parent_id:
@@ -98,6 +103,7 @@ class History( object ):
                 if data.id == parent_id:
                     dataset.hid = data.hid
                     break
+                    # TODO gvk: ask if this needs to be fixed, I don't want to break it if it isn't broken...
             else:
                 dataset.hid = self._next_hid()
         else:
@@ -250,7 +256,27 @@ class Dataset( object ):
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
             
 class Event( object ):
-    def __init__( self, message=None, history=None, user=None ):
-        self.message = message
+    def __init__( self, message=None, history=None, user=None, galaxy_session=None ):
         self.history = history
+        self.galaxy_session = galaxy_session
         self.user = user
+        self.tool_id = None
+        self.message = message
+
+class GalaxySession( object ):
+    def __init__( self, id=None, user=None, remote_host=None, remote_addr=None ):
+        self.id = id
+        self.user = user
+        self.remote_host = remote_host
+        self.remote_addr = remote_addr
+        self.histories = []
+
+    def add_history( self, history ):
+        self.histories.append( GalaxySessionToHistoryAssociation( self, history ) )
+    
+class GalaxySessionToHistoryAssociation( object ):
+    def __init__( self, galaxy_session, history ):
+        self.galaxy_session = galaxy_session
+        self.history = history
+        
+

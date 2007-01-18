@@ -24,21 +24,24 @@ NOT_SET = object()
 class UniverseWebTransaction( framework.DefaultWebTransaction ):
     """
     Encapsulates web transaction specific state for the Universe application
-    (specifically the user's history)
+    (specifically the user's "cookie" session and history)
     """
     def __init__( self, environ, app ):
         self.app = app
         self.__user = NOT_SET
         self.__history = NOT_SET
+        self.__galaxy_session = NOT_SET
         framework.DefaultWebTransaction.__init__( self, environ )
         self.app.model.context.current.clear()
         self.debug = asbool( self.app.config.get( 'debug', False ) )
-    def log_event( self, message, **kwargs ):
+        
+    def log_event( self, message, tool_id=None, **kwargs ):
         """
         Application level logging. Still needs fleshing out (log levels and
         such)
         """
         event = self.app.model.Event()
+        event.tool_id = tool_id
         try:
             event.message = message % kwargs
         except:
@@ -49,7 +52,10 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         except:
             event.history_id = None
         event.user = self.user
+        if self.galaxy_session_is_valid():
+            event.session_id = self.galaxy_session.id   
         event.flush()
+        
     def get_cookie( self, name='universe' ):
         """
         Convienience method for getting the universe cookie
@@ -63,6 +69,7 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
                 return self.request.cookies[name].value
         except Exception:
             return None
+        
     def set_cookie( self, value, name='universe', path='/', age=90, version='1' ):
         """
         Convienience method for setting the universe cookie
@@ -73,6 +80,7 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         tstamp = time.localtime ( time.time() + 3600 * 24 * age  )
         self.response.cookies[name]['expires'] = time.strftime('%a, %d-%b-%Y %H:%M:%S GMT', tstamp) 
         self.response.cookies[name]['version'] = version
+        
     def get_history( self ):
         """
         Load the current history
@@ -84,14 +92,20 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
                 history = self.app.model.History.get( id )
             if history is None:
                 history = self.new_history()
-            self.__history = history
-        return self.__history    
+            self.__history = history                
+        return self.__history
+    
     def new_history( self ):
         history = self.app.model.History()
+        if history.user_id is None and self.user is not None:
+            history.user_id = self.user.id
+        if self.galaxy_session_is_valid():
+            history.add_galaxy_session(self.get_galaxy_session())
         history.flush()
         self.set_cookie( name='universe', value=history.id )
         self.__history = history
         return history
+    
     def set_history( self, history ):
         if history is None:
             self.set_cookie( name='universe', value='' )
@@ -99,6 +113,7 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
             self.set_cookie( name='universe', value=history.id )
         self.__history = history
     history = property( get_history, set_history )
+    
     def get_user( self ):
         """
         Return the current user if logged in (based on cookie) or `None`.
@@ -110,6 +125,7 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
             else:
                 self.__user = self.app.model.User.get( int( id ) )
         return self.__user
+    
     def set_user( self, user ):
         """
         Set the current user to `user` (by setting a cookie).
@@ -119,7 +135,75 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         else:
             self.set_cookie( name='universe_user', value=user.id )  
         self.__user = user
-    user = property( get_user, set_user )  
+    user = property( get_user, set_user )
+    
+    def get_galaxy_session( self ):
+        """
+        Return the current user's galaxy_session.
+        """
+        if self.__galaxy_session is NOT_SET:
+            id = self.get_cookie( name='universe_session' )
+            if not id:
+                self.__galaxy_session = None
+            else:
+                self.__galaxy_session = self.app.model.GalaxySession.get( int( id ) )
+        return self.__galaxy_session
+    
+    def new_galaxy_session( self ):
+        galaxy_session = self.app.model.GalaxySession()
+        if self.user is not None:
+            galaxy_session.user_id = self.user.id
+        galaxy_session.remote_host = self.request.remote_host
+        galaxy_session.remote_addr = self.request.remote_addr
+        if self.history is not None:
+            galaxy_session.add_history(self.history)
+        galaxy_session.flush()
+        self.set_cookie( name='universe_session', value=galaxy_session.id )
+        self.__galaxy_session = galaxy_session
+        return self.__galaxy_session
+    
+    def set_galaxy_session( self, galaxy_session ):
+        """
+        Set the current galaxy_session by setting the universe_session cookie.
+        """
+        if galaxy_session is None:
+            #TODO we may want to raise an exception here instead of creating a new galaxy_session
+            galaxy_session = self.new_galaxy_session()
+        else:
+            if galaxy_session.user_id is None and self.user is not None:
+                galaxy_session.user_id = self.user.id
+                galaxy_session.flush()
+            self.set_cookie( name='universe_session', value=galaxy_session.id )
+            self.__galaxy_session = galaxy_session
+            
+    def galaxy_session_is_valid( self ):
+        # TODO do we want better validation here?
+        valid = False
+        a_galaxy_session = self.get_galaxy_session()
+        if a_galaxy_session is not None and a_galaxy_session.id is not None:
+            valid = True
+        return valid
+                
+    def end_galaxy_session( self ):
+        """
+        End the current galaxy_session by expiring the universe_session cookie.
+        """
+        if self.galaxy_session_is_valid():
+            self.set_cookie( name='universe_session', value=self.galaxy_session.id, age=0 )
+            self.__galaxy_session = None
+    galaxy_session = property( get_galaxy_session, set_galaxy_session )
+    
+    def make_associations( self ):
+        if self.galaxy_session_is_valid():
+           if self.galaxy_session.user_id is None and self.user is not None:
+                self.galaxy_session.user_id = self.user.id
+                self.galaxy_session.flush()
+                self.__galaxy_session = self.galaxy_session
+        if self.history is not None and self.user is not None:
+            self.history.user_id = self.user.id
+            self.history.flush()
+            self.__history = self.history
+                
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox
