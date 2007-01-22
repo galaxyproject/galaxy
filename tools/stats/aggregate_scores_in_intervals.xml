@@ -1,0 +1,45 @@
+<tool id="aggregate_scores_in_intervals" description="from the table browser (equivalent to wiggle format)." name="Aggregate datapoints">
+    <description>Appends the average, min, max, sum, and count of datapoints per interval</description>
+    <command interpreter="python2.4">aggregate_scores_in_intervals.py $input2 $input1 $out_file1</command>
+    <inputs>
+        <page>
+            <param format="text" name="input2" type="data" label="Datapoints from table browser"/>
+            <param format="interval" name="input1" type="data" label="Interval file"/>
+        </page>
+    </inputs>
+    <outputs>
+        <data format="interval" name="out_file1" metadata_source="input2"/>
+    </outputs>
+    <tests>
+      <test>
+        <!--
+        <param name="input1" value="1.bed" />
+        <param name="datasets" value="hg17/rp_hg17panTro1mm5rn3canFam1" />
+        <output name="out_file1" file="ggs_aggregate_datapoints.dat" />
+        -->
+      </test>
+    </tests>
+    <help>
+
+**Syntax**
+
+This tool returns aggregated data per interval in the form of the average, minimum and maximum of the data points for each given interval.
+
+Note: Datapoints must be in the format returned by the table browser.
+
+.. image:: ../../static/images/dat_points_table_brows_1.png
+
+-----
+
+**Example**
+
+*Input*
+
+.. image:: ../../static/images/aggregate_history1.png
+
+*Result*
+
+.. image:: ../../static/images/aggregate_history2.png
+
+    </help>
+</tool>
