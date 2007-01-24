@@ -4,14 +4,14 @@
 # paste.server_runner = galaxy.web.server:serve
 # port = 8080
 # # Change this to 0.0.0.0 to make public
-# host = 0.0.0.0
+# host = 127.0.0.1
 # # Size of worker thread pool for web server
 # nworkers = 10
 
 [server:main]
 use = egg:Paste#http
-port = 8192
-host = 0.0.0.0
+port = 8080
+host = 127.0.0.1
 use_threadpool = true
 threadpool_workers = 10
 
