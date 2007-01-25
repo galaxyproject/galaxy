@@ -588,14 +588,9 @@ class DefaultToolAction( object ):
         
         # Create the job object
         job = trans.app.model.Job()
-        if trans.galaxy_session_is_valid():
-            a_galaxy_session = trans.get_galaxy_session()
-        else:
-            a_galaxy_session = trans.new_galaxy_session()
-        job.session_id = a_galaxy_session.id
-        a_history = trans.get_history()
-        if a_history is not None:
-            job.history_id = a_history.id
+        job.session_id = trans.get_galaxy_session( create=True ).id
+        if trans.get_history() is not None:
+            job.history_id = trans.get_history().id
         job.tool_id = tool.id
         job.command_line = command_line
         job.param_filename = param_filename

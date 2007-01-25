@@ -73,7 +73,6 @@ Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
     Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
-    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ) ),
     Column( "tool_id", String( 255 ) ),
     Column( "state", String( 64 ) ),
@@ -81,7 +80,8 @@ Job.table = Table( "job", metadata,
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", String() ),
-    Column( "stderr", String() ) )
+    Column( "stderr", String() ),
+    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ) )
     
 JobParameter.table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -106,10 +106,10 @@ Event.table = Table( "event", metadata,
     Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
     Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), nullable=True ),
-    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True ),
-    Column( "tool_id", String( 255 ) ),
-    Column( "message", TrimmedString( 1024 ) ) )
+    Column( "message", TrimmedString( 1024 ) ),
+    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ),
+    Column( "tool_id", String( 255 ) ) )
 
 GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "id", Integer, primary_key=True ),

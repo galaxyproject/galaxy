@@ -28,7 +28,7 @@ class ASync(common.Root):
         if not kwd:
             return trans.response.send_redirect( "/index" )
 
-        history = trans.get_history()
+        history = trans.get_history( create=True )
         params  = util.Params(kwd, safe=False) 
         STATUS = params.STATUS
         URL = params.URL

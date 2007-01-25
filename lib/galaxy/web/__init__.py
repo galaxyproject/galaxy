@@ -52,8 +52,8 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         except:
             event.history_id = None
         event.user = self.user
-        if self.galaxy_session_is_valid():
-            event.session_id = self.galaxy_session.id   
+        self.ensure_valid_galaxy_session()
+        event.session_id = self.galaxy_session.id   
         event.flush()
         
     def get_cookie( self, name='universe' ):
@@ -81,7 +81,7 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         self.response.cookies[name]['expires'] = time.strftime('%a, %d-%b-%Y %H:%M:%S GMT', tstamp) 
         self.response.cookies[name]['version'] = version
         
-    def get_history( self ):
+    def get_history( self, create=False ):
         """
         Load the current history
         """
@@ -92,7 +92,9 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
                 history = self.app.model.History.get( id )
             if history is None:
                 history = self.new_history()
-            self.__history = history                
+            self.__history = history
+        if create is True and history is None:
+            history = self.new_history()             
         return self.__history
     
     def new_history( self ):
@@ -137,7 +139,7 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         self.__user = user
     user = property( get_user, set_user )
     
-    def get_galaxy_session( self ):
+    def get_galaxy_session( self, create=False ):
         """
         Return the current user's galaxy_session.
         """
@@ -147,6 +149,8 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
                 self.__galaxy_session = None
             else:
                 self.__galaxy_session = self.app.model.GalaxySession.get( int( id ) )
+        if create is True and self.__galaxy_session is None:
+            galaxy_session = self.new_galaxy_session()   
         return self.__galaxy_session
     
     def new_galaxy_session( self ):
@@ -183,7 +187,11 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         if a_galaxy_session is not None and a_galaxy_session.id is not None:
             valid = True
         return valid
-                
+
+    def ensure_valid_galaxy_session( self ):
+        if not self.galaxy_session_is_valid():
+            self.new_galaxy_session()
+
     def end_galaxy_session( self ):
         """
         End the current galaxy_session by expiring the universe_session cookie.

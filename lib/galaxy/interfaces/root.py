@@ -27,8 +27,7 @@ class Universe(common.Root):
             trans.set_cookie(name=self.pref_cookie_name, value=mode)
         else:
             mode = trans.get_cookie(name=self.pref_cookie_name)
-        if not trans.galaxy_session_is_valid():
-            trans.new_galaxy_session()
+        trans.ensure_valid_galaxy_session()
         result = trans.fill_template('index_frames.tmpl', mode=mode)
         return [ result ]
 
@@ -206,7 +205,7 @@ class Universe(common.Root):
                    assert data.parent == None, "You must delete the primary dataset first."
                    history.datasets.remove( data )
                    data.deleted = True
-                   trans.log_event( "Data delete: %s" % str(id) )
+                   trans.log_event( "Dataset marked as deleted, id: %s" % str(id) )
             self.app.model.flush()
         return self.history( trans )
         
@@ -220,7 +219,7 @@ class Universe(common.Root):
                assert data.parent == None, "You must delete the primary dataset first."
                history.datasets.remove( data )
                data.deleted = True
-               trans.log_event( "Data delete async: %s" % str(id) )
+               trans.log_event( "Dataset marked as deleted async, id: %s" % str(id) )
             self.app.model.flush()
         return "OK"
 
@@ -244,7 +243,7 @@ class Universe(common.Root):
                     # If deleting the current history, make a new current.
                     if history == trans.get_history():
                         trans.new_history()
-                trans.log_event( "History delete: %s" % str(hid) )
+                trans.log_event( "History marked as deleted, id: %s" % str(hid) )
                 self.app.model.flush()
             
         else:
@@ -259,7 +258,7 @@ class Universe(common.Root):
         for dataset in history.datasets:
             dataset.deleted = True
         self.app.model.flush()
-        trans.log_event( "History clear" )
+        trans.log_event( "History cleared, id: %s" % (str(history.id)) )
         trans.response.send_redirect("/index")
 
     @web.expose
@@ -325,10 +324,8 @@ class Universe(common.Root):
                 gvk TODO: how should we handle galaxy_session_to_history association here?
                 I'll do the following for now, but not sure if this is what we want...
                 """
-                if not trans.galaxy_session_is_valid():
-                    trans.new_galaxy_session()
-                new_history.add_galaxy_session(trans.get_galaxy_session())
-                trans.log_event( "History share: %s to %s" % (str(history.id),str(new_history.id)) )
+                new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
+                trans.log_event( "History share, id: %s, name: '%s': to new id: %s" % (str(history.id), history.name, str(new_history.id)) )
             self.app.model.flush()
             return trans.show_message( "History (%s) has been shared with: %s" % (",".join(history_names),email) )
         return trans.fill_template("history_share.tmpl", histories=histories, user=user, email=email, send_to_err=send_to_err)
@@ -342,8 +339,6 @@ class Universe(common.Root):
         
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
-        if not trans.galaxy_session_is_valid():
-            trans.new_galaxy_session()
         msg = ""
         user = trans.get_user()
         user_history = trans.get_history()
@@ -358,20 +353,20 @@ class Universe(common.Root):
             new_history = self.copy_history(import_history)
             new_history.name = "imported: "+new_history.name
             new_history.user_id = user.id
-            new_history.add_galaxy_session(trans.get_galaxy_session())
+            new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
             new_history.flush()
             if not user_history.datasets:
                 trans.set_history( new_history )
-            trans.log_event( "History import: %s" % str(new_history.id) )
+            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
             return trans.show_message( "History has been imported", refresh_frames=['history'])
         elif not user_history.datasets or confirm:
             new_history = self.copy_history(import_history)
             new_history.name = "imported: "+new_history.name
             new_history.user_id = None
-            new_history.add_galaxy_session(trans.get_galaxy_session())
+            new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
             new_history.flush()
             trans.set_history( new_history )
-            trans.log_event( "History import: %s" % str(new_history.id) )
+            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
             return trans.show_message( "History has been imported", refresh_frames=['history'])
         return trans.fill_template("history_import.tmpl", history=import_history)
 
@@ -380,13 +375,12 @@ class Universe(common.Root):
         if not id:
             return trans.fill_template( "history_switch.tmpl" )
         else:
-            if not trans.galaxy_session_is_valid():
-                trans.new_galaxy_session()
             new_history = trans.app.model.History.get( id )
             if new_history:
-                new_history.add_galaxy_session(trans.get_galaxy_session())
+                new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
+                new_history.flush()
                 trans.set_history( new_history )
-                trans.log_event( "History switch" )
+                trans.log_event( "History switched to id: %s, name: '%s'" % (str(new_history.id), new_history.name ) )
                 return trans.show_message( "History switched to: %s" % new_history.name,
                                            refresh_frames=['history'])
             else:
@@ -395,7 +389,7 @@ class Universe(common.Root):
     @web.expose
     def history_new( self, trans ):
         trans.new_history()
-        trans.log_event( "Created new History." )
+        trans.log_event( "Created new History, id: %s." % str(trans.get_history().id) )
         return self.history( trans )
         
     @web.expose
@@ -415,7 +409,7 @@ class Universe(common.Root):
         history.name = name
         history.user = user
         trans.app.model.flush()
-        trans.log_event( "History stored" )
+        trans.log_event( "History stored, id: %s, name: '%s'" % (str(history.id), history.name ) )
         return trans.show_message( "Current history stored as %s" % name, refresh_frames=['history']  )        
 
     @web.expose
@@ -452,7 +446,7 @@ class Universe(common.Root):
                     histories[i].name = name[i]
                     histories[i].flush()
                     change_msg = change_msg + "<p>History: "+cur_names[i]+" renamed to: "+name[i]+"</p>"
-                    trans.log_event( "History renamed: %s" % str(histories[i].id) )
+                    trans.log_event( "History renamed: id: %s, renamed to: '%s'" % (str(histories[i].id), name[i] ) )
                 else:
                     change_msg = change_msg + "<p>You must specify a valid name for History: "+cur_names[i]+"</p>"
             else:

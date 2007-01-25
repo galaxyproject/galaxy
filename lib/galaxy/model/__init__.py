@@ -103,7 +103,6 @@ class History( object ):
                 if data.id == parent_id:
                     dataset.hid = data.hid
                     break
-                    # TODO gvk: ask if this needs to be fixed, I don't want to break it if it isn't broken...
             else:
                 dataset.hid = self._next_hid()
         else:

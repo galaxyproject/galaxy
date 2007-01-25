@@ -88,13 +88,11 @@ class User( common.Root ):
                 password_error = "Invalid password"
             else:
                 trans.set_user( user )
-                if not trans.galaxy_session_is_valid():          
-                    trans.new_galaxy_session()
-                else:
-                    """
-                    Associate user with galaxy_session and history
-                    """
-                    trans.make_associations()
+                trans.ensure_valid_galaxy_session()
+                """
+                Associate user with galaxy_session and history
+                """
+                trans.make_associations()
                 trans.log_event( "User logged in" )
                 return trans.show_ok_message( "Now logged in as " + user.email, \
                     refresh_frames=['masthead', 'history'] )
@@ -133,13 +131,11 @@ class User( common.Root ):
                 user.set_password_cleartext( password )
                 user.flush()
                 trans.set_user( user )
-                if not trans.galaxy_session_is_valid():
-                    trans.new_galaxy_session()
-                else:
-                    """
-                    Associate user with galaxy_session and history
-                    """
-                    trans.make_associations()
+                trans.ensure_valid_galaxy_session()
+                """
+                Associate user with galaxy_session and history
+                """
+                trans.make_associations()
                 trans.log_event( "User created a new account" )
                 trans.log_event( "User logged in" )
                 #subscribe user to email list
