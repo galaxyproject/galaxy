@@ -196,25 +196,13 @@ class TwillTestCase(unittest.TestCase):
         data = self.last_page()
         file(temp_name, 'wb').write(data)
 
-        if not filecmp.cmp(local_name, temp_name):
-            #maybe it is just the line endings
-            lc = 0
-            for line1, line2 in zip(file(local_name), file(temp_name)):
-                lc += 1
-                line1 = line1.strip()
-                line2 = line2.strip()
-                if line1 != line2:
-                    # nicer message
-                    fromlines = open( local_name, 'U').readlines()
-                    tolines = open( temp_name, 'U').readlines()
-                    diff = difflib.unified_diff( fromlines, tolines, "local_file", "history_data" )
-                    diff_slice = list( islice( diff, 40 ) )
-                    if len( diff_slice ) == 40:
-                        errmsg = [ 'Data at history id %s does not match expected, first 40 lines of diff:\n' % hid ]
-                    else:
-                        errmsg = [ 'Data at history id %s does not match expected, diff:\n' % hid ]
-                    errmsg += diff_slice
-                    raise AssertionError( "".join( errmsg ) )
+        try:
+            self.diff(local_name, temp_name)
+        except AssertionError, err:
+            errmsg = 'Data at history id %s does not match expected, diff:\n' % hid
+            errmsg += str( err )
+            raise AssertionError( errmsg )
+
         os.remove(temp_name)
 
     def submit_form(self, form=1, button="runtool_btn", **kwd):
@@ -272,3 +260,20 @@ class TwillTestCase(unittest.TestCase):
         page = self.last_page()
         if page.find('error') > -1:
             raise AssertionError('Errors in the history for user %s' % self.user )
+
+    def diff(self, file1, file2):
+        if not filecmp.cmp(file1, file2):
+            #maybe it is just the line endings
+            lc = 0
+            for line1, line2 in zip(file(file1), file(file2)):
+                lc += 1
+                line1 = line1.strip()
+                line2 = line2.strip()
+                if line1 != line2:
+                    # nicer message
+                    fromlines = open( file1, 'U').readlines()
+                    tolines = open( file2, 'U').readlines()
+                    diff = difflib.unified_diff( fromlines, tolines, "local_file", "history_data" )
+                    diff_slice = list( islice( diff, 40 ) )
+                    raise AssertionError( "".join( diff_slice ) )
+        return True

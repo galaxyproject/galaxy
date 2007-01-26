@@ -1,3 +1,4 @@
+import os
 from base.twilltestcase import TwillTestCase
 
 class UcscTests(TwillTestCase):
@@ -32,7 +33,26 @@ class UcscTests(TwillTestCase):
         
         #self.check_data('biomart_uniprot.dat')
 
-    
+    def test_UCSC_interface(self):
+        """Diffing first page of UCSC proxy."""
+        # hgsid needs to be set or else we get a different one every time.
+        self.go2myurl("http://www.genome.ucsc.edu/cgi-bin/hgTables?org=Human&db=hg18&hgsid=84962660&hgta_doMainPage=1")
+        current_file = self.get_fname('new_ucsc_proxy_page.dat')
+        diff_file = self.get_fname('ucsc_proxy_page.dat')
+        
+        currentpage = self.last_page()
+        file(current_file, 'wb').write(currentpage)
+
+        try:
+            self.diff( current_file, diff_file )
+        except AssertionError, err:
+            raise AssertionError( "UCSC Page has changed:\n" + str( err ) )
+
+        # Note that execution will not reach this if there is an
+        # error.  This is intended so that the new ucsc page will be
+        # stored and can be easily checked by hand and updated.
+        os.remove( current_file )
+
     def test_UCSC_bed(self):
         """Getting bed files from UCSC"""
 
