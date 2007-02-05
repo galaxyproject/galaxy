@@ -1,24 +1,11 @@
-#build list of available data
-import sys
-builds= []
+#Provides Upload tool with access to list of available builds
+import galaxy.util
+builds = []
 
-try:
-    #read db names from file, this file is also used in galaxy/util.py
-    for line in open("static/ucsc/builds.txt"):
-        if line[0:1] == "#": continue
-        try:
-            fields = line.replace("\r","").replace("\n","").split("\t")
-            builds.append((fields[1], fields[0], False))
-        except: continue
-except Exception, exc:
-    print >>sys.stdout, 'upload_code.py initialization error -> %s' % exc 
+#Read build names and keys from galaxy.util
+for dbkey, build_name in galaxy.util.dbnames:
+    builds.append((build_name,dbkey,False))
 
-#return available builds
+#Return available builds
 def get_available_builds():
-    try:
-        available_options = builds[0:]
-    except:
-        available_options = []
-    if len(available_options) < 1:
-        available_options.append(('unspecified','?',True))
-    return available_options
+    return builds

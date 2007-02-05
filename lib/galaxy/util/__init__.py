@@ -249,19 +249,30 @@ def get_ucsc_by_build(build):
             sites.append((site['name'],site['url']))
     return sites
 
-#read db names from file, this file is also used in upload tool
-dbnames= []
+#Read build names from file, this list is also used in upload tool
+dbnames = []
 try:
     for line in open("static/ucsc/builds.txt"):
         try:
             if line[0:1] == "#": continue
             fields = line.replace("\r","").replace("\n","").split("\t")
-            dbnames.append( (fields[0],fields[1]) )
+            #Special case of unspecified build is at top of list
+            if fields[0] == "?":
+                dbnames.insert(0,(fields[0],fields[1]))
+                continue
+            #Alphabetize build list
+            for i in range(0,len(dbnames)):
+                if dbnames[i][0] == "?": continue
+                if dbnames[i][1] > fields[1]:
+                    dbnames.insert(i,(fields[0],fields[1]))
+                    break
+            else:
+                dbnames.append( (fields[0],fields[1]) )
         except: continue
 except:
     print "ERROR: Unable to read builds file"
 if len(dbnames)<1:
-    dbnames = [('?', 'unspecified')]
+    dbnames = [('?', 'unspecified (?)')]
     
     
 #read db names to ucsc mappings from file, this file should probably be merged with the one above
