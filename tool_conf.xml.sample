@@ -62,6 +62,7 @@
     <tool file="extract/extractAxt_wrapper.xml" />
     <tool file="extract/interval2maf.xml" />
     <tool file="extract/user_interval2maf.xml" />
+    <tool file="filters/maf/maf_limit_to_species.xml"/>
   </section>
   <section name="Alignment Viewers" id="align_view">
     <tool file="visualization/GMAJ.xml" />
