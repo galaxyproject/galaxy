@@ -1,0 +1,31 @@
+<tool id="kaks" name="yn00">
+  <description>Computes Ka/Ks ratio for every alignment</description>
+  <command interpreter="python2.4">
+    test_kaks.py $input $out_file1
+  </command>
+  <inputs>
+    <param name="input" type="data" format="fasta"  
+           label="Select data" help="Query missing? See TIP below"/>
+        
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="kaks_input"/>
+      <output name="out_file1" file="kaks_output"/>
+    </test>
+  </tests>
+  <help> 
+.. class:: infomark
+
+
+**Details**
+
+- This tool finds the ratio of the number of nonsynonymous substitutions per nonsynonymous site (Ka) to the number of synonymous substitutions per synonymous site (Ks) for the alignments in the input file.
+
+
+
+</help>  
+</tool>

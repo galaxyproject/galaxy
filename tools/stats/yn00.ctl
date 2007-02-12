@@ -1,0 +1,2 @@
+seqfile = seqfile
+outfile = outfile
