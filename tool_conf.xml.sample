@@ -339,5 +339,6 @@
  <section name="PAML" id="mdea">
     <tool file="mdea/BaseML.xml" />
     <tool file="mdea/AlphaSubst.xml" />
+    <tool file="stats/kaks.xml" />
  </section>
 </toolbox>
