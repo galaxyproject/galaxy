@@ -15,6 +15,15 @@ host = 127.0.0.1
 use_threadpool = true
 threadpool_workers = 10
 
+## Start an AJP listener on port 4001 with 10 processes and 10 threads per process
+# [server:main]
+# paste.server_factory = galaxy.web.flupservers.ajp_forkthreaded:factory
+# minSpare = 10
+# maxSpare = 10
+# maxThreads = 10
+# host = localhost
+# port = 4001
+
 # The base application dispatches some queries to universe and others to 
 # static files
 
