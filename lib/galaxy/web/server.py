@@ -55,6 +55,8 @@ import SocketServer
 import Queue
 import threading
 import socket
+import os
+import signal
 
 import logging
 log = logging.getLogger( __name__ )
@@ -103,16 +105,17 @@ class ThreadPool( object ):
         for worker in self.workers:
             worker.join()
 
-class ThreadPoolServer( SocketServer.TCPServer ):
+class PreforkThreadPoolServer( SocketServer.TCPServer ):
     """
     Server that uses a pool of threads for request handling
     """
     allow_reuse_address = 1
-    def __init__( self, server_address, request_handler, nworkers ):
+    def __init__( self, server_address, request_handler, nworkers, nprocesses ):
         # Create and start the workers
+        self.nprocesses = nprocesses
+        self.nworkers = nworkers
         self.running = True
         assert nworkers > 0, "ThreadPoolServer must have at least one worker"
-        self.thread_pool = ThreadPool( nworkers, "ThreadPoolServer on %s:%d" % server_address )
         # Call the base class constructor
         SocketServer.TCPServer.__init__( self, server_address, request_handler )
     def process_request( self, request, client_address ):
@@ -141,8 +144,32 @@ class ThreadPoolServer( SocketServer.TCPServer ):
         """
         Overrides `serve_forever` to shutdown cleanly.
         """
+        log.info( "Serving requests..." )
+        # Pre-fork each child
+        children = []
+        for i in range( self.nprocesses )
+            pid = os.fork()
+            if pid:
+                # We are in the parent process
+                children.append( pid )
+            else:
+                # We are in the child process
+                signal.signal( signal.SIGINT, self.shutdown )
+                self.serve_forever_child()
+                sys.exit( 0 )
+        # Wait
         try:
-            log.info( "Serving requests..." )
+            wait_lock = threading.Lock()
+            wait_lock.acquire()
+        except KeyboardInterrupt:
+            # Cleanup, kill all children
+            for child in children:
+                os.kill( child, signal.SIGINT )
+        
+        log.info( "Shutting down..." )
+    def serve_forver_child( self ):
+        thread_pool = ThreadPool( nworkers, "ThreadPoolServer on %s:%d" % server_address )
+        try:    
             while self.running:
                 try:
                     self.handle_request()
@@ -150,9 +177,9 @@ class ThreadPoolServer( SocketServer.TCPServer ):
                     # Timeout is expected, gives interrupts a chance to 
                     # propogate, just keep handling
                     pass
-            log.info( "Shutting down..." )
         finally:
             self.thread_pool.shutdown()
+            
     def shutdown( self ):
         """
         Finish pending requests and shutdown the server
@@ -167,7 +194,7 @@ class ThreadPoolServer( SocketServer.TCPServer ):
         self.socket.settimeout(1)
         SocketServer.TCPServer.server_activate(self)
         
-class WSGIThreadPoolServer( ThreadPoolServer ):
+class WSGIPreforkThreadPoolServer( PreforkThreadPoolServer ):
     """
     Server that mixes ThreadPoolServer and WSGIHandler
     """
@@ -184,7 +211,7 @@ class WSGIThreadPoolServer( ThreadPoolServer ):
 
 def serve( wsgi_app, global_conf, host="127.0.0.1", port="8080",
            server_version=None, protocol_version=None, start_loop=True,
-           daemon_threads=None, socket_timeout=None, nworkers=10 ):
+           daemon_threads=None, socket_timeout=None, nworkers=10, nprocesses=2 ):
     """
     Similar to `paste.httpserver.serve` but using the thread pool server
     """
@@ -197,7 +224,7 @@ def serve( wsgi_app, global_conf, host="127.0.0.1", port="8080",
         assert protocol_version in ('HTTP/0.9','HTTP/1.0','HTTP/1.1')
         handler.protocol_version = protocol_version
 
-    server = WSGIThreadPoolServer( wsgi_app, server_address, int( nworkers ) )
+    server = WSGIThreadPoolServer( wsgi_app, server_address, int( nworkers ), int( nprocesses ) )
     if daemon_threads:
         server.daemon_threads = daemon_threads
     if socket_timeout:
@@ -212,5 +239,8 @@ def serve( wsgi_app, global_conf, host="127.0.0.1", port="8080",
             pass
     return server
 
-
+if __name__ == '__main__':
+    from paste.wsgilib import dump_environ
+    serve(dump_environ, server_version="Wombles/1.0",
+          protocol_version="HTTP/1.1", port="8888")
 
