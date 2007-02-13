@@ -278,7 +278,10 @@ class PBSJobRunner( object ):
             stderr = 'Job output not returned by PBS.  Manually dequeued or cluster error?'
             log.debug(stderr)
 
-        pbs_job_state.job_wrapper.finish( stdout, stderr )
+        try:
+            pbs_job_state.job_wrapper.finish( stdout, stderr )
+        except:
+            log.exception("Job wrapper finish method failed")
 
         # clean up the job_file, ofile, efile
         if os.access(ofile, os.R_OK):
