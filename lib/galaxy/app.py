@@ -67,4 +67,10 @@ def app_factory( global_conf, **kwargs ):
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
         webapp = middleware.make_middleware( webapp, global_conf, **kwargs )
+    # Close any pooled database connections before forking
+    try:
+        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
+    except:
+        pass
+    # Return
     return webapp
