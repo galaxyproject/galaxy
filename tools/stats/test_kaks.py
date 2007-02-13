@@ -33,7 +33,7 @@ def kaks(subset1, subset2):
          f.close()
 
 	 # run yn00 on the input file 
-	 os.system("~/galaxy_2.2/tools/stats/yn00 yn00.ctl > /dev/null")
+	 os.system("./yn00 yn00.ctl > /dev/null")
 	 
 	 	
 	 # compute the Ka/Ks ratio from the output file
