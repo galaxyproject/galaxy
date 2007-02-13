@@ -40,12 +40,18 @@ class JobQueue( object ):
     def __init__( self, app ):
         """Start the job manager"""
         self.app = app
+        # Should we use IPC to communicate (needed if forking)
+        self.track_jobs_in_database = app.config.get( 'track_jobs_in_database', False )
+        # Keep track of the pid that started the job manager, only it
+        # has valid threads
+        self.parent_pid = os.getpid()
         # Contains new jobs
         self.queue = Queue()
         # Contains jobs that are waiting (only use from monitor thread)
         self.waiting = []
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
+        self.running = True
         self.dispatcher = DefaultJobDispatcher( app )
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
@@ -56,17 +62,28 @@ class JobQueue( object ):
         Continually iterate the waiting jobs, checking is each is ready to 
         run and dispatching if so.
         """
-        while 1:
+        while self.running:
             # Pull all new jobs from the queue at once
             new_jobs = []
-            try:
-                while 1:
-                    job = self.queue.get_nowait()
-                    if job is self.STOP_SIGNAL:
-                        return
+            if self.track_jobs_in_database:
+                model = self.app.model
+                for j in model.Job.select( model.Job.c.state == 'new' ):
+                    job = JobWrapper( j.id, self.app.toolbox.tools_by_id[ j.tool_id ], self )
                     new_jobs.append( job )
-            except Empty:
-                pass
+            else:
+                try:
+                    while 1:
+                        message = self.queue.get_nowait()
+                        if message is self.STOP_SIGNAL:
+                            return
+                        # Unpack the message
+                        job_id, tool_id = message
+                        # Create a job wrapper from it
+                        job = JobWrapper( job_id, self.app.toolbox.tools_by_id[ tool_id ], self )
+                        # Append to watch queue
+                        new_jobs.append( job )
+                except Empty:
+                    pass
             # Iterate over new and waiting jobs and look for any that are 
             # ready to run
             new_waiting = []
@@ -94,15 +111,23 @@ class JobQueue( object ):
             
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""
-        self.queue.put( JobWrapper( job_id, tool, self ) )
-        self.sleeper.wake()
+        if not self.track_jobs_in_database:
+            self.queue.put( ( job_id, tool.id ) )
+            self.sleeper.wake()
     
     def shutdown( self ):
         """Attempts to gracefully shut down the worker thread"""
-        log.info( "sending stop signal to worker thread" )
-        self.queue.put( self.STOP_SIGNAL )
-        log.info( "job queue stopped" )
-        self.dispatcher.shutdown()
+        if self.parent_pid != os.getpid():
+            # We're not the real job queue, do nothing
+            return
+        else:
+            log.info( "sending stop signal to worker thread" )
+            self.running = False
+            if not self.track_jobs_in_database:
+                self.queue.put( self.STOP_SIGNAL )
+            self.sleeper.wake()
+            log.info( "job queue stopped" )
+            self.dispatcher.shutdown()
 
 class JobWrapper( object ):
     """

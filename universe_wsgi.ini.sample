@@ -42,6 +42,8 @@ use = egg:Paste#urlmap
 paste.app_factory = galaxy.app:app_factory
 # Configuration for the universe application
 job_queue_workers = 5
+# Jobs should be tracked by querying the database (MUST when forking)
+## track_jobs_in_database = True
 template_path = templates
 database_file = database/universe.sqlite
 #You may use a SQLAlchemy connection string to specify an external database
