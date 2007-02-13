@@ -25,6 +25,34 @@
 
 - This tool finds the ratio of the number of nonsynonymous substitutions per nonsynonymous site (Ka) to the number of synonymous substitutions per synonymous site (Ks) for the alignments in the input file.
 
+-----
+
+**Syntax**
+
+- The input file should contain the aligned sequences in FASTA format
+    >Seq 1_a
+     AAAAAAAAAAAGGGGGGGG
+    >Seq 1_b	
+     AAAAAAGGGGGGGGGGGGG
+
+
+    >Seq 2_a
+     TTTTTTTTTTCCCCCC
+    >Seq2_b
+     TTTT-----CCCCCAT
+
+- The output will have the Ka/Ks value written above each pair of the aligned sequences.
+    Ka/Ks : 0.14
+     >Seq 1_a
+      AAAAAAAAAAAGGGGGGGG
+     >Seq 1_b	
+      AAAAAAGGGGGGGGGGGGG
+
+    Ka/Ks : 0.06
+     >Seq 2_a
+      TTTTTTTTTTCCCCCC
+     >Seq2_b
+      TTTT-----CCCCCAT
 
 
 </help>  
