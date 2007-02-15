@@ -1,0 +1,34 @@
+<tool id="srg2wig1" name="Srg2wig">
+  <description>converter</description>
+  <command interpreter="perl">srg2wig.pl $input $out_file1</command>
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Convert this srg to wiggle"/>
+   </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" />
+  </outputs>
+  <help>
+
+
+**Syntax**
+
+This tool converts srg tables into variableStep wiggle tables.
+
+If your input looks like this::
+
+   chr2   16447976        1.08385
+   chr2   16447977        0.01
+   chr4   16417846        1.26935
+   chr4   16418578        1.54405
+
+it will be converted into this::
+
+   variableStep chrom=chr2
+   16447976        1.08385
+   16447977        0.01
+   variableStep chrom=chr4
+   16417846        1.26935
+   16418578        1.54405
+
+</help>
+</tool>
