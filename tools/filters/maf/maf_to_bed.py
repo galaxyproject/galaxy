@@ -7,7 +7,7 @@ Read a maf and output intervals for specified list of species.
 from __future__ import division
 
 import textwrap
-import sys, tempfile
+import sys, tempfile, os
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
 
@@ -15,6 +15,10 @@ def __main__():
         
     input_filename = sys.argv[1]
     output_filename = sys.argv[2]
+    #where to store files that become additional output
+    database_tmp_dir =  './database/tmp' #os.path.join(os.path.split(os.path.split(os.path.realpath(output_filename))[0])[0],'tmp') #database/tmp
+    
+    
     species = sys.argv[3].split(',')
     partial = sys.argv[4]
     out_files = {}
@@ -41,7 +45,7 @@ def __main__():
             out_files[spec] = open(output_filename, 'w')
             primary_spec = spec
         else:
-            out_files[spec] = tempfile.NamedTemporaryFile('w')
+            out_files[spec] = tempfile.NamedTemporaryFile(mode='w',dir=database_tmp_dir, suffix='.maf_to_bed')
             filename = out_files[spec].name
             out_files[spec].close()
             out_files[spec] = open(filename, 'w')
@@ -65,7 +69,7 @@ def __main__():
             if not spec or not chrom:
                     spec = chrom = c.src
             if spec not in out_files.keys():
-                out_files[spec] = tempfile.NamedTemporaryFile('w')
+                out_files[spec] = tempfile.NamedTemporaryFile(mode='w',dir=database_tmp_dir, suffix='.maf_to_bed')
                 filename = out_files[spec].name
                 out_files[spec].close()
                 out_files[spec] = open(filename, 'w')
@@ -77,7 +81,7 @@ def __main__():
 
     for spec in out_files.keys():
         if spec != primary_spec:
-            print "#FILE\t"+spec+"\t"+out_files[spec].name
+            print "#FILE\t"+spec+"\t"+os.path.join(database_tmp_dir,os.path.split(out_files[spec].name)[1])
         else:
             print "#FILE1\t"+spec+"\t"+out_files[spec].name
 
