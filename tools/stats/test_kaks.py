@@ -1,74 +1,122 @@
 #! /usr/bin/python
 # this tool computes Ka/Ks ratios for the alignments in the input file
-import sys, sets, re, os
+import sys, sets, re, os, tempfile
 
-def kaks(subset1, subset2):
+curdir = os.path.dirname(sys.argv[0])
+curdir = os.path.abspath(curdir)
 
-     aligns = [subset1, subset2]
-     ratio = 0
-     curdir = os.getcwd()
-          
+def kaks(blocknum,seqs):
+			 
+     seqcnt = len(seqs)
+     ratio = ""
+     #curdir = os.getcwd()
+     #print ("curdir = %s", curdir)
+     
+     workdir = curdir + "/kaks"
+     os.chdir(workdir)
+   
      try:
-         # create control file
-         out = file("yn00.ctl", "w")
-         print >>out, "seqfile = seqfile"
-         print >>out, "outfile = outfile"
-         out.close()
+         j =0
+	 flagmat = []
+	 for i in range(seqcnt): flagmat.append([1]*seqcnt)
+	 while j < seqcnt-1:
+		k = j + 1
+		while k < seqcnt: 
+			if len(seqs[j].strip()) != len(seqs[k].strip()):
+				myratio = "Unequal lengths"
+				ratio = str(blocknum) + "\t" + "-" + "\t" + "-" + "\t" + str(myratio) 
+				flagmat[j][k] = -1	
+				return ratio
+			k += 1
+		j += 1
+	 j=0
+	 while j < seqcnt-1:
+		k = j + 1
+		while k < seqcnt:
+	 		flagmat[j][k] = 1
+			if ((len(seqs[j]))%3 != 0):
+	 			chop = (len(seqs[j]))%3
+				seq1 = seqs[j]
+				seq2 = seqs[k]
+				seq1 = seq1[:-chop]
+				seq2 = seq2[:-chop]
+				seqs[j] = seq1
+				seqs[k] = seq2	
+			k += 1
+		j += 1
 
-	 if len(subset1) != len(subset2):
-	 	ratio = "Error: The two sequences have unequal lengths"	 
-		return ratio
-	 if ((len(subset2))%3 != 0):
-	 	chop = (len(subset2))%3
-		subset1 = subset1[:-chop]
-		subset2 = subset2[:-chop]
 
-         # create the input file
-         f = open('seqfile', 'w')
-         print >>f, len(aligns), len(subset2), 'I'
+	# create the input file
+	 f = open('seqfile', 'w')
+	 i=0
+	 print >>f, seqcnt, len(seqs[0]), 'I'
          print >>f
-	 print >>f, "name1" +"\n"+ "name2" 
+	 while i < seqcnt:
+	 	print >>f, "name" 
+		i += 1
+ 	 i=0
 	 print >>f, 1
-	 print >>f, subset1+ "\n" + subset2 + "\n"
-         f.close()
-
-	 # run yn00 on the input file 
-	 os.system("./yn00 yn00.ctl > /dev/null")
+	 while i < seqcnt:
+		print >>f, seqs[i]
+		i += 1
+	 f.close()
+	
+	 
+         # run yn00 on the input file 
+		 
+	 outfile = tempfile.NamedTemporaryFile()
+	 cmdline = "./yn00 -s seqfile -o " + outfile.name + " > /dev/null"
+	 os.system(cmdline) 	
 	 
 	 	
 	 # compute the Ka/Ks ratio from the output file
-	 f = open('outfile', 'r')
+	
 	 line = ''
-	 lines = f.readlines()
+	 lines = outfile.readlines()
+	 #print ("lines : %s", lines)
 	 if len(lines) == 0:
-		ratio = "Error: One of the sequences contains either a stop codon or invalid character(s)" 
+		myratio = "STOP codon encountered" 
+		ratio = str(blocknum) + "\t" + "-" + "\t" + "-" + "\t" + str(myratio) 
 		return ratio
 	 else:
 	 	i = 0
-		fields = ""
+		fields = list()
+		pairs = seqcnt*(seqcnt-1)/2
 		while i != len(lines):
 		     if lines[i] ==  'seq. seq.     S       N        t   kappa   omega     dN +- SE    dS +- SE\n':
-			 fields = lines[i+2]
+			 k = 0 
+			 ratio=""
+			 while k < pairs:
+			 	fields.append(lines[i+2+k])
+				subfields = fields[k].split()
+	     			Ka = subfields[7]
+				Ks = subfields[10]
+				
+				if Ka != 'nan' and Ks != 'nan':
+					try:
+		    				myratio = float(Ka)/float(Ks)
+						myratio = round (myratio, 3)
+					except:
+						myratio = 'nan'
+		    			
+		    			ratio = ratio + str(blocknum) + "\t" + subfields[0] + "\t" + subfields[1] + "\t" + str(myratio) + "\n"
+				else:
+		    			ratio = ratio + str(blocknum) + "\t" + subfields[0] + "\t" + subfields[1] + "\t" + 'nan'+ "\n"
+				k+=1
 			 break
 		     else:
 			 i += 1
 			 
-		subfields = fields.split()
-	     	Ka = subfields[7]
-		Ks = subfields[10]
-		if Ka != 'nan' and Ks != 'nan':
-		    ratio = float(Ka)/float(Ks)
-		    ratio = round (ratio, 2)
-		else:
-		    ratio = 'nan'
-		f.close()
+		
+	 outfile.close()
 	 
 	
      
      finally:
         os.chdir(curdir)
      
-     return ratio
+    
+     return ratio.strip()
 
 
 
@@ -78,32 +126,42 @@ if len(sys.argv) != 3:
 inp_file  = sys.argv[1]
 out_file = sys.argv[2]
 fp = open(inp_file)
-s1 = fp.read()
-sets = s1.split(">")
-
-j = 1
+filestr = fp.read()
+blocksep = "\n\n"
+j = 0
+blocknum = 1
 fo = open(out_file, 'w')
-while j < len(sets):
-    subset1 = sets[j].split("\n")
-    subset2 = sets[j+1].split("\n")
-    k=2
-    if k < len(subset1):
-	subset1[1] = subset1[1] + subset1[k]
-	k += 1
-    k=2
-    if k < len(subset2):
-	subset2[1] = subset2[1] + subset2[k]
-	k += 1	
-    subset1[1].replace(" ","")
-    subset1[1].replace("\r","")
-    subset1[1].replace("\t","")
-    subset2[1].replace(" ","")
-    subset2[1].replace("\r","")
-    subset2[1].replace("\t","")
-   
-    ratio = kaks(subset1[1].replace("\n",""), subset2[1].replace("\n",""))
+filestr = filestr.strip()
+blocks = filestr.split(blocksep)
+
+print >> fo, "Block" + "\t" + "Seq" + "\t" + "Seq" + "\t" + "ka/ks ratio"
+while j < len(blocks):
     
-    print >>fo, "Ka/Ks ratio : " + str(ratio) + "\n>" + sets[j].strip() + "\n>" + sets[j+1].strip() + "\n"
-    j += 2
+    sets = blocks[j].split(">")
+    sequences = list()
+    seqcnt = 1
+    while seqcnt < len(sets):
+	subset = sets[seqcnt].split("\n")
+	
+	k=2
+    	if k < len(subset):
+		subset[1] = subset[1] + subset[k]
+		k += 1 
+	subset[1]=subset[1].replace(" ","")
+	subset[1]=subset[1].replace("\r","")
+	subset[1]=subset[1].replace("\t","")	
+	sequences.append(subset[1].replace("\n","")) 
+    	seqcnt += 1
+    if sequences != []:
+    	ratio = kaks(j+1,sequences)   # j+1 is the block number
+        print >>fo, ratio
+    	j += 1
+    	blocknum += 1
+    else:
+	fo.close()
+	fo = open(out_file, 'w')
+	fo.write("Input error found at block " + str(j+1)+"\n")
+	fp.close()
+	sys.exit()
 fo.close()
 fp.close()

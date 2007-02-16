@@ -9,7 +9,7 @@
         
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data format="table" name="out_file1" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -27,33 +27,30 @@
 
 -----
 
-**Syntax**
+**Example** 
 
-- The input file should contain the aligned sequences in FASTA format
-    >Seq 1_a
+- Input file should consist of blocks of aligned sequences in FASTA format separated by a new line::
+
+    >Block 1 Seq 1
      AAAAAAAAAAAGGGGGGGG
-    >Seq 1_b	
+    >Block1 Seq 2	
      AAAAAAGGGGGGGGGGGGG
 
-
-    >Seq 2_a
+    >Block 2 Seq 1
      TTTTTTTTTTCCCCCC
-    >Seq2_b
+    >Block 2 Seq 2
      TTTT-----CCCCCAT
+    >Block 2 Seq 3
+     TTGGGGTTTAAACTAA
 
-- The output will have the Ka/Ks value written above each pair of the aligned sequences.
-    Ka/Ks : 0.14
-     >Seq 1_a
-      AAAAAAAAAAAGGGGGGGG
-     >Seq 1_b	
-      AAAAAAGGGGGGGGGGGGG
+- Output file consists of a table with ka/ks ratios of all sequence pairs of all blocks::
 
-    Ka/Ks : 0.06
-     >Seq 2_a
-      TTTTTTTTTTCCCCCC
-     >Seq2_b
-      TTTT-----CCCCCAT
-
+    Block	Seq	Seq	ka/ks ratio
+    1		2	1	0.06
+    2		2	1	0.78
+    2		3	1	0.62
+    2		3	2	0.04
+	
 
 </help>  
 </tool>
