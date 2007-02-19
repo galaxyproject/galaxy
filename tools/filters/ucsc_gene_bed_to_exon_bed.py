@@ -32,7 +32,7 @@ def main():
     parser.add_option( "-o", "--output", dest="output", default=None,
                        help="Output file" )
     options, args = parser.parse_args()
-    assert options.region in ( 'coding', 'utr3', 'utr5', 'transcribed' ), "Invalid region argument"
+    assert options.region in ( 'coding', 'utr3', 'utr5', 'transcribed', 'intron' ), "Invalid region argument"
     
     try:
         out_file = open (options.output,"w")
@@ -55,7 +55,9 @@ def main():
     
     # Read table and handle each gene
     for line in in_file:
+	
         try:
+	    
             if line[0:1] == "#":
                 continue
             # Parse fields from gene tabls
@@ -67,7 +69,8 @@ def main():
             strand    = fields[5].replace(" ","_")
             cds_start = int( fields[6] )
             cds_end   = int( fields[7] )
-
+	    
+	    	
             # Determine the subset of the transcribed region we are interested in
             if options.region == 'utr3':
                 if strand == '-': region_start, region_end = tx_start, cds_start
@@ -82,17 +85,29 @@ def main():
 
             # If only interested in exons, print the portion of each exon overlapping
             # the region of interest, otherwise print the span of the region
+	    # options.exons is always TRUE
             if options.exons:
                 exon_starts = map( int, fields[11].rstrip( ',\n' ).split( ',' ) )
                 exon_starts = map((lambda x: x + tx_start ), exon_starts)
                 exon_ends = map( int, fields[10].rstrip( ',\n' ).split( ',' ) )
                 exon_ends = map((lambda x, y: x + y ), exon_starts, exon_ends);
-                for start, end in zip( exon_starts, exon_ends ):
-                    start = max( start, region_start )
-                    end = min( end, region_end )
-                    if start < end:
-                        if strand: print_tab_sep(out_file, chrom, start, end, name, "0", strand )
-                        else: print_tab_sep(out_file, chrom, start, end )
+		#for Intron regions:
+		if options.region == 'intron':
+			i=0
+	    		while i < len(exon_starts)-1:
+            			intron_starts = exon_ends[i] + 1
+				intron_ends = exon_starts[i+1] - 1
+				if strand: print_tab_sep(out_file, chrom, intron_starts, intron_ends, name, "0", strand )
+                		else: print_tab_sep(out_file, chrom, intron_starts, intron_ends )
+				i+=1
+		#for non-intron regions:
+		else:
+                	for start, end in zip( exon_starts, exon_ends ):
+                    		start = max( start, region_start )
+                    		end = min( end, region_end )
+                    		if start < end:
+                        		if strand: print_tab_sep(out_file, chrom, start, end, name, "0", strand )
+                        		else: print_tab_sep(out_file, chrom, start, end )
             else:
                 if strand: print_tab_sep(out_file, chrom, region_start, region_end, name, "0", strand )
                 else: print_tab_sep(out_file, chrom, region_start, region_end )

@@ -1,20 +1,18 @@
 <tool id="gene2exon1" name="Gene BED To Exon BED">
 <description>expander</description>
-  <command interpreter="python">ucsc_gene_bed_to_exon_bed.py --input=$input1 --output=$out_file1 --region=$region $exon</command>
+  <command interpreter="python">ucsc_gene_bed_to_exon_bed.py --input=$input1 --output=$out_file1 --region=$region "--exons"</command>
   <inputs>
     <param name="input1" type="data" format="interval" label="UCSC Gene Table"/>
     <param name="region" type="select">
       <label>Feature Type</label>
-      <option value="transcribed">Transcribed</option>
+      <option value="transcribed">Coding + UTR</option>
       <option value="coding">Coding</option>
       <option value="utr3">3' UTR</option>
       <option value="utr5">5' UTR</option>
+      <option value="intron">Introns</option>
     </param>
-    <param name="exon" type="select">
-      <label>Output only exons?</label>
-      <option value="--exons">Yes</option>
-      <option value="">No</option>
-    </param>
+    
+    
   </inputs>
   <outputs>
     <data name="out_file1" format="bed"/>
@@ -23,7 +21,6 @@
     <test>
       <param name="input1" value="3.bed" /> 
       <param name="region" value="transcribed" />
-      <param name="exon" value="--exons" />
       <output name="out_file1" value="cf-gene2exon.dat"/>
     </test>
   </tests>
@@ -60,8 +57,8 @@ This tool converts a UCSC gene bed format file to a list of bed format lines cor
 
 - A UCSC gene bed format file::
 
-    chr7 127475281 127491632 NM_000230 0 + 127486022 127488767 0 3 29,172,3225,    0,10713,13126,
-    chr7 127486011 127488900 D49487    0 + 127486022 127488767 0 2 155,490,        0,2399,
+    chr7 127475281 127491632 NM_000230 0 + 127486022 127488767 0 3 29,172,3225,    0,10713,13126
+    chr7 127486011 127488900 D49487    0 + 127486022 127488767 0 2 155,490,        0,2399
 
 - Converts the above file to a list of bed lines, which has the transcribed regions and overlap with exons. (if user selects **"Transcribed** and **Yes** to exon only output)::
 
