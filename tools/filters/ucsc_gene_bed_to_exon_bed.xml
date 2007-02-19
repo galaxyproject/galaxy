@@ -1,4 +1,4 @@
-<tool id="gene2exon1" name="Gene BED To Exon BED">
+<tool id="gene2exon1" name="Gene BED To Exon/Intron BED">
 <description>expander</description>
   <command interpreter="python">ucsc_gene_bed_to_exon_bed.py --input=$input1 --output=$out_file1 --region=$region "--exons"</command>
   <inputs>
@@ -60,7 +60,7 @@ This tool converts a UCSC gene bed format file to a list of bed format lines cor
     chr7 127475281 127491632 NM_000230 0 + 127486022 127488767 0 3 29,172,3225,    0,10713,13126
     chr7 127486011 127488900 D49487    0 + 127486022 127488767 0 2 155,490,        0,2399
 
-- Converts the above file to a list of bed lines, which has the transcribed regions and overlap with exons. (if user selects **"Transcribed** and **Yes** to exon only output)::
+- Converts the above file to a list of bed lines, which has the transcribed regions and overlap with exons. (if user selects **Coding + UTR**)::
 
     chr7 127475281 127475310 NM_000230 0 +
     chr7 127485994 127486166 NM_000230 0 +
