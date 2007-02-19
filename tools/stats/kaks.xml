@@ -1,7 +1,7 @@
 <tool id="kaks" name="yn00">
   <description>Computes Ka/Ks ratio for every alignment</description>
   <command interpreter="python2.4">
-    test_kaks.py $input $out_file1
+    kaks_yn00.py $input $out_file1
   </command>
   <inputs>
     <param name="input" type="data" format="fasta"  
