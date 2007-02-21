@@ -157,10 +157,10 @@ class Params:
     #       different parameters can be sanitized in different ways.
     NEVER_SANITIZE = ['file_data', 'url_paste', 'URL']
     
-    def __init__(self, params, safe=True):
+    def __init__(self, params, safe=True, sanitize=True):
         if safe:
             for key, value in params.items():
-                if key not in self.NEVER_SANITIZE:
+                if key not in self.NEVER_SANITIZE and sanitize:
                     self.__dict__[key] = sanitize_param(value)
                 else:
                     self.__dict__[key] = value

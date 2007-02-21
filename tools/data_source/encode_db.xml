@@ -17,5 +17,7 @@
 	</inputs>
 	
 	<code file="encodedb_filter.py"/>
+	
+	<options sanitize="False" refresh="True"/>
 
 </tool>

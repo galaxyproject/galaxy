@@ -1,6 +1,3 @@
-
-#set $refresh = $tool.id in [ 'biomart', 'encode_db1' ]
-
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 
@@ -16,14 +13,14 @@ if ( parent.frames && parent.frames.galaxy_history )
 
   function add_refresh()
    {
-    #if $refresh
+    #if $tool.options.refresh
        setTimeout( "refresh()", 1000 ); //
     #end if
    }
 
    function refresh()
    {
-      window.location.href = '$request.base';
+      top.location.href = '$request.base';
    }
 
 </script>
@@ -36,7 +33,7 @@ if ( parent.frames && parent.frames.galaxy_history )
 <div class="donemessage">
 
 
-#if $refresh
+#if $tool.options.refresh
 <h3 align="center">Redirecting to <a href="$request.base">GALAXY</a> </h3>
 #end if
 

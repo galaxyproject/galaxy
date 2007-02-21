@@ -132,6 +132,15 @@ class Tool:
             file_name = code_elem.get("file")
             code_path = os.path.join( self.tool_dir, file_name )
             execfile( code_path, self.code_namespace )
+        # Load any tool specific options (optional)
+        self.options = {'sanitize':True, 'refresh':False}
+        for option_elem in root.findall("options"):
+            for option, value in self.options.copy().items():
+                if isinstance(value, type(False)):
+                    self.options[option] = util.string_as_bool(option_elem.get(option, str(value)))
+                else:
+                    self.options[option] = option_elem.get(option, str(value))
+        self.options = Bunch(** self.options)
         # Load parameters (optional)
         input_elem = root.find("inputs")
         if input_elem:

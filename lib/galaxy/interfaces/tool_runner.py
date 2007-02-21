@@ -35,7 +35,7 @@ class ToolRunner(common.Root):
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             return "Tool '%s' does not exist, kwd=%s " % (tool_id, kwd)
-        params = util.Params(kwd)
+        params = util.Params(kwd, sanitize = tool.options.sanitize)
         history = trans.get_history()
         trans.ensure_valid_galaxy_session()
         template, vars = tool.handle_input( trans, params.__dict__ )
