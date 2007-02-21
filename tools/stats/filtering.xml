@@ -1,6 +1,6 @@
 <tool id="Filter1" name="Filter">
   <description>data on any column using simple expressions</description>
-  <command interpreter="python">
+  <command interpreter="python2.4">
     filtering.py $input $out_file1 "$cond"
   </command>
   <inputs>
