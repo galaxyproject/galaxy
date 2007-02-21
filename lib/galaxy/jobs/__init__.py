@@ -62,6 +62,8 @@ class JobQueue( object ):
         Continually iterate the waiting jobs, checking is each is ready to 
         run and dispatching if so.
         """
+        # HACK: Delay until after forking, we need a way to do post fork notification!!!
+        time.sleep( 10 )
         while self.running:
             # Pull all new jobs from the queue at once
             new_jobs = []
