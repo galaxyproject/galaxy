@@ -110,7 +110,7 @@ for i, line in enumerate( open( inp_file )):
             skipped_lines += 1
             flags.append(False)
             if not invalid_line:
-                first_invalid_line = i
+                first_invalid_line = i + 1
                 invalid_line = line
     else:
         flags.append(False)
