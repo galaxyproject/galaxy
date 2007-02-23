@@ -20,7 +20,7 @@ usage: %prog maf_file index_file [options] < interval_file
    -o, --output_file=o:      Output MAF file
 """
 
-import psyco_full
+#import psyco_full
 
 import cookbook.doc_optparse
 

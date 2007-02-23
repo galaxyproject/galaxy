@@ -1,4 +1,4 @@
-<tool id="aggregate_scores_in_intervals" description="from the table browser (equivalent to wiggle format)." name="Aggregate datapoints">
+<tool id="aggregate_scores_in_intervals1" description="from the table browser (equivalent to wiggle format)." name="Aggregate datapoints">
     <description>Appends the average, min, max, sum, and count of datapoints per interval</description>
     <command interpreter="python2.4">aggregate_scores_in_intervals.py $input2 $input1 $out_file1</command>
     <inputs>

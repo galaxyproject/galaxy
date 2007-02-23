@@ -1,4 +1,4 @@
-<tool id="aggregate_scores_in_intervals" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints">
+<tool id="aggregate_scores_in_intervals2" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints">
     <description>Appends the average, min, max, sum, and count of datapoints per interval</description>
     <command interpreter="python2.4">aggregate_binned_scores_in_intervals.py $input1 $datasets -o $out_file1 -S static/score_repository/encode/hg16/ </command>
     <code file="aggregate_binned_scores_in_intervals_code.py"/>
