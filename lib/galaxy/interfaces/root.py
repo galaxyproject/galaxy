@@ -104,7 +104,7 @@ class Universe(common.Root):
                 if toext[0:1] != ".":
                     toext = "." + toext
                 trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s%s" % (data.hid, toext)
-            trans.log_event( "Data view: %s" % str(id) )
+            trans.log_event( "Display dataset id: %s" % str(id) )
             try:
                 return open( data.file_name )
             except: 
@@ -123,7 +123,7 @@ class Universe(common.Root):
                 mime = data.get_mime()
                 trans.response.set_content_type(mime)
                 file_name = data.as_bedfile()
-                trans.log_event( "Data view as BED: %s" % str(id) )
+                trans.log_event( "Display dataset id %s as BED: %s" % str(id) )
                 return open(file_name)
             else:
                 return 'This file cannot be displayed as bed'
@@ -184,10 +184,10 @@ class Universe(common.Root):
                     data.extension = 'interval'
                     
             data.flush()
-            trans.log_event( "Data edit complete: %s" % str(id) )
+            trans.log_event( "Completed editing of dataset id %s" % str(id) )
             return trans.fill_template( "edit_complete.tmpl" )
         else:
-            trans.log_event( "Data edit view: %s" % str(id) )
+            trans.log_event( "Opened edit view on dataset %s" % str(id) )
             return trans.fill_template( "edit.tmpl", data=data, dbnames=util.dbnames )
 
     @web.expose
@@ -205,7 +205,7 @@ class Universe(common.Root):
                    assert data.parent == None, "You must delete the primary dataset first."
                    history.datasets.remove( data )
                    data.deleted = True
-                   trans.log_event( "Dataset marked as deleted, id: %s" % str(id) )
+                   trans.log_event( "Dataset id %s marked as deleted" % str(id) )
             self.app.model.flush()
         return self.history( trans )
         
@@ -219,7 +219,7 @@ class Universe(common.Root):
                assert data.parent == None, "You must delete the primary dataset first."
                history.datasets.remove( data )
                data.deleted = True
-               trans.log_event( "Dataset marked as deleted async, id: %s" % str(id) )
+               trans.log_event( "Dataset id %s marked as deleted async" % str(id) )
             self.app.model.flush()
         return "OK"
 
@@ -243,7 +243,7 @@ class Universe(common.Root):
                     # If deleting the current history, make a new current.
                     if history == trans.get_history():
                         trans.new_history()
-                trans.log_event( "History marked as deleted, id: %s" % str(hid) )
+                trans.log_event( "History id %s marked as deleted" % str(hid) )
                 self.app.model.flush()
             
         else:
@@ -258,7 +258,7 @@ class Universe(common.Root):
         for dataset in history.datasets:
             dataset.deleted = True
         self.app.model.flush()
-        trans.log_event( "History cleared, id: %s" % (str(history.id)) )
+        trans.log_event( "History id %s cleared" % (str(history.id)) )
         trans.response.send_redirect("/index")
 
     @web.expose
@@ -334,8 +334,8 @@ class Universe(common.Root):
     def history_available( self, trans, id=None, **kwd ):
         if not isinstance( id, list ):
             id = [ id ]
-        trans.log_event( "History view available" )
-        return trans.fill_template( "history_available.tmpl",ids=id )
+        trans.log_event( "History id %s available" % str( id ))
+        return trans.fill_template( "history_available.tmpl", ids=id )
         
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):

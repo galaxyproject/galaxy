@@ -65,6 +65,7 @@ class UCSCProxy(common.Root):
             page = urllib.urlopen(url)
             content = page.info().get('Content-type', '')
         except Exception, exc:
+            trans.log_event( "Proxy Error -> %s" % str(exc) )
             msg = 'There has been a problem connecting to <i>%s</i> <p> <b>%s<b>' % (base_url, exc)
             return msg
 

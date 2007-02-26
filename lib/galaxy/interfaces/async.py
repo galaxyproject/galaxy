@@ -103,6 +103,7 @@ class ASync(common.Root):
             data.state = data.states.NEW
             trans.history.add_dataset( data )
             trans.model.flush()
+            trans.log_event( "Async added dataset %s to history %s" %(data.name, trans.history.name ), tool_id=tool_id)
 
             try:
                 galaxy_url  = trans.request.base + '/async/%s/%s' % ( tool_id, data.id )
