@@ -28,11 +28,11 @@ direction = sys.argv[4]
 
 elems = []
 newline = ""
-fp = open(inp_file)
-while 1:
-    line = fp.readline().strip()
-    if line != "":
-	elems = line.split('\t')
+
+for line in open ( inp_file ):
+    line = line.strip()
+    if line and not line.startswith( '#' ):
+        elems = line.split( '\t' )
 	if direction == "up":
 		if elems[5] == '+':
 		    elems[1] = int(elems[1]) - size
@@ -65,7 +65,6 @@ while 1:
     
     elif line == "":
         break
-fp.close()
 
 if not elems:
     stop_err('Empty file?')    

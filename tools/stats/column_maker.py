@@ -1,7 +1,11 @@
 # this is a tool that creates another column
-import sys, sets, re
+import sys, sets, re, os.path
 
 def get_wrap_func(value):
+    """
+    Determine the data type of each column in the input file
+    (valid data types for columns are either string or float)
+    """
     try:
         check = float(value)
         return 'float(%s)'
@@ -50,28 +54,29 @@ try:
 except Exception, e:
     stop_err("Cannot recognize the word %s in condition %s" % (e, cond_text) )
 
-#
-# guess how many columns there are and what wrappers are appropriate for each
-#
+"""
+Determine the number of columns in the input file and the data type for each
+"""
 elems = []
-fp = open(inp_file)
-while 1:
-    line = fp.readline().strip()
-    if line and line[0] != '#':
-        elems = line.split('\t')
-        break
-fp.close()
+if os.path.exists( inp_file ):
+    for line in open( inp_file ):
+        line = line.strip()
+        if line and not line.startswith( '#' ):
+            elems = line.split( '\t' )
+            break
+else:
+    stop_err('The input data file "%s" does not exist.' % inp_file)
 
 if not elems:
-    stop_err('Empty file?')    
+    stop_err('No non-blank or non-comment lines in input data file "%s"' % inp_file)    
 
 if len(elems) == 1:
     if len(line.split()) != 1:
         stop_err('This tool can only be run on tab delimited files')
 
-#
-# prepare the variable names and wrappers
-#
+"""
+Prepare the column variable names and wrappers for column data types
+"""
 cols, funcs = [], []
 for ind, elem in enumerate(elems):
     name = 'c%d' % ( ind + 1 )
@@ -87,7 +92,7 @@ cols = []
 code = '''
 for line in file(inp_file):
     line = line.strip()
-    if line and line[0] != '#':
+    if line and not line.startswith( '#' ):
         %s
         %s
         cols.append(%s)

@@ -5,7 +5,7 @@ The tool will skip over invalid lines within the file, informing the user about 
 Invalid lines are those that do not follow the standard defined when the get_wrap_func function (immediately below)
 is applied to the first uncommented line in the input file.
 """
-import sys, sets, re
+import sys, sets, re, os.path
 
 def get_wrap_func(value):
     """
@@ -61,16 +61,17 @@ except Exception, e:
 Determine the number of columns in the input file and the data type for each
 """
 elems = []
-fp = open(inp_file)
-while 1:
-    line = fp.readline().strip()
-    if line and line[0] != '#':
-        elems = line.split('\t')
-        break
-fp.close()
+if os.path.exists( inp_file ):
+    for line in open( inp_file ):
+        line = line.strip()
+        if line and not line.startswith( '#' ):
+            elems = line.split( '\t' )
+            break
+else:
+    stop_err('The input data file "%s" does not exist.' % inp_file)
 
 if not elems:
-    stop_err('Empty file?')    
+    stop_err('No non-blank or non-comment lines in input data file "%s"' % inp_file)    
 
 if len(elems) == 1:
     if len(line.split()) != 1:
@@ -98,7 +99,7 @@ invalid_line = None
 code = '''
 for i, line in enumerate( open( inp_file )):
     line = line.strip()
-    if line and line[0] != '#':
+    if line and not line.startswith( '#' ):
         try:
             %s
             %s
