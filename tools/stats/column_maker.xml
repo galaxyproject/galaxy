@@ -1,6 +1,6 @@
 <tool id="Add a column1" name="Compute">
   <description>an expression on every row</description>
-  <command interpreter="python">
+  <command interpreter="python2.4">
     column_maker.py $input $out_file1 "$cond"
   </command>
   <inputs>
