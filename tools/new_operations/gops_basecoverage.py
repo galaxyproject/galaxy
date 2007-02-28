@@ -37,7 +37,8 @@ def main():
     g1 = GenomicIntervalReader( fileinput.FileInput( in_fname ),
                                 chrom_col=chr_col_1,
                                 start_col=start_col_1,
-                                end_col=end_col_1)
+                                end_col=end_col_1,
+                                fix_strand=True)
     if strand_col_1 >= 0:
         g1.strand_col=strand_col_1
 
