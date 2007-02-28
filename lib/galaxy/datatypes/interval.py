@@ -2,10 +2,14 @@
 Interval datatypes
 
 """
+import pkg_resources
+pkg_resources.require( "bx-python" )
+
 import logging, os, sys, time, sets, tempfile, shutil
 import data
 from galaxy import util
 from cgi import escape
+from bx.intervals.io import *
 
 log = logging.getLogger(__name__)
 
@@ -159,6 +163,28 @@ class Interval( Tabular ):
                 os.write(fd, '%s\n' % '\t'.join(tmp) )    
         os.close(fd)
         return temp_name
+
+    def validate( self, dataset ):
+        """Validate an interval file using the bx GenomicIntervalReader"""
+        errors = list()
+        c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
+        c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
+        infile = open(dataset.file_name, "r")
+        reader = GenomicIntervalReader(
+            infile,
+            chrom_col = c,
+            start_col = s,
+            end_col = e,
+            strand_col = t)
+
+        while True:
+            try:
+                reader.next()
+            except ParseError, e:
+                errors.append(e)
+            except StopIteration:
+                infile.close()
+                return errors
 
 class Bed( Interval ):
     """Tab delimited data in BED format"""

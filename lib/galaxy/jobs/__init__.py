@@ -230,6 +230,26 @@ class JobWrapper( object ):
             data = dataset_assoc.dataset
             if data.state == data.states.FAKE:
                 data.deleted = True
+        # validate output datasets
+        for out_dataset in job.output_datasets:
+            # file must exist in order to validate it
+            if os.path.exists(out_dataset.dataset.file_name):
+                errors = out_dataset.dataset.datatype.validate(out_dataset.dataset)
+                if len(errors) > 0:
+                    # create child dataset with errors
+                    errordata = self.app.model.Dataset(hid=out_dataset.dataset.hid,
+                                                       parent_id=out_dataset.dataset.id,
+                                                       state=model.Dataset.states.OK,
+                                                       extension='text',
+                                                       name='Errors',
+                                                       info='', blurb='Errors!')
+                    errordata.flush()
+                    errorfile = open(errordata.file_name,"w")
+                    for error in errors:
+                        print >> errorfile, str( error )
+                    errorfile.close()
+                    errordata.set_peek()
+                    self.app.model.flush()
         mapping.context.current.flush()
         log.debug('job ended, id: %d' % self.job_id )
         

@@ -36,6 +36,9 @@ class Data( object ):
             return "info unavailable"
     def get_ucsc_sites(self, dataset):
         return util.get_ucsc_by_build(dataset.dbkey)
+    def validate(self, dataset):
+        """Unimplemented validate, return no exceptions"""
+        return list()
 
 class Text( Data ):
     def write_from_stream(self, stream):
