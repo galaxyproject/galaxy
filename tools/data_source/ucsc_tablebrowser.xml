@@ -11,6 +11,7 @@
 		<param name="tool_id" type="hidden" value="ucsc_table_direct1" />
 		<param name="sendToGalaxy" type="hidden" value="1" />
 		<param name="hgta_compressType" type="hidden" value="none" />
+		<param name="hgta_outputType" type="hidden" value="bed" />
 	</inputs>
 	
 	<code file="ucsc_tablebrowser_code.py"/>
