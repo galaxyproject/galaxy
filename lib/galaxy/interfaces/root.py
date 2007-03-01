@@ -123,7 +123,7 @@ class Universe(common.Root):
                 mime = data.get_mime()
                 trans.response.set_content_type(mime)
                 file_name = data.as_bedfile()
-                trans.log_event( "Display dataset id %s as BED: %s" % str(id) )
+                trans.log_event( "Display dataset id %s as BED" % str(id) )
                 return open(file_name)
             else:
                 return 'This file cannot be displayed as bed'
