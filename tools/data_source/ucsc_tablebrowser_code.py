@@ -21,6 +21,7 @@ def exec_before_job( trans, inp_data, out_data, param_dict, tool=None):
         ext = outputType
         try: ext = outputType_to_ext[outputType]
         except: pass
+        if ext not in datatypes.datatypes_by_extension: ext = 'interval'
         
         data = datatypes.change_datatype(data, ext)
         
