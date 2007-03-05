@@ -69,7 +69,7 @@ def make_middleware( app, global_conf, **local_conf ):
             log.debug( "Enabling 'lint' middleware" )
         # Middleware to run the python profiler on each request
         if asbool( conf.get( 'use_profile', False ) ):
-            from paste.debug import profile
+            import profile
             app = profile.ProfileMiddleware( app, conf )
             log.debug( "Enabling 'profile' middleware" )
         # Interactive exception debugging, scary dangerous if publicly
