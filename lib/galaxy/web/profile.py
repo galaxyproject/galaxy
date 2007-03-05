@@ -72,116 +72,103 @@ class ProfileMiddleware(object):
             return body.append
         def run_app():
             body.extend(self.app(environ, replace_start_response))
-        #self.lock.acquire()
-        try:
-            # Run in profiler
-            prof = cProfile.Profile()
-            prof.runctx( "run_app()", globals(), locals() )
-            # Build up body with stats
-            body = ''.join(body)
-            headers = catch_response[1]
-            content_type = response.header_value(headers, 'content-type')
-            if not content_type.startswith('text/html'):
-                # We can't add info to non-HTML output
-                return [body]
-            stats = Stats( prof )
-            stats.strip_dirs()
-            stats.sort_stats('time', 'calls')
-            #output = capture_output(stats.print_stats, self.limit)
-            #output_callers = capture_output(
-            #    stats.print_callers, self.limit)
-            stats.f = StringIO()
-            stats.print_stats( self.limit )
-            output = stats.f.getvalue()
-            output_callers = ""
-            #body += '<div style="%s">%s\n%s</div>' % (
-            #    self.style, output, cgi.escape(output_callers))
-            body += template % output
+        # Run in profiler
+        prof = cProfile.Profile()
+        prof.runctx( "run_app()", globals(), locals() )
+        # Build up body with stats
+        body = ''.join(body)
+        headers = catch_response[1]
+        content_type = response.header_value(headers, 'content-type')
+        if not content_type.startswith('text/html'):
+            # We can't add info to non-HTML output
             return [body]
-        finally:
-            pass
-            # self.lock.release()
-        
-# pstats.Stats annoyingly assumes you want to print to stdout, to avoid this 
-# we have to duplicate the whole thing here. Since we're at it, also format
-# as HTML and escape values.
+        stats = pstats.Stats( prof )
+        stats.strip_dirs()
+        stats.sort_stats( 'time', 'calls' )
+        output = pstats_as_html( stats, self.limit )
+        body += template % output
+        return [body]
+            
+def pstats_as_html( stats, *sel_list ):
+    """
+    Return an HTML representation of a pstats.Stats object.
+    """
+    rval = []
+    # Number of function calls, primitive calls, total time
+    rval.append( "<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
+            % ( stats.total_calls, stats.prim_calls, stats.total_tt ) )
+    # Extract functions that match 'sel_list'
+    funcs, order_message, select_message = get_func_list( stats, sel_list )
+    # Deal with any ordering or selection messages
+    if order_message:
+        rval.append( "<div>%s</div>" % cgi.escape( order_message ) )
+    if select_message:
+        rval.append( "<div>%s</div>" % cgi.escape( select_message ) )
+    # Build a table for the functions
+    if list:
+        rval.append( "<table>" )
+        # Header
+        rval.append( "<tr><th>ncalls</th>"
+                     "<th>tottime</th>"
+                     "<th>percall</th>"
+                     "<th>cumtime</th>"
+                     "<th>percall</th>"
+                     "<th>filename:lineno(function)</th></tr>" )
+        for func in funcs:
+            rval.append( "<tr>" )
+            # Calculate each field
+            cc, nc, tt, ct, callers = stats.stats[ func ]
+            # ncalls
+            ncalls = str(nc)
+            if nc != cc:
+                ncalls = ncalls + '/' + str(cc)
+            rval.append( "<td>%s</td>" % cgi.escape( ncalls ) )
+            # tottime
+            rval.append( "<td>%0.8f</td>" %  tt )
+            # percall
+            if nc == 0:
+                percall = ""
+            else:
+                percall = "%0.8f" %  ( tt / nc )
+            rval.append( "<td>%s</td>" % cgi.escape( percall ) )
+            # cumtime
+            rval.append( "<td>%0.8f</td>" % ct )
+            # ctpercall
+            if cc == 0:
+                ctpercall = ""
+            else:
+                ctpercall = "%0.8f" % ( ct / cc )
+            rval.append( "<td>%s</td>" % cgi.escape( ctpercall ) )
+            # location
+            rval.append( "<td>%s</td>" % cgi.escape( func_std_string( func ) ) )
+            # row complete
+            rval.append( "</tr>" )
+        rval.append( "</table>")
+        # Concatenate result
+        return "".join( rval )
+      
+def get_func_list( stats, sel_list ):
+    """
+    Use 'sel_list' to select a list of functions to display. 
+    """
+    # Determine if an ordering was applied
+    if stats.fcn_list:
+        list = stats.fcn_list[:]
+        order_message = "Ordered by: " + stats.sort_type 
+    else:
+        list = stats.stats.keys()
+        order_message = "Random listing order was used"
+    # Do the selection and accumulate messages
+    select_message = ""
+    for selection in sel_list:
+        list, select_message = stats.eval_print_amount( selection, list, select_message )
+    # Return the list of functions selected and the message
+    return list, order_message, select_message
     
-class Stats( pstats.Stats ):    
-    
-    def print_cell( self, val, tag="td" ):
-        print >> self.f, "<%s>%s</%s>" % ( tag, cgi.escape( val ), tag )
-    
-    def get_print_list(self, sel_list):
-        width = self.max_name_len
-        if self.fcn_list:
-            list = self.fcn_list[:]
-            msg = "   Ordered by: " + self.sort_type + '\n'
-        else:
-            list = self.stats.keys()
-            msg = "   Random listing order was used\n"
-
-        for selection in sel_list:
-            list, msg = self.eval_print_amount(selection, list, msg)
-
-        count = len(list)
-
-        if not list:
-            return 0, list
-        print >> self.f, "<div>", cgi.escape( msg ), "</div>"
-        if count < len(self.stats):
-            width = 0
-            for func in list:
-                if  len(func_std_string(func)) > width:
-                    width = len(func_std_string(func))
-        return width+2, list
-    
-    def print_stats( self, *amount ):
-        for filename in self.files:
-            print >> self.f, filename
-        if self.files: print >> self.f, ""
-        indent = ' ' * 8
-        for func in self.top_level:
-            print >> self.f, indent, func_get_function_name(func)
-
-        print >> self.f, indent, self.total_calls, "function calls",
-        if self.total_calls != self.prim_calls:
-            print >> self.f, "(%d primitive calls)" % self.prim_calls,
-        print >> self.f, "in %.3f CPU seconds" % self.total_tt
-        print >> self.f, ""
-        width, list = self.get_print_list(amount)
-        if list:
-            print >> self.f, "<table>"
-            print >> self.f, '<tr><th>ncalls</th><th>tottime</th><th>percall</th>' \
-                             '<th>cumtime</th><th>percall</th><th>filename:lineno(function)</th></tr>'
-            for func in list:
-                self.print_line(func)
-            print >> self.f, "</table>"
-        return self
-    
-    def print_line( self, func ):  # hack : should print percentages
-        print >> self.f, "<tr>"
-        cc, nc, tt, ct, callers = self.stats[func]
-        c = str(nc)
-        if nc != cc:
-            c = c + '/' + str(cc)
-        self.print_cell( c )
-        self.print_cell( f8(tt) )
-        if nc == 0:
-            self.print_cell( "" )
-        else:
-            self.print_cell( f8(tt/nc) )
-        self.print_cell( f8(ct) )
-        if cc == 0:
-            self.print_cell( "" )
-        else:
-            self.print_cell( f8(ct/cc) )
-        self.print_cell( func_std_string(func) )
-        print >> self.f, "<tr>"
-
-def func_get_function_name(func):
-    return func[2]
-
-def func_std_string(func_name): # match what old profile produced
+def func_std_string( func_name ): 
+    """
+    Match what old profile produced
+    """
     if func_name[:2] == ('~', 0):
         # special case for built-in functions
         name = func_name[2]
@@ -191,32 +178,3 @@ def func_std_string(func_name): # match what old profile produced
             return name
     else:
         return "%s:%d(%s)" % func_name
-
-def add_func_stats(target, source):
-    """Add together all the stats for two profile entries."""
-    cc, nc, tt, ct, callers = source
-    t_cc, t_nc, t_tt, t_ct, t_callers = target
-    return (cc+t_cc, nc+t_nc, tt+t_tt, ct+t_ct,
-              add_callers(t_callers, callers))
-
-def add_callers(target, source):
-    """Combine two caller lists in a single list."""
-    new_callers = {}
-    for func, caller in target.iteritems():
-        new_callers[func] = caller
-    for func, caller in source.iteritems():
-        if func in new_callers:
-            new_callers[func] = caller + new_callers[func]
-        else:
-            new_callers[func] = caller
-    return new_callers
-
-def count_calls(callers):
-    """Sum the caller statistics to get total number of calls received."""
-    nc = 0
-    for calls in callers.itervalues():
-        nc += calls
-    return nc
-
-def f8(x):
-    return "%8.3f" % x
