@@ -5,7 +5,7 @@ def exec_before_job( trans, inp_data, out_data, param_dict, tool=None):
     """Sets the name of the data"""
     outputType = param_dict.get( 'hgta_outputType', "interval" ) #assume all data is interval, we will fix later if not the case
     #list for converting ucsc to galaxy exts, if not in here, use raw reported value
-    outputType_to_ext = {'wigData':'wig','tab':'interval','hyperlinks':'html'}
+    outputType_to_ext = {'wigData':'wig','tab':'interval','hyperlinks':'html','sequence':'fasta'}
     items = out_data.items()
     description = param_dict.get('hgta_regionType',"")
     organism = param_dict.get('org',"unkown species")
