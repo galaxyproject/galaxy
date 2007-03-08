@@ -237,12 +237,14 @@ class JobWrapper( object ):
                 errors = out_dataset.dataset.datatype.validate(out_dataset.dataset)
                 if len(errors) > 0:
                     # create child dataset with errors
-                    errordata = self.app.model.Dataset(hid=out_dataset.dataset.hid,
-                                                       parent_id=out_dataset.dataset.id,
-                                                       state=model.Dataset.states.OK,
-                                                       extension='text',
-                                                       name='Errors',
-                                                       info='', blurb='Errors!')
+                    errordata = model.Dataset( hid=out_dataset.dataset.hid,
+                                               state=model.Dataset.states.OK,
+                                               extension='text',
+                                               name='Errors',
+                                               info='', blurb='Errors!')
+                    assoc = model.DatasetChildAssociation()
+                    assoc.child = errordata
+                    out_dataset.children.append( assoc )
                     errordata.flush()
                     errorfile = open(errordata.file_name,"w")
                     for error in errors:

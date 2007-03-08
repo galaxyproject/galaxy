@@ -240,11 +240,14 @@ class Dataset( object ):
     def get_ucsc_sites( self ):
         return self.datatype.get_ucsc_sites( self )
     def get_child_by_designation(self, designation):
-        if self.history:
-            for data in self.history.datasets:
-                if data.parent_id and data.parent_id == self.id:
-                    if designation == data.designation:
-                        return data
+        # if self.history:
+        #     for data in self.history.datasets:
+        #         if data.parent_id and data.parent_id == self.id:
+        #             if designation == data.designation:
+        #                 return data
+        for child_assocation in self.children:
+            if child_association.designation == designation:
+                return child
         return None
     # FIXME: sqlalchemy will replace this
     def _delete(self):
@@ -253,6 +256,12 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
+            
+class DatasetChildAssociation( object ):
+    def __init__( self, designation=None ):
+        self.designation = designation
+        self.parent = None
+        self.child = None
             
 class Event( object ):
     def __init__( self, message=None, history=None, user=None, galaxy_session=None ):

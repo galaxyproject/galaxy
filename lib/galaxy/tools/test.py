@@ -20,3 +20,12 @@ class ToolTestBuilder( object ):
         self.inputs.append( ( name, value, extra ) )
     def add_output( self, name, file ):
         self.outputs.append( ( name, file ) )
+        
+class BadToolTest( object ):
+    """
+    Represents a tool test that failed to parse
+    """
+    def __init__( self, tool, name, exception=None ):
+        self.tool = tool
+        self.name = name 
+        self.exception = exception

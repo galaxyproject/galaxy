@@ -8,7 +8,7 @@ from cookbook.patterns import Bunch
 from galaxy import util, jobs
 from elementtree import ElementTree
 from parameters import *
-from galaxy.tools.test import ToolTestBuilder
+from galaxy.tools.test import ToolTestBuilder, BadToolTest
 
 log = logging.getLogger( __name__ )
 
@@ -245,20 +245,29 @@ class Tool:
         self.tests = []
         for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
             name = test_elem.get( 'name', 'Test-%d' % (i+1) )
-            test = ToolTestBuilder( self, name )
-            for param_elem in test_elem.findall( "param" ):
-                attrib = dict( param_elem.attrib )
-                if 'values' in attrib:
-                    value = attrib[ 'values' ].split( ',' )
-                elif 'value' in attrib:
-                    value = attrib['value']
-                else:
-                    value = None
-                test.add_param( attrib.pop( 'name' ), value, attrib )
-            for output_elem in test_elem.findall( "output" ):
-                attrib = dict( output_elem.attrib )
-                test.add_output( attrib.pop( 'name' ), attrib.pop( 'file' ) )
-            self.tests.append( test )
+            try:
+                test = ToolTestBuilder( self, name )
+                for param_elem in test_elem.findall( "param" ):
+                    attrib = dict( param_elem.attrib )
+                    if 'values' in attrib:
+                        value = attrib[ 'values' ].split( ',' )
+                    elif 'value' in attrib:
+                        value = attrib['value']
+                    else:
+                        value = None
+                    test.add_param( attrib.pop( 'name' ), value, attrib )
+                for output_elem in test_elem.findall( "output" ):
+                    attrib = dict( output_elem.attrib )
+                    name = attrib.pop( 'name', None )
+                    if name is None:
+                        raise Exception( "Test output does not have a 'name'" )
+                    file = attrib.pop( 'file', None )
+                    if file is None:
+                        raise Exception( "Test output does not have a 'file'")
+                    test.add_output( name, file )
+                self.tests.append( test )
+            except Exception, e:
+                self.tests.append( BadToolTest( self, name, e ) )
 
     def parse_page( self, input_elem, enctypes ):
         param_map = odict()
@@ -407,12 +416,14 @@ class Tool:
         #   $dataset.get_child( 'name' ).filename
         for name, data in input_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data )
-            for child in data.children:
+            for child_association in data.children:
+                child = child_association.child
                 key = "_CHILD___%s___%s" % ( name, child.designation ) 
                 param_dict[ key ] = DatasetFilenameWrapper( child )
         for name, data in output_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data )
-            for child in data.children:
+            for child_association in data.children:
+                child = child_association.child
                 key = "_CHILD___%s___%s" % ( name, child.designation ) 
                 param_dict[ key ] = DatasetFilenameWrapper( child )
         # Return the dictionary of parameters
@@ -478,34 +489,48 @@ class DefaultToolAction( object ):
     """
     Default tool action is to run an external command
     """
+    
+    def collect_input_datasets( self, tool, incoming ):
+        """
+        Collect any dataset inputs from incoming. Returns a mapping from 
+        parameter name to Dataset instance for each tool parameter that is
+        of the DataToolParameter type.
+        """
+        input_datasets = dict()
+        for name, value in incoming.iteritems():
+            param = tool.get_param( name )
+            if param and isinstance( param, DataToolParameter ):
+                if isinstance( value, list ):
+                    # If there are multiple inputs with the same name, they
+                    # are stored as name1, name2, ...
+                    for i, v in enumerate( value ):
+                        input_datasets[ name + str( i + 1 ) ] = v
+                else:
+                    input_datasets[ name ] = value
+        return input_datasets
+    
     def execute(self, tool, trans, incoming={} ):
-        inp_data   = {}
         out_data   = {}
-        # collect the input data
-        for name, value in incoming.items():
-            param = tool.get_param(name)
-            if param:
-                count = 1
-                if isinstance(param, DataToolParameter ):
-                    # multiple inputs on the same parameter name will be created as name1, name2 ...
-                    if isinstance( value, list ):
-                        for v in value:
-                            inp_data[name+str(count)] = v 
-                            count += 1
-                    else:
-                        inp_data[name] = value
         
-        # input metadata
+        # Collect any input datasets from the incoming parameters
+        inp_data = self.collect_input_datasets( tool, incoming )
+        
+        # Deal with input metadata, 'dbkey', names, and types
+        
         # FIXME: does this need to modify 'incoming' or should this be 
-        #        moved into 'build_param_dict'?
-        input_names, input_ext, input_dbkey, input_meta = [ ], 'data', incoming.get("dbkey", "?"), Bunch()
+        #        moved into 'build_param_dict'? Is this just about getting the
+        #        metadata into the command line? 
+        input_names = []
+        input_ext = 'data'
+        input_dbkey = incoming.get( "dbkey", "?" )
+        input_meta = Bunch()
         for name, data in inp_data.items():
-            #fix for fake incoming data
+            # Hack for fake incoming data
             if data == None:
                 data = trans.app.model.Dataset()
                 data.state = data.states.FAKE
-            input_names.append( 'data %s' % data.hid)
-            input_ext   = data.ext
+            input_names.append( 'data %s' % data.hid )
+            input_ext = data.ext
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
             for meta_key, meta_value in data.metadata.items():
@@ -513,74 +538,84 @@ class DefaultToolAction( object ):
                     meta_key = '%s_%s' % (name, meta_key)
                     incoming[meta_key] = meta_value
 
-        # format input names  for display
-        if input_names: 
-            input_names = 'on ' + ', '.join(input_names)
-        else:
-            input_names = '' 
+        # Build name for output datasets based on tool name and input names
+        output_base_name = tool.name
+        if input_names:
+            output_base_name += ' on ' + ', '.join( input_names )
         
-        # add the dbkey to the incoming parameters
-        incoming["dbkey"] = input_dbkey
+        # Add the dbkey to the incoming parameters
+        incoming[ "dbkey" ] = input_dbkey
         
-        #Use to store param_name -> data id and existing child/parent relationships
-        name_id = {}
-        child_parent = {}
-        # create the output data
+        # Keep track of parent / child relationships, we'll create all the 
+        # datasets first, then create the associations
+        parent_to_child_pairs = []
+        child_dataset_names = set()
+        
         for name, elems in tool.outputs.items():
-            (ext, metadata_source, parent) = elems
+            ( ext, metadata_source, parent ) = elems
             if parent:
-                child_parent[name]=parent
-            # hack! the output data has already been created
+                parent_to_child_pairs.append( ( parent, name ) )
+                child_dataset_names.add( name )
+            ## What is the following hack for? Need to document under what 
+            ## conditions can the following occur? (james@bx.psu.edu)
+            # HACK: the output data has already been created
             if name in incoming:
                 dataid = incoming[name]
                 data = trans.app.model.Dataset.get( dataid )
                 assert data != None
                 out_data[name] = data
                 continue 
-            
             # the type should match the input
             if ext == "input":
                 ext = input_ext
-            
+            # FIXME: What does this flush?
             trans.app.model.flush()
             data = trans.app.model.Dataset()
-            # Commit immediately so it gets an id
+            # Commit the dataset immediately so it gets database assigned 
+            # unique id
             data.flush()
-            
-            #create an empty file
-            open(data.file_name,"w").close()
-            
+            # Create an empty file immediately
+            open( data.file_name, "w" ).close()
+            # FIXME: What does this flush?
             trans.app.model.flush()
-            
+            # This may not be neccesary with the new parent/child associations
             data.designation = name
-            
+            # Set the extension / datatype
+            # FIXME: Datatypes -- this propertype has a lot of hidden logic
             data.extension = ext
+            # Copy metadata from one of the inputs if requested. 
+            # FIXME: init_meta should take a dataset to copy from as an 
+            # argument
             if metadata_source:
                 data.metadata = Bunch( ** inp_data[metadata_source].metadata.__dict__ )
             else:
                 data.init_meta()
-
+            # Take dbkey from LAST input
             data.dbkey = input_dbkey
+            # Default attributes
             data.state = data.states.QUEUED
             data.blurb = "queued"
-            data.name  = '%s %s' % (tool.name, input_names)
-            out_data[name] = data
+            data.name  = output_base_name
+            out_data[ name ] = data
+            # Store all changes to database
             trans.app.model.flush()
-            name_id[name] = data.id
-            
-        #add parent datasets to history
+                        
+        # Add all the top-level (non-child) datasets to the history
         for name in out_data.keys():
-            if name not in child_parent.keys():
-                data = out_data[name]
+            if name not in child_dataset_names:
+                data = out_data[ name ]
                 trans.history.add_dataset( data )
                 data.flush()
-        #add children datasets to history
-        for name in out_data.keys():
-            if name in child_parent.keys():
-                data = out_data[name]
-                data.parent_id = name_id[child_parent[name]]
-                trans.history.add_dataset( data, parent_id=data.parent_id )
-                data.flush()
+                
+        # Add all the children to their parents
+        for parent_name, child_name in parent_to_child_pairs:
+            parent_dataset = out_data[ parent_name ]
+            child_dataset = out_data[ child_name ]
+            assoc = trans.app.model.DatasetChildAssociation()
+            assoc.child = child_dataset
+            assoc.designation = child_dataset.designation
+            parent_dataset.children.append( assoc )
+            # FIXME: Child dataset hid
             
         # Store data after custom code runs 
         trans.app.model.flush()

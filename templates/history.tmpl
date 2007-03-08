@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
-#set $refresh= bool ( [ data for data in $history.active_datasets if data.state in ['running', 'queued','',None] ] )
+#set $refresh = bool ( [ data for data in $history.active_datasets if data.state in ['running', 'queued', '', None ] ] )
 
 <html>
 
@@ -136,9 +136,6 @@ main();">
 #else    
 
 #for $data in reversed($history.active_datasets)
-	#if $data.parent
-	#continue
-	#end if
     <div id="historyItem-$data.id">
         #if $data.state in ["no state","",None]:
           #set $data_state = "queued"
@@ -152,11 +149,11 @@ main();">
                         <div style='padding-right: 5px; display: none;' id="progress-$data.id">
                         <img src="/static/style/data_running.gif" border="0" align="middle" >
                         </div>
-        				#if $data_state == 'running'
-        					<div style='padding-right: 5px;'><img src="/static/style/data_running.gif" border="0" align="middle"></div>
-        				#elif $data_state == 'ok'
-        				    #pass
-        				#else
+        								#if $data_state == 'running'
+        									<div style='padding-right: 5px;'><img src="/static/style/data_running.gif" border="0" align="middle"></div>
+												#elif $data_state == 'ok'
+													#pass
+        								#else
                             #set $src = "/static/style/data_%s.png" % $data_state 
                             <div style='padding-right: 5px;'><img src="$src" border="0" align="middle"></div>
                         #end if
@@ -223,8 +220,8 @@ main();">
         #if $len($data.children)>0
         <div>
 	        There are $len($data.children) secondary datasets.
-	        #for $idx, $child in $enumerate($data.children)
-			
+	        #for $idx, $child_assoc in $enumerate($data.children)
+							#set $child = $child_assoc.child
 	            <div id="historyItem-$child.id">
         #if $child.state in ["no state","",None]:
           #set $data_state = "queued"
@@ -238,13 +235,13 @@ main();">
                         <div style='padding-right: 5px; display: none;' id="progress-$data.id">
                         <img src="/static/style/data_running.gif" border="0" align="middle" >
                         </div>
-        				#if $data_state == 'running'
-        					<div style='padding-right: 5px;'><img src="/static/style/data_running.gif" border="0" align="middle"></div>
-        				#elif $data_state == 'ok'
-        				    #pass
-        				#else
-                            #set $src = "/static/style/data_%s.png" % $data_state 
-                            <div style='padding-right: 5px;'><img src="$src" border="0" align="middle"></div>
+                        #if $data_state == 'running'
+                        	<div style='padding-right: 5px;'><img src="/static/style/data_running.gif" border="0" align="middle"></div>
+                        #elif $data_state == 'ok'
+                          #pass
+                        #else
+                          #set $src = "/static/style/data_%s.png" % $data_state 
+                          <div style='padding-right: 5px;'><img src="$src" border="0" align="middle"></div>
                         #end if
                         </div>
                      </td>
@@ -315,7 +312,6 @@ main();">
         </div>
     </div>
 #end for  
-
 
 #end if
 

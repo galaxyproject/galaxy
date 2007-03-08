@@ -202,8 +202,8 @@ class Universe(common.Root):
                data = self.app.model.Dataset.get( id )
                if data:
                    assert data in history.datasets, "Data does not belong to current history"
-                   assert data.parent == None, "You must delete the primary dataset first."
-                   history.datasets.remove( data )
+                   # assert data.parent == None, "You must delete the primary dataset first."
+                   # history.datasets.remove( data )
                    data.deleted = True
                    trans.log_event( "Dataset id %s marked as deleted" % str(id) )
             self.app.model.flush()
@@ -216,8 +216,8 @@ class Universe(common.Root):
             data = self.app.model.Dataset.get( id )
             if data:
                assert data in history.datasets, "Data does not belong to current history"
-               assert data.parent == None, "You must delete the primary dataset first."
-               history.datasets.remove( data )
+               # assert data.parent == None, "You must delete the primary dataset first."
+               # history.datasets.remove( data )
                data.deleted = True
                trans.log_event( "Dataset id %s marked as deleted async" % str(id) )
             self.app.model.flush()
@@ -527,7 +527,7 @@ class Universe(common.Root):
         des.state = src.state
         des.metadata = src.metadata
         des.hid = src.hid
-        des.parent_id = parent_id
+        ## des.parent_id = parent_id
         shutil.copyfile(src.file_name,des.file_name)
         des.hid = src.hid
         des.designation = src.designation
@@ -540,15 +540,17 @@ class Universe(common.Root):
         des.name = src.name
         des.user_id = src.user_id
         for data in src.datasets:
-            if not data.parent:
-                new_data = self.copy_dataset(data)
-                des.add_dataset(new_data)
-                new_data.hid = data.hid
-                new_data.flush()
-                for child in data.children:
-                    new_child = self.copy_dataset(child, parent_id=new_data.id)
-                    des.add_dataset(new_child, parent_id = new_data.id)
-                    new_child.flush()
+            new_data = self.copy_dataset(data)
+            des.add_dataset(new_data)
+            new_data.hid = data.hid
+            new_data.flush()
+            for child_assoc in data.children:
+                new_child = self.copy_dataset(child_assoc.child)
+                new_assoc = self.app.model.DatasetAssociation( child.designation )
+                new_assoc.child = new_child
+                new_assoc.parent = new_data
+                #des.add_dataset(new_child, parent_id = new_data.id)
+                new_child.flush()
         des.hid_counter = src.hid_counter
         self.app.model.flush()
         return des

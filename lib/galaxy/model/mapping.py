@@ -4,7 +4,7 @@ are encapsulated here.
 """
 
 import pkg_resources
-pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
+pkg_resources.require( "psycopg2", "pysqlite>=2", "sqlalchemy>=0.3" )
 
 import sys
 
@@ -69,6 +69,12 @@ Dataset.table = Table( "dataset", metadata,
     Column( "deleted", Boolean ),
     ForeignKeyConstraint(['parent_id'],['dataset.id'], ondelete="CASCADE") )
     
+DatasetChildAssociation.table = Table( "dataset_child_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "parent_dataset_id", Integer, ForeignKey( "dataset.id" ) ),
+    Column( "child_dataset_id", Integer, ForeignKey( "dataset.id" ) ),
+    Column( "designation", TrimmedString( 255 ) ) )
+    
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
@@ -129,8 +135,11 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
 # relationships between the model objects.
 
 assign_mapper( context, Dataset, Dataset.table,
-    properties=dict( children=relation( Dataset, cascade="delete",
-                                        backref=backref("parent", foreignkey=Dataset.table.c.id ) ) ) )
+    properties=dict( children=relation( DatasetChildAssociation, primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
+                                        lazy=False ) ) )
+                                        
+assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
+    properties=dict( child=relation( Dataset, primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
 
 # assign_mapper( model.Query, model.Query.table,
 #     properties=dict( datasets=relation( model.Dataset.mapper, backref="query") ) )
@@ -199,7 +208,7 @@ def init( file_path, url, **kwargs ):
     Dataset.file_path = file_path
     # Connect the metadata the database. 
     metadata.connect( url, **kwargs )
-    ##metadata.engine.echo = True
+    metadata.engine.echo = True
     # Create tables if needed
     if create_tables:
         metadata.create_all()
