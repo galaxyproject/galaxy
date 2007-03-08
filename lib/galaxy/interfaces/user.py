@@ -27,20 +27,20 @@ class User( common.Root ):
         old_pass_err = new_pass_err = conf_pass_err = ''
         user = trans.get_user()
         if not user:
-            trans.response.send_redirect("/user/login")
-        
-        if not user.check_password( old_pass ):
-            old_pass_err = "Invalid password"
-        elif len( new_pass ) < 6:
-            new_pass_err = "Please use a password of at least 6 characters"
-        elif new_pass != conf_pass:
-            conf_pass_err = "New passwords do not match."
-        else:
-            user.set_password_cleartext( new_pass )
-            user.flush()
-            trans.log_event( "User change password" )
-            return trans.show_ok_message( "Password has been changed for " + user.email)
-        
+            trans.response.send_redirect( "/user/login" )
+        if trans.request.method == 'POST':
+            if not user.check_password( old_pass ):
+                old_pass_err = "Invalid password"
+            elif len( new_pass ) < 6:
+                new_pass_err = "Please use a password of at least 6 characters"
+            elif new_pass != conf_pass:
+                conf_pass_err = "New passwords do not match."
+            else:
+                user.set_password_cleartext( new_pass )
+                user.flush()
+                trans.log_event( "User change password" )
+                return trans.show_ok_message( "Password has been changed for " + user.email)
+        # Generate input form        
         return trans.show_form( 
             web.FormBuilder( "/user/change_password", "Change Password", submit_text="Submit" )
                 .add_password( "old_pass", "Old Password", value='', error=old_pass_err )
@@ -53,23 +53,22 @@ class User( common.Root ):
         user = trans.get_user()
         if not user:
             trans.response.send_redirect("/user/login")
-        
-        if not user.check_password( password ):
-            pass_err = "Invalid password"
-        elif len( email ) == 0 or "@" not in email or "." not in email:
-            email_err = "Please enter a real email address"
-        elif len( email) > 255:
-            email_err = "Email address exceeds maximum allowable length"
-        elif len( trans.app.model.User.select_by( email=email ) ) > 0:
-            email_err = "User with that email already exists"
-        elif email != conf_email:
-            conf_email_err = "Email addresses do not match."
-        else:
-            user.email = email
-            user.flush()
-            trans.log_event( "User change email" )
-            return trans.show_ok_message( "Email has been changed to: " + user.email, refresh_frames=['masthead', 'history'] )
-        
+        if trans.request.method == "POST":
+            if not user.check_password( password ):
+                pass_err = "Invalid password"
+            elif len( email ) == 0 or "@" not in email or "." not in email:
+                email_err = "Please enter a real email address"
+            elif len( email) > 255:
+                email_err = "Email address exceeds maximum allowable length"
+            elif len( trans.app.model.User.select_by( email=email ) ) > 0:
+                email_err = "User with that email already exists"
+            elif email != conf_email:
+                conf_email_err = "Email addresses do not match."
+            else:
+                user.email = email
+                user.flush()
+                trans.log_event( "User change email" )
+                return trans.show_ok_message( "Email has been changed to: " + user.email, refresh_frames=['masthead', 'history'] )        
         return trans.show_form( 
             web.FormBuilder( "/user/change_email", "Change Email", submit_text="Submit" )
                 .add_text( "email", "Email", value=email, error=email_err )

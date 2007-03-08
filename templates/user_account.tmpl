@@ -11,38 +11,24 @@
 <body onLoad="frame_dw();">
 
 <div class="toolForm">
-  <div class="toolFormTitle">User settings for $user.email</div>
+  <h2>User settings for $user.email</h2>
   #if $msg:
      <p class="ok_bgr">$msg</p>
   #end if
-  <div class="toolFormBody">
-  <form action="/user/change_password" method="post" >
-    <table>
-        <tr><th colspan="2" align="center">Change Your Password</th></tr>
-        <tr><td>Current Password:</td><td><input type="password" name="old_pass" value="" size="40"></td></tr>
-        <tr><td>New Password:</td><td><input type="password" name="new_pass" value="" size="40"></td></tr>
-        <tr><td>Confirm Password:</td><td><input type="password" name="conf_pass" value="" size="40"></td></tr>
-        <tr><td colspan="2" align="right"><input type="submit" name="change_pass_btn" value="Submit"></td></tr>
-  </form>
-  <form action="/user/change_email" method="post" >
-        <tr><th colspan="2" align="center">Update Your Email</th></tr>
-        <tr><td>New Email:</td><td><input type="text" name="email" value="" size="40"></td></tr>
-        <tr><td>Confirm Email:</td><td><input type="text" name="conf_email" value="" size="40"></td></tr>
-        <tr><td>Password:</td><td><input type="password" name="password" value="" size="40"></td></tr>
-        <tr><td colspan="2" align="right"><input type="submit" name="change_email_btn" value="Submit"></td></tr>
-  </form>
-        <tr><th colspan="2" align="center">Actions</a></th></tr>
-        <tr><td colspan="2">
-          <ul>
-            <li><a href="/history_available">View</a> your available histories</li>
-            <li><a href="/history_store">Store</a> your current history</li>
-            <li><a href="/history_delete?id=$history.id" onclick="confirm_click('/history_delete?id=$history.id');return false;">Delete</a> your current history</li>
-            <br>
-            <li><a href="/user/logout">Logout</a></li>
-          </ul>
-        </td></tr>
-    </table>
-  </div>
+  
+  <h3>Account settings</h3>
+  <ul>
+		<li><a href="${h.url_for( action='change_password' )}">Change your password</a></li>
+		<li><a href="${h.url_for( action='change_email' )}">Update your email address</a></li>
+		<li><a href="${h.url_for( action='logout' )}">Logout</a></li>
+	</ul>
+	<h3>Histories</h3>
+	<ul>
+		<li><a href="/history_available">View</a> your available histories</li>
+		<li><a href="/history_store">Store</a> your current history</li>
+		<li><a href="/history_delete?id=$history.id" onclick="confirm_click('/history_delete?id=$history.id');return false;">Delete</a> your current history</li>
+	</ul>
+
 </div>
 </body>
 </html>
