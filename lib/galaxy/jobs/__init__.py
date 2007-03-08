@@ -244,7 +244,7 @@ class JobWrapper( object ):
                                                info='', blurb='Errors!')
                     assoc = model.DatasetChildAssociation()
                     assoc.child = errordata
-                    out_dataset.children.append( assoc )
+                    out_dataset.dataset.children.append( assoc )
                     errordata.flush()
                     errorfile = open(errordata.file_name,"w")
                     for error in errors:
