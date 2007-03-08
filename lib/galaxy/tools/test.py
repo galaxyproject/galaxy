@@ -14,18 +14,11 @@ class ToolTestBuilder( object ):
         self.required_files = []
         self.inputs = []
         self.outputs = []
+        self.error = False
+        self.exception = None
     def add_param( self, name, value, extra ):
         if isinstance( self.tool.param_map[name], parameters.DataToolParameter ):
             self.required_files.append( ( value, extra ) )
         self.inputs.append( ( name, value, extra ) )
     def add_output( self, name, file ):
         self.outputs.append( ( name, file ) )
-        
-class BadToolTest( object ):
-    """
-    Represents a tool test that failed to parse
-    """
-    def __init__( self, tool, name, exception=None ):
-        self.tool = tool
-        self.name = name 
-        self.exception = exception

@@ -9,6 +9,12 @@ class ToolTestCase( TwillTestCase ):
     Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`
     """
     def do_it( self ):
+        # If the test generation had an error, raise
+        if self.testdef.error:
+            if self.testdef.exception:
+                raise self.testdef.exception
+            else:
+                raise Exception( "Test parse failure" )
         # Start with an empty history
         self.clear_history()
         # Upload any needed files
@@ -31,13 +37,6 @@ class ToolTestCase( TwillTestCase ):
             self.check_data( file )
     def shortDescription( self ):
         return self.name
-        
-class BadToolTestCase( TwillTestCase ):
-    def do_it( self ):
-        if self.testdef.exception:
-            raise self.testdef.exception
-        else:
-            raise Exception( "Test parse failure" )
 
 def get_testcase( testdef, name ):
     """
@@ -45,17 +44,6 @@ def get_testcase( testdef, name ):
     """
     n = "GeneratedToolTestCase_" + testdef.tool.id.replace( ' ', '_' )
     s = ( ToolTestCase, )
-    def test_tool( self ):
-        self.do_it()
-    d = dict( testdef=testdef, test_tool=test_tool, name=name )
-    return new.classobj( n, s, d )
-    
-def get_badtestcase( testdef, name ):
-    """
-    Dynamically generate a `BadToolTestCase` for `testdef`
-    """
-    n = "GeneratedToolTestCase_" + testdef.tool.id.replace( ' ', '_' )
-    s = ( BadToolTestCase, )
     def test_tool( self ):
         self.do_it()
     d = dict( testdef=testdef, test_tool=test_tool, name=name )
@@ -76,8 +64,5 @@ def setup():
             if tool.tests:
                 for k, testdef in enumerate( tool.tests ):
                     name = "%s > %s > %s" % ( section.name, tool.name, testdef.name )
-                    if isinstance( testdef, BadToolTest ):
-                        testcase = get_badtestcase( testdef, name )
-                    else:
-                        testcase = get_testcase( testdef, name )
+                    testcase = get_testcase( testdef, name )
                     G[ 'testcase_%d_%d_%d' % ( i, j, k ) ] = testcase

@@ -8,7 +8,7 @@ from cookbook.patterns import Bunch
 from galaxy import util, jobs
 from elementtree import ElementTree
 from parameters import *
-from galaxy.tools.test import ToolTestBuilder, BadToolTest
+from galaxy.tools.test import ToolTestBuilder
 
 log = logging.getLogger( __name__ )
 
@@ -245,8 +245,8 @@ class Tool:
         self.tests = []
         for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
             name = test_elem.get( 'name', 'Test-%d' % (i+1) )
+            test = ToolTestBuilder( self, name )
             try:
-                test = ToolTestBuilder( self, name )
                 for param_elem in test_elem.findall( "param" ):
                     attrib = dict( param_elem.attrib )
                     if 'values' in attrib:
@@ -265,10 +265,11 @@ class Tool:
                     if file is None:
                         raise Exception( "Test output does not have a 'file'")
                     test.add_output( name, file )
-                self.tests.append( test )
             except Exception, e:
-                self.tests.append( BadToolTest( self, name, e ) )
-
+                test.error = True
+                test.exception = e
+            self.tests.append( test )
+            
     def parse_page( self, input_elem, enctypes ):
         param_map = odict()
         for param_elem in input_elem.findall("param"):
