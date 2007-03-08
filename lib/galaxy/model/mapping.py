@@ -4,6 +4,7 @@ are encapsulated here.
 """
 
 import pkg_resources
+## pkg_resources.require( "psycopg2", "pysqlite>=2", "sqlalchemy>=0.3" )
 pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
 
 import sys
@@ -208,7 +209,7 @@ def init( file_path, url, **kwargs ):
     Dataset.file_path = file_path
     # Connect the metadata the database. 
     metadata.connect( url, **kwargs )
-    metadata.engine.echo = True
+    ## metadata.engine.echo = True
     # Create tables if needed
     if create_tables:
         metadata.create_all()
