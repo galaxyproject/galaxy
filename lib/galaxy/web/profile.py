@@ -15,10 +15,13 @@ try:
     # Included in Python 2.5 
     import cProfile
 except:
-    # Included in lsprof packae for Python 2.4
-    import pkg_resources
-    pkg_resources.require( "lsprof" )
-    import cProfile
+    try:
+        # Included in lsprof package for Python 2.4
+        import pkg_resources
+        pkg_resources.require( "lsprof" )
+        import cProfile
+    except:
+        cProfile = None
 
 import pstats
 
