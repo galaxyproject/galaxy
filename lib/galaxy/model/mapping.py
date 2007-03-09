@@ -4,8 +4,8 @@ are encapsulated here.
 """
 
 import pkg_resources
-pkg_resources.require( "psycopg2", "pysqlite>=2", "sqlalchemy>=0.3" )
-## pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
+## pkg_resources.require( "psycopg2", "pysqlite>=2", "sqlalchemy>=0.3" )
+pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
 
 import sys
 
