@@ -235,31 +235,11 @@ class JobWrapper( object ):
             # file must exist in order to validate it
             if os.path.exists(out_dataset.dataset.file_name):
                 errors = out_dataset.dataset.datatype.validate(out_dataset.dataset)
-<<<<<<< .mine
                 for error in errors:
                     out_dataset.dataset.add_validation_error(
                         model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=str( error.__dict__ ) ) )
                     print str( error )
                         
-=======
-                if len(errors) > 0:
-                    # create child dataset with errors
-                    errordata = model.Dataset( hid=out_dataset.dataset.hid,
-                                               state=model.Dataset.states.OK,
-                                               extension='text',
-                                               name='Errors',
-                                               info='', blurb='Errors!')
-                    assoc = model.DatasetChildAssociation()
-                    assoc.child = errordata
-                    out_dataset.dataset.children.append( assoc )
-                    errordata.flush()
-                    errorfile = open(errordata.file_name,"w")
-                    for error in errors:
-                        print >> errorfile, str( error )
-                    errorfile.close()
-                    errordata.set_peek()
-                    self.app.model.flush()
->>>>>>> .r1414
         mapping.context.current.flush()
         log.debug('job ended, id: %d' % self.job_id )
         
