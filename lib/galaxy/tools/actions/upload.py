@@ -3,6 +3,8 @@ from galaxy import datatypes, jobs
 from galaxy.datatypes import sniff
 from galaxy import model
 
+import sys, traceback
+
 class UploadToolAction( object ):
     """
     Action for uploading files
@@ -88,7 +90,6 @@ class UploadToolAction( object ):
         for error in data.datatype.validate( data ):
             data.add_validation_error( 
                 model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=str( error.__dict__ ) ) )
-            
         trans.history.add_dataset( data )
         trans.app.model.flush()
         return data
