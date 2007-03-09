@@ -5,7 +5,7 @@ Validate a dataset based on extension a metadata passed in on the
 command line.  Outputs a binhex'd representation of the exceptions.
 
 usage: %prog input output
-    -c, --cols=N,N,N,N: column metadata, in the case of GFF, BED, or intervals
+    -m, --metadata=N: base64 pickeled metadata
     -x, --ext=N: extension as understood by galaxy
 """
 from cookbook import doc_optparse
@@ -25,12 +25,8 @@ def main():
     data = model.Dataset( extension=extension, id=int( args[0] ) )
     data.file_path = "/home/ian/trunk/database/files/"
     
-    if options.cols:
-        cols = options.cols.split(",")
-        data.metadata.chromCol = cols[0]
-        data.metadata.startCol = cols[1]
-        data.metadata.endCol = cols[2]
-        data.metadata.strandCol = cols[3]
+    if options.metadata:
+        data.metadata = util.string_to_object( options.metadata )
 
     errors = data.datatype.validate( data )
     print util.object_to_string(errors)

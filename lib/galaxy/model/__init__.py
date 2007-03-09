@@ -254,7 +254,10 @@ class Dataset( object ):
 
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
-    
+
+    def extend_validation_errors( self, validation_errors ):
+        self.validation_errors.extend(validation_errors)
+
     # FIXME: sqlalchemy will replace this
     def _delete(self):
         """Remove the file that corresponds to this data"""

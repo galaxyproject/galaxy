@@ -1,6 +1,7 @@
 import os, shutil, urllib, StringIO
 from galaxy import datatypes, jobs
 from galaxy.datatypes import sniff
+from galaxy import model
 
 class UploadToolAction( object ):
     """
@@ -82,6 +83,12 @@ class UploadToolAction( object ):
         if isinstance( data.datatype, datatypes.interval.Interval ):
             if data.missing_meta():
                 data.extension = 'tabular'
+
+        # validate incomming data
+        for error in data.datatype.validate( data ):
+            data.add_validation_error( 
+                model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=str( error.__dict__ ) ) )
+            
         trans.history.add_dataset( data )
         trans.app.model.flush()
         return data
