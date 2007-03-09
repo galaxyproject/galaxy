@@ -216,6 +216,11 @@ main();">
                     #if $data.peek != "no peek"
                     <div><pre id="peek$data.id" class="peek">$data.display_peek</pre></div>
                     #end if
+		    #if $len($data.validation_errors)>0
+		    <div class="info">
+		    There are $len($data.validation_errors) errors
+		    </div>
+		    #end if
                 #end if
         #if $len($data.children)>0
         <div>

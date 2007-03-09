@@ -129,7 +129,8 @@ class Dataset( object ):
     file_path = "/tmp/"
     engine = None
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
-                  dbkey=None, state=None, metadata=None, history=None, parent_id=None, designation=None ):
+                  dbkey=None, state=None, metadata=None, history=None, parent_id=None, designation=None,
+                  validation_errors=None ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.hid = hid
@@ -145,6 +146,7 @@ class Dataset( object ):
         self.deleted = False
         # Relationships
         self.history = history
+        self.validation_errors = validation_errors
     def mark_metadata_changed( self ):
         """
         Register changes to metadata with the history
@@ -249,6 +251,10 @@ class Dataset( object ):
             if child_association.designation == designation:
                 return child
         return None
+
+    def add_validation_error( self, validation_error ):
+        self.validation_errors.append( validation_error )
+    
     # FIXME: sqlalchemy will replace this
     def _delete(self):
         """Remove the file that corresponds to this data"""
@@ -256,7 +262,18 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
-            
+
+class ValidationError( object ):
+    def __init__( self, message=None, err_type=None, attributes=None ):
+        self.message = message
+        self.err_type = err_type
+        self.attributes = attributes
+
+class DatasetToValidationErrorAssociation( object ):
+    def __init__( self, dataset, validation_error ):
+        self.dataset = dataset
+        self.validation_error = validation_error
+
 class DatasetChildAssociation( object ):
     def __init__( self, designation=None ):
         self.designation = designation

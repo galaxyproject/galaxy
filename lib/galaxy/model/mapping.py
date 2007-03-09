@@ -69,7 +69,14 @@ Dataset.table = Table( "dataset", metadata,
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean ),
     ForeignKeyConstraint(['parent_id'],['dataset.id'], ondelete="CASCADE") )
-    
+
+ValidationError.table = Table( "validation_error", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ) ),
+    Column( "message", TrimmedString( 255 ) ),
+    Column( "err_type", TrimmedString( 64 ) ),
+    Column( "attributes", TEXT ) )
+
 DatasetChildAssociation.table = Table( "dataset_child_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "parent_dataset_id", Integer, ForeignKey( "dataset.id" ) ),
@@ -135,8 +142,12 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
+assign_mapper( context, ValidationError, ValidationError.table )
+
 assign_mapper( context, Dataset, Dataset.table,
-    properties=dict( children=relation( DatasetChildAssociation, primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ), lazy=False ) ) )
+    properties=dict( children=relation( DatasetChildAssociation, primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
+                                        lazy=False ),
+                     validation_errors=relation( ValidationError ) ) )
                                         
 assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
     properties=dict( child=relation( Dataset, primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
