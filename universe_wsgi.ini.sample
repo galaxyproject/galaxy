@@ -70,6 +70,10 @@ use_interactive = True
 admin_pass = "galaxy"
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
+# SMTP server
+## smtp_server = ...
+# Address to email error reports to
+## error_email_to = ...
 # Address to join mailing list
 mailing_join_addr = galaxy-user-join@bx.psu.edu
 # Write thread status periodically to 'heartbeat.log'

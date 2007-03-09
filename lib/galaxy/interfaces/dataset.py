@@ -1,0 +1,83 @@
+import logging, os, sets, string, shutil
+import re, socket
+
+from galaxy import util, datatypes, jobs, web, util, model
+import common
+from cgi import escape, FieldStorage
+
+import smtplib
+from email.MIMEText import MIMEText
+
+log = logging.getLogger( __name__ )
+
+error_report_template = """
+GALAXY TOOL ERROR REPORT
+------------------------
+
+This error report is in reference to dataset ${dataset_id}. The user 
+(${email}) provided the following information:
+
+-----------------------------------------------------------------------------
+${message}
+-----------------------------------------------------------------------------
+
+The tool error was:
+
+-----------------------------------------------------------------------------
+${stderr}
+-----------------------------------------------------------------------------
+
+And the tool output was:
+
+-----------------------------------------------------------------------------
+${stdout}
+-----------------------------------------------------------------------------
+
+(This is an automated message).
+"""
+
+class DatasetInterface( common.Root ):
+
+    @web.expose
+    def errors( self, trans, id ):
+        dataset = model.Dataset.get( id )
+        return trans.fill_template( "dataset/errors.tmpl", dataset=dataset )
+    
+    @web.expose
+    def report_error( self, trans, id, email="no email provided", message="" ):
+        smtp_server = trans.app.config.smtp_server
+        if smtp_server is None:
+            return trans.show_error_message( "Sorry, mail is not configured for this galaxy instance" )
+        to_address = trans.app.config.error_email_to
+        if to_address is None:
+            return trans.show_error_message( "Sorry, error reporting has been disabled for this galaxy instance" )
+        # Get the dataset and associated job
+        dataset = model.Dataset.get( id )
+        job = dataset.creating_job_associations[0].job
+        # Build the email message
+        msg = MIMEText( string.Template( error_report_template )
+            .safe_substitute( dataset_id=dataset.id,
+                              email=email, 
+                              message=message, 
+                              stderr=job.stderr,
+                              stdout=job.stdout ) )
+        frm = to_address
+        # Check email a bit
+        email = email.strip()
+        parts = email.split()
+        if len( parts ) == 1 and len( email ) > 0:
+            to = to_address + ", " + email
+        else:
+            to = to_address
+        msg[ 'To' ] = to
+        msg[ 'From' ] = frm
+        msg[ 'Subject' ] = "Galaxy tool error report from " + email
+        # Send it
+        try:
+            s = smtplib.SMTP()
+            s.connect( smtp_server )
+            s.sendmail( frm, [ to ], msg.as_string() )
+            s.close()
+            return trans.show_ok_message( "Your error report has been sent" )
+        except:
+            return trans.show_error_message( "An error occurred sending the report by email" )

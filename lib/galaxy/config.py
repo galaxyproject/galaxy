@@ -33,6 +33,8 @@ class Configuration( object ):
         self.admin_pass = kwargs.get('admin_pass',"galaxy")
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
+        self.error_email_to = kwargs.get( 'error_email_to', None )
+        self.smtp_server = kwargs.get( 'smtp_server', None )
         self.use_pbs = kwargs.get('use_pbs', False )
         self.pbs_server = kwargs.get('pbs_server', "" )
         self.pbs_instance_path = kwargs.get('pbs_instance_path', os.getcwd() )

@@ -179,13 +179,13 @@ main();">
                     #if $data_state == "queued"
                     	<div>Job is waiting to run</div>
                     	#* THIS SHOULD SAY CANCEL, DELETING QUEUED/RUNNING JOBS SHOULD REMOVE THEM FROM THE QUEUE *#
-                    	<a href="delete?id=$data.id">delete</a> 
+                    	#* <a href="delete?id=$data.id">delete</a> *#
                     #elif $data_state == "running"
                     	<div>Job is currently running</div>
-                    	<a href="delete?id=$data.id">delete</a> 
+                    	#*<a href="delete?id=$data.id">delete</a> *#
                     #elif $data_state == "error"
-                    	<div>An error occurred running this job: <i>$data.display_info</i></div>
-                    	<a href="delete?id=$data.id">delete</a> 
+                    	<div>An error occurred running this job: <i>$data.display_info</i>, <a href="${h.url_for( controller='dataset', action='errors', id=$data.id )}" target="galaxy_main">more info</a></div>
+                    	#*<a href="delete?id=$data.id">delete</a> *#
                     #else
                     <div>
                     $data.blurb, 

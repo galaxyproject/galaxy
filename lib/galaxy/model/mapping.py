@@ -136,8 +136,7 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
 # relationships between the model objects.
 
 assign_mapper( context, Dataset, Dataset.table,
-    properties=dict( children=relation( DatasetChildAssociation, primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
-                                        lazy=False ) ) )
+    properties=dict( children=relation( DatasetChildAssociation, primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ), lazy=False ) ) )
                                         
 assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
     properties=dict( child=relation( Dataset, primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
@@ -181,6 +180,8 @@ assign_mapper( context, GalaxySession, GalaxySession.table,
 assign_mapper( context, GalaxySessionToHistoryAssociation, GalaxySessionToHistoryAssociation.table,
     properties=dict( galaxy_session=relation( GalaxySession ), 
                      history=relation( History ) ) )
+                     
+Dataset.mapper.add_property( "creating_job_associations", relation( JobToOutputDatasetAssociation ) )
     
 def db_next_hid( self ):
     """

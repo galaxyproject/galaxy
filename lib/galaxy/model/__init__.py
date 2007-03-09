@@ -286,5 +286,3 @@ class GalaxySessionToHistoryAssociation( object ):
     def __init__( self, galaxy_session, history ):
         self.galaxy_session = galaxy_session
         self.history = history
-        
-
