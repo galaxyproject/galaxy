@@ -117,9 +117,7 @@ class Universe(common.Root):
         """Returns a bed file"""
         data = self.app.model.Dataset.get( id )
         if data:
-            if isinstance(data.datatype, datatypes.interval.Bed):
-                return self.display(trans, id=data.id)
-            elif isinstance(data.datatype, datatypes.interval.Interval):
+            if isinstance(data.datatype, datatypes.interval.Interval):
                 mime = data.get_mime()
                 trans.response.set_content_type(mime)
                 file_name = data.as_bedfile()

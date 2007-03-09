@@ -197,6 +197,36 @@ class Bed( Interval ):
     def set_meta( self, dataset ):
         # metadata already set
         pass
+    def as_bedfile( self, dataset ):
+        '''Returns a file that contains only the bed data. If bed 6+, treat as interval.'''
+        for line in open(dataset.file_name):
+            line = line.strip()
+            if line == "" or line.startswith("#"): continue
+            fields = line.split('\t')
+            #check to see if this file doesn't conform to strict genome browser accepted bed
+            try:
+                if len(fields)>12: return Interval.as_bedfile(self, dataset) #too many fields
+                if len(fields)>6:
+                    if len(fields) > 6:
+                        int(fields[6])
+                        if len(fields) > 7:
+                            int(fields[7])
+                            if len(fields) > 8:
+                                if int(fields[8]) != 0: return Interval.as_bedfile(self, dataset)
+                                if len(fields) > 9:
+                                    int(fields[9])
+                                    if len(fields) > 10:
+                                        fields2 = fields[10].rstrip(",").split(",") #remove trailing comma and split on comma
+                                        for field in fields2: int(field)
+                                        if len(fields) > 11:
+                                            fields2 = fields[11].rstrip(",").split(",") #remove trailing comma and split on comma
+                                            for field in fields2: int(field)
+            except: return Interval.as_bedfile(self, dataset)
+            #only check first line for proper form
+            break
+            
+        try: return dataset.file_name
+        except: return "This item contains no content"
 
 class Gff( Tabular ):
     """Tab delimited data in Gff format"""
