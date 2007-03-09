@@ -236,6 +236,22 @@ class Gff( Tabular ):
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
 
+#Extend Tabular type, since interval tools will fail on track def line (we should fix this)
+#This is a skeleton class for now, allows viewing at ucsc and formatted peeking.
+class CustomTrack ( Tabular ):
+    """UCSC CustomTrack"""
+    def __init__(self, id=None):
+        data.Text.__init__(self, id=id)
+    
+    def make_html_table(self, dataset):
+        return Tabular.make_html_table(self, dataset, skipchar='track')
+    
+    def bed_viewport( self, dataset ):
+        return "." #Not ideal solution, will cause genome browser to give warning
+    
+    def as_bedfile( self, dataset ):
+        return dataset.file_name
+
 if __name__ == '__main__':
     import doctest, sys
     doctest.testmod(sys.modules[__name__])        

@@ -203,7 +203,7 @@ main();">
                     #if $data.ext in [ "bed", "interval", "tabular", "txt", "text", "axt", "maf", "fasta", "gff", "gmaj.zip" ]:
                          <a href="display?id=$data.id&tofile=yes&toext=$data.ext" target="_blank">save</a>
                     #end if
-                    #if $data.ext in ["bed", "interval" ]:
+                    #if $data.ext in ["bed", "interval", "customtrack" ]:
                       #set $value = $data.bed_viewport()
                       #if $value
                          | display at UCSC 

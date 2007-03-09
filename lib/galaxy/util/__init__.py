@@ -74,7 +74,7 @@ text_types = sets.Set([
     'regions', 'simple', 'score', 'text', 'msf', 'selex', 'tagseq', 'embl', 'srspair', 'staden', 
     'strider', 'xbed', 'markx10', 'pair', 'markx1', 'markx0', 'markx3', 'markx2', 'jackknifer', 
     'ncbi', 'mega', 'fa', 'feattable', 'phylip', 'diffseq', 'bed', 'srs', 'jackknifernon', 'swiss', 
-    'phylipnon', 'nexusnon', 'nametable', 'xml', 'interval', 'tabular', 'maf','axt', 'lav', 'laj'
+    'phylipnon', 'nexusnon', 'nametable', 'xml', 'interval', 'tabular', 'maf','axt', 'lav', 'laj', 'customtrack'
 ])     
 
 def parse_xml(fname):

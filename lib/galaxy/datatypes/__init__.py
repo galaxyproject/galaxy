@@ -23,7 +23,8 @@ datatypes_by_extension = {
     'gmaj.zip' : images.Gmaj(),
     'laj'      : images.Laj(),
     'lav'      : sequence.Lav(),
-    'html'     : images.Html()
+    'html'     : images.Html(),
+    'customtrack' : interval.CustomTrack()
 }
 
 def get_datatype_by_extension( ext ):
