@@ -102,7 +102,7 @@ class Interval( Tabular ):
         """
         if dataset.has_data():
             line = file(dataset.file_name).readline().strip()
-            if first_line_is_header or line[0] == '#':
+            if len(line)>0 and (first_line_is_header or line[0] == '#'):
                 self.init_meta(dataset)
                 line  = line.strip("#")
                 elems = line.split("\t")
