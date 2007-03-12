@@ -73,6 +73,7 @@ div#footer {
    <div style="display: none;" id="$section.id">
       <div class="toolSectionBg">
          #for $tool in $section.tools
+	 #if not $tool.hidden:
             <div class="toolTitle">
 							 #if $tool.input_required
 							   #set $link = $h.url_for( 'tool_runner', tool_id=$tool.id )
@@ -88,6 +89,7 @@ div#footer {
                <a href="$link" target="galaxy_main">$tool.description</a>
                #end if
             </div>
+	#end if
         #end for
       </div>
    </div>

@@ -39,6 +39,9 @@ class Data( object ):
     def validate(self, dataset):
         """Unimplemented validate, return no exceptions"""
         return list()
+    def repair_methods(self, dataset):
+        """Unimplemented method, returns dict with method/option for repairing errors"""
+        return None
 
 class Text( Data ):
     def write_from_stream(self, stream):

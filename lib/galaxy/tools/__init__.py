@@ -126,6 +126,9 @@ class Tool:
             self.command = ''
         # Short description of the tool
         self.description = util.xml_text(root, "description")
+        # Is this a 'hidden' tool (hidden in tool menu)
+        self.hidden = util.xml_text(root, "hidden")
+        if self.hidden: self.hidden = util.string_as_bool(self.hidden)
         # Load any tool specific code (optional)
         self.code_namespace = dict()
         for code_elem in root.findall("code"):
@@ -620,16 +623,18 @@ class DefaultToolAction( object ):
             
         # Store data after custom code runs 
         trans.app.model.flush()
-        
-        # Build the job's command line
+
+        # Build params, done before hook so hook can use
         param_dict = tool.build_param_dict( incoming, inp_data, out_data )
-        param_filename = tool.build_param_file( param_dict )
-        command_line = tool.build_command_line( param_dict )
-        
+
         # Run the before queue ("exec_before_job") hook
         # FIXME: this hook should probably be called exec_before_job_queued
         tool.call_hook( 'exec_before_job', trans, inp_data=inp_data, 
                         out_data=out_data, tool=tool, param_dict=param_dict )
+
+        # Build the job's command line, moved to after the hook so the hook can alter params
+        param_filename = tool.build_param_file( param_dict )
+        command_line = tool.build_command_line( param_dict )
         
         # Create the job object
         job = trans.app.model.Job()

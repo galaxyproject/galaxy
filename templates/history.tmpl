@@ -199,6 +199,11 @@ main();">
                     </div>
 
                     <div class="info">Info: $data.display_info </div>
+		    #if $len($data.validation_errors)>0
+		    <div class="info"><i>
+		    There are $len($data.validation_errors) possibles errors in this dataset (<a href="dataset_errors?id=$data.id" target="galaxy_main">view</a>).
+		    </i></div>
+		    #end if
                     <div> 
                     #if $data.ext in [ "bed", "interval", "tabular", "txt", "text", "axt", "maf", "fasta", "gff", "gmaj.zip" ]:
                          <a href="display?id=$data.id&tofile=yes&toext=$data.ext" target="_blank">save</a>
@@ -216,11 +221,6 @@ main();">
                     #if $data.peek != "no peek"
                     <div><pre id="peek$data.id" class="peek">$data.display_peek</pre></div>
                     #end if
-		    #if $len($data.validation_errors)>0
-		    <div class="info">
-		    There are $len($data.validation_errors) errors
-		    </div>
-		    #end if
                 #end if
         #if $len($data.children)>0
         <div>

@@ -186,6 +186,10 @@ class Interval( Tabular ):
                 infile.close()
                 return errors
 
+    def repair_methods( self, dataset ):
+        """Return options for removing errors along with a description"""
+        return [("lines","Remove erroneous lines")]
+
 class Bed( Interval ):
     """Tab delimited data in BED format"""
     def init_meta( self, dataset ):

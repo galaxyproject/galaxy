@@ -7,6 +7,8 @@ import re, socket
 from galaxy import util, datatypes, jobs, web, util
 import common
 from cgi import escape, FieldStorage
+import urllib
+import traceback
 
 log = logging.getLogger( __name__ )
 
@@ -495,6 +497,29 @@ class Universe(common.Root):
     @web.expose
     def masthead( self, trans ):
         return trans.fill_template( "masthead.tmpl" )
+
+    @web.expose
+    def dataset_errors( self, trans, id=None, **kwd ):
+        """View/fix errors associated with dataset"""
+        data = trans.app.model.Dataset.get( id )
+        p = kwd
+        if p.get("fix_errors", None):
+            # launch tool to create new, (hopefully) error free dataset
+            tool_params = {}
+            tool_params["tool_id"] = 'fix_errors'
+            tool_params["runtool_btn"] = 'T'
+            tool_params["input"] = id
+            # send methods selected
+            repair_methods = data.datatype.repair_methods( data )
+            methods = []
+            for method, description in repair_methods:
+                if method in p: methods.append(method)
+            tool_params["methods"] = ",".join(methods)
+            url = "/tool_runner/index?" + urllib.urlencode(tool_params)
+            trans.response.send_redirect(url)                
+        else:
+            history = trans.app.model.History.get( data.history_id )
+            return trans.fill_template('dataset_errors.tmpl', data=data, history=history)
 
     # ---- Debug methods ----------------------------------------------------
 

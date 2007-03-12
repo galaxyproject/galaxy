@@ -1,7 +1,7 @@
 import os, shutil, urllib, StringIO
 from galaxy import datatypes, jobs
 from galaxy.datatypes import sniff
-from galaxy import model
+from galaxy import model, util
 
 import sys, traceback
 
@@ -89,7 +89,7 @@ class UploadToolAction( object ):
         # validate incomming data
         for error in data.datatype.validate( data ):
             data.add_validation_error( 
-                model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=str( error.__dict__ ) ) )
+                model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=util.object_to_string( error.__dict__ ) ) )
         trans.history.add_dataset( data )
         trans.app.model.flush()
         return data
