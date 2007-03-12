@@ -4,7 +4,9 @@ File format detector
 import logging, sys, os, csv, tempfile, shutil, re
 
 log = logging.getLogger(__name__)
-
+valid_strand = ['+', '-', '.']
+valid_frame = [0, 2, '.']
+        
 def get_test_fname(fname):
     """Returns test data filename"""
     path, name = os.path.split(__file__)
@@ -87,7 +89,7 @@ def get_headers(fname, sep, count=30):
 def is_column_based(fname, sep='\t'):
     """
     Checks whether the file is column based with respect to a separator 
-    (defaults to tab separator)
+    (defaults to tab separator).
     
     >>> fname = get_test_fname('test_tab.bed')
     >>> is_column_based(fname)
@@ -118,6 +120,12 @@ def is_fasta(headers):
     """
     Determines wether the file is in fasta format
     
+    A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. 
+    The first character of the description line is a greater-than (">") symbol in the first column. 
+    All lines should be shorter than 80 charcters
+    
+    For complete details see http://www.g2l.bio.uni-goettingen.de/blast/fastades.html
+    
     >>> headers = get_headers(__file__, sep=' ')
     >>> is_fasta(headers)
     False
@@ -135,6 +143,10 @@ def is_gff(headers):
     """
     Determines wether the file is in gff format
     
+    GFF lines have nine required fields that must be tab-separated.
+    
+    For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
+    
     >>> headers = get_headers(__file__, sep=' ')
     >>> is_fasta(headers)
     False
@@ -144,13 +156,41 @@ def is_gff(headers):
     True
     """
     try:
-        return len(headers) > 2 and headers[0][1] and headers[0][1].startswith('gff-version')
+        if len(headers) < 2: 
+            return False
+        """
+        Assume the first line in the file is not actual data
+        (it could be a description), so we'll use the 2nd line
+        """
+        line = headers[1]
+        if len(line) != 9: 
+            return False
+        try:
+            map(int, [line[3], line[4], line[5]])
+        except:
+            return False
+        score = int(line[5])
+        if (score < 0 or score > 1000) and line[6] not in valid_strand and line[7] not in valid_frame:
+            return False
+        return True
     except:
         return False
 
 def is_maf(headers):
     """
     Determines wether the file is in maf format
+    
+    The .maf format is line-oriented. Each multiple alignment ends with a blank line. 
+    Each sequence in an alignment is on a single line, which can get quite long, but 
+    there is no length limit. Words in a line are delimited by any white space. 
+    Lines starting with # are considered to be comments. Lines starting with ## can 
+    be ignored by most programs, but contain meta-data of one form or another.
+    
+    The first line of a .maf file begins with ##maf. This word is followed by white-space-separated 
+    variable=value pairs. There should be no white space surrounding the "=".
+ 
+    For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format5
+    
     >>> headers = get_headers(__file__, sep=' ')
     >>> is_maf(headers)
     False
@@ -167,6 +207,12 @@ def is_maf(headers):
 def is_lav(headers):
     """
     Determines wether the file is in lav format
+    
+    LAV is an alignment format developed by Webb Miller's group. It is the primary output format for BLASTZ.
+    The first line of a .maf file begins with #:lav.
+
+    For complete details see http://www.bioperl.org/wiki/LAV_alignment_format
+    
     >>> headers = get_headers(__file__, sep=' ')
     >>> is_lav(headers)
     False
@@ -183,6 +229,15 @@ def is_lav(headers):
 def is_axt(headers):
     """
     Determines wether the file is in axt format
+    
+    axt alignment files are produced from Blastz, an alignment tool available from Webb Miller's lab 
+    at Penn State University.  Each alignment block in an axt file contains three lines: a summary 
+    line and 2 sequence lines. Blocks are separated from one another by blank lines.
+    
+    The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields:
+
+    For complete details see http://genome.ucsc.edu/goldenPath/help/axt.html
+    
     >>> headers = get_headers(__file__, sep=None)
     >>> is_axt(headers)
     False
@@ -191,14 +246,41 @@ def is_axt(headers):
     >>> is_axt(headers)
     True
    """
-    try:        
-        return (len(headers) >= 4) and (headers[0][7] == '-' or headers[0][7] == '+') and (headers[3] == []) and (len(headers[0])==9 or len(headers[0])==10)    
+    try:     
+        #return (len(headers) >= 4) and (headers[0][7] == '-' or headers[0][7] == '+') and (headers[3] == []) and (len(headers[0])==9 or len(headers[0])==10) 
+        if len(headers) < 4:
+            return False
+        """
+        Assume the summary line is the first line of the file.
+        """   
+        line = headers[0]
+        
+        if len(line) != 9:
+            return False
+        try:
+            map ( int, [line[0], line[2], line[3], line[5], line[6], line[8]] )
+        except:
+            return False
+        if line[7] not in valid_strand:
+            return False
+        return True
     except:
         return False
 
 def is_wiggle(headers):
     """
     Determines wether the file is in wiggle format
+
+    The .wig format is line-oriented. Wiggle data is preceeded by a track definition line,
+    which adds a number of options for controlling the default display of this track.
+    Following the track definition line is the track data, which can be entered in several
+    different formats.
+
+    The track definition line begins with the word 'track' followed by the track type.
+    The track type with version is REQUIRED, and it currently must be wiggle_0.  For example,
+    track type=wiggle_0...
+    
+    For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
     
     >>> headers = get_headers(__file__, sep=' ')
     >>> is_wiggle(headers)
@@ -210,18 +292,27 @@ def is_wiggle(headers):
     """
     try:
         for idx, hdr in enumerate(headers):
-            if hdr and hdr[0] == "track":
+            if hdr and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
                 return True
-            if idx > 10:
+            if idx > 29:
+                """
+                This is a weakness since it assumes < 29 blank lines, comments, etc.
+                """
                 break
         return False
     except:
         return False
 
-def is_bed(headers, skip=0):
+def is_bed(headers, skip=1):
     """
     Checks for 'bedness'
-
+    
+    BED lines have three required fields and nine additional optional fields. 
+    The number of fields per line must be consistent throughout any single set of data in 
+    an annotation track.
+    
+    For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format1
+    
     >>> fname = get_test_fname('test_tab.bed')
     >>> headers = get_headers(fname, sep='\\t')
     >>> is_bed(headers)
@@ -236,19 +327,66 @@ def is_bed(headers, skip=0):
         if not headers:
             return False
         
-        for hdr in headers[skip:]:
-            try:   
-                map(int, [ hdr[1], hdr[2] ])
-            except:
-                return False
+        for hdr in headers[skip:-1]:
+            """
+            We'll try to ensure we are not looking at a comment line
+            """
+            if hdr[0].startswith('chr') or hdr[0].startswith('scaffold'):
+                if len(hdr) < 3:
+                    return False
+                try:
+                    map(int, [hdr[1], hdr[2]])
+                except:
+                    return False
+                
+                if len(hdr) > 3:
+                    """
+                    Since all 9 of these fields are optional, it is difficult to test
+                    for specific column values...
+                    """
+                    optionals = hdr[3:]
+                    """
+                    ...we can, however, test complete BED definitions fairly easily.
+                    """
+                    if len(optionals) == 9:
+                        try:
+                            map (int, optionals[1], optionals[3], optionals[4], optionals[5], optionals[6])
+                        except:
+                            return False
+                        score = int(optionals[1])
+                        if score < 0 or score > 1000:
+                            return False
+                        if optionals[2] not in ['+', '-']:
+                            return False
+                        if int(optionals[5]) != 0:
+                            return False
+                        block_count = int(optionals[6])
+                        block_sizes = optionals[7].split(',')
+                        block_starts = optionals[8].split(',')
+                        if len(block_sizes) != block_couint or len(block_starts) != block_count:
+                            return False
+                    elif len(optionals) > 4 and len(optionals) < 9:
+                        """
+                        Here it gets a bit trickier, but in this case, we can be somewhat confident 
+                        that optionals will include a strand column
+                        """
+                        is_valid_strand = False
+                        for ele in optionals:
+                            if ele in valid_bed_strand:
+                                is_valid_strand = True
+                        if not is_valid_strand:
+                            return False
         return True
     except:
         return False
 
-def is_interval(headers):
+def is_interval(headers, skip=1):
     """
     Checks for 'intervalness'
 
+    This is the most loosely defined format and is mostly used by galaxy itself.  In general, if
+    the format is_column_based, but not any of the other formats, then it must be interval.
+    
     >>> fname = get_test_fname('test_space.bed')
     >>> headers = get_headers(fname, sep=' ')
     >>> is_interval(headers)
@@ -261,7 +399,48 @@ def is_interval(headers):
 
     """
     try:
-        return is_bed(headers, skip=1) and headers[0][0][0] == '#'
+        #return is_bed(headers, skip=1) and headers[0][0][0] == '#'
+        """
+        If we got here, we already know the file is_column_based and is not bed,
+        so we'll just look for some valid data.
+        """
+        for hdr in headers[skip:-1]:
+            """
+            This is a weakness in that it assumes no more than 5 blank lines, comments, etc.
+            """
+            if hdr[0].startswith('chr') or hdr[0].startswith('scaffold'):
+                if len(hdr) < 3:
+                    return False
+                try:
+                    map(int, [hdr[1], hdr[2]])
+                except:
+                    return False
+        return True
+    except:
+        return False
+
+def is_html(headers):
+    """
+    Determines wether the file is in html format
+    
+    >>> headers = get_headers(__file__, sep=' ')
+    >>> is_html(headers)
+    False
+    >>> fname = get_test_fname('file.html')
+    >>> headers = get_headers(fname, sep=' ')
+    >>> is_html(headers)
+    True
+    """
+    try:
+        for idx, hdr in enumerate(headers):
+            if hdr and hdr[0].lower() == '<html>':
+                return True
+            if idx > 29:
+                """
+                This is a weakness since it assumes < 29 blank lines, comments, etc.
+                """
+                break
+        return False
     except:
         return False
 
@@ -301,6 +480,11 @@ def guess_ext(fname):
     'gff'
     """
     try:
+        """
+        The order in which we attempt to determine data format is pretty important
+        because some formats are much more flexibly defined than others.  Interval format
+        is the most loosely defined, so it should be that last format we check.
+        """
         #guess if data is binary
         for line in file(fname):
             for char in line:
@@ -308,18 +492,20 @@ def guess_ext(fname):
                     return "data"
         
         headers = get_headers(fname, sep=None)
-        if is_gff(headers):
-            return 'gff'
         if is_maf(headers):
             return 'maf'
-        elif is_fasta(headers):
-            return 'fasta'
-        elif is_wiggle(headers):
-            return 'wig'
-        elif is_axt(headers):
-            return 'axt'
         elif is_lav(headers):
             return 'lav'
+        elif is_fasta(headers):
+            return 'fasta'
+        elif is_gff(headers):
+            return 'gff'
+        elif is_wiggle(headers):
+            return 'wig'
+        elif is_html(headers):
+            return 'html'
+        elif is_axt(headers):
+            return 'axt'
         
         # convert space to tabs
         if is_column_based(fname, sep=' '):
@@ -329,7 +515,7 @@ def guess_ext(fname):
             headers = get_headers(fname, sep='\t')
             if is_bed(headers):
                 return 'bed'
-            if is_interval(headers):
+            elif is_interval(headers):
                 return 'interval'
             
             return 'tabular'
