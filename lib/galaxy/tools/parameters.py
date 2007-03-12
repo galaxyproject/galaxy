@@ -395,7 +395,7 @@ class DataToolParameter( ToolParameter ):
         field = form_builder.SelectField( self.name, self.multiple )
         some_data = False
         for data in history.datasets:
-            if isinstance( data.datatype, self.format.__class__ ) and not data.parent_id:
+            if isinstance( data.datatype, self.format.__class__ ) and not data.parent_id and not data.deleted:
                 some_data = True
                 selected = ( value and ( data in value ) )
                 field.add_option( "%d: %s" % ( data.hid, data.name[:30] ), data.id, selected )
