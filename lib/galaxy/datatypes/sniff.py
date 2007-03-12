@@ -5,7 +5,6 @@ import logging, sys, os, csv, tempfile, shutil, re
 
 log = logging.getLogger(__name__)
 valid_strand = ['+', '-', '.']
-valid_frame = [0, 2, '.']
         
 def get_test_fname(fname):
     """Returns test data filename"""
@@ -151,27 +150,32 @@ def is_gff(headers):
     >>> is_fasta(headers)
     False
     >>> fname = get_test_fname('test.gff')
-    >>> headers = get_headers(fname,sep=' ')
+    >>> headers = get_headers(fname,sep='\\t')
     >>> is_gff(headers)
     True
     """
     try:
-        if len(headers) < 2: 
+        if len(headers) < 2:
             return False
-        """
-        Assume the first line in the file is not actual data
-        (it could be a description), so we'll use the 2nd line
-        """
-        line = headers[1]
-        if len(line) != 9: 
-            return False
-        try:
-            map(int, [line[3], line[4], line[5]])
-        except:
-            return False
-        score = int(line[5])
-        if (score < 0 or score > 1000) and line[6] not in valid_strand and line[7] not in valid_frame:
-            return False
+        for idx, hdr in enumerate(headers):
+            if hdr and len(hdr) > 1 and not hdr[0].startswith('#'):
+                if len(hdr) != 9: 
+                    return False
+                try:
+                    map(int, [hdr[3], hdr[4]])
+                except:
+                    return False
+                if hdr[5] != '.':
+                    try:
+                        score = int(hdr[5])
+                    except:
+                        return False
+                    if (score < 0 or score > 1000):
+                        return False
+                if hdr[6] not in valid_strand:
+                    return False
+            if idx > 29:
+                break
         return True
     except:
         return False
@@ -295,9 +299,6 @@ def is_wiggle(headers):
             if hdr and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
                 return True
             if idx > 29:
-                """
-                This is a weakness since it assumes < 29 blank lines, comments, etc.
-                """
                 break
         return False
     except:
@@ -317,23 +318,21 @@ def is_bed(headers, skip=1):
     >>> headers = get_headers(fname, sep='\\t')
     >>> is_bed(headers)
     True
-
     >>> fname = get_test_fname('interval.bed')
     >>> headers = get_headers(fname, sep='\\t')
     >>> is_bed(headers)
-    False
+    True
     """
     try:
         if not headers:
             return False
         
-        for hdr in headers[skip:-1]:
-            """
-            We'll try to ensure we are not looking at a comment line
-            """
+        for hdr in headers[skip:]:
+            
+            if len(hdr) < 3:
+                return False
+
             if hdr[0].startswith('chr') or hdr[0].startswith('scaffold'):
-                if len(hdr) < 3:
-                    return False
                 try:
                     map(int, [hdr[1], hdr[2]])
                 except:
@@ -388,11 +387,10 @@ def is_interval(headers, skip=1):
     the format is_column_based, but not any of the other formats, then it must be interval.
     
     >>> fname = get_test_fname('test_space.bed')
-    >>> headers = get_headers(fname, sep=' ')
+    >>> headers = get_headers(fname, sep='\\t')
     >>> is_interval(headers)
     False
-
-    >>> fname = get_test_fname('interval.bed')
+    >>> fname = get_test_fname('interval.interval')
     >>> headers = get_headers(fname, sep='\\t')
     >>> is_interval(headers)
     True
@@ -404,13 +402,11 @@ def is_interval(headers, skip=1):
         If we got here, we already know the file is_column_based and is not bed,
         so we'll just look for some valid data.
         """
-        for hdr in headers[skip:-1]:
-            """
-            This is a weakness in that it assumes no more than 5 blank lines, comments, etc.
-            """
+        for hdr in headers[skip:]:
+            if len(hdr) < 3:
+                return False
+            
             if hdr[0].startswith('chr') or hdr[0].startswith('scaffold'):
-                if len(hdr) < 3:
-                    return False
                 try:
                     map(int, [hdr[1], hdr[2]])
                 except:
@@ -449,35 +445,33 @@ def guess_ext(fname):
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
 
-    >>> fname = get_test_fname('interval.bed')
+    >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname)
     'interval'
-    
+    >>> fname = get_test_fname('interval.bed')
+    >>> guess_ext(fname)
+    'bed'
     >>> fname = get_test_fname('test_tab.bed')
     >>> guess_ext(fname)
     'bed'
-    
     >>> fname = get_test_fname('sequence.maf')
     >>> guess_ext(fname)
     'maf'
-    
     >>> fname = get_test_fname('sequence.fasta')
     >>> guess_ext(fname)
     'fasta'
-
+    >>> fname = get_test_fname('file.html')
+    >>> guess_ext(fname)
+    'html'
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a 2\\nc 1")
     >>> guess_ext(fname)
     'tabular'
-
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a  1  2  x\\nb  3  4  y")
     >>> guess_ext(fname)
     'bed'
     
-    >>> fname = get_test_fname('test.gff')
-    >>> guess_ext(fname)
-    'gff'
     """
     try:
         """
@@ -506,7 +500,7 @@ def guess_ext(fname):
             return 'html'
         elif is_axt(headers):
             return 'axt'
-        
+
         # convert space to tabs
         if is_column_based(fname, sep=' '):
             sep2tabs(fname)
