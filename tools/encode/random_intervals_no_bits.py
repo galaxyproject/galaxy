@@ -17,7 +17,7 @@ def add_random_region(region, b_chr, b_start, b_end, exist_regions, mask, overla
         
         found_overlap = False
         for region in exist_regions:
-            if (rand_region['start'] >= region['start'] and rand_region['start'] <= region['end']) or (rand_region['end'] >= region['start'] and rand_region['end'] <= region['end']):
+            if not (rand_region['end'] <= region['start'] or  region['end'] <= rand_region['start']):
                 if overlaps=="none" or rand_region['strand'] == region['strand']:
                     found_overlap = True
             
@@ -26,7 +26,7 @@ def add_random_region(region, b_chr, b_start, b_end, exist_regions, mask, overla
             for region in mask:
 	            if region['chr'] != rand_region['chr']:
 	                continue
-	            if (rand_region['start'] >= region['start'] and rand_region['start'] <= region['end']) or (rand_region['end'] >= region['start'] and rand_region['end'] <= region['end']):
+	            if not (rand_region['end'] <= region['start'] or  region['end'] <= rand_region['start']):
 	                found_overlap = True
                 
         if not found_overlap:
@@ -74,7 +74,7 @@ def main():
         print >>sys.stdout, 'random_intervals.py initialization error -> %s' % exc 
 
     if region_uid not in available_regions:
-        print >>stderr, "Invalid region selected"
+        print >>sys.stderr, "Invalid region selected"
         sys.exit(0)
     region_fname = available_regions[region_uid]
 

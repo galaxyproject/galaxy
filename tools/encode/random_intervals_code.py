@@ -32,7 +32,7 @@ def get_available_data( build ):
     if build in available_regions:
         return available_regions[build]
     else:
-        return ('No data available for this build','None',True)
+        return [('No data available for this build','None',True)]
 
 
 #def exec_before_job(inp_data, out_data, param_dict, tool):
