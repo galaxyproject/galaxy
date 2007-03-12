@@ -9,8 +9,6 @@ class FilterTests(TwillTestCase):
 
     def test_10_Genes(self):
         """3E_Filter: Get UCSC known genes first(encode)"""
-        self.clear_history()
-
         self.run_tool('ucsc_proxy')
         params = dict(
             hgta_regionType="encode",
@@ -30,14 +28,14 @@ class FilterTests(TwillTestCase):
     def test_21_Sort1(self):
         """3E_Filter: Sort on column one"""
         self.delete_data(2)
-        self.run_tool("sort1", column="1", order="ASC", style="alpha")
+        self.run_tool("sort1", input=1, column="1", order="ASC", style="alpha")
         self.wait()
         self.check_data('sc_3E_sort.bed', hid=3)
 
     def test_31_select(self):
         """3E_Filter: Select on the pattern AY143171"""
         self.delete_data(3)
-        self.run_tool("Grep1", invert="false", pattern="AY143171")
+        self.run_tool("Grep1", input=1, invert="false", pattern="AY143171")
         self.wait()
         self.check_data('sc_3E_select.bed', hid=4)
 

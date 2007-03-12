@@ -17,35 +17,35 @@ class EditModifyTests(TwillTestCase):
 
     def test_11_Add_column_1(self):
         """3D_Edit_Modify: Add value 1 to cds"""
-        self.run_tool("addValue", exp="1", iterate="no")
+        self.run_tool("addValue", input=1, exp="1", iterate="no")
         self.wait()
         self.check_data('sc_3D_cds_add_1.bed', hid=2)
 
     def test_12_Add_column_Mycds(self):
         """3D_Edit_Modify: Add value 'My.cds' to cds"""
         self.delete_data(2)
-        self.run_tool("addValue", exp="My.cds", iterate="no")
+        self.run_tool("addValue", input=1, exp="My.cds", iterate="no")
         self.wait()
         self.check_data('sc_3D_cds_add_mycds.bed', hid=3)
 
     def test_21_compute1(self):
         """3D_Edit_Modify: Compute expression c3-c2"""
         self.delete_data(3)
-        self.run_tool('Add a column1', cond='c3-c2')
+        self.run_tool('Add a column1', input=1, cond='c3-c2')
         self.wait()
         self.check_data('sc_3D_cds_compute1.bed', hid=4)
 
     def test_22_compute2(self):
         """3D_Edit_Modify: Compute expression(c3-c2)*100"""
         self.delete_data(4)
-        self.run_tool('Add a column1', cond='(c3-c2)*100')
+        self.run_tool('Add a column1', input=1, cond='(c3-c2)*100')
         self.wait()
         self.check_data('sc_3D_cds_compute2.bed', hid=5)
 
     def test_30_concatenate(self):
         """3D_Edit_Modify: Concatenate cd and cds"""
         self.delete_data(5)
-        self.run_tool('cat1')
+        self.run_tool('cat1', input1=1, input2=1)
         self.wait()
         self.check_data('sc_3D_cds_concat.bed', hid=6)
 
@@ -59,14 +59,14 @@ class EditModifyTests(TwillTestCase):
     def test_50_cut(self):
         """3D_Edit_Modify: cut c1, c2"""
         self.delete_data(7)
-        self.run_tool('Cut1', columnList='c1,c2', delimiter='T')
+        self.run_tool('Cut1', input=1, columnList='c1,c2', delimiter='T')
         self.wait()
         self.check_data('sc_3D_cds_cut.bed', hid=8)
 
     def test_60_paste(self):
         """3D_Edit_Modify: paste"""
         self.delete_data(8)
-        self.run_tool('Paste1', delimiter='T')
+        self.run_tool('Paste1', input1=1, input2=1, delimiter='T')
         self.wait()
         self.check_data('sc_3D_cds_paste.bed', hid=9)
         self.delete_data(9)
