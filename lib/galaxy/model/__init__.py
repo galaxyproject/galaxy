@@ -156,6 +156,7 @@ class Dataset( object ):
                this magically.
         """
         self.metadata = Bunch( **self.metadata.__dict__ )
+        
     @property
     def ext( self ):
         return self.extension

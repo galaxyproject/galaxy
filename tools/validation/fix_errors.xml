@@ -3,7 +3,7 @@
 	
 	<description>in data validation</description>
 	
-	<command interpreter="python">
+	<command interpreter="python2.4">
 		fix_errors.py $input $errorsfile $output -x $ext --methods=$methods
 	</command>
 	

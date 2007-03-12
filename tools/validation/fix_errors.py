@@ -9,9 +9,7 @@ usage: %prog input errorsfile output
     -m, --methods=N: comma separated list of repair methods
 """
 from cookbook import doc_optparse
-from galaxy import model
-from fileinput import FileInput
-from galaxy import util
+from galaxy import util, model
 
 def main():
     options, args = doc_optparse.parse( __doc__ )
