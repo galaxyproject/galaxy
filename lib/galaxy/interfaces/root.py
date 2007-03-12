@@ -8,7 +8,6 @@ from galaxy import util, datatypes, jobs, web, util
 import common
 from cgi import escape, FieldStorage
 import urllib
-import traceback
 
 log = logging.getLogger( __name__ )
 
@@ -509,6 +508,7 @@ class Universe(common.Root):
             tool_params["tool_id"] = 'fix_errors'
             tool_params["runtool_btn"] = 'T'
             tool_params["input"] = id
+            tool_params["ext"] = data.ext
             # send methods selected
             repair_methods = data.datatype.repair_methods( data )
             methods = []
@@ -519,7 +519,7 @@ class Universe(common.Root):
             trans.response.send_redirect(url)                
         else:
             history = trans.app.model.History.get( data.history_id )
-            return trans.fill_template('dataset_errors.tmpl', data=data, history=history)
+            return trans.fill_template('dataset/validation.tmpl', data=data, history=history)
 
     # ---- Debug methods ----------------------------------------------------
 

@@ -15,12 +15,13 @@ from galaxy import util
 
 def main():
     options, args = doc_optparse.parse( __doc__ )
-
+    methods = []
     try:
         if options.methods: methods = options.methods.split(",")
-        ext = options.ext
     except:
-        doc_optparse.exception()
+        pass
+    
+    ext = options.ext
 
     in_file = open(args[0], "r")
     error_file = open(args[1], "r")

@@ -199,9 +199,13 @@ main();">
                     </div>
 
                     <div class="info">Info: $data.display_info </div>
-		    #if $len($data.validation_errors)>0
+		    #if $len($data.validation_errors)>1
 		    <div class="info"><i>
 		    There are $len($data.validation_errors) possibles errors in this dataset (<a href="dataset_errors?id=$data.id" target="galaxy_main">view</a>).
+		    </i></div>
+		    #elif $len($data.validation_errors)==1
+		    <div class="info"><i>
+		    There is 1 possible error in this dataset (<a href="dataset_errors?id=$data.id" target="galaxy_main">view</a>).
 		    </i></div>
 		    #end if
                     <div> 

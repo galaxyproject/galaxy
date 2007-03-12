@@ -4,12 +4,13 @@
 	<description>in data validation</description>
 	
 	<command interpreter="python">
-		fix_errors.py $input $errorsfile $output -m $methods
+		fix_errors.py $input $errorsfile $output -x $ext --methods=$methods
 	</command>
 	
 	<inputs>
 		<param name="errorsfile" type="text" />
 	        <param type="data" name="input" />
+		<param name="ext" type="text" />
 		<param name="methods" type="text" />
 	</inputs>
 	
