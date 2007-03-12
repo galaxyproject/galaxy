@@ -53,8 +53,8 @@ class UcscTests(TwillTestCase):
     #     # error.  This is intended so that the new ucsc page will be
     #     # stored and can be easily checked by hand and updated.
      
-     def test_UCSC_bed(self):
-         """Getting bed files from UCSC"""
+    def test_UCSC_bed(self):
+        """Getting bed files from UCSC"""
 
         self.clear_history()
 
