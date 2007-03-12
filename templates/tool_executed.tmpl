@@ -6,48 +6,57 @@
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <link href="/static/style/base.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript">
-if ( parent.frames && parent.frames.galaxy_history )
-{
-    parent.frames.galaxy_history.location.href="$request.base/history";
-}
+  var inside_galaxy_frameset = false;
 
-  function add_refresh()
-   {
+  if ( parent.frames && parent.frames.galaxy_history )
+  {
+      parent.frames.galaxy_history.location.href="$request.base/history";
+    
+      inside_galaxy_frameset = true;
+  }
+
+  function main()
+  {
+    // If called from outside the galaxy frameset, redirect there
     #if $tool.options.refresh
-       setTimeout( "refresh()", 1000 ); //
+      if ( ! inside_galaxy_frameset )
+      {
+        setTimeout( "refresh()", 1000 );
+        document.getElementById( "refresh_message" ).style.display = "block";
+      }
     #end if
-   }
+  }
 
-   function refresh()
-   {
-      top.location.href = '$request.base';
-   }
+  function refresh()
+  {
+    top.location.href = '$request.base';
+  }
 
 </script>
 
 </head>
 
-<body onLoad="add_refresh()">
+<body onLoad="main()">
 
 
 <div class="donemessage">
 
-
-#if $tool.options.refresh
-<h3 align="center">Redirecting to <a href="$request.base">GALAXY</a> </h3>
-#end if
-
-
-The following job has been succesfully added to the queue:
+<p>The following job has been succesfully added to the queue:</p>
 
 #for $data in $out_data.values
    <div style="padding: 10px"><b> $data.hid: $data.name</b></div>
 #end for
 
+<p>
 You can check the status of queued jobs and view the resulting 
 data by refreshing the <b>History</b> pane. When the job has been run
 the status will change from 'running' to 'finished' if completed 
 succesfully or 'error' if problems were encountered.
+</p>
+
+#if $tool.options.refresh
+<p id="refresh_message" style="display: none;">You are now being redirected back to <a href="$request.base">Galaxy</a></div>
+#end if
 
 </div>
 
