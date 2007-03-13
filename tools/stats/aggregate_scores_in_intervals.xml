@@ -12,11 +12,9 @@
     </outputs>
     <tests>
       <test>
-        <!--
-        <param name="input1" value="1.bed" />
-        <param name="datasets" value="hg17/rp_hg17panTro1mm5rn3canFam1" />
-        <output name="out_file1" file="ggs_aggregate_datapoints.dat" />
-        -->
+        <param name="input1" value="aggregate_binned_scores_in_intervals.bed" />
+        <param name="datasets" value="aggregate_binned_scores_in_intervals.wig" />
+        <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
       </test>
     </tests>
     <help>
