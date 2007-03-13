@@ -153,9 +153,11 @@ class Interval( Tabular ):
         fd, temp_name = tempfile.mkstemp()
         c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
         c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
-        if t >= 0: # strand column exists
+        if t >= 0: # strand column (should) exists
             for elems in util.file_iter(dataset.file_name):
-                tmp = [ elems[c], elems[s], elems[e], '1', '2', elems[t] ]
+                strand = "+"
+                if t<len(elems): strand = elems[t]
+                tmp = [ elems[c], elems[s], elems[e], '1', '2', strand ]
                 os.write(fd, '%s\n' % '\t'.join(tmp) )
         else:
             for elems in util.file_iter(dataset.file_name):
