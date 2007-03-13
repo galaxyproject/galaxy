@@ -29,6 +29,7 @@
 	<outputs>
 		<data name="out_file1" format="tabular" />
 	</outputs>
+    <tests>
       <test>
         <param name="input1" value="branchlength_fasta_in.dat"/>
         <param name="tree" values="((hg17,panTro1),(mm5,rn3),canFam1)"/>
@@ -36,6 +37,7 @@
         <param name="base_freq" values="Observed"/>
         <output name="out_file1" file="branchlength_out.dat"/>
       </test>
+	</tests>
 	<help>
 This tool takes a single or multiple FASTA alignment file and estimates branch lengths using HYPHY_, a maximum likelihood analyses package.
 
