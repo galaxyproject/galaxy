@@ -90,6 +90,9 @@ def is_column_based(fname, sep='\t'):
     Checks whether the file is column based with respect to a separator 
     (defaults to tab separator).
     
+    >>> fname = get_test_fname('test.gff')
+    >>> is_column_based(fname)
+    True
     >>> fname = get_test_fname('test_tab.bed')
     >>> is_column_based(fname)
     True
@@ -106,12 +109,16 @@ def is_column_based(fname, sep='\t'):
     if not headers:
         return False
     
-    count = len(headers[0])
+    for hdr in headers:
+        if hdr[0] and not (hdr[0] == '' or hdr[0].startswith( '#' )):
+            count = len(hdr)
+            break
+    
     if count < 2:
         return False
     
     for hdr in headers:
-        if len(hdr) != count:
+        if hdr[0] and not (hdr[0] == '' or hdr[0].startswith( '#' )) and len(hdr) != count:
             return False
     return True
         
@@ -158,7 +165,7 @@ def is_gff(headers):
         if len(headers) < 2:
             return False
         for idx, hdr in enumerate(headers):
-            if hdr and len(hdr) > 1 and not hdr[0].startswith('#'):
+            if len(hdr) > 1 and hdr[0] != '' and not hdr[0].startswith( '#' ):
                 if len(hdr) != 9: 
                     return False
                 try:
@@ -394,8 +401,8 @@ def is_interval(headers, skip=1):
     >>> headers = get_headers(fname, sep='\\t')
     >>> is_interval(headers)
     True
-
     """
+    
     try:
         #return is_bed(headers, skip=1) and headers[0][0][0] == '#'
         """
@@ -403,10 +410,9 @@ def is_interval(headers, skip=1):
         so we'll just look for some valid data.
         """
         for hdr in headers[skip:]:
-            if len(hdr) < 3:
-                return False
-            
-            if hdr[0].startswith('chr') or hdr[0].startswith('scaffold'):
+            if not (hdr[0] == '' or hdr[0].startswith( '#' )):
+                if len(hdr) < 3:
+                    return False
                 try:
                     map(int, [hdr[1], hdr[2]])
                 except:
@@ -463,6 +469,9 @@ def guess_ext(fname):
     >>> fname = get_test_fname('file.html')
     >>> guess_ext(fname)
     'html'
+    >>> fname = get_test_fname('test.gff')
+    >>> guess_ext(fname)
+    'gff'
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a 2\\nc 1")
     >>> guess_ext(fname)
@@ -492,8 +501,6 @@ def guess_ext(fname):
             return 'lav'
         elif is_fasta(headers):
             return 'fasta'
-        elif is_gff(headers):
-            return 'gff'
         elif is_wiggle(headers):
             return 'wig'
         elif is_html(headers):
@@ -501,8 +508,11 @@ def guess_ext(fname):
         elif is_axt(headers):
             return 'axt'
 
-        # convert space to tabs
-        if is_column_based(fname, sep=' '):
+        if is_column_based(fname, sep='\t'):
+            headers = get_headers(fname, sep='\t')
+            if is_gff(headers):
+                return 'gff'
+        elif is_column_based(fname, sep=' '):
             sep2tabs(fname)
 
         if is_column_based(fname, sep='\t'):
@@ -511,8 +521,8 @@ def guess_ext(fname):
                 return 'bed'
             elif is_interval(headers):
                 return 'interval'
-            
-            return 'tabular'
+            else:
+                return 'tabular'
     except:
         pass
     return 'text'
