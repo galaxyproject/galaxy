@@ -343,4 +343,7 @@
     <tool file="mdea/AlphaSubst.xml" />
     <tool file="stats/kaks.xml" />
  </section>
+ <section name="HYPHY" id="hyphy">
+    <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
+ </section>
 </toolbox>
