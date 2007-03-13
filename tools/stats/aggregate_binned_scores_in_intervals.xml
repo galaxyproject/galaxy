@@ -16,7 +16,7 @@
     </outputs>
     <tests>
       <test>
-        <param name="input1" value="aggregate_binned_scores_in_intervals.bed" dbkey="mm8" />
+        <param name="input1" value="aggregate_binned_scores_in_intervals.bed" dbkey="hg17" />
         <param name="datasets" value="aggregate_binned_scores_in_intervals.dir" />
         <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
       </test>
