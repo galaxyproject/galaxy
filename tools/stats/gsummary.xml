@@ -15,7 +15,7 @@
     <test>
       <param name="cond" value="c2"/>
       <param name="input" value="1.bed"/>
-      <output name="out_file1" value="sta_summary.dat"/>
+      <output name="out_file1" file="sta_summary.dat"/>
     </test>
   </tests>
   <help>

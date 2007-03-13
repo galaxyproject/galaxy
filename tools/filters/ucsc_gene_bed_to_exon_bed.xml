@@ -21,7 +21,7 @@
     <test>
       <param name="input1" value="3.bed" /> 
       <param name="region" value="transcribed" />
-      <output name="out_file1" value="cf-gene2exon.dat"/>
+      <output name="out_file1" file="cf-gene2exon.dat"/>
     </test>
   </tests>
 <help>

@@ -11,7 +11,7 @@
   <tests>
     <test>
       <param name="input1" value="3.bed" /> 
-      <output name="out_file1" value="cf-gene2intron.dat"/>
+      <output name="out_file1" file="cf-gene2intron.dat"/>
     </test>
   </tests>
 <help>

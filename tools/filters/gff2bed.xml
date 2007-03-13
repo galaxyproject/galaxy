@@ -10,7 +10,7 @@
   <tests>
     <test>
       <param name="input" value="5.gff"/>
-      <output name="out_file1" value="cf-gff2bed.dat"/>
+      <output name="out_file1" file="cf-gff2bed.dat"/>
     </test>
   </tests>
   <help>
