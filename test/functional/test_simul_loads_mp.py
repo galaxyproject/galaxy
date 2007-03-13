@@ -36,8 +36,9 @@ class UcscTests(TwillTestCase):
 
 
 	#tools' params
-	testdir = "/home/jbhe/galaxy_2.2/test-data/"
-	loaddir = "/home/jbhe/galaxy_2.2/test-data/load_test/"
+	root = os.getcwd()
+	testdir = root + "/test-data/"
+	loaddir = root + "/test-data/load_test/"
 	filenames_temp = os.listdir(loaddir)
 	filenames = []
 	users = []
@@ -84,7 +85,6 @@ class UcscTests(TwillTestCase):
 
 	#multiple users: Load test
 	hosts     = ["kenny",	"butters",	"cartman",	"tweek",	"craig"] 
-#	hosts_cmd = [""] 
 	hosts_cmd = [" ls & ", " ls & ", " ls & ", " ls & ", " ls & "] 
 	i = 0
 	j = 0
@@ -106,9 +106,9 @@ class UcscTests(TwillTestCase):
 	h = 0
         while h < len(hosts) : 
 #           h = random.randint(0, len(hosts)-1)
-	   print      "ssh -q %s ' %s ' >> %sjob.log " % (hosts[h], hosts_cmd[h], loaddir)  
+	   print      "ssh -q %s ' %s ' >> %sjob.log &" % (hosts[h], hosts_cmd[h], loaddir)  
 #	   os.system( "ssh -q %s ' %s ' >> %sjob.log " % (hosts[h], hosts_cmd[h], loaddir) )
-	   os.system( "ssh -q %s ' %s ' " % (hosts[h], hosts_cmd[h]) )
+	   os.system( "ssh -q %s ' %s ' &" % (hosts[h], hosts_cmd[h]) )
 	   h = h + 1
 
         self.wait(maxiter=2000)
@@ -122,7 +122,8 @@ class UcscTests(TwillTestCase):
 
 
 	#put statistics of the jobs to database "jbhe_tests_stat"
-	loaddir = "/home/jbhe/galaxy_2.2/test-data/load_test/"
+	root = os.getcwd()
+	loaddir = root + "/test-data/load_test/"
 	filenames_temp = os.listdir(loaddir)
 	i=0
 	for filename in filenames_temp : 
@@ -132,9 +133,9 @@ class UcscTests(TwillTestCase):
 	sqlstr = sqlstr + "FROM ( SELECT count(history_id) AS num_users, tool_id, avg(lifetime) AS avg_lifetime, max(update_time) as update_time "
 	sqlstr = sqlstr + "FROM ( SELECT history_id,  tool_id, (update_time - create_time) AS lifetime, update_time FROM job ORDER BY tool_id ) AS foo "
 	sqlstr = sqlstr + "WHERE foo.lifetime != '00:00:00' GROUP BY tool_id ORDER BY tool_id ) AS bar; "
-	sqlstr = sqlstr + "copy job_stat to '/home/jbhe/galaxy_2.2/test-data/load_test/job_stat.txt' "
+	sqlstr = sqlstr + "copy job_stat to '%s/test-data/load_test/job_stat.txt' " % root
 	os.system( "psql -q -h lonnie  -d jbhe_tests -c \"%s\"  " % sqlstr )
-	sqlstr = "copy job_stat from '/home/jbhe/galaxy_2.2/test-data/load_test/job_stat.txt' "
+	sqlstr = "copy job_stat from '%s/test-data/load_test/job_stat.txt' " % root
 	os.system( "psql -q -h lonnie  -d jbhe_tests_stat -c \"%s\"  " % sqlstr )
 
 	
