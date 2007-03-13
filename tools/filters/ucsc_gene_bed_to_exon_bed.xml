@@ -2,7 +2,7 @@
 <description>expander</description>
   <command interpreter="python">ucsc_gene_bed_to_exon_bed.py --input=$input1 --output=$out_file1 --region=$region "--exons"</command>
   <inputs>
-    <param name="input1" type="data" format="interval" label="UCSC Gene Table"/>
+    <param name="input1" type="data" format="bed" label="UCSC Gene Table"/>
     <param name="region" type="select">
       <label>Feature Type</label>
       <option value="transcribed">Coding + UTR</option>

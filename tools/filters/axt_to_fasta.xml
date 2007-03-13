@@ -1,10 +1,9 @@
 <tool id="axt_to_fasta" name="AXT to FASTA">
     <description>Converts an AXT formated file to FASTA format</description>
-    <command interpreter="python2.4">axt_to_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_file &gt; $out_file1</command>
+    <command interpreter="python2.4">axt_to_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1</command>
     <inputs>
         <page>
-            <param format="axt" name="axt_file" type="data" label="AXT file"/>
-
+            <param format="axt" name="axt_input" type="data" label="AXT file"/>
             <param label="Genome" name="dbkey_1" type="select" dynamic_options="get_available_builds()"/>
             <param label="Genome" name="dbkey_2" type="select" dynamic_options="get_available_builds()"/>
 
@@ -15,7 +14,7 @@
     </outputs>
     <tests>
       <test>
-        <param name="axt_file" value="1.axt" />
+        <param name="axt_input" value="1.axt" />
         <param name="dbkey_1" value='hg17' />
         <param name="dbkey_2" value="panTro1" />
         <output name="out_file1" file="axt_to_fasta.dat" />
