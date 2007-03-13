@@ -3,7 +3,7 @@ import os, sys
 encode_sets= {}
 
 try:
-    for line in open( "/cache/encode_datasets/encode_datasets.loc" ):
+    for line in open( "/depot/data2/galaxy/encode_datasets.loc" ):
         if line[0:1] == "#" : continue
         
         fields = line.split('\t')

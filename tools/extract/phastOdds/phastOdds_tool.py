@@ -1,5 +1,5 @@
 scores = {}
-for line in open( '/cache/phastOdds_precomputed/index.txt' ):
+for line in open( '/depot/data2/galaxy/phastOdds.loc' ):
     fields = line.strip().split( "\t" )
     if not fields[0] in scores: scores[fields[0]] = []
     scores[ fields[0] ].append( (fields[1],fields[2]) )

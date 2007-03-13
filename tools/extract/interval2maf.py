@@ -41,7 +41,7 @@ def __main__():
     #dictionary of available maf files
     maf_sets = {}
     try:
-        for line in open( "/cache/maf/maf_index.loc" ):
+        for line in open( "/depot/data2/galaxy/maf_index.loc" ):
             if line[0:1] == "#" : continue
             fields = line.split('\t')
             #read each line, if not enough fields, go to next line

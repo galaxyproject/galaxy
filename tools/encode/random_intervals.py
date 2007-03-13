@@ -126,7 +126,7 @@ def main():
     
     available_regions = {}
 
-    loc_file = "/cache/regions/regions.loc"
+    loc_file = "/depot/data2/galaxy/regions.loc"
 
 
     try:
