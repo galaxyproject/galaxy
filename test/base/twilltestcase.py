@@ -45,6 +45,10 @@ class TwillTestCase(unittest.TestCase):
 #       print "-----------------------------"
         tc.code(200)
 
+    def reload_page(self):
+        tc.reload()
+        tc.code(200)
+
     def set_history(self):
         """Sets the history (stores the cookies for this run)"""
         if self.history_id:
@@ -133,6 +137,22 @@ class TwillTestCase(unittest.TestCase):
         tc.go("/history_delete?id=%s" % elems[0].get('id') )
         tc.code(200)
 
+    def switch_history(self, hid=None):
+        """Deletes a history at a certain id"""
+        data_list = self.get_history_ids()
+        self.assertTrue( data_list )
+        if hid is None: # take last hid
+            elem = data_list[-1]
+            hid = elem.get('hid')
+        if hid < 0:
+            hid = len(data_list) + hid +1
+            print hid
+        hid = str(hid)
+        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
+        self.assertEqual(len(elems), 1)
+        tc.go("/history_switch?id=%s" % elems[0].get('id') )
+        tc.code(200)
+
 
     def historyid(self):
         data_list = self.get_data_list()
@@ -218,6 +238,20 @@ class TwillTestCase(unittest.TestCase):
     def last_page(self):
         return tc.browser.get_html()
 
+    def clear_cookies(self):
+        tc.clear_cookies()
+
+    def load_cookies(self, file):
+        fname = self.get_fname(file)
+        tc.load_cookies(fname)
+
+    def show_cookies(self):
+        return tc.show_cookies()
+
+    def showforms(self):
+        """Shows form, helpful for debugging new tests"""
+        return tc.browser.showforms()
+
     def run_tool(self, tool_id, **kwd):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and pass it the key/values from the *kwd"""
@@ -251,6 +285,12 @@ class TwillTestCase(unittest.TestCase):
     def check_history(self, patt):
         """Checks history for a pattern"""
         tc.go("./history")
+        for subpatt in patt.split():
+            tc.find(subpatt)
+
+    def check_data_prop(self, patt, hid=None):
+        """Check properties of data(hid=**) for patterns"""
+        tc.go("./edit?hid=%d" % hid)
         for subpatt in patt.split():
             tc.find(subpatt)
 
