@@ -16,7 +16,7 @@
     </outputs>
     <tests>
       <test>
-        <param name="input1" value="1.bed" />
+        <param name="input1" value="1.bed" dbkey="hg17" />
         <param name="datasets" value="hg17/rp_hg17panTro1mm5rn3canFam1" />
         <output name="out_file1" file="ggs_aggregate_datapoints.dat" />
       </test>
