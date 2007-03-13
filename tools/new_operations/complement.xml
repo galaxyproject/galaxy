@@ -9,7 +9,7 @@
     </param>
    </inputs>
   <outputs>
-    <data format="input" name="output" metadata_source="input1" />
+    <data format="input1" name="output" metadata_source="input1" />
   </outputs>
   <code file="operation_filter.py"/>
   <tests>

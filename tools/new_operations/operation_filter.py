@@ -12,14 +12,20 @@ from galaxy.tools.parameters import DataToolParameter
 def validate_input( trans, error_map, param_values, page_param_map ):
     dbkeys = sets.Set()
     data_param_names = sets.Set()
+    data_params = 0
     for name, param in page_param_map.iteritems():
         if isinstance( param, DataToolParameter ):
-            dbkeys.add( param_values[name].dbkey )
+            if param_values.get(name, None) != None:
+                dbkeys.add( param_values[name].dbkey )
+                data_params += 1
             data_param_names.add( name )
-    if len( dbkeys ) != 1:
+    if len( dbkeys ) > 1:
         for name in data_param_names:
             error_map[name] = "All datasets must belong to same genomic build, " \
-                "this dataset is linked to build '%s'" % param_values[name].dbkey 
+                "this dataset is linked to build '%s'" % param_values[name].dbkey
+    if data_params != len(data_param_names):
+        for name in data_param_names:
+            error_map[name] = "A data of the appropriate type is required"
 
 def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
     """Verify the output data after each run"""
