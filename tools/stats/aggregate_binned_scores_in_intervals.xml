@@ -7,7 +7,7 @@
             <param format="interval" name="input1" type="data" label="Interval file"/>
         </page>
         <page>
-            <param name="datasets" type="select" label="Available datasets" dynamic_options="get_scores_for_build( input1.dbkey )" multiple="false" display="checkboxes">
+            <param name="datasets" type="select" label="Available datasets" dynamic_options="get_scores_for_build( input1.dbkey )" display="radio" multiple="false">
             </param>
         </page>
     </inputs>
