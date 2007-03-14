@@ -87,9 +87,12 @@ class UploadToolAction( object ):
                 data.extension = 'tabular'
 
         # validate incomming data
+        """
+        Commented by greg on 3/14/07
         for error in data.datatype.validate( data ):
             data.add_validation_error( 
                 model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=util.object_to_string( error.__dict__ ) ) )
+        """
         trans.history.add_dataset( data )
         trans.app.model.flush()
         return data
