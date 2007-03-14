@@ -184,7 +184,7 @@ main();">
                     	<div>Job is currently running</div>
                     	#*<a href="delete?id=$data.id">delete</a> *#
                     #elif $data_state == "error"
-                    	<div>An error occurred running this job: <i>$data.display_info</i>, <a href="${h.url_for( controller='dataset', action='errors', id=$data.id )}" target="galaxy_main">more info</a></div>
+                    	<div>An error occurred running this job: <i>$data.display_info</i>, <a href="${h.url_for( controller='dataset', action='errors', id=$data.id )}" target="galaxy_main">report this error</a></div>
                     	#*<a href="delete?id=$data.id">delete</a> *#
                     #else
                     <div>
