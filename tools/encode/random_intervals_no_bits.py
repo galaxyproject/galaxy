@@ -75,7 +75,7 @@ def main():
     
     available_regions = {}
     
-    loc_file = "/depot/data2/galaxy/regions.loc" #"/home/dan/galaxy/universe/svnroot/galaxy/trunk/regions.loc"
+    loc_file = "/depot/data2/galaxy/regions.loc"
     
     
     try:
