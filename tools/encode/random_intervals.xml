@@ -7,13 +7,13 @@
         <param name="input2" type="data" format="interval" label="Intervals to Mask"/>
         <param name="use_mask" type="select">
           <label>Use Mask</label>
-          <option value="use_mask">Yes</option>
           <option value="no_mask">No</option>
+          <option value="use_mask">Yes</option>
         </param>
          <param name="strand_overlaps" type="select">
           <label>Allow overlaps</label>
-          <option value="strand">Across Strands</option>
           <option value="all">Any</option>
+          <option value="strand">Across Strands</option>
           <option value="none">None</option>
         </param>
       </page>
