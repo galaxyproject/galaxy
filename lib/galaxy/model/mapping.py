@@ -147,7 +147,7 @@ assign_mapper( context, ValidationError, ValidationError.table )
 assign_mapper( context, Dataset, Dataset.table,
     properties=dict( children=relation( DatasetChildAssociation, primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
                                         lazy=False ),
-                     validation_errors=relation( ValidationError ) ) )
+                     validation_errors=relation( ValidationError, lazy=False ) ) )
                                         
 assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
     properties=dict( child=relation( Dataset, primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
