@@ -263,34 +263,19 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         form.
         """    
         return self.fill_template( "form.tmpl", form=form )
-    def compile_and_fill_template( self, source=None, file=None, namespaces=[] ):
-        """
-        Get the template matching `source` or `file` and fill it using 
-        variables from `namespaces`.
-        """
-        tclass = Template.compile( source=source, 
-                                   file=file, 
-                                   cacheModuleFilesForTracebacks=True, 
-                                   cacheDirForModuleFiles=self.app.config.template_cache )
-        default_namespace = dict( caller=self, t=self, h=webhelpers, 
-                                  util=util, request=self.request, 
-                                  response=self.response, app=self.app )
-        template = tclass( namespaces = namespaces + [ default_namespace ] )
-        return str( template )
     def fill_template(self, file_name, **kwargs):
         """
-        Fill in a template from a file.
+        Fill in a template, putting any keyword arguments on the context.
         """
-        return self.compile_and_fill_template( 
-            file = os.path.join( self.app.config.template_path, file_name ),
-            namespaces=[ kwargs, self.template_context ] )
+        template = Template( file=os.path.join(self.app.config.template_path, file_name), 
+                             searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app)] )
+        return str(template)
     def fill_template_string(self, template_string, context=None, **kwargs):
         """
-        Fill in a template from a string.
+        Fill in a template, putting any keyword arguments on the context.
         """
-        return self.compile_and_fill_template( 
-            source = template_string,
-            namespaces = [ context or kwargs, dict(caller=self) ] )
+        template = Template( source=template_string, searchList=[context or kwargs, dict(caller=self)] )
+        return str(template)
         
 class FormBuilder( object ):
     """
