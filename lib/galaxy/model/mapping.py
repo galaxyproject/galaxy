@@ -144,10 +144,17 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
 
 assign_mapper( context, ValidationError, ValidationError.table )
 
+# assign_mapper( context, Dataset, Dataset.table,
+#     properties=dict( children=relation( DatasetChildAssociation, primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
+#                                         lazy=False ),
+#                      validation_errors=relation( ValidationError, lazy=False ) ) )
+                                        
 assign_mapper( context, Dataset, Dataset.table,
-    properties=dict( children=relation( DatasetChildAssociation, primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
-                                        lazy=False ),
-                     validation_errors=relation( ValidationError, lazy=False ) ) )
+    properties=dict( 
+        children=relation( 
+            DatasetChildAssociation, 
+            primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
+            lazy=False ) ) )
                                         
 assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
     properties=dict( child=relation( Dataset, primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
@@ -158,7 +165,7 @@ assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
 assign_mapper( context, History, History.table,
     properties=dict( galaxy_sessions=relation( GalaxySessionToHistoryAssociation ),
                      datasets=relation( Dataset, backref="history", order_by=asc(Dataset.table.c.hid) ),
-                     active_datasets=relation( Dataset, primaryjoin=( ( Dataset.c.history_id == History.table.c.id ) & ( Dataset.c.deleted == False ) ), order_by=asc( Dataset.table.c.hid ), lazy=False, viewonly=True ) ) )
+                     active_datasets=relation( Dataset, primaryjoin=( ( Dataset.c.history_id == History.table.c.id ) & ( not_( Dataset.c.deleted ) ) ), order_by=asc( Dataset.table.c.hid ), lazy=False, viewonly=True ) ) )
 
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user", 
