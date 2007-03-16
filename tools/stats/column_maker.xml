@@ -1,13 +1,17 @@
 <tool id="Add a column1" name="Compute">
   <description>an expression on every row</description>
   <command interpreter="python2.4">
-    column_maker.py $input $out_file1 "$cond"
+    column_maker.py $input $out_file1 "$cond" $round
   </command>
   <inputs>
     <param name="cond" size="40" type="text" value="c3-c2" 
            label="Add expression"/>
     <param format="tabular" name="input" type="data" 
            label="as a new column to" help="Query missing? See TIP below"/>
+    <param name="round" type="select" label="Round result?">
+      <option value="no">NO</option>
+      <option value="yes">YES</option>
+    </param>    
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input"/>
@@ -16,6 +20,7 @@
     <test>
       <param name="cond" value="c3-c2"/>
       <param name="input" value="1.bed"/>
+      <param name="round" value="no"/>
       <output name="out_file1" file="eq-compute.dat"/>
     </test>
   </tests>
@@ -44,10 +49,14 @@ This tool allows to compute an expression for every row of a query and add resul
     chr1	151077881	151077918	2	200	-
     chr1	151081985	151082078	3	500	+
 
-- Compute "c4*c5" of the above file. The result is::
+- Using the above file, compute "c4*c5" results in::
 
     chr1	151077881	151077918	2	200	-	400.0
     chr1	151081985	151082078	3	500	+	1500.0
+    
+- If "Round result?" is YES, compute "c4*c5" results in::
 
+    chr1	151077881	151077918	2	200	-	400
+    chr1	151081985	151082078	3	500	+	1500
 </help>
 </tool>

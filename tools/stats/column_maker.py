@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Greg Von Kuster
 """
 This tool takes a tab-delimited textfile as input and creates another column in the file which is the result of
 a computation performed on every row in the original file.  The tool will skip over invalid lines within the file,
@@ -7,14 +8,18 @@ defined when the get_wrap_func function (immediately below) is applied to the fi
 """
 import sys, sets, re, os.path
 
-def get_wrap_func(value):
+def get_wrap_func(value, round):
     """
     Determine the data type of each column in the input file
     (valid data types for columns are either string or float)
     """
     try:
-        check = float(value)
-        return 'float(%s)'
+        if round == 'no':
+            check = float(value)
+            return 'float(%s)'
+        else:
+            check = int(value)
+            return 'int(%s)'
     except:
         return 'str(%s)'
 
@@ -23,13 +28,14 @@ def stop_err(msg):
     sys.exit()
 
 # we expect 4 parameters
-if len(sys.argv) != 4:
+if len(sys.argv) != 5:
     print sys.argv
-    stop_err('Usage: python column_maker.py input_file ouput_file condition')
+    stop_err('Usage: python column_maker.py input_file ouput_file condition round')
 
-inp_file  = sys.argv[1]
-out_file  = sys.argv[2]
+inp_file = sys.argv[1]
+out_file = sys.argv[2]
 cond_text = sys.argv[3]
+round = sys.argv[4]
 
 # replace if input has been escaped
 mapped_str = {
@@ -81,7 +87,7 @@ cols, funcs = [], []
 for ind, elem in enumerate(elems):
     name = 'c%d' % ( ind + 1 )
     cols.append(name)
-    funcs.append(get_wrap_func(elem) % name)
+    funcs.append(get_wrap_func(elem, round) % name)
 
 col   = ', '.join(cols)
 func  = ', '.join(funcs)
