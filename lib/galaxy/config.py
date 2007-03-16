@@ -39,6 +39,8 @@ class Configuration( object ):
         self.pbs_server = kwargs.get('pbs_server', "" )
         self.pbs_instance_path = kwargs.get('pbs_instance_path', os.getcwd() )
         self.pbs_application_server = kwargs.get('pbs_application_server', "" )
+        self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "" )
+        self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "" )
         self.use_heartbeat = kwargs.get( 'use_heartbeat', False )
     def get( self, key, default ):
         return self.config_dict.get( key, default )
