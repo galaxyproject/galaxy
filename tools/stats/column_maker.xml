@@ -34,7 +34,7 @@
 
 **Syntax**
 
-This tool allows to compute an expression for every row of a query and add result as a new column (field).
+This tool computes an expression for every row of a query and appends the result as a new column (field).
 
 - Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
 
@@ -49,7 +49,7 @@ This tool allows to compute an expression for every row of a query and add resul
     chr1	151077881	151077918	2	200	-
     chr1	151081985	151082078	3	500	+
 
-- Using the above file, compute "c4*c5" results in::
+- Using Input file, compute "c4*c5" results in::
 
     chr1	151077881	151077918	2	200	-	400.0
     chr1	151081985	151082078	3	500	+	1500.0
@@ -58,5 +58,16 @@ This tool allows to compute an expression for every row of a query and add resul
 
     chr1	151077881	151077918	2	200	-	400
     chr1	151081985	151082078	3	500	+	1500
+
+- Many operations are functional.  For example, compute "c3>=c2" for Input file results in::
+
+    chr1	151077881	151077918	2	200	-	True
+    chr1	151081985	151082078	3	500	+	True
+
+- Another example, compute "type(c2)==type('') for Input file resutls in::
+
+    chr1	151077881	151077918	2	200	-	False
+    chr1	151081985	151082078	3	500	+	False
+
 </help>
 </tool>

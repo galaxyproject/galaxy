@@ -11,7 +11,6 @@ import sys, sets, re, os.path
 def get_wrap_func(value, round):
     """
     Determine the data type of each column in the input file
-    (valid data types for columns are either string or float)
     """
     try:
         if round == 'no':
@@ -35,12 +34,14 @@ if len(sys.argv) != 5:
 inp_file = sys.argv[1]
 out_file = sys.argv[2]
 cond_text = sys.argv[3]
-round = sys.argv[4]
+round = sys.argv[4] 
 
 # replace if input has been escaped
 mapped_str = {
     '__lt__': '<',
     '__le__': '<=',
+    '__eq__': '==',
+    '__ne__': '!=',
     '__gt__': '>',
     '__ge__': '>=',
     '__sq__': '\'',
@@ -50,7 +51,7 @@ for key, value in mapped_str.items():
     cond_text = cond_text.replace(key, value)
 
 # safety measures
-safe_words = sets.Set( "c chr str float int split map lambda and or len".split() )
+safe_words = sets.Set( "c chr str float int split map lambda and or len type".split() )
 try:
     # filter on words
     patt = re.compile('[a-z]+')
@@ -71,7 +72,7 @@ if os.path.exists( inp_file ):
             elems = line.split( '\t' )
             break
 else:
-    stop_err('The input data file "%s" does not exist.' % inp_file)
+    stop_err('The input data file "%s" does not exist' % inp_file)
 
 if not elems:
     stop_err('No non-blank or non-comment lines in input data file "%s"' % inp_file)    
@@ -88,11 +89,11 @@ for ind, elem in enumerate(elems):
     name = 'c%d' % ( ind + 1 )
     cols.append(name)
     funcs.append(get_wrap_func(elem, round) % name)
-
-col   = ', '.join(cols)
-func  = ', '.join(funcs)
+        
+col = ', '.join(cols)
+func = ', '.join(funcs)
 assign = "%s = line.split('\\t')" % col
-wrap   = "%s = %s" % (col, func)
+wrap = "%s = %s" % (col, func)
 skipped_lines = 0
 first_invalid_line = 0
 invalid_line = None

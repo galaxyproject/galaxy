@@ -82,7 +82,7 @@ class UcscTests(TwillTestCase):
     def test_hbvar(self):
         """Getting hybrid gene mutations from HbVar"""
 
-        self.load_cookies("hbvar_cookie.txt")
+        #self.load_cookies("hbvar_cookie.txt")
         self.clear_history()
 
         self.run_tool('hbvar')

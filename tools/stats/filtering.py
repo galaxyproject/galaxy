@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#Greg Von Kuster
 """
 This tool takes a tab-delimited textfile as input and creates filters on columns based on certain properties.
 The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
@@ -38,6 +39,8 @@ cond_text = sys.argv[3]
 mapped_str = {
     '__lt__': '<',
     '__le__': '<=',
+    '__eq__': '==',
+    '__ne__': '!=',
     '__gt__': '>',
     '__ge__': '>=',
     '__sq__': '\'',
@@ -47,7 +50,7 @@ for key, value in mapped_str.items():
     cond_text = cond_text.replace(key, value)
 
 # Safety measures
-safe_words = sets.Set( "c chr str float int split map lambda and or len not intronic intergenic proximal distal scaffold chrX chrY chrUn random contig ctg ctgY ctgX".split() )
+safe_words = sets.Set( "c chr str float int split map lambda and or len not type intronic intergenic proximal distal scaffold chrX chrY chrUn random contig ctg ctgY ctgX".split() )
 try:
     # filter on words
     patt = re.compile('[a-z]+')
@@ -90,10 +93,10 @@ col = ', '.join(cols)
 func = ', '.join(funcs)
 assign = "%s = line.split('\\t')" % col
 wrap = "%s = %s" % (col, func)
-flags = []
 skipped_lines = 0
 first_invalid_line = 0
 invalid_line = None
+flags = []
 
 # Read and filter input file, skipping invalid lines
 code = '''

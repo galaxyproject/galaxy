@@ -169,7 +169,7 @@ def is_gff(headers):
                 if len(hdr) != 9: 
                     return False
                 try:
-                    map(int, [hdr[3], hdr[4]])
+                    map( int, [hdr[3], hdr[4]] )
                 except:
                     return False
                 if hdr[5] != '.':
@@ -329,22 +329,22 @@ def is_bed(headers, skip=1):
     >>> headers = get_headers(fname, sep='\\t')
     >>> is_bed(headers)
     True
+    >>> fname = get_test_fname('complete.bed')
+    >>> headers = get_headers(fname, sep='\\t')
+    >>> is_bed(headers)
+    True
     """
     try:
         if not headers:
             return False
-        
         for hdr in headers[skip:]:
-            
             if len(hdr) < 3:
                 return False
-
             if hdr[0].startswith('chr') or hdr[0].startswith('scaffold'):
                 try:
-                    map(int, [hdr[1], hdr[2]])
+                    map( int, [hdr[1], hdr[2]] )
                 except:
                     return False
-                
                 if len(hdr) > 3:
                     """
                     Since all 9 of these fields are optional, it is difficult to test
@@ -356,7 +356,7 @@ def is_bed(headers, skip=1):
                     """
                     if len(optionals) == 9:
                         try:
-                            map (int, optionals[1], optionals[3], optionals[4], optionals[5], optionals[6])
+                            map ( int, [optionals[1], optionals[3], optionals[4], optionals[5], optionals[6]] )
                         except:
                             return False
                         score = int(optionals[1])
@@ -367,9 +367,12 @@ def is_bed(headers, skip=1):
                         if int(optionals[5]) != 0:
                             return False
                         block_count = int(optionals[6])
-                        block_sizes = optionals[7].split(',')
-                        block_starts = optionals[8].split(',')
-                        if len(block_sizes) != block_couint or len(block_starts) != block_count:
+                        """
+                        Sometime the blosck_sizes and block_starts lists end in extra commas
+                        """
+                        block_sizes = optionals[7].rstrip(',').split(',')
+                        block_starts = optionals[8].rstrip(',').split(',')
+                        if len(block_sizes) != block_count or len(block_starts) != block_count:
                             return False
                     elif len(optionals) > 4 and len(optionals) < 9:
                         """
@@ -414,7 +417,7 @@ def is_interval(headers, skip=1):
                 if len(hdr) < 3:
                     return False
                 try:
-                    map(int, [hdr[1], hdr[2]])
+                    map( int, [hdr[1], hdr[2]] )
                 except:
                     return False
         return True
