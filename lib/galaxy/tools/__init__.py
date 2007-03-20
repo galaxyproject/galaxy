@@ -388,20 +388,36 @@ class Tool:
     def params_to_strings( self, params, app ):
         rval = dict()
         for key, value in params.iteritems():
-            if key in self.param_map:
-                rval[ key ] = self.param_map[key].to_string( value, app )
-            else:
-                rval[ key ] = str( value )
+	    if isinstance( value, list ):
+		i=0
+		while i < len(value): 
+            		rval[ key ] = str( value[i] )
+			i+=1
+	    else:
+		if key in self.param_map:
+                	rval[ key ] = self.param_map[key].to_string( value, app )
+            	else:
+                	rval[ key ] = str( value )
         return rval
-        
+
     def params_to_python( self, params, app ):
         rval = dict()
         for key, value in params.iteritems():
-            if key in self.param_map:
-                rval[ key ] = self.param_map[key].to_python( value, app )
-            else:
-                rval[ key ] = value
+            if isinstance( value, list ):
+		i=0
+		while i < len(value): 
+            		if key in self.param_map:
+                		rval[ key ] = self.param_map[key].to_python( value[i], app )
+            		else:
+                		rval[ key ] = value[i] 
+			i+=1
+	    else:
+		if key in self.param_map:
+                	rval[ key ] = self.param_map[key].to_python( value, app )
+            	else:
+                	rval[ key ] = value 
         return rval
+    
         
     def build_param_dict( self, incoming, input_datasets, output_datasets ):
         """
@@ -431,7 +447,15 @@ class Tool:
                 key = "_CHILD___%s___%s" % ( name, child.designation ) 
                 param_dict[ key ] = DatasetFilenameWrapper( child )
         # Return the dictionary of parameters
-        return param_dict
+        try:
+		if len(param_dict['input']) > 1:
+			j=0
+			while j < len(param_dict['input']):
+				param_dict['input'][j] = param_dict['input'+ str(j+1)] #[j].id
+				j+=1
+	except:
+		j=0 #do nothing 
+	return param_dict
     
     def build_param_file( self, param_dict ):
         """
@@ -462,6 +486,14 @@ class Tool:
             try:                
                 # Substituting parameters into the command
                 # TODO: replace with a real template (Cheetah)
+		try:
+			if len(param_dict['input']) > 1:
+				j=0
+				while j < len(param_dict['input']):
+					param_dict['input'][j] = param_dict['input'][j].id
+					j+=1
+		except:
+			j=0 #do nothing 
                 command_line = string.Template( self.command ).substitute( param_dict )
             except Exception, e:
                 # Modify exception message to be more clear

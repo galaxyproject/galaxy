@@ -7,7 +7,6 @@ import re, socket
 from galaxy import util, datatypes, jobs, web, util
 import common
 from cgi import escape, FieldStorage
-import urllib
 
 log = logging.getLogger( __name__ )
 
@@ -35,6 +34,7 @@ class Universe(common.Root):
     @web.expose
     def tool_menu( self, trans ):
         return trans.fill_template('tool_menu.tmpl', toolbox=self.get_toolbox() )
+
 
     @web.expose
     def last_hid( self, trans ):
@@ -118,7 +118,9 @@ class Universe(common.Root):
         """Returns a bed file"""
         data = self.app.model.Dataset.get( id )
         if data:
-            if isinstance(data.datatype, datatypes.interval.Interval) or isinstance(data.datatype, datatypes.interval.CustomTrack):
+            if isinstance(data.datatype, datatypes.interval.Bed):
+                return self.display(trans, id=data.id)
+            elif isinstance(data.datatype, datatypes.interval.Interval):
                 mime = data.get_mime()
                 trans.response.set_content_type(mime)
                 file_name = data.as_bedfile()
@@ -128,6 +130,109 @@ class Universe(common.Root):
                 return 'This file cannot be displayed as bed'
         else:
             return "No data with id=%s" % id
+	
+    @web.expose
+    def display_custom_bed( self, trans, id=None ):
+        """Returns a bed file with custom track specifications at the top"""
+        data = self.app.model.Dataset.get( id )
+        if data:
+	    track_name = data.name
+	    track_info = data.info
+	    try:
+		track_visibility = str(data.metadata.visibility)
+	    except:
+		track_visibility = '2'
+	    try:
+		track_color = data.metadata.color
+	    except:
+		track_color = "0,0,0"
+	    try:
+		track_group = data.metadata.group
+	    except:
+		track_group = 'user'
+	    
+	    peek_var = data.peek
+	    if peek_var.count("track") == 0:	#case where track information isn't present in the data
+	    	track = "track name='" + track_name.strip() + "' visibility=" + track_visibility + " color=" + track_color + " group='" + track_group +"'\n"	
+	    else: #case where track information is already present in the data
+		track=""
+            if isinstance(data.datatype, datatypes.interval.Bed):
+		lines= self.display(trans, id=data.id).read()
+		return track + str(lines)
+            elif isinstance(data.datatype, datatypes.interval.Interval):
+                mime = data.get_mime()
+                trans.response.set_content_type(mime)
+                file_name = data.as_bedfile()
+                trans.log_event( "Data view as BED: %s" % str(id) )
+                inp = open(file_name)
+		lines = inp.read()
+		return track + lines
+	    elif isinstance(data.datatype, datatypes.interval.CustomTrack):
+		mime = data.get_mime()
+                trans.response.set_content_type(mime)
+                file_name = data.as_bedfile()
+                trans.log_event( "Data view as BED: %s" % str(id) )
+                inp = open(file_name)
+		lines = inp.read()
+		return lines
+            else:
+                return 'This file cannot be displayed as bed'
+        else:
+            return "No data with id=%s" % id
+    
+
+
+
+
+    @web.expose
+    def display_custom_bed_list( self, trans, id=None ):
+        """Returns a bed file with custom track specifications at the top"""
+	id_list = id.split(',')
+	output=""
+	if 1:
+		i=0
+		while i<len(id_list):
+			id = id_list[i]
+        		data = self.app.model.Dataset.get( id )
+        		if data:
+	    			track_name = data.name
+	    			track_info = data.info
+	    			try:
+					track_visibility = str(data.metadata.visibility)
+	    			except:
+					track_visibility = '2'
+	    			try:
+					track_color = data.metadata.color
+	    			except:
+					track_color = "0,0,0"
+	    			try:
+					track_group = data.metadata.group
+	    			except:		
+					track_group = 'user'
+	    
+	    			peek_var = data.peek
+	    			if peek_var.count("track") == 0:#case where track information isn't present in the data
+	    				track = "track name='" + track_name.strip() + "' description='" + track_info.strip() + "' visibility=" + track_visibility + " color=" + track_color + " group='" + track_group +"'\n"	
+	    			else: #case where track information is already present in the data
+					track=""
+            			if isinstance(data.datatype, datatypes.interval.Bed):
+					lines= self.display(trans, id=data.id).read()
+					output = output + track + str(lines)
+            			elif isinstance(data.datatype, datatypes.interval.Interval):
+                			mime = data.get_mime()
+                			trans.response.set_content_type(mime)
+                			file_name = data.as_bedfile()
+                			trans.log_event( "Data view as BED: %s" % str(id) )
+                			inp = open(file_name)
+					lines = inp.read()
+					output = output + track + lines
+            			else:
+                			return 'This file cannot be displayed as bed'
+        			i+=1
+			else:
+            			return "No data with id=%s" % id
+		
+	return output
 
     @web.expose
     def peek(self, trans, id=None):
@@ -162,7 +267,7 @@ class Universe(common.Root):
             
             # detect metadata changes, kind of ugly
             changed = False
-            for attr in 'chromCol', 'startCol', 'endCol', 'strandCol':
+            for attr in 'chromCol', 'startCol', 'endCol', 'strandCol', 'visibility', 'color', 'group':
                 try:
                     oldv = str(getattr(data.metadata, attr)).strip() or None
                 except:
@@ -176,6 +281,9 @@ class Universe(common.Root):
                 data.metadata.startCol  = p.startCol
                 data.metadata.endCol    = p.endCol
                 data.metadata.strandCol = p.strandCol or '0'
+		data.metadata.visibility = p.visibility
+		data.metadata.color    = p.color
+		data.metadata.group    = p.group
                 data.mark_metadata_changed()
                 if data.missing_meta():
                     data.extension = 'tabular'
@@ -496,30 +604,6 @@ class Universe(common.Root):
     @web.expose
     def masthead( self, trans ):
         return trans.fill_template( "masthead.tmpl" )
-
-    @web.expose
-    def dataset_errors( self, trans, id=None, **kwd ):
-        """View/fix errors associated with dataset"""
-        data = trans.app.model.Dataset.get( id )
-        p = kwd
-        if p.get("fix_errors", None):
-            # launch tool to create new, (hopefully) error free dataset
-            tool_params = {}
-            tool_params["tool_id"] = 'fix_errors'
-            tool_params["runtool_btn"] = 'T'
-            tool_params["input"] = id
-            tool_params["ext"] = data.ext
-            # send methods selected
-            repair_methods = data.datatype.repair_methods( data )
-            methods = []
-            for method, description in repair_methods:
-                if method in p: methods.append(method)
-            tool_params["methods"] = ",".join(methods)
-            url = "/tool_runner/index?" + urllib.urlencode(tool_params)
-            trans.response.send_redirect(url)                
-        else:
-            history = trans.app.model.History.get( data.history_id )
-            return trans.fill_template('dataset/validation.tmpl', data=data, history=history)
 
     # ---- Debug methods ----------------------------------------------------
 

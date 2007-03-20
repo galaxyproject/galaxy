@@ -71,9 +71,151 @@
                   </div>
                </td>
             </tr>
+	    <tr>	
+		<td colspan="2">
+		  #if $data.missing_meta():
+                     	<div id="metadata" style="display:none;">
+                  #else:
+                     <div id="metadata" style="display:block;">
+                  #end if  
+		  Visibility:	
+		  <select name="visibility">	
+			#set $i = 0
+			#set $displaydict = {1:"dense", 2:"full", 3:"pack", 4:"squish", 0:"hide"}
+			#try
+			    #set $option = int($data.metadata.get("visibility"))
+			#except TypeError
+			    #set $option = 2
+			#end try
+			#while $i < 5	
+				#if $i == $option
+                       			<option value="$i" selected="yes">$displaydict[$i]</option>
+                    		#else
+                       			<option value="$i">$displaydict[$i]</option>
+                    		#end if
+				#set $i = $i + 1
+                 	#end while
+		  </select>	
+		</td>
+	    </tr>
+	    <tr>
+               <td colspan="2">
+		  #if $data.missing_meta():
+                     <div id="metadata" style="display:none;">
+                  #else:
+                     <div id="metadata" style="display:block;">
+                  #end if   
+		  Color:
+		  <select name="color">	
+			#set $i = 0
+			#set $colordict = {"0,0,255":"Blue", 
+					"0,255,0":"Green", 
+					"255,0,0":"Red", 
+					"160,32,240":"Purple",
+					"255,140,0":"Orange", 
+					"255,20,147": "Pink",
+					"0,255,255":"Cyan",
+					"85,107,47":"Olive green",
+					"255,215,0":"Gold",
+					"139,69,19": "Brown",
+					"255,255,0":"Yellow",
+					"255,0,255":"Magenta",
+					"112,219,147":"Aquamarine",
+					"92,51,23":"Dark Chocolate",
+					"250,128,114":"Salmon",
+					"0,0,0":" Black"}
+			#try	
+				#set $option = $data.metadata.color
+	    		#except
+				#set $option = "0,0,0"
+			#end try
+			
+			#for $i in $colordict	
+				#if $i == $option
+                       			<option value="$i" selected="yes">$colordict[$i]</option>
+                    		#else
+                       			<option value="$i">$colordict[$i]</option>
+                    		#end if
+			#end for
+			
+		  </select>	
+                  <!--<table>
+			<tr>
+				<td>Color:</td>
+				<td><b>R</b> 
+				    <select name="colorR">	
+					#set $i = 0
+				    	#while $i < 256:	
+				    		#if $i == int($data.metadata.get("colorR","0"))
+                       					<option value="$i" selected="yes">$i</option>
+                    				#else
+                       					<option value="$i">$i</option>
+                    		    		#end if
+						#set $i = $i + 1
+                 		    	#end while
+				    </select>			
+				</td>
+				<td><b>G</b>
+				    <select name="colorG">	
+					#set $i = 0
+					#while $i < 256	
+				    		#if $i == int($data.metadata.get("colorG","0"))
+							<option value="$i" selected="yes">$i</option>
+                    				#else
+                       					<option value="$i">$i</option>
+                    		    		#end if
+						#set $i = $i + 1
+                 		    	#end while
+				    </select>			
+				</td>
+				<td><b>B</b>
+				    <select name="colorB">	
+					#set $i = 0
+				    	#while $i < 256:	
+				    		#if $i == int($data.metadata.get("colorB","0"))
+                       					<option value="$i" selected="yes">$i</option>
+                    				#else
+                       					<option value="$i">$i</option>
+                    		    		#end if
+						#set $i = $i + 1
+                 		    	#end while
+				    </select>			
+				</td>
+				<td>You can refer the color code chart <a href="http://www.pitt.edu/~nisg/cis/web/cgi/rgb.html" target="_blank"><b>here</b></a></td>
+			</tr>
+		  </table>-->
+                   
+               </td>
+            </tr>
             </div>
-
-        <tr><td colspan="2"><input type="submit" name="edit_genome_btn" value="Submit"></td></tr>
+	<tr>	
+		<td colspan="2">
+		  #if $data.missing_meta():
+                     	<div id="metadata" style="display:none;">
+                  #else:
+                     <div id="metadata" style="display:block;">
+                  #end if  
+		  Group: 	
+		  <select name="group">	
+			#set $displaydict = {"user":"Custom track","map": "Mapping and sequencing tracks", "phenDis":"Phenotype and Disease associations", "genes":"Genes and gene prediction tracks", "rna":"mRNA and EST tracks", "regulation":"Expression and Regulation","compGeno": "Comparative Genomics","varRep":"Variation and Repeats", "encodeGenes":"ENCODE regions and genes", "encodeRegions":"ENCODE Transcript levels", "encodeChip":"ENCODE Chromatin Immunoprecipitation", "encodeChrom":"ENCODE Chromosome, Chromatin and DNA structure", "encodeCompGeno":"ENCODE Comparative Genomics", "encodeVariation": "ENCODE Variation"}
+			#try	
+				#set $option = $data.metadata.group
+	    		#except
+				#set $option = "user"
+			#end try
+			
+			#for $i in $displaydict	
+				#if $i == $option
+                       			<option value="$i" selected="yes">$displaydict[$i]</option>
+                    		#else
+                       			<option value="$i">$displaydict[$i]</option>
+                    		#end if
+			#end for
+		  </select>	
+		</td>
+	</tr>
+        
+	<tr><td colspan="2"><input type="submit" name="edit_genome_btn" value="Submit"></td></tr>
 
     </table> 
 

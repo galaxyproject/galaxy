@@ -340,11 +340,12 @@ class SelectToolParameter( ToolParameter ):
     def filter_value( self, value, trans=None, other_values={} ):
         if self.dynamic_options:
             legal_values = set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
+	    
         else:
             legal_values = self.legal_values
         if isinstance( value, list ):
             assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
-            rval = []
+	    rval = []
             for v in value: 
                 v = util.restore_text( v )
                 assert v in legal_values 
@@ -352,7 +353,7 @@ class SelectToolParameter( ToolParameter ):
             return self.separator.join( rval )
         else:
             value = util.restore_text( value )
-            assert value in legal_values
+	    assert value in legal_values
             return value
 
 class DataToolParameter( ToolParameter ):
@@ -381,24 +382,42 @@ class DataToolParameter( ToolParameter ):
     <option value="5" selected>5: Unnamed dataset</option>
     </select>
     """
+    	
     def __init__( self, tool, elem ):
-        ToolParameter.__init__( self, tool, elem )
+	ToolParameter.__init__( self, tool, elem )
         self.format = datatypes.get_datatype_by_extension( elem.get( 'format', 'data' ).lower() )
         self.multiple = str_bool( elem.get( 'multiple', False ) )
         self.optional = str_bool( elem.get( 'optional', False ) )
+	self.legal_values = set()
+        self.dynamic_options = elem.get( "dynamic_options", None )
+	
+    
     def get_html( self, trans=None, value=None, other_values={} ):
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.history
         assert history is not None, "DataToolParameter requires a history"
+	
         if value is not None:
             if type( value ) != list: value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple )
         some_data = False
+	
+	if self.dynamic_options:
+		options = eval( self.dynamic_options, self.tool.code_namespace, other_values )
+                
         for data in history.datasets:
-            if isinstance( data.datatype, self.format.__class__ ) and not data.parent_id and not data.deleted:
-                some_data = True
-                selected = ( value and ( data in value ) )
-                field.add_option( "%d: %s" % ( data.hid, data.name[:30] ), data.id, selected )
+	    if self.dynamic_options:
+		if isinstance( data.datatype, self.format.__class__ ) and (data.dbkey == options) and not data.parent_id and (data.extension == "interval" or data.extension == "bed"):
+                	some_data = True
+                	selected = ( value and ( data in value ) )
+			field.add_option( "%d: %s" % ( data.hid, data.name[:30] ), data.id, selected )
+			
+	    else:
+		if isinstance( data.datatype, self.format.__class__ ) and not data.parent_id:
+                	some_data = True
+                	selected = ( value and ( data in value ) )
+                	field.add_option( "%d: %s" % ( data.hid, data.name[:30] ), data.id, selected )
+	
         if some_data and value is None:
             # Ensure that the last item is always selected
             a, b, c = field.options[-1]; field.options[-1] = a, b, True
@@ -408,6 +427,8 @@ class DataToolParameter( ToolParameter ):
         if self.optional == True:
             field.add_option( "Selection is Optional", 'None', True )
         return field.get_html()
+
+	
     def filter_value( self, value, trans, other_values={} ):
         if not value:
             raise ValueError( "A data of the appropriate type is required" )
@@ -419,10 +440,14 @@ class DataToolParameter( ToolParameter ):
             return [ trans.app.model.Dataset.get( v ) for v in value ]
         else:
             return trans.app.model.Dataset.get( value )
+    
     def to_string( self, value, app ):
-        return value.id
+	return value.id
+	
     def to_python( self, value, app ):
-        return app.model.Dataset.get( int( value ) )
+	return app.model.Dataset.get( int( value ) )
+	
+
 
 class RawToolParameter( ToolParameter ):
     """
@@ -479,7 +504,7 @@ parameter_types = dict( text     = TextToolParameter,
                         baseurl  = BaseURLToolParameter,
                         file     = FileToolParameter,
                         data     = DataToolParameter,
-                        raw      = RawToolParameter )
+                        raw      = RawToolParameter)
 
 def get_suite():
     """Get unittest suite for this module"""

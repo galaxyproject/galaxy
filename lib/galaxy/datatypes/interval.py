@@ -165,6 +165,8 @@ class Interval( Tabular ):
                 os.write(fd, '%s\n' % '\t'.join(tmp) )    
         os.close(fd)
         return temp_name
+    
+    
 
     def validate( self, dataset ):
         """Validate an interval file using the bx GenomicIntervalReader"""
@@ -253,7 +255,12 @@ class CustomTrack ( Tabular ):
         return Tabular.make_html_table(self, dataset, skipchar='track')
     
     def bed_viewport( self, dataset ):
-        return "." #Not ideal solution, will cause genome browser to give warning
+	for line in open(dataset.file_name):
+		if (line.startswith("chr") or line.startswith("scaffold")):     
+			value = line.split("\t")[0] + ":" + line.split("\t")[1] + "-" + line.split("\t")[2]
+			break
+			
+        return value #returns	 the co-ordinates of the 1st track/dataset
     
     def as_bedfile( self, dataset ):
         return dataset.file_name
