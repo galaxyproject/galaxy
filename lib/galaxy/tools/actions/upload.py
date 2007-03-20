@@ -4,11 +4,13 @@ from galaxy.datatypes import sniff
 from galaxy import model, util
 
 import sys, traceback
-
+        
 class UploadToolAction( object ):
     """
     Action for uploading files
     """
+    empty = False
+    
     def execute( self, tool, trans, incoming={} ):
         data_file = incoming['file_data']
         file_type = incoming['file_type']
@@ -21,6 +23,7 @@ class UploadToolAction( object ):
         info = "uploaded file"
         temp_name = ""
         data_list = []
+        self.empty = False
         if 'filename' in dir(data_file):
             try:
                 file_name = data_file.filename
@@ -43,9 +46,10 @@ class UploadToolAction( object ):
                     data_list.append( self.add_file(trans, StringIO.StringIO(url_paste), 'Pasted Entry', file_type, dbkey, "pasted entry",space_to_tab=space_to_tab) )
                 except:
                     pass
-        
-        if len(data_list)<1:
-            return self.upload_failed(trans, "ERROR: No file specified or Invalid URL","upload failed, the url specified is invalid or you have not specified a file")
+        if self.empty:
+            return self.upload_failed(trans, "Empty file error:", "you attempted to upload an empty file")
+        elif len(data_list)<1:
+            return self.upload_failed(trans, "No data error:","either you pasted no data, the url you specified is invalid, or you have not specified a file")
         return dict( output=data_list[0] )
 
     def upload_failed(self, trans, err_code, err_msg):
@@ -93,6 +97,9 @@ class UploadToolAction( object ):
             data.add_validation_error( 
                 model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=util.object_to_string( error.__dict__ ) ) )
         """
-        trans.history.add_dataset( data )
-        trans.app.model.flush()
+        if data.has_data():
+            trans.history.add_dataset( data )
+            trans.app.model.flush()
+        else:
+            self.empty = True
         return data
