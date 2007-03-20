@@ -79,32 +79,32 @@ class UcscTests(TwillTestCase):
         self.check_data('ucsc_proxy_range.dat', hid=1)
         self.check_data('ucsc_proxy_encode.dat', hid=2)
 
-    def test_hbvar(self):
-        """Getting hybrid gene mutations from HbVar"""
+    # We probably will not move this to main
+    #def test_hbvar(self):
+    #    """Getting hybrid gene mutations from HbVar"""
+    #    #self.load_cookies("hbvar_cookie.txt")
+    #    self.clear_history()
 
-        #self.load_cookies("hbvar_cookie.txt")
-        self.clear_history()
-
-        self.run_tool('hbvar')
-        params = dict(
-            htyp="any hybrid gene",
-        )
-        self.submit_form(form=1, button="Submit Query", **params)
+    #    self.run_tool('hbvar')
+    #    params = dict(
+    #        htyp="any hybrid gene",
+    #    )
+    #    self.submit_form(form=1, button="Submit Query", **params)
         
-        params = dict(
-            display_format="galaxy",
-        )
-        self.submit_form(form=1, button="Go", **params)
+    #    params = dict(
+    #        display_format="galaxy",
+    #    )
+    #    self.submit_form(form=1, button="Go", **params)
         
-        params = dict(
-            build="hg17",
-        )
-        self.submit_form(form=1, button="ok", **params);
+    #    params = dict(
+    #        build="hg17",
+    #    )
+    #    self.submit_form(form=1, button="ok", **params);
 
-        """
-        TODO: Currently fails when using sqlite, although successful when
-        using Postgres.  Upgrading our version of sqlite may fix this, but
-        confirmation is required.
-        """
-        self.check_data('hbvar_hybrid_genes.dat')
+    #    """
+    #    TODO: Currently fails when using sqlite, although successful when
+    #    using Postgres.  Upgrading our version of sqlite may fix this, but
+    #    confirmation is required.
+    #    """
+    #    self.check_data('hbvar_hybrid_genes.dat')
 
