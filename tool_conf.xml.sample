@@ -3,13 +3,14 @@
   <section name="Get Data" id="getext">
     <tool file="data_source/upload.xml"/>
     <tool file="data_source/ucsc_tablebrowser.xml" />
-    <tool file="data_source/ucsc_proxy.xml"/> 
+    <tool file="data_source/ucsc_proxy.xml"/>
     <tool file="data_source/ucsc_testproxy.xml" />
     <tool file="data_source/ucsc_archaea.xml" />
     <tool file="data_source/microbial_import.xml" />
     <tool file="data_source/biomart.xml" />
     <tool file="data_source/encode_db.xml" />
     <tool file="data_source/hbvar.xml" />
+    <tool file="data_source/show_in_ucsc.xml" />
     <tool file="validation/fix_errors.xml" />
   </section>
   <section name="Get ENCODE Data" id="encode">
@@ -24,6 +25,7 @@
     <tool file="extract/interval2maf.xml" />
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
+    <tool file="stats/aggregate_scores_in_intervals.xml" />
     <tool file="encode/gencode_partition.xml" />
     <tool file="encode/random_intervals.xml" />
   </section>
@@ -59,6 +61,9 @@
     <tool file="filters/axt_to_concat_fasta.xml" />
     <tool file="filters/axt_to_lav.xml" />
     <tool file="filters/lav_to_bed.xml" />
+    <tool file="filters/srg2wig.xml" />
+    <tool file="filters/aggTrack.xml" />
+
   </section>
   <section name="Fetch Sequences and Alignments" id="extract">
     <tool file="extract/fasta-subseq-wrapper.xml" />
@@ -75,9 +80,27 @@
     <tool file="stats/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
+    <tool file="stats/aggregate_scores_in_intervals.xml" />
   </section>
+<!--  <section name="Operate on Genomic Intervals" id="operation">
+    <tool file="operations/cluster.xml" />
+    <tool file="operations/clusterMerge.xml" />
+    <tool file="operations/interval_complement.xml" />
+    <tool file="operations/complement.xml" />
+    <tool file="operations/interval_coverage.xml" />
+    <tool file="operations/covDensity.xml" />
+    <tool file="operations/difference.xml" />
+    <tool file="operations/intersect.xml" />
+    <tool file="operations/joinLists.xml" />
+    <tool file="operations/merge.xml" />
+    <tool file="operations/overlap.xml" />
+    <tool file="operations/proximity.xml" />
+    <tool file="operations/subtract.xml" />
+    <tool file="operations/unionWrapper.xml" />
+    <tool file="operations/extend.xml" />
+  </section> -->
   <section name="Operate on Genomic Intervals" id="bxops">
-    <tool file="new_operations/intersect.xml" id="intersect" />  
+    <tool file="new_operations/intersect.xml" id="intersect" />
     <tool file="new_operations/subtract.xml" id="subtract" />
     <tool file="new_operations/merge.xml" id="merge" />
     <tool file="new_operations/concat.xml" id="concat" />
@@ -86,11 +109,13 @@
     <tool file="new_operations/complement.xml" id="complement" />
     <tool file="new_operations/cluster.xml" id="cluster" />
     <tool file="new_operations/join.xml" id="join" />
+    <tool file="new_operations/get_flanks.xml" />
+
   </section>
   <section name="Statistics" id="stats">
     <tool file="stats/gsummary.xml" />
-    <tool file="filters/uniq.xml" /> 
-    <tool file="stats/cor.xml" /> 
+    <tool file="filters/uniq.xml" />
+    <tool file="stats/cor.xml" />
   </section>
   <section name="Graph Data" id="plots">
     <tool file="plotting/histogram2.xml" />
@@ -345,6 +370,6 @@
     <tool file="stats/kaks.xml" />
  </section>
  <section name="HYPHY" id="hyphy">
-    <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
+   <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
  </section>
 </toolbox>

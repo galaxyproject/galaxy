@@ -256,12 +256,13 @@ class CustomTrack ( Tabular ):
     
     def bed_viewport( self, dataset ):
 	for line in open(dataset.file_name):
-		if (line.startswith("chr") or line.startswith("scaffold")):     
-			value = line.split("\t")[0] + ":" + line.split("\t")[1] + "-" + line.split("\t")[2]
-			break
-			
-        return value #returns	 the co-ordinates of the 1st track/dataset
-    
+	    if (line.startswith("chr") or line.startswith("scaffold")):     
+		value = line.split("\t")[0] + ":" + line.split("\t")[1] + "-" + line.split("\t")[2]
+		break
+	try:
+	    return value 	#returns the co-ordinates of the 1st track/dataset
+    	except:
+	    return "."
     def as_bedfile( self, dataset ):
         return dataset.file_name
 
