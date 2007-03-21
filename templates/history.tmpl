@@ -218,11 +218,10 @@ main();">
                     #end if
                     #if $data.ext in ["bed", "interval", "customtrack" ]:
                       #set $value = $data.bed_viewport()
-		      #if $value
+                      #if $value
                          | display at UCSC 
                            #for $site_name,$site_url in $data.get_ucsc_sites:
-                    		<a target="_blank" href="$[site_url]db=$data.dbkey&position=$value&hgt.customText=$request.base/display_custom_bed?id=$data.id">$site_name</a> 
-				<!--<a target="_blank" href="display_custom_bed?id=$data.id">$site_name</a>-->
+                         <a target="_blank" href="$[site_url]db=$data.dbkey&position=$value&hgt.customText=$request.base/display_bed?id=$data.id">$site_name</a> 
                            #end for
                       #end if
                     #end if
