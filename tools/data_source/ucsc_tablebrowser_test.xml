@@ -8,7 +8,7 @@
 	<inputs action="http://genome-test.cse.ucsc.edu/cgi-bin/hgTables" check_values="false" method="get">
 		<display>go to UCSC Table Browser $GALAXY_URL</display>
 		<param name="GALAXY_URL" type="baseurl" value="/tool_runner" />
-		<param name="tool_id" type="hidden" value="ucsc_table_direct1" />
+		<param name="tool_id" type="hidden" value="ucsc_table_direct_test1" />
 		<param name="sendToGalaxy" type="hidden" value="1" />
 		<param name="hgta_compressType" type="hidden" value="none" />
 		<param name="hgta_outputType" type="hidden" value="bed" />
