@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<tool name="UCSC Test" id="ucsc_table_direct_test1">
+	
+	<description>table browser</description>
+	
+	<command interpreter="python2.4">ucsc_tablebrowser.py $output</command>
+	
+	<inputs action="http://genome-test.cse.ucsc.edu/cgi-bin/hgTables" check_values="false" method="get">
+		<display>go to UCSC Table Browser $GALAXY_URL</display>
+		<param name="GALAXY_URL" type="baseurl" value="/tool_runner" />
+		<param name="tool_id" type="hidden" value="ucsc_table_direct1" />
+		<param name="sendToGalaxy" type="hidden" value="1" />
+		<param name="hgta_compressType" type="hidden" value="none" />
+		<param name="hgta_outputType" type="hidden" value="bed" />
+	</inputs>
+	
+	<code file="ucsc_tablebrowser_code.py"/>
+	
+	<outputs>
+		<data name="output" format="bed" />
+	</outputs>
+	<options sanitize="False" refresh="True"/>
+
+</tool>
+

@@ -3,8 +3,9 @@
   <section name="Get Data" id="getext">
     <tool file="data_source/upload.xml"/>
     <tool file="data_source/ucsc_tablebrowser.xml" />
-    <tool file="data_source/ucsc_proxy.xml"/> 
-    <tool file="data_source/ucsc_testproxy.xml" />
+    <tool file="data_source/ucsc_tablebrowser_test.xml" />
+<!--    <tool file="data_source/ucsc_proxy.xml"/> 
+    <tool file="data_source/ucsc_testproxy.xml" /> -->
     <tool file="data_source/ucsc_archaea.xml" />
     <tool file="data_source/microbial_import.xml" />
     <tool file="data_source/biomart.xml" />
