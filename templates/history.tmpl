@@ -221,7 +221,9 @@ main();">
                       #if $value
                          | display at UCSC 
                            #for $site_name,$site_url in $data.get_ucsc_sites:
+                               #if $site_name in $app.config.ucsc_display_sites:
                          <a target="_blank" href="$[site_url]db=$data.dbkey&position=$value&hgt.customText=$request.base/display_bed?id=$data.id">$site_name</a> 
+                               #end if
                            #end for
                       #end if
                     #end if

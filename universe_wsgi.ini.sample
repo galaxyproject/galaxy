@@ -78,6 +78,8 @@ sendmail_path = /usr/sbin/sendmail
 mailing_join_addr = galaxy-user-join@bx.psu.edu
 # Write thread status periodically to 'heartbeat.log'
 use_heartbeat = True
+# Comma separated list of UCSC browsers to use for viewing
+ucsc_display_sites = main,test,archaea
 
 # Static files
 
