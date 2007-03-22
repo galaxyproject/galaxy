@@ -26,8 +26,12 @@
       </p>
    </td></tr>
    <tr><td>
-      <form method="post" action="index">
+      <form method="post" action="admin">
          <p>Admin password: <input type="password" name="passwd" size="8"> </p>
+         <p>
+         Purge deleted datasets older than <input type="textfield" value="30" size="3" name="purge_days"> days.
+         <button name="action" value="purge">Purge</button>
+         </p> 
          <p>
          Delete objects older than <input type="textfield" value="120" size="3" name="days"> days.
          <button name="action" value="delete">Delete</button>

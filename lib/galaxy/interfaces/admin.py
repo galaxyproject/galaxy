@@ -15,6 +15,8 @@ class Admin( common.Root ):
                 msg = self.delete( **kwd )
             elif kwd['action'] == "tool_reload":
                 msg = self.tool_reload( **kwd )
+            elif kwd['action'] == "purge":
+                msg = self.purge( **kwd )
         
         users, data = [], []
         for row in trans.model.User.table.select().execute():
@@ -25,6 +27,32 @@ class Admin( common.Root ):
         qsize = self.app.job_queue.queue.qsize() 
         return trans.fill_template('admin_main.tmpl', toolbox=self.app.toolbox, users=users, data=data, qsize=qsize,msg=msg)
         
+    def purge( self, **kwd ):
+        """ Purges deleted datasets older than specified number of days """
+        params = util.Params(kwd)
+        msg = ''
+        if params.purge_days:
+            if params.passwd==self.app.config.admin_pass:
+                days = int(params.purge_days)
+                count = 0
+                now  = time.time()
+                for row in self.app.model.Dataset.table.select().execute():
+                    data = self.app.model.Dataset.get(row.id)
+                    if data.deleted and not data.purged:
+                        last = time.mktime( time.strptime( data.update_time.strftime('%a %b %d %H:%M:%S %Y') ))
+                        diff = (now - last) /3600/24 # days
+                        if diff>days:
+                            data.purge()
+                            count += 1
+                try:
+                    self.app.model.flush()
+                except:
+                    pass
+                msg = 'Purged %d datasets' % count
+            else:
+                msg = 'Invalid password'
+        return msg
+    
     def delete( self, **kwd ):
         params = util.Params(kwd)
         msg = ''

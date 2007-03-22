@@ -144,6 +144,7 @@ class Dataset( object ):
         self.parent_id = parent_id
         self.designation = designation
         self.deleted = False
+        self.purged = False
         # Relationships
         self.history = history
         self.validation_errors = validation_errors
@@ -252,6 +253,12 @@ class Dataset( object ):
             if child_association.designation == designation:
                 return child
         return None
+    def purge( self ):
+        """Removes the file contents from disk """
+        self.deleted = True
+        self.purged = True
+        try: os.unlink(self.file_name)
+        except: pass
 
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
