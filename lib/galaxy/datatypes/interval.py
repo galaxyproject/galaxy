@@ -200,33 +200,58 @@ class Bed( Interval ):
         dataset.metadata.endCol    = 3
         dataset.metadata.strandCol = 6
         dataset.mark_metadata_changed()
+        
     def set_meta( self, dataset ):
-        # metadata already set
-        pass
+        """
+        Overrides the default setting for dataset.metadata.strandCol for BED
+        files that do not contain a strand column.  This will result in changing
+        the format of the file from BED to Interval.
+        """
+        valid_bed_data = False
+        if dataset.has_data():
+            for i, line in enumerate( file(dataset.file_name) ):
+                line = line.strip()
+                if len(line) > 0 and ( line.startswith('chr') or line.startswith('scaff') ):
+                    valid_bed_data = True
+                    elems = line.split("\t")
+                    if len(elems) < 6:
+                        dataset.metadata.strandCol = 0
+                        dataset.mark_metadata_changed()
+                    break
+                if i == 30:
+                    break
+        if not valid_bed_data:
+            dataset.metadata.strandCol = 0
+            dataset.mark_metadata_changed()
+        
     def as_bedfile( self, dataset ):
         '''Returns a file that contains only the bed data. If bed 6+, treat as interval.'''
         for line in open(dataset.file_name):
             line = line.strip()
-            if line == "" or line.startswith("#"): continue
+            if line == "" or line.startswith("#"):
+                continue
             fields = line.split('\t')
             #check to see if this file doesn't conform to strict genome browser accepted bed
             try:
-                if len(fields)>12: return Interval.as_bedfile(self, dataset) #too many fields
-                if len(fields)>6:
-                    if len(fields) > 6:
-                        int(fields[6])
-                        if len(fields) > 7:
-                            int(fields[7])
-                            if len(fields) > 8:
-                                if int(fields[8]) != 0: return Interval.as_bedfile(self, dataset)
-                                if len(fields) > 9:
-                                    int(fields[9])
-                                    if len(fields) > 10:
-                                        fields2 = fields[10].rstrip(",").split(",") #remove trailing comma and split on comma
-                                        for field in fields2: int(field)
-                                        if len(fields) > 11:
-                                            fields2 = fields[11].rstrip(",").split(",") #remove trailing comma and split on comma
-                                            for field in fields2: int(field)
+                if len(fields) > 12:
+                    return Interval.as_bedfile(self, dataset) #too many fields
+                if len(fields) > 6:
+                    int(fields[6])
+                    if len(fields) > 7:
+                        int(fields[7])
+                        if len(fields) > 8:
+                            if int(fields[8]) != 0:
+                                return Interval.as_bedfile(self, dataset)
+                            if len(fields) > 9:
+                                int(fields[9])
+                                if len(fields) > 10:
+                                    fields2 = fields[10].rstrip(",").split(",") #remove trailing comma and split on comma
+                                    for field in fields2: 
+                                        int(field)
+                                    if len(fields) > 11:
+                                        fields2 = fields[11].rstrip(",").split(",") #remove trailing comma and split on comma
+                                        for field in fields2:
+                                            int(field)
             except: return Interval.as_bedfile(self, dataset)
             #only check first line for proper form
             break
