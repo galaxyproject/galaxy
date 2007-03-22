@@ -3,7 +3,7 @@ Utility functions used systemwide.
 
 """
 import logging
-import threading, sets, random, string, md5, re, binascii, pickle, time, datetime, math
+import threading, sets, random, string, md5, re, binascii, pickle, time, datetime, math, re
 
 import pkg_resources
 
@@ -249,49 +249,75 @@ def get_ucsc_by_build(build):
             sites.append((site['name'],site['url']))
     return sites
 
-#Read build names from file, this list is also used in upload tool
-dbnames = []
-try:
-    for line in open("static/ucsc/builds.txt"):
-        try:
-            if line[0:1] == "#": continue
-            fields = line.replace("\r","").replace("\n","").split("\t")
-            #Special case of unspecified build is at top of list
-            if fields[0] == "?":
-                dbnames.insert(0,(fields[0],fields[1]))
-                continue
-            #Alphabetize build list
-            for i in range(0,len(dbnames)):
-                if dbnames[i][0] == "?": continue
-                if dbnames[i][1] > fields[1]:
-                    dbnames.insert(i,(fields[0],fields[1]))
-                    break
-            else:
-                dbnames.append( (fields[0],fields[1]) )
-        except: continue
-except:
-    print "ERROR: Unable to read builds file"
-if len(dbnames)<1:
-    dbnames = [('?', 'unspecified (?)')]
-    
-    
-#read db names to ucsc mappings from file, this file should probably be merged with the one above
-ucsc_build_sites= []
-try:
-    for line in open("static/ucsc/ucsc_build_sites.txt"):
-        try:
-            if line[0:1] == "#": continue
-            fields = line.replace("\r","").replace("\n","").split("\t")
-            site_name = fields[0]
-            site = fields[1]
-            site_builds = fields[2].split(",")
-            site_dict = {'name':site_name, 'url':site, 'builds':site_builds}
-            ucsc_build_sites.append( site_dict )
-        except: continue
-except:
-    print "ERROR: Unable to read builds to ucsc site file"
+def read_dbnames(filename):
+    """ Read build names from file """
+    db_names = []
+    try:
+        ucsc_builds = {}
+        man_builds = [] #assume these are integers
+        name_to_db_base = {}
+        for line in open(filename):
+            try:
+                if line[0:1] == "#": continue
+                fields = line.replace("\r","").replace("\n","").split("\t")
+                #Special case of unspecified build is at top of list
+                if fields[0] == "?":
+                    db_names.insert(0,(fields[0],fields[1]))
+                    continue
+                try: #manual build (i.e. microbes)
+                    int(fields[0])
+                    man_builds.append((fields[1], fields[0]))
+                except: #UCSC build
+                    db_base = fields[0].rstrip('0123456789')
+                    if db_base not in ucsc_builds:
+                        ucsc_builds[db_base] = []
+                        name_to_db_base[fields[1]] = db_base
+                    #we want to sort within a species numerically by revision number
+                    build_rev = re.compile(r'\d+$')
+                    try: build_rev = int(build_rev.findall(fields[0])[0])
+                    except: build_rev = 0
+                    ucsc_builds[db_base].append((build_rev, fields[0],fields[1]))
+            except: continue
+        sort_names = name_to_db_base.keys()
+        sort_names.sort()
+        for name in sort_names:
+            db_base = name_to_db_base[name]
+            ucsc_builds[db_base].sort()
+            ucsc_builds[db_base].reverse()
+            ucsc_builds[db_base] = [(build, name) for build_rev, build, name in ucsc_builds[db_base]]
+            db_names = db_names + ucsc_builds[db_base]
+        if len(db_names)>1 and len(man_builds)>0: db_names.append(('?', '----- Additional Species Are Below -----'))
+        man_builds.sort()
+        man_builds = [(build, name) for name, build  in man_builds]
+        db_names = db_names + man_builds
+    except Exception, e:
+        print "ERROR: Unable to read builds file:", e
+    if len(db_names)<1:
+        db_names = [('?', 'unspecified (?)')]
+    return db_names
 
-    
+def read_ucsc_build_sites(filename):
+    """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
+    build_sites = []
+    try:
+        for line in open(filename):
+            try:
+                if line[0:1] == "#": continue
+                fields = line.replace("\r","").replace("\n","").split("\t")
+                site_name = fields[0]
+                site = fields[1]
+                site_builds = fields[2].split(",")
+                site_dict = {'name':site_name, 'url':site, 'builds':site_builds}
+                build_sites.append( site_dict )
+            except: continue
+    except:
+        print "ERROR: Unable to read builds to ucsc site file"
+    return build_sites
+
+dbnames = read_dbnames("static/ucsc/builds.txt") #this list is used in edit attributes and the upload tool
+ucsc_build_sites = read_ucsc_build_sites("static/ucsc/ucsc_build_sites.txt") #this list is used in history.tmpl
+
+
 if __name__ == '__main__':
     import doctest, sys
     doctest.testmod(sys.modules[__name__], verbose=False)

@@ -22,9 +22,11 @@
             <td>Database:</td>
             <td>
               <select name="dbkey">
+                 #set $found_key = False
                  #for $key, $value in $dbnames
-                    #if $key == $data.dbkey:
+                    #if $key == $data.dbkey and not $found_key:
                        <option value="$key" selected="yes">$value</option>
+                       #set $found_key = True
                     #else
                        <option value="$key">$value</option>
                     #end if
