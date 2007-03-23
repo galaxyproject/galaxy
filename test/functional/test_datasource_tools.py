@@ -53,31 +53,31 @@ class UcscTests(TwillTestCase):
     #     # error.  This is intended so that the new ucsc page will be
     #     # stored and can be easily checked by hand and updated.
      
-    def test_UCSC_bed(self):
-        """Getting bed files from UCSC"""
-
-        self.clear_history()
-
-        # in range
-        self.run_tool('ucsc_proxy')
-        params = dict(
-            hgta_regionType="range",
-            hgta_outputType="primaryTable",
-        )
-        self.submit_form(1, button="hgta_doTopSubmit", **params)
-
-        # encode
-        self.run_tool('ucsc_proxy')
-        params = dict(
-            hgta_regionType="encode",
-            hgta_outputType="primaryTable",
-        )
-        self.submit_form(1, button="hgta_doTopSubmit", **params)
-        
-        self.wait()
-        
-        self.check_data('ucsc_proxy_range.dat', hid=1)
-        self.check_data('ucsc_proxy_encode.dat', hid=2)
+    # def test_UCSC_bed(self):
+    #     """Getting bed files from UCSC"""
+    # 
+    #     self.clear_history()
+    # 
+    #     # in range
+    #     self.run_tool('ucsc_proxy')
+    #     params = dict(
+    #         hgta_regionType="range",
+    #         hgta_outputType="primaryTable",
+    #     )
+    #     self.submit_form(1, button="hgta_doTopSubmit", **params)
+    # 
+    #     # encode
+    #     self.run_tool('ucsc_proxy')
+    #     params = dict(
+    #         hgta_regionType="encode",
+    #         hgta_outputType="primaryTable",
+    #     )
+    #     self.submit_form(1, button="hgta_doTopSubmit", **params)
+    #    
+    #     self.wait()
+    #    
+    #     self.check_data('ucsc_proxy_range.dat', hid=1)
+    #     self.check_data('ucsc_proxy_encode.dat', hid=2)
 
     # We probably will not move this to main
     #def test_hbvar(self):

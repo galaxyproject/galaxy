@@ -14,20 +14,20 @@ class UcscTests(TwillTestCase):
         self.upload_file('MyData.bed')
         self.check_data('MyData.bed', hid=1)
 
-    def test_20_UCSC_bed(self):
-        """3A_GetData: Getting bed files from UCSC"""
-        self.clear_history()
-
-        self.run_tool('ucsc_proxy')
-        params = dict(
-            hgta_regionType="range",
-            hgta_outputType="bed",
-        )
-        self.submit_form(1, button="hgta_doTopSubmit", **params)
-        self.submit_form(1, button="hgta_doGetBed" )
-        self.wait()
-        self.check_data('3A_GetData_ucsc_bed_range.dat', hid=1)
-
+    #def test_20_UCSC_bed(self):
+    #    """3A_GetData: Getting bed files from UCSC"""
+    #    self.clear_history()
+    #
+    #    self.run_tool('ucsc_proxy')
+    #    params = dict(
+    #        hgta_regionType="range",
+    #        hgta_outputType="bed",
+    #    )
+    #    self.submit_form(1, button="hgta_doTopSubmit", **params)
+    #    self.submit_form(1, button="hgta_doGetBed" )
+    #    self.wait()
+    #    self.check_data('3A_GetData_ucsc_bed_range.dat', hid=1)
+    #
     # def test_30_Biomart_Uniprot(self):
     #     """3A_GetData: Connection to Biomart"""
     #     #All this test does, is check to see if biomart is accessible through Galaxy. A dataset is never retrieved or checked.
