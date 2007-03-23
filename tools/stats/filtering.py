@@ -50,7 +50,7 @@ for key, value in mapped_str.items():
     cond_text = cond_text.replace(key, value)
 
 # Safety measures
-safe_words = sets.Set( "c chr str float int split map lambda and or len not type intronic intergenic proximal distal scaffold chrX chrY chrUn random contig ctg ctgY ctgX".split() )
+safe_words = sets.Set( "c chr str exon CDS start_codon intron float int split map lambda and or len not type intronic intergenic proximal distal scaffold chrX chrY chrUn random contig ctg ctgY ctgX".split() )
 try:
     # filter on words
     patt = re.compile('[a-z]+')

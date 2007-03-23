@@ -45,6 +45,8 @@ The filter tool allows you to restrict the datset using simple conditional state
 - **c3 - c2 &lt; 100 * c4** selects lines where subtracting column 3 from column 2 is less than the value of column 4 times 100
 - **len(c2.split(',')) &lt; 4** will select lines where the second column has less than four comma separated elements
 - **c2 >= 1** selects lines in which the value of column 2 is greater than or equal to 1
+- Numbers should not contain commas - **c2 &lt;= 44,554,350** will not work, but **c2 &lt;= 44554350** will
+- Some words in the data can be used, but must be single or double quoted (e.g., **c3 == 'exon'**)
 
 </help>
 </tool>

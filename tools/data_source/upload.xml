@@ -26,6 +26,9 @@
 			<option value="axt">AXT</option>
 			<option value="tabular">Tab delimited</option>
 			<option value="gff">Gff</option>
+			<option value="lav">LAV</option>
+			<option value="html">HTML</option>
+			<option value="wig">Wiggle</option>
 			<option value="text">Other text type</option>
 		</param>
 		
@@ -35,11 +38,11 @@
 <help>
 **Auto-detect**
 
-The system can detect FASTA, MAF, Wiggle, BED and Interval (BED with headers) formats. Other formats will be set to generic text files. If your file is not detected properly as one of the known formats it most likely means that it might have some format problems for example: different number of columns on different rows. You can still coerce the system to set your data to the format you think is should be (please send us a note if you see a case when a valid format is not detected).
+The system will attempt to detect AXT, FASTA, Gff, HTML, LAV, Maf, Wiggle, BED and Interval (BED with headers) formats. Other formats will be set to generic text files. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be (please send us a note if you see a case when a valid format is not detected).
 
 **BED**
 
-* Tab delimited format
+* Tab delimited format (tabular)
 * Does not require header line
 * Contains 3 required fields:
 
@@ -72,7 +75,7 @@ Original description of the BED format can be found here_.
 
 **Genomic Intervals**
 
-- Tab delimited format
+- Tab delimited format (tabular)
 - File must start with definition line in the following format (columns may be in any order).::
 
     #CHROM START END STRAND
@@ -89,9 +92,15 @@ Original description of the BED format can be found here_.
 
 -----
 
+**AXT**
+
+blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields.
+
+-----
+
 **FASTA**
 
-Fasta file may contain any number of sequences. Each sequence starts with a definition line identified by &gt; symbol::
+A sequence in FASTA format consists of a single-line description, followed by lines of sequence data.  The first character of the description line is a greater-than (">") symbol in the first column.  All lines should be shorter than 80 charcters::
 
     >sequence1
     atgcgtttgcgtgc
@@ -102,21 +111,33 @@ Fasta file may contain any number of sequences. Each sequence starts with a defi
 
 -----
 
-**MAF**
+**Gff**
 
-TBA and multiz multiple alignment format
+GFF lines have nine required fields that must be tab-separated.
 
 -----
 
-**AXT**
+**Lav**
 
-blastz pairwise alignment format
+Lav is the primary output format for BLASTZ.  The first line of a .lav file begins with #:lav..
+
+-----
+
+**MAF**
+
+TBA and multiz multiple alignment format.  The first line of a .maf file begins with ##maf. This word is followed by white-space-separated "variable=value pairs". There should be no white space surrounding the "=".
+
+-----
+
+**Wiggle**
+
+The .wig format is line-oriented.  Wiggle data is preceeded by a track definition line, which adds a number of options for controlling the default display of this track.
 
 -----
 
 **Tab delimited**
 
-Any data in tab delimited format
+Any data in tab delimited format (tabular)
 
 -----
 

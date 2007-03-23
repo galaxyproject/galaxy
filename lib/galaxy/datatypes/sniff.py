@@ -220,7 +220,7 @@ def is_lav(headers):
     Determines wether the file is in lav format
     
     LAV is an alignment format developed by Webb Miller's group. It is the primary output format for BLASTZ.
-    The first line of a .maf file begins with #:lav.
+    The first line of a .lav file begins with #:lav.
 
     For complete details see http://www.bioperl.org/wiki/LAV_alignment_format
     
@@ -338,7 +338,7 @@ def is_bed(headers, skip=1):
         if not headers:
             return False
         for hdr in headers[skip:]:
-            if len(hdr) < 3:
+            if len(hdr) < 3 or len(hdr) > 12:
                 return False
             if hdr[0].startswith('chr') or hdr[0].startswith('scaffold'):
                 try:
