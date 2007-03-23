@@ -17,7 +17,7 @@
     </outputs>
     <tests>
       <test>
-        <param name="input" value="1.bed"/>
+        <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
         <param name="species" value="musMus6"/>
         <output name="out_file1" file="fsa_extract_blastz_alignments.dat" />
       </test>

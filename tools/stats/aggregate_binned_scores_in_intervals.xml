@@ -4,7 +4,7 @@
     <code file="aggregate_binned_scores_in_intervals_code.py"/>
     <inputs>
         <page>
-            <param format="interval" name="input1" type="data" label="Interval file"/>
+            <param format="interval" name="input" type="data" label="Interval file"/>
         </page>
         <page>
             <param name="datasets" type="select" label="Available datasets" dynamic_options="get_scores_for_build( input1.dbkey )" display="radio" multiple="false">
@@ -12,11 +12,11 @@
         </page>
     </inputs>
     <outputs>
-        <data format="interval" name="out_file1" metadata_source="input1"/>
+        <data format="interval" name="out_file1" metadata_source="input"/>
     </outputs>
     <tests>
       <test>
-        <param name="input1" value="aggregate_binned_scores_in_intervals.bed" dbkey="hg17" />
+        <param name="input" value="6.bed" dbkey="hg17" />
         <param name="datasets" value="aggregate_binned_scores_in_intervals.dir" />
         <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
       </test>

@@ -9,7 +9,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input" value="1.bed"/>
+      <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
       <output name="out_file1" file="fsa_extract_genomic_dna.dat" />
     </test>
   </tests>
