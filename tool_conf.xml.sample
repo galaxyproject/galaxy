@@ -78,7 +78,7 @@
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
-    <tool file="new_operations/intersect.xml" id="intersect" />  
+  	<tool file="new_operations/intersect.xml" id="intersect" />  
     <tool file="new_operations/subtract.xml" id="subtract" />
     <tool file="new_operations/merge.xml" id="merge" />
     <tool file="new_operations/concat.xml" id="concat" />
@@ -87,6 +87,7 @@
     <tool file="new_operations/complement.xml" id="complement" />
     <tool file="new_operations/cluster.xml" id="cluster" />
     <tool file="new_operations/join.xml" id="join" />
+    <tool file="new_operations/get_flanks.xml" />
   </section>
   <section name="Statistics" id="stats">
     <tool file="stats/gsummary.xml" />

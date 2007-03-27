@@ -23,7 +23,7 @@
       <param name="input" value="1.bed"/>
       <param name="size" value="50"/>
       <param name="direction" value="up"/>
-      <output name="out_file1" file="flanks-compute.dat"/>
+      <output name="out_file1" file="gops-get_flanks.bed"/>
     </test>
   </tests>
  <help> .. class:: infomark
