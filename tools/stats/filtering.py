@@ -35,6 +35,10 @@ inp_file  = sys.argv[1]
 out_file  = sys.argv[2]
 cond_text = sys.argv[3]
 
+if cond_text == '' or cond_text == None:
+    print 'Empty filtering condition'
+    sys.exit()
+        
 # replace if input has been escaped
 mapped_str = {
     '__lt__': '<',
@@ -49,6 +53,8 @@ mapped_str = {
 for key, value in mapped_str.items():
     cond_text = cond_text.replace(key, value)
 
+"""
+For now we'll take these out since they seem to restrict filtering significantly and result in unnecessary job errors.
 # Safety measures
 safe_words = sets.Set( "c chr str exon CDS start_codon intron float int split map lambda and or len not type intronic intergenic proximal distal scaffold chrX chrY chrUn random contig ctg ctgY ctgX".split() )
 try:
@@ -59,6 +65,7 @@ try:
             raise Exception, word
 except Exception, e:
     stop_err("Cannot recognize the word %s in condition %s" % (e, cond_text) )
+"""
 
 """
 Determine the number of columns in the input file and the data type for each
@@ -71,14 +78,17 @@ if os.path.exists( inp_file ):
             elems = line.split( '\t' )
             break
 else:
-    stop_err('The input data file "%s" does not exist.' % inp_file)
+    print 'The data file you selected for filtering does not exist.'
+    sys.exit()
 
 if not elems:
-    stop_err('No non-blank or non-comment lines in input data file "%s"' % inp_file)    
+    print 'No non-blank or non-comment lines in the data you selected for filtering'
+    sys.exit()
 
 if len(elems) == 1:
     if len(line.split()) != 1:
-        stop_err('This tool can only be run on tab delimited files')
+        print 'This tool can only be run on tab delimited data'
+        sys.exit()
 
 """
 Prepare the column variable names and wrappers for column data types
