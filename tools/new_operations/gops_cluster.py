@@ -8,7 +8,7 @@ usage: %prog in_file out_file
     -d, --distance=N: Maximum distance between clustered intervals
     -v, --overlap=N: Minimum overlap require (negative distance)
     -m, --minregions=N: Minimum regions per cluster
-    -o, --output=N: 1)merged 2)filtered 3)clustered
+    -o, --output=N: 1)merged 2)filtered 3)clustered 4) minimum 5) maximum
 """
 
 import pkg_resources
@@ -67,7 +67,7 @@ def main():
     if output == 1:
         fields = ["."  for x in range(max(g1.chrom_col, g1.start_col, g1.end_col)+1)]
         for chrom, tree in clusters.items():
-            for start, end in tree.getregions():
+            for start, end, lines in tree.getregions():
                 fields[g1.chrom_col] = chrom
                 fields[g1.start_col] = str(start)
                 fields[g1.end_col] = str(end)
@@ -94,6 +94,31 @@ def main():
         for chrom, tree in clusters.items():
             for linenum in tree.getlines():
                 print >> out_file, fileLines[linenum].rstrip("\n\r")
+
+    # If "minimum" we output the smallest interval in each cluster
+    if output == 4 or output == 5:
+        linenums = list()
+        f1.seek(0)
+        fileLines = f1.readlines()
+        for chrom, tree in clusters.items():
+            regions = tree.getregions()
+            for start, end, lines in tree.getregions():
+                outsize = -1
+                outinterval = None
+                for line in lines:
+                    # three nested for loops?
+                    # should only execute this code once per line
+                    fileline = fileLines[line].rstrip("\n\r")
+                    cluster_interval = GenomicInterval(g1, fileline.split("\t"), g1.chrom_col, g1.start_col,
+                                         g1.end_col, g1.strand_col, g1.default_strand,
+                                         g1.fix_strand)
+                    interval_size = cluster_interval.end - cluster_interval.start
+                    if outsize == -1 or \
+                       ( outsize > interval_size and output == 4 ) or \
+                       ( outsize < interval_size and output == 5 ) :
+                        outinterval = cluster_interval
+                        outsize = interval_size
+                print >> out_file, outinterval
 
     f1.close()
     
