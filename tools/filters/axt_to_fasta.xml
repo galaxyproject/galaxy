@@ -15,7 +15,7 @@
     <tests>
       <test>
         <param name="axt_input" value="1.axt" ftype="axt" />
-        <param name="dbkey_1" value='hg17' />
+        <param name="dbkey_1" value="hg17" />
         <param name="dbkey_2" value="panTro1" />
         <output name="out_file1" file="axt_to_fasta.dat" />
       </test>
