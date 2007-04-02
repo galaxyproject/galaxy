@@ -17,8 +17,49 @@
     <data format="png" name="out_file2" />
   </outputs>
   <help>
-    You can view the original documentation here_.
-    
+
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
+**Syntax**
+
+This application plots GC content over a sequence. It is intended for large sequences such as complete chromosomes or large genomic contigs, although interesting results can also be obtained from shorter sequences. You can view the original documentation here_.    
+
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/isochore.html
+
+- Both **Window size** and **Shift increment** are intergers.
+
+-----
+
+**Example**
+
+- Input sequences::
+
+    >hg18_dna range=chrX:151073054-151073376 5'pad=0 3'pad=0 revComp=FALSE strand=? repeatMasking=none
+    TTTATGTCTATAATCCTTACCAAAAGTTACCTTGGAATAAGAAGAAGTCA
+    GTAAAAAGAAGGCTGTTGTTCCGTGAAATACTGTCTTTATGCCTCAGATT
+    TGGAGTGCTCAGAGCCTCTGCAGCAAAGATTTGGCATGTGTCCTAGGCCT
+    GCTCAGAGCAGCAAATCCCACCCTCTTGGAGAATGAGACTCATAGAGGGA
+    CAGCTCCCTCCTCAGAGGCTTCTCTAATGGGACTCCAAAGAGCAAACACT
+    CAGCCCCATGAGGACTGGCCAGGCCAAGTGGTGTGTGGGAACAGGGAGCA
+    GCGGTTTCCAAGAGGATACAGTA
+
+- Output data file::
+
+    Position	Percent G+C 1 .. 323
+    80	0.422
+    112	0.460
+    144	0.509
+    176	0.534
+    208	0.553
+    240	0.553
+
+- Output graphics file:
+
+.. image:: ../static/emboss_icons/isochore.png
+
   </help>
 </tool>
