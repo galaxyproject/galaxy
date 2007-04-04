@@ -348,5 +348,6 @@
  </section>
  <section name="HYPHY" id="hyphy">
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
+    <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
  </section>
 </toolbox>

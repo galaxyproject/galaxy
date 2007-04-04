@@ -15,6 +15,330 @@ def get_filled_temp_filename(contents):
 HYPHY_PATH = "/home/universe/linux-i686/HYPHY"
 HYPHY_EXECUTABLE = os.path.join(HYPHY_PATH,"HYPHY")
 
+NJ_tree_shared_ibf = """
+COUNT_GAPS_IN_FREQUENCIES = 0;
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+
+function InferTreeTopology(verbFlag)
+{
+	distanceMatrix = {ds.species,ds.species};
+
+	MESSAGE_LOGGING 		 	= 0;
+	ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"chooseDistanceFormula.def");
+	InitializeDistances (0);
+		
+	for (i = 0; i<ds.species; i=i+1)
+	{
+		for (j = i+1; j<ds.species; j = j+1)
+		{
+			distanceMatrix[i][j] = ComputeDistanceFormula (i,j);
+		}
+	}
+
+	MESSAGE_LOGGING 		 	= 1;
+	cladesMade 					= 1;
+	
+
+	if (ds.species == 2)
+	{
+		d1 = distanceMatrix[0][1]/2;
+		treeNodes = {{0,1,d1__},
+					 {1,1,d1__},
+					 {2,0,0}};
+					 
+		cladesInfo = {{2,0}};
+	}
+	else
+	{
+		if (ds.species == 3)
+		{
+			/* generate least squares estimates here */
+			
+			d1 = (distanceMatrix[0][1]+distanceMatrix[0][2]-distanceMatrix[1][2])/2;
+			d2 = (distanceMatrix[0][1]-distanceMatrix[0][2]+distanceMatrix[1][2])/2;
+			d3 = (distanceMatrix[1][2]+distanceMatrix[0][2]-distanceMatrix[0][1])/2;
+			
+			treeNodes = {{0,1,d1__},
+						 {1,1,d2__},
+						 {2,1,d3__}
+						 {3,0,0}};
+						 
+			cladesInfo = {{3,0}};		
+		}
+		else
+		{	
+			njm = (distanceMatrix > methodIndex)>=ds.species;
+				
+			treeNodes 		= {2*(ds.species+1),3};
+			cladesInfo	    = {ds.species-1,2};
+			
+			for (i=Rows(treeNodes)-1; i>=0; i=i-1)
+			{
+				treeNodes[i][0] = njm[i][0];
+				treeNodes[i][1] = njm[i][1];
+				treeNodes[i][2] = njm[i][2];
+			}
+
+			for (i=Rows(cladesInfo)-1; i>=0; i=i-1)
+			{
+				cladesInfo[i][0] = njm[i][3];
+				cladesInfo[i][1] = njm[i][4];
+			}
+			
+			njm = 0;
+		}
+	}
+	return 1.0;
+}
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+
+function TreeMatrix2TreeString (doLengths)
+{
+	treeString = "";
+	p = 0;
+	k = 0;
+	m = treeNodes[0][1];
+	n = treeNodes[0][0];
+	treeString*(Rows(treeNodes)*25);
+
+	while (m)
+	{	
+		if (m>p)
+		{
+			if (p)
+			{
+				treeString*",";
+			}
+			for (j=p;j<m;j=j+1)
+			{
+				treeString*"(";
+			}
+		}
+		else
+		{
+			if (m<p)
+			{
+				for (j=m;j<p;j=j+1)
+				{
+					treeString*")";
+				}
+			}	
+			else
+			{
+				treeString*",";
+			}	
+		}
+		if (n<ds.species)
+		{
+			GetString (nodeName, ds, n);
+			if (doLengths == 2)
+			{
+				treeString*nodeName;			
+			}
+			else
+			{	
+				treeString*taxonNameMap[nodeName];
+			}
+		}
+		if (doLengths>.5)
+		{
+			nodeName = ":"+treeNodes[k][2];
+			treeString*nodeName;
+		}
+		k=k+1;
+		p=m;
+		n=treeNodes[k][0];
+		m=treeNodes[k][1];
+	}
+
+	for (j=m;j<p;j=j+1)
+	{
+		treeString*")";
+	}
+	
+	treeString*0;
+	return treeString;
+}
+"""
+
+def get_NJ_tree (filename):
+    return """
+DISTANCE_PROMPTS			= 1;
+ExecuteAFile ("%s");
+
+DataSet 				ds 			 = ReadDataFile (PROMPT_FOR_FILE);
+DataSetFilter 			filteredData = CreateFilter (ds,1);
+
+/* do sequence to branch map */
+
+taxonNameMap = {};
+
+for (k=0; k<ds.species; k=k+1)
+{
+	GetString 		(thisName, ds,k);
+	shortName 		= (thisName^{{"\\\\..+",""}})&&1;
+	taxonNameMap[shortName] = thisName;
+	SetParameter (ds,k,shortName);
+}
+
+DataSetFilter 			filteredData = CreateFilter (ds,1);
+InferTreeTopology 		(0);
+treeString 				= TreeMatrix2TreeString (1);
+
+fprintf					(PROMPT_FOR_FILE, CLEAR_FILE, treeString);
+fscanf					(stdin, "String", ps_file);
+
+if (Abs(ps_file))
+{
+	treeString = TreeMatrix2TreeString (2);
+	UseModel (USE_NO_MODEL);
+	Tree givenTree = treeString;
+	baseHeight 		= TipCount (givenTree)*28;
+	TREE_OUTPUT_OPTIONS = {};
+	TREE_OUTPUT_OPTIONS["__FONT_SIZE__"] = 14;
+	baseWidth = 0;
+	treeAVL				= givenTree^0;
+	drawLetter			= "/drawletter {"+TREE_OUTPUT_OPTIONS["__FONT_SIZE__"]$4+" -"+TREE_OUTPUT_OPTIONS["__FONT_SIZE__"]$2+ " show} def\\n";
+	for (k3 = 1; k3 < Abs(treeAVL); k3=k3+1)
+	{
+		nodeName = (treeAVL[k3])["Name"];
+		if(Abs((treeAVL[k3])["Children"]) == 0)
+		{
+			mySpecs = {};
+			mySpecs ["TREE_OUTPUT_BRANCH_LABEL"] = "(" + taxonNameMap[nodeName] + ") drawLetter";
+			baseWidth = Max (baseWidth, (treeAVL[k3])["Depth"]);
+		}
+	}
+	baseWidth = 40*baseWidth;
+	
+	fprintf (ps_file,  CLEAR_FILE, drawLetter, PSTreeString (givenTree, "STRING_SUPPLIED_LENGTHS",{{baseWidth,baseHeight}}));
+}
+""" % (filename)
+
+def get_NJ_treeMF (filename):
+    return  """
+ExecuteAFile ("%s");
+
+VERBOSITY_LEVEL			= -1;
+fscanf          		(PROMPT_FOR_FILE, "Lines", inLines);
+
+_linesIn = Columns (inLines);
+/*---------------------------------------------------------*/
+
+_currentGene   = 1; 
+_currentState = 0;
+geneSeqs	  = "";
+geneSeqs	  * 128;
+
+fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN);
+treeOutFile = LAST_FILE_PATH;
+
+fscanf  (stdin,"String", ps_file);
+if (Abs(ps_file))
+{
+	fprintf (ps_file, CLEAR_FILE, KEEP_OPEN);
+}
+
+for (l=0; l<_linesIn; l=l+1)
+{
+	if (Abs(inLines[l]) == 0)
+	{
+		if (_currentState == 1)
+		{
+			geneSeqs      * 0;
+			DataSet 	  ds 		   = ReadFromString (geneSeqs);
+			_processAGene (_currentGene,treeOutFile,ps_file);
+			geneSeqs * 128;
+			_currentGene = _currentGene + 1;
+		}
+	}
+	else
+	{
+		if (_currentState == 0)
+		{
+			_currentState = 1;
+		}
+		geneSeqs * inLines[l];
+		geneSeqs * "\\n";
+	}
+}
+
+
+if (_currentState == 1)
+{
+	geneSeqs      * 0;
+	if (Abs(geneSeqs))
+	{
+		DataSet 	  ds 		   = ReadFromString (geneSeqs);
+		_processAGene (_currentGene,treeOutFile,ps_file);
+	}
+}
+
+fprintf (treeOutFile,CLOSE_FILE);
+if (Abs(ps_file))
+{
+	fprintf (ps_file,CLOSE_FILE);
+}
+/*---------------------------------------------------------*/
+
+function _processAGene (_geneID, nwk_file, ps_file)
+{
+	if (ds.species == 1)
+	{
+		fprintf					(nwk_file, _geneID, "\\tNone\\tNone\\n");
+		return 0;
+		
+	}
+	DataSetFilter 			filteredData = CreateFilter (ds,1);
+
+	/* do sequence to branch map */
+
+	taxonNameMap = {};
+
+	for (k=0; k<ds.species; k=k+1)
+	{
+		GetString 		(thisName, ds,k);
+		shortName 		= (thisName^{{"\\\\..+",""}})&&1;
+		taxonNameMap[shortName] = thisName;
+		SetParameter (ds,k,shortName);
+	}
+
+	DataSetFilter 			filteredData = CreateFilter (ds,1);
+	DISTANCE_PROMPTS		= (_geneID==1);
+
+	InferTreeTopology 		(0);
+	fprintf					(nwk_file, _geneID, "\\t", TreeMatrix2TreeString (0), "\\t", TreeMatrix2TreeString (1), "\\n");
+	if (Abs(ps_file))
+	{
+		treeString = TreeMatrix2TreeString (2);
+		UseModel (USE_NO_MODEL);
+		Tree givenTree = treeString;
+		baseHeight 		= TipCount (givenTree)*28;
+		TREE_OUTPUT_OPTIONS = {};
+		TREE_OUTPUT_OPTIONS["__FONT_SIZE__"] = 14;
+		baseWidth = 0;
+		treeAVL				= givenTree^0;
+		drawLetter			= "/drawletter {"+TREE_OUTPUT_OPTIONS["__FONT_SIZE__"]$4+" -"+TREE_OUTPUT_OPTIONS["__FONT_SIZE__"]$2+ " show} def\\n";
+		for (k3 = 1; k3 < Abs(treeAVL); k3=k3+1)
+		{
+			nodeName = (treeAVL[k3])["Name"];
+			if(Abs((treeAVL[k3])["Children"]) == 0)
+			{
+				mySpecs = {};
+				mySpecs ["TREE_OUTPUT_BRANCH_LABEL"] = "(" + taxonNameMap[nodeName] + ") drawLetter";
+				baseWidth = Max (baseWidth, (treeAVL[k3])["Depth"]);
+			}
+		}
+		baseWidth = 40*baseWidth;
+		
+		fprintf (ps_file, PSTreeString (givenTree, "STRING_SUPPLIED_LENGTHS",{{baseWidth,baseHeight}}));
+	}
+	return 0;
+}
+""" % (filename)
+
 BranchLengthsMF = """
 VERBOSITY_LEVEL			= -1;
 fscanf          		(PROMPT_FOR_FILE, "Lines", inLines);
@@ -514,3 +838,44 @@ ExecuteAFile ("%s", _genomeScreenOptions);
 """ % (input_filename, nuc_model, model_options, base_freq, tree_filename, output_filename, BranchLengths_filename)
     return get_filled_temp_filename(contents)
     
+    
+def get_nj_tree_config_filename(input_filename, distance_metric, output_filename1, output_filename2, NJ_tree_filename):
+    contents = """
+_genomeScreenOptions = {};
+
+/* all paths are either absolute or relative 
+to the BuildNJTree.bf */
+
+_genomeScreenOptions ["0"] = "%s"; 
+	/* the file to analyze; */	
+_genomeScreenOptions ["1"] = "%s"; 
+	/* pick which distance metric to use; TN93 is a good default */	
+_genomeScreenOptions ["2"] = "%s"; 
+	/* write Newick tree output to; */	
+_genomeScreenOptions ["3"] = "%s"; 
+	/* write a postscript tree file to this file; leave blank to not write a tree */	
+	
+ExecuteAFile ("%s", _genomeScreenOptions);	
+""" % (input_filename, distance_metric, output_filename1, output_filename2, NJ_tree_filename)
+    return get_filled_temp_filename(contents)
+    
+    
+def get_nj_treeMF_config_filename(input_filename, output_filename1, output_filename2, distance_metric, NJ_tree_filename):
+    contents = """
+_genomeScreenOptions = {};
+
+/* all paths are either absolute or relative 
+to the BuildNJTreeMF.bf */
+
+_genomeScreenOptions ["0"] = "%s"; 
+	/* the multiple alignment file to analyze; */	
+_genomeScreenOptions ["1"] = "%s"; 
+	/* write Newick tree output to; */	
+_genomeScreenOptions ["2"] = "%s"; 
+	/* write a postscript tree file to this file; leave blank to not write a tree */	
+_genomeScreenOptions ["3"] = "%s"; 
+	/* pick which distance metric to use; TN93 is a good default */	
+	
+ExecuteAFile ("%s", _genomeScreenOptions);		
+""" % (input_filename, output_filename1, output_filename2, distance_metric, NJ_tree_filename)
+    return get_filled_temp_filename(contents)

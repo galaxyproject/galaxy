@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<tool name="Neighbor Joining Tree" id="hyphy_nj_tree_wrapper1">
+    
+    <description>Builder</description>
+    
+    <command interpreter="python2.4">hyphy_nj_tree_wrapper.py $input1 $out_file1 $out_file2 $distance_metric</command>
+    
+    <inputs>
+        <page>
+            <param format="fasta" name="input1" type="data" label="Fasta file"/>
+            <param name="distance_metric" type="select" label="Distance Model">
+                  <option value="TN93">Tamura-Nei (93)</option>
+                <!-- <option value="TN93_RV">Tamura-Nei (93) distance and rate variation (unequal character frequencies, A->G, C->T and transversional bias corrections, gamma distributed rate variation from site to site)</option> -->
+                <!-- <option value="TN84">Tajima-Nei (84) distance (unequal character frequencies)</option> -->
+                <!-- <option value="K2P_RV">Kimura 2 parameter and rate variation (equal character frequencies, transition/trasversion bias correction, gamma distributed rate variation from site to site)</option> -->
+                <option value="K2P">Kimura 2 parameter</option>
+                <option value="JC69">Jukes-Cantor</option>
+                <!-- <option value="T3P">Tamura 3-parameter (correction for GC content bias and transition/trasversion bias)</option> -->
+                <!-- <option value="p_Distance">Number of observed substituions per site</option> -->
+                <!-- <option value="Unaligned_LZ">Distance measure for unaligned sequences based on Lempel Ziv measure of information content</option> -->
+                <!-- <option value="Unaligned_LZ_FR">Distance measure for unaligned sequences based on Lempel Ziv measure of information content using the best choice forward and reverse string orientations</option> -->
+            </param>
+        </page>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="tabular" />
+        <data name="out_file2" format="pdf" />
+    </outputs>
+    <tests>
+      <test>
+        <param name="input1" value="cf_maf2fasta.dat"/>
+        <param name="distance_metric" value="TN93"/>
+        <output name="out_file1" file="nj_tree_newick_out.dat"/>
+<!--        <output name="out_file2" file="nj_tree_pdf_out.dat"/> generated tests can currently check only one file-->
+      </test>
+    </tests>
+    <help>
+This tool takes a single or multiple FASTA alignment file and builds Neighbor Joining Trees using HYPHY_, a maximum likelihood analyses package.
+
+.. _HYPHY: http://www.hyphy.org
+    </help>
+</tool>
+
