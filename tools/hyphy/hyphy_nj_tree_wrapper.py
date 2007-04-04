@@ -1,5 +1,5 @@
 #Dan Blankenberg
-#takes commandline tree def and input multiple fasta alignment file and runs the branch length ananlysis
+#takes fasta alignments, a distance metric and builds neighbor joining trees
 import os, sys
 import hyphy_util
 
