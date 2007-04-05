@@ -1,0 +1,35 @@
+<tool id="maf_stats1" name="MAF Coverage Stats">
+  <description>Alignment coverage information</description>
+  <command interpreter="python2.4">maf_stats.py $input1 $input2 $out_file1 $dbkey $input2_chromCol $input2_startCol $input2_endCol</command>
+  <inputs>
+    <page>
+        <param format="interval" name="input2" label="Interval File" type="data"/>
+        <param format="maf" name="input1" label="MAF File" type="data"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="interval" name="out_file1" metadata_source="input2"/>
+  </outputs>
+  <help>
+This tool takes a MAF file and an interval file and relates coverage information by interval for each species.
+If a column does not exist in the reference genome, it is not included in the output.
+
+Consider the interval: "chrX 1000 1100 myInterval"
+  Let's suppose we want to do stats on three way alignments for H, M, and R. The result look like this:
+
+    chrX 1000 1100 myInterval H XXX YYY 
+    
+    chrX 1000 1100 myInterval M XXX YYY 
+    
+    chrX 1000 1100 myInterval R XXX YYY 
+    
+
+  where XXX and YYY are:
+
+    XXX = number of nucleotides
+    
+    YYY = number of gaps
+
+
+  </help>
+</tool>

@@ -66,6 +66,7 @@
     <tool file="extract/extractAxt_wrapper.xml" />
     <tool file="extract/interval2maf.xml" />
     <tool file="extract/user_interval2maf.xml" />
+    <tool file="filters/maf/maf_stats.xml"/>
     <tool file="filters/maf/maf_limit_to_species.xml"/>
     <tool file="filters/maf/maf_limit_size.xml"/>
   </section>
