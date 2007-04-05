@@ -18,7 +18,16 @@ def get_wrap_func(value):
         return 'float(%s)'
     except:
         return 'str(%s)'
-    
+
+def get_operands(astring):
+    # Note that the order of all_operators is important
+    items_to_strip = ['+', '-', '**', '*', '//', '/', '%', '<<', '>>', '&', '|', '^', '~', '<=', '<', '>=', '>', '==', '!=', '<>', ' and ', ' or ', ' not ', ' is ', ' is not ', ' in ', ' not in ']
+    for item in items_to_strip:
+        if astring.find(item) >= 0:
+            astring = astring.replace(item, ' ')
+    operands = sets.Set(astring.split(' '))
+    return operands
+
 def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
@@ -53,16 +62,21 @@ mapped_str = {
 for key, value in mapped_str.items():
     cond_text = cond_text.replace(key, value)
 
-# Safety measures
-safe_words = sets.Set( "c chr str exon CDS start_codon intron float int split map lambda and or len not type intronic intergenic proximal distal scaffold chrX chrY chrUn random contig ctg ctgY ctgX".split() )
-try:
-    # filter on words
-    patt = re.compile('[a-z]+')
-    for word in patt.findall(cond_text):
-        if word not in safe_words:
-            raise Exception, word
-except Exception, e:
-    stop_err("Cannot recognize the word %s in condition %s" % (e, cond_text) )
+"""
+We'll attempt to determine if the condition includes executable stuff and, if so, exit
+"""
+secured = dir()
+operands = get_operands(cond_text)
+
+for operand in operands:
+    try:
+        map(int, operand)
+    except:
+        if operand == '=':
+            print 'Syntax error in "%s" - make sure to use proper operators (e.g., <=, ==, >=)' %cond_text
+            sys.exit()
+        if operand in secured:
+            stop_err("Illegal value %s in condition %s" % (operand, cond_text) )
 
 """
 Determine the number of columns in the input file and the data type for each
@@ -141,8 +155,8 @@ for flag, line in zip(flags, file(inp_file)):
 fp.close()
 
 print 'Filtering with %s, ' % cond_text
-print 'kept %4.2f%% of %d original lines.  ' % ( 100.0*keep/len(flags), total )
+print 'kept %4.2f%% of %d lines.' % ( 100.0*keep/len(flags), total )
 if skipped_lines > 0:
-    print 'Skipped %d invalid lines in file starting with line # %d, data: %s' % ( skipped_lines, first_invalid_line, invalid_line )
+    print 'Condition/data issue: skipped %d invalid lines starting at line #%d which is "%s"-valid lines are %s' % ( skipped_lines, first_invalid_line, invalid_line, func )
     
     
