@@ -1,0 +1,25 @@
+<tool id="maf_limit_size1" name="Filter MAF Size">
+  <description>remove MAF blocks larger or smaller than a range</description>
+  <command interpreter="python2.4">maf_limit_size.py $input1 $out_file1 $min_size $max_size</command>
+  <inputs>
+    <page>
+        <param format="maf" name="input1" label="MAF File" type="data"/>
+        <param name="min_size" label="Minimum Size" value="0" type="integer"/>
+        <param name="max_size" label="Maximum Size" value="0" type="integer" help="A maximum size less than 1 indicates no limit"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="maf" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="3.maf"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <output name="out_file1" file="3.maf" />
+    </test>
+  </tests>
+  <help>
+This tool takes a MAF file and a size range and extracts the MAF blocks which fall within the specified range from the provided file.
+  </help>
+</tool>
