@@ -47,19 +47,19 @@ class UploadToolAction( object ):
                 except:
                     pass
         if self.empty:
-            return self.upload_failed(trans, "Empty file error:", "you attempted to upload an empty file")
+            return self.upload_empty(trans, "Empty file error:", "you attempted to upload an empty file")
         elif len(data_list)<1:
-            return self.upload_failed(trans, "No data error:","either you pasted no data, the url you specified is invalid, or you have not specified a file")
+            return self.upload_empty(trans, "No data error:","either you pasted no data, the url you specified is invalid, or you have not specified a file")
         return dict( output=data_list[0] )
 
-    def upload_failed(self, trans, err_code, err_msg):
+    def upload_empty(self, trans, err_code, err_msg):
         data = trans.app.model.Dataset()
         data.name = err_code 
         data.extension = "text"
         data.dbkey = "?"
         data.info = err_msg
         data.flush()
-        data.state = jobs.JOB_ERROR
+        data.state = data.states.EMPTY
         trans.history.add_dataset( data )
         trans.app.model.flush()
         return dict( output=data )

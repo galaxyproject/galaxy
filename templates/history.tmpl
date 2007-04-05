@@ -186,11 +186,13 @@ main();">
                     #elif $data_state == "error"
                     	<div>An error occurred running this job: <i>$data.display_info</i>, <a href="${h.url_for( controller='dataset', action='errors', id=$data.id )}" target="galaxy_main">report this error</a></div>
                     	#*<a href="delete?id=$data.id">delete</a> *#
+                    #elif $data_state == "empty"
+                    	<div>No data: <i>$data.display_info</i></div>
                     #else
                     <div>
-                    $data.blurb, 
-                        format: <span class="$data.ext">$data.ext</span>, 
-                        database:
+                    	$data.blurb,
+       					format: <span class="$data.ext">$data.ext</span>, 
+                     	database:
                         #if $data.dbkey == '?'
                            <a href="edit?id=$data.id" target="galaxy_main"><span class="$data.dbkey">$data.dbkey</span></a>
                         #else

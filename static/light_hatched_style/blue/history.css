@@ -40,6 +40,20 @@ div.historyItem-ok
     
 }
 
+div.historyItem-empty
+{
+    padding: 5px;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-bottom: 5px;
+    border-top: solid #AA6666 1px;
+    border-bottom: solid #AA6666 1px;
+    background: #FFCCCC;
+    background-image: url(/static/style/error_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+}
+
 div.historyItem-error
 {
     padding: 5px;
