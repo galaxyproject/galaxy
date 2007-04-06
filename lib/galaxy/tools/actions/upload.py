@@ -88,7 +88,10 @@ class UploadToolAction( object ):
         data.set_peek()
         if isinstance( data.datatype, datatypes.interval.Interval ):
             if data.missing_meta():
-                data.extension = 'tabular'
+                if isinstance( data.datatype, datatypes.interval.Bed ):
+                    data.extension = 'interval'
+                if data.missing_meta():
+                    data.extension = 'tabular'
 
         # validate incomming data
         """

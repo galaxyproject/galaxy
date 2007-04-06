@@ -85,6 +85,15 @@ class Tabular( data.Text ):
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
       
+    def missing_meta( self, dataset ):
+        """Checks for empty meta values"""
+        for key, value in dataset.metadata.items():
+            if key in ['strandCol']: continue #we skip check for strand column here, since it is considered optional
+            if not value:
+                return True
+        return False
+    
+    
     def init_meta( self, dataset ):
         for key in alias_spec:
             setattr( dataset.metadata, key, '' ) 
@@ -194,6 +203,10 @@ class Interval( Tabular ):
 
 class Bed( Interval ):
     """Tab delimited data in BED format"""
+    def missing_meta( self, dataset ):
+        """Checks for empty meta values"""
+        return Tabular.missing_meta(self, dataset)
+    
     def init_meta( self, dataset ):
         dataset.metadata.chromCol  = 1
         dataset.metadata.startCol  = 2
