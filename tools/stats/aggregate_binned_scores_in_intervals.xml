@@ -1,5 +1,5 @@
 <tool id="aggregate_scores_in_intervals2" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints">
-    <description>Appends the average, min, max, sum, and count of datapoints per interval</description>
+    <description>Appends the average, min, max of datapoints per interval</description>
     <command interpreter="python2.4">aggregate_scores_in_intervals.py $datasets $input1 $out_file1 -b</command>
     <code file="aggregate_binned_scores_in_intervals_code.py"/>
     <inputs>
@@ -25,7 +25,7 @@
 
 **Syntax**
 
-This tool add columns of summary info for each interval against a provided dataset. For each of the given intervals, compute the average, minimum, maximum, sum, and count of data falling within the interval. The five columns representing these values are appended to the input file.
+This tool add columns of summary info for each interval against a provided dataset. For each of the given intervals, compute the average, minimum, maximum of data falling within the interval. The five columns representing these values are appended to the input file.
 
 - Several quantitative scores are provided for the ENCODE regions.
 
@@ -50,18 +50,15 @@ If your original query has the following format:
 
 and you choose to aggregate phastCons scores, your output will look like this:
 
-+-----+-----+---+-----+---+---+---+---+-----+
-|chrom|start|end|other|ave|min|max|sum|count|
-+-----+-----+---+-----+---+---+---+---+-----+
++-----+-----+---+-----+---+---+---+
+|chrom|start|end|other|ave|min|max|
++-----+-----+---+-----+---+---+---+
 
 where:
 
 * **ave** - average phastCons score for each region
 * **min** - minimal phastCons score for each region
 * **max** - maximum phastCons score for each region
-* **sum** - sum of phastCons scores for each region
-* **count** - count of phastCons datapoints for each region
-
 
     </help>
 </tool>
