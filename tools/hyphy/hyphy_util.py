@@ -17,6 +17,7 @@ HYPHY_EXECUTABLE = os.path.join(HYPHY_PATH,"HYPHY")
 
 NJ_tree_shared_ibf = """
 COUNT_GAPS_IN_FREQUENCIES = 0;
+methodIndex				  = 1;
 
 /*-----------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -133,7 +134,7 @@ function TreeMatrix2TreeString (doLengths)
 		if (n<ds.species)
 		{
 			GetString (nodeName, ds, n);
-			if (doLengths == 2)
+			if (doLengths != 1)
 			{
 				treeString*nodeName;			
 			}
@@ -287,10 +288,11 @@ function _processAGene (_geneID, nwk_file, ps_file)
 {
 	if (ds.species == 1)
 	{
-		fprintf					(nwk_file, _geneID, "\\tNone\\tNone\\n");
+		fprintf					(nwk_file, _geneID-1, "\\tNone \\tNone\\n");
 		return 0;
 		
 	}
+	
 	DataSetFilter 			filteredData = CreateFilter (ds,1);
 
 	/* do sequence to branch map */
@@ -300,7 +302,7 @@ function _processAGene (_geneID, nwk_file, ps_file)
 	for (k=0; k<ds.species; k=k+1)
 	{
 		GetString 		(thisName, ds,k);
-		shortName 		= (thisName^{{"\\\\..+",""}})&&1;
+		shortName 		= (thisName^{{"\\\\..+",""}});
 		taxonNameMap[shortName] = thisName;
 		SetParameter (ds,k,shortName);
 	}
@@ -309,7 +311,7 @@ function _processAGene (_geneID, nwk_file, ps_file)
 	DISTANCE_PROMPTS		= (_geneID==1);
 
 	InferTreeTopology 		(0);
-	fprintf					(nwk_file, _geneID, "\\t", TreeMatrix2TreeString (0), "\\t", TreeMatrix2TreeString (1), "\\n");
+	fprintf					(nwk_file, _geneID-1, "\\t", TreeMatrix2TreeString (0), "\\t", TreeMatrix2TreeString (1), "\\n");
 	if (Abs(ps_file))
 	{
 		treeString = TreeMatrix2TreeString (2);
@@ -333,6 +335,7 @@ function _processAGene (_geneID, nwk_file, ps_file)
 		}
 		baseWidth = 40*baseWidth;
 		
+		fprintf (stdout, _geneID, ":", givenTree,"\\n");
 		fprintf (ps_file, PSTreeString (givenTree, "STRING_SUPPLIED_LENGTHS",{{baseWidth,baseHeight}}));
 	}
 	return 0;
