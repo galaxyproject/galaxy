@@ -658,7 +658,7 @@ class DefaultToolAction( object ):
         # Queue the job for execution
         trans.app.job_queue.put( job.id, tool )
         # IMPORTANT: keep the following event as is - we parse it for our session activity reports
-        trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
         return out_data
         
 # ---- Utility classes to be factored out -----------------------------------

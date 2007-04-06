@@ -333,7 +333,7 @@ class Universe(common.Root):
     def history_available( self, trans, id=None, **kwd ):
         if not isinstance( id, list ):
             id = [ id ]
-        trans.log_event( "History id %s available" % str( id ))
+        trans.log_event( "History id %s available" % str( id ) )
         return trans.fill_template( "history_available.tmpl", ids=id )
         
     @web.expose

@@ -43,6 +43,10 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
         event = self.app.model.Event()
         event.tool_id = tool_id
         try:
+            event.referer = self.request.headers['Referer']
+        except:
+            event.referer = None
+        try:
             event.message = message % kwargs
         except:
             event.message = message
@@ -159,6 +163,7 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
             galaxy_session.user_id = self.user.id
         galaxy_session.remote_host = self.request.remote_host
         galaxy_session.remote_addr = self.request.remote_addr
+        galaxy_session.referer = self.request.referer
         if self.history is not None:
             galaxy_session.add_history(self.history)
         galaxy_session.flush()

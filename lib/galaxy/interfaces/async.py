@@ -58,7 +58,7 @@ class ASync(common.Root):
                 # push the job into the queue
                 data.state = data.blurb = data.states.RUNNING
                 log.debug('executing tool %s' % tool.id)
-                trans.log_event( 'Async executing tool %s' % tool.id )
+                trans.log_event( 'Async executing tool %s' % tool.id, tool_id=tool.id )
                 params = dict(url=URL, dataid=data.id, output=data.file_name)
                 #tool.execute( app=self.app, history=history, incoming=params )
                 tool.execute( trans, incoming=params )
@@ -103,7 +103,7 @@ class ASync(common.Root):
             data.state = data.states.NEW
             trans.history.add_dataset( data )
             trans.model.flush()
-            trans.log_event( "Async added dataset %s to history %s" %(data.name, trans.history.name ), tool_id=tool_id)
+            trans.log_event( "Async added dataset %s to history %s" %(data.name, trans.history.name ), tool_id=tool_id )
 
             try:
                 galaxy_url  = trans.request.base + '/async/%s/%s' % ( tool_id, data.id )

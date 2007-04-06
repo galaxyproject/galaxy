@@ -298,13 +298,15 @@ class Event( object ):
         self.user = user
         self.tool_id = None
         self.message = message
+        self.referer = None
 
 class GalaxySession( object ):
-    def __init__( self, id=None, user=None, remote_host=None, remote_addr=None ):
+    def __init__( self, id=None, user=None, remote_host=None, remote_addr=None, referer=None ):
         self.id = id
         self.user = user
         self.remote_host = remote_host
         self.remote_addr = remote_addr
+        self.referer = referer
         self.histories = []
 
     def add_history( self, history ):

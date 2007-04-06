@@ -124,7 +124,8 @@ Event.table = Table( "event", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True ),
     Column( "message", TrimmedString( 1024 ) ),
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ),
-    Column( "tool_id", String( 255 ) ) )
+    Column( "tool_id", String( 255 ) ),
+    Column( "referer", String( 255 ) ) )
 
 GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -132,7 +133,8 @@ GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True ),
     Column( "remote_host", String( 255 ) ),
-    Column( "remote_addr", String( 255 ) ) )
+    Column( "remote_addr", String( 255 ) ),
+    Column( "referer", String( 255 ) ) )
 
 GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", metadata,
     Column( "id", Integer, primary_key=True ),
