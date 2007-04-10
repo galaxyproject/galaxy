@@ -25,6 +25,10 @@ Double equal signs, ==, must be used as *"equal to"* (e.g., **c1 == 'chr22'**)
 
 .. class:: infomark
 
+**TIP:** Attempting to apply a filtering condition may throw exceptions if the data type (e.g., string, integer) in every line of the columns being filtered is not appropriate for the condition (e.g., attempting certain numerical calculations on strings).  If an exception is thrown when applying the condition to a line, that line is skipped as invalid for the filter condition.  The number of invalid skipped lines is documented in the resulting history item as a "Condition/data issue".
+
+.. class:: infomark
+
 **TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
 
 -----

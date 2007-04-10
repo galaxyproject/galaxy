@@ -157,6 +157,6 @@ fp.close()
 print 'Filtering with %s, ' % cond_text
 print 'kept %4.2f%% of %d lines.' % ( 100.0*keep/len(flags), total )
 if skipped_lines > 0:
-    print 'Condition/data issue: skipped %d invalid lines starting at line #%d which is "%s"-valid lines are %s' % ( skipped_lines, first_invalid_line, invalid_line, func )
+    print 'Condition/data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
     
     

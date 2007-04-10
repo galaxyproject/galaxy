@@ -231,10 +231,6 @@ class Request( object ):
     protocol = WSGIEnvironmentProperty( 'SERVER_PROTOCOL' )
     query_string = WSGIEnvironmentProperty( 'QUERY_STRING' )
     path_info = WSGIEnvironmentProperty( 'PATH_INFO' )
-    try:
-        referer = headers['Referer']
-    except:
-        referer = None
     
 class Response( object ):
     """

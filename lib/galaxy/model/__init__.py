@@ -298,7 +298,6 @@ class Event( object ):
         self.user = user
         self.tool_id = None
         self.message = message
-        self.referer = None
 
 class GalaxySession( object ):
     def __init__( self, id=None, user=None, remote_host=None, remote_addr=None, referer=None ):
