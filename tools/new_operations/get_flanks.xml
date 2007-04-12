@@ -26,7 +26,12 @@
       <output name="out_file1" file="gops-get_flanks.bed"/>
     </test>
   </tests>
- <help> .. class:: infomark
+ <help> 
+.. class:: infomark
+
+**TIP:** Every line should contain at least 3 columns: Chromosome number, Start and Stop co-ordinates. If any of these columns is missing or if start and stop co-ordinates are not numerical, the tool may encounter exceptions and such lines are skipped as invalid. The number of invalid skipped lines is documented in the resulting history item as a "Data issue".
+
+.. class:: infomark
 
 **TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
 

@@ -32,21 +32,101 @@
         <input type="submit" name="runtool_btn" value="Execute">
         
     #else
-    
-        <table>
-        #for $name, $param in $tool.param_map_by_page[$tool_state.page].items()
-            <tr valign="top">
-              <td>$param.get_label():</td>
-              <td>
-                <div>$param.get_html( $caller, $param_values.get( $param.name, None ), $param_values )</div>
-                #if $errors and $errors.has_key( $param.name ):
-                <div style="color: red; font-style: italic; padding-top: 1px; padding-bottom: 3px;">$errors[$param.name]</div>
-                #elif $param.help
-                <div class="toolParamHelp">$param.help</div>
-                #end if
-              </td>
-            </tr>
+    	
+		#set $param_list = $tool.param_map_by_page[$tool_state.page].items()
+        
+        ##Clean-up previously generated repeat parameters, which are identified by a # at the beginning.
+        #for $name, $param in $param_list
+        	#if $name.count('#') != 0:
+        		#del $param_list[$param_list.index(($name,$param))]
+        	#end if
         #end for
+        
+  		#set $new_list = []
+        #for $name, $param in $param_list 
+			#if $param.repeat:
+				#try
+			  		#set $param.repeat = $int($param.repeat)
+			  	#except
+			  		#pass
+			  	#end try
+			  	#if $isinstance($param.repeat, int)
+				  	#set $numloops = $param.repeat
+				#else if $isinstance($param.repeat, str)
+					#if not($param.repeat.startswith("with_")):
+				  		#set $datasets = []
+				  	  	#if $isinstance($param_values.get($param.repeat), list):
+					  		#for $set in $param_values.get($param.repeat):
+			                    $datasets.append("%s" %($set.name))
+			                #end for
+			                #set $numloops = $len($datasets)
+		                #else:
+		                	$datasets.append("%s" %($param_values.get($param.repeat).name))
+		                	#set $numloops = 1
+		                #end if
+					#end if
+				#end if
+                #if $numloops > 1:
+			  		#set $j = 1
+                	#while $j < $numloops:
+                		$new_list.append(("#%s%s" %($j+1,$name), $param))
+                		#set $j = $j + 1
+                    #end while	
+        		#end if
+        	#end if
+		#end for
+		
+		#if $new_list != []:
+			$new_list.sort()
+			$param_list.extend($new_list)
+		#end if
+		
+       
+		#set $i=0
+		<table>
+			#for $name, $param in $param_list
+				#set $other_values = {}
+				#if $param.condition:
+					#try
+						#set $status = $int($param_values.get($param.condition))
+					#except
+						#set $status = 0					
+					#end try
+				#else:
+					#set $status = 1
+				#end if
+				#if $status:			
+					#if $param.repeat and $isinstance($param.repeat, str):
+						#if not($param.repeat.startswith("with_")) and $datasets != []:
+							<tr>
+								<td> Dataset: </td>
+								<td> $datasets[$i]</td>
+							</tr>
+							#set $i = $i + 1
+						#end if
+					#end if	
+					<tr valign="top">
+		              <td>
+		              		#if $param.type != "hidden":
+		              			$param.get_label():
+		              		#end if
+		              </td>
+		              <td>
+		              	#if $param.type != "hidden":
+		                	<div>$param.get_html( $caller, $param_values.get( $param.name, None ), $param_values )</div>
+		                #else:
+		                	<div>$param.get_html( $caller, None, $param_values )</div>
+		                #end if
+		                #if $errors and $errors.has_key( $param.name ):
+		                <div style="color: red; font-style: italic; padding-top: 1px; padding-bottom: 3px;">$errors[$param.name]</div>
+		                #elif $param.help
+		                <div class="toolParamHelp">$param.help</div>
+		                #end if
+		              </td>
+		            </tr>
+		        #end if
+		  	#end for
+        	
         <tr><td></td><td>
             #if $tool_state.page == $tool.last_page
             <input type="submit" name="runtool_btn" value="Execute">
@@ -55,7 +135,7 @@
             #end if
         </td></tr>    
         </table>
-    
+    	
     #end if    
 
   </form>

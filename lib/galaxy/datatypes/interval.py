@@ -291,7 +291,19 @@ class CustomTrack ( Tabular ):
         return Tabular.make_html_table(self, dataset, skipchar='track')
     
     def bed_viewport( self, dataset ):
-        return "." #Not ideal solution, will cause genome browser to give warning
+        try:
+            for line in open(dataset.file_name):
+                if (line.startswith("chr") or line.startswith("scaffold")):  
+                    start = line.split("\t")[1].replace(",","")   
+                    end = line.split("\t")[2].replace(",","")
+                    if int(start) < int(end):
+                        value = line.split("\t")[0] + ":" + start + "-" + end
+                    else:
+                        value = line.split("\t")[0] + ":" + end + "-" + start
+                    break
+            return value #returns the co-ordinates of the 1st track/dataset
+        except:
+            return "."
     
     def as_bedfile( self, dataset ):
         return dataset.file_name

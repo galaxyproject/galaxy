@@ -73,10 +73,6 @@
     <tool file="filters/maf/maf_limit_size.xml"/>
     <tool file="filters/maf/maf_by_block_number.xml"/>
   </section>
-  <section name="Alignment Viewers" id="align_view">
-    <tool file="visualization/GMAJ.xml" />
-    <tool file="visualization/LAJ.xml" />
-  </section>
   <section name="Get Genomic Scores" id="scores">
     <tool file="stats/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
@@ -99,9 +95,12 @@
     <tool file="filters/uniq.xml" /> 
     <tool file="stats/cor.xml" /> 
   </section>
-  <section name="Graph Data" id="plots">
+  <section name="Graph/Display Data" id="plots">
     <tool file="plotting/histogram2.xml" />
     <tool file="plotting/scatterplot.xml" />
+    <tool file="visualization/GMAJ.xml" />
+    <tool file="visualization/LAJ.xml" />
+    <tool file="data_source/show_in_ucsc.xml" />
   </section>
  <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss/emboss_cai.xml" />

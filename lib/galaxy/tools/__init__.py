@@ -5,7 +5,7 @@ Classes encapsulating galaxy tools and tool configuration.
 import logging, os, string, sys, tempfile
 from cookbook.odict import odict
 from cookbook.patterns import Bunch
-from galaxy import util, jobs
+from galaxy import util, jobs, model
 from elementtree import ElementTree
 from parameters import *
 from galaxy.tools.test import ToolTestBuilder
@@ -388,19 +388,34 @@ class Tool:
     def params_to_strings( self, params, app ):
         rval = dict()
         for key, value in params.iteritems():
-            if key in self.param_map:
-                rval[ key ] = self.param_map[key].to_string( value, app )
+            if isinstance( value, list ):
+                i=0
+                while i < len(value):
+                    rval[ key ] = str( value[i] )
+                    i += 1
             else:
-                rval[ key ] = str( value )
+                if key in self.param_map:
+                    rval[ key ] = self.param_map[key].to_string( value, app )
+                else:
+                    rval[ key ] = str( value )
         return rval
         
     def params_to_python( self, params, app ):
         rval = dict()
         for key, value in params.iteritems():
-            if key in self.param_map:
-                rval[ key ] = self.param_map[key].to_python( value, app )
+            if isinstance( value, list ):
+                i=0
+                while i < len(value):
+                    if key in self.param_map:
+                        rval[ key ] = self.param_map[key].to_python( value[i], app )
+                    else:
+                        rval[ key ] = value[i] 
+                    i+=1
             else:
-                rval[ key ] = value
+                if key in self.param_map:
+                    rval[ key ] = self.param_map[key].to_python( value, app )
+                else:
+                    rval[ key ] = value 
         return rval
         
     def build_param_dict( self, incoming, input_datasets, output_datasets ):
@@ -430,7 +445,7 @@ class Tool:
                 child = child_association.child
                 key = "_CHILD___%s___%s" % ( name, child.designation ) 
                 param_dict[ key ] = DatasetFilenameWrapper( child )
-        # Return the dictionary of parameters
+        # Return the dictionary of parameters        
         return param_dict
     
     def build_param_file( self, param_dict ):
@@ -462,6 +477,16 @@ class Tool:
             try:                
                 # Substituting parameters into the command
                 # TODO: replace with a real template (Cheetah)
+                for key in param_dict.keys():
+                    if isinstance(param_dict[key], list):
+                        #Convert a list of dataset instances to dataset IDs for multiple dataset selection case
+                        j=0
+                        for item in param_dict[key]:
+                            if isinstance(item, model.Dataset):
+                                param_dict[key][j] =  item.id
+                                j+=1
+                            else:
+                                break
                 command_line = string.Template( self.command ).substitute( param_dict )
             except Exception, e:
                 # Modify exception message to be more clear
