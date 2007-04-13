@@ -5,9 +5,7 @@ Done by: Guru
 """
 
 import sys,os
-#from galaxy import model 
-fo=open("po","w")
-print >>fo, sys.argv
+
 primary = sys.argv[2]
 color_list = [sys.argv[3].replace('-',',')]
 visib_list = [sys.argv[4]]
@@ -28,7 +26,7 @@ i=8
 for item in sys.argv[8:]:
 	if item.count("_NAME_") != 0 or item == "customTrack2.bed":
 		item=item.replace("_NAME_","").replace("_SPACE_"," ").replace("_OPEN_","(").replace("_CLOSE_",")")
-		for sym in ["(u__sq__","u__sq__","__sq__,","__sq__)"]:
+		for sym in ["(u__sq__","u__sq__","__sq__,","__sq__)","__sq__","__ob__", "__cb__"]:
 			item = item.replace(sym, "")
 		name_list.append(item)
 		i+=1
@@ -54,17 +52,11 @@ if color_list[1] == 'None':
 		color_list.append('0,0,0')
 		visib_list.append('1')
 		j+=1
-fout = open(sys.argv[1],"w")
 
-print >>fo,input_list
-print >>fo,color_list
-print >>fo,visib_list
-fo.close()
-k=0
-for inp in input_list:
+fout = open(sys.argv[1],"w")
+for k,inp in enumerate(input_list):
 	print >>fout, "track name='%s' visibility=%d color=%s" %(name_list[k],int(visib_list[k]),color_list[k])
-	print>> fout, open(inp,"r").read()
-	k+=1
+	print >>fout, open(inp,"r").read()
 fout.close()
 
 print "Display %d tracks in UCSC" %(len(input_list))

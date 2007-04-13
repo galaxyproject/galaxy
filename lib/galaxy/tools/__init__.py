@@ -389,10 +389,12 @@ class Tool:
         rval = dict()
         for key, value in params.iteritems():
             if isinstance( value, list ):
-                i=0
+                rval[ key ] = [str(value[0])]
+                i=1
                 while i < len(value):
-                    rval[ key ] = str( value[i] )
+                    rval[ key ].append( str( value[i] ) )
                     i += 1
+                rval[key] = str(rval[key])
             else:
                 if key in self.param_map:
                     rval[ key ] = self.param_map[key].to_string( value, app )
@@ -404,12 +406,13 @@ class Tool:
         rval = dict()
         for key, value in params.iteritems():
             if isinstance( value, list ):
-                i=0
+                rval[ key ] = [str(value[0])]
+                i=1
                 while i < len(value):
                     if key in self.param_map:
-                        rval[ key ] = self.param_map[key].to_python( value[i], app )
+                        rval[ key ].append(self.param_map[key].to_python( value[i], app ))
                     else:
-                        rval[ key ] = value[i] 
+                        rval[ key ].append(value[i]) 
                     i+=1
             else:
                 if key in self.param_map:
@@ -480,11 +483,9 @@ class Tool:
                 for key in param_dict.keys():
                     if isinstance(param_dict[key], list):
                         #Convert a list of dataset instances to dataset IDs for multiple dataset selection case
-                        j=0
-                        for item in param_dict[key]:
+                        for j,item in enumerate(param_dict[key]):
                             if isinstance(item, model.Dataset):
                                 param_dict[key][j] =  item.id
-                                j+=1
                             else:
                                 break
                 command_line = string.Template( self.command ).substitute( param_dict )
