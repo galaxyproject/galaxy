@@ -1,0 +1,54 @@
+<tool id="find_clusters" name="Find Clusters">
+  <description> search for clusters(specific combination of patterns in a window size) on a genome</description>
+  <command interpreter="python2.4">findcluster_pygre.py -g $dbkey -c $chroms -p $patterns -w $wsize  -o $out_file1 -i $out_file2 -l $out_file3</command>
+  <inputs>
+    <page>
+        <param name="dbkey" label="Genome" type="select" dynamic_options="get_available_data_genomes( )"/>
+    </page>
+    <page>
+        <param name="chroms" label="Chroms" type="select" dynamic_options="get_available_data_chroms( dbkey )" display="checkboxes" multiple="true" />
+	<param name="patterns" type="text" area="true" size="8x35" value="" label="Patterns" />
+        <param name="wsize" size="10" type="integer" value="3500" label="window size"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="bed" type="data" name="out_file1" />
+    <data format="tabular" name="out_file2" />
+    <data format="text" name="out_file3" />
+  </outputs>
+  <code file="findcluster_pygre_subs.py"/>
+  <help>
+
+
+.. |INFO| image:: ../static/images/icon_info_sml.gif
+
+-----
+
+**Syntax**
+
+This tool uses a combined method (suffix-header approach and database support) to find clusters of patterns. 
+
+-----
+
+**The steps** are:
+
+1. Select 'Genome' and click on 'Next step' button;
+2. Select 'Available Chroms'(default: all);
+3. Input 'Patterns': patterns and occurrences in cluster. Here is a simple example: ARWYAKGCAART,1,YRTGRGAR,2,TGGYAATTW,1,GCCSSRGGV,2,
+4. Input 'window size' for the cluster;
+5. Click on 'Execute' button to run the tool.
+
+-----
+
+**Example**
+
+.. image:: ../static/patmat/findenhancer.png
+
+-----
+
+**The outputs and display in ucsc genome browser**
+
+1. The result is a bed format file of the clusters. 
+2. To display the result clusters in genome browser, click on 'display at UCSC main'.
+</help>
+</tool>
