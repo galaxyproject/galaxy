@@ -41,7 +41,7 @@ def convert_newlines(fname):
     shutil.copyfile(fname, temp_name)
     fp = open(fname, "wt")
     for line in file(temp_name, "U"):
-        line = line.strip() + '\n' 
+        line = line.rstrip() + '\n' 
         fp.write(line)
     fp.close()
     os.remove(temp_name)
