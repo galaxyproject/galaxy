@@ -17,7 +17,7 @@ def get_available_data_genomes( ):
 #   db = pg.connect(dbname="stree", host="lonnie", user="stree", passwd="12345")
 #   matchs = db.query(sqlquery).getresult()
 #   db = create_engine('postgres://localhost/stree')
-   db = create_engine('postgres://stree:12345@lonnie.bx.psu.edu:5432/stree')
+   db = create_engine('postgres://stree:12345@lonnie/stree')
    conn = db.connect()
    matchs = conn.execute(sqlquery)
 
@@ -181,7 +181,7 @@ def scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, 
    total_matchs = 0
 #   db = pg.connect(dbname="stree", host="lonnie", user="stree", passwd="12345")
 #   db = create_engine('postgres://localhost/stree')
-   db = create_engine('postgres://stree:12345@lonnie.bx.psu.edu:5432/stree')
+   db = create_engine('postgres://stree:12345@lonnie/stree')
    conn = db.connect()
    table_name = genome_name + "_" + chrom_name
    for pattern in patterns: 
