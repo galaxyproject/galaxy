@@ -42,13 +42,13 @@ This tool uses a combined method (suffix-header approach and database support) t
 
 **Example**
 
-.. image:: ../static/patmat/findenhancer.png
+.. image:: ../static/patmat/findcluster.png
 
 -----
 
 **The outputs and display in ucsc genome browser**
 
-1. The result is a bed format file of the clusters. 
-2. To display the result clusters in genome browser, click on 'display at UCSC main'.
+1. The results are 3 files: 1)a bed format file of the clusters, 2)statistic file, 3)running log. 
+2. To display the bed format file of result clusters in genome browser, click on 'display at UCSC main'.
 </help>
 </tool>

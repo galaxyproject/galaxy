@@ -14,9 +14,6 @@ STDERR = sys.stderr
 #return genomes available in the datasets
 def get_available_data_genomes( ):
    sqlquery = "SELECT distinct genome, genome_desc from genome order by genome_desc"
-#   db = pg.connect(dbname="stree", host="lonnie", user="stree", passwd="12345")
-#   matchs = db.query(sqlquery).getresult()
-#   db = create_engine('postgres://localhost/stree')
    db = create_engine('postgres://stree:12345@lonnie/stree')
    conn = db.connect()
    matchs = conn.execute(sqlquery)
@@ -31,9 +28,6 @@ def get_available_data_genomes( ):
 #return chroms available of the genome in the datasets
 def get_available_data_chroms( genome ):
    sqlquery = "SELECT chrom from genome where genome= \'%s\' order by chrom" % genome 
-#   db = pg.connect(dbname="stree", host="lonnie", user="stree", passwd="12345")
-#   matchs = db.query(sqlquery).getresult()
-#   db = create_engine('postgres://localhost/stree')
    db = create_engine('postgres://stree:12345@lonnie/stree')
    conn = db.connect()
    available_sets = []
@@ -137,7 +131,6 @@ def sortedDictValues(adict):
    keys = adict.keys()
    keys.sort()
    return map(adict.get, keys)
-#   return [adict[key] for key in keys]
 
 def pattern_match(conn, shsize, pat, table_name, log_file):
    mpattern = len(pat)
@@ -147,6 +140,7 @@ def pattern_match(conn, shsize, pat, table_name, log_file):
    matchs = []
    log_file.write(strftime("\n%Y-%b-%d %H:%M:%S", localtime()))
    log_file.write("\tmatch: %-10s..." % pat) 
+
    num = dna2num(patterns[0], mpattern, shsize)
    sqlquery = "SELECT chromStart from %s where " % table_name + "num>=%s " % num[0] + "and num<%s " % num[1] 
    for pattern in patterns:
@@ -156,17 +150,16 @@ def pattern_match(conn, shsize, pat, table_name, log_file):
       num=dna2num(pattern, mpattern, shsize)
       sqlquery = sqlquery + "or num>=%s " % num[0] + "and num<%s " % num[1]
    sqlquery = sqlquery + " order by chromStart" 
-#   print sqlquery
    log_file.write(strftime("\t%H:%M:%S", localtime()))
    log_file.write("...query database") 
    rr = conn.execute(sqlquery)
-#   rr = db.query(sqlquery).getresult()
    log_file.write(strftime("\t%H:%M:%S", localtime()))
    log_file.write("...extract matchs") 
    for match in rr : 
       matchs.append(match[0])
    matchs_tmp = del_same(matchs) 
    log_file.write("\t(%d)" % len(matchs_tmp))
+
    return matchs_tmp
 
 def scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) :
@@ -178,18 +171,14 @@ def scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, 
 
    #----------------------------------------------------------------------------------------
    #----------------find matchs-------------------------------------------------------------
-   total_matchs = 0
-#   db = pg.connect(dbname="stree", host="lonnie", user="stree", passwd="12345")
-#   db = create_engine('postgres://localhost/stree')
    db = create_engine('postgres://stree:12345@lonnie/stree')
    conn = db.connect()
+   total_matchs = 0
    table_name = genome_name + "_" + chrom_name
    for pattern in patterns: 
       result['M'][pattern] = pattern_match(conn, shsize, pattern, table_name, log_file)
       total_matchs = total_matchs + len(result['M'][pattern])
    conn.close()
-#   db.close()
-
 
    #----------------------------------------------------------------------------------------
    #---------------find pattern combination in window---------------------------------------
