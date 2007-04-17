@@ -1,6 +1,9 @@
 #!/usr/bin/env python2.4
 import urllib, sys, os, sets, findcluster_pygre_subs 
 from time import time, localtime, strftime
+import pkg_resources
+pkg_resources.require( "sqlalchemy>=0.2" )
+from sqlalchemy import *
 
       
 if __name__ == '__main__':
