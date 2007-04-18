@@ -52,7 +52,7 @@ while (<BED>) {
     @columns = split /\t/;
     
     # Check for field consitency below:
-    $columns[$ARGV[8]] = "+" if !defined$columns[$ARGV[8]];
+    $columns[$ARGV[8]] = "+" if !defined($columns[$ARGV[8]]);
     if (defined($columns[$ARGV[5]]) and defined($columns[$ARGV[6]]) and defined($columns[$ARGV[7]]) and defined($columns[$ARGV[8]])) {
       if ($columns[$ARGV[5]] =~ m/\w/ and $columns[$ARGV[6]] =~ m/^\d+$/ and $columns[$ARGV[7]] =~ m/^\d+$/ and $columns[$ARGV[8]] =~ m/^-|\+$/) {
 	if (exists $seqLocation{$ARGV[10]}) {
