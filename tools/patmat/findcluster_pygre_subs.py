@@ -14,7 +14,7 @@ STDERR = sys.stderr
 #return genomes available in the datasets
 def get_available_data_genomes( ):
    sqlquery = "SELECT distinct genome, genome_desc from genome order by genome_desc"
-   db = create_engine('postgres://stree:12345@lonnie/stree')
+   db = create_engine('postgres://stree:12345@lonnie.bx.psu.edu/stree')
    conn = db.connect()
    matchs = conn.execute(sqlquery)
 
@@ -28,7 +28,7 @@ def get_available_data_genomes( ):
 #return chroms available of the genome in the datasets
 def get_available_data_chroms( genome ):
    sqlquery = "SELECT chrom from genome where genome= \'%s\' order by chrom" % genome 
-   db = create_engine('postgres://stree:12345@lonnie/stree')
+   db = create_engine('postgres://stree:12345@lonnie.bx.psu.edu/stree')
    conn = db.connect()
    available_sets = []
    
@@ -171,7 +171,7 @@ def scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, 
 
    #----------------------------------------------------------------------------------------
    #----------------find matchs-------------------------------------------------------------
-   db = create_engine('postgres://stree:12345@lonnie/stree')
+   db = create_engine('postgres://stree:12345@lonnie.bx.psu.edu/stree')
    conn = db.connect()
    total_matchs = 0
    table_name = genome_name + "_" + chrom_name
