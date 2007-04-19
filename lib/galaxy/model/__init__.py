@@ -77,6 +77,7 @@ class History( object ):
         self.id = id
         self.name = name or "Unnamed history"
         self.deleted = False
+        self.genome_build = None
         # Relationships
         self.user = user
         self.datasets = []
@@ -97,7 +98,7 @@ class History( object ):
     def add_galaxy_session( self, galaxy_session ):
         self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
     
-    def add_dataset( self, dataset, parent_id=None ):
+    def add_dataset( self, dataset, parent_id=None, genome_build=None ):
         if parent_id:
             for data in self.datasets:
                 if data.id == parent_id:
@@ -107,6 +108,7 @@ class History( object ):
                 dataset.hid = self._next_hid()
         else:
             dataset.hid = self._next_hid()
+        self.genome_build = genome_build
         self.datasets.append( dataset )
 
 # class Query( object ):

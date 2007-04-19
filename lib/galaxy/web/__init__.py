@@ -99,6 +99,12 @@ class UniverseWebTransaction( framework.DefaultWebTransaction ):
     
     def new_history( self ):
         history = self.app.model.History()
+        """
+        We are associating the last used genome_build with histories, so we will always
+        initialize a new history with the first dbkey in util.dbnames which is currently
+        ?    unspecified (?)
+        """
+        history.genome_build = util.dbnames[0][0]
         if history.user_id is None and self.user is not None:
             history.user_id = self.user.id
         if self.galaxy_session_is_valid():

@@ -42,7 +42,8 @@ History.table = Table( "history", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ) ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "hid_counter", Integer, default=1 ),
-    Column( "deleted", Boolean ) )
+    Column( "deleted", Boolean ),
+    Column( "genome_build", TrimmedString( 40 ) ) )
 
 # model.Query.table = Table( "query", engine,
 #             Column( "id", Integer, primary_key=True),

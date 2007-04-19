@@ -101,7 +101,7 @@ class ASync(common.Root):
             data.dbkey = GALAXY_BUILD
             data.info = GALAXY_INFO
             data.state = data.states.NEW
-            trans.history.add_dataset( data )
+            trans.history.add_dataset( data, genome_build=GALAXY_BUILD )
             trans.model.flush()
             trans.log_event( "Async added dataset %s to history %s" %(data.name, trans.history.name ), tool_id=tool_id )
 

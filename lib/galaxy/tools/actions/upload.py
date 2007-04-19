@@ -101,7 +101,7 @@ class UploadToolAction( object ):
                 model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=util.object_to_string( error.__dict__ ) ) )
         """
         if data.has_data():
-            trans.history.add_dataset( data )
+            trans.history.add_dataset( data, genome_build=dbkey )
             trans.app.model.flush()
         else:
             self.empty = True

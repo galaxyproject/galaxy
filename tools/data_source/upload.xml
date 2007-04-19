@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 
 <tool name="Upload File" id="upload1">
-
 	<description>
 		from your computer  
 	</description>
@@ -32,7 +31,7 @@
 			<option value="text">Other text type</option>
 		</param>
 		
-		<param label="Genome" name="dbkey" type="select" dynamic_options="get_available_builds()"/>
+		<param label="Genome" name="dbkey" type="genomebuild" dynamic_options=""/>
 
 	</inputs>
 <help>
@@ -146,5 +145,4 @@ Any data in tab delimited format (tabular)
 Any text file
 
 </help>
-<code file = "upload_code.py"/>
 </tool>

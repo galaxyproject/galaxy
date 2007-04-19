@@ -47,7 +47,7 @@ class ToolParameter( object ):
         any encoding)
         """
         return None
-    
+        
     def filter_value( self, value, trans=None, other_values={} ):
         """
         Parse the value returned by the view into a form usable by the tool OR
@@ -174,7 +174,7 @@ class BooleanToolParameter( ToolParameter ):
             return self.falsevalue
     def to_python( self, value, app ):
         return ( value == 'True' )
-
+    
 class FileToolParameter( ToolParameter ):
     """
     Parameter that takes an uploaded file as a value.
@@ -224,8 +224,7 @@ class HiddenToolParameter( ToolParameter ):
             options = eval( self.dynamic_options, self.tool.code_namespace, other_values )
             self.value = options
         return form_builder.HiddenField( self.name, self.value ).get_html()
-        
-
+    
 ## This is clearly a HACK, parameters should only be used for things the user
 ## can change, there needs to be a different way to specify this. I'm leaving
 ## it for now to avoid breaking any tools.
@@ -365,6 +364,52 @@ class SelectToolParameter( ToolParameter ):
             assert value in legal_values
             return value
 
+class GenomeBuildParameter( SelectToolParameter ):
+    """
+    Select list that sets the last used genome build for the 
+    current history as "selected".
+    """
+    def __init__( self, tool, elem ):
+        ToolParameter.__init__( self, tool, elem )
+        self.multiple = False
+        self.display = elem.get( 'display', None )
+        self.separator = elem.get( 'separator', ',' )
+        self.legal_values = set()
+        self.dynamic_options = elem.get( "dynamic_options", None )
+    def get_html( self, trans=None, value=None, other_values={} ):
+        if value is not None:
+            if not isinstance( value, list ): 
+                value = [ value ]
+        field = form_builder.SelectField( self.name, False, self.display )
+        last_used_build = trans.history.genome_build
+        for dbkey, build_name in util.dbnames:
+            if dbkey == last_used_build:
+                field.add_option( build_name, dbkey, True )
+            else:
+                field.add_option( build_name, dbkey, False )
+        return field.get_html()
+    def filter_value( self, value, trans=None, other_values={} ):
+        if self.dynamic_options:
+            legal_values = set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
+        else:
+            legal_values = set()
+            for dbkey, build_name in util.dbnames:
+                legal_values.add(dbkey)
+                legal_values.add(build_name)
+        if isinstance( value, list ):
+            if not(self.repeat):
+                assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+            rval = []
+            for v in value: 
+                v = util.restore_text( v )
+                assert v in legal_values 
+                rval.append( v )
+            return self.separator.join( rval )
+        else:
+            value = util.restore_text( value )
+            assert value in legal_values
+            return value
+
 class DataToolParameter( ToolParameter ):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -489,16 +534,17 @@ class RawToolParameter( ToolParameter ):
 #         self.html = form_builder.HiddenField( self.name, trans.history.id ).get_html()
 #         return self.html
 
-parameter_types = dict( text     = TextToolParameter,
-                        integer  = IntegerToolParameter,
-                        float    = FloatToolParameter,
-                        boolean  = BooleanToolParameter,
-                        select   = SelectToolParameter,
-                        hidden   = HiddenToolParameter,
-                        baseurl  = BaseURLToolParameter,
-                        file     = FileToolParameter,
-                        data     = DataToolParameter,
-                        raw      = RawToolParameter )
+parameter_types = dict( text        = TextToolParameter,
+                        integer     = IntegerToolParameter,
+                        float       = FloatToolParameter,
+                        boolean     = BooleanToolParameter,
+                        genomebuild = GenomeBuildParameter,
+                        select      = SelectToolParameter,
+                        hidden      = HiddenToolParameter,
+                        baseurl     = BaseURLToolParameter,
+                        file        = FileToolParameter,
+                        data        = DataToolParameter,
+                        raw         = RawToolParameter )
 
 def get_suite():
     """Get unittest suite for this module"""
