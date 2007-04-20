@@ -96,6 +96,16 @@ class TwillTestCase(unittest.TestCase):
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
 
+    def check_genome_build(self):
+        """Returns the last used genome_build at history id 'hid'"""
+        tree = self.get_xml_history()
+        elems = [ elem for elem in tree.findall("data") ]
+        print '%s %d' %(elems, len(elems))
+        elem = elems[-1]
+        self.assertEqual(len(elem), 1)
+        genome_build = elem.get('dbkey')
+        self.assertTrue( genome_build == 'hg17' )
+    
     def delete_data(self, hid):
         """Deletes data at a certain history id"""
         hid = str(hid)
