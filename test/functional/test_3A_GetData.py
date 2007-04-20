@@ -13,7 +13,7 @@ class UcscTests(TwillTestCase):
 
         self.upload_file('MyData.bed')
         self.check_data('MyData.bed', hid=1)
-        self.check_genome_build()
+        self.check_genome_build('hg17')
 
     #def test_20_UCSC_bed(self):
     #    """3A_GetData: Getting bed files from UCSC"""

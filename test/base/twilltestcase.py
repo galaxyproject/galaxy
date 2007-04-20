@@ -40,9 +40,9 @@ class TwillTestCase(unittest.TestCase):
 
     def go2myurl(self, myurl):
         tc.go("%s" % myurl)
-#       print "+++++++++++++++++++++++++++++"
-#       print tc.show()
-#       print "-----------------------------"
+        print "+++++++++++++++++++++++++++++"
+        print tc.show()
+        print "-----------------------------"
         tc.code(200)
 
     def reload_page(self):
@@ -66,11 +66,17 @@ class TwillTestCase(unittest.TestCase):
         """Uploads a file"""
         fname = self.get_fname(fname)
         tc.go("./tool_runner/index?tool_id=upload1")
-        tc.fv("1","file_type", ftype)
-        tc.fv("1","dbkey", dbkey)
-        tc.formfile("1","file_data", fname)
-        tc.submit("runtool_btn")
-        self.home()
+	try: 
+            tc.fv("1","file_type", ftype)
+            tc.fv("1","dbkey", dbkey)
+            tc.formfile("1","file_data", fname)
+            tc.submit("runtool_btn")
+            self.home()
+        except AssertionError, err:
+            errmsg = 'The file doesn\'t exsit. Please check' % file
+            errmsg += str( err )
+            raise AssertionError( errmsg )
+	
 
     def edit_data(self, hid, check_patt=None, **kwd):
         """
@@ -96,15 +102,14 @@ class TwillTestCase(unittest.TestCase):
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
 
-    def check_genome_build(self):
+    def check_genome_build(self, dbkey='hg17' ):
         """Returns the last used genome_build at history id 'hid'"""
         tree = self.get_xml_history()
         elems = [ elem for elem in tree.findall("data") ]
-        print '%s %d' %(elems, len(elems))
+        self.assertTrue(len(elems)>0)
         elem = elems[-1]
-        self.assertEqual(len(elem), 1)
         genome_build = elem.get('dbkey')
-        self.assertTrue( genome_build == 'hg17' )
+        self.assertTrue( genome_build == dbkey )
     
     def delete_data(self, hid):
         """Deletes data at a certain history id"""
