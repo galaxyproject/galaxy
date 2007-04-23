@@ -16,7 +16,7 @@
     </outputs>
     <tests>
       <test>
-        <param name="input1" value="6.bed" dbkey="hg17" />
+        <param name="input1" value="6.bed" dbkey="hg17" ftype="bed"/>
         <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg17/phastcons_encode_sep2005_tba" />
         <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
       </test>
