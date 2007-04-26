@@ -280,6 +280,14 @@ class Gff( Tabular ):
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
 
+class Wiggle( Tabular ):
+    """Tab delimited data in wiggle format"""
+    def __init__(self, id=None):
+        data.Text.__init__(self, id=id)
+    
+    def make_html_table(self, data):
+        return Tabular.make_html_table(self, data, skipchar='#')
+    
 #Extend Tabular type, since interval tools will fail on track def line (we should fix this)
 #This is a skeleton class for now, allows viewing at ucsc and formatted peeking.
 class CustomTrack ( Tabular ):

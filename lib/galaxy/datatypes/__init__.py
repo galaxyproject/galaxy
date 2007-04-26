@@ -20,6 +20,7 @@ datatypes_by_extension = {
     'maf'      : sequence.Maf(),
     'axt'      : sequence.Axt(),
     'gff'      : interval.Gff(),
+    'wig'      : interval.Wiggle(),
     'gmaj.zip' : images.Gmaj(),
     'laj'      : images.Laj(),
     'lav'      : sequence.Lav(),
