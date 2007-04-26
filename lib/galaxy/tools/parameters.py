@@ -452,17 +452,25 @@ class DataToolParameter( ToolParameter ):
         some_data = False
         if self.dynamic_options:
             option_build,option_id,option_extension = eval( self.dynamic_options, self.tool.code_namespace, other_values )
-        for data in history.datasets:
-            if self.dynamic_options:
-                if isinstance( data.datatype, self.format.__class__ ) and (data.dbkey == option_build) and (data.id != option_id) and (data.extension in option_extension) and not data.parent_id and not data.deleted: 
-                    some_data = True
-                    selected = ( value and ( data in value ) )
-                    field.add_option( "%d: %s" % ( data.hid, data.name[:30] ), data.id, selected )
-            else:
-                if isinstance( data.datatype, self.format.__class__ ) and not data.parent_id and not data.deleted:
-                    some_data = True
-                    selected = ( value and ( data in value ) )
-                    field.add_option( "%d: %s" % ( data.hid, data.name[:30] ), data.id, selected )
+        def dataset_collector( datasets, parent_hid ):            
+            for i, data in enumerate( datasets ):
+                if parent_hid is not None:
+                    hid = "%s.%d" % ( parent_hid, i + 1 )
+                else:
+                    hid = str( data.hid )
+                if self.dynamic_options:
+                    if isinstance( data.datatype, self.format.__class__ ) and (data.dbkey == option_build) and (data.id != option_id) and (data.extension in option_extension) and not data.parent_id and not data.deleted: 
+                        some_data = True
+                        selected = ( value and ( data in value ) )
+                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+                else:
+                    if isinstance( data.datatype, self.format.__class__ ) and not data.parent_id and not data.deleted:
+                        some_data = True
+                        selected = ( value and ( data in value ) )
+                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+                # Also collect children via association object
+                dataset_collector( [ assoc.child for assoc in data.children ], hid )
+        dataset_collector( history.datasets, None )
         if some_data and value is None:
             # Ensure that the last item is always selected
             a, b, c = field.options[-1]; field.options[-1] = a, b, True

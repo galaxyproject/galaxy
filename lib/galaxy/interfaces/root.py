@@ -485,8 +485,9 @@ class Universe(common.Root):
         try:
             old_data = self.app.model.Dataset.get( id )
             new_data = self.copy_dataset(old_data)
-            new_data.parent = None
-            history = trans.app.model.History.get( old_data.history_id )
+            ## new_data.parent = None
+            ## history = trans.app.model.History.get( old_data.history_id )
+            history = trans.get_history()
             history.add_dataset(new_data)
             new_data.flush()
             return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] ) 
