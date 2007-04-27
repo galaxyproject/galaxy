@@ -333,23 +333,28 @@ class SelectToolParameter( ToolParameter ):
                 self.legal_values.add( value )
                 selected = ( option.get( "selected", None ) == "true" )
                 self.options.append( ( option.text, value, selected ) )
+    def get_options( self, trans, other_values ):
+        if self.dynamic_options:
+            return eval( self.dynamic_options, self.tool.code_namespace, other_values )
+        else:
+            return self.options
+    def get_legal_values( self, other_values ):
+        if self.dynamic_options:
+            return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
+        else:
+            return self.legal_values
     def get_html( self, trans=None, value=None, other_values={} ):
         if value is not None:
             if not isinstance( value, list ): value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, self.display )
-        if self.dynamic_options:
-            options = eval( self.dynamic_options, self.tool.code_namespace, other_values )
-        else:
-            options = self.options
+        options = self.get_options( trans, other_values )
         for text, optval, selected in options:
-            if value: selected = ( optval in value )
+            if value: 
+                selected = ( optval in value )
             field.add_option( text, optval, selected )
         return field.get_html()
     def filter_value( self, value, trans=None, other_values={} ):
-        if self.dynamic_options:
-            legal_values = set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
-        else:
-            legal_values = self.legal_values
+        legal_values = self.get_legal_values( other_values )
         if isinstance( value, list ):
             if not(self.repeat):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
@@ -366,49 +371,51 @@ class SelectToolParameter( ToolParameter ):
 
 class GenomeBuildParameter( SelectToolParameter ):
     """
-    Select list that sets the last used genome build for the 
-    current history as "selected".
+    Select list that sets the last used genome build for the current history 
+    as "selected".
+    
+    >>> # Create a mock transcation with 'hg17' as the current build
+    >>> from cookbook.patterns import Bunch
+    >>> trans = Bunch( history=Bunch( genome_build='hg17' ) )
+    
+    >>> p = GenomeBuildParameter( None, XML( 
+    ... '''
+    ... <param name="blah" type="genomebuild" />
+    ... ''' ) )
+    >>> print p.name
+    blah
+    
+    >>> # hg17 should be selected by default
+    >>> print p.get_html( trans ) # doctest: +ELLIPSIS
+    <select name="blah">
+    <option value="?">unspecified (?)</option>
+    ...
+    <option value="hg18">Human Mar. 2006 (hg18)</option>
+    <option value="hg17" selected>Human May 2004 (hg17)</option>
+    ...
+    </select>
+    
+    >>> # If the user selected something else already, that should be used
+    >>> # instead
+    >>> print p.get_html( trans, value='hg18' ) # doctest: +ELLIPSIS
+    <select name="blah">
+    <option value="?">unspecified (?)</option>
+    ...
+    <option value="hg18" selected>Human Mar. 2006 (hg18)</option>
+    <option value="hg17">Human May 2004 (hg17)</option>
+    ...
+    </select>
+    
+    >>> print p.filter_value( "hg17" )
+    hg17
     """
-    def __init__( self, tool, elem ):
-        ToolParameter.__init__( self, tool, elem )
-        self.multiple = False
-        self.display = elem.get( 'display', None )
-        self.separator = elem.get( 'separator', ',' )
-        self.legal_values = set()
-        self.dynamic_options = elem.get( "dynamic_options", None )
-    def get_html( self, trans=None, value=None, other_values={} ):
-        if value is not None:
-            if not isinstance( value, list ): 
-                value = [ value ]
-        field = form_builder.SelectField( self.name, False, self.display )
+    def get_options( self, trans, other_values ):
         last_used_build = trans.history.genome_build
         for dbkey, build_name in util.dbnames:
-            if dbkey == last_used_build:
-                field.add_option( build_name, dbkey, True )
-            else:
-                field.add_option( build_name, dbkey, False )
-        return field.get_html()
-    def filter_value( self, value, trans=None, other_values={} ):
-        if self.dynamic_options:
-            legal_values = set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
-        else:
-            legal_values = set()
-            for dbkey, build_name in util.dbnames:
-                legal_values.add(dbkey)
-                legal_values.add(build_name)
-        if isinstance( value, list ):
-            if not(self.repeat):
-                assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
-            rval = []
-            for v in value: 
-                v = util.restore_text( v )
-                assert v in legal_values 
-                rval.append( v )
-            return self.separator.join( rval )
-        else:
-            value = util.restore_text( value )
-            assert value in legal_values
-            return value
+            yield build_name, dbkey, ( dbkey == last_used_build )
+    def get_legal_values( self, other_values ):
+        return set( dbkey for dbkey, _ in util.dbnames )
+
 
 class DataToolParameter( ToolParameter ):
     """
@@ -450,7 +457,10 @@ class DataToolParameter( ToolParameter ):
             if type( value ) != list: value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple )
         if self.dynamic_options:
-            option_build,option_id,option_extension = eval( self.dynamic_options, self.tool.code_namespace, other_values )
+            # Dynamic options for a DataToolParameter specify limits on 
+            # acceptrable build, id, or extension
+            option_build, option_id, option_extension = \
+                eval( self.dynamic_options, self.tool.code_namespace, other_values )
         def dataset_collector( datasets, parent_hid ):            
             for i, data in enumerate( datasets ):
                 if parent_hid is not None:
