@@ -1,6 +1,6 @@
 <tool id="aggregate_scores_in_intervals1" description="from the table browser (equivalent to wiggle format)." name="Aggregate datapoints">
     <description>Appends the average, min, max, sum, and count of datapoints per interval</description>
-    <command interpreter="python2.4">aggregate_scores_in_intervals.py $input2 $input1 $out_file1</command>
+    <command interpreter="python2.4">aggregate_scores_in_intervals.py $input2 $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1</command>
     <inputs>
         <page>
             <param format="text" name="input2" type="data" label="Datapoints from table browser"/>
@@ -18,6 +18,22 @@
       </test>
     </tests>
     <help>
+
+.. class:: warningmark
+
+This tool currently only works with data from genome builds hg16, hg17 or hg18.
+
+.. class:: warningmark
+
+This tool assumes that the input dataset is in interval format and contains at least a chrom column, a start column and an end column.  These 3 columns can be dispersed throughout any number of other data columns. 
+
+-----
+
+.. class:: infomark
+
+**TIP:** Computing summary information may throw exceptions if the data type (e.g., string, integer) in every line of the columns is not appropriate for the computation (e.g., attempting numerical calculations on strings).  If an exception is thrown when computing summary information for a line, that line is skipped as invalid for the computation.  The number of invalid skipped lines is documented in the resulting history item as a "Data issue".
+
+-----
 
 **Syntax**
 
