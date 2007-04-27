@@ -1,17 +1,13 @@
 <tool id="get_flanks1" name="Get flanks">
   <description>returns flanking region/s for every gene</description>
-  <command interpreter="python2.4">
-    get_flanks.py $input $out_file1 $size $direction
-  </command>
+  <command interpreter="python2.4">get_flanks.py $input $out_file1 $size $direction -l $input_chromCol,$input_startCol,$input_endCol,$input_strandCol</command>
   <inputs>
-    <param format="tabular" name="input" type="data" 
-           label="Select data" help="Query missing? See TIP below"/>
-    <param name="size" size="10" type="integer" value="50" 
-           label="Enter the length of the desired flanking region/s"/>
-    <param name="direction" type="select" label="Location of flanking region/s">
-      <option value="up">Upstream</option>
-      <option value="down">Downstream</option>
-      <option value="both">Both</option>
+    <param format="interval" name="input" type="data" label="Select data"/>
+    <param name="size" size="10" type="integer" value="50" label="Length of the flanking region/s"/>
+    <param name="direction" type="select" label="Location of the flanking region/s">
+      <option value="Upstream">Upstream</option>
+      <option value="Downstream">Downstream</option>
+      <option value="Both">Both</option>
     </param>
     
   </inputs>
@@ -20,10 +16,10 @@
   </outputs>
   <tests>
     <test>
-      <param name="input" value="1.bed"/>
+      <param name="input" value="flanks_inp.bed"/>
       <param name="size" value="50"/>
-      <param name="direction" value="up"/>
-      <output name="out_file1" file="gops-get_flanks.bed"/>
+      <param name="direction" value="Upstream"/>
+      <output name="out_file1" file="flanks_out.bed"/>
     </test>
   </tests>
  <help> 

@@ -1,123 +1,106 @@
 #! /usr/bin/python
 # this is a tool that creates new row/s
 #Done by: Guru
+
+"""
+Get Flanking regions.
+
+usage: %prog input out_file size direction
+   -l, --cols=N,N,N,N: Columns for chrom, start, end, strand in file
+"""
+
 import sys, sets, re, os
-
-def get_wrap_func(value):
+import cookbook.doc_optparse
+import pkg_resources
+pkg_resources.require( "bx-python" )
+from galaxyops import *
+   
+def main():   
+    # Parsing Command Line here
+    options, args = cookbook.doc_optparse.parse( __doc__ )
+    
     try:
-        check = float(value)
-        return 'float(%s)'
+        chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols )
+        inp_file, out_file, size, direction = args
+        size = int(size)
+        if strand_col_1 == -1:
+            strand = "+"        #if strand is not defined, default it to +
     except:
-        return 'str(%s)'
-
-def stop_err(msg):
-    sys.stderr.write(msg)
-    sys.exit()
-
-# we expect 5 parameters
-if len(sys.argv) != 5:
-    print sys.argv
-    stop_err('Usage: python get_flanks.py input out_file size direction')
-
-
-inp_file  = sys.argv[1]
-out_file  = sys.argv[2]
-size = int(sys.argv[3])
-direction = sys.argv[4]
-
-"""
-Determine the number of columns in the input file
-"""
-elems = []
-if os.path.exists( inp_file ):
-    for line in open( inp_file ):
-        line = line.strip()
-        if line and not line.startswith( '#' ):
-            elems = line.split( '\t' )
-            break
-else:
-    print 'The input file does not exist.'
-    sys.exit()
-
-if not elems:
-    print 'No non-blank or non-comment lines in the input data file'
-    sys.exit()
-    
-if len(elems) < 3:
-    if len(line.split()) != 1:
-        print 'This tool can only be run on tab delimited data'
+        cookbook.doc_optparse.exception()
+        
+    try:
+        fi = open(inp_file,'r')
+    except:
+        print >> sys.stderr, "Unable to open input file"
         sys.exit()
-
-if len(elems) < 6:
-    strand = '+'
-else:
-    strand = elems[5]
-
-try:
-    fo = open(out_file,'w')
-except:
-    print >> sys.stderr, "Unable to open output file"
-    sys.exit()
-
-skipped_lines = 0
-first_invalid_line = 0
-invalid_line = None
-elems = []
-for i, line in enumerate( open( inp_file )):
-    line = line.strip()
-    if line and (not line.startswith( '#' )) and line != '':
-        try:
-            elems = line.split( '\t' )
-            if direction == 'up':
-                if strand == '+':
-                    elems[2] = elems[1]
-                    elems[1] = str(int(elems[1]) - size)
-                elif strand == '-':
-                    elems[1] = elems[2]
-                    elems[2] = str(int(elems[2]) + size)
-                print >>fo, '\t'.join(elems)
+    try:
+        fo = open(out_file,'w')
+    except:
+        print >> sys.stderr, "Unable to open output file"
+        sys.exit()
+        
+    skipped_lines = 0
+    first_invalid_line = 0
+    invalid_line = None
+    elems = []
+    j=0
+    for i, line in enumerate( open( inp_file )):
+        line = line.strip()
+        if line and (not line.startswith( '#' )) and line != '':
+            j+=1
+            try:
+                elems = line.split('\t')
+                #if the start and/or end columns are not numbers, skip that line.
+                assert int(elems[start_col_1])
+                assert int(elems[end_col_1])
+                if strand_col_1 != -1:
+                    strand = elems[strand_col_1]
+                #if the stand value is not + or -, skip that line.
+                assert strand in ['+', '-']
+                if direction == 'Upstream':
+                    if strand == '+':
+                        elems[end_col_1] = elems[start_col_1]
+                        elems[start_col_1] = str(int(elems[start_col_1]) - size)
+                    elif strand == '-':
+                        elems[start_col_1] = elems[end_col_1]
+                        elems[end_col_1] = str(int(elems[end_col_1]) + size)
+                    print >>fo, '\t'.join(elems)
+                    
+                elif direction == 'Downstream':
+                    if strand == '-':
+                        elems[end_col_1] = elems[start_col_1]
+                        elems[start_col_1] = str( int(elems[start_col_1]) - size )
+                    elif strand == '+':
+                        elems[start_col_1] = elems[end_col_1]
+                        elems[end_col_1] = str(int(elems[end_col_1]) + size)
+                    print >>fo, '\t'.join(elems)
                 
-            elif direction == 'down':
-                if strand == '-':
-                    elems[2] = elems[1]
-                    elems[1] = str(int(elems[1]) - size)
-                elif strand == '+':
-                    elems[1] = elems[2]
-                    elems[2] = str(int(elems[2]) + size)
-                print >>fo, '\t'.join(elems)
+                elif direction == 'Both':
+                    newelem1 = str(int(elems[start_col_1]) - size)
+                    newelem2 = elems[start_col_1]
+                    newelem3 = elems[end_col_1]
+                    newelem4 = str(int(elems[end_col_1]) + size)
+                    elems[start_col_1]=newelem1
+                    elems[end_col_1]=newelem2
+                    print >>fo, '\t'.join(elems)
+                    elems[start_col_1]=newelem3
+                    elems[end_col_1]=newelem4
+                    print >>fo, '\t'.join(elems)
             
-            elif direction == 'both':
-                newelem1 = str(int(elems[1]) - size)
-                newelem2 = elems[1]
-                newelem3 = elems[2]
-                newelem4 = str(int(elems[2]) + size)
-                elems[1]=newelem1
-                elems[2]=newelem2
-                print >>fo, '\t'.join(elems)
-                elems[1]=newelem3
-                elems[2]=newelem4
-                print >>fo, '\t'.join(elems)
-                
-        except:
-            skipped_lines += 1
-            if not invalid_line:
-                first_invalid_line = i + 1
-                invalid_line = line
-
-fo.close()
-
-if direction == 'up':
-    direction = "Upstream"
-elif direction == 'down':
-    direction = "Downstream"
-
-print 'Flank length : %d and location : %s ' %(size, direction)
-if skipped_lines > 0:
-    print '(Data issue: skipped %d invalid lines starting at line #%d which is "%s")' % ( skipped_lines, first_invalid_line, invalid_line )
+            except:
+                skipped_lines += 1
+                if not invalid_line:
+                    first_invalid_line = i + 1
+                    invalid_line = line
+    fo.close()
     
-
-
-
-
-
-
+    #If number of skipped lines = num of lines in the file, inform the user to check metadata attributes of the input file.
+    if skipped_lines == j:
+        print 'Data issue: Skipped all lines in your input. Check the metadata attributes of the chosen input by clicking on the pencil icon next to it.'
+        sys.exit()
+    elif skipped_lines > 0:
+        print '(Data issue: skipped %d invalid lines starting at line #%d which is "%s")' % ( skipped_lines, first_invalid_line, invalid_line )
+    print 'Flank length : %d and location : %s ' %(size, direction)
+    
+if __name__ == "__main__":
+    main()
