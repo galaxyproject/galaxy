@@ -31,6 +31,14 @@ PATH=$PATH:/depot/apps/$MACHTYPE/bin:/home/universe/$ARCH/EMBOSS/bin:/home/unive
 
 export PATH NODEPATH
 
+# Create directories
+CREATE_DIRS="files tmp"
+for CREATE_DIR in $CREATE_DIRS; do
+    if [ ! -e $UNIVERSE_HOME/database/$CREATE_DIR ]; then
+        mkdir -p $UNIVERSE_HOME/database/$CREATE_DIR
+    fi
+done
+
 echo "python path: $PYTHONPATH"
 
 python2.4 ./scripts/paster.py serve universe_wsgi.ini $@
