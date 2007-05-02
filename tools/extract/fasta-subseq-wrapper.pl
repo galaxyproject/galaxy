@@ -40,7 +40,11 @@ $ARGV[10] = "ratNor$1" if ($ARGV[10]=~ m/^rn(\d)$/);
 $ARGV[5] = $ARGV[5]-1;
 $ARGV[6] = $ARGV[6]-1;
 $ARGV[7] = $ARGV[7]-1;
-$ARGV[8] = $ARGV[8]-1;
+if ($ARGV[8] > 0) {
+	$ARGV[8] = $ARGV[8]-1;
+} else {
+	$ARGV[8] = 1000000;
+}
 
 
 
@@ -71,7 +75,7 @@ while (<BED>) {
 	    push (@errors, "Sequence $columns[$ARGV[5]] was not found for genome build $ARGV[10]\nMost likely your data lists wrong chromosome number for this organism\nCheck your genome build selection");
 	  }
 	} else {
-	  push (@errors, "No sequences are available for $ARGV[10]");
+	  push (@errors, "No sequences are available for $ARGV[10]. Request them by reporting this error");
 	}
       } else {
 	push (@errors, "Bad BED fields: $columns[$ARGV[5]], $columns[$ARGV[6]], $columns[$ARGV[7]], $columns[$ARGV[8]]");
