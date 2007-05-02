@@ -9,7 +9,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input" value="4.bed"/>
+      <param name="input" value="4.bed" ftype="wig" />
       <output name="out_file1" file="ggs_wiggle2simple.dat"/>
     </test>
   </tests>
