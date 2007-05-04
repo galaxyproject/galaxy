@@ -3,7 +3,7 @@
     <command interpreter="python2.4">aggregate_scores_in_intervals.py $input2 $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1</command>
     <inputs>
         <page>
-            <param format="text" name="input2" type="data" label="Datapoints from table browser"/>
+            <param format="wig" name="input2" type="data" label="Datapoints from table browser"/>
             <param format="interval" name="input1" type="data" label="Interval file"/>
         </page>
     </inputs>
@@ -25,13 +25,13 @@ This tool currently only works with data from genome builds hg16, hg17 or hg18.
 
 .. class:: warningmark
 
-This tool assumes that the input dataset is in interval format and contains at least a chrom column, a start column and an end column.  These 3 columns can be dispersed throughout any number of other data columns. 
+This tool expects 2 input datasets, the first in wiggle format and the second in interval format. 
 
 -----
 
 .. class:: infomark
 
-**TIP:** Computing summary information may throw exceptions if the data type (e.g., string, integer) in every line of the columns is not appropriate for the computation (e.g., attempting numerical calculations on strings).  If an exception is thrown when computing summary information for a line, that line is skipped as invalid for the computation.  The number of invalid skipped lines is documented in the resulting history item as a "Data issue".
+**TIP:** Aggregating data may throw exceptions if the data type (e.g., string, integer) in every line of the columns is not appropriate for the computation (e.g., attempting numerical calculations on strings).  If an exception is thrown, computation is stopped and an error message is displayed.
 
 -----
 

@@ -78,9 +78,12 @@ class UCSCOutWrapper( object ):
                 self.lookahead = next_line
         return line 
     def readline(self):
-        # This function should only be called if the UCSC output limit is encountered.
-        raise UCSCLimitException
+        return self.__next__()
 
+def stop_err(msg):
+    sys.stderr.write(msg)
+    sys.exit()
+    
 def load_scores_wiggle( fname ):
     """
     Read a wiggle file and return a dict of BinnedArray objects keyed 
@@ -95,6 +98,10 @@ def load_scores_wiggle( fname ):
     except UCSCLimitException:
         # Wiggle data was truncated, at the very least need to warn the user.
         print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
+    except IndexError:
+        stop_err('Data error: one or more column data values is missing in "%s"' %fname)
+    except ValueError:
+        stop_err('Data error: invalid data type for one or more values in "%s".' %fname)
     return scores_by_chrom
 
 def load_scores_ba_dir( dir ):
