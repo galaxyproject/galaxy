@@ -2,7 +2,7 @@
   <description>Finds DNA inverted repeats</description>
   <command>einverted -sequence $input1 -outfile $out_file1 -gap $gap -threshold $threshold -match $match -mismatch $mismatch -maxrepeat $maxrepeat -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>On query</label>
     </param>
     <param name="gap" size="4" type="text" value="12">
@@ -25,6 +25,12 @@
     <data format="txt" name="out_file1" />
   </outputs>
   <help>
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/einverted.html

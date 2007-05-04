@@ -3,7 +3,7 @@
   <command>getorf -sequence $input1 -outseq $out_file1 -table $table -minsize $minsize -maxsize $maxsize -find $find -methionine $methionine -circular $circular -reverse $reverse -flanking $flanking
   -osformat2 $out_format1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequences</label>
     </param>
     <param name="table" type="select">
@@ -99,6 +99,13 @@
   </outputs>
   <code file="emboss_format_corrector.py" />
   <help>
+
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/getorf.html

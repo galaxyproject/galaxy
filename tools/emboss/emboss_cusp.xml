@@ -2,7 +2,7 @@
   <description>Create a codon usage table</description>
   <command>cusp -sequence $input1 -outfile $out_file1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>On query</label>
     </param>
   </inputs>
@@ -10,6 +10,12 @@
     <data format="txt" name="out_file1" />
   </outputs>
   <help>
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/cusp.html

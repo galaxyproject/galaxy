@@ -2,7 +2,7 @@
   <description>Plots isochores in large DNA sequences</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl isochore -sequence $input1 -outfile $out_file1 -goutfile $out_file2 -graph png -window $window -shift $shift -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequences</label>
     </param>
     <param name="window" size="4" type="text" value="1000">

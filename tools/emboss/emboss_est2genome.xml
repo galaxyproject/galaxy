@@ -3,7 +3,7 @@
   <command>est2genome -estsequence $input1 -genomesequence $input2 -outfile $out_file1 -match $match -mismatch $mismatch -gappenalty $gappenalty -intronpenalty $intronpenalty -splicepenalty
   $splicepenalty -minscore $minscore -reverse $reverse -splice $splice -mode $mode -best $best -shuffle $shuffle -seed $seed -align $align -width $width -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>EST sequence(s)</label>
     </param>
     <param format="data" name="input2" type="data">
@@ -67,6 +67,12 @@
     <data format="txt" name="out_file1" />
   </outputs>
   <help>
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/est2genome.html

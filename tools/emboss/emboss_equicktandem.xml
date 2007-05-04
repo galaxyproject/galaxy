@@ -2,7 +2,7 @@
   <description>Finds tandem repeats</description>
   <command>equicktandem -sequence $input1 -outfile $out_file1 -maxrepeat $maxrepeat -threshold $threshold -rformat2 $out_format1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequence</label>
     </param>
     <param name="maxrepeat" size="4" type="text" value="600">
@@ -36,6 +36,12 @@
   </outputs>
   <code file="emboss_format_corrector.py" />
   <help>
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/equicktandem.html
