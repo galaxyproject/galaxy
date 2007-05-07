@@ -65,7 +65,7 @@ Finding lines of the **First query** whose 4th column matching the 1st column of
   chr1 10 20 geneA 
   chr1 50 80 geneB
 
-Converesely, using options **Non Matching rows of First query** on same fields will yield::
+Conversely, using options **Non Matching rows of First query** on same fields will yield::
 
   chr5 10 40 geneL
 

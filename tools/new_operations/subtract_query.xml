@@ -1,0 +1,82 @@
+<tool id="subtract_query1" name="Subtract Whole Query">
+  <description>from another query</description>
+  <command interpreter="python2.4">subtract_query.py $input1 $input2 $output</command>
+  <inputs>
+    <param format="text" name="input2" type="data" help="Second query">
+      <label>Subtract</label>
+    </param>
+    
+    <param format="text" name="input1" type="data" help="First query">
+      <label>from</label>
+    </param>
+   </inputs>
+  <outputs>
+    <data format="input" name="output" metadata_source="input1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="1.txt" />
+      <param name="input2" value="2.txt" />
+      <output name="output" file="subtract-query-1.dat" />
+    </test>
+    <test>
+      <param name="input1" value="eq-showbeginning.dat" />
+      <param name="input2" value="eq-showtail.dat" />
+      <output name="output" file="subtract-query-2.dat" />
+    </test>
+    <test>
+      <param name="input1" value="eq-showbeginning.dat" />
+      <param name="input2" value="eq-removebeginning.dat" />
+      <output name="output" file="subtract-query-3.dat" />
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** This tool complements the tool in the **Operate on Genomic Intervals** tool set which subtracts the intervals of two queries.
+
+
+-----
+
+**Syntax**
+
+This tool subtracts an entire query from another query.  Any text format is valid.
+
+-----
+
+**Example**
+
+If this is the **First query**::
+
+  chr1    4225    19670
+  chr10   6       8
+  chr1    24417   24420
+  chr6_hla_hap2   0       150
+  chr2    1       5
+  chr10   2       10
+  chr1    30      55
+  chrY    1       20
+  chr1    1225979 42287290
+  chr10   7       8 
+
+and this is the **Second query**::
+
+  chr1    4225    19670
+  chr10   6       8
+  chr1    24417   24420
+  chr6_hla_hap2   0       150
+  chr2    1       5
+  chr1    30      55
+  chrY    1       20
+  chr1    1225979 42287290
+
+Subtracting the **Second query** from the **First query** will yield::
+
+  chr10   7       8 
+  chr10   2       10
+
+Conversely, subtracting the **First query** from the **Second query** will result in an empty dataset.
+
+</help>
+</tool>
