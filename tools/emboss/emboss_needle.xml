@@ -2,10 +2,10 @@
   <description>Needleman-Wunsch global alignment</description>
   <command>needle -asequence $input1 -bsequence $input2 -outfile $out_file1 -gapopen $gapopen -gapextend $gapextend -brief $brief -aformat3 $out_format1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequence 1</label>
     </param>
-    <param format="data" name="input2" type="data">
+    <param format="fasta" name="input2" type="data">
       <label>Sequence 2</label>
     </param>
     <param name="gapopen" size="4" type="text" value="10.0">
