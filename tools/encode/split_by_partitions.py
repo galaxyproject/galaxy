@@ -12,7 +12,7 @@ from bx.bitset_builders import *
 
 
 partition_index = sys.argv[1]
-partition_offset = "/home/james/work/encode/feature_partitions/" #should parse perhaps from index filepath
+partition_offset = "/home/universe/encode_feature_partitions/" #should parse perhaps from index filepath
 
 warnings = []
 
