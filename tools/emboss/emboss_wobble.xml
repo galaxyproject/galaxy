@@ -2,7 +2,7 @@
   <description>Wobble base plot</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl wobble -sequence $input1 -graph png -goutfile $out_file2 -outfile $out_file1 -window "$window" -bases "$bases" -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequence</label>
     </param>
     <param name="window" size="5" type="text" value="30">
@@ -17,6 +17,13 @@
     <data format="png" name="out_file2" />
   </outputs>
   <help>
+
+.. class:: warningmark 
+
+The input dataset needs to be sequences. 
+
+----- 
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/wobble.html

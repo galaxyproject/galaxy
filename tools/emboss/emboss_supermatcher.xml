@@ -3,7 +3,7 @@
   <command>supermatcher -asequence $input1 -bsequence $input2 -gapopen "$gapopen" -gapextend "$gapextend" -width "$width" -wordlen "$wordlen" -outfile $out_file1 -errorfile $out_file2 -aformat3
   $out_format1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Large sequences</label>
     </param>
     <param format="data" name="input2" type="data">

@@ -2,7 +2,7 @@
   <description>Plot potential open reading frames</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl plotorf -sequence $input1 -graph png -goutfile $out_file1 -start $start -stop $stop -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequence</label>
     </param>
     <param name="start" size="15" type="text" value="ATG">
@@ -16,6 +16,13 @@
     <data format="png" name="out_file1" />
   </outputs>
   <help>
+
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/plotorf.html

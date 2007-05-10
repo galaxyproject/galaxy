@@ -2,7 +2,7 @@
   <description>Output sequence with translated ranges</description>
   <command>prettyseq -sequence $input1 -outfile $out_file1 -ruler $ruler -plabel $plabel -nlabel $nlabel -width $width -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequence</label>
     </param>
     <param name="ruler" type="select">
@@ -28,6 +28,13 @@
     <data format="txt" name="out_file1" />
   </outputs>
   <help>
+
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/prettyseq.html

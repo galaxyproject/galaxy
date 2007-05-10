@@ -3,7 +3,7 @@
   <command>sixpack -sequence $input1 -outfile $out_file1 -outseq $out_file2 -table $table -firstorf $firstorf -lastorf $lastorf -mstart $mstart -reverse $reverse -orfminsize $orfminsize -uppercase
   "$uppercase" -number $number -width "$width" -length "$length" -margin "$margin" -name $disp_name -description $description -offset "$offset" -html $html_out1 -osformat $out_format2 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequences</label>
     </param>
     <param name="table" type="select">
@@ -124,6 +124,13 @@
   </outputs>
   <code file="emboss_format_corrector.py" />
   <help>
+
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/sixpack.html

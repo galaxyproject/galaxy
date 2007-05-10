@@ -2,10 +2,10 @@
   <description>Smith-Waterman local alignment</description>
   <command>water -asequence $input1 -bsequence $input2 -outfile $out_file1 -gapopen "$gapopen" -gapextend "$gapextend" -brief $brief -aformat3 $out_format1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequence 1</label>
     </param>
-    <param format="data" name="input2" type="data">
+    <param format="fasta" name="input2" type="data">
       <label>Sequence 2</label>
     </param>
     <param name="gapopen" size="6" type="text" value="10.0">
@@ -40,6 +40,13 @@
   </outputs>
   <code file="emboss_format_corrector.py" />
   <help>
+
+.. class:: warningmark 
+
+The input datasets need to be sequences. 
+
+----- 
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/water.html

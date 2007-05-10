@@ -3,10 +3,10 @@
   <command>wordmatch -asequence $input1 -bsequence $input2 -outfile $out_file1 -aoutfeat $out_file2 -boutfeat $out_file3 -wordsize "$wordsize" -aformat3 $out_format1 -offormat4 $out_format2
   -offormat5 $out_format3 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequence 1</label>
     </param>
-    <param name="input2" type="data">
+    <param format="fasta" name="input2" type="data">
       <label>Sequence 2</label>
     </param>
     <param name="wordsize" size="5" type="text" value="4">
@@ -48,6 +48,13 @@
   </outputs>
   <code file="emboss_format_corrector.py" />
   <help>
+
+.. class:: warningmark 
+
+The input datasets need to be sequences. 
+
+----- 
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/wordmatch.html

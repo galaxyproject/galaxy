@@ -2,7 +2,7 @@
   <description>Align nucleic coding regions given the aligned proteins</description>
   <command>tranalign -asequence $input1 -bsequence $input2 -outseq $out_file1 -table $table -osformat3 $out_format1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Nucleic Sequences</label>
     </param>
     <param format="data" name="input2" type="data">

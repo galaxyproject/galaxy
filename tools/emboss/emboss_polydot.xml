@@ -3,7 +3,7 @@
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl polydot -sequence $input1 -graph png -goutfile $out_file2 -outfeat $out_file1 -wordsize $wordsize -boxit $boxit -dumpfeat yes -gap
   $gap -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequence</label>
     </param>
     <param name="wordsize" size="10" type="text" value="6">
@@ -23,6 +23,13 @@
     <data format="png" name="out_file2" />
   </outputs>
   <help>
+
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/polydot.html

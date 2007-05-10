@@ -2,10 +2,10 @@
   <description>Insert one sequence into another</description>
   <command>pasteseq -asequence $input2 -bsequence $input1 -outseq $out_file1 -pos $pos -osformat3 $out_format1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Main sequence</label>
     </param>
-    <param format="data" name="input2" type="data">
+    <param format="fasta" name="input2" type="data">
       <label>Sequence to insert</label>
     </param>
     <param name="pos" size="4" type="text" value="0">
@@ -49,6 +49,13 @@
   </outputs>
   <code file="emboss_format_corrector.py" />
   <help>
+
+.. class:: warningmark
+
+The input datasets need to be sequences.
+
+-----
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/pasteseq.html

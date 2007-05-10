@@ -2,7 +2,7 @@
   <description>Reports STOP codons and ORF statistics of a protein</description>
   <command>checktrans -sequence $input1 -outfile $out_file1 -outseq $out_file2 -osformat3 $out_format2 -outfeat $out_file3 -offormat4 $out_format3 -orfml $orfml -addlast $addlast -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>On query</label>
     </param>
     <param name="orfml" size="4" type="text" value="100">
@@ -60,6 +60,13 @@
   </outputs>
   <code file="emboss_format_corrector.py" />
   <help>
+
+.. class:: warningmark 
+
+The input dataset needs to be sequences. 
+
+----- 
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/checktrans.html

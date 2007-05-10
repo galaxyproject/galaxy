@@ -2,7 +2,7 @@
   <description>Back translate a protein sequence</description>
   <command>backtranseq -sequence $input1 -outfile $out_file1 -cfile $cfile -osformat2 $out_format1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>On query</label>
     </param>
     <param name="cfile" type="select">
@@ -197,6 +197,13 @@
   </outputs>
   <code file="emboss_format_corrector.py" />
   <help>
+
+.. class:: warningmark 
+
+The input dataset needs to be sequences. 
+
+----- 
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/backtranseq.html

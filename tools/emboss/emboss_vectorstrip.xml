@@ -3,7 +3,7 @@
   <command>vectorstrip -sequence $input1 -vectorsfile $input2 -outseq $out_file1 -outfile $out_file2 -vectorfile yes -mismatch "$mismatch" -besthits $besthits -linkera "$linkera" -linkerb
   "$linkerb" -osformat4 $out_format1 -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequences</label>
     </param>
     <param format="data" name="input2" type="data">

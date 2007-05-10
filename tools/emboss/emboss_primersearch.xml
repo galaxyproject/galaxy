@@ -2,7 +2,7 @@
   <description>Searches DNA sequences for matches with primer pairs</description>
   <command>primersearch -seqall $input1 -primersfile $input2 -outfile $out_file1 -mismatchpercent $mismatchpercent -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Main sequences</label>
     </param>
     <param format="data" name="input2" type="data">
@@ -16,6 +16,7 @@
     <data format="txt" name="out_file1" />
   </outputs>
   <help>
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/primersearch.html

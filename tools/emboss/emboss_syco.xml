@@ -3,7 +3,7 @@
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl syco -sequence $input1 -graph png -goutfile $out_file1 -cfile $cfile -window "$window" -uncommon $uncommon -minimum "$minimum"
   -auto</command>
   <inputs>
-    <param format="data" name="input1" type="data">
+    <param format="fasta" name="input1" type="data">
       <label>Sequence</label>
     </param>
     <param name="cfile" type="select">
@@ -176,6 +176,7 @@
     <data format="png" name="out_file1" />
   </outputs>
   <help>
+
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/4.0/emboss/apps/syco.html
