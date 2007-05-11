@@ -1,4 +1,5 @@
 #TODO: Set dbkey to proper UCSC build, if known
+# Greg Von Kuster
 import urllib
 
 from galaxy import datatypes, config

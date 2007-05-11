@@ -357,7 +357,7 @@ class Universe(common.Root):
             if not user_history.datasets:
                 trans.set_history( new_history )
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
-            return trans.show_message( "History has been imported", refresh_frames=['history'])
+            return trans.fill_template("history_imported.tmpl", history=new_history)
         elif not user_history.datasets or confirm:
             new_history = self.copy_history(import_history)
             new_history.name = "imported: "+new_history.name
@@ -366,7 +366,7 @@ class Universe(common.Root):
             new_history.flush()
             trans.set_history( new_history )
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
-            return trans.show_message( "History has been imported", refresh_frames=['history'])
+            return trans.fill_template("history_imported.tmpl", history=new_history)
         return trans.fill_template("history_import.tmpl", history=import_history)
 
     @web.expose
