@@ -64,7 +64,7 @@
     <tool file="filters/lav_to_bed.xml" />
   </section>
   <section name="Pattern-Matching" id="patmat">
-    <tool file="patmat/findcluster_pygre.xml" />
+    <tool file="patmat/findcluster_mysql.xml" />
   </section>
   <section name="Fetch Sequences and Alignments" id="extract">
     <tool file="extract/fasta-subseq-wrapper.xml" />
