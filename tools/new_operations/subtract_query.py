@@ -15,7 +15,7 @@ def get_lines(fname):
     for i, line in enumerate(file(fname)):
         line = line.strip()
         lines.add( line )
-    return lines
+    return (i+1, lines)
 
 def main():   
     # Parsing Command Line here
@@ -32,14 +32,19 @@ def main():
         print >> sys.stderr, "Unable to open output file"
         sys.exit()
 
-    lines1 = get_lines(inp1_file)
-    lines2 = get_lines(inp2_file)
+    len1, lines1 = get_lines(inp1_file)
+    diff1 = len1 - len(lines1)
+    len2, lines2 = get_lines(inp2_file)
+    
     lines1.difference_update(lines2)
     
     for line in lines1:
         print >> fo, line
 
     fo.close()
-    
+
+    if diff1 > 0:
+        print "Eliminated %d duplicate lines from first query." %diff1
+
 if __name__ == "__main__":
     main()

@@ -15,9 +15,36 @@
         <data format="interval" name="output" metadata_source="input"/>
     </outputs>
     <help>
+    
+.. class:: warningmark
 
-Append a column to each line of an interval file containing the 
-phastOdds score for that interval.
+This tool currently only works with interval data from genome build hg17.
+
+.. class:: warningmark
+
+This tool assumes that the input dataset is in interval format and contains at least a chrom column, a start column and an end column.  These 3 columns can be dispersed throughout any number of other data columns. 
+
+-----
+
+**Syntax**
+
+Append a column to each line of an interval file containing the phastOdds score for that interval.
+
+-----
+
+**Example**
+
+If your original data has the following format:
+
++-----+-----+---+
+|chrom|start|end|
++-----+-----+---+
+
+and you choose to compute phastCons scores, your output will look like this:
+
++-----+-----+---+-----+
+|chrom|start|end|score|
++-----+-----+---+-----+
 
     </help>
 </tool>

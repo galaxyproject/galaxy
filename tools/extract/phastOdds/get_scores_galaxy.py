@@ -30,6 +30,11 @@ def main():
     except Exception, e:
         print e
         cookbook.doc_optparse.exit()
+        
+    if h5_fname == 'None.h5':
+        print 'Invalid genome build - this tool currently only works with data from genome build hg17.  Click "edit attributes" (the pencil icon) in your history item to correct the genome build if appropriate.'
+        sys.exit()
+        
     # Open the h5 file
     h5 = openFile( h5_fname, mode = "r" )
     # Load intervals and names for the subregions

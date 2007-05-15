@@ -41,7 +41,7 @@
 
 **Syntax**
 
-This tool subtracts an entire query from another query.  Any text format is valid.
+This tool subtracts an entire query from another query.  Any text format is valid.  This tool assumes that each query consists of distinct lines of data (i.e., duplicate lines are eliminated from both queries prior to subtraction).  If any duplicate lines were eliminated from the first query, the number is displayed in the resulting history item.
 
 -----
 
