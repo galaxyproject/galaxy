@@ -16,7 +16,11 @@ def __main__():
     max_size = int(sys.argv[4].strip())
     if max_size < 1: max_size = sys.maxint
     maf_writer = bx.align.maf.Writer( open(output_filename1, 'w') )
-    maf_reader = bx.align.maf.Reader( open(input_maf_filename, 'r') )
+    try:
+        maf_reader = bx.align.maf.Reader( open(input_maf_filename, 'r') )
+    except:
+        print >>sys.stderr, "Your MAF file appears to be malformed."
+        sys.exit()
     maf_count = 0
     for m in maf_reader:
         if min_size <= m.components[0].size <= max_size:

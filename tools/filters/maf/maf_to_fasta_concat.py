@@ -29,19 +29,22 @@ def __main__():
     file_out = open(output_filename, 'w')
 
     for s in species: texts[s] = []
-    maf_reader = maf.Reader( file_in )
-    for m in maf_reader:
+    try:
+        maf_reader = maf.Reader( file_in )
+        for m in maf_reader:
+            for s in species:
+                c = m.get_component_by_src_start( s ) 
+                if c: texts[s].append( c.text )
+                else: texts[s].append( "-" * m.text_size )
         for s in species:
-            c = m.get_component_by_src_start( s ) 
-            if c: texts[s].append( c.text )
-            else: texts[s].append( "-" * m.text_size )
-    for s in species:
-        file_out.write(">"+s+"\n")
-        file_out.write("".join(texts[s])+"\n")
-    
-    file_in.close()
-    file_out.close()
-    
+            file_out.write(">"+s+"\n")
+            file_out.write("".join(texts[s])+"\n")
+        
+        file_in.close()
+        file_out.close()
+    except:
+        print >>sys.stderr, "Your MAF file appears to be malformed."
+        sys.exit()
     
 def print_n( s, n, f = sys.stdout ):
     p = 0

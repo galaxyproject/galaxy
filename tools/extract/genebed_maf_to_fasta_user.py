@@ -15,6 +15,7 @@ usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract c
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 from bx import interval_index_file
+import bx.intervals.io
 import sys, os
 import string
 import tempfile
@@ -26,6 +27,33 @@ def reverse_complement(text):
     comp.reverse()
     return "".join(comp)
 
+
+#an object corresponding to a reference genome position
+class Genomic_Position(object):
+    def __init__(self, dbkey, t_keys):
+        self.dbkey = dbkey
+        self.bases = {}
+        for t_key in [dbkey]+t_keys: self.bases[t_key] = "-"
+        self.children = []
+    def get_sequence (self, key = None):
+        if not key: key = self.dbkey
+        seq = ""
+        positions = [self] + self.children
+        for position in positions:
+            seq += position.bases[key]
+        return seq
+#a list of reference genome positions
+class Genomic_Region(list):
+    def get_sequence (self, key):
+        seq = ""
+        for position in self:
+            seq += position.get_sequence(key)
+        return seq
+    def count_gaps(self):
+        gaps = 0
+        for position in self:
+            gaps =+ len(position.children)
+        return gaps
 
 #define Different Gap types, mostly used for debuging
 GAP_NORMAL = "-"
@@ -67,21 +95,24 @@ def __main__():
     #index maf for use here
     indexes = interval_index_file.Indexes()
     
-    maf_reader = bx.align.maf.Reader( open( mafFile ) )
-    # Need to be a bit tricky in our iteration here to get the 'tells' right
-    while 1:
-        pos = maf_reader.file.tell()
-        block = maf_reader.next()
-        if block is None: break
-        for c in block.components:
-            indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
-    index_filename = tempfile.NamedTemporaryFile().name
-    out = open(index_filename,'w')
-    indexes.write(out)
-    out.close()
+    try:
+        maf_reader = bx.align.maf.Reader( open( mafFile ) )
+        # Need to be a bit tricky in our iteration here to get the 'tells' right
+        while 1:
+            pos = maf_reader.file.tell()
+            block = maf_reader.next()
+            if block is None: break
+            for c in block.components:
+                indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
+        index_filename = tempfile.NamedTemporaryFile().name
+        out = open(index_filename,'w')
+        indexes.write(out)
+        out.close()
+    except:
+        print >>sys.stderr, "Your MAF file appears to be malformed."
+        sys.exit()
     
-    
-    index = bx.align.maf.Indexed(mafFile, index_filename = index_filename)
+    index = bx.align.maf.Indexed(mafFile, index_filename = index_filename, keep_open=True, parse_e_rows=True)
     
     
     #Step through gene bed
@@ -116,19 +147,10 @@ def __main__():
                     start = max( start, region_start )
                     end = min( end, region_end )
                     if start < end:
-                        target_chrom = {}
-                        target_strand = {}
-                        target_start = {}
-                        target_end = {}
-                        target_sequence = {}
-                        for t_key in target_dbkey:
-                            #initialize exons with gaps in all positions
-                            target_sequence[t_key] = [GAP_NO_DATA for i in range(end-start)]
-                            target_chrom[t_key] = []
-                            target_strand[t_key] = []
-                            target_start[t_key] = []
-                            target_end[t_key] = []
-                        exons.append({'name':name,'ref_chrom':chrom,'target_chrom':target_chrom,'ref_start':start,'target_start':target_start,'ref_end':end,'target_end':target_end,'ref_strand':strand,'target_strand':target_strand,'ref_sequence':[GAP_NO_DATA for i in range(end-start)],'target_sequence':target_sequence,'ref_gaps':[]})
+                        alignment = Genomic_Region()
+                        for i in range(end-start):
+                            alignment.append(Genomic_Position(dbkey, target_dbkey))
+                        exons.append({'name':name,'ref_chrom':chrom,'ref_start':start,'ref_end':end,'ref_strand':strand,'alignment':alignment})
             except Exception, e:
                 print "Error loading exon positions from input line %i:" % line_count, e
                 continue
@@ -139,6 +161,7 @@ def __main__():
                     start = exon['ref_start']
                     end = exon['ref_end']
                     strand = exon['ref_strand']
+                    alignment = exon['alignment']
                     
                     blocks = index.get( src, start, end )
                     
@@ -169,106 +192,48 @@ def __main__():
                         else:
                             slice_start = max( start, ref.start )
                             slice_end = min( end, ref.end )
-                        sliced = maf.slice_by_component( ref, slice_start, slice_end ) 
                         
+                        try:
+                            sliced = maf.slice_by_component( ref, slice_start, slice_end )
+                        except:
+                            #print "slicing failed!"
+                            continue
                         sliced_ref = sliced.get_component_by_src( src )
-                        sliced_target={}
-                        for t_key in target_dbkey:
-                            sliced_target[t_key] = sliced.get_component_by_src_start( t_key )
+                        sliced_offset = sliced_ref.start - exon['ref_start']
                         
-                        start_offset = sliced_ref.start - exon['ref_start']
-                        
-                        ref_seq =  list(sliced_ref.text)
+                        ref_block_seq =  list(sliced_ref.text.rstrip())
                         
                         #sliced_target is empty if doesn't exist
-                        targ_seq = {}
+                        targ_block_seq = {}
                         for t_key in target_dbkey:
                             try:
-                                targ_seq[t_key] = list(sliced_target[t_key].text)
+                                targ_block_seq[t_key] = list(sliced.get_component_by_src_start( t_key ).text) #list(sliced_target[t_key].text)
                             except:
-                                targ_seq[t_key] = [GAP_NO_DATA for i in range(len(ref_seq))]
+                                targ_block_seq[t_key] = [GAP_NO_DATA for i in range(len(ref_block_seq))]
                         
                         
-                        #determin new gap locations 
-                        new_ref_gap_indicies = [i+start_offset for i in xrange(len(ref_seq)) if ref_seq[i] == GAP_NORMAL]
-                        try:
-                            old_ref_gap_indicies = exon['ref_gaps'][0:]
-                        except:
-                            old_ref_gap_indicies = []
-                        new_adj_gap_indicies = []
-                        old_adj_gap_indicies = []
-                        
-                        while len(new_ref_gap_indicies+old_ref_gap_indicies) > 0:
-                            this_gap = min(new_ref_gap_indicies+old_ref_gap_indicies)
-                            
-                            #gap exists previously, but is not currently present
-                            if this_gap in old_ref_gap_indicies and this_gap not in new_ref_gap_indicies:
-                                #add gap to exist list
-                                old_adj_gap_indicies.append(this_gap)
-                                #update indicies of new gaps
-                                for i in range(len(new_ref_gap_indicies)):
-                                    new_ref_gap_indicies[i] = new_ref_gap_indicies[i]+1
-                                #remove gap from old_ref_gap_indicies
-                                old_ref_gap_indicies.remove(this_gap)
-                                
-                                #add gap char into block sequences:
-                                ref_seq.insert(this_gap-start_offset,GAP_INSERT)
+                        gaps_found = 0
+                        recent_gaps = 0
+                        for i in range(len(ref_block_seq)):
+                            if ref_block_seq[i] not in GAP_NORMAL: #this is a position
+                                recent_gaps = 0
+                                alignment[i+sliced_offset-gaps_found].bases[dbkey] = ref_block_seq[i]
                                 for t_key in target_dbkey:
-                                    targ_seq[t_key].insert(this_gap-start_offset,GAP_INSERT)
-                                
-                            #gap doesn't exists previously, but is currently present
-                            elif this_gap not in old_ref_gap_indicies and this_gap in new_ref_gap_indicies:
-                                #add gap to new list
-                                new_adj_gap_indicies.append(this_gap)
-                                #update indicies of new gaps
-                                for i in range(len(old_ref_gap_indicies)):
-                                    old_ref_gap_indicies[i] = old_ref_gap_indicies[i]+1
-                                #remove gap from new_ref_gap_indicies
-                                new_ref_gap_indicies.remove(this_gap)
-                                
-                                #gap doesn't exist previously, add gap char into exon sequences:
-                                exon['ref_sequence'].insert(this_gap,GAP_INSERT)
+                                    if targ_block_seq[t_key][i] not in ALL_GAP_TYPES:
+                                        alignment[i+sliced_offset-gaps_found].bases[t_key] = targ_block_seq[t_key][i]
+                            else: #this is a gap
+                                gaps_found += 1
+                                recent_gaps += 1
+                                if recent_gaps > len(alignment[i+sliced_offset-gaps_found].children):
+                                    alignment[i+sliced_offset-gaps_found].children.append(Genomic_Position(dbkey, target_dbkey))
+                                if ref_block_seq[i] not in ALL_GAP_TYPES:
+                                    alignment[i+sliced_offset-gaps_found].children[recent_gaps-1].bases[dbkey] = ref_block_seq[i]
                                 for t_key in target_dbkey:
-                                    exon['target_sequence'][t_key].insert(this_gap,GAP_INSERT)
-                                
-                            #gap is in new and old, simply place it back on both lists
-                            else:
-                                old_adj_gap_indicies.append(this_gap)
-                                new_adj_gap_indicies.append(this_gap)
-                                #remove gaps from working list
-                                old_ref_gap_indicies.remove(this_gap)
-                                new_ref_gap_indicies.remove(this_gap)
-                        
-                        #create and sort list of all Gaps, removing duplicates
-                        temp = {}
-                        for g in (old_adj_gap_indicies + new_adj_gap_indicies): temp[g]=g
-                        temp = temp.keys()
-                        temp.sort()
-                        exon['ref_gaps'] = temp
-                        
-                        #Exon and block sequences should now have same number of gaps
+                                    if targ_block_seq[t_key][i] not in ALL_GAP_TYPES:
+                                        alignment[i+sliced_offset-gaps_found].children[recent_gaps-1].bases[t_key] = targ_block_seq[t_key][i]
                         
                         
-                        filled = False
-                        for i in range(start_offset, len(exon['ref_sequence'])):
-                            if i-start_offset >= len(ref_seq): break #this block doesn't cover to edge
-                            
-                            #Don't overwrite bases with gaps
-                            if ref_seq[i-start_offset] not in ALL_GAP_TYPES:
-                                exon['ref_sequence'][i] = ref_seq[i-start_offset]
-                            for t_key in target_dbkey:
-                                if targ_seq[t_key][i-start_offset] not in ALL_GAP_TYPES:
-                                    exon['target_sequence'][t_key][i] = targ_seq[t_key][i-start_offset]
-                            
-                            #Store block info for exons
-                            if not filled:
-                                for t_key in target_dbkey:
-                                    if sliced_target[t_key]:
-                                        exon['target_start'][t_key].append(sliced_target[t_key].start)
-                                        exon['target_end'][t_key].append(sliced_target[t_key].end)
-                                        exon['target_strand'][t_key].append(sliced_target[t_key].strand)
-                                        exon['target_chrom'][t_key].append(bx.align.maf.src_split(sliced_target[t_key].src)[-1])
-                                filled=True
+                        
                     
                 except Exception, e:
                     print "Error filling exons with MAFs from input line %i:" % line_count, e
@@ -276,75 +241,27 @@ def __main__():
                     
             
             #exons loaded, now output them stitched together in proper orientation
-            seq1=""
-            seq2={}
-            chr1=[]
-            chr2={}
-            start1=[]
-            start2={}
-            end1=[]
-            end2={}
-            strand1=[]
-            strand2={}
-            gaps =[]
-            gap_offset = 0
-            gene_name = ""
-            for t_key in target_dbkey:
-                seq2[t_key]=""
-                start2[t_key]=[]
-                end2[t_key]=[]
-                chr2[t_key]=[]
-                strand2[t_key]=[]
+            sequences = {}
+            for key in [dbkey] + target_dbkey:
+                sequences[key] = ""
             
-            strand = exons[0]['ref_strand']
-            if strand == '-':
-                exons.reverse()
-                for exon in exons:
-                    gene_name = exon['name']
-                    for gap in exon['ref_gaps']:
-                        gaps.append(len(exon['ref_sequence'])-gap+gap_offset-1)
-                    gap_offset += len(exon['ref_sequence'])
-                    
-                    chr1.append(exon['ref_chrom'])
-                    start1.append(str(exon['ref_start']))
-                    end1.append(str(exon['ref_end']))
-                    strand1.append(exon['ref_strand'])
-                    seq1+=reverse_complement("".join(exon['ref_sequence']))
-                    for t_key in target_dbkey:
-                        start2[t_key].append(str(exon['target_start'][t_key])[1:-1].replace(" ",""))
-                        end2[t_key].append(str(exon['target_end'][t_key])[1:-1].replace(" ",""))
-                        chr2[t_key].append(",".join(exon['target_chrom'][t_key]))
-                        strand2[t_key].append(",".join(exon['target_strand'][t_key]))
-                        seq2[t_key]+=reverse_complement("".join(exon['target_sequence'][t_key]))
-                        
-            else:
-                for exon in exons:
-                    gene_name = exon['name']
-                    for gap in exon['ref_gaps']:
-                        gaps.append(gap+gap_offset)
-                    gap_offset += len(exon['ref_sequence'])
-                    
-                    chr1.append(exon['ref_chrom'])
-                    start1.append(str(exon['ref_start']))
-                    end1.append(str(exon['ref_end']))
-                    strand1.append(exon['ref_strand'])
-                    seq1+="".join(exon['ref_sequence'])
-                    for t_key in target_dbkey:
-                        start2[t_key].append(str(exon['target_start'][t_key])[1:-1].replace(" ",""))
-                        end2[t_key].append(str(exon['target_end'][t_key])[1:-1].replace(" ",""))
-                        chr2[t_key].append(",".join(exon['target_chrom'][t_key]))
-                        strand2[t_key].append(",".join(exon['target_strand'][t_key]))
-                        seq2[t_key]+="".join(exon['target_sequence'][t_key])
+            step_list = range(len(exons))
+            if strand == "-": step_list.reverse()
+            for i in step_list:
+                exon = exons[i]
+                for key in [dbkey] + target_dbkey:
+                    if strand == "-":
+                        sequences[key] += reverse_complement(exon['alignment'].get_sequence(key))
+                    else:
+                        sequences[key] += exon['alignment'].get_sequence(key)
             
-            gaps.sort()
+            
             if include_primary:
-                #print >>output, ">%s.%s|%s(%s)%s-%s|gaps:%s" %(dbkey, gene_name,";".join(chr1),";".join(strand1),";".join(start1),";".join(end1),",".join([str(i) for i in gaps ]))
-                print >>output, ">%s.%s" %(dbkey, gene_name)
-                print >>output, seq1
+                print >>output, ">%s.%s" %(dbkey, name)
+                print >>output, sequences[dbkey]
             for t_key in target_dbkey:
-                #print >>output, ">%s.%s|%s(%s)%s-%s" %(t_key, gene_name,";".join(chr2[t_key]),";".join(strand2[t_key]),";".join(start2[t_key]),";".join(end2[t_key]))
-                print >>output, ">%s.%s" %(t_key, gene_name)
-                print >>output, seq2[t_key]
+                print >>output, ">%s.%s" %(t_key, name)
+                print >>output, sequences[t_key]
             print >>output
             
             genes_extracted += 1

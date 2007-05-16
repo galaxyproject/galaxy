@@ -25,7 +25,7 @@ try:
             continue
 
 except Exception, exc:
-    print >>sys.stdout, 'genebed_maf_to_fasta_code.py initialization error -> %s' % exc 
+    print >>sys.stdout, 'interval_maf_to_merged_fasta_code.py initialization error -> %s' % exc 
 
 #return available datasets for group and build, set None option as selected for hg16
 def get_available_data( build ):

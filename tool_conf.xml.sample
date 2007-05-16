@@ -69,8 +69,11 @@
   <section name="Fetch Sequences and Alignments" id="extract">
     <tool file="extract/fasta-subseq-wrapper.xml" />
     <tool file="extract/extractAxt_wrapper.xml" />
+    <tool file="extract/interval2maf_pairwise.xml" />
     <tool file="extract/interval2maf.xml" />
     <tool file="extract/user_interval2maf.xml" />
+    <tool file="extract/interval_maf_to_merged_fasta.xml" />
+    <tool file="extract/interval_maf_to_merged_fasta_user.xml" />
     <tool file="extract/genebed_maf_to_fasta.xml"/>
     <tool file="extract/genebed_maf_to_fasta_user.xml"/>
     <tool file="filters/maf/maf_stats.xml"/>

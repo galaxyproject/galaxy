@@ -26,13 +26,17 @@ def __main__():
     
     if "None" in species:
         species = {}
-        for i, m in enumerate( maf.Reader( open(input_filename, 'r') ) ):
-            for c in m.components:
-                spec,chrom = maf.src_split( c.src )
-                if not spec or not chrom:
-                    spec = chrom = c.src
-                species[spec]=""
-        species = species.keys()
+        try:
+            for i, m in enumerate( maf.Reader( open(input_filename, 'r') ) ):
+                for c in m.components:
+                    spec,chrom = maf.src_split( c.src )
+                    if not spec or not chrom:
+                        spec = chrom = c.src
+                    species[spec]=""
+            species = species.keys()
+        except:
+            print >>sys.stderr, "Invalid MAF file specified"
+            return
         
     if "?" in species:
         print >>sys.stderr, "Invalid dbkey specified"
@@ -74,7 +78,11 @@ def __main__():
                 out_files[spec].close()
                 out_files[spec] = open(filename, 'w')
             
-            out_files[spec].write(chrom+"\t"+str(c.start)+"\t"+str(c.end)+"\t"+spec+"_"+str(block_num)+"\t"+"0\t"+c.strand+"\n")
+            if c.strand == "-":
+                out_files[spec].write(chrom+"\t"+str(c.src_size - c.end)+"\t"+str(c.src_size - c.start)+"\t"+spec+"_"+str(block_num)+"\t"+"0\t"+c.strand+"\n")
+            else:
+                out_files[spec].write(chrom+"\t"+str(c.start)+"\t"+str(c.end)+"\t"+spec+"_"+str(block_num)+"\t"+"0\t"+c.strand+"\n")
+            
     file_in.close()
     for file_out in out_files.keys():
         out_files[file_out].close()

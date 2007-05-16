@@ -225,7 +225,9 @@ ExecuteAFile ("%s");
 VERBOSITY_LEVEL			= -1;
 fscanf          		(PROMPT_FOR_FILE, "Lines", inLines);
 
-_linesIn = Columns (inLines);
+_linesIn        				= Columns (inLines);
+isomorphicTreesBySequenceCount  = {};
+
 /*---------------------------------------------------------*/
 
 _currentGene   = 1; 
@@ -311,7 +313,33 @@ function _processAGene (_geneID, nwk_file, ps_file)
 	DISTANCE_PROMPTS		= (_geneID==1);
 
 	InferTreeTopology 		(0);
-	fprintf					(nwk_file, _geneID-1, "\\t", TreeMatrix2TreeString (0), "\\t", TreeMatrix2TreeString (1), "\\n");
+	baseTree				= TreeMatrix2TreeString (0);
+	UseModel 				(USE_NO_MODEL);
+	
+	Tree 			baseTop	= baseTree;
+	
+	/* standardize this top */
+	
+	for (k=0; k<Abs(isomorphicTreesBySequenceCount[filteredData.species]); k=k+1)
+	{
+		testString	  = (isomorphicTreesBySequenceCount[filteredData.species])[k];
+		Tree testTree = testString;
+		if (testTree == baseTop)
+		{
+			baseTree = testString;
+			break;
+		}
+	}
+	if (k==Abs(isomorphicTreesBySequenceCount[filteredData.species]))
+	{
+		if (k==0)
+		{
+			isomorphicTreesBySequenceCount[filteredData.species] = {};
+		}
+		(isomorphicTreesBySequenceCount[filteredData.species])[k] = baseTree;
+	}
+	
+	fprintf					(nwk_file, _geneID-1, "\\t", baseTree, "\\t", TreeMatrix2TreeString (1), "\\n");
 	if (Abs(ps_file))
 	{
 		treeString = TreeMatrix2TreeString (2);

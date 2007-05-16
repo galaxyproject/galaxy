@@ -3,7 +3,7 @@ import os, sys
 maf_sets = {}
 
 try:
-    for line in open( "/depot/data2/galaxy/maf_index.loc" ):
+    for line in open( "/depot/data2/galaxy/maf_pairwise.loc" ):
         if line[0:1] == "#" : continue
         
         fields = line.split('\t')
@@ -25,7 +25,7 @@ try:
             continue
 
 except Exception, exc:
-    print >>sys.stdout, 'genebed_maf_to_fasta_code.py initialization error -> %s' % exc 
+    print >>sys.stdout, 'interval2maf_pairwise_code.py initialization error -> %s' % exc 
 
 #return available datasets for group and build, set None option as selected for hg16
 def get_available_data( build ):
@@ -37,14 +37,7 @@ def get_available_data( build ):
         available_sets.append(('No data available for this build','None',True))
     return available_sets
 
-def get_available_species( maf_uid ):
-    available_sets = []
-    for key in maf_sets[maf_uid]['builds']:
-        available_sets.append((key,key,True))
-    if len(available_sets) < 1:
-        available_sets.append(('No data available for this configuration','None',True))
-    return available_sets
 
 def exec_before_job(trans,inp_data, out_data, param_dict, tool):
     for name, data in out_data.items():
-        data.name = data.name + " [" + maf_sets[param_dict['mafSource']]['description'] + "]"
+        data.name = data.name + " [" + maf_sets[param_dict['mafType']]['description'] + "]"

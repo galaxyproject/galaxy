@@ -1,0 +1,33 @@
+<tool id="Interval_Maf_Merged_Fasta_User1" name="Extract Interval User blocks">
+  <description>from a MAF File</description>
+  <command interpreter="python2.4">interval_maf_to_merged_fasta_user.py $dbkey $species $input2 $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol -</command>
+  <inputs>
+    <page>
+        <param format="interval" name="input1" type="data" label="Interval File"/>
+        <param format="maf" name="input2" type="data" label="MAF File"/>
+<!--        <param name="unkown_gap_char" type="select">
+          <label>Character for missing data</label>
+          <option value="-">-</option>
+          <option value="?">?</option>
+        </param> -->
+    </page>
+    <page>
+        <param name="species" label="Choose desired species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( input2.file_name )"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="fasta" name="out_file1" />
+  </outputs>
+<!--  <tests>
+    <test>
+      <param name="input1" value="gene_bed.dat"/>
+      <param name="input2" value="gene_bed_maf_to_fasta_user_maf_in.dat"/>
+      <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
+      <output name="out_file1" file="gene_bed_maf_to_fasta_out.dat" />
+    </test>
+  </tests> -->
+  <help>
+This tool takes a MAF file and an interval file and creates a FASTA file which contains merged alignments of user specified species which correspond to the supplied regions.  
+  </help>
+  <code file="interval_maf_to_merged_fasta_user_code.py"/>
+</tool>

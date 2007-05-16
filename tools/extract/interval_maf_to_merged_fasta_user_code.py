@@ -9,7 +9,6 @@ def get_available_species( input_filename ):
         species={}
         try:
             file_in = open(input_filename, 'r')
-            
             maf_reader = maf.Reader( file_in )
             
             for i, m in enumerate( maf_reader ):
@@ -36,5 +35,5 @@ def get_available_species( input_filename ):
             rval.append( ( display,spec,True) )
                 
         return rval
-    except Exception:
+    except:
         return [("<B>You must wait for the MAF file to be created before you can use this tool.</B>",'None',True)]

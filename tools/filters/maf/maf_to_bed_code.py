@@ -9,44 +9,39 @@ def get_available_species( dbkey, input_filename ):
         rval = []
         species={}
         
-        file_in = open(input_filename, 'r')
-        maf_reader = maf.Reader( file_in )
         
-        for i, m in enumerate( maf_reader ):
-            l = m.components
-            for c in l:
-                spec,chrom = maf.src_split( c.src )
-                if not spec or not chrom:
-                    spec = chrom = c.src
-                species[spec]=spec
+        try:
+            file_in = open(input_filename, 'r')
+            maf_reader = maf.Reader( file_in )
+            
+            
+            for i, m in enumerate( maf_reader ):
+                l = m.components
+                for c in l:
+                    spec,chrom = maf.src_split( c.src )
+                    if not spec or not chrom:
+                        spec = chrom = c.src
+                    if spec not in species:
+                        species[spec]={"bases":0,"nongaps":0}
+                    species[spec]["bases"] = species[spec]["bases"] + c.size + c.text.count("-")
+                    species[spec]["nongaps"] = species[spec]["nongaps"] + c.size 
+            
+            file_in.close()
+        except:
+            return [("There is a problem with your MAF file",'None',True)]
+        species_names = species.keys()
+        species_names.sort()
         
-        file_in.close()
-        
-        species = species.keys()
-        species.sort()
-
-        file_in = open(input_filename, 'r')
-        maf_reader = maf.Reader( file_in )
-        
-        species_sequence={}
-        for s in species: species_sequence[s] = []
-        
-        for m in maf_reader:
-            for s in species:
-                c = m.get_component_by_src_start( s ) 
-                if c: species_sequence[s].append( c.text )
-                else: species_sequence[s].append( "-" * m.text_size )
-        
-        file_in.close()
-        
-        rval.append( ("Include all species.",'None',False) )
-        for spec in species:
-            species_sequence[spec] = "".join(species_sequence[spec])
+        for spec in species_names:
+            #species_sequence[spec] = "".join(species_sequence[spec])
+            
             if spec == dbkey:
-                rval.append( ("<b>"+spec + ": "+str(len(species_sequence[spec]) - species_sequence[spec].count("-"))+" nongap, "+ str(len(species_sequence[spec])) + " total bases</b>",spec,True) )
+                display = "<b>%s: %i nongap, %i total bases</b>" % (spec, species[spec]["nongaps"], species[spec]["bases"] )
+                rval.append( ( display,spec,True) )
             else:
-                rval.append( (spec + ": "+str(len(species_sequence[spec]) - species_sequence[spec].count("-"))+" nongap, "+ str(len(species_sequence[spec])) + " total bases",spec,False) )
-                
+                display = "%s: %i nongap, %i total bases" % (spec, species[spec]["nongaps"], species[spec]["bases"] )
+                rval.append( ( display,spec,False) )
+            
         return rval
     except:
         return [("Include all species.",'None',True)]

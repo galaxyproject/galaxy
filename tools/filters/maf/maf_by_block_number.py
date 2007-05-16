@@ -30,12 +30,16 @@ def __main__():
         except:
             failed_lines.append(str(ctr))
             continue
-        maf_reader = bx.align.maf.Reader( open(input_maf_filename, 'r') )
-        count = 0
-        for m in maf_reader:
-            if count == block_wanted:
-                maf_writer.write(m)
-                break
-            count += 1
+        try:
+            maf_reader = bx.align.maf.Reader( open(input_maf_filename, 'r') )
+            count = 0
+            for m in maf_reader:
+                if count == block_wanted:
+                    maf_writer.write(m)
+                    break
+                count += 1
+        except:
+            print >>sys.stderr, "Your MAF file appears to be malformed."
+            sys.exit()
     if len(failed_lines) > 0: print "Failed to extract from %i lines (%s)." % (len(failed_lines), ",".join(failed_lines))
 if __name__ == "__main__": __main__()

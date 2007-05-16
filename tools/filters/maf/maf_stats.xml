@@ -10,6 +10,13 @@
   <outputs>
     <data format="interval" name="out_file1" metadata_source="input2"/>
   </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="4.maf" dbkey="hg17"/>
+      <param name="input2" value="maf_stats_interval_in.dat" dbkey="hg17" format="bed"/>
+      <output name="out_file1" file="maf_stats_interval_out.dat"/>
+    </test>
+  </tests>
   <help>
 This tool takes a MAF file and an interval file and relates coverage information by interval for each species.
 If a column does not exist in the reference genome, it is not included in the output.

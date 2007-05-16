@@ -16,9 +16,12 @@ import sys
 def main():
 
     species = sys.argv[1].split( ',' )
-
-    maf_reader = bx.align.maf.Reader( open(sys.argv[2],'r') )
-    maf_writer = bx.align.maf.Writer( open(sys.argv[3],'w') )
+    try:
+        maf_reader = bx.align.maf.Reader( open(sys.argv[2],'r') )
+        maf_writer = bx.align.maf.Writer( open(sys.argv[3],'w') )
+    except:
+        print >>sys.stderr, "Your MAF file appears to be malformed."
+        sys.exit()
     allow_partial = False
     if int(sys.argv[4]): allow_partial = True
     min_species_per_block = int(sys.argv[5])

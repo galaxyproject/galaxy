@@ -24,19 +24,23 @@ def __main__():
     
     #index maf for use here
     indexes = bx.interval_index_file.Indexes()
-    maf_reader = bx.align.maf.Reader( open( input_maf_filename ) )
-    # Need to be a bit tricky in our iteration here to get the 'tells' right
-    while 1:
-        pos = maf_reader.file.tell()
-        block = maf_reader.next()
-        if block is None: break
-        for c in block.components:
-            indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
-    index_filename = tempfile.NamedTemporaryFile().name
-    out = open(index_filename,'w')
-    indexes.write(out)
-    out.close()
-    index = bx.align.maf.Indexed(input_maf_filename, index_filename = index_filename)
+    try:
+        maf_reader = bx.align.maf.Reader( open( input_maf_filename ) )
+        # Need to be a bit tricky in our iteration here to get the 'tells' right
+        while 1:
+            pos = maf_reader.file.tell()
+            block = maf_reader.next()
+            if block is None: break
+            for c in block.components:
+                indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
+        index_filename = tempfile.NamedTemporaryFile().name
+        out = open(index_filename,'w')
+        indexes.write(out)
+        out.close()
+    except:
+        print >>sys.stderr, "Your MAF file appears to be malformed."
+        sys.exit()
+    index = bx.align.maf.Indexed(input_maf_filename, index_filename = index_filename, keep_open=True)
     
     out = open(output_filename, 'w')
     
@@ -68,7 +72,11 @@ def __main__():
             else:
                 slice_start = max( start, ref.start )
                 slice_end = min( end, ref.end )
-            sliced = maf.slice_by_component( ref, slice_start, slice_end ) 
+            try:
+                sliced = maf.slice_by_component( ref, slice_start, slice_end )
+            except:
+                #print "slicing failed!"
+                continue
             
             #look for gaps (indels) in primary sequence, we do not include these columns in our stats
             gaps = []

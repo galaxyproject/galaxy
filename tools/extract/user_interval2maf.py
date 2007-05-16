@@ -130,9 +130,9 @@ def __main__():
                             continue
                             
                         good = True
-                        for c in sliced.components: 
-                            if c.size < 1: 
-                                good = False
+                        #for c in sliced.components: 
+                        #    if c.size < 1: 
+                        #        good = False
                         if good and sliced.text_size > mincols:
                             if strand != ref.strand: sliced = sliced.reverse_complement()
                             # restore old score, may not be accurate, but it is better than 0 for everything
@@ -148,4 +148,5 @@ def __main__():
         print num_blocks, "MAF blocks extracted."
     except:
         print "Error Reading MAF File"
+    
 if __name__ == "__main__": __main__()

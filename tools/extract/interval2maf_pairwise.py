@@ -43,7 +43,7 @@ def __main__():
     #dictionary of available maf files
     maf_sets = {}
     try:
-        for line in open( "/depot/data2/galaxy/maf_index.loc" ):
+        for line in open( "/depot/data2/galaxy/maf_pairwise.loc" ):
             if line[0:1] == "#" : continue
             fields = line.split('\t')
             #read each line, if not enough fields, go to next line
@@ -73,7 +73,7 @@ def __main__():
                 continue
 
     except Exception, exc:
-        print >>sys.stdout, 'interval2maf.py initialization error -> %s' % exc 
+        print >>sys.stdout, 'interval2maf_pairwise.py initialization error -> %s' % exc 
     
     
     try:
@@ -190,16 +190,6 @@ def __main__():
             start = region.start
             end = region.end
             strand = region.strand
-            #src, start, end = dbkey + "." + fields[chromCol], int( fields[startCol] ), int( fields[endCol] )
-            
-            #if strandCol < 0 or not strand_exists:
-            #    strand = "+"
-            #else:
-            #    strand = fields[strandCol]
-            
-            #do a fix on src, chromosome for mlagan alignments (they lack chr)
-            if mafType == "ENCODE_MLAGAN":
-                src = src.replace(".chr",".")
             
             #if prefix: src = prefix + src
             # Find overlap with reference component
@@ -231,7 +221,6 @@ def __main__():
                 #for c in sliced.components: 
                 #    if c.size < 1: 
                 #        good = False
-                
                 if good and sliced.text_size > mincols:
                     if strand != ref.strand: sliced = sliced.reverse_complement()
                     # restore old score, may not be accurate, but it is better than 0 for everything
