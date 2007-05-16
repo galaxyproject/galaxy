@@ -156,6 +156,19 @@ class Universe(common.Root):
 
         p = util.Params(kwd, safe=False)
         if p.edit_genome_btn:
+            err = None
+            # check for "valid" column assignments first
+            for attr in 'chromCol', 'startCol', 'endCol', 'strandCol':
+                try:
+                    num = int( getattr(p, attr) )
+                    if num < 0: raise Exception()
+                except:
+                    if getattr(p, attr) != "" or attr != 'strandCol':
+                        err = "Column assignments must be numbers greater than zero.  Strand column may be ommitted (set to 0)."
+            if err:
+                trans.log_event( "Edit submitted bad values on dataset %s" % str(id) )
+                return trans.fill_template( "edit.tmpl", data=data, dbnames=util.dbnames, err=err )
+            
             data.name  = p.name
             data.info  = p.info
             data.dbkey = p.dbkey
@@ -187,7 +200,7 @@ class Universe(common.Root):
             return trans.fill_template( "edit_complete.tmpl" )
         else:
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
-            return trans.fill_template( "edit.tmpl", data=data, dbnames=util.dbnames )
+            return trans.fill_template( "edit.tmpl", data=data, dbnames=util.dbnames, err=None )
 
     @web.expose
     def delete( self, trans, id = None, **kwd):

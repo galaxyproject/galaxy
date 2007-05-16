@@ -69,6 +69,9 @@
                         <p>Strand: <input type="textfield" size="2" name="strandCol" value=""> </p>
                      </div>
                   #end if
+		  #if $err
+		  <div style="color: red; font-style: italic; padding-top: 1px; padding-bottom: 3px;">$err</div>
+		  #end if
                   <p><b>Note:</b> The strand column is optional.</p>
                   </div>
                </td>
