@@ -1,2 +1,3 @@
-User-agent: Googlebot
+User-agent: *
 Disallow: /display?
+Disallow: /display_as_bed?
