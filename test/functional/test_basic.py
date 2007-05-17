@@ -34,12 +34,16 @@ class BasicFunctions(TwillTestCase):
         self.check_history('hg16 Testdata bed')
         
         # test switching types
-        self.edit_data(hid=1, dbkey='hg16', chromCol='')
-        self.check_history('hg16 Testdata tabular')
+        # EDITED and changed by INS, 5/17/07
+        # He who rejects change is the architect of decay - Harold Wilson
+        #self.edit_data(hid=1, dbkey='hg16', chromCol='')
+        #self.check_history('hg16 Testdata tabular')
+        #
+        #self.edit_data(hid=1, dbkey='hg15', chromCol='1', info='foo')
+        #self.check_history('hg15 Testdata interval foo')
+        self.edit_data(hid=1, dbkey='hg16', strandCol='')
+        self.check_history('hg16 Testdata interval')
         
-        self.edit_data(hid=1, dbkey='hg15', chromCol='1', info='foo')
-        self.check_history('hg15 Testdata interval foo')
-
     def test_delete(self):
         """Testing individual deletes"""
         self.clear_history()
