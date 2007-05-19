@@ -7,7 +7,7 @@ import logging, util
 log = logging.getLogger(__name__)
 
 class BaseField(object):
-    def get_html( self ):
+    def get_html( self, prefix="" ):
         """Returns the html widget corresponding to the parameter"""
         raise TypeError( "Abstract Method" )
         
@@ -24,18 +24,18 @@ class TextField(BaseField):
         self.name = name
         self.size = int( size or 10 )
         self.value = value or ""
-    def get_html( self ):
-        return '<input type="text" name="%s" size="%d" value="%s">' \
-            % ( self.name, self.size, self.value )
+    def get_html( self, prefix="" ):
+        return '<input type="text" name="%s%s" size="%d" value="%s">' \
+            % ( prefix, self.name, self.size, self.value )
 
 class TextArea(BaseField):
     """
     A standard text area box.
     
     >>> print TextArea( "foo" ).get_html()
-    <textarea name="foo" rows="5" cols="25"></TEXTAREA>
+    <textarea name="foo" rows="5" cols="25"></textarea>
     >>> print TextArea( "bins", size="4x5", value="default" ).get_html()
-    <textarea name="bins" rows="4" cols="5">default</TEXTAREA>
+    <textarea name="bins" rows="4" cols="5">default</textarea>
     """
     def __init__( self, name, size="5x25", value=None ):
         self.name = name
@@ -43,9 +43,9 @@ class TextArea(BaseField):
         self.rows = int(self.size[0])
         self.cols = int(self.size[-1])
         self.value = value or ""
-    def get_html( self ):
-        return '<textarea name="%s" rows="%d" cols="%d">%s</TEXTAREA>' \
-            % (self.name, self.rows, self.cols, self.value)
+    def get_html( self, prefix="" ):
+        return '<textarea name="%s%s" rows="%d" cols="%d">%s</textarea>' \
+            % ( prefix, self.name, self.rows, self.cols, self.value )
 
 class CheckboxField(BaseField):
     """
@@ -60,10 +60,11 @@ class CheckboxField(BaseField):
         if checked is None: checked = False
         self.name = name
         self.checked = ( checked in ( True, "yes", "true", "on" ) )
-    def get_html( self ):
+    def get_html( self, prefix="" ):
         if self.checked: checked_text = " checked"
         else: checked_text = ""
-        return '<input type="checkbox" name="%s" value="true"%s><input type="hidden" name="%s" value="true">' % ( self.name, checked_text, self.name )
+        return '<input type="checkbox" name="%s%s" value="true"%s><input type="hidden" name="%s" value="true">' \
+            % ( prefix, self.name, checked_text, self.name )
     @staticmethod
     def is_checked( value ):
         if type( value ) == list and len( value ) == 2:
@@ -80,8 +81,8 @@ class FileField(BaseField):
     """
     def __init__( self, name ):
         self.name = name
-    def get_html( self ):
-        return '<input type="file" name="%s">' % self.name
+    def get_html( self, prefix="" ):
+        return '<input type="file" name="%s%s">' % ( prefix, self.name )
 
 class HiddenField(BaseField):
     """
@@ -93,8 +94,8 @@ class HiddenField(BaseField):
     def __init__( self, name, value=None ):
         self.name = name
         self.value = value or ""
-    def get_html( self ):
-        return '<input type="hidden" name="%s" value="%s">' % ( self.name, self.value )
+    def get_html( self, prefix="" ):
+        return '<input type="hidden" name="%s%s" value="%s">' % ( prefix, self.name, self.value )
 
 class SelectField(BaseField):
     """
@@ -132,7 +133,7 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3">automatic</div>
     <div><input type="checkbox" name="bar" value="4" checked>bazooty</div>
     """
-    def __init__( self, name, multiple=None, display=None ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False ):
         self.name = name
         self.multiple = multiple or False
         self.options = list()
@@ -143,16 +144,17 @@ class SelectField(BaseField):
         elif display is not None:
             raise Exception, "Unknown display type: %s" % display
         self.display = display
+        self.refresh_on_change = refresh_on_change
     def add_option( self, text, value, selected = False ):
         self.options.append( ( text, value, selected ) )
-    def get_html( self ):
+    def get_html( self, prefix="" ):
         if self.display == "checkboxes":
-            return self.get_html_checkboxes()
+            return self.get_html_checkboxes( prefix )
         elif self.display == "radio":
-            return self.get_html_radio()
+            return self.get_html_radio( prefix)
         else:
-            return self.get_html_default()
-    def get_html_checkboxes( self ):
+            return self.get_html_default( prefix )
+    def get_html_checkboxes( self, prefix="" ):
         rval = []
         ctr = 0
         for text, value, selected in self.options:
@@ -160,12 +162,12 @@ class SelectField(BaseField):
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
             if selected:
-                rval.append( '<div%s><input type="checkbox" name="%s" value="%s" checked>%s</div>' % ( style, self.name, value, text) )
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked>%s</div>' % ( style, prefix, self.name, value, text) )
             else:
-                rval.append( '<div%s><input type="checkbox" name="%s" value="%s">%s</div>' % ( style, self.name, value, text) )
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s">%s</div>' % ( style, prefix, self.name, value, text) )
             ctr += 1
         return "\n".join( rval )
-    def get_html_radio( self ):
+    def get_html_radio( self, prefix="" ):
         rval = []
         ctr = 0
         for text, value, selected in self.options:
@@ -173,15 +175,18 @@ class SelectField(BaseField):
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
             if selected:
-                rval.append( '<div%s><input type="radio" name="%s" value="%s" checked>%s</div>' % ( style, self.name, value, text) )
+                rval.append( '<div%s><input type="radio" name="%s%s" value="%s" checked>%s</div>' % ( style, prefix, self.name, value, text) )
             else:
-                rval.append( '<div%s><input type="radio" name="%s" value="%s">%s</div>' % ( style, self.name, value, text) )
+                rval.append( '<div%s><input type="radio" name="%s%s" value="%s">%s</div>' % ( style, prefix, self.name, value, text) )
             ctr += 1
         return "\n".join( rval )    
-    def get_html_default( self ):
+    def get_html_default( self, prefix="" ):
         if self.multiple: multiple = " multiple"
         else: multiple = ""
-        rval = [ '<select name="%s"%s>' % ( self.name, multiple ) ]
+        if self.refresh_on_change:
+            rval = [ '<select name="%s%s"%s onchange="document.forms[0].submit();">' % ( prefix, self.name, multiple ) ]
+        else:
+            rval = [ '<select name="%s%s"%s>' % ( prefix, self.name, multiple ) ]
         for text, value, selected in self.options:
             if selected: selected_text = " selected"
             else: selected_text = ""

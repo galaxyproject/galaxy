@@ -2,13 +2,24 @@
 Classes encapsulating galaxy tools and tool configuration.
 """
 
+import pkg_resources; 
+pkg_resources.require( "Cheetah" )
+pkg_resources.require( "simplejson" )
+
 import logging, os, string, sys, tempfile
+import simplejson
+
+from UserDict import DictMixin
+from Cheetah.Template import Template
 from cookbook.odict import odict
 from cookbook.patterns import Bunch
 from galaxy import util, jobs, model
 from elementtree import ElementTree
 from parameters import *
+from grouping import *
+from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
+from galaxy.tools.actions import DefaultToolAction
 
 log = logging.getLogger( __name__ )
 
@@ -21,7 +32,11 @@ class ToolBox( object ):
     """
 
     def __init__( self, config_filename, tool_root_dir ):
-        """Create a toolbox from config in 'fname'"""
+        """
+        Create a toolbox from the config file names by `config_filename`,
+        using `tool_root_directory` as the base directory for finding 
+        individual tool config files.
+        """
         self.tools_by_id = {}
         self.tools_and_sections_by_id = {}
         self.sections = []
@@ -32,7 +47,9 @@ class ToolBox( object ):
             log.exception( "ToolBox error reading %s", config_filename )
 
     def init_tools( self, config_filename ):
-        """Reads the individual tool configurations paths from the main configuration file"""
+        """
+        Read the configuration file and load each tool.
+        """
         log.info("parsing the tool configuration")
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
@@ -42,7 +59,7 @@ class ToolBox( object ):
             for tool in elem.findall("tool"):
                 try:
                     path = tool.get("file")
-                    tool = Tool( os.path.join( self.tool_root_dir, path ) )
+                    tool = self.load_tool( os.path.join( self.tool_root_dir, path ) )
                     log.debug( "Loaded tool: %s", tool.id )
                     self.tools_by_id[tool.id] = tool
                     self.tools_and_sections_by_id[tool.id] = tool, section
@@ -50,6 +67,25 @@ class ToolBox( object ):
                 except Exception, exc:
                     log.exception( "error reading tool from path: %s" % path )
             self.sections.append(section)
+        
+    def load_tool( self, config_file ):
+        """
+        Load a single tool from the file named by `config_file` and return 
+        an instance of `Tool`.
+        """
+        # Parse XML configuration file and get the root element
+        tree = util.parse_xml( config_file )
+        root = tree.getroot()
+        # Allow specifying a different tool subclass to instantiate
+        if root.find( "type" ):
+            type_elem = root.find( "type" )
+            module = type_elem.get( 'module', 'galaxy.tools' )
+            cls = type_elem.get( 'class' )
+            mod = __import__( module, globals(), locals(), [cls])
+            ToolClass = getattr( mod, cls )
+        else:
+            ToolClass = Tool
+        return ToolClass( config_file, root )
         
     def reload( self, tool_id ):
         """
@@ -59,7 +95,7 @@ class ToolBox( object ):
         if tool_id not in self.tools_and_sections_by_id:
             raise ToolNotFoundException( "No tool with id %s" % tool_id )
         old_tool, section = self.tools_and_sections_by_id[ tool_id ]
-        new_tool = Tool( old_tool.config_file )
+        new_tool = self.load_tool( old_tool.config_file )
         log.debug( "Reloaded tool %s", old_tool.id )
         # Is there a potential sync problem here? This should be roughly 
         # atomic. Too many indexes for tools...
@@ -68,57 +104,77 @@ class ToolBox( object ):
         self.tools_and_sections_by_id[ tool_id ] = new_tool, section
         
     def itertools( self ):
-        """Return any tests associated with tools"""
+        """
+        Iterate over all the tools in the toolbox (ordered by section but
+        without grouping).
+        """
         for section in self.sections:
             for tool in section.tools:
                 yield tool
 
-    def __str__(self):
-        return "%s: %s" % (self.__class__.__name__, self.tools_by_id)
-
 class ToolSection( object ):
-    """A group of tools with similar type/purpose"""
-
-    def __init__( self, elem):
-        """Creates a tool section"""
-        self.name = elem.get("name")
-        self.id   = elem.get("id")
+    """
+    A group of tools with similar type/purpose that will be displayed as a
+    group in the user interface.
+    """
+    def __init__( self, elem ):
+        self.name = elem.get( "name" )
+        self.id = elem.get( "id" )
         self.tools = []
 
-    def __str__( self ):
-        return "%s: %s (%s)" % (self.__class__.__name__ , self.name, self.id) 
-
 class DefaultToolState( object ):
+    """
+    Keeps track of the state of a users interaction with a tool between 
+    requests. The default tool state keeps track of the current page (for 
+    multipage "wizard" tools) and the values of all parameters.
+    """
     def __init__( self ):
         self.page = 0
-        self.params = {}
+        self.inputs = None
+    def encode( self, tool, app ):
+        """
+        Convert the data to a pickleable form
+        """
+        rval = tool.params_to_strings( self.inputs, app )
+        rval["__page__"] = self.page  
+        return rval      
+    def decode( self, values, tool, app ):
+        """
+        Restore the state from pickleable form
+        """
+        self.page = values.pop( "__page__" )
+        self.inputs = tool.params_from_strings( values, app, ignore_errors=True )
 
 class Tool:
     """
-    Creates a tool class from a tool specification
+    Represents a computational tool that can be executed through Galaxy. 
     """
-    def __init__( self, config_file ):
+    def __init__( self, config_file, root ):
         """
-        Load a tool from 'config file'
+        Load a tool from the config named by `config_file`
         """
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
-        # Parse XML configuration file and get the root element
-        tree  = util.parse_xml( self.config_file )
-        root  = tree.getroot()
+        # Parse XML element containing configuration
+        self.parse( root )
+        
+    def parse( self, root ):
+        """
+        Read tool configuration from the element `root` and fill in `self`.
+        """
         # Get the (user visible) name of the tool
         self.name = root.get("name")
         if not self.name: raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
         # TODO: can this be generated automatically?
-        self.id   = root.get("id")
+        self.id = root.get("id")
         if not self.id: raise Exception, "Missing tool 'id'" 
         # Command line (template). Optional for tools that do not invoke a 
         # local program  
         command = root.find("command")
         if command is not None:
-            self.command = util.xml_text(root, "command") # get rid of whitespace
+            self.command = command.text.lstrip() # get rid of leading whitespace
             interpreter  = command.get("interpreter")
             if interpreter:
                 self.command = interpreter + " " + os.path.join(self.tool_dir, self.command)
@@ -136,7 +192,7 @@ class Tool:
             code_path = os.path.join( self.tool_dir, file_name )
             execfile( code_path, self.code_namespace )
         # Load any tool specific options (optional)
-        self.options = {'sanitize':True, 'refresh':False}
+        self.options = dict( sanitize=True, refresh=False )
         for option_elem in root.findall("options"):
             for option, value in self.options.copy().items():
                 if isinstance(value, type(False)):
@@ -144,73 +200,10 @@ class Tool:
                 else:
                     self.options[option] = option_elem.get(option, str(value))
         self.options = Bunch(** self.options)
-        # Load parameters (optional)
-        input_elem = root.find("inputs")
-        if input_elem:
-            # Handle properties of the input form
-            self.check_values = util.string_as_bool( input_elem.get("check_values", "true") )
-            self.action = input_elem.get( "action", "/tool_runner/index")
-            self.target = input_elem.get( "target", "galaxy_main" )
-            self.method = input_elem.get( "method", "post" )
-            # Parse the actual parameters
-            self.param_map = odict()
-            self.param_map_by_page = list()
-            self.display_by_page = list()
-            enctypes = set()
-            # Handle multiple page case
-            pages = input_elem.findall( "page" )
-            for page in ( pages or [ input_elem ] ):
-                display, param_map = self.parse_page( page, enctypes )
-                self.param_map_by_page.append( param_map )
-                self.param_map.update( param_map )
-                self.display_by_page.append( display )
-            self.display = self.display_by_page[0]
-            self.npages = len( self.param_map_by_page )
-            self.last_page = len( self.param_map_by_page ) - 1
-            self.has_multiple_pages = bool( self.last_page )
-            # Determine the needed enctype for the form
-            if len( enctypes ) == 0:
-                self.enctype = "application/x-www-form-urlencoded"
-            elif len( enctypes ) == 1:
-                self.enctype = enctypes.pop()
-            else:
-                raise Exception, "Conflicting required enctypes: %s" % str( enctypes )
-        # Check if the tool either has no parameters or only hidden (and
-        # thus hardcoded) parameters. FIXME: hidden parameters aren't
-        # parameters at all really, and should be passed in a different
-        # way, making this check easier.
-        self.input_required = False
-        for param in self.param_map.values():
-            if not isinstance( param, ( HiddenToolParameter, BaseURLToolParameter ) ):
-                self.input_required = True
-                break
-        # Longer help text for the tool. Formatted in RST
-        # TODO: Allow raw HTML or an external link.
-        self.help = root.find("help")
-        self.help_by_page = list()
-        help_header = ""
-        help_footer = ""
-        if self.help is not None:
-            help_pages = self.help.findall( "page" )
-            help_header = self.help.text
-            try:
-                self.help = util.rst_to_html(self.help.text)
-            except:
-                log.exception( "error in help for tool %s" % self.name )
-            # Multiple help page case
-            if help_pages:
-                for help_page in help_pages:
-                    self.help_by_page.append( help_page.text )
-                    help_footer = help_footer + help_page.tail
-        # Each page has to rendered all-together because of backreferences allowed by rst
-        try:
-            self.help_by_page = [ \
-                util.rst_to_html(help_header + x + help_footer) for x in self.help_by_page \
-                ]
-        except:
-            log.exception( "error in multi-page help for tool %s" % self.name )
-        # Pad out help pages to match npages ... could this be done better?
-        while len(self.help_by_page) < self.npages: self.help_by_page.append( self.help )
+        # Parse tool inputs (if there are any required)
+        self.parse_inputs( root )
+        # Parse tool help
+        self.parse_help( root )
         # FIXME: This is not used anywhere, what does it do?
         # url redirection to ougoings
         self.redir_url  = root.find("url")
@@ -223,7 +216,16 @@ class Tool:
                 format = data_elem.get("format", "data")
                 metadata_source = data_elem.get("metadata_source", "")
                 parent = data_elem.get("parent", None)
-                self.outputs[name] = (format, metadata_source, parent) 
+                self.outputs[name] = (format, metadata_source, parent)
+        # Any extra generated config files for the tool
+        self.config_files = []
+        conf_parent_elem = root.find("configfiles")
+        if conf_parent_elem:
+            for conf_elem in conf_parent_elem.findall( "configfile" ):
+                name = conf_elem.get( "name" )
+                filename = conf_elem.get( "filename", None )
+                text = conf_elem.text
+                self.config_files.append( ( name, filename, text ) )
         # Action
         action_elem = root.find( "action" )
         if action_elem is None:
@@ -243,8 +245,89 @@ class Tool:
         else:
             self.tests = None
             
+    def parse_inputs( self, root ):
+        """
+        Parse the "<inputs>" element and create appropriate `ToolParameter`s.
+        This implementation supports multiple pages and grouping constructs.
+        """
+        # Load parameters (optional)
+        input_elem = root.find("inputs")
+        if input_elem:
+            # Handle properties of the input form
+            self.check_values = util.string_as_bool( input_elem.get("check_values", "true") )
+            self.action = input_elem.get( "action", "/tool_runner/index")
+            self.target = input_elem.get( "target", "galaxy_main" )
+            self.method = input_elem.get( "method", "post" )
+            # Parse the actual parameters
+            self.inputs = odict()
+            self.inputs_by_page = list()
+            self.display_by_page = list()
+            enctypes = set()
+            # Handle multiple page case
+            pages = input_elem.findall( "page" )
+            for page in ( pages or [ input_elem ] ):
+                display, inputs = self.parse_input_page( page, enctypes )
+                self.inputs_by_page.append( inputs )
+                self.inputs.update( inputs )
+                self.display_by_page.append( display )
+            self.display = self.display_by_page[0]
+            self.npages = len( self.inputs_by_page )
+            self.last_page = len( self.inputs_by_page ) - 1
+            self.has_multiple_pages = bool( self.last_page )
+            # Determine the needed enctype for the form
+            if len( enctypes ) == 0:
+                self.enctype = "application/x-www-form-urlencoded"
+            elif len( enctypes ) == 1:
+                self.enctype = enctypes.pop()
+            else:
+                raise Exception, "Conflicting required enctypes: %s" % str( enctypes )
+        # Check if the tool either has no parameters or only hidden (and
+        # thus hardcoded) parameters. FIXME: hidden parameters aren't
+        # parameters at all really, and should be passed in a different
+        # way, making this check easier.
+        self.input_required = False
+        for param in self.inputs.values():
+            if not isinstance( param, ( HiddenToolParameter, BaseURLToolParameter ) ):
+                self.input_required = True
+                break
+                
+    def parse_help( self, root ):
+        """
+        Parse the help text for the tool. Formatted in reStructuredText.
+        This implementation supports multiple pages.
+        """
+        # TODO: Allow raw HTML or an external link.
+        self.help = root.find("help")
+        self.help_by_page = list()
+        help_header = ""
+        help_footer = ""
+        if self.help is not None:
+            help_pages = self.help.findall( "page" )
+            help_header = self.help.text
+            try:
+                self.help = util.rst_to_html(self.help.text)
+            except:
+                log.exception( "error in help for tool %s" % self.name )
+            # Multiple help page case
+            if help_pages:
+                for help_page in help_pages:
+                    self.help_by_page.append( help_page.text )
+                    help_footer = help_footer + help_page.tail
+        # Each page has to rendered all-together because of backreferences allowed by rst
+        try:
+            self.help_by_page = [ util.rst_to_html( help_header + x + help_footer )
+                                  for x in self.help_by_page ]
+        except:
+            log.exception( "error in multi-page help for tool %s" % self.name )
+        # Pad out help pages to match npages ... could this be done better?
+        while len( self.help_by_page ) < self.npages: 
+            self.help_by_page.append( self.help )
+            
     def parse_tests( self, tests_elem ):
-        """Parse any 'test' elements and save"""
+        """
+        Parse any "<test>" elements, create a `ToolTestBuilder` for each and
+        store in `self.tests`.
+        """
         self.tests = []
         for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
             name = test_elem.get( 'name', 'Test-%d' % (i+1) )
@@ -273,107 +356,302 @@ class Tool:
                 test.exception = e
             self.tests.append( test )
             
-    def parse_page( self, input_elem, enctypes ):
-        param_map = odict()
-        for param_elem in input_elem.findall("param"):
-            param = ToolParameter.build( self, param_elem )
-            param_map[param.name] = param
-            param_enctype = param.get_required_enctype()
-            if param_enctype:
-                enctypes.add( param_enctype )
+    def parse_input_page( self, input_elem, enctypes ):
+        """
+        Parse a page of inputs. This basically just calls 'parse_input_elem',
+        but it also deals with possible 'display' elements which are supported
+        only at the top/page level (not in groups).
+        """
+        inputs = self.parse_input_elem( input_elem, enctypes )
+        # Display
         display_elem = input_elem.find("display")
         if display_elem is not None:
             display = util.xml_to_string(display_elem)
         else:
             display = None
-        return display, param_map
+        return display, inputs
+        
+    def parse_input_elem( self, parent_elem, enctypes ):
+        """
+        Parse a parent element whose children are inputs -- these could be 
+        groups (repeat, conditional) or param elements. Groups will be parsed
+        recursively.
+        """
+        rval = odict()
+        for elem in parent_elem:
+            # Repeat group
+            if elem.tag == "repeat":
+                group = Repeat()
+                group.name = elem.get( "name" )
+                group.title = elem.get( "title" ) 
+                group.inputs = self.parse_input_elem( elem, enctypes )  
+                rval[group.name] = group
+            elif elem.tag == "conditional":
+                group = Conditional()
+                group.name = elem.get( "name" )
+                # Should have one child "input" which determines the case
+                input_elem = elem.find( "param" )
+                assert input_elem is not None, "<conditional> must have a child <param>"
+                group.test_param = self.parse_param_elem( input_elem, enctypes )
+                # And a set of possible cases
+                for case_elem in elem.findall( "when" ):
+                    case = ConditionalWhen()
+                    case.value = case_elem.get( "value" )
+                    case.inputs = self.parse_input_elem( case_elem, enctypes )
+                    group.cases.append( case )
+                rval[group.name] = group
+            elif elem.tag == "param":
+                param = self.parse_param_elem( elem, enctypes )
+                rval[param.name] = param
+        return rval
+
+    def parse_param_elem( self, input_elem, enctypes ):
+        """
+        Parse a single "<param>" element and return a ToolParameter instance. 
+        Also, if the parameter has a 'required_enctype' add it to the set
+        enctypes.
+        """
+        param = ToolParameter.build( self, input_elem )
+        param_enctype = param.get_required_enctype()
+        if param_enctype:
+            enctypes.add( param_enctype )
+        return param
+
+    def new_state( self, trans ):
+        """
+        Create a new `DefaultToolState` for this tool. It will be initialized
+        based on `self.inputs` with appropriate default values.
+        """
+        state = DefaultToolState()
+        state.inputs = {}
+        self.fill_in_new_state( trans, self.inputs_by_page[ 0 ], state.inputs )
+        return state
+
+    def fill_in_new_state( self, trans, inputs, state ):
+        """
+        Fill in a state dictionary with default values taken from input.
+        Grouping elements are filled in recursively. 
+        """
+        for input in inputs.itervalues():
+            if isinstance( input, Repeat ):  
+                state[ input.name ] = []
+            elif isinstance( input, Conditional ):
+                s = state[ input.name ] = {}
+                test_value = input.test_param.get_initial_value( trans, state )
+                current_case = input.get_current_case( test_value, trans )
+                self.fill_in_new_state( trans, input.cases[current_case].inputs, s )
+                # Store the current case in a special value
+                s['__current_case__'] = current_case
+                # Store the value of the test element
+                s[ input.test_param.name ] = test_value
+            else:
+                value = input.get_initial_value( trans, state )
+                state[ input.name ] = value
 
     def get_param_html_map( self, trans, page=0 ):
-        """Map containing HTML representation of each parameter"""
-        return dict( ( key, param.get_html( trans ) ) for key, param in self.param_map_by_page[page].iteritems() )
+        """
+        Return a dictionary containing the HTML representation of each 
+        parameter. This is used for rendering display elements. It is 
+        currently not compatible with grouping constructs.
+        """
+        rval = dict()
+        for key, param in self.inputs_by_page[page].iteritems():
+            if not isinstance( param, ToolParameter ):
+               raise Exception( "'get_param_html_map' only supported for simple paramters" )
+            rval[key] = param.get_html( trans )
+        return rval
 
-    def get_param(self, key):
-        """Returns a parameter by name"""
-        return self.param_map.get(key, None)
-
-    def __str__(self):
-        return "%s: %s (%s)" % (self.__class__.__name__ , self.name, self.id)
+    def get_param( self, key ):
+        """
+        Returns the parameter named `key` or None if there is no such 
+        parameter.
+        """
+        return self.inputs.get( key, None )
 
     def get_hook(self, name):
-        """Returns an externally loaded object from the namespace"""
+        """
+        Returns an object from the code file referenced by `code_namespace`
+        (this will normally be a callable object)
+        """
         if self.code_namespace and name in self.code_namespace:
             return self.code_namespace[name]
         return None
+        
+    def visit_inputs( self, value, callback ):
+        # HACK: Yet another hack around check_values
+        if not self.check_values:
+            return
+        for input in self.inputs.itervalues():
+            if isinstance( input, ToolParameter ):
+                callback( "", input, value[input.name] )
+            else:
+                input.visit_inputs( "", value[input.name], callback )
 
     def handle_input( self, trans, incoming ):
-        """Process incoming parameters for this tool"""
+        """
+        Process incoming parameters for this tool from the dict `incoming`,
+        update the tool state (or create if none existed), and either return
+        to the form or execute the tool (only if 'execute' was clicked and
+        there were no errors).
+        """
         # Get the state or create if not found
         if "tool_state" in incoming:
-            state = util.string_to_object( incoming["tool_state"] )
-        else:
+            encoded_state = util.string_to_object( incoming["tool_state"] )
             state = DefaultToolState()
+            state.decode( encoded_state, self, trans.app )
+        else:
+            state = self.new_state( trans )
             # This feels a bit like a hack
             if "runtool_btn" not in incoming and "URL" not in incoming:
                 return "tool_form.tmpl", dict( errors={}, tool_state=state, param_values={}, incoming={} )
-        # Check that values from previous page are all there
-        params = dict()
-        for p in range( state.page ):
-            for param in self.param_map_by_page[p].values():
-                if param.name in state.params:
-                    params[param.name] = param.filter_value( state.params[ param.name ], trans, params )
-                else:
-                    raise Exception( "Value from previous page is not stored!" )
+        # Fill in everything we can in the state and keep track of errors
         # Now process new parameters for the current page
-        error_map = dict()
         if self.check_values:
-            # Validate each parameter
-            for param in self.param_map_by_page[state.page].values():
-                try:
-                    value = orig_value = incoming.get( param.name, None )
-                    if param.name == 'file_data':
-                        value = orig_value
-                    elif orig_value is not None or isinstance(param, DataToolParameter):
-                        # Allow the value to be converted if neccesary
-                        value = param.filter_value( orig_value, trans, params )
-                        # Then do any further validation on the value
-                        param.validate( value, trans.history )
-                    # All okay, stuff it back into the parameter map
-                    state.params[param.name] = orig_value
-                    params[param.name] = value
-                except ValueError, e:
-                    error_map[param.name] = str( e )
+            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming )
             # Any tool specific validation
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
-                validate_input( trans, error_map, params, self.param_map_by_page[state.page] )
+                validate_input( trans, errors, state.inputs, self.inputs_by_page[state.page] )
+            params = state.inputs
         else:
+            errors = {}
             params = incoming
-        
-        #Add Tool Parameters to tool's namespace.
-        self.code_namespace['GALAXY_TOOL_PARAMS']=Bunch(** params)
-        
-        # If there were errors, we stay on the same page and display 
-        # error messages
-        if error_map:
-            error_message = "One or more errors were found in the input you provided. The specific errors are marked below."    
-            return "tool_form.tmpl", dict( errors=error_map, tool_state=state, param_values=params, incoming=incoming, error_message=error_message )
-        # If we've completed the last page we can execute the tool
-        elif state.page == self.last_page:
-            out_data = self.execute( trans, params )
-            return 'tool_executed.tmpl', dict( out_data=out_data )
-        # Otherwise move on to the next page
+        # Did the user actually click next / execute or is this just
+        # a refresh?
+        if 'runtool_btn' in incoming or 'URL' in incoming:
+            # If there were errors, we stay on the same page and display 
+            # error messages
+            if errors:
+                error_message = "One or more errors were found in the input you provided. The specific errors are marked below."    
+                return "tool_form.tmpl", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
+            # If we've completed the last page we can execute the tool
+            elif state.page == self.last_page:
+                out_data = self.execute( trans, params )
+                return 'tool_executed.tmpl', dict( out_data=out_data )
+            # Otherwise move on to the next page
+            else:
+                state.page += 1
+                # Fill in the default values for the next page
+                self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
+                return 'tool_form.tmpl', dict( errors=errors, tool_state=state )
         else:
-            state.page += 1
-            return 'tool_form.tmpl', dict( errors={}, tool_state=state, param_values=params, incoming=incoming )
+            return 'tool_form.tmpl', dict( errors=errors, tool_state=state )
+      
+    def update_state( self, trans, inputs, state, incoming, prefix = "", context=None ):
+        """
+        Update the tool state in `state` using the user input in `incoming`. 
+        This is designed to be called recursively: `inputs` contains the
+        set of inputs being processed, and `prefix` specifies a prefix to
+        add to the name of each input to extract it's value from `incoming`.
+        """
+        errors = dict()       
+        # Push this level onto the context stack
+        context = ExpressionContext( state, context )
+        # Iterate inputs and update (recursively)
+        for input in inputs.itervalues():
+            key = prefix + input.name
+            if isinstance( input, Repeat ):
+                group_state = state[input.name]
+                group_errors = []
+                any_group_errors = False
+                # Check any removals before updating state
+                for i in range( len( group_state ) ):                    
+                    if input.name + "_" + str(i) + "_remove" in incoming:
+                        del group_state[i]
+                # Update state
+                for i in range( len( group_state ) ):
+                    prefix = "%s_%d|" % ( key, i )
+                    rep_errors = self.update_state( trans,
+                                                    input.inputs, 
+                                                    group_state[i], 
+                                                    incoming, 
+                                                    prefix,
+                                                    context )
+                    if rep_errors:
+                        any_group_errors = True
+                        group_errors.append( rep_errors )
+                    else:
+                        group_errors.append( {} )
+                # Check for addition
+                if input.name + "_add" in incoming:
+                    new_state = {}
+                    self.fill_in_new_state( trans, input.inputs, new_state )
+                    group_state.append( new_state )
+                    if any_group_errors:
+                        group_errors.append( {} )
+                # Were there *any* errors for any repetition?
+                if any_group_errors:
+                    errors[input.name] = group_errors
+            elif isinstance( input, Conditional ):
+                group_state = state[input.name]
+                old_current_case = group_state['__current_case__']
+                prefix = "%s|" % ( key )
+                # Deal with the 'test' element and see if it's value changed
+                test_incoming = incoming.get( prefix + input.test_param.name, None )
+                value, test_param_error = \
+                    self.check_param( trans, input.test_param, test_incoming, group_state )
+                current_case = input.get_current_case( value, trans )
+                if current_case != old_current_case:
+                    # Current case has changed, throw away old state
+                    group_state = state[input.name] = {}
+                    # TODO: we should try to preserve values if we can
+                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state )
+                    group_errors = dict()
+                else:
+                    # Current case has not changed, update children
+                    group_errors = self.update_state( trans, 
+                                                      input.cases[current_case].inputs, 
+                                                      group_state,
+                                                      incoming, 
+                                                      prefix )
+                if test_param_error:
+                    group_errors[ input.test_param.name ] = test_param_error
+                if group_errors:
+                    errors[ input.name ] = group_errors
+                # Store the current case in a special value
+                group_state['__current_case__'] = current_case
+                # Store the value of the test element
+                group_state[ input.test_param.name ] = value
+            else:
+                incoming_value = incoming.get( key, None )
+                value, error = self.check_param( trans, input, incoming_value, state )
+                if error:
+                    errors[ input.name ] = error
+                state[input.name] = value
+        return errors
+            
+    def check_param( self, trans, param, incoming_value, param_values ):
+        """
+        Check the value of a single parameter `param`. The value in 
+        `incoming_value` is converted from its HTML encoding and validated.
+        The `param_values` argument contains the processed values of 
+        previous parameters (this may actually be an ExpressionContext 
+        when dealing with grouping scenarios).
+        """
+        value = incoming_value
+        error = None
+        try:
+            if param.name == 'file_data':
+                pass
+            elif value is not None or isinstance(param, DataToolParameter):
+                # Convert value from HTML representation
+                value = param.from_html( value, trans, param_values )
+                # Allow the value to be converted if neccesary
+                filtered_value = param.filter_value( value, trans, param_values )
+                # Then do any further validation on the value
+                param.validate( filtered_value, trans.history )
+        except ValueError, e:
+            error = str( e )
+        return value, error
             
     def get_static_param_values( self, trans ):
         """
-        Returns a map of parameter names and values if the tool does
-        not require any user input. Will raise an exception if a
-        parameter that does require input exists.
+        Returns a map of parameter names and values if the tool does not 
+        require any user input. Will raise an exception if any parameter
+        does require input.
         """
         args = dict()
-        for key, param in self.param_map.iteritems():
+        for key, param in self.inputs.iteritems():
             if isinstance( param, HiddenToolParameter ):
                 args[key] = param.value
             elif isinstance( param, BaseURLToolParameter ):
@@ -383,52 +661,76 @@ class Tool:
         return args
             
     def execute( self, trans, incoming={} ):
+        """
+        Execute the tool using parameter values in `incoming`. This just
+        dispatches to the `ToolAction` instance specified by 
+        `self.tool_action`. In general this will create a `Job` that 
+        when run will build the tool's outputs, e.g. `DefaultToolAction`.
+        """
         return self.tool_action.execute( self, trans, incoming )
         
     def params_to_strings( self, params, app ):
+        """
+        Convert a dictionary of parameter values to a dictionary of strings
+        suitable for persisting. The `value_to_basic` method of each parameter
+        is called to convert its value to basic types, the result of which
+        is then json encoded (this allowing complex nested parameters and 
+        such).
+        """
         rval = dict()
         for key, value in params.iteritems():
-            if isinstance( value, list ):
-                rval[ key ] = [str(value[0])]
-                i=1
-                while i < len(value):
-                    rval[ key ].append( str( value[i] ) )
-                    i += 1
-                rval[key] = str(rval[key])
+            if key in self.inputs:
+                basic = self.inputs[ key ].value_to_basic( value, app )
+                rval[ key ] = simplejson.dumps( basic )
             else:
-                if key in self.param_map:
-                    rval[ key ] = self.param_map[key].to_string( value, app )
-                else:
-                    rval[ key ] = str( value )
+                rval[ key ] = value
         return rval
         
-    def params_to_python( self, params, app ):
+    def params_from_strings( self, params, app, ignore_errors=False ):
+        """
+        Convert a dictionary of strings as produced by `params_to_strings`
+        back into parameter values (decode the json representation and then
+        allow each parameter to convert the basic types into the parameters
+        preferred form).
+        """
         rval = dict()
         for key, value in params.iteritems():
-            if isinstance( value, list ):
-                rval[ key ] = [str(value[0])]
-                i=1
-                while i < len(value):
-                    if key in self.param_map:
-                        rval[ key ].append(self.param_map[key].to_python( value[i], app ))
-                    else:
-                        rval[ key ].append(value[i]) 
-                    i+=1
+            if key in self.inputs:
+                basic = simplejson.loads( value )
+                rval[ key ] = self.inputs[key].value_from_basic( basic, app, ignore_errors )
             else:
-                if key in self.param_map:
-                    rval[ key ] = self.param_map[key].to_python( value, app )
-                else:
-                    rval[ key ] = value 
+                rval[ key ] = value 
         return rval
         
     def build_param_dict( self, incoming, input_datasets, output_datasets ):
         """
         Build the dictionary of parameters for substituting into the command
-        line.
+        line. Each value is wrapped in a `InputValueWrapper`, which allows
+        all the attributes of the value to be used in the template, *but* 
+        when the __str__ method is called it actually calls the 
+        `to_param_dict_value` method of the associated input.
         """
         param_dict = dict()
-        # All converted posted parameters go int the param dict
+        # All parameters go into the param_dict
         param_dict.update( incoming )
+        # Wrap parameters as neccesary
+        def wrap_values( inputs, input_values ):
+            for input in inputs.itervalues():
+                if isinstance( input, Repeat ):  
+                    for d in input_values[ input.name ]:
+                        wrap_values( input.inputs, d )
+                elif isinstance( input, Conditional ):
+                    values = input_values[ input.name ]
+                    current = values["__current_case__"]
+                    wrap_values( input.cases[current].inputs, values )
+                else:
+                    input_values[ input.name ] = \
+                        InputValueWrapper( input, input_values[ input.name ] )
+        # HACK: only wrap if check_values is false, this deals with external
+        #       tools where the inputs don't even get passed through. These
+        #       tools (e.g. UCSC) should really be handled in a special way.
+        if self.check_values:
+            wrap_values( self.inputs, param_dict )
         # Additionally, datasets go in the param dict. We wrap them such that
         # if the bare variable name is used it returns the filename (for
         # backwards compatibility). We also add any child datasets to the
@@ -451,12 +753,12 @@ class Tool:
         # Return the dictionary of parameters        
         return param_dict
     
-    def build_param_file( self, param_dict ):
+    def build_param_file( self, param_dict, directory=None ):
         """
         Build temporary file for file based parameter transfer if needed
         """
         if self.command and "$param_file" in self.command:
-            fd, param_filename = tempfile.mkstemp()
+            fd, param_filename = tempfile.mkstemp( dir=directory )
             os.close( fd )
             f = open( param_filename, "wt" )
             for key, value in param_dict.items():
@@ -470,29 +772,46 @@ class Tool:
             return param_filename
         else:
             return None
+            
+    def build_config_files( self, param_dict, directory=None ):
+        """
+        Build temporary file for file based parameter transfer if needed
+        """
+        config_filenames = []
+        for name, filename, template_text in self.config_files:
+            # If a particular filename was forced by the config use it
+            if filename is not None:
+                if directory is None:
+                    raise Exception( "Config files with fixed filenames require a working directory" )
+                config_filename = os.path.join( directory, filename )
+            else:
+                fd, config_filename = tempfile.mkstemp( dir=directory )
+                os.close( fd )
+            f = open( config_filename, "wt" )
+            template = Template( source=template_text, searchList=[param_dict] )
+            f.write( str( template ) )
+            f.close()
+            param_dict[name] = config_filename
+            config_filenames.append( config_filename )
+        return config_filenames
         
     def build_command_line( self, param_dict ):
         """
         Build command line to invoke this tool given a populated param_dict
         """
         command_line = None
-        if self.command:
-            try:                
-                # Substituting parameters into the command
-                # TODO: replace with a real template (Cheetah)
-                for key in param_dict.keys():
-                    if isinstance(param_dict[key], list):
-                        #Convert a list of dataset instances to dataset IDs for multiple dataset selection case
-                        for j,item in enumerate(param_dict[key]):
-                            if isinstance(item, model.Dataset):
-                                param_dict[key][j] =  item.id
-                            else:
-                                break
-                command_line = string.Template( self.command ).substitute( param_dict )
-            except Exception, e:
-                # Modify exception message to be more clear
-                e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ) )
-                raise
+        if not self.command:
+            return
+        try:                
+            # Substituting parameters into the command
+            template = Template( source=self.command, searchList=[param_dict] )
+            command_line = str( template )  
+            # Remove newlines from command line
+            command_line = command_line.replace( "\n", " " ).replace( "\r", " " )
+        except Exception, e:
+            # Modify exception message to be more clear
+            #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ) )
+            raise
         return command_line
         
     def call_hook( self, hook_name, *args, **kwargs ):
@@ -505,190 +824,27 @@ class Tool:
             if code:
                 return code( *args, **kwargs )
         except Exception, e:
-            raise Exception, "Error in '%s' hook: %s" % ( hook_name, e )
-
-class ToolAction( object ):
-    """
-    The actions to be taken when a tool is run (after parameters have
-    been converted and validated).
-    """
-    def execute( self, tool, trans, incoming={} ):
-        raise TypeError("Abstract method")
-    
-class DefaultToolAction( object ):
-    """
-    Default tool action is to run an external command
-    """
-    
-    def collect_input_datasets( self, tool, incoming ):
-        """
-        Collect any dataset inputs from incoming. Returns a mapping from 
-        parameter name to Dataset instance for each tool parameter that is
-        of the DataToolParameter type.
-        """
-        input_datasets = dict()
-        for name, value in incoming.iteritems():
-            param = tool.get_param( name )
-            if param and isinstance( param, DataToolParameter ):
-                if isinstance( value, list ):
-                    # If there are multiple inputs with the same name, they
-                    # are stored as name1, name2, ...
-                    for i, v in enumerate( value ):
-                        input_datasets[ name + str( i + 1 ) ] = v
-                else:
-                    input_datasets[ name ] = value
-        return input_datasets
-    
-    def execute(self, tool, trans, incoming={} ):
-        out_data   = {}
-        
-        # Collect any input datasets from the incoming parameters
-        inp_data = self.collect_input_datasets( tool, incoming )
-        
-        # Deal with input metadata, 'dbkey', names, and types
-        
-        # FIXME: does this need to modify 'incoming' or should this be 
-        #        moved into 'build_param_dict'? Is this just about getting the
-        #        metadata into the command line? 
-        input_names = []
-        input_ext = 'data'
-        input_dbkey = incoming.get( "dbkey", "?" )
-        input_meta = Bunch()
-        for name, data in inp_data.items():
-            # Hack for fake incoming data
-            if data == None:
-                data = trans.app.model.Dataset()
-                data.state = data.states.FAKE
-            input_names.append( 'data %s' % data.hid )
-            input_ext = data.ext
-            if data.dbkey not in [None, '?']:
-                input_dbkey = data.dbkey
-            for meta_key, meta_value in data.metadata.items():
-                if meta_value is not None:
-                    meta_key = '%s_%s' % (name, meta_key)
-                    incoming[meta_key] = meta_value
-
-        # Build name for output datasets based on tool name and input names
-        output_base_name = tool.name
-        if input_names:
-            output_base_name += ' on ' + ', '.join( input_names )
-        
-        # Add the dbkey to the incoming parameters
-        incoming[ "dbkey" ] = input_dbkey
-        
-        # Keep track of parent / child relationships, we'll create all the 
-        # datasets first, then create the associations
-        parent_to_child_pairs = []
-        child_dataset_names = set()
-        
-        for name, elems in tool.outputs.items():
-            ( ext, metadata_source, parent ) = elems
-            if parent:
-                parent_to_child_pairs.append( ( parent, name ) )
-                child_dataset_names.add( name )
-            ## What is the following hack for? Need to document under what 
-            ## conditions can the following occur? (james@bx.psu.edu)
-            # HACK: the output data has already been created
-            if name in incoming:
-                dataid = incoming[name]
-                data = trans.app.model.Dataset.get( dataid )
-                assert data != None
-                out_data[name] = data
-                continue 
-            # the type should match the input
-            if ext == "input":
-                ext = input_ext
-            # FIXME: What does this flush?
-            trans.app.model.flush()
-            data = trans.app.model.Dataset()
-            # Commit the dataset immediately so it gets database assigned 
-            # unique id
-            data.flush()
-            # Create an empty file immediately
-            open( data.file_name, "w" ).close()
-            # FIXME: What does this flush?
-            trans.app.model.flush()
-            # This may not be neccesary with the new parent/child associations
-            data.designation = name
-            # Set the extension / datatype
-            # FIXME: Datatypes -- this propertype has a lot of hidden logic
-            data.extension = ext
-            # Copy metadata from one of the inputs if requested. 
-            # FIXME: init_meta should take a dataset to copy from as an 
-            # argument
-            if metadata_source:
-                data.metadata = Bunch( ** inp_data[metadata_source].metadata.__dict__ )
-            else:
-                data.init_meta()
-            # Take dbkey from LAST input
-            data.dbkey = input_dbkey
-            # Default attributes
-            data.state = data.states.QUEUED
-            data.blurb = "queued"
-            data.name  = output_base_name
-            out_data[ name ] = data
-            # Store all changes to database
-            trans.app.model.flush()
-                        
-        # Add all the top-level (non-child) datasets to the history
-        for name in out_data.keys():
-            if name not in child_dataset_names:
-                data = out_data[ name ]
-                trans.history.add_dataset( data )
-                data.flush()
-                
-        # Add all the children to their parents
-        for parent_name, child_name in parent_to_child_pairs:
-            parent_dataset = out_data[ parent_name ]
-            child_dataset = out_data[ child_name ]
-            assoc = trans.app.model.DatasetChildAssociation()
-            assoc.child = child_dataset
-            assoc.designation = child_dataset.designation
-            parent_dataset.children.append( assoc )
-            # FIXME: Child dataset hid
-            
-        # Store data after custom code runs 
-        trans.app.model.flush()
-
-        # Build params, done before hook so hook can use
-        param_dict = tool.build_param_dict( incoming, inp_data, out_data )
-
-        # Run the before queue ("exec_before_job") hook
-        # FIXME: this hook should probably be called exec_before_job_queued
-        tool.call_hook( 'exec_before_job', trans, inp_data=inp_data, 
-                        out_data=out_data, tool=tool, param_dict=param_dict )
-
-        # Build the job's command line, moved to after the hook so the hook can alter params
-        param_filename = tool.build_param_file( param_dict )
-        command_line = tool.build_command_line( param_dict )
-        
-        # Create the job object
-        job = trans.app.model.Job()
-        job.session_id = trans.get_galaxy_session( create=True ).id
-        if trans.get_history() is not None:
-            job.history_id = trans.get_history().id
-        job.tool_id = tool.id
-        job.command_line = command_line
-        job.param_filename = param_filename
-        # FIXME: Don't need all of incoming here, just the defined parameters
-        #        from the tool. We need to deal with tools that pass all post
-        #        parameters to the command as a special case.
-        for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
-            job.add_parameter( name, value )
-        for name, dataset in inp_data.iteritems():
-            job.add_input_dataset( name, dataset )
-        for name, dataset in out_data.iteritems():
-            job.add_output_dataset( name, dataset )
-        trans.app.model.flush()
-        
-        # Queue the job for execution
-        trans.app.job_queue.put( job.id, tool )
-        # IMPORTANT: keep the following event as is - we parse it for our session activity reports
-        trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-        return out_data
+            e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ) )
+            raise 
         
 # ---- Utility classes to be factored out -----------------------------------
-
+        
+class BadValue( object ):
+    def __init__( self, value ):
+        self.value = value
+        
+class InputValueWrapper( object ):
+    """
+    Wraps an input so that __str__ gives the "param_dict" representation.
+    """
+    def __init__( self, input, value ):
+        self.input = input
+        self.value = value
+    def __str__( self ):
+        return self.input.to_param_dict_string( self.value )
+    def __getattr__( self, key ):
+        return getattr( self.value, key )
+        
 class DatasetFilenameWrapper( object ):
     """
     Wraps a dataset so that __str__ returns the filename, but all other

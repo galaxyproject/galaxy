@@ -17,7 +17,8 @@ class ToolTestBuilder( object ):
         self.error = False
         self.exception = None
     def add_param( self, name, value, extra ):
-        if isinstance( self.tool.param_map[name], parameters.DataToolParameter ):
+        # FIXME: This needs to be updated for parameter grouping support
+        if isinstance( self.tool.inputs[name], parameters.DataToolParameter ):
             self.required_files.append( ( value, extra ) )
         self.inputs.append( ( name, value, extra ) )
     def add_output( self, name, file ):

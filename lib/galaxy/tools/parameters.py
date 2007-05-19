@@ -33,12 +33,28 @@ class ToolParameter( object ):
         if self.label: return self.label
         else: return self.name
 
-    def get_html( self, trans=None, value=None, other_values={} ):
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        raise TypeError( "Abstract Method" )
+
+    def get_html( self, trans=None, value=None, other_values={}):
         """
         Returns the html widget corresponding to the paramter. 
         Optionally attempt to retain the current value specific by 'value'
         """
-        return self.html
+        return self.get_html_field( trans, value, other_values ).get_html()
+        
+    def from_html( self, value, trans=None, other_values={} ):
+        """
+        Convert a value from an HTML POST into the parameters prefered value 
+        format. 
+        """
+        return value
+        
+    def get_initial_value( self, trans, context ):
+        """
+        Return the starting value of the parameter
+        """
+        return None
 
     def get_required_enctype( self ):
         """
@@ -62,6 +78,24 @@ class ToolParameter( object ):
     def to_python( self, value, app ):
         """Convert a value created with to_string back to an object representation"""
         return value
+        
+    def value_to_basic( self, value, app ):
+        return self.to_string( value, app )
+        
+    def value_from_basic( self, value, app, ignore_errors=False ):
+        # HACK: Some things don't deal with unicode well, psycopg problem?
+        if type( value ) == unicode:
+            value = str( value )
+        if ignore_errors:
+            try:
+                return self.to_python( value, app )
+            except:
+                return value
+        else:
+            return self.to_python( value, app )
+        
+    def to_param_dict_string( self, value ):
+        return str( value )
         
     def validate( self, value, history=None ):
         for validator in self.validators:
@@ -94,10 +128,13 @@ class TextToolParameter( ToolParameter ):
         self.size = elem.get( 'size' )
         self.value = elem.get( 'value' )
         self.area = str_bool( elem.get( 'area', False ) )
-    def get_html( self, trans=None, value=None, other_values={} ):
+    def get_html_field( self, trans=None, value=None, other_values={} ):
         if self.area:
-            return form_builder.TextArea( self.name, self.size, value or self.value ).get_html()
-        return form_builder.TextField( self.name, self.size, value or self.value ).get_html()
+            return form_builder.TextArea( self.name, self.size, value or self.value )
+        else:
+            return form_builder.TextField( self.name, self.size, value or self.value )
+    def get_initial_value( self, trans, context ):
+        return self.value
 
 class IntegerToolParameter( TextToolParameter ):
     """
@@ -108,18 +145,20 @@ class IntegerToolParameter( TextToolParameter ):
     blah
     >>> print p.get_html()
     <input type="text" name="blah" size="4" value="10">
-    >>> type( p.filter_value( "10" ) )
+    >>> type( p.from_html( "10" ) )
     <type 'int'>
-    >>> type( p.filter_value( "bleh" ) )
+    >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
     ValueError: An integer is required
     """
-    def filter_value( self, value, trans=None, other_values={} ):
+    def from_html( self, value, trans=None, other_values={} ):
         try: return int( value )
         except: raise ValueError( "An integer is required" )
     def to_python( self, value, app ):
         return int( value )
+    def get_initial_value( self, trans, context ):
+        return int( self.value )
             
 class FloatToolParameter( TextToolParameter ):
     """
@@ -130,18 +169,20 @@ class FloatToolParameter( TextToolParameter ):
     blah
     >>> print p.get_html()
     <input type="text" name="blah" size="4" value="3.141592">
-    >>> type( p.filter_value( "36.1" ) )
+    >>> type( p.from_html( "36.1" ) )
     <type 'float'>
-    >>> type( p.filter_value( "bleh" ) )
+    >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
     ValueError: A real number is required
     """
-    def filter_value( self, value, trans=None, other_values={} ):
+    def from_html( self, value, trans=None, other_values={} ):
         try: return float( value )
-        except: raise ValueError( "A real number is required")
+        except: raise ValueError( "A real number is required" )
     def to_python( self, value, app ):
         return float( value )
+    def get_initial_value( self, trans, context ):
+        return float( self.value )
 
 class BooleanToolParameter( ToolParameter ):
     """
@@ -152,9 +193,13 @@ class BooleanToolParameter( ToolParameter ):
     blah
     >>> print p.get_html()
     <input type="checkbox" name="blah" value="true" checked><input type="hidden" name="blah" value="true">
-    >>> print p.filter_value( ["true","true"] )
+    >>> print p.from_html( ["true","true"] )
+    True
+    >>> print p.to_param_dict_string( True )
     bulletproof vests
-    >>> print p.filter_value( ["true"] )
+    >>> print p.from_html( ["true"] )
+    False
+    >>> print p.to_param_dict_string( False )
     cellophane chests
     """
     def __init__( self, tool, elem ):
@@ -162,19 +207,24 @@ class BooleanToolParameter( ToolParameter ):
         self.truevalue = elem.get( 'truevalue', 'true' )
         self.falsevalue = elem.get( 'falsevalue', 'false' )
         self.name = elem.get( 'name' )
-        self.checked = elem.get( 'checked' )
-    def get_html( self, trans=None, value=None, other_values={} ):
+        self.checked = str_bool( elem.get( 'checked' ) )
+    def get_html_field( self, trans=None, value=None, other_values={} ):
         checked = self.checked
-        if value: checked = form_builder.CheckboxField.is_checked( value )
-        return form_builder.CheckboxField( self.name, checked ).get_html()
-    def filter_value( self, value, trans=None, other_values={} ):
-        if form_builder.CheckboxField.is_checked( value ):
-            return self.truevalue
-        else: 
-            return self.falsevalue
+        if value: 
+            checked = form_builder.CheckboxField.is_checked( value )
+        return form_builder.CheckboxField( self.name, checked )
+    def from_html( self, value, trans=None, other_values={} ):
+        return form_builder.CheckboxField.is_checked( value )  
     def to_python( self, value, app ):
         return ( value == 'True' )
-    
+    def get_initial_value( self, trans, context ):
+        return self.checked
+    def to_param_dict_string( self, value ):
+        if value:
+            return self.truevalue
+        else:
+            return self.falsevalue
+
 class FileToolParameter( ToolParameter ):
     """
     Parameter that takes an uploaded file as a value.
@@ -190,16 +240,26 @@ class FileToolParameter( ToolParameter ):
         Example: C{<param name="bins" type="file" />}
         """
         ToolParameter.__init__( self, tool, elem )
-        self.html = form_builder.FileField( elem.get( 'name') ).get_html()
+        self.name = elem.get( 'name' )
+    def get_html_field( self, trans=None, value=None, other_values={}  ):
+        return form_builder.FileField( self.name )
     def get_required_enctype( self ):
         """
         File upload elements require the multipart/form-data encoding
         """
         return "multipart/form-data"
     def to_string( self, value, app ):
-        raise Exception( "FileToolParameter cannot be persisted" )
+        if value is None:
+            return None
+        else:
+            raise Exception( "FileToolParameter cannot be persisted" )
     def to_python( self, value, app ):
-        raise Exception( "FileToolParameter cannot be persisted" )
+        if value is None:
+            return None
+        else:
+            raise Exception( "FileToolParameter cannot be persisted" )
+    def get_initial_value( self, trans, context ):
+        return None
         
 class HiddenToolParameter( ToolParameter ):
     """
@@ -219,11 +279,16 @@ class HiddenToolParameter( ToolParameter ):
         self.name = elem.get( 'name' )
         self.value = elem.get( 'value' )
         self.dynamic_options = elem.get( "dynamic_options", None )
-    def get_html( self, trans=None, value=None, other_values={} ):
+    def get_html_field( self, trans=None, value=None, other_values={} ):
         if self.dynamic_options:
-            options = eval( self.dynamic_options, self.tool.code_namespace, other_values )
+            # Add GALAXY_TOOL_PARAMS to locals for backward compatibility
+            locals = dict( other_values )
+            locals['GALAXY_TOOL_PARAMS'] = other_values
+            options = eval( self.dynamic_options, self.tool.code_namespace, locals )
             self.value = options
-        return form_builder.HiddenField( self.name, self.value ).get_html()
+        return form_builder.HiddenField( self.name, self.value )
+    def get_initial_value( self, trans, context ):
+        return self.value
     
 ## This is clearly a HACK, parameters should only be used for things the user
 ## can change, there needs to be a different way to specify this. I'm leaving
@@ -238,8 +303,10 @@ class BaseURLToolParameter( ToolParameter ):
         ToolParameter.__init__( self, tool, elem )
         self.name = elem.get( 'name' )
         self.value = elem.get( 'value', '' )
-    def get_html( self, trans=None, value=None, other_values={} ):
-        return form_builder.HiddenField( self.name, trans.request.base + self.value ).get_html()
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        return form_builder.HiddenField( self.name, trans.request.base + self.value )
+    def get_initial_value( self, trans, context ):
+        return self.value
 
 class SelectToolParameter( ToolParameter ):
     """
@@ -295,7 +362,7 @@ class SelectToolParameter( ToolParameter ):
     <option value="y" selected>I am Y</option>
     <option value="z">I am Z</option>
     </select>
-    >>> print p.filter_value( ["y", "z"] )
+    >>> print p.to_param_dict_string( ["y", "z"] )
     y,z
     
     >>> p = SelectToolParameter( None, XML( 
@@ -316,7 +383,7 @@ class SelectToolParameter( ToolParameter ):
     <div><input type="checkbox" name="blah" value="x" checked>I am X</div>
     <div class="odd_row"><input type="checkbox" name="blah" value="y" checked>I am Y</div>
     <div><input type="checkbox" name="blah" value="z">I am Z</div>
-    >>> print p.filter_value( ["y", "z"] )
+    >>> print p.to_param_dict_string( ["y", "z"] )
     y,z
     """
     def __init__( self, tool, elem):
@@ -343,7 +410,7 @@ class SelectToolParameter( ToolParameter ):
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
         else:
             return self.legal_values
-    def get_html( self, trans=None, value=None, other_values={} ):
+    def get_html_field( self, trans=None, value=None, other_values={} ):
         if value is not None:
             if not isinstance( value, list ): value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, self.display )
@@ -352,8 +419,8 @@ class SelectToolParameter( ToolParameter ):
             if value: 
                 selected = ( optval in value )
             field.add_option( text, optval, selected )
-        return field.get_html()
-    def filter_value( self, value, trans=None, other_values={} ):
+        return field
+    def from_html( self, value, trans=None, other_values={} ):
         legal_values = self.get_legal_values( other_values )
         if isinstance( value, list ):
             if not(self.repeat):
@@ -363,11 +430,28 @@ class SelectToolParameter( ToolParameter ):
                 v = util.restore_text( v )
                 assert v in legal_values 
                 rval.append( v )
-            return self.separator.join( rval )
+            return rval
         else:
             value = util.restore_text( value )
             assert value in legal_values
+            return value    
+    def to_param_dict_string( self, value ):
+        if isinstance( value, list ):
+            if not(self.repeat):
+                assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+            return self.separator.join( value )
+        else:
             return value
+    def value_to_basic( self, value, app ):
+        return value
+    def get_initial_value( self, trans, context ):
+        options = self.get_options( trans, context )
+        value = [ optval for _, optval, selected in options if selected ]
+        if len( value ) == 0:
+            value = None
+        elif len( value ) == 1:
+            value = value[0]
+        return value
 
 class GenomeBuildParameter( SelectToolParameter ):
     """
@@ -445,11 +529,16 @@ class DataToolParameter( ToolParameter ):
     """
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
-        self.format = datatypes.get_datatype_by_extension( elem.get( 'format', 'data' ).lower() )
+        # Build tuple of classes for supported data formats
+        formats = []
+        extensions = elem.get( 'format', 'data' ).split( "," )
+        for extension in extensions:
+            formats.append( datatypes.get_datatype_by_extension( extension.lower() ).__class__ )
+        self.formats = tuple( formats )
         self.multiple = str_bool( elem.get( 'multiple', False ) )
         self.optional = str_bool( elem.get( 'optional', False ) )
         self.dynamic_options = elem.get( "dynamic_options", None )
-    def get_html( self, trans=None, value=None, other_values={} ):
+    def get_html_field( self, trans=None, value=None, other_values={} ):
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.history
         assert history is not None, "DataToolParameter requires a history"
@@ -468,30 +557,31 @@ class DataToolParameter( ToolParameter ):
                 else:
                     hid = str( data.hid )
                 if self.dynamic_options:
-                    if ( isinstance( data.datatype, self.format.__class__ )
+                    if ( isinstance( data.datatype, self.formats )
                          and (data.dbkey == option_build) and (data.id != option_id) 
                          and (data.extension in option_extension) 
                          and not data.deleted ): 
                         selected = ( value and ( data in value ) )
                         field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
                 else:
-                    if isinstance( data.datatype, self.format.__class__ ) and not data.deleted:
+                    if isinstance( data.datatype, self.formats) and not data.deleted:
                         selected = ( value and ( data in value ) )
                         field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
                 # Also collect children via association object
                 dataset_collector( [ assoc.child for assoc in data.children ], hid )
         dataset_collector( history.datasets, None )
         some_data = bool( field.options )
-        if some_data and value is None:
-            # Ensure that the last item is always selected
-            a, b, c = field.options[-1]; field.options[-1] = a, b, True
+        if some_data:
+            if value is None:
+                # Ensure that the last item is always selected
+                a, b, c = field.options[-1]; field.options[-1] = a, b, True
         else:
             # HACK: we should just disable the form or something
             field.add_option( "no data has the proper type", '' )                
         if self.optional == True:
             field.add_option( "Selection is Optional", 'None', True )
-        return field.get_html()
-    def filter_value( self, value, trans, other_values={} ):
+        return field
+    def from_html( self, value, trans, other_values={} ):
         if not value:
             raise ValueError( "A data of the appropriate type is required" )
         if value in [None, "None"]:
@@ -502,31 +592,48 @@ class DataToolParameter( ToolParameter ):
             return [ trans.app.model.Dataset.get( v ) for v in value ]
         else:
             return trans.app.model.Dataset.get( value )
-    def to_string( self, value, app ):
+    def value_to_basic( self, value, app ):
+        if value is None:
+            return None
+        if isinstance( value, str ):
+            return value
         return value.id
-    def to_python( self, value, app ):
-        return app.model.Dataset.get( int( value ) )
+    def value_from_basic( self, value, app, ignore_errors=False ):
+        if value is None:
+            return None
+        try:
+            return app.model.Dataset.get( int( value ) )
+        except:
+            if ignore_errors:
+                return value
+            else:
+                raise
+    def to_param_dict_string( self, value ):
+        return value.file_name
 
-class RawToolParameter( ToolParameter ):
-    """
-    Completely nondescript parameter, HTML representation is provided as text
-    contents. 
-    
-    >>> p = RawToolParameter( None, XML( 
-    ... '''
-    ... <param name="blah" type="raw">
-    ... <![CDATA[<span id="$name">Some random stuff</span>]]>
-    ... </param>
-    ... ''' ) )
-    >>> print p.name
-    blah
-    >>> print p.get_html().strip()
-    <span id="blah">Some random stuff</span>
-    """
-    def __init__( self, tool, elem ):
-        ToolParameter.__init__( self, tool, elem )
-        template = string.Template( elem.text )
-        self.html = template.substitute( self.__dict__ )
+# class RawToolParameter( ToolParameter ):
+#     """
+#     Completely nondescript parameter, HTML representation is provided as text
+#     contents. 
+#     
+#     >>> p = RawToolParameter( None, XML( 
+#     ... '''
+#     ... <param name="blah" type="raw">
+#     ... <![CDATA[<span id="$name">Some random stuff</span>]]>
+#     ... </param>
+#     ... ''' ) )
+#     >>> print p.name
+#     blah
+#     >>> print p.get_html().strip()
+#     <span id="blah">Some random stuff</span>
+#     """
+#     def __init__( self, tool, elem ):
+#         ToolParameter.__init__( self, tool, elem )
+#         self.template = string.Template( elem.text )
+#     def get_html( self, prefix="" ):
+#         context = dict( self.__dict__ )
+#         context.update( dict( prefix=prefix ) )
+#         return self.template.substitute( context )
         
 # class HistoryIDParameter( ToolParameter ):
 #     """
@@ -562,19 +669,14 @@ parameter_types = dict( text        = TextToolParameter,
                         hidden      = HiddenToolParameter,
                         baseurl     = BaseURLToolParameter,
                         file        = FileToolParameter,
-                        data        = DataToolParameter,
-                        raw         = RawToolParameter )
+                        data        = DataToolParameter )
 
-def get_suite():
-    """Get unittest suite for this module"""
-    import doctest, sys
-    return doctest.DocTestSuite( sys.modules[__name__] )
 
 def str_bool(in_str):
     """
     returns true/false of a string, since bool(str), always returns true if string is not empty
     default action is to return false
     """
-    if str(in_str).lower() == 'true':
+    if str(in_str).lower() == 'true' or str(in_str).lower() == 'yes':
         return True
     return False

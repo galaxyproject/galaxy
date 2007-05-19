@@ -1,4 +1,4 @@
-import logging, threading, sys, os, time, subprocess, string, tempfile, re
+import logging, threading, sys, os, time, subprocess, string, tempfile, re, traceback
 
 from galaxy import util, model
 from galaxy.model import mapping
@@ -141,8 +141,54 @@ class JobWrapper( object ):
         self.tool = tool
         self.queue = queue
         self.app = queue.app
+        self.extra_filenames = []
         
-    def fail( self, message ):
+    def get_param_dict( self ):
+        """
+        Restore the dictionary of parameters from the database.
+        """
+        job = model.Job.get( self.job_id )
+        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+        param_dict = self.tool.params_from_strings( param_dict, self.app )
+        return param_dict
+        
+    def prepare( self ):
+        """
+        Prepare the job to run by creating the working directory and the
+        config files.
+        """
+        # Create the working directory
+        self.working_directory = \
+            os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
+        os.mkdir( self.working_directory )
+        # Restore parameters from the database
+        job = model.Job.get( self.job_id )
+        incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+        incoming = self.tool.params_from_strings( incoming, self.app )
+        # Resore input / output data lists
+        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
+        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        # Build params, done before hook so hook can use
+        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data )
+        # Run the before queue ("exec_before_job") hook
+        self.tool.call_hook( 'exec_before_job', trans=None, inp_data=inp_data, 
+                             out_data=out_data, tool=self.tool, param_dict=incoming )
+        mapping.context.current.flush()
+        # Build any required config files
+        config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
+        # FIXME: Build the param file (might return None, DEPRECATED)
+        param_filename = self.tool.build_param_file( param_dict, self.working_directory )
+        # Build the job's command line
+        self.command_line = self.tool.build_command_line( param_dict )
+        # Return list of all extra files
+        extra_filenames = config_filenames
+        if param_filename is not None:
+            extra_filenames.append( param_filename )
+        self.param_dict = param_dict
+        self.extra_filenames = extra_filenames
+        return extra_filenames
+        
+    def fail( self, message, exception=False ):
         """
         Indicate job failure by setting state and message on all output 
         datasets.
@@ -154,10 +200,15 @@ class JobWrapper( object ):
             dataset.refresh()
             dataset.state = dataset.states.ERROR
             dataset.blurb = 'tool error'
-            dataset.info = "ERROR: " + message
+            dataset.info = message
             dataset.flush()
         job.state = model.Job.states.ERROR
+        # If the failure is due to a Galaxy framework exception, save 
+        # the traceback
+        if exception:
+            job.traceback = traceback.format_exc()
         job.flush()
+        self.cleanup()
         
     def change_state( self, state ):
         job = model.Job.get( self.job_id )
@@ -219,12 +270,10 @@ class JobWrapper( object ):
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+        param_dict = self.tool.params_from_strings( param_dict, self.app )
         self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, param_dict=param_dict, 
                              tool=self.tool, stdout=stdout, stderr=stderr )
-        # remove temporary file
-        if job.param_filename: 
-            os.remove( job.param_filename )
         # remove 'fake' datasets 
         for dataset_assoc in job.input_datasets:
             data = dataset_assoc.dataset
@@ -235,10 +284,16 @@ class JobWrapper( object ):
                         
         mapping.context.current.flush()
         log.debug('job ended, id: %d' % self.job_id )
+        self.cleanup()
+        
+    def cleanup( self ):
+        # remove temporary files
+        for fname in self.extra_filenames: 
+            os.remove( fname )
+        os.rmdir( self.working_directory ) 
         
     def get_command_line( self ):
-        job = model.Job.get( self.job_id )
-        return job.command_line
+        return self.command_line
     
     def get_session_id( self ):
         job = model.Job.get( self.job_id )

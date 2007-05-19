@@ -15,6 +15,56 @@
    <p></p>
 #end if
 
+#def do_inputs( $inputs, $tool_state, $errors, $prefix )
+  #for $input_index, $input in enumerate( $inputs.itervalues() )
+    #if $input.type == "repeat"
+      #if $input_index > 0
+        <tr><td colspan="2"><hr/></td></tr>
+      #end if
+      <tr><td colspan="2"><b>${input.title_plural}</b></td></tr>
+      #set repeat_state = $tool_state[$input.name]
+      #for i in range( len( $repeat_state ) ):
+        #if $input.name in errors
+          #set rep_errors = $errors[$input.name][$i]
+        #else
+          #set rep_errors = dict()
+        #end if
+        <tr><td colspan="2"><b>${input.title} ${i + 1}</b></td></tr>
+        $do_inputs( $input.inputs, $repeat_state[$i], $rep_errors, $prefix + $input.name + "_" + str(i) + "|" )
+        <tr><td></td><td><input type="submit" name="${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}"></td></tr>
+      #end for
+      <tr><td colspan="2">&nbsp;</td></tr>
+      <tr><td></td><td><input type="submit" name="${input.name}_add" value="Add new ${input.title}"></td></tr>
+      <tr><td colspan="2"><hr/></td></tr>
+    #elif $input.type == "conditional"
+      #set group_state = $tool_state[$input.name]
+      #set group_errors = $errors.get( $input.name, {} )
+      #set current_case = $group_state['__current_case__']
+      #set prefix = $prefix + $input.name + "|"
+      $row_for_param( $prefix, $input.test_param, $group_state, $group_errors, refresh=True )
+      $do_inputs( $input.cases[$current_case].inputs, $group_state, $group_errors, $prefix )
+    #else
+      $row_for_param( $prefix, $input, $tool_state, $errors )
+    #end if
+  #end for  
+#end def
+
+#def row_for_param( $prefix, $param, $parent_state, $parent_errors, $refresh=False )
+  <tr valign="top">
+    <td>$param.get_label():</td>
+    <td>
+      #set field = $param.get_html_field( $caller, $parent_state[ $param.name ], $parent_state )
+      #set $field.refresh_on_change = $refresh
+      <div>$field.get_html( $prefix )</div>
+      #if $parent_errors.has_key( $param.name ):
+      <div style="color: red; font-style: italic; padding-top: 1px; padding-bottom: 3px;">$parent_errors[$param.name]</div>
+      #elif $param.help
+      <div class="toolParamHelp">$param.help</div>
+      #end if
+    </td>
+  </tr>
+#end def
+
 <div class="toolForm" id="$tool.id">
   #if $tool.has_multiple_pages 
   <div class="toolFormTitle">$tool.name (step #echo $tool_state.page+1 # of $tool.npages)</div>
@@ -24,7 +74,7 @@
   <div class="toolFormBody">
   <form name="tool_form" action="$tool.action" enctype="$tool.enctype" target="$tool.target" method="$tool.method">
     <input type="hidden" name="tool_id" value="$tool.id">
-    <input type="hidden" name="tool_state" value="$util.object_to_string( $tool_state )">
+    <input type="hidden" name="tool_state" value="$util.object_to_string( $tool_state.encode( $tool, $app ) )">
     
     #if $tool.display_by_page[$tool_state.page]
         
@@ -33,108 +83,23 @@
         
     #else
     	
-		#set $param_list = $tool.param_map_by_page[$tool_state.page].items()
-        
-        ##Clean-up previously generated repeat parameters, which are identified by a # at the beginning.
-        #for $name, $param in $param_list
-        	#if $name.count('#') != 0:
-        		#del $param_list[$param_list.index(($name,$param))]
-        	#end if
-        #end for
-        
-  		#set $new_list = []
-        #for $name, $param in $param_list 
-			#if $param.repeat:
-				#try
-			  		#set $param.repeat = $int($param.repeat)
-			  	#except
-			  		#pass
-			  	#end try
-			  	#if $isinstance($param.repeat, int)
-				  	#set $numloops = $param.repeat
-				#else if $isinstance($param.repeat, str)
-					#if not($param.repeat.startswith("with_")):
-				  		#set $datasets = []
-				  	  	#if $isinstance($param_values.get($param.repeat), list):
-					  		#for $set in $param_values.get($param.repeat):
-			                    $datasets.append("%s" %($set.name))
-			                #end for
-			                #set $numloops = $len($datasets)
-		                #else:
-		                	$datasets.append("%s" %($param_values.get($param.repeat).name))
-		                	#set $numloops = 1
-		                #end if
-					#end if
-				#end if
-                #if $numloops > 1:
-			  		#set $j = 1
-                	#while $j < $numloops:
-                		$new_list.append(("#%s%s" %($j+1,$name), $param))
-                		#set $j = $j + 1
-                    #end while	
-        		#end if
-        	#end if
-		#end for
-		
-		#if $new_list != []:
-			$new_list.sort()
-			$param_list.extend($new_list)
-		#end if
-		
-       
-		#set $i=0
-		<table>
-			#for $name, $param in $param_list
-				#set $other_values = {}
-				#if $param.condition:
-					#try
-						#set $status = $int($param_values.get($param.condition))
-					#except
-						#set $status = 0					
-					#end try
-				#else:
-					#set $status = 1
-				#end if
-				#if $status:			
-					#if $param.repeat and $isinstance($param.repeat, str):
-						#if not($param.repeat.startswith("with_")) and $datasets != []:
-							<tr>
-								<td> Dataset: </td>
-								<td> $datasets[$i]</td>
-							</tr>
-							#set $i = $i + 1
-						#end if
-					#end if	
-					<tr valign="top">
-		              <td>
-		              		#if $param.type != "hidden":
-		              			$param.get_label():
-		              		#end if
-		              </td>
-		              <td>
-		              	#if $param.type != "hidden":
-		                	<div>$param.get_html( $caller, $param_values.get( $param.name, None ), $param_values )</div>
-		                #else:
-		                	<div>$param.get_html( $caller, None, $param_values )</div>
-		                #end if
-		                #if $errors and $errors.has_key( $param.name ):
-		                <div style="color: red; font-style: italic; padding-top: 1px; padding-bottom: 3px;">$errors[$param.name]</div>
-		                #elif $param.help
-		                <div class="toolParamHelp">$param.help</div>
-		                #end if
-		              </td>
-		            </tr>
-		        #end if
-		  	#end for
-        	
-        <tr><td></td><td>
+      <table width="100%">
+          <tr style="display: none;"><td></td><td>
             #if $tool_state.page == $tool.last_page
             <input type="submit" name="runtool_btn" value="Execute">
             #else
             <input type="submit" name="runtool_btn" value="Next step">
             #end if
-        </td></tr>    
-        </table>
+          </td></tr>
+          $do_inputs( $tool.inputs_by_page[ $tool_state.page ], $tool_state.inputs, $errors, "" )
+          <tr><td></td><td>
+            #if $tool_state.page == $tool.last_page
+            <input type="submit" name="runtool_btn" value="Execute">
+            #else
+            <input type="submit" name="runtool_btn" value="Next step">
+            #end if
+          </td></tr>    
+      </table>
     	
     #end if    
 

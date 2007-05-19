@@ -1,14 +1,14 @@
 <tool id="axt_to_lav_1" name="AXT to LAV">
 <description>Converts an AXT formated file to LAV format</description>
 <!--  <command interpreter="python2.4">axt_to_lav.py $align_input $dbkey_1 $dbkey_2 $lav_file $seq_file1 $seq_file2</command> -->
-<command interpreter="python2.4">axt_to_lav.py /depot/data2/galaxy/$dbkey_1/seq/%s.nib:$dbkey_1:./static/ucsc/chrom/$dbkey_1.len /depot/data2/galaxy/$dbkey_2/seq/%s.nib:$dbkey_2:./static/ucsc/chrom/$dbkey_2.len $align_input $lav_file $seq_file1 $seq_file2</command>
+<command interpreter="python2.4">axt_to_lav.py /depot/data2/galaxy/$dbkey_1/seq/%s.nib:$dbkey_1:./static/ucsc/chrom/${dbkey_1}.len /depot/data2/galaxy/$dbkey_2/seq/%s.nib:$dbkey_2:./static/ucsc/chrom/${dbkey_2}.len $align_input $lav_file $seq_file1 $seq_file2</command>
 
   <inputs>
       <page>
       <param name="align_input" type="data" format="axt" label="Alignment File" optional="False"/>
       </page>
       <page>
-      <param label="Genome" name="dbkey_1" type="select" dynamic_options="get_available_builds(build=GALAXY_TOOL_PARAMS.align_input.dbkey)"/>
+      <param label="Genome" name="dbkey_1" type="select" dynamic_options="get_available_builds(build=align_input.dbkey)"/>
       <param label="Genome" name="dbkey_2" type="select" dynamic_options="get_available_builds()"/>
       </page>
   </inputs>

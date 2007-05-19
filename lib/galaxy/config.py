@@ -30,6 +30,7 @@ class Configuration( object ):
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
         self.job_queue_workers = int( kwargs.get( "job_queue_workers", "10" ) )
+        self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
         self.admin_pass = kwargs.get('admin_pass',"galaxy")
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
@@ -47,7 +48,7 @@ class Configuration( object ):
         return self.config_dict.get( key, default )
     def check( self ):
         # Check that required directories exist
-        for path in self.root, self.file_path, self.tool_path, self.template_path:
+        for path in self.root, self.file_path, self.tool_path, self.template_path, self.job_working_directory:
             if not os.path.isdir( path ):
                 raise ConfigurationError("Directory does not exist: %s" % path )
         # Check that required files exist

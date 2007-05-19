@@ -22,29 +22,41 @@ pre
 
 <div class="toolForm">
   
-  #set job = $dataset.creating_job_associations[0].job
-  
   <h2>Dataset generation errors</h2>
 
   <p><b>Dataset $dataset.hid: $dataset.display_name</b></p>
+  
+  #if $dataset.creating_job_associations
+  
+    #set job = $dataset.creating_job_associations[0].job
+  
+    #if job.traceback
+      The Galaxy framework encountered the following error while attempting
+      to run the tool:
+      
+      <pre>${job.traceback}</pre>
+  
+    #end if
+  
+    #if $job.stderr
+      Tool execution generated the following error message:
+      <pre>${job.stderr}</pre>
+    #else
+      Tool execution did not generate any error messages.
+    #end if
 
-  #if $job.stderr
-    Tool execution generated the following error message:
-    <pre>
-    ${job.stderr}
-    </pre>
+    #if $job.stdout
+      The tool produced the following additional output:
+      <pre>${job.stdout}</pre>
+    #end if
+
   #else
-    Tool execution did not generate any error messages.
-  #end if
-
-  #if $job.stdout
-    The tool produced the following additional output:
-    <pre>
-    ${job.stdout}
-    </pre>
+  
+    The tool did not create any additional job / error info.
+  
   #end if
   
-  <h2>Report this error to Galaxy Team</h2>
+  <h2>Report this error to the Galaxy Team</h2>
   
   <p>The Galaxy team regularly reviews errors that occur in the application. 
   However, if you would like to provide additional information (such as 

@@ -102,9 +102,48 @@ class InRangeValidator( Validator ):
         if not( self.min <= float( value ) <= self.max ):
             raise ValueError( self.message )   
         
+class LengthValidator( Validator ):
+    """
+    Validator that ensures a number is in a specific range
+
+    >>> from galaxy.tools.parameters import ToolParameter
+    >>> p = ToolParameter.build( None, XML( '''
+    ... <param name="blah" type="text" size="10" value="foobar">
+    ...     <validator type="length" min="2" max="8"/>
+    ... </param>
+    ... ''' ) )
+    >>> t = p.validate( "foo" )
+    >>> t = p.validate( "bar" )
+    >>> t = p.validate( "f" )
+    Traceback (most recent call last):
+        ...
+    ValueError: Must have length of at least 2
+    >>> t = p.validate( "foobarbaz" )
+    Traceback (most recent call last):
+        ...
+    ValueError: Must have length no more than 8
+    """
+    @classmethod
+    def from_element( cls, elem ):
+        return cls( elem.get( 'message', None ), elem.get( 'min', None ), elem.get( 'max', None ) )
+    def __init__( self, message, min, max ):
+        self.message = message
+        if min is not None: 
+            min = int( min )
+        if max is not None:
+            max = int( max )
+        self.min = min
+        self.max = max
+    def validate( self, value, history=None ):
+        if self.min is not None and len( value ) < self.min:
+            raise ValueError( self.message or ( "Must have length of at least %d" % self.min ) )
+        if self.max is not None and len( value ) > self.max:
+            raise ValueError( self.message or ( "Must have length no more than %d" % self.max ) )
+        
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,
-                        in_range=InRangeValidator )
+                        in_range=InRangeValidator,
+                        length=LengthValidator )
                         
 def get_suite():
     """Get unittest suite for this module"""

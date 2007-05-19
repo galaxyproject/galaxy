@@ -8,9 +8,12 @@ from Queue import Queue, Empty
 from galaxy import model
 
 import pkg_resources
-pkg_resources.require( "pbs_python" )
-pbs = __import__( "pbs" )
 
+try:
+    pkg_resources.require( "pbs_python" )
+    pbs = __import__( "pbs" )
+except:
+    pbs = None
 
 log = logging.getLogger( __name__ )
 
@@ -43,6 +46,9 @@ class PBSJobRunner( object ):
     STOP_SIGNAL = object()
     def __init__( self, app ):
         """Initialize this job runner and start the monitor thread"""
+        # Check if PBS was importable, fail if not
+        if pbs is None:
+            raise Exception( "PBSJobRunner requires pbs-python which was not found" )
         self.app = app
         # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
@@ -67,6 +73,7 @@ class PBSJobRunner( object ):
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
+        job_wrapper.prepare()
         command_line = job_wrapper.get_command_line()
         
         # This is silly, why would we queue a job with no command line?

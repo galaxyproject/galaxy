@@ -97,6 +97,7 @@ Job.table = Table( "job", metadata,
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", String() ),
     Column( "stderr", String() ),
+    Column( "traceback", String() ),
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ) )
     
 JobParameter.table = Table( "job_parameter", metadata,

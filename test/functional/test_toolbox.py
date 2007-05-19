@@ -24,12 +24,12 @@ class ToolTestCase( TwillTestCase ):
         all_inputs = dict( ( name, value ) for ( name, value, _ ) in self.testdef.inputs )
         # Do the first page
         page_inputs = dict( ( key, all_inputs[key] )
-                            for key in self.testdef.tool.param_map_by_page[0].keys() )        
+                            for key in self.testdef.tool.inputs_by_page[0].keys() )        
         self.run_tool( self.testdef.tool.id, **page_inputs )
         # Do other pages if they exist
         for i in range( 1, self.testdef.tool.npages ):
             page_inputs = dict( ( key, all_inputs[key] )
-                                for key in self.testdef.tool.param_map_by_page[i].keys() )
+                                for key in self.testdef.tool.inputs_by_page[i].keys() )
             self.submit_form( **page_inputs )
         # Check the result
         assert len( self.testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."

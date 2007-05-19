@@ -1,0 +1,85 @@
+<tool id="build_ucsc_custom_track_1" name="Build custom track">
+  <description>for UCSC genome browser</description>    
+  <command interpreter="python2.4">
+    build_ucsc_custom_track.py 
+      "$out_file1"
+      #for $t in $tracks
+        "${t.input.file_name}"
+        "${t.input.ext}"
+        #if $t.input.ext == "interval"
+          ${t.input.metadata.chromCol},${t.input.metadata.startCol},${t.input.metadata.endCol},${t.input.metadata.strandCol}
+        #else
+          "NA"
+        #end if
+        "${t.name}"
+        "${t.description}"
+        "${t.color}"
+        "${t.visibility}"
+      #end for
+  </command>
+  <inputs>
+    <repeat name="tracks" title="Track">
+      <param name="input" type="data" format="interval,wig" label="Dataset"/>
+      <param name="name" type="text" size="15" value="User Track">
+        <validator type="length" max="15"/>
+      </param>
+      <param name="description" type="text" value="User Supplied Track (from Galaxy)">
+        <validator type="length" max="60"/>
+      </param>
+  		<param label="Color" name="color" type="select">
+  			<option selected="yes" value="0-0-0">Black</option>
+  			<option value="255-0-0">Red</option>
+  			<option value="0-255-0">Green</option>
+  			<option value="0-0-255">Blue</option>
+  			<option value="255-0-255">Magenta</option>
+  			<option value="0-255-255">Cyan</option>
+  			<option value="255-215-0">Gold</option>
+  			<option value="160-32-240">Purple</option>
+  			<option value="255-140-0">Orange</option>
+  			<option value="255-20-147">Pink</option>
+  			<option value="92-51-23">Dark Chocolate</option>
+  			<option value="85-107-47">Olive green</option>
+  		</param>
+  		<param label="Visibility" name="visibility" type="select">
+  			<option selected="yes" value="1">Dense</option>
+  			<option value="2">Full</option>
+  			<option value="3">Pack</option>
+  			<option value="4">Squish</option>
+  			<option value="0">Hide</option>
+  		</param>
+    </repeat>
+  </inputs>
+	<outputs>
+  	<data format="customtrack" name="out_file1" />
+	</outputs>
+  <!--
+  <tests>
+    <test>
+  		<param name="primary" value="customTrack1.bed" />
+  		<param name="primary_color" value="0-0-0" />
+  		<param name="primary_visib" value="1" />
+  		<param name="primary_name" value="customTrack1.bed" />
+  		<param name="newdata" value="customTrack2.bed" />
+  		<param name="status" value="1" />
+  		<param name="Color" value="255-0-0" />
+  		<param name="Visibility" value="2" />
+  		<param name="other_names" value="customTrack2.bed" />
+  		<output name="out_file1" file="customTrack_output.dat" />
+    </test>
+	</tests>
+  -->
+	<help>
+
+**Info**
+
+This tool displays the selected datasets with their custom track attributes (if any) in the UCSC genome browser. 
+
+This tool allows you to set the **Color** and **Visibility** attributes and you can edit the **Name** attribute of the dataset by clicking on **"edit attributes"** button (pencil icon) next to the dataset name in the history panel. 
+
+Please note that the primary dataset in step 1 of the tool sets the database build for the datasets in step 2.
+
+	</help>
+
+  <code file="build_ucsc_custom_track_code.py" />
+  
+</tool>

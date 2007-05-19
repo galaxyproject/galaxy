@@ -32,7 +32,16 @@ class LocalJobRunner( object ):
             if job_wrapper is self.STOP_SIGNAL:
                 return
             job_wrapper.change_state( 'running' )
-            command_line = job_wrapper.get_command_line()
+            stderr = stdout = command_line = ''
+            # Prepare the job to run
+            try:
+                job_wrapper.prepare()
+                command_line = job_wrapper.get_command_line()
+            except:
+                job_wrapper.fail( "failure preparing job", exception=True )
+                log.exception( "failure running job id: %d" % job_wrapper.job_id  )
+                continue
+            # If we were able to get a command line, run the job
             if command_line:
                 try:
                     log.debug( 'executing: %s' % command_line )
@@ -46,12 +55,12 @@ class LocalJobRunner( object ):
                     proc.stderr.close()
                     log.debug('execution finished: %s' % command_line)
                 except Exception, e:
-                    job_wrapper.fail( "failure running job" )
+                    job_wrapper.fail( "failure running job", exception=True )
                     log.exception( "failure running job id: %d" % job_wrapper.job_id  )
-            else:
-                stderr = stdout = ''
+                    continue
+            # Finish the job                
             job_wrapper.finish( stdout, stderr )
-            
+
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
         self.queue.put( job_wrapper )
