@@ -142,6 +142,7 @@ class JobWrapper( object ):
         self.queue = queue
         self.app = queue.app
         self.extra_filenames = []
+        self.working_directory = None
         
     def get_param_dict( self ):
         """
@@ -290,7 +291,8 @@ class JobWrapper( object ):
         # remove temporary files
         for fname in self.extra_filenames: 
             os.remove( fname )
-        os.rmdir( self.working_directory ) 
+        if self.working_directory is not None:
+            os.rmdir( self.working_directory ) 
         
     def get_command_line( self ):
         return self.command_line
