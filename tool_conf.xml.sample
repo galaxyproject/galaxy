@@ -102,6 +102,7 @@
     <tool file="stats/gsummary.xml" />
     <tool file="filters/uniq.xml" /> 
     <tool file="stats/cor.xml" /> 
+    <tool file="stats/kaks.xml" />
   </section>
   <section name="Graph/Display Data" id="plots">
     <tool file="plotting/histogram2.xml" />
@@ -352,11 +353,6 @@
     <tool file="emboss/phylipnew/emboss_fneighbor.xml" />
     <tool file="emboss/phylipnew/emboss_fprotdist.xml" />
     <tool file="emboss/phylipnew/emboss_fprotpars.xml" />
- </section>
- <section name="PAML" id="mdea">
-    <tool file="mdea/BaseML.xml" />
-    <tool file="mdea/AlphaSubst.xml" />
-    <tool file="stats/kaks.xml" />
  </section>
  <section name="HYPHY" id="hyphy">
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
