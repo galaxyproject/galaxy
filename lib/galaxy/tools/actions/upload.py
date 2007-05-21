@@ -103,6 +103,7 @@ class UploadToolAction( object ):
         if data.has_data():
             trans.history.add_dataset( data, genome_build=dbkey )
             trans.app.model.flush()
+            trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id), tool_id="upload")
         else:
             self.empty = True
         return data

@@ -487,7 +487,7 @@ class Universe(common.Root):
             history.flush()
             data.set_peek()
             data.flush()
-            trans.log_event( "History added to: %s to %s" % (str(data.id),str(history_id)) )
+            trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id))
             return trans.show_ok_message("Dataset "+str(data.hid)+" added to history "+str(history_id)+".")
         except:
             return trans.show_error_message("Adding File to History has Failed")
