@@ -20,9 +20,17 @@
   </tests>
   <help>
 
+.. class:: warningmark
+
+This tool expects input datasets to consist of tab-delimited columns (blank or comment lines beginning with a # character are automatically skipped).
+
 .. class:: infomark
 
-**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert delimiters to TAB*
+
+.. class:: infomark
+
+**TIP:** Computing summary statistics may throw exceptions if the data value in every line of the columns being summarized is not numerical.  If a line is missing a value or contains a non-numerical value in the column being summarized, that line is skipped and the value is not included in the statistical computation.  The number of invalid skipped lines is documented in the resulting history item.
 
 .. class:: infomark
 
@@ -34,11 +42,11 @@ Currently, these R functions are supported: *abs, sign, sqrt, floor, ceiling, tr
 
 **Syntax**
 
-This tool computes basic summary statistics on a given column, or on an expression containing those columns.
+This tool computes basic summary statistics on a given column, or on a valid expression containing one or more columns.
 
 - Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file.
 
-- Examples of expression:
+- Examples of expressions:
 
   - **log(c5)** calculates the summary statistics for the natural log of column 5
   - **(c5 + c6 + c7) / 3** calculates the summary statistics on the average of columns 5-7
@@ -51,14 +59,15 @@ This tool computes basic summary statistics on a given column, or on an expressi
 
 - Input Dataset::
 
+    c1      c2      c3      c4      c5              c6
     586     chrX    161416  170887  41108_at        16990
     73      chrX    505078  532318  35073_at        1700
     595     chrX    1361578 1388460 33665_s_at      1960
-    74      chrX    1420620 1461919 1185_at 8600
+    74      chrX    1420620 1461919 1185_at         8600
 
-- Summary Statistics on the above input file::
+- Summary Statistics on column c6 of the above input dataset::
 
-    #sum    mean    stdev   0%      25%     50%     75%     100%
+    #sum       mean      stdev     0%        25%       50%       75%        100%
     29250.000  7312.500  7198.636  1700.000  1895.000  5280.000  10697.500  16990.000
 
 </help>

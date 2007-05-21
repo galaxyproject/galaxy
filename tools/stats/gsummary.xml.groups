@@ -12,6 +12,18 @@
   </outputs>
   <help>
 
+.. class:: warningmark
+
+This tool expects input datasets to consist of tab-delimited columns (blank or comment lines beginning with a # character are automatically skipped).
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+.. class:: infomark
+
+**TIP:** Computing summary statistics may throw exceptions if the data value in every line of the columns being summarized is not numerical.  If a line is missing a value or contains a non-numerical value in the column being summarized, that line is skipped and the value is not included in the statistical computation.  The number of invalid skipped lines is documented in the resulting history item.
+
 **Syntax**
 
 This tool computes basic summary statistics on a given column, or on an expression containing those columns
