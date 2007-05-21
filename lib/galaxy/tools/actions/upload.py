@@ -30,6 +30,8 @@ class UploadToolAction( object ):
                 file_name = file_name.split('\\')[-1]
                 file_name = file_name.split('/')[-1]
                 data_list.append( self.add_file(trans, data_file.file, file_name, file_type, dbkey, "uploaded file",space_to_tab=space_to_tab) )
+            except BadFileException:
+                return self.upload_empty( trans, "Error", "error in uploaded file")
             except:
                 pass
         
@@ -39,11 +41,15 @@ class UploadToolAction( object ):
                 for line in url_paste:
                     try:
                         data_list.append( self.add_file(trans, urllib.urlopen(line), line, file_type, dbkey, "uploaded url",space_to_tab=space_to_tab) )
+                    except BadFileException:
+                        return self.upload_empty( trans, "Error", "error in uploaded file")
                     except:
                         pass
             else:
                 try:
                     data_list.append( self.add_file(trans, StringIO.StringIO(url_paste), 'Pasted Entry', file_type, dbkey, "pasted entry",space_to_tab=space_to_tab) )
+                except BadFileException:
+                    return self.upload_empty( trans, "Error", "error in uploaded file" )
                 except:
                     pass
         if self.empty:
@@ -70,7 +76,7 @@ class UploadToolAction( object ):
         # Check against html:
         if self.check_html( temp_name ):
             self.empty = True
-            return None
+            raise BadFileException( "Error in uploaded file" )
         
         sniff.convert_newlines(temp_name)
         
@@ -117,10 +123,17 @@ class UploadToolAction( object ):
     def check_html( self, temp_name ):
         temp = open(temp_name, "U")
         regexp = re.compile( "<([A-Z][A-Z0-9]*)[^>]*>", re.I )
+        lineno = 0
         for line in temp:
+            lineno += 1
             matches = regexp.search( line )
             if matches:
                 temp.close()
                 return True
+            if lineno > 1000:
+                break
         temp.close()
         return False
+
+class BadFileException( Exception ):
+    pass
