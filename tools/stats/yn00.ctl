@@ -1,2 +1,0 @@
-seqfile = seqfile
-outfile = outfile
