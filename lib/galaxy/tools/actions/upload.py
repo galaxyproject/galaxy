@@ -1,4 +1,4 @@
-import os, shutil, urllib, StringIO
+import os, shutil, urllib, StringIO, re
 from galaxy import datatypes, jobs
 from galaxy.datatypes import sniff
 from galaxy import model, util
@@ -66,6 +66,12 @@ class UploadToolAction( object ):
 
     def add_file(self, trans, file_obj, file_name, file_type, dbkey, info, space_to_tab = False ):
         temp_name = sniff.stream_to_file(file_obj)
+
+        # Check against html:
+        if self.check_html( temp_name ):
+            self.empty = True
+            return None
+        
         sniff.convert_newlines(temp_name)
         
         if space_to_tab:
@@ -107,3 +113,14 @@ class UploadToolAction( object ):
         else:
             self.empty = True
         return data
+
+    def check_html( self, temp_name ):
+        temp = open(temp_name, "U")
+        regexp = re.compile( "<([A-Z][A-Z0-9]*)[^>]*>", re.I )
+        for line in temp:
+            matches = regexp.search( line )
+            if matches:
+                temp.close()
+                return True
+        temp.close()
+        return False
