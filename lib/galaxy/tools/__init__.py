@@ -173,7 +173,7 @@ class Tool:
         # Command line (template). Optional for tools that do not invoke a 
         # local program  
         command = root.find("command")
-        if command is not None:
+        if command is not None and command.text is not None:
             self.command = command.text.lstrip() # get rid of leading whitespace
             interpreter  = command.get("interpreter")
             if interpreter:
