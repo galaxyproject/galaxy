@@ -327,7 +327,10 @@ class DefaultJobDispatcher( object ):
         log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
             
     def dispatch_pbs( self, job_wrapper ):
-        command_line = job_wrapper.get_command_line()
+        # command_line = job_wrapper.get_command_line()
+	# HACK: Need a more robust way for tools to assert whether they should
+        #       be run on the cluster.
+        command_line = job_wrapper.tool.command
         if ( command_line is None ) or ( "/tools/data_source" in command_line ):
             log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
             self.local_job_runner.put( job_wrapper )
