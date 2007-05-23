@@ -28,7 +28,8 @@ def __main__():
         page = urllib.urlopen(URL, urllib.urlencode(params))
     except Exception, exc:
         #raise Exception('Problems connecting to %s (%s)' % (URL, exc) )
-        print >> sys.stderr, 'Problems connecting to %s (%s)' % (URL, exc)
+        #print >> sys.stderr, 'Problems connecting to %s (%s)' % (URL, exc)
+        print >> sys.stderr, 'It appears that the UCSC Table Browser is currently offline. You may try again later.'
         sys.exit(0)
     
     while 1:
