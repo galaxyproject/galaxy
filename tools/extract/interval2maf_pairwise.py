@@ -38,8 +38,6 @@ def __main__():
 
     options, args = cookbook.doc_optparse.parse( __doc__ )
     
-    # Going to leave a bunch of James's original functionality commented out in here, maybe add some back later.
-    
     #dictionary of available maf files
     maf_sets = {}
     try:
@@ -77,7 +75,6 @@ def __main__():
     
     
     try:
-        #maf_files = args
         mincols=0
         
         if options.dbkey: dbkey = options.dbkey
@@ -118,19 +115,8 @@ def __main__():
         else: 
             print >>sys.stderr, "Output file has not been specified."
             sys.exit()
-        
-        
-        #if options.src: fixed_src = options.src
-        #else: fixed_src = None
-        #if options.prefix: prefix = options.prefix
-        #else: prefix = None
-        #if options.dir: dir = options.dir
-        #else: dir = None
-        #chop = bool( options.chop )
-        #do_strand = bool( options.strand )
     except:
         sys.exit()
-        #cookbook.doc_optparse.exit()
         
     if dbkey == "?": 
         print >>sys.stderr, "You must specify a proper build in order to extract alignments."
@@ -158,58 +144,32 @@ def __main__():
         print >>sys.stderr, "This MAF set is not available for this build."
         sys.exit()
     
+    out = bx.align.maf.Writer( open(output_file, "w") )
     
-    #max_col_referenced = max([chromCol, startCol, endCol, strandCol])
-    #max_col_referenced_no_strand = max([chromCol, startCol, endCol])
-    
-    #if dir is None: 
-    #    out = bx.align.maf.Writer( sys.stdout )
-    output = open(output_file, "w");
-    out = bx.align.maf.Writer( output )
     # Iterate over input ranges 
     num_blocks=0
-    #input = open(interval_file, "r")
-    
     num_lines = 0
     for region in bx.intervals.io.GenomicIntervalReader( open(interval_file, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True):
-    #for line in input.readlines():
         try:
             num_lines += 1
-            #if line[0:1]=="#":
-            #    continue
-            #fields = line.split()
-            #strand_exists = True
-            #if len(fields) - 1 < max_col_referenced:
-            #    strand_exists = False
-            
-            #if fixed_src:
-            #    src, start, end = fixed_src, int( fields[0] ), int( fields[1] )
-            #    if do_strand: strand = fields[2]
-            #else:
             src = "%s.%s" % (dbkey,region.chrom)
             start = region.start
             end = region.end
             strand = region.strand
             
-            #if prefix: src = prefix + src
             # Find overlap with reference component
             blocks = index.get( src, start, end )
-            # Open file if needed
-            #if dir:
-            #    out = bx.align.maf.Writer( open( os.path.join( dir, "%s:%09d-%09d.maf" % ( src, start, end ) ), 'w' ) )
-            # Write each intersecting block
-            #if chop:
             for block in blocks: 
                 ref = block.get_component_by_src( src )
+                #We want our block coordinates to be from positive strand
+                if ref.strand == "-":
+                    block = block.reverse_complement()
+                    ref = block.get_component_by_src( src )
                 #save old score here for later use
                 old_score =  block.score
-                # If the reference component is on the '-' strand we should complement the interval
-                if ref.strand == '-':
-                    slice_start = max( ref.src_size - end, ref.start )
-                    slice_end = max( ref.src_size - start, ref.end )
-                else:
-                    slice_start = max( start, ref.start )
-                    slice_end = min( end, ref.end )
+                #slice maf by start and end
+                slice_start = max( start, ref.start )
+                slice_end = min( end, ref.end )
                 
                 #when interval is out-of-range (not in maf index), fail silently: else could create tons of scroll
                 try:
@@ -217,11 +177,7 @@ def __main__():
                 except:
                     continue
                     
-                good = True
-                #for c in sliced.components: 
-                #    if c.size < 1: 
-                #        good = False
-                if good and sliced.text_size > mincols:
+                if sliced.text_size > mincols:
                     if strand != ref.strand: sliced = sliced.reverse_complement()
                     # restore old score, may not be accurate, but it is better than 0 for everything
                     sliced.score = old_score
@@ -233,17 +189,12 @@ def __main__():
                             c.src = bx.align.src_merge(maf_sets[mafType]['common'][spec],chrom)
                     out.write( sliced )
                     num_blocks+=1
-            #else:
-            #    for block in blocks:
-            #        out.write( block )
-            #if dir:
-            #    out.close()
         except Exception, e:
             print "Error found on input line:",num_lines
             print e
             continue
+    
     # Close output MAF
-
     out.close()
     print num_blocks, "MAF blocks extracted."
 if __name__ == "__main__": __main__()

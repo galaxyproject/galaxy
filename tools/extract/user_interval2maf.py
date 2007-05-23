@@ -26,9 +26,10 @@ import cookbook.doc_optparse
 
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
-from bx import misc
-import os
-import sys
+from bx import interval_index_file
+import bx.intervals.io
+import tempfile
+import os, sys
 
 def __main__():
 
@@ -84,69 +85,76 @@ def __main__():
         print >>sys.stderr, "You must specify a proper build in order to extract alignments."
         sys.exit()
     
+    #index maf for use here
+    indexes = interval_index_file.Indexes()
     
-    max_col_referenced = max([chromCol, startCol, endCol, strandCol])
-    max_col_referenced_no_strand = max([chromCol, startCol, endCol])
+    try:
+        maf_reader = bx.align.maf.Reader( open( mafFile ) )
+        # Need to be a bit tricky in our iteration here to get the 'tells' right
+        while 1:
+            pos = maf_reader.file.tell()
+            block = maf_reader.next()
+            if block is None: break
+            for c in block.components:
+                indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
+        index_filename = tempfile.NamedTemporaryFile().name
+        out = open(index_filename,'w')
+        indexes.write(out)
+        out.close()
+    except:
+        print >>sys.stderr, "Your MAF file appears to be malformed."
+        sys.exit()
     
-    output = open(output_file, "w");
-    out = bx.align.maf.Writer( output )
+    index = bx.align.maf.Indexed(mafFile, index_filename = index_filename, keep_open=True, parse_e_rows=True)
+    out = bx.align.maf.Writer( open(output_file, "w") )
     
     # Iterate over input ranges 
     num_blocks=0
-    
-    try:
-        for maf in bx.align.maf.Reader(open(mafFile, "r")):
-            try:
-                for line in open(interval_file, "r").readlines():
-                    try:
-                        if line[0:1]=="#":
-                            continue
-                        fields = line.split()
-                        strand_exists = True
-                        if len(fields) - 1 < max_col_referenced:
-                            strand_exists = False
-                        
-                        src, start, end = dbkey + "." + fields[chromCol], int( fields[startCol] ), int( fields[endCol] )
-                        if strandCol < 0 or not strand_exists:
-                            strand = "+"
-                        else:
-                            strand = fields[strandCol]
-                        ref = maf.get_component_by_src( src )
-                        
-                        #save old score here for later use
-                        old_score =  maf.score
-                        # If the reference component is on the '-' strand we should complement the interval
-                        if ref.strand == '-':
-                            slice_start = max( ref.src_size - end, ref.start )
-                            slice_end = max( ref.src_size - start, ref.end )
-                        else:
-                            slice_start = max( start, ref.start )
-                            slice_end = min( end, ref.end )
-                        
-                        #when interval is out-of-range (not in maf index), fail silently: else could create tons of scroll
-                        try:
-                            sliced = maf.slice_by_component( ref, slice_start, slice_end ) 
-                        except:
-                            continue
-                            
-                        good = True
-                        #for c in sliced.components: 
-                        #    if c.size < 1: 
-                        #        good = False
-                        if good and sliced.text_size > mincols:
-                            if strand != ref.strand: sliced = sliced.reverse_complement()
-                            # restore old score, may not be accurate, but it is better than 0 for everything
-                            sliced.score = old_score
-                            out.write( sliced )
-                            num_blocks+=1
-                    except:
-                        continue
-            except:
-                print "Error Reading Interval File."
-        # Close output MAF
-        out.close()
-        print num_blocks, "MAF blocks extracted."
-    except:
-        print "Error Reading MAF File"
-    
+    num_lines = 0
+    for region in bx.intervals.io.GenomicIntervalReader( open(interval_file, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True):
+        try:
+            num_lines += 1
+            src = "%s.%s" % (dbkey,region.chrom)
+            start = region.start
+            end = region.end
+            strand = region.strand
+            blocks = index.get( src, start, end )
+            for block in blocks: 
+                ref = block.get_component_by_src( src )
+                #We want our block coordinates to be from positive strand
+                if ref.strand == "-":
+                    block = block.reverse_complement()
+                    ref = block.get_component_by_src( src )
+                
+                #save old score here for later use
+                old_score =  block.score
+                slice_start = max( start, ref.start )
+                slice_end = min( end, ref.end )
+                
+                #when interval is out-of-range (not in maf index), fail silently: else could create tons of scroll
+                try:
+                    sliced = block.slice_by_component( ref, slice_start, slice_end ) 
+                except:
+                    continue
+                
+                if sliced.text_size > mincols:
+                    if strand != ref.strand: sliced = sliced.reverse_complement()
+                    # restore old score, may not be accurate, but it is better than 0 for everything
+                    sliced.score = old_score
+                    for c in sliced.components:
+                        spec,chrom = bx.align.src_split( c.src )
+                        if not spec or not chrom:
+                            spec = chrom = c.src
+                            c.src = bx.align.src_merge(spec,chrom)
+                    out.write( sliced )
+                    num_blocks+=1
+        except Exception, e:
+            print "Error found on input line:",num_lines
+            print e
+            continue
+    #Close output MAF
+    out.close()
+    #Delete index file
+    os.unlink(index_filename)
+    print num_blocks, "MAF blocks extracted."
 if __name__ == "__main__": __main__()

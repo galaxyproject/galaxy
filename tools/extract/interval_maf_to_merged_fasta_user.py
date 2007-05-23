@@ -147,22 +147,19 @@ def __main__():
             maf = maf.limit_to_species([dbkey]+target_dbkey)
             maf.remove_all_gap_columns()
             ref = maf.get_component_by_src( src )
-            
+            #We want our block coordinates to be from positive strand
+            if ref.strand == "-":
+                maf = maf.reverse_complement()
+                ref = maf.get_component_by_src( src )
             #save old score here for later use, since slice results score==0
             old_score =  maf.score
             
             #slice maf by start and end
-            # If the reference component is on the '-' strand we should complement the interval
-            if ref.strand == '-':
-                slice_start = max( ref.src_size - end, ref.start )
-                slice_end = max( ref.src_size - start, ref.end )
-            else:
-                slice_start = max( start, ref.start )
-                slice_end = min( end, ref.end )
+            slice_start = max( start, ref.start )
+            slice_end = min( end, ref.end )
             try:
                 sliced = maf.slice_by_component( ref, slice_start, slice_end )
             except:
-                #print "slicing failed!"
                 continue
             sliced_ref = sliced.get_component_by_src( src )
             sliced_offset = sliced_ref.start - region.start
@@ -199,13 +196,18 @@ def __main__():
                             alignment[i+sliced_offset-gaps_found].children[recent_gaps-1].bases[t_key] = targ_block_seq[t_key][i]
             
             
-        #print >>output, sliced
         if include_primary:
             print >>output, ">%s.%s(%s):%s-%s" %(dbkey, region.chrom, region.strand, region.start, region.end )
-            print >>output, alignment.get_sequence(dbkey)
+            if region.strand == "-":
+                print >>output, reverse_complement(alignment.get_sequence(dbkey))
+            else:
+                print >>output, alignment.get_sequence(dbkey)
         for t_key in target_dbkey:
             print >>output, ">%s" %(t_key)
-            print >>output, alignment.get_sequence(t_key)
+            if region.strand == "-":
+                print >>output, reverse_complement(alignment.get_sequence(t_key))
+            else:
+                print >>output, alignment.get_sequence(t_key)
         print >>output
         
         genes_extracted += 1

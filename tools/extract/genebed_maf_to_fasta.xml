@@ -14,7 +14,7 @@
         <param name="mafSource" label="Choose MAF source" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
     </page>
     <page>
-        <param name="species" label="Choose desired species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( GALAXY_TOOL_PARAMS.mafSource )"/>
+        <param name="species" label="Choose desired species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( mafSource )"/>
     </page>
    </inputs>
   <outputs>
