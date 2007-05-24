@@ -441,6 +441,7 @@ class SelectToolParameter( ToolParameter ):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
             return self.separator.join( value )
         else:
+            if not value: return "None"
             return value
     def value_to_basic( self, value, app ):
         return value
