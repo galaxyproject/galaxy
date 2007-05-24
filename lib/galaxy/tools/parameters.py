@@ -401,7 +401,6 @@ class SelectToolParameter( ToolParameter ):
                 selected = ( option.get( "selected", None ) == "true" )
                 self.options.append( ( option.text, value, selected ) )
     def get_options( self, trans, other_values ):
-        print self.name
         if self.dynamic_options:
             return eval( self.dynamic_options, self.tool.code_namespace, other_values )
         else:
