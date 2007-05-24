@@ -725,7 +725,7 @@ class Tool:
                     wrap_values( input.cases[current].inputs, values )
                 else:
                     input_values[ input.name ] = \
-                        InputValueWrapper( input, input_values[ input.name ] )
+                        InputValueWrapper( input, str(input_values[ input.name ]) )
         # HACK: only wrap if check_values is false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
