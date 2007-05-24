@@ -11,7 +11,7 @@
         <display>
             <p><div class="toolFormTitle">Select the Desired Organism</div>$org</p>
         </display>
-        <param name="org" type="select" display="radio" multiple="False" dynamic_options="get_orgs_by_kingdom(GALAXY_TOOL_PARAMS.kingdom)"/>
+        <param name="org" type="select" display="radio" multiple="False" dynamic_options="get_orgs_by_kingdom(kingdom)"/>
     </page>
     <page>
         <display>
@@ -24,13 +24,13 @@
             <p><div class="toolFormTitle">Select Desired Glimmer3 Annotations</div>$Glimmer3</p>
             <p></p>
         </display>
-        <param name="CDS" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(GALAXY_TOOL_PARAMS.kingdom,GALAXY_TOOL_PARAMS.org,'CDS')"/>
-        <param name="tRNA" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(GALAXY_TOOL_PARAMS.kingdom,GALAXY_TOOL_PARAMS.org,'tRNA')"/>
-        <param name="rRNA" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(GALAXY_TOOL_PARAMS.kingdom,GALAXY_TOOL_PARAMS.org,'rRNA')"/>
-        <param name="sequence" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(GALAXY_TOOL_PARAMS.kingdom,GALAXY_TOOL_PARAMS.org,'sequence')"/>
-        <param name="GeneMark" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(GALAXY_TOOL_PARAMS.kingdom,GALAXY_TOOL_PARAMS.org,'GeneMark')"/>
-        <param name="GeneMarkHMM" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(GALAXY_TOOL_PARAMS.kingdom,GALAXY_TOOL_PARAMS.org,'GeneMarkHMM')"/>
-        <param name="Glimmer3" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(GALAXY_TOOL_PARAMS.kingdom,GALAXY_TOOL_PARAMS.org,'Glimmer3')"/>
+        <param name="CDS" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(kingdom,org,'CDS')"/>
+        <param name="tRNA" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(kingdom,org,'tRNA')"/>
+        <param name="rRNA" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(kingdom,org,'rRNA')"/>
+        <param name="sequence" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(kingdom,org,'sequence')"/>
+        <param name="GeneMark" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(kingdom,org,'GeneMark')"/>
+        <param name="GeneMarkHMM" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(kingdom,org,'GeneMarkHMM')"/>
+        <param name="Glimmer3" type="select" display="checkboxes" multiple="True" dynamic_options="get_data_by_kingdom_org_feature(kingdom,org,'Glimmer3')"/>
     </page>
   </inputs>
   <outputs>

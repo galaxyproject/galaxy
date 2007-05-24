@@ -448,7 +448,7 @@ class Tool:
                 value = input.get_initial_value( trans, state )
                 state[ input.name ] = value
 
-    def get_param_html_map( self, trans, page=0 ):
+    def get_param_html_map( self, trans, page=0, other_values={} ):
         """
         Return a dictionary containing the HTML representation of each 
         parameter. This is used for rendering display elements. It is 
@@ -458,7 +458,7 @@ class Tool:
         for key, param in self.inputs_by_page[page].iteritems():
             if not isinstance( param, ToolParameter ):
                raise Exception( "'get_param_html_map' only supported for simple paramters" )
-            rval[key] = param.get_html( trans )
+            rval[key] = param.get_html( trans, other_values=other_values )
         return rval
 
     def get_param( self, key ):

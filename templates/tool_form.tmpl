@@ -78,7 +78,7 @@
     
     #if $tool.display_by_page[$tool_state.page]
         
-        $caller.fill_template_string( $tool.display_by_page[$tool_state.page], context=$tool.get_param_html_map( $caller, $tool_state.page ) )
+        $caller.fill_template_string( $tool.display_by_page[$tool_state.page], context=$tool.get_param_html_map( $caller, $tool_state.page, $tool_state.inputs ) )
         <input type="submit" name="runtool_btn" value="Execute">
         
     #else
