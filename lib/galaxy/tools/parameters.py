@@ -436,12 +436,13 @@ class SelectToolParameter( ToolParameter ):
             assert value in legal_values
             return value    
     def to_param_dict_string( self, value ):
+        if value is None:
+            return ""
         if isinstance( value, list ):
             if not(self.repeat):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
             return self.separator.join( value )
         else:
-            if not value: return str( None )
             return value
     def value_to_basic( self, value, app ):
         return value
