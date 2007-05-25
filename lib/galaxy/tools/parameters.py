@@ -437,7 +437,7 @@ class SelectToolParameter( ToolParameter ):
             return value    
     def to_param_dict_string( self, value ):
         if value is None:
-            return ""
+            return "None"
         if isinstance( value, list ):
             if not(self.repeat):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
