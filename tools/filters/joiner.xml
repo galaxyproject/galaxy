@@ -38,7 +38,7 @@
 
 **Syntax**
 
-This tool joins lines of two queries on a common field, which is similarly to unix join command and SQL join operation. 
+This tool joins lines of two queries on a common field similarly to unix join command or the SQL join operation. 
 
 - Columns are referenced with a **number**. For example, **3** refers to the 3rd column of a tab-delimited file.
 

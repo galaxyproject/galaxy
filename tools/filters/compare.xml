@@ -3,8 +3,8 @@
   <command interpreter="perl">joinWrapper.pl $input1 $input2 $field1 $field2 $mode "Y" $out_file1</command>
   <inputs>
     <page>
-      <param format="tabular" name="input1" type="data" label="of Query1"/>
-      <param format="tabular" name="input2" type="data" label="of Query2" help="Click [Next Step] to select columns and return type" />
+      <param format="tabular" name="input1" type="data" label="Compare"/>
+      <param format="tabular" name="input2" type="data" label="against" help="Click [Next Step] to select columns and return type" />
     </page>
     <page>
       <param name="field1" label="Using column" size="4" type="select" dynamic_options="get_available_columns( input1.file_name )" help="of First query"/>

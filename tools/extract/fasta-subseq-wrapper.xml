@@ -17,7 +17,7 @@
 
 .. class:: warningmark
 
-Make sure the input data has been specified a database build. 
+Make sure that the genome build is specified for the interval dataset you are extracting sequences for (click the pencil icon if it is not specified). However, if the build is specified and the tool still gives you an error, your genome of interest may only be partially assembled (ie, in scaffolds).  To extract sequences from such partially assembled genomes use *Extract Genomic DNA from unassmebled genomes* tool.
 
 -----
 

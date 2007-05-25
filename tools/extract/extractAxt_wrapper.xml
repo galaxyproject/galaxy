@@ -24,6 +24,13 @@
     </tests>
     <help>
 
+.. class:: warningmark
+
+**IMPORTANT**: AXT formatted alignments will be phased out from Galaxy in the coming weeks. They will be replaced with pairwise MAF alignments, which are already available. To try pairwise MAF alignments use "Extract Pairwise MAF blocks" tool in *Fetch Sequences and Alignments* section.
+
+--------
+
+
 .. class:: infomark
 
 **TIP:** The last field of the axt header is the same as the column 4 (name) of the corresponding BED file.  *This is very useful* for establishing correspondence between alignments and the original BED file.

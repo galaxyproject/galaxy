@@ -19,6 +19,13 @@
   </outputs>
     <help>
 
+.. class:: warningmark
+
+**IMPORTANT**: AXT formatted alignments will be phased out from Galaxy in the coming weeks. They will be replaced with pairwise MAF alignments, which are already available. To try pairwise MAF alignments use "Extract Pairwise MAF blocks" tool in *Fetch Sequences and Alignments* section.
+
+--------
+
+
 **Syntax**
 
 This tool converts an AXT formated file to the LAV format.

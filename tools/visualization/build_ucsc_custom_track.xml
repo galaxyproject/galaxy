@@ -76,7 +76,7 @@ This tool displays the selected datasets with their custom track attributes (if 
 
 This tool allows you to set the **Color** and **Visibility** attributes and you can edit the **Name** attribute of the dataset by clicking on **"edit attributes"** button (pencil icon) next to the dataset name in the history panel. 
 
-Please note that the primary dataset in step 1 of the tool sets the database build for the datasets in step 2.
+Please note that the primary dataset in step 1 of the tool sets the database build for the datasets in following steps. For example, if your first dataset belogs to hg18, you will only be able to select hg18 associated datasets on the next step.
 
 	</help>
 

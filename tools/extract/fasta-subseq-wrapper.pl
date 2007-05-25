@@ -19,6 +19,7 @@ my @locFields = ();
 my %seqLocation = ();
 
 die "Cannot fetch sequences for unspecified genome\n" unless @ARGV == 11;
+die "Please specify genome build by clicking on pencil icon in the original dataset\n" if $ARGV[10] =~ m/\?/;
 
 # Read /depot/data2/galaxy/alignseq.loc
 
