@@ -4,8 +4,8 @@
 <head>
 <title>Galaxy</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<link href="/static/style/base.css" rel="stylesheet" type="text/css" />
-<link href="/static/style/masthead.css" rel="stylesheet" type="text/css" />
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
+<link href="$h.url_for('/static/style/masthead.css')" rel="stylesheet" type="text/css" />
 </head>
 
 <body class="mastheadPage">
@@ -26,11 +26,11 @@
     | <a target="mainframe" href="/static/index_frame_history.html">history</a> -->
     &nbsp;&nbsp;&nbsp;
     #if $caller.user
-        Logged in as $caller.user.email: <a target="galaxy_main" href="/user/index">manage</a>
-        | <a target="galaxy_main" href="/user/logout">logout</a> 
+        Logged in as $caller.user.email: <a target="galaxy_main" href="$h.url_for( controller='user', action='index' )">manage</a>
+        | <a target="galaxy_main" href="$h.url_for( controller='user', action='logout' )">logout</a> 
     #else
-        Account: <a target="galaxy_main" href="/user/create">create</a>
-        | <a target="galaxy_main" href="/user/login">login</a>
+        Account: <a target="galaxy_main" href="$h.url_for( controller='user', action='create' )">create</a>
+        | <a target="galaxy_main" href="$h.url_for( controller='user', action='login' )">login</a>
     #end if
     &nbsp;
 </td>

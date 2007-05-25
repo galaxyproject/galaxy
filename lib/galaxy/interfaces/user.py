@@ -98,7 +98,8 @@ class User( common.Root ):
         return trans.show_form( 
             web.FormBuilder( "/user/login", "Login", submit_text="Login" )
                 .add_text( "email", "Email address", value=email, error=email_error )
-                .add_password( "password", "Password", value='', error=password_error, help="<a href=\"/user/reset_password\">Forgot password? Reset here</a>" ) )
+                .add_password( "password", "Password", value='', error=password_error, 
+                 help="<a href='" + web.url_for('/user/reset_password') + "'>Forgot password? Reset here</a>" ) )
 
     @web.expose
     def logout( self, trans ):

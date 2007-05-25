@@ -9,19 +9,20 @@
 #if $refresh
 <meta http-equiv="refresh" content="10">
 #end if
+
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <meta http-equiv="Pragma" content="no-cache">
-<link href="/static/style/base.css" rel="stylesheet" type="text/css" />
-<link href="/static/style/history.css" rel="stylesheet" type="text/css" />
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
+<link href="$h.url_for('/static/style/history.css')" rel="stylesheet" type="text/css" />
 
 <!--[if lt IE 7]>
 <script defer type="text/javascript" src="/static/scripts/ie_pngfix.js"></script>
 <![endif]-->
 
-<script language="JavaScript" type="text/javascript" src="/static/universe.js"></script>
-<script language="JavaScript" type="text/javascript" src="/static/dojo.js"></script>
-<script language="JavaScript" type="text/javascript" src="/static/wipe.js"></script>
-<script language="JavaScript" type="text/javascript" src="/static/scripts/prototype.js"></script>
+<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/universe.js')"></script>
+<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/dojo.js')"></script>
+<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/wipe.js')"></script>
+<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/scripts/prototype.js')"></script>
 
 
 <script language="JavaScript" type="text/javascript">
@@ -100,6 +101,7 @@ div#footer {
 
 </head>
 
+
 <body class="historyPage" onLoad="
 #if $refresh
 add_refresh( 9 );
@@ -107,17 +109,17 @@ add_refresh( 9 );
 main();">
 <div class="historyItem">
    #if $refresh
-      <a href="/history">refreshing in <span id="refreshCounterSpan">10</span> sec</a> 
+      <a href="$h.url_for('/history')">refreshing in <span id="refreshCounterSpan">10</span> sec</a> 
    #else
-      <a href="/history">refresh</a> 
+      <a href="$h.url_for('/history')">refresh</a> 
    #end if
    | <a href="javascript:collapse_all()">collapse all</a>
       #if $mode == 'stacked'
       | <a href="javascript:frame_up();" >
-         <img src="/static/images/history_up_arrow.gif" align="absmiddle" border="0"> 
+         <img src="$h.url_for('/static/images/history_up_arrow.gif')" align="absmiddle" border="0"> 
       </a> 
       | <a href="javascript:frame_dw();">
-         <img src="/static/images/history_down_arrow.gif" align="absmiddle" border="0"> 
+         <img src="$h.url_for('/static/images/history_down_arrow.gif')" align="absmiddle" border="0"> 
       </a>
       #end if
 </div>
@@ -147,23 +149,23 @@ main();">
                 <tr>
                     <td>
                         <div style='padding-right: 5px; display: none;' id="progress-$data.id">
-                        <img src="/static/style/data_running.gif" border="0" align="middle" >
+                        <img src="$h.url_for('/static/style/data_running.gif')" border="0" align="middle" >
                         </div>
         								#if $data_state == 'running'
-        									<div style='padding-right: 5px;'><img src="/static/style/data_running.gif" border="0" align="middle"></div>
+        									<div style='padding-right: 5px;'><img src="$h.url_for('/static/style/data_running.gif')" border="0" align="middle"></div>
 												#elif $data_state == 'ok'
 													#pass
         								#else
-                            #set $src = "/static/style/data_%s.png" % $data_state 
+                            #set $src = $h.url_for( "/static/style/data_%s.png" % $data_state )
                             <div style='padding-right: 5px;'><img src="$src" border="0" align="middle"></div>
                         #end if
                         </div>
                      </td>
                     <td>
                     <div>
-                    <div style="float: right;"><a href="display?id=$data.id" target="_top"><img src='static/images/eye_icon.png' width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>#* 
-                    *#<a href="edit?id=$data.id" target="galaxy_main"><img src='static/images/pencil_icon.png' width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>#*
-                    *#$h.link_to_remote( "<img src='static/images/delete_icon.png' width='16' height='16' alt='delete' class='deleteButton' border='0'>", 
+                    <div style="float: right;"><a href="$h.url_for( 'display', id=data.id )" target="_top"><img src="$h.url_for('/static/images/eye_icon.png')" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>#* 
+                    *#<a href="edit?id=$data.id" target="galaxy_main"><img src="$h.url_for('/static/images/pencil_icon.png')" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>#*
+                    *#$h.link_to_remote( "<img src='%s' width='16' height='16' alt='delete' class='deleteButton' border='0'>" % $h.url_for('/static/images/delete_icon.png'), 
                                            dict( url=$h.url( action="delete_async", id=$data.id ), 
                                                  before=( "$( 'progress-%s' ).show()" % $data.id ),
                                                  success=( "delete_item( 'historyItem-%s' )" % $data.id ),
@@ -234,6 +236,7 @@ main();">
                     <div><pre id="peek$data.id" class="peek">$data.display_peek</pre></div>
                     #end if
                 #end if
+                              
         #if $len($data.children)>0
         <div>
 	        There are $len($data.children) secondary datasets.
@@ -250,23 +253,23 @@ main();">
                 <tr>
                     <td>
                         <div style='padding-right: 5px; display: none;' id="progress-$data.id">
-                        <img src="/static/style/data_running.gif" border="0" align="middle" >
+                        <img src="$h.url_for('/static/style/data_running.gif')" border="0" align="middle" >
                         </div>
                         #if $data_state == 'running'
-                        	<div style='padding-right: 5px;'><img src="/static/style/data_running.gif" border="0" align="middle"></div>
+                        	<div style='padding-right: 5px;'><img src="$h.url_for('/static/style/data_running.gif')" border="0" align="middle"></div>
                         #elif $data_state == 'ok'
                           #pass
                         #else
-                          #set $src = "/static/style/data_%s.png" % $data_state 
+                          #set $src = $h.url_for( "/static/style/data_%s.png" % $data_state )
                           <div style='padding-right: 5px;'><img src="$src" border="0" align="middle"></div>
                         #end if
                         </div>
                      </td>
                     <td>
                     <div>
-                    <div style="float: right;"><a href="display?id=$child.id" target="_top"><img src='static/images/eye_icon.png' width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>#* 
-                    *#<a href="edit?id=$child.id" target="galaxy_main"><img src='static/images/pencil_icon.png' width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>#*
-                    *#<a href="dataset_make_primary?id=$child.id" target="galaxy_main"><img src='static/images/thumbtack_icon.png' width='16' height='16' alt='make a primary dataset' title='make a primary dataset' class='primaryButton' border='0'></a>
+                    <div style="float: right;"><a href="display?id=$child.id" target="_top"><img src="$h.url_for('static/images/eye_icon.png')" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>#* 
+                    *#<a href="edit?id=$child.id" target="galaxy_main"><img src="$h.url_for('static/images/pencil_icon.png')" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>#*
+                    *#<a href="dataset_make_primary?id=$child.id" target="galaxy_main"><img src="$h.url_for('static/images/thumbtack_icon.png')" width='16' height='16' alt='make a primary dataset' title='make a primary dataset' class='primaryButton' border='0'></a>
                     </div>
                     <b><a href="javascript:expand('info$child.id')">#echo $idx +1#: $child.display_name</a></b>  
                     </div>
@@ -344,22 +347,22 @@ main();">
 #if $t.user
 <div style="padding-top: 5px;">
 #if $history.user
-<div class="footermenuitem">currently stored as "<a href="/history_rename?id=$history.id" target="galaxy_main">$history.name</a>"</div>
+<div class="footermenuitem">currently stored as "<a href="$h.url_for('/history_rename', id=$history.id )" target="galaxy_main">$history.name</a>"</div>
 #else
-<div class="footermenuitem"><a href="/history_store" target="galaxy_main">store</a> this history for later</div>
+<div class="footermenuitem"><a href="$h.url_for('/history_store')" target="galaxy_main">store</a> this history for later</div>
 #end if
-<div class="footermenuitem"><a href="/history_available" target="galaxy_main">view</a> previously stored histories</div>
+<div class="footermenuitem"><a href="$h.url_for('/history_available')" target="galaxy_main">view</a> previously stored histories</div>
 #if $len($history.active_datasets)>0 and $history.user not in [None,""]:
-<div class="footermenuitem"><a href="/history_new">create</a> a new empty history</div>
+<div class="footermenuitem"><a href="$h.url_for('/history_new')">create</a> a new empty history</div>
 #end if
 </div>
 #else
 <div class="footermenumessage">
-<div class="infomark">You must be <a target="galaxy_main" href="/user/login">logged in</a> to store or switch histories.</div>
+<div class="infomark">You must be <a target="galaxy_main" href="$h.url_for('/user/login')">logged in</a> to store or switch histories.</div>
 </div>
 #end if
-<div class="footermenuitem"><a href="history_share" target="galaxy_main">share</a> current history</div>
-<div class="footermenuitem"><a href="/history_delete?id=$history.id" onclick="confirm_click('/history_delete?id=$history.id');return false;">delete</a> current history</div>
+<div class="footermenuitem"><a href="$h.url_for('/history_share')" target="galaxy_main">share</a> current history</div>
+<div class="footermenuitem"><a href="$h.url_for('/history_delete', id=$history.id )" onclick="confirm_click('$h.url_for('/history_delete', id=$history.id )');return false;">delete</a> current history</div>
 </div>
 </div>
 </div>
@@ -370,26 +373,26 @@ main();">
 
 // Rollovers for delete button
 
-new Image().src = "/static/images/delete_icon_dark.png"
-new Image().src = "/static/images/pencil_icon_dark.png"
-new Image().src = "/static/images/eye_icon_dark.png"
-new Image().src = "/static/images/thumbtack_icon_dark.png"
+new Image().src = $h.url_for("/static/images/delete_icon_dark.png")
+new Image().src = $h.url_for("/static/images/pencil_icon_dark.png")
+new Image().src = $h.url_for("/static/images/eye_icon_dark.png")
+new Image().src = $h.url_for("/static/images/thumbtack_icon_dark.png")
 
 document.getElementsByClassName( 'deleteButton' ).each( function( e ) {
-    e.onmouseover = function ( ev ) { Event.element( ev ).src = "/static/images/delete_icon_dark.png" };
-    e.onmouseout = function ( ev ) { Event.element( ev ).src = "/static/images/delete_icon.png" };
+    e.onmouseover = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/delete_icon_dark.png") };
+    e.onmouseout = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/delete_icon.png") };
 } )
 document.getElementsByClassName( 'displayButton' ).each( function( e ) {
-    e.onmouseover = function ( ev ) { Event.element( ev ).src = "/static/images/eye_icon_dark.png" };
-    e.onmouseout = function ( ev ) { Event.element( ev ).src = "/static/images/eye_icon.png" };
+    e.onmouseover = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/eye_icon_dark.png") };
+    e.onmouseout = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/eye_icon.png") };
 } )
 document.getElementsByClassName( 'editButton' ).each( function( e ) {
-    e.onmouseover = function ( ev ) { Event.element( ev ).src = "/static/images/pencil_icon_dark.png" };
-    e.onmouseout = function ( ev ) { Event.element( ev ).src = "/static/images/pencil_icon.png" };
+    e.onmouseover = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/pencil_icon_dark.png") };
+    e.onmouseout = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/pencil_icon.png") };
 } )
 document.getElementsByClassName( 'primaryButton' ).each( function( e ) {
-    e.onmouseover = function ( ev ) { Event.element( ev ).src = "/static/images/thumbtack_icon_dark.png" };
-    e.onmouseout = function ( ev ) { Event.element( ev ).src = "/static/images/thumbtack_icon.png" };
+    e.onmouseover = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/thumbtack_icon_dark.png") };
+    e.onmouseout = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/thumbtack_icon.png") };
 } )
 
 </script>

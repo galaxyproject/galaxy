@@ -2,7 +2,7 @@ body
 {
     background: white;
     color: #303030;
-    background-image: url(/static/style/menu_bg.png);
+    background-image: url(menu_bg.png);
     background-repeat: repeat-x;
     background-position: top;
     margin-top: 5px;
@@ -34,13 +34,13 @@ div.historyItem-ok
     border-top: solid #66AA66 1px;
     border-bottom: solid #66AA66 1px;
     background: #CCFFCC;
-    background-image: url(/static/style/ok_bg.png);
+    background-image: url(ok_bg.png);
     background-repeat: repeat-x;
     background-position: top;
     
 }
 
-div.historyItem-empty
+div.historyItem-error, div.historyItem-empty
 {
     padding: 5px;
     padding-right: 15px;
@@ -49,21 +49,7 @@ div.historyItem-empty
     border-top: solid #AA6666 1px;
     border-bottom: solid #AA6666 1px;
     background: #FFCCCC;
-    background-image: url(/static/style/error_bg.png);
-    background-repeat: repeat-x;
-    background-position: top;
-}
-
-div.historyItem-error
-{
-    padding: 5px;
-    padding-right: 15px;
-    padding-left: 15px;
-    margin-bottom: 5px;
-    border-top: solid #AA6666 1px;
-    border-bottom: solid #AA6666 1px;
-    background: #FFCCCC;
-    background-image: url(/static/style/error_bg.png);
+    background-image: url(error_bg.png);
     background-repeat: repeat-x;
     background-position: top;
 }
@@ -77,7 +63,7 @@ div.historyItem-running
     border-top: solid #AAAA66 1px;
     border-bottom: solid #AAAA66 1px;
     background: #FFFFCC;
-    background-image: url(/static/style/warn_bg.png);
+    background-image: url(warn_bg.png);
     background-repeat: repeat-x;
     background-position: top;
 }
@@ -91,7 +77,7 @@ div.historyItem-queued
     border-top: solid #888888 1px;
     border-bottom: solid #888888 1px;
     background: #EEEEEE;
-    background-image: url(/static/style/gray_bg.png);
+    background-image: url(gray_bg.png);
     background-repeat: repeat-x;
     background-position: top;
 }

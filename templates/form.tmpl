@@ -3,14 +3,14 @@
 <head>
 <title> User Create </title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link href="/static/style/base.css" rel="stylesheet" type="text/css">
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css">
 </head>
 <body onload="document.forms[0].email.focus()">
     
 <div class="toolForm">
   <div class="toolFormTitle">$form.title</div>
   <div class="toolFormBody">
-  <form name="$form.name" action="$form.action" method="post" >
+  <form name="$form.name" action="$h.url_for($form.action)" method="post" >
     <table>
       #for input in $form.inputs    
           <tr><td>$input.label:</td><td><input type="$input.type" name="$input.name" value="$input.value" size="40"></td></tr>

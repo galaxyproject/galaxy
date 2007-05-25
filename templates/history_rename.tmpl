@@ -4,8 +4,8 @@
 <head>
 <title>Rename History</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<link href="/static/style/base.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="/static/universe.js">var dummy1=0;</script>
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="$h.url_for('/static/universe.js')">var dummy1=0;</script>
 </head>
 
 <body onLoad="frame_dw();">
@@ -13,7 +13,7 @@
 <div class="toolForm">
   <div class="toolFormTitle">Rename History</div>
   <div class="toolFormBody">
-  <form action="/history_rename" method="post" >
+  <form action="$h.url_for('/history_rename')" method="post" >
     <table>
         <tr><th>Current Name</th><th>New Name</th></tr>
         #for $history in $histories:

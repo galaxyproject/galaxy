@@ -12,6 +12,8 @@ pkg_resources.require( "PasteDeploy" )
 import webhelpers
 from paste.deploy.converters import asbool
 
+url_for = framework.routes.url_for
+
 def expose( func ):
     """
     Decorator: mark a function as 'exposed' and thus web accessible

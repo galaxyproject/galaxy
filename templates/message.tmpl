@@ -3,19 +3,19 @@
 <head>
 <title> User Login </title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link href="/static/style/base.css" rel="stylesheet" type="text/css">
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css">
 </head>
 <script type="text/javascript">
 #if 'masthead' in $refresh_frames
 if ( parent.parent && parent.parent.frames && parent.parent.frames.galaxy_masthead )
 {
-    parent.parent.frames.galaxy_masthead.location.href="$request.base/masthead";
+    parent.parent.frames.galaxy_masthead.location.href="$h.url_for('/masthead')";
 }
 #end if
 #if 'history' in $refresh_frames
 if ( parent.frames && parent.frames.galaxy_history )
 {
-    parent.frames.galaxy_history.location.href="$request.base/history";
+    parent.frames.galaxy_history.location.href="$h.url_for('/history')";
 }
 #end if
 </script>

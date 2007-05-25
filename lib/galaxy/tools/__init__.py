@@ -655,7 +655,7 @@ class Tool:
             if isinstance( param, HiddenToolParameter ):
                 args[key] = param.value
             elif isinstance( param, BaseURLToolParameter ):
-                args[key] = trans.request.base + param.value
+                args[key] = param.get_value( trans )
             else:
                 raise Exception( "Unexpected parameter type" )
         return args

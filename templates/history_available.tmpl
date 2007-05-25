@@ -3,8 +3,8 @@
 <head>
 <title> Available Histories </title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link href="/static/style/base.css" rel="stylesheet" type="text/css">
-<script language="JavaScript" type="text/javascript" src="/static/universe.js"></script>
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css">
+<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/universe.js')"></script>
 <style>
 tr.history_row_deleted td
 {
@@ -18,18 +18,18 @@ function OnSubmitForm()
 {
   if(document.history_actions.operation[0].checked == true)
   {
-    document.history_actions.action ="/history_share";
+    document.history_actions.action = "$h.url_for("/history_share")";
   }
   else if(document.history_actions.operation[1].checked == true)
   {
 
-    document.history_actions.action ="/history_rename";
+    document.history_actions.action = "$h.url_for("/history_rename")";
   }
   else if(document.history_actions.operation[2].checked == true)
   {
     if (confirm("Are you sure you want to delete these histories?"))
     {
-        document.history_actions.action ="/history_delete";
+        document.history_actions.action = "$h.url_for("/history_delete")";
     }
   }
 
@@ -43,7 +43,7 @@ function OnSubmitForm()
     	
     	#if $history.user is None and $history.datasets
     	<div class="warningmessage">
-    	    Your current history has not been <a href="/history_store">stored</a> 
+    	    Your current history has not been <a href="$h.url_for('/history_store')">stored</a> 
     	    and will be lost if you switch to another history. 
     	</div>
     	#end if
@@ -68,9 +68,9 @@ function OnSubmitForm()
   	        <td>${len(history.active_datasets)}</td>
   	        <td>${str(history.update_time)[:19]}</td>
   	        <td>
-  	          <a href="history_rename?id=$history.id">rename</a><br />
-  	          <a href="history_switch?id=$history.id">switch to</a><br />
-  	          <a href="/history_delete?id=$history.id" onclick="confirm_click('/history_delete?id=$history.id');return false;">delete</a>
+  	          <a href="$h.url_for('history_rename', id=$history.id )">rename</a><br />
+  	          <a href="$h.url_for('history_switch', id=$history.id )">switch to</a><br />
+  	          <a href="$h.url_for('/history_delete', id=$history.id )" onclick="confirm_click('$h.url_for('/history_delete', id=$history.id)');return false;">delete</a>
   	        </td>
 	        </tr>
 	      #end if

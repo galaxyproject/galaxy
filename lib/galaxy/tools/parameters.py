@@ -7,6 +7,9 @@ from galaxy import config, datatypes, util, form_builder
 import validation
 from elementtree.ElementTree import XML, Element
 
+# For BaseURLToolParameter
+from galaxy.web import url_for
+
 log = logging.getLogger(__name__)
 
 class ToolParameter( object ):
@@ -303,8 +306,12 @@ class BaseURLToolParameter( ToolParameter ):
         ToolParameter.__init__( self, tool, elem )
         self.name = elem.get( 'name' )
         self.value = elem.get( 'value', '' )
+    def get_value( self, trans ):
+        # url = trans.request.base + self.value
+        url = url_for( self.value, qualified=True )
+        return url
     def get_html_field( self, trans=None, value=None, other_values={} ):
-        return form_builder.HiddenField( self.name, trans.request.base + self.value )
+        return form_builder.HiddenField( self.name, self.get_value( trans ) )
     def get_initial_value( self, trans, context ):
         return self.value
 

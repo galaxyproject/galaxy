@@ -4,8 +4,8 @@
 <head>
 <title>Galaxy User Options</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<link href="/static/style/base.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="/static/universe.js">var dummy1=0;</script>
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="$h.url_for('/static/universe.js')">var dummy1=0;</script>
 </head>
 
 <body onLoad="frame_dw();">
@@ -14,8 +14,8 @@
   <div class="toolFormTitle">User Options</div>
   <div class="toolFormBody">
     <table>
-        <tr><td>You may login <a href="/user/login">here</a>.</td></tr>
-        <tr><td>If you don't have an account you can make one <a href="/user/create">here</a>.</td></tr>
+        <tr><td>You may login <a href="$h.url_for('/user/login')">here</a>.</td></tr>
+        <tr><td>If you don't have an account you can make one <a href="$h.url_for('/user/create')">here</a>.</td></tr>
     </table>
   </div>
 </div>

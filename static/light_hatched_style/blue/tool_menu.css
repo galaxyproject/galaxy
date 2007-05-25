@@ -2,7 +2,7 @@ body
 {
     background: white;
     color: #303030;
-    background: white url(/static/style/menu_bg.png) top repeat-x;
+    background: white url(menu_bg.png) top repeat-x;
     margin: 5px;
     margin-right: 15px;
     margin-left: 15px;

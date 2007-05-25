@@ -4,8 +4,8 @@
 <head>
 <title>User Settings</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<link href="/static/style/base.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="/static/universe.js">var dummy1=0;</script>
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="$h.url_for('/static/universe.js')">var dummy1=0;</script>
 </head>
 
 <body onLoad="frame_dw();">
@@ -24,9 +24,9 @@
 	</ul>
 	<h3>Histories</h3>
 	<ul>
-		<li><a href="/history_available">View</a> your available histories</li>
-		<li><a href="/history_store">Store</a> your current history</li>
-		<li><a href="/history_delete?id=$history.id" onclick="confirm_click('/history_delete?id=$history.id');return false;">Delete</a> your current history</li>
+		<li><a href="$h.url_for('/history_available')">View</a> your available histories</li>
+		<li><a href="$h.url_for('/history_store')">Store</a> your current history</li>
+		<li><a href="$h.url_for('/history_delete', id=$history.id )" onclick="confirm_click('$h.url_for('/history_delete', id=$history.id )');return false;">Delete</a> your current history</li>
 	</ul>
 
 </div>

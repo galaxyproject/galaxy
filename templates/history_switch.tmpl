@@ -3,7 +3,7 @@
 <head>
 <title> Switch History </title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link href="/static/style/base.css" rel="stylesheet" type="text/css">
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css">
 </head>
 <body>
     
@@ -13,7 +13,7 @@
     	
     	#if $history.user is None and $history.datasets
     	<div class="warningmessage">
-    	    Your current history has not been <a href="/history_store">stored</a> 
+    	    Your current history has not been <a href="$h.url_for('/history_store')">stored</a> 
     	    and will be lost if you switch to another history. 
     	</div>
     	#end if
@@ -25,7 +25,7 @@
 	        <tr class="header"><td>Name</td><td># datasets<td>created</td><td></td></tr>
 	    #for $history in $user.histories:
 	      #if not( $history.deleted )
-	        <tr><td>$history.name </td><td>${len(history.datasets)}<td>$history.create_time</td><td><a href="history_switch?id=$history.id">switch to</a></td></tr>
+	        <tr><td>$history.name </td><td>${len(history.datasets)}<td>$history.create_time</td><td><a href="$h.url_for('history_switch', id=$history.id )">switch to</a></td></tr>
 	      #end if
 	    #end for
 	    </table>

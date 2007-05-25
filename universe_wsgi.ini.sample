@@ -34,6 +34,13 @@ use = egg:Paste#urlmap
 /images = static_images
 /static/style = static_style
 /favicon.ico = static_favicon
+## Uncomment the following if running behind a proxy with a prefix, and 
+## set the prefix in the next section
+# filter-with = proxy-prefix
+
+[filter:proxy-prefix]
+use = egg:PasteDeploy#prefix
+prefix = /galaxy
 
 # The universe web interface
 
