@@ -106,9 +106,11 @@
   <section name="Graph/Display Data" id="plots">
     <tool file="plotting/histogram2.xml" />
     <tool file="plotting/scatterplot.xml" />
+    <tool file="plotting/xy_plot.xml" />
     <tool file="visualization/GMAJ.xml" />
     <tool file="visualization/LAJ.xml" />
     <tool file="data_source/show_in_ucsc.xml" />
+    <tool file="visualization/build_ucsc_custom_track.xml" />
   </section>
  <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss/emboss_cai.xml" />
