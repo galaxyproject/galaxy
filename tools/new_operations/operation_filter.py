@@ -55,3 +55,29 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
         except Exception, exc:
             data.blurb = jobs.JOB_ERROR
             data.state = jobs.JOB_ERROR
+
+def exec_after_merge(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
+    exec_after_process(
+        app, inp_data, out_data, param_dict, tool=tool, stdout=stdout, stderr=stderr)
+
+    # strip strand column if clusters were merged
+    items = out_data.items()
+    print param_dict['returntype']
+    for name, data in items:
+        if param_dict['returntype'] == True:
+            data.metadata.chromCol = 1
+            data.metadata.startCol = 2
+            data.metadata.endCol = 3
+        # merge always clobbers strand
+        data.metadata.strandCol = None
+            
+
+def exec_after_cluster(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
+    exec_after_process(
+        app, inp_data, out_data, param_dict, tool=tool, stdout=stdout, stderr=stderr)
+
+    # strip strand column if clusters were merged
+    if param_dict["returntype"] == '1':
+        items = out_data.items()
+        for name, data in items:
+            data.metadata.strandCol = None

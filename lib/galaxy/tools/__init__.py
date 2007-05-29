@@ -202,17 +202,16 @@ class Tool:
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
-        sys.path.append( self.tool_dir )
         self.code_namespace = dict()
+        self.hook_map = {}
         for code_elem in root.findall("code"):
+            for hook_elem in code_elem.findall("hook"):
+                for key, value in hook_elem.items():
+                    # map hook to function
+                    self.hook_map[key]=value
             file_name = code_elem.get("file")
             code_path = os.path.join( self.tool_dir, file_name )
             execfile( code_path, self.code_namespace )
-        # Restore old sys.path
-        try:
-            sys.path.remove( self.tool_dir )
-        except:
-            pass  # bad?
         # Load any tool specific options (optional)
         self.options = dict( sanitize=True, refresh=False )
         for option_elem in root.findall("options"):
@@ -495,8 +494,12 @@ class Tool:
         Returns an object from the code file referenced by `code_namespace`
         (this will normally be a callable object)
         """
-        if self.code_namespace and name in self.code_namespace:
-            return self.code_namespace[name]
+        if self.code_namespace:
+            # Try to look up hook in self.hook_map, otherwise resort to default
+            if name in self.hook_map and self.hook_map[name] in self.code_namespace:
+                return self.code_namespace[self.hook_map[name]]
+            elif name in self.code_namespace:
+                return self.code_namespace[name]
         return None
         
     def visit_inputs( self, value, callback ):
