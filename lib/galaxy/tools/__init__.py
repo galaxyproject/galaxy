@@ -20,6 +20,7 @@ from grouping import *
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
+from copy import copy
 
 log = logging.getLogger( __name__ )
 
@@ -185,12 +186,18 @@ class Tool:
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = util.xml_text(root, "hidden")
         if self.hidden: self.hidden = util.string_as_bool(self.hidden)
-        # Load any tool specific code (optional)
+        # Load any tool specific code (optional) Edit: INS 5/29/2007,
+        # allow code files to have access to the individual tool's
+        # "module" if it has one.  Allows us to reuse code files, etc.
+        oldpath = copy(sys.path)
+        sys.path.append( self.tool_dir )
         self.code_namespace = dict()
         for code_elem in root.findall("code"):
             file_name = code_elem.get("file")
             code_path = os.path.join( self.tool_dir, file_name )
             execfile( code_path, self.code_namespace )
+        # Restore old sys.path
+        sys.path = oldpath
         # Load any tool specific options (optional)
         self.options = dict( sanitize=True, refresh=False )
         for option_elem in root.findall("options"):

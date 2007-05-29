@@ -55,4 +55,3 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
         except Exception, exc:
             data.blurb = jobs.JOB_ERROR
             data.state = jobs.JOB_ERROR
-
