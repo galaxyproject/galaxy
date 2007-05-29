@@ -68,6 +68,7 @@
   </section>
   <section name="Fetch Sequences and Alignments" id="extract">
     <tool file="extract/fasta-subseq-wrapper.xml" />
+    <tool file="extract/twoBitToFa_wrapper.xml" />
     <tool file="extract/extractAxt_wrapper.xml" />
     <tool file="extract/interval2maf_pairwise.xml" />
     <tool file="extract/interval2maf.xml" />

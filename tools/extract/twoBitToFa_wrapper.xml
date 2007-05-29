@@ -1,0 +1,61 @@
+<tool id="Extract genomic DNA" name="Extract genomic DNA2">
+  <description>from unassembled genome coordinates</description>
+  <command interpreter="perl">twoBitToFa_wrapper.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey "/depot/data2/galaxy/twobit.loc"</command>
+  <inputs>
+    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"/>
+  </inputs>
+  <outputs>
+    <data format="fasta" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="droPer1.bed" dbkey="droPer1" ftype="bed" />
+      <output name="out_file1" file="droPer1.dat" />
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+Make sure the input data has been specified a database build. 
+
+-----
+
+**Syntax**
+
+This tool uses coordinate, strand, and build information to fetch genomic DNAs from partially assembled and unassembled genomes in FASTA format.
+
+- **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
+
+  - This format contains a one line header. It starts with a " >" symbol. The first word on this line is the name of the sequence. The rest of the line is a description of the sequence.
+  - The remaining lines contain the sequence itself.
+  - Blank lines in a FASTA file are ignored, and so are spaces or other gap symbols (dashes, underscores, periods) in a sequence.
+  - Fasta files containing multiple sequences are just the same, with one sequence listed right after another. This format is accepted for many multiple sequence alignment programs.
+
+-----
+
+**Example**
+
+- Input dataset::
+
+    super_1	127475281	127475310	NM_000230	0	+
+    super_1	127485994	127486166	NM_000230	0	+
+    super_1	127486011	127486166	D49487	0	+
+
+- Fetch genomic DNAs of the above data::
+
+    &gt;super_1:127475281-127475310
+    GTAGGAATCGCAGCGCCAGCGGTTGCAAG
+    &gt;super_1:127485994-127486166
+    GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCG
+    GATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATC
+    CAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAG
+    GATCAATGACATTTCACACACG
+    &gt;super_1:127486011-127486166
+    TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGG
+    CCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGA
+    CACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCAC
+    ACACG
+
+</help>
+</tool>
