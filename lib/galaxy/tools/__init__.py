@@ -155,7 +155,7 @@ class DefaultToolState( object ):
         test = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
         assert a == test
         # Restore from string
-        values = simplejson.loads( value )
+        values = json_fix( simplejson.loads( value ) )
         self.page = values.pop( "__page__" )
         self.inputs = tool.params_from_strings( values, app, ignore_errors=True )
 
@@ -715,7 +715,7 @@ class Tool:
         """
         rval = dict()
         for key, value in params.iteritems():
-            value = simplejson.loads( value )
+            value = json_fix( simplejson.loads( value ) )
             if key in self.inputs:
                 value = self.inputs[key].value_from_basic( value, app, ignore_errors )
             rval[ key ] = value 
@@ -875,3 +875,14 @@ class DatasetFilenameWrapper( object ):
         return self.dataset.file_name
     def __getattr__( self, key ):
         return getattr( self.dataset, key )
+        
+def json_fix( val ):
+    if isinstance( val, list ):
+        return [ json_fix( v ) for v in val ]
+    elif isinstance( val, dict ):
+        return dict( [ ( k, json_fix( v ) ) for ( k, v ) in val.iteritems() ] )
+    elif isinstance( val, unicode ):
+        return val.decode( "utf8" )
+    else:
+        return val
+    
