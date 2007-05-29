@@ -27,6 +27,7 @@ class Configuration( object ):
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )
+        self.tool_secret = kwargs.get( "tool_secret", "" )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
         self.job_queue_workers = int( kwargs.get( "job_queue_workers", "10" ) )
