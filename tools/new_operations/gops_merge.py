@@ -6,6 +6,7 @@ Merge overlaping regions.
 usage: %prog in_file out_file
     -1, --cols1=N,N,N,N: Columns for start, end, strand in first file
     -m, --mincols=N: Require this much overlap (default 1bp)
+    -3, --threecol: Output 3 column bed
 """
 
 import pkg_resources
@@ -48,12 +49,21 @@ def main():
 
     try:
         for line in merge(g1,mincols=mincols):
-            if type( line ) is GenomicInterval:
-                print >> out_file, "\t".join( line.fields )
-            elif type( line ) is list:
-                print >> out_file, "\t".join( line )
+            if options.threecol:
+                if type( line ) is GenomicInterval:
+                    print >> out_file, line.chrom + "\t" + str(line.startCol) + "\t" + str(line.endCol)
+                elif type( line ) is list:
+                    print >> out_file, \
+                          line[chr_col_1] + "\t" + str(line[start_col_1]) + "\t" + str(line[end_col_1])
+                else:
+                    print out_file, line
             else:
-                print >> out_file, line
+                if type( line ) is GenomicInterval:
+                    print >> out_file, "\t".join( line.fields )
+                elif type( line ) is list:
+                    print >> out_file, "\t".join( line )
+                else:
+                    print >> out_file, line
     except ParseError, exc:
         print >> sys.stderr, "Invalid file format: ", str( exc )
 

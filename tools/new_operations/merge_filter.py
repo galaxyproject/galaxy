@@ -10,7 +10,10 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
         app, inp_data, out_data, param_dict, tool=tool, stdout=stdout, stderr=stderr)
 
     # strip strand column if clusters were merged
-    if param_dict["returntype"] == '1':
+    if param_dict["returntype"] == True:
         items = out_data.items()
         for name, data in items:
+            data.metadata.chromCol = 1
+            data.metadata.startCol = 2
+            data.metadata.endCol = 3
             data.metadata.strandCol = None
