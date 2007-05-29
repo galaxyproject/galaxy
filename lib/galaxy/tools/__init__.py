@@ -688,10 +688,8 @@ class Tool:
         rval = dict()
         for key, value in params.iteritems():
             if key in self.inputs:
-                basic = self.inputs[ key ].value_to_basic( value, app )
-                rval[ key ] = simplejson.dumps( basic )
-            else:
-                rval[ key ] = value
+                value = self.inputs[ key ].value_to_basic( value, app )
+            rval[ key ] = simplejson.dumps( value )
         return rval
         
     def params_from_strings( self, params, app, ignore_errors=False ):
@@ -703,11 +701,10 @@ class Tool:
         """
         rval = dict()
         for key, value in params.iteritems():
+            value = simplejson.loads( value )
             if key in self.inputs:
-                basic = simplejson.loads( value )
-                rval[ key ] = self.inputs[key].value_from_basic( basic, app, ignore_errors )
-            else:
-                rval[ key ] = value 
+                value = self.inputs[key].value_from_basic( value, app, ignore_errors )
+            rval[ key ] = value 
         return rval
         
     def build_param_dict( self, incoming, input_datasets, output_datasets ):
