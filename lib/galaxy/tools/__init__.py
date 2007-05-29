@@ -7,7 +7,6 @@ pkg_resources.require( "Cheetah" )
 pkg_resources.require( "simplejson" )
 
 import logging, os, string, sys, tempfile
-import thread
 import simplejson
 
 from UserDict import DictMixin
@@ -21,7 +20,6 @@ from grouping import *
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
-from copy import copy
 
 log = logging.getLogger( __name__ )
 
@@ -197,7 +195,10 @@ class Tool:
             code_path = os.path.join( self.tool_dir, file_name )
             execfile( code_path, self.code_namespace )
         # Restore old sys.path
-        sys.path.remove( self.tool_dir )
+        try:
+            sys.path.remove( self.tool_dir )
+        except:
+            pass  # bad?
         # Load any tool specific options (optional)
         self.options = dict( sanitize=True, refresh=False )
         for option_elem in root.findall("options"):

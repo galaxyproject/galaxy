@@ -16,7 +16,8 @@
   <tests>
     <test>
       <param name="input1" value="1.bed" />
-      <output name="output" file="gops-merge.dat" />     
+      <output name="output" file="gops-merge.dat" />
+      <param name="returntype" value="true" />
     </test>
   </tests>
   <help>
