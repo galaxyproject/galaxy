@@ -62,7 +62,6 @@ def exec_after_merge(app, inp_data, out_data, param_dict, tool=None, stdout=None
 
     # strip strand column if clusters were merged
     items = out_data.items()
-    print param_dict['returntype']
     for name, data in items:
         if param_dict['returntype'] == True:
             data.metadata.chromCol = 1
