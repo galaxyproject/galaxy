@@ -882,7 +882,7 @@ def json_fix( val ):
     elif isinstance( val, dict ):
         return dict( [ ( k, json_fix( v ) ) for ( k, v ) in val.iteritems() ] )
     elif isinstance( val, unicode ):
-        return val.decode( "utf8" )
+        return val.encode( "utf8" )
     else:
         return val
     
