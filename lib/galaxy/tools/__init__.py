@@ -190,7 +190,6 @@ class Tool:
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
-        oldpath = copy(sys.path)
         sys.path.append( self.tool_dir )
         self.code_namespace = dict()
         for code_elem in root.findall("code"):
@@ -198,7 +197,7 @@ class Tool:
             code_path = os.path.join( self.tool_dir, file_name )
             execfile( code_path, self.code_namespace )
         # Restore old sys.path
-        sys.path = oldpath
+        sys.path.remove( self.tool_dir )
         # Load any tool specific options (optional)
         self.options = dict( sanitize=True, refresh=False )
         for option_elem in root.findall("options"):
