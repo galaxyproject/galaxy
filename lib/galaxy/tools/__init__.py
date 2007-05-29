@@ -8,6 +8,7 @@ pkg_resources.require( "simplejson" )
 
 import logging, os, string, sys, tempfile
 import simplejson
+import sha, hmac, binascii
 
 from UserDict import DictMixin
 from Cheetah.Template import Template
@@ -133,15 +134,28 @@ class DefaultToolState( object ):
         self.inputs = None
     def encode( self, tool, app ):
         """
-        Convert the data to a pickleable form
+        Convert the data to a string
         """
-        rval = tool.params_to_strings( self.inputs, app )
-        rval["__page__"] = self.page  
-        return rval      
-    def decode( self, values, tool, app ):
+        # Convert parameters to a dictionary of strings, and save curent
+        # page in that dict
+        value = tool.params_to_strings( self.inputs, app )
+        value["__page__"] = self.page
+        value = simplejson.dumps( value )
+        # Make it secure
+        a = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
+        b = binascii.hexlify( value )
+        return "%s:%s" % ( a, b )      
+    def decode( self, value, tool, app ):
         """
-        Restore the state from pickleable form
+        Restore the state from a string
         """
+        # Extract and verify hash
+        a, b = value.split( ":" )
+        value = binascii.unhexlify( b )
+        test = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
+        assert a == test
+        # Restore from string
+        values = simplejson.loads( value )
         self.page = values.pop( "__page__" )
         self.inputs = tool.params_from_strings( values, app, ignore_errors=True )
 
@@ -689,7 +703,7 @@ class Tool:
         for key, value in params.iteritems():
             if key in self.inputs:
                 value = self.inputs[ key ].value_to_basic( value, app )
-            rval[ key ] = simplejson.dumps( value )
+            rval[ key ] = str( simplejson.dumps( value ) )
         return rval
         
     def params_from_strings( self, params, app, ignore_errors=False ):
