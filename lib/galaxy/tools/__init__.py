@@ -7,6 +7,7 @@ pkg_resources.require( "Cheetah" )
 pkg_resources.require( "simplejson" )
 
 import logging, os, string, sys, tempfile
+import thread
 import simplejson
 
 from UserDict import DictMixin
@@ -189,6 +190,8 @@ class Tool:
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
+        lock = thread.allocate_lock()
+        lock.acquire(True)
         oldpath = copy(sys.path)
         sys.path.append( self.tool_dir )
         self.code_namespace = dict()
@@ -198,6 +201,7 @@ class Tool:
             execfile( code_path, self.code_namespace )
         # Restore old sys.path
         sys.path = oldpath
+        lock.release()
         # Load any tool specific options (optional)
         self.options = dict( sanitize=True, refresh=False )
         for option_elem in root.findall("options"):
