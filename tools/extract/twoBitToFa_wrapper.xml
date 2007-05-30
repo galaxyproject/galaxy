@@ -1,4 +1,4 @@
-<tool id="Extract genomic DNA" name="Extract genomic DNA2">
+<tool id="Extract genomic DNA2" name="Extract genomic DNA">
   <description>from unassembled genome coordinates</description>
   <command interpreter="perl">twoBitToFa_wrapper.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey "/depot/data2/galaxy/twobit.loc"</command>
   <inputs>

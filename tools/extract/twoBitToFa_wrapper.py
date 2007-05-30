@@ -15,7 +15,7 @@ def reverse_complement(text):
     return "".join(comp)
 
 if len(sys.argv) != 9:
-    print "USAGE: prog input out_file input_chromCol input_startCol input_endCol input_strandCol input_dbkey loc_file"
+    print >>sys.stderr, "USAGE: prog input out_file input_chromCol input_startCol input_endCol input_strandCol input_dbkey loc_file"
     sys.exit()
 
 infile = sys.argv[1]
@@ -52,7 +52,8 @@ except Exception, exc:
     print >>sys.stdout, 'twoBitToFa_wrapper.py initialization error -> %s' % exc 
 
 if filepath == None:
-    print "Sequences for the specified genome are unavailable. You may want to try the 'Extract genomic DNA corresponding to query coordinates' tool"
+    print >>sys.stderr, "Sequences for the specified genome are unavailable. You may want to try the 'Extract genomic DNA corresponding to query coordinates' tool"
+    sys.exit()
 else:
     try:
         fout = open(outfile, "w")
@@ -66,27 +67,29 @@ else:
                 end = fields[int(end_col)-1]
                 #Run twoBitToFa program
                 tmpfile = tempfile.NamedTemporaryFile()
-                cmdline = "tools/extract/twoBitToFa " + filepath.strip() + " " + tmpfile.name + " -seq=" + name + " -start=" + start + " -end=" + end 
+                cmdline = "tools/extract/twoBitToFa " + filepath.strip() + " " + tmpfile.name + " -seq=" + name + " -start=" + start + " -end=" + end + "  > /dev/null 2>&1" 
                 os.system(cmdline)
                 header = tmpfile.readline()
                 seq = tmpfile.read()
+                if header == "" and seq == "":
+                    print >>sys.stderr, '%s:%s-%s is either invalid or not present in the specified genome.' %(name,start,end)
+                    continue
                 if strand_col != 0 and fields[int(strand_col)-1] == "-":    # for negative strand
                     print >>fout, header.strip()
                     revcompseq = reverse_complement(seq.replace("\n","").replace("\r",""))
                     i = 0
                     while i < len (revcompseq):        
-                        print >>fout, revcompseq[i:i+50]    #print 50 nucleotides per line of the fasta output
+                        print >>fout, revcompseq[i:i+50].strip()    #print 50 nucleotides per line of the fasta output
                         i += 50 
                     #print >>fout, reverse_complement(seq.replace("\n","").replace("\r",""))    
                 else:    # for positive strand
                     print >>fout, header.strip()
-                    print >>fout, seq                    
+                    print >>fout, seq.strip()                   
             except:
                 pass    #skip invalid lines
         fout.close()
-        print "Genomic DNA corresponding to query co-ordinates"
+        print "Genomic DNA corresponding to query co-ordinates:"
     except Exception, exc:
-        print >>sys.stdout, exc 
-
+        print >>sys.stderr, exc
   
     
