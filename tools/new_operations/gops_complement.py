@@ -39,7 +39,7 @@ def main():
     except:
         cookbook.doc_optparse.exception()
 
-    g1 = GenomicIntervalReader( fileinput.FileInput( in_fname ),
+    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
                                 chrom_col=chr_col_1,
                                 start_col=start_col_1,
                                 end_col=end_col_1,
@@ -88,6 +88,10 @@ def main():
                 print >> out_file, interval
     except ParseError, exc:
         print >> sys.stderr, "Invalid file format: ", str( exc )
+
+    if g1.skipped > 0:
+        first_line, line_contents = g1.skipped_lines[0]
+        print 'Condition/data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( g1.skipped, first_line, line_contents )
 
 if __name__ == "__main__":
     main()

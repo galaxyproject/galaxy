@@ -44,7 +44,7 @@ def main():
     except:
         cookbook.doc_optparse.exception()
 
-    g1 = GenomicIntervalReader( fileinput.FileInput( in_file_1 ),
+    g1 = NiceReaderWrapper( fileinput.FileInput( in_file_1 ),
                                 chrom_col=chr_col_1,
                                 start_col=start_col_1,
                                 end_col=end_col_1,
@@ -52,7 +52,7 @@ def main():
     if strand_col_1 >= 0:
         g1.strand_col=strand_col_1
         
-    g2 = GenomicIntervalReader( fileinput.FileInput( in_file_2 ),
+    g2 = NiceReaderWrapper( fileinput.FileInput( in_file_2 ),
                                 chrom_col=chr_col_2,
                                 start_col=start_col_2,
                                 end_col=end_col_2,
@@ -69,6 +69,12 @@ def main():
                 print >> out_file, line
     except ParseError, exc:
         print >> sys.stderr, "Invalid file format: ", str( exc )
+        
+    if g1.skipped > 0:
+        print skipped( g1, filedesc=" of 1st dataset" )
 
+    if g2.skipped > 0:
+        print skipped( g2, filedesc=" of 2nd dataset" )
+        
 if __name__ == "__main__":
     main()
