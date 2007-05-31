@@ -448,25 +448,26 @@ class Tool:
         self.fill_in_new_state( trans, self.inputs_by_page[ 0 ], state.inputs )
         return state
 
-    def fill_in_new_state( self, trans, inputs, state ):
+    def fill_in_new_state( self, trans, inputs, state, context=None ):
         """
         Fill in a state dictionary with default values taken from input.
         Grouping elements are filled in recursively. 
         """
+        context = ExpressionContext( state, context )
         for input in inputs.itervalues():
             if isinstance( input, Repeat ):  
                 state[ input.name ] = []
             elif isinstance( input, Conditional ):
                 s = state[ input.name ] = {}
-                test_value = input.test_param.get_initial_value( trans, state )
+                test_value = input.test_param.get_initial_value( trans, context )
                 current_case = input.get_current_case( test_value, trans )
-                self.fill_in_new_state( trans, input.cases[current_case].inputs, s )
+                self.fill_in_new_state( trans, input.cases[current_case].inputs, s, context )
                 # Store the current case in a special value
                 s['__current_case__'] = current_case
                 # Store the value of the test element
                 s[ input.test_param.name ] = test_value
             else:
-                value = input.get_initial_value( trans, state )
+                value = input.get_initial_value( trans, context )
                 state[ input.name ] = value
 
     def get_param_html_map( self, trans, page=0, other_values={} ):

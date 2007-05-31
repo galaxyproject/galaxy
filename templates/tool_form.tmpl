@@ -1,4 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+#from galaxy.util.expressions import ExpressionContext 
+
 <html>
 
 <head>
@@ -15,7 +18,8 @@
    <p></p>
 #end if
 
-#def do_inputs( $inputs, $tool_state, $errors, $prefix )
+#def do_inputs( $inputs, $tool_state, $errors, $prefix, $context=None )
+  #set $context = ExpressionContext( $tool_state, $context )
   #for $input_index, $input in enumerate( $inputs.itervalues() )
     #if $input.type == "repeat"
       #if $input_index > 0
@@ -30,7 +34,7 @@
           #set rep_errors = dict()
         #end if
         <tr><td colspan="2"><b>${input.title} ${i + 1}</b></td></tr>
-        $do_inputs( $input.inputs, $repeat_state[$i], $rep_errors, $prefix + $input.name + "_" + str(i) + "|" )
+        $do_inputs( $input.inputs, $repeat_state[$i], $rep_errors, $prefix + $input.name + "_" + str(i) + "|", $context )
         <tr><td></td><td><input type="submit" name="${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}"></td></tr>
       #end for
       <tr><td colspan="2">&nbsp;</td></tr>
@@ -41,19 +45,19 @@
       #set group_errors = $errors.get( $input.name, {} )
       #set current_case = $group_state['__current_case__']
       #set prefix = $prefix + $input.name + "|"
-      $row_for_param( $prefix, $input.test_param, $group_state, $group_errors, refresh=True )
-      $do_inputs( $input.cases[$current_case].inputs, $group_state, $group_errors, $prefix )
+      $row_for_param( $prefix, $input.test_param, $group_state, $group_errors, $context, refresh=True )
+      $do_inputs( $input.cases[$current_case].inputs, $group_state, $group_errors, $prefix, $context )
     #else
-      $row_for_param( $prefix, $input, $tool_state, $errors )
+      $row_for_param( $prefix, $input, $tool_state, $errors, $context )
     #end if
   #end for  
 #end def
 
-#def row_for_param( $prefix, $param, $parent_state, $parent_errors, $refresh=False )
+#def row_for_param( $prefix, $param, $parent_state, $parent_errors, $context, $refresh=False )
   <tr valign="top">
     <td>$param.get_label():</td>
     <td>
-      #set field = $param.get_html_field( $caller, $parent_state[ $param.name ], $parent_state )
+      #set field = $param.get_html_field( $caller, $parent_state[ $param.name ], $context )
       #set $field.refresh_on_change = $refresh
       <div>$field.get_html( $prefix )</div>
       #if $parent_errors.has_key( $param.name ):
