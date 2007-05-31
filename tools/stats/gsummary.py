@@ -135,8 +135,8 @@ def read_table(datafile, cols):
                     if not table.has_key( colname ): 
                         table[colname] = []
                     table[colname].append( val )
-        if valid and not width:
-            width = len(f)
+                if not width:
+                    width = len(f)
     if len(table) > 0:
         """
         terms will look like this: r dataframe:  c1=table['c1'], c2=table['c2'], ...
