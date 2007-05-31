@@ -38,25 +38,21 @@ def validate_input( trans, error_map, param_values, page_param_map ):
             error_map[name] = "A dataset of the appropriate type is required"
 
 # Commented out by INS, 5/30/2007.  What is the PURPOSE of this?
-## def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
-##     """Verify the output data after each run"""
-##     items = out_data.items()
-
-##     for name, data in items:
-##         try:
-##             err_msg, err_flag = '', False
-##             if data.info and data.info[0] != 'M'
-##                 data.peek = 'no peek'
-##                 os.remove( data.file_name )
-##                 err_flag = True
-##             if err_flag:
-##                 raise Exception(err_msg)
-
-##         except Exception, exc:
-##             data.blurb = jobs.JOB_ERROR
-##             data.state = jobs.JOB_ERROR
 def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
-    pass
+    """Verify the output data after each run"""
+    items = out_data.items()
+
+    for name, data in items:
+        try:
+            if stderr and len( stderr ) > 0:
+                raise Exception( stderr )
+
+        except Exception, exc:
+            data.blurb = jobs.JOB_ERROR
+            data.state = jobs.JOB_ERROR
+
+## def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
+##     pass
 
 
 def exec_after_merge(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
