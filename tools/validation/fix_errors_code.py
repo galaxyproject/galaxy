@@ -14,7 +14,7 @@ def validate(incoming):
     #raise Exception, 'not quite right'
     pass
 
-def exec_before_job( trans, inp_data, out_data, param_dict, tool=None):
+def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     """Build a temp file with errors in it"""
     errors = []
     for name, data in inp_data.items():

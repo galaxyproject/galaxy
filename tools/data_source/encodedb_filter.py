@@ -5,10 +5,10 @@ def validate(incoming):
     #raise Exception, 'not quite right'
     pass
 
-def exec_before_job( trans, inp_data, out_data, param_dict, tool=None):
+def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     """Sets the name of the data"""
     dataid = param_dict.get( 'dataid', None )
-    data = trans.model.Dataset.get( dataid )
+    data = app.model.Dataset.get( dataid )
     if data:
         data.info = data.states.RUNNING
         data.flush()

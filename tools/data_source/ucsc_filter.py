@@ -6,7 +6,7 @@ def validate(incoming):
     #raise Exception, 'not quite right'
     pass
 
-def exec_before_job( trans, inp_data, out_data, param_dict, tool=None):
+def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     """Sets the name of the data"""
     outputType = param_dict.get( 'hgta_outputType', None )
     if isinstance(outputType, list) and len(outputType)>0: outputType = outputType[-1]

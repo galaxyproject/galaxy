@@ -1,7 +1,7 @@
 #Code for direct connection to UCSC
 from galaxy import datatypes
 
-def exec_before_job( trans, inp_data, out_data, param_dict, tool=None):
+def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     """Sets the name of the data"""
     outputType = param_dict.get( 'hgta_outputType', "interval" ).lower() #assume all data is interval, we will fix later if not the case
     #list for converting ucsc to galaxy exts, if not in following dictionary, use provided datatype

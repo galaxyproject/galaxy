@@ -4,7 +4,7 @@ import urllib
 from galaxy import datatypes, config
 import tempfile, shutil
 
-def exec_before_job( trans, inp_data, out_data, param_dict, tool=None):
+def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     """Sets the name of the data"""
     data_name = param_dict.get( 'name', 'HbVar query' )
     data_type = param_dict.get( 'type', 'text' )

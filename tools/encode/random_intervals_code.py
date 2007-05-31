@@ -35,6 +35,6 @@ def get_available_data( build ):
         return [('No data available for this build','None',True)]
 
 
-#def exec_before_job(inp_data, out_data, param_dict, tool):
+#def exec_before_job(app, inp_data, out_data, param_dict, tool):
 #    for name, data in out_data.items():
 #        data.name = data.name + " [" + maf_sets[param_dict['mafType']]['description'] + "]"
