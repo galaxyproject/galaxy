@@ -171,8 +171,10 @@ class JobWrapper( object ):
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         # Build params, done before hook so hook can use
         param_dict = self.tool.build_param_dict( incoming, inp_data, out_data )
-        # Run the before queue ("exec_before_job") hook
-        self.tool.call_hook( 'exec_before_job', trans=None, inp_data=inp_data, 
+        # Run the before queue ("exec_before_job") hook "trans" is no
+        # longer available to this hook, and has been replaced with
+        # app - 5/31/2007, by INS
+        self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, tool=self.tool, param_dict=incoming )
         mapping.context.current.flush()
         # Build any required config files
