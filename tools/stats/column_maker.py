@@ -7,6 +7,7 @@ informing the user about the number of lines skipped.  Invalid lines are those t
 defined when the get_wrap_func function (immediately below) is applied to the first uncommented line in the input file.
 """
 import sys, sets, re, os.path
+from galaxy.tools import validation
 
 def get_wrap_func(value, round):
     """
@@ -49,6 +50,16 @@ mapped_str = {
 }
 for key, value in mapped_str.items():
     cond_text = cond_text.replace(key, value)
+
+"""
+Attempt to ensure the expression is valid Python
+"""
+validator_msg = 'Invalid syntax in "%s". See tool tips and warnings for examples of proper expression syntax.' %cond_text
+try:
+    validator = validation.ExpressionValidator(validator_msg, cond_text)
+except:
+    print validator_msg
+    sys.exit()
 
 # safety measures
 safe_words = sets.Set( "c chr str float int split map lambda and or len type".split() )

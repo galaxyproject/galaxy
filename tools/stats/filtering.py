@@ -7,6 +7,7 @@ Invalid lines are those that do not follow the standard defined when the get_wra
 is applied to the first uncommented line in the input file.
 """
 import sys, sets, re, os.path
+from galaxy.tools import validation
 
 def get_wrap_func(value):
     """
@@ -45,9 +46,9 @@ out_file  = sys.argv[2]
 cond_text = sys.argv[3]
 
 if cond_text == '' or cond_text == None:
-    print 'Empty filtering condition'
+    print 'Empty filtering condition.'
     sys.exit()
-        
+
 # replace if input has been escaped
 mapped_str = {
     '__lt__': '<',
@@ -63,7 +64,17 @@ for key, value in mapped_str.items():
     cond_text = cond_text.replace(key, value)
 
 """
-We'll attempt to determine if the condition includes executable stuff and, if so, exit
+Attempt to ensure the expression is valid Python
+"""
+validator_msg = 'Invalid syntax in "%s". See tool tips and warnings for examples of proper expression syntax.' %cond_text
+try:
+    validator = validation.ExpressionValidator(validator_msg, cond_text)
+except:
+    print validator_msg
+    sys.exit()
+    
+"""
+Attempt to determine if the condition includes executable stuff and, if so, exit
 """
 secured = dir()
 operands = get_operands(cond_text)
@@ -72,9 +83,6 @@ for operand in operands:
     try:
         map(int, operand)
     except:
-        if operand == '=':
-            print 'Syntax error in "%s" - make sure to use proper operators (e.g., <=, ==, >=)' %cond_text
-            sys.exit()
         if operand in secured:
             stop_err("Illegal value %s in condition %s" % (operand, cond_text) )
 
@@ -93,12 +101,12 @@ else:
     sys.exit()
 
 if not elems:
-    print 'No non-blank or non-comment lines in the data you selected for filtering'
+    print 'No non-blank or non-comment lines in the data you selected for filtering.'
     sys.exit()
 
 if len(elems) == 1:
     if len(line.split()) != 1:
-        print 'This tool can only be run on tab delimited data'
+        print 'This tool can only be run on tab delimited data.'
         sys.exit()
 
 """
