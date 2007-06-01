@@ -5,6 +5,7 @@ Universe configuration builder.
 import sys, os
 import logging, logging.config
 from optparse import OptionParser
+import ConfigParser
 
 log = logging.getLogger( __name__ )
 
@@ -45,6 +46,16 @@ class Configuration( object ):
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "" )
         self.use_heartbeat = kwargs.get( 'use_heartbeat', False )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea" ).lower().split(",")
+        #Parse global_conf
+        global_conf = kwargs.get( 'global_conf', None )
+        global_conf_parser = ConfigParser.ConfigParser()
+        if global_conf and "__file__" in global_conf:
+            global_conf_parser.read(global_conf['__file__'])
+        #Store datatypes
+        try:
+            self.datatypes = global_conf_parser.items("galaxy:datatypes")
+        except ConfigParser.NoSectionError:
+            self.datatypes = []
     def get( self, key, default ):
         return self.config_dict.get( key, default )
     def check( self ):

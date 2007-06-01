@@ -97,7 +97,7 @@ class Universe(common.Root):
             data = self.app.model.Dataset.get( id )
             
         if data:
-            mime = data.get_mime()
+            mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
             trans.response.set_content_type(mime)
             if tofile:
                 fStat = os.stat(data.file_name)
@@ -119,7 +119,7 @@ class Universe(common.Root):
         data = self.app.model.Dataset.get( id )
         if data:
             if isinstance(data.datatype, datatypes.interval.Interval) or isinstance(data.datatype, datatypes.interval.CustomTrack):
-                mime = data.get_mime()
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
                 file_name = data.as_bedfile()
                 trans.log_event( "Display dataset id %s as BED" % str(id) )
@@ -329,7 +329,7 @@ class Universe(common.Root):
             send_to_err = "You can't send histories to yourself"
         else:
             for history in histories:
-                new_history = self.copy_history(history)
+                new_history = self.copy_history(history, trans)
                 new_history.name = history.name+" from "+user.email
                 new_history.user_id = send_to_user.id
                 """
@@ -362,7 +362,7 @@ class Universe(common.Root):
         if user:
             if import_history.user_id == user.id:
                 return trans.show_error_message( "You cannot import your own history.")
-            new_history = self.copy_history(import_history)
+            new_history = self.copy_history(import_history, trans)
             new_history.name = "imported: "+new_history.name
             new_history.user_id = user.id
             new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
@@ -372,7 +372,7 @@ class Universe(common.Root):
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
             return trans.fill_template("history_imported.tmpl", history=new_history)
         elif not user_history.datasets or confirm:
-            new_history = self.copy_history(import_history)
+            new_history = self.copy_history(import_history, trans)
             new_history.name = "imported: "+new_history.name
             new_history.user_id = None
             new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
@@ -497,7 +497,7 @@ class Universe(common.Root):
         """Copies a dataset and makes primary"""
         try:
             old_data = self.app.model.Dataset.get( id )
-            new_data = self.copy_dataset(old_data)
+            new_data = self.copy_dataset(old_data, trans)
             ## new_data.parent = None
             ## history = trans.app.model.History.get( old_data.history_id )
             history = trans.get_history()
@@ -551,10 +551,10 @@ class Universe(common.Root):
 
     # ---- Work methods -----------------------------------------------------
     
-    def copy_dataset(self, src, parent_id=None):
+    def copy_dataset(self, src, trans, parent_id=None):
         des = self.app.model.Dataset()
         des.flush()
-        des = datatypes.change_datatype(des, src.ext)
+        des = trans.app.dataset_registry.change_datatype(des, src.ext)
         des.name = src.name
         des.info = src.info
         des.blurb = src.blurb
@@ -571,18 +571,18 @@ class Universe(common.Root):
         des.flush()
         return des
         
-    def copy_history(self, src):
+    def copy_history(self, src, trans):
         des = self.app.model.History()
         des.flush()
         des.name = src.name
         des.user_id = src.user_id
         for data in src.datasets:
-            new_data = self.copy_dataset(data)
+            new_data = self.copy_dataset(data, trans)
             des.add_dataset(new_data)
             new_data.hid = data.hid
             new_data.flush()
             for child_assoc in data.children:
-                new_child = self.copy_dataset(child_assoc.child)
+                new_child = self.copy_dataset(child_assoc.child, trans)
                 new_assoc = self.app.model.DatasetAssociation( child.designation )
                 new_assoc.child = new_child
                 new_assoc.parent = new_data

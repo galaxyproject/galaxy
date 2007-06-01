@@ -225,7 +225,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             data.name = data.name + " (" + microbe_info[kingdom][org]['chrs'][chr]['data'][description]['feature'] +" for "+microbe_info[kingdom][org]['name']+":"+chr + ")"
             data.dbkey = dbkey
             data.info = data.name
-            datatypes.change_datatype( data, file_type )
+            data = app.datatypes_registry.change_datatype( data, file_type )
             data.init_meta()
             data.set_peek()
             app.model.flush()

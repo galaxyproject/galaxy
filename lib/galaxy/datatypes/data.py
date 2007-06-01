@@ -1,6 +1,7 @@
 import logging, os, sys, time, sets, tempfile
 from galaxy import util
 from cgi import escape
+import galaxy.datatypes.registry
 
 log = logging.getLogger(__name__)
 
@@ -87,13 +88,7 @@ class Text( Data ):
 
     def get_mime(self):
         """Returns the mime type of the data"""
-        try:
-            ext = self.ext.lower()
-            if ext in util.text_types:
-                return 'text/plain'
-            return util.mime_types[ext]
-        except KeyError:
-            return 'application/octet-stream'
+        return galaxy.datatypes.registry.Registry().get_mimetype_by_extension( self.extension.lower() )
    
     def set_peek(self, dataset):
         dataset.peek  = get_file_peek( dataset.file_name )

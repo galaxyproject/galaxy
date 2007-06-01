@@ -105,3 +105,25 @@ cache_seconds = 360
 document_root = %(here)s/static/light_hatched_style/blue
 #document_root = %(here)s/static/light_hatched_style/green
 #document_root = %(here)s/static/old_blue_style
+
+[galaxy:datatypes]
+data = galaxy.datatypes.data:Data,application/octet-stream
+bed = galaxy.datatypes.interval:Bed
+txt = galaxy.datatypes.data:Text
+text = galaxy.datatypes.data:Text
+interval = galaxy.datatypes.interval:Interval
+tabular = galaxy.datatypes.interval:Tabular
+png = galaxy.datatypes.images:Image,image/png
+pdf = galaxy.datatypes.images:Image,application/pdf
+gif = galaxy.datatypes.images:Image,image/gif
+jpg = galaxy.datatypes.images:Image,image/jpeg
+fasta = galaxy.datatypes.sequence:Fasta
+maf = galaxy.datatypes.sequence:Maf
+axt = galaxy.datatypes.sequence:Axt
+gff = galaxy.datatypes.interval:Gff
+wig = galaxy.datatypes.interval:Wiggle
+gmaj.zip = galaxy.datatypes.images:Gmaj,application/zip
+laj = galaxy.datatypes.images:Laj
+lav = galaxy.datatypes.sequence:Lav
+html = galaxy.datatypes.images:Html,text/html
+customtrack = galaxy.datatypes.interval:CustomTrack

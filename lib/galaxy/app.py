@@ -1,7 +1,9 @@
 import sys, os, atexit
 
 from galaxy import config, db, jobs, util, tools, web
+import galaxy.model
 import galaxy.model.mapping
+import galaxy.datatypes.registry
 from galaxy.interfaces import root, tool_runner, proxy, async, admin, user, error, dataset
 from galaxy.web import middleware
 
@@ -13,6 +15,9 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
+        #Set up datatypes registry
+        self.datatypes_registry = galaxy.datatypes.registry.Registry(datatypes = self.config.datatypes)
+        galaxy.model.set_datatypes_registry(self.datatypes_registry)
         # Connect up the object model
         if self.config.database_connection:
             self.model = galaxy.model.mapping.init( self.config.file_path,
@@ -23,7 +28,7 @@ class UniverseApplication( object ):
                                                     "sqlite://%s?isolation_level=IMMEDIATE" % self.config.database,
                                                     create_tables = True )
         # Initialize the tools
-        self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path )
+        self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, datatypes_registry = self.datatypes_registry )
         # Start the job queue
         self.job_queue = jobs.JobQueue( self )
         self.heartbeat = None
@@ -46,7 +51,7 @@ def app_factory( global_conf, **kwargs ):
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
     else:
-        app = UniverseApplication( **kwargs )
+        app = UniverseApplication( global_conf = global_conf, **kwargs )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = web.framework.WebApplication()

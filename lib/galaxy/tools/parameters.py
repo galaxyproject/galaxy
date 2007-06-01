@@ -3,7 +3,8 @@ Classes encapsulating tool parameters
 """
 
 import logging, string, sys
-from galaxy import config, datatypes, util, form_builder 
+from galaxy import config, datatypes, util, form_builder
+import galaxy.datatypes.registry
 import validation
 from elementtree.ElementTree import XML, Element
 
@@ -105,13 +106,17 @@ class ToolParameter( object ):
             validator.validate( value, history )
 
     @classmethod
-    def build( cls, tool, param ):
+    def build( cls, tool, param, datatypes_registry = galaxy.datatypes.registry.Registry() ):
         """Factory method to create parameter of correct type"""
         param_type = param.get("type")
         if not param_type or param_type not in parameter_types:
             raise ValueError( "Unknown tool parameter type '%s'" % param_type )
         else:
-            return parameter_types[param_type]( tool, param )
+            #data parameter requires datatypes_registry
+            if param_type in ['data']:
+                return parameter_types[param_type]( tool, param, datatypes_registry = datatypes_registry )
+            else:
+                return parameter_types[param_type]( tool, param )
         
 class TextToolParameter( ToolParameter ):
     """
@@ -536,13 +541,13 @@ class DataToolParameter( ToolParameter ):
     <option value="5" selected>5: Unnamed dataset</option>
     </select>
     """
-    def __init__( self, tool, elem ):
+    def __init__( self, tool, elem, datatypes_registry = galaxy.datatypes.registry.Registry() ):
         ToolParameter.__init__( self, tool, elem )
         # Build tuple of classes for supported data formats
         formats = []
         extensions = elem.get( 'format', 'data' ).split( "," )
         for extension in extensions:
-            formats.append( datatypes.get_datatype_by_extension( extension.lower() ).__class__ )
+            formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
         self.formats = tuple( formats )
         self.multiple = str_bool( elem.get( 'multiple', False ) )
         self.optional = str_bool( elem.get( 'optional', False ) )

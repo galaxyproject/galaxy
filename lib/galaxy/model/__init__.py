@@ -11,6 +11,15 @@ import galaxy.datatypes
 from cookbook.patterns import Bunch
 from galaxy import util
 import tempfile
+import galaxy.datatypes.registry
+
+datatypes_registry = galaxy.datatypes.registry.Registry()
+
+def set_datatypes_registry( d_registry ):
+    """
+    Set up datatypes_registry
+    """
+    datatypes_registry = d_registry
 
 class User( object ):
     def __init__( self, email=None, password=None ):
@@ -169,7 +178,7 @@ class Dataset( object ):
         return os.path.join( self.file_path, "dataset_%d.dat" % self.id )
     @property
     def datatype( self ):
-        return galaxy.datatypes.get_datatype_by_extension( self.extension )
+        return datatypes_registry.get_datatype_by_extension( self.extension )
     def get_size( self ):
         """
         Returns the size of the data on disk
@@ -218,13 +227,7 @@ class Dataset( object ):
         os.remove( temp_name )
     def get_mime(self):
         """Returns the mime type of the data"""
-        try:
-            ext = self.extension.lower()
-            if ext in util.text_types:
-                return 'text/plain'
-            return util.mime_types[ext]
-        except KeyError:
-            return 'application/octet-stream'
+        return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
     def set_peek( self ):
         return self.datatype.set_peek( self )
     def init_meta( self ):

@@ -21,9 +21,8 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
         ext = outputType
         try: ext = outputType_to_ext[outputType]
         except: pass
-        if ext not in datatypes.datatypes_by_extension: ext = 'interval'
-        
-        data = datatypes.change_datatype(data, ext)
+        if ext not in app.datatypes_registry.datatypes_by_extension: ext = 'interval'
+        data = app.datatypes_registry.change_datatype(data, ext)
         
         #store ucsc parameters temporarily in output file
         out = open(data.file_name,'w')
@@ -40,6 +39,6 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
     
     if not isinstance(data.datatype, datatypes.interval.Bed) and isinstance(data.datatype, datatypes.interval.Interval):
         data.set_meta()
-        if data.missing_meta(): data = datatypes.change_datatype(data, 'tabular')
+        if data.missing_meta(): data = app.datatypes_registry.change_datatype(data, 'tabular')
     data.set_peek()
     data.flush()

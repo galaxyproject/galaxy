@@ -1,7 +1,7 @@
 #EMBOSS format corrector
 
 import operator
-from galaxy import datatypes
+#from galaxy import datatypes
 
 #Properly set file formats after job run
 def exec_after_process( app, inp_data, out_data, param_dict,tool, stdout, stderr):
@@ -25,7 +25,7 @@ def exec_after_process( app, inp_data, out_data, param_dict,tool, stdout, stderr
                 outputType = "Tabular"
             elif outputType == 'text':
                 outputType = "txt"
-            data = datatypes.change_datatype(data, outputType)
+            data = app.datatypes_registry.change_datatype(data, outputType)
             data.flush()
         data_count+=1
     
@@ -35,7 +35,7 @@ def exec_after_process( app, inp_data, out_data, param_dict,tool, stdout, stderr
         wants_plot = param_dict.get( 'html_out'+str(data_count), None )
         ext = "html"
         if wants_plot == "yes":
-            data = datatypes.change_datatype(data, ext)
+            data = app.datatypes_registry.change_datatype(data, ext)
             data.flush()
         data_count+=1
     
@@ -45,6 +45,6 @@ def exec_after_process( app, inp_data, out_data, param_dict,tool, stdout, stderr
         wants_plot = param_dict.get( 'plot'+str(data_count), None )
         ext = "png"
         if wants_plot == "yes":
-            data = datatypes.change_datatype(data, ext)
+            data = app.datatypes_registry.change_datatype(data, ext)
             data.flush()
         data_count+=1

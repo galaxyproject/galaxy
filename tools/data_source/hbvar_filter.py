@@ -10,7 +10,7 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     data_type = param_dict.get( 'type', 'text' )
     if data_type == 'text': data_type='interval' #All data is TSV, assume interval
     name, data = out_data.items()[0]
-    data = datatypes.change_datatype(data, data_type)
+    data = app.datatypes_registry.change_datatype(data, data_type)
     data.name = data_name
     out_data[name] = data
 
@@ -70,6 +70,6 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
             shutil.move(temp_filename,data.file_name)
             
         else:
-            data = datatypes.change_datatype(data, 'tabular')
+            data = app.datatypes_registry.change_datatype(data, 'tabular')
     data.set_peek()
     data.flush()
