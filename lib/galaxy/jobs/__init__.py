@@ -206,6 +206,7 @@ class JobWrapper( object ):
             dataset.info = message
             dataset.flush()
         job.state = model.Job.states.ERROR
+        job.command_line = self.command_line
         # If the failure is due to a Galaxy framework exception, save 
         # the traceback
         if exception:
@@ -284,7 +285,8 @@ class JobWrapper( object ):
                 data.deleted = True
         # TODO
         # validate output datasets
-                        
+               
+        job.command_line = self.command_line
         mapping.context.current.flush()
         log.debug('job ended, id: %d' % self.job_id )
         self.cleanup()
