@@ -158,16 +158,19 @@ class Universe(common.Root):
         if p.edit_genome_btn:
             err = None
             # check for "valid" column assignments first
-            for attr in 'chromCol', 'startCol', 'endCol', 'strandCol':
-                try:
-                    num = int( getattr(p, attr) )
-                    if num < 0: raise Exception()
-                except:
-                    if getattr(p, attr) != "" or attr != 'strandCol':
-                        err = "Column assignments must be numbers greater than zero.  Strand column may be ommitted (set to 0)."
-            if err:
-                trans.log_event( "Edit submitted bad values on dataset %s" % str(id) )
-                return trans.fill_template( "edit.tmpl", data=data, dbnames=util.dbnames, err=err )
+            # Patch: don't validate these fields for mafs, etc.
+            # This will all go away soon
+            if isinstance( data.datatype, datatypes.interval.Tabular ):
+                for attr in 'chromCol', 'startCol', 'endCol', 'strandCol':
+                    try:
+                        num = int( getattr(p, attr) )
+                        if num < 0: raise Exception()
+                    except:
+                        if getattr(p, attr) != "" or attr != 'strandCol':
+                            err = "Column assignments must be numbers greater than zero.  Strand column may be ommitted (set to 0)."
+                if err:
+                    trans.log_event( "Edit submitted bad values on dataset %s" % str(id) )
+                    return trans.fill_template( "edit.tmpl", data=data, dbnames=util.dbnames, err=err )
             
             data.name  = p.name
             data.info  = p.info
