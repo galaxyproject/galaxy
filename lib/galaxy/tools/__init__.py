@@ -618,13 +618,13 @@ class Tool:
                 # Deal with the 'test' element and see if it's value changed
                 test_incoming = incoming.get( prefix + input.test_param.name, None )
                 value, test_param_error = \
-                    self.check_param( trans, input.test_param, test_incoming, group_state )
+                    self.check_param( trans, input.test_param, test_incoming, context )
                 current_case = input.get_current_case( value, trans )
                 if current_case != old_current_case:
                     # Current case has changed, throw away old state
                     group_state = state[input.name] = {}
                     # TODO: we should try to preserve values if we can
-                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state )
+                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context )
                     group_errors = dict()
                 else:
                     # Current case has not changed, update children
@@ -632,7 +632,8 @@ class Tool:
                                                       input.cases[current_case].inputs, 
                                                       group_state,
                                                       incoming, 
-                                                      prefix )
+                                                      prefix,
+                                                      context )
                 if test_param_error:
                     group_errors[ input.test_param.name ] = test_param_error
                 if group_errors:
@@ -643,7 +644,7 @@ class Tool:
                 group_state[ input.test_param.name ] = value
             else:
                 incoming_value = incoming.get( key, None )
-                value, error = self.check_param( trans, input, incoming_value, state )
+                value, error = self.check_param( trans, input, incoming_value, context )
                 if error:
                     errors[ input.name ] = error
                 state[input.name] = value
