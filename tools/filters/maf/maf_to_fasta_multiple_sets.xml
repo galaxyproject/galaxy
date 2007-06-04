@@ -21,7 +21,7 @@
       <test>
         <param name="input1" value="4.maf"/>
         <param name="species" values="canFam2,dasNov1,echTel1,hg17,loxAfr1,mm7,monDom2,oryCun1,panTro1,rheMac2,rn3"/>
-        <param name="complete_blocks" value="partial_disallowed"/>
+        <param name="complete_blocks" value="partial_allowed"/>
         <output name="out_file1" file="cf_maf2fasta.dat"/>
       </test>
     </tests>
