@@ -1,14 +1,21 @@
 <tool id="get_flanks1" name="Get flanks">
   <description>returns flanking region/s for every gene</description>
-  <command interpreter="python2.4">get_flanks.py $input $out_file1 $size $direction -l $input_chromCol,$input_startCol,$input_endCol,$input_strandCol</command>
+  <command interpreter="python2.4">get_flanks.py $input $out_file1 $size $direction $region -o $offset -l $input_chromCol,$input_startCol,$input_endCol,$input_strandCol</command>
   <inputs>
     <param format="interval" name="input" type="data" label="Select data"/>
-    <param name="size" size="10" type="integer" value="50" label="Length of the flanking region/s"/>
+    <param name="region" type="select" label="Region">
+      <option value="whole" selected="true">Whole feature</option>
+      <option value="start">Around Start</option>
+      <option value="end">Around End</option>
+    </param>
     <param name="direction" type="select" label="Location of the flanking region/s">
       <option value="Upstream">Upstream</option>
       <option value="Downstream">Downstream</option>
       <option value="Both">Both</option>
     </param>
+    <param name="offset" size="10" type="integer" value="0" label="Offset" help="Use positive values to offset co-ordinates in the direction of transcription and negative values to offset in the opposite direction."/>
+    <param name="size" size="10" type="integer" value="50" label="Length of the flanking region/s"/>
+    
     
   </inputs>
   <outputs>
@@ -17,38 +24,53 @@
   <tests>
     <test>
       <param name="input" value="flanks_inp.bed"/>
-      <param name="size" value="50"/>
-      <param name="direction" value="Upstream"/>
-      <output name="out_file1" file="flanks_out.bed"/>
+      <param name="offset" value="-500"/>
+      <param name="size" value="1000"/>
+      <param name="direction" value="Both"/>
+      <param name="region" value="whole"/>
+      <output name="out_file1" file="flanks_out1.bed"/>
+    </test>
+    <test>
+      <param name="input" value="flanks_inp.bed"/>
+      <param name="offset" value="200"/>
+      <param name="size" value="1000"/>
+      <param name="direction" value="Downstream"/>
+      <param name="region" value="start" />
+      <output name="out_file1" file="flanks_out2.bed"/>
     </test>
   </tests>
  <help> 
-.. class:: infomark
 
-**TIP:** Every line should contain at least 3 columns: Chromosome number, Start and Stop co-ordinates. If any of these columns is missing or if start and stop co-ordinates are not numerical, the tool may encounter exceptions and such lines are skipped as invalid. The number of invalid skipped lines is documented in the resulting history item as a "Data issue".
+This tool finds the upstream and/or downstream flanking region/s of all the selected regions in the input file. 
 
-.. class:: infomark
-
-**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+**Note:** Every line should contain at least 3 columns: Chromosome number, Start and Stop co-ordinates. If any of these columns is missing or if start and stop co-ordinates are not numerical, the tool may encounter exceptions and such lines are skipped as invalid. The number of invalid skipped lines is documented in the resulting history item as a "Data issue".
 
 -----
 
 
-**Example**
-
-- This tool finds the upstream and/or downstream flanking region/s of all the genes in the input file.
+**Example 1**
 
 - For the following query::
 
-   chr7 100   600  gene1 0 +
-   chr7 200  1000  gene2 0 -
+   chr22  1000  7000  NM_174568 0 +
 
-- running **get flanks** with **flank length 50** and **location upstream** will return::
+- running get flanks with Region: Around start, Offset: -200, Flank-length: 300 and Location: Upstream will return::
 
-   chr7 50   100  gene1 0 +
-   chr7 1000  1050  gene2 0 -
+   chr22  500  800  NM_174568 0 +
 
+.. image:: ../static/operation_icons/flanks_ex1.gif
 
+**Example 2**
+
+- For the following query::
+
+   chr22  1000  7000  NM_028946 0 -
+
+- running get flanks with Region: Whole, Offset: 200, Flank-length: 300 and Location: Downstream will return::
+
+   chr22  500  800  NM_028946 0 -
+
+.. image:: ../static/operation_icons/flanks_ex2.gif
 
 </help>  
 
