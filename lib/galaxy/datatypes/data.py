@@ -2,13 +2,20 @@ import logging, os, sys, time, sets, tempfile
 from galaxy import util
 from cgi import escape
 import galaxy.datatypes.registry
-
+from galaxy.datatypes.metadata import *
 log = logging.getLogger(__name__)
 
 # Constants for data states
 DATA_NEW, DATA_OK, DATA_FAKE = 'new', 'ok', 'fake'
 
+class DataMeta( type ):
+    def __init__( cls, name, bases, dict_ ):
+        cls._metadataspec = MetadataSpecCollection()
+        Statement.process( cls )
+
 class Data( object ):
+    __metaclass__ = DataMeta
+
     def set_peek( self, dataset ):
         dataset.peek  = ''
         dataset.blurb = 'data'
@@ -43,6 +50,10 @@ class Data( object ):
     def repair_methods(self, dataset):
         """Unimplemented method, returns dict with method/option for repairing errors"""
         return None
+
+    @classmethod
+    def get_metadata_spec( cls ):
+        return cls._metadataspec
 
 class Text( Data ):
     def write_from_stream(self, stream):
