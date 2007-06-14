@@ -20,7 +20,10 @@ class Data( object ):
         dataset.peek  = ''
         dataset.blurb = 'data'
     def init_meta( self, dataset ):
-        pass
+        # set values according to defaults set in metadata_spec
+        if "metadata" not in dataset: dataset.metadata = MetadataCollection()
+        for item in self.get_metadata_spec():
+            dataset.metadata[item.name] = item.default
     def missing_meta( self, dataset):
         return False
     def bed_viewport( self, dataset ):
@@ -55,6 +58,17 @@ class Data( object ):
     def get_metadata_spec( cls ):
         return cls._metadataspec
 
+    @classmethod
+    def convert_to( cls, dataset, target_cls ):
+        # This is by no means supposed to perform anything more
+        # complex than simply changing the datatype of the dataset,
+        # and copying over any metadata that could or should possibly
+        # stay the same.
+        old_meta = dataset.metadata
+        dataset.metadata = dict()
+        new_obj = target_cls()
+        new_obj.init_meta( dataset )
+        
 class Text( Data ):
     def write_from_stream(self, stream):
         "Writes data from a stream"
