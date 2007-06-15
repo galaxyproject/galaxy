@@ -22,6 +22,7 @@ class ASync(common.Root):
 
         if tool_id is None:
             return "tool_id argument is required"
+        tool_id=str(tool_id)
         #log.debug('async params -> %s' % kwd)
 
         # redirect to main when getting no parameters
@@ -35,7 +36,7 @@ class ASync(common.Root):
         data_id = params.data_id
 
         log.debug('async dataid -> %s' % data_id)
-        trans.log_event( 'Async dataid -> %s' % data_id )
+        trans.log_event( 'Async dataid -> %s' % str(data_id) )
 
         # initialize the tool
         toolbox = self.get_toolbox()
@@ -59,7 +60,9 @@ class ASync(common.Root):
                 data.state = data.blurb = data.states.RUNNING
                 log.debug('executing tool %s' % tool.id)
                 trans.log_event( 'Async executing tool %s' % tool.id, tool_id=tool.id )
-                params = dict(url=URL, dataid=data.id, output=data.file_name)
+                galaxy_url  = trans.request.base + '/async/%s/%s' % ( tool_id, data.id )
+                galaxy_url = params.get("GALAXY_URL",galaxy_url)
+                params = dict(url=URL, dataid=data.id, output=data.file_name, GALAXY_URL=galaxy_url)
                 #tool.execute( app=self.app, history=history, incoming=params )
                 tool.execute( trans, incoming=params )
             else:
@@ -108,6 +111,7 @@ class ASync(common.Root):
             try:
                 galaxy_url  = trans.request.base + '/async/%s/%s' % ( tool_id, data.id )
                 params.update( { 'GALAXY_URL' :galaxy_url } )
+                params.update( { 'data_id' :data.id } )
                 url  = tool.action + '?' + urllib.urlencode( params.flatten() )
                 log.debug("connecting to -> %s" % url)
                 trans.log_event( "Async connecting to -> %s" % url )
