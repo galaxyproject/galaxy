@@ -10,7 +10,6 @@ import data
 from galaxy import util
 from cgi import escape
 from bx.intervals.io import *
-from galaxy.datatypes.metadata import MetadataElement, MetadataElementSpec
 
 log = logging.getLogger(__name__)
 
@@ -34,21 +33,6 @@ for key, value in alias_spec.items():
 class Tabular( data.Text ):
     """Tab delimited data"""
 
-    MetadataElement( name="columns", desc="Number of columns", default=1,
-                     attributes=MetadataElementSpec.READONLY )
-
-    def init_meta( self, dataset ):
-        # set number of columns
-        data.Text.init_meta( self, dataset )
-        fileptr = open( dataset.filename, "r" )
-        columns = 0
-        for line in fileptr:
-            line = line.rstrip("\r\n")
-            if line and not line.startswith("#") and not line == "":
-                columns = count(line.split("\t"))
-                break
-        dataset.metadata["columns"] = columns
-        
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
@@ -100,12 +84,7 @@ class Tabular( data.Text ):
 
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
-
-    MetadataElement( name="chromCol", desc="Chrom column", default=1 )
-    MetadataElement( name="startCol", desc="Start column", default=2 )
-    MetadataElement( name="endCol", desc="End column", default=3 )
-    MetadataElement( name="strandCol", desc="Strand column", default=6 )
-    
+      
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():

@@ -16,15 +16,12 @@ class Statement( object ):
         for statement, args, kwargs in getattr( element, STATEMENTS, [] ):
             statement.target( element, *args, **kwargs )
 
-class MetadataSpecCollection( dict ):
-    def append( self, item ):
-        self[item.name] = item
-    def iter( self ):
-        return self.itervalues()
+class MetadataSpecCollection( list ):
+    pass
 
 class MetadataWrapper( object ):
     def __init__( self, metadata ):
-        self.set_value( metadata )
+        self.value = metadata
     def get_value( self ):
         return self.value
     def set_value( self, value ):
@@ -47,36 +44,16 @@ class MetadataWrapper( object ):
 
 class MetadataElementSpec( object ):
     READONLY = 1
-    def __init__( self, datatype, name=None, desc=None, wrapper=MetadataWrapper, attributes=None, default=None ):
+    def __init__( self, datatype, name=None, desc=None, wrapper=MetadataWrapper, attributes=None ):
         self.name = name
         self.desc = desc
         self.wrapper = wrapper
         self.attributes = attributes
-        self.default = default
         datatype._metadataspec.append( self )
     def hasAttribute( self, attribute ):
         return ((self.permission & attribute) == attribute)
     def wrap( self, metadata ):
         return self.wrapper(metadata)
-
-class MetadataCollection( dict ):
-    def __init__( self, spec=None, *args ):
-        dict.__init__( self )
-        self.spec = spec
-    def __setitem__( self, key, value ):
-        if spec:
-            wrapper = spec[key].wrap( value )
-            dict.__setitem__( self, key, wrapper )
-        else:
-            dict.__setitem__( self, key, value )
-    def __getitem__( self, key ):
-        if spec:
-            if key not in self:
-                return self.spec[key].default
-            else:
-                return dict.__getitem__(self, key).get_value()
-        else:
-            return dict.__getitem__(self, key)
 
 MetadataElement = Statement(MetadataElementSpec)
 
