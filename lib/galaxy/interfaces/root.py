@@ -586,7 +586,7 @@ class Universe(common.Root):
             new_data.flush()
             for child_assoc in data.children:
                 new_child = self.copy_dataset(child_assoc.child, trans)
-                new_assoc = self.app.model.DatasetAssociation( child.designation )
+                new_assoc = self.app.model.DatasetChildAssociation( child_assoc.designation )
                 new_assoc.child = new_child
                 new_assoc.parent = new_data
                 #des.add_dataset(new_child, parent_id = new_data.id)
