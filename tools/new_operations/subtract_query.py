@@ -11,6 +11,7 @@ import cookbook.doc_optparse
 
 
 def get_lines(fname):
+    i = 0
     lines = set([])
     for i, line in enumerate(file(fname)):
         line = line.strip()
