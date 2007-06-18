@@ -557,7 +557,7 @@ class Universe(common.Root):
     def copy_dataset(self, src, trans, parent_id=None):
         des = self.app.model.Dataset()
         des.flush()
-        des = trans.app.dataset_registry.change_datatype(des, src.ext)
+        des.change_datatype( src.ext )
         des.name = src.name
         des.info = src.info
         des.blurb = src.blurb

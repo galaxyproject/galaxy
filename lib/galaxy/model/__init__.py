@@ -179,6 +179,8 @@ class Dataset( object ):
     @property
     def datatype( self ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
+    def change_datatype( self, new_ext ):
+        datatypes_registry.change_datatype( self, new_ext )
     def get_size( self ):
         """
         Returns the size of the data on disk
