@@ -158,7 +158,8 @@ assign_mapper( context, Dataset, Dataset.table,
         children=relation( 
             DatasetChildAssociation, 
             primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
-            lazy=False ) ) )
+            lazy=False,
+            backref="parent" ) ) )
                                         
 assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
     properties=dict( child=relation( Dataset, primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
