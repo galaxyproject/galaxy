@@ -12,12 +12,12 @@ log = logging.getLogger( __name__ )
 class ASync(common.Root):
 
     @web.expose
-    def default(self, trans, tool_id=None, data_id=None, **kwd):
+    def default(self, trans, tool_id=None, data_id=None, history_id=None, **kwd):
         """Catches the tool id and redirects as needed"""
-        return self.index( trans, tool_id=tool_id, data_id=data_id, **kwd)
+        return self.index( trans, tool_id=tool_id, data_id=data_id, history_id=history_id, **kwd)
 
     @web.expose
-    def index(self, trans, tool_id=None, **kwd):
+    def index(self, trans, tool_id=None, history_id=None, **kwd):
         """Manages ascynchronous connections"""
 
         if tool_id is None:
@@ -56,11 +56,13 @@ class ASync(common.Root):
                 return "Data %s does not exist or has already been deleted" % data_id
 
             if STATUS == 'OK':
+                if str(data.history_id) != str(history_id):
+                    return "Data %s does not belong in provided history %s" % (data_id, history_id)
                 # push the job into the queue
                 data.state = data.blurb = data.states.RUNNING
                 log.debug('executing tool %s' % tool.id)
                 trans.log_event( 'Async executing tool %s' % tool.id, tool_id=tool.id )
-                galaxy_url  = trans.request.base + '/async/%s/%s' % ( tool_id, data.id )
+                galaxy_url  = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, data.history_id )
                 galaxy_url = params.get("GALAXY_URL",galaxy_url)
                 params = dict(url=URL, dataid=data.id, output=data.file_name, GALAXY_URL=galaxy_url)
                 #tool.execute( app=self.app, history=history, incoming=params )
@@ -109,7 +111,7 @@ class ASync(common.Root):
             trans.log_event( "Added dataset %d to history %d" %(data.id, trans.history.id ), tool_id=tool_id )
 
             try:
-                galaxy_url  = trans.request.base + '/async/%s/%s' % ( tool_id, data.id )
+                galaxy_url  = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, data.history_id )
                 params.update( { 'GALAXY_URL' :galaxy_url } )
                 params.update( { 'data_id' :data.id } )
                 url  = tool.action + '?' + urllib.urlencode( params.flatten() )
