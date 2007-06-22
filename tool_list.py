@@ -1,0 +1,57 @@
+import os
+
+#--------read tool_conf.xml to get all the tool xml file names-----------
+onoff = 1
+tool_list = []
+for line in open("tool_conf.xml", "r"):
+   if line.find("<!--") != -1: 
+      onoff = 0
+   if line.find("file") != -1 and onoff==1: 
+      strs = line.split('\"') 
+      tool_list.append(strs[1])
+   if line.find("<section") != -1 and onoff==1: 
+      keys = line.strip().split('\"')
+      n = 0
+      strtmp = "section::"
+      while n < len(keys) : 
+         if keys[n].find("id") != -1 : strtmp = strtmp + keys[n+1]  
+         if keys[n].find("name") != -1 : strtmp = strtmp + keys[n+1] + "-" 
+	 n = n + 1
+      tool_list.append(strtmp)
+   if line.find("-->") != -1:
+      onoff =1
+
+#-------read tool info from every tool xml file--------------------------
+name = []
+id = []
+desc = []
+tool_infos = []
+for tool in tool_list : 
+   if tool.find("section")!=-1 : 
+      tool_info = dict()
+      tool_info["id"] = tool
+      tool_infos.append(tool_info)
+   if os.path.exists("tools/"+tool) : 
+      for line in open("tools/"+tool) : 
+	  if line.find("<tool ") != -1 and line.find("id") != -1 : 
+	     keys = line.strip().split('\"')
+	     n = 0
+	     tool_info = dict()
+	     tool_info["desc"] = ''
+	     while n < len(keys) : 
+	        if keys[n].find("id") != -1 : tool_info["id"] = keys[n+1].replace(' ', '_') 
+	        if keys[n].find("name") != -1 : tool_info["name"] = keys[n+1] 
+	        if keys[n].find("description") != -1 : tool_info["desc"] = keys[n+1] 
+		n = n + 1
+	     tool_infos.append(tool_info)
+	     break
+for tool_info in tool_infos: 
+   if tool_info["id"].find("section") != -1 : 
+      print "==========================================================================================================================================="
+      print "%-45s\t%-40s\t%s" % ("id", "name", tool_info["id"])
+      print "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+   else :
+      print "%-45s\t%-40s" % (tool_info["id"], tool_info["name"])
+
+#for key in tool_infos.keys():
+#   print tool_infos[key]["id"], "\t", tool_infos[key]["name"], "\t", tool_infos[key]["desc"]
