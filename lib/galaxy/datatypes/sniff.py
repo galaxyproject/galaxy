@@ -5,6 +5,8 @@ import logging, sys, os, csv, tempfile, shutil, re
 
 log = logging.getLogger(__name__)
 valid_strand = ['+', '-', '.']
+valid_gff3_strand = ['+', '-', '.', '?']
+valid_gff3_phase = ['.', '0', '1', '2']
         
 def get_test_fname(fname):
     """Returns test data filename"""
@@ -180,6 +182,70 @@ def is_gff(headers):
                     if (score < 0 or score > 1000):
                         return False
                 if hdr[6] not in valid_strand:
+                    return False
+            if idx > 29:
+                break
+        return True
+    except:
+        return False
+
+def is_gff3(headers):
+    """
+    Determines wether the file is in gff version 3 format
+    
+    GFF 3 format:
+
+    1) adds a mechanism for representing more than one level 
+       of hierarchical grouping of features and subfeatures.
+    2) separates the ideas of group membership and feature name/id
+    3) constrains the feature type field to be taken from a controlled
+       vocabulary.
+    4) allows a single feature, such as an exon, to belong to more than
+       one group at a time.
+    5) provides an explicit convention for pairwise alignments
+    6) provides an explicit convention for features that occupy disjunct regions
+    
+    The format consists of 9 columns, separated by tabs (NOT spaces).
+    
+    Undefined fields are replaced with the "." character, as described in the original GFF spec.
+
+    For complete details see http://song.sourceforge.net/gff3.shtml
+    
+    >>> headers = get_headers(__file__, sep=' ')
+    >>> is_fasta(headers)
+    False
+    >>> fname = get_test_fname('test.gff')
+    >>> headers = get_headers(fname,sep='\\t')
+    >>> is_gff(headers)
+    True
+    """
+    try:
+        if len(headers) < 2:
+            return False
+        for idx, hdr in enumerate(headers):
+            if len(hdr) > 1 and hdr[0] != '' and not hdr[0].startswith( '#' ):
+                if len(hdr) != 9: 
+                    return False
+                try:
+                    map( int, [hdr[3]] )
+                except:
+                    if hdr[3] != '.':
+                        return False
+                try:
+                    map( int, [hdr[4]] )
+                except:
+                    if hdr[4] != '.':
+                        return False
+                if hdr[5] != '.':
+                    try:
+                        score = int(hdr[5])
+                    except:
+                        return False
+                    if (score < 0 or score > 1000):
+                        return False
+                if hdr[6] not in valid_gff3_strand:
+                    return False
+                if hdr[7] not in valid_gff3_phase:
                     return False
             if idx > 29:
                 break
@@ -475,6 +541,9 @@ def guess_ext(fname):
     >>> fname = get_test_fname('test.gff')
     >>> guess_ext(fname)
     'gff'
+    >>> fname = get_test_fname('gff_version_3.gff')
+    >>> guess_ext(fname)
+    'gff'
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a 2\\nc 1")
     >>> guess_ext(fname)
@@ -513,7 +582,7 @@ def guess_ext(fname):
 
         if is_column_based(fname, sep='\t'):
             headers = get_headers(fname, sep='\t')
-            if is_gff(headers):
+            if is_gff(headers) or is_gff3(headers):
                 return 'gff'
         elif is_column_based(fname, sep=' '):
             sep2tabs(fname)

@@ -112,7 +112,7 @@ A sequence in FASTA format consists of a single-line description, followed by li
 
 **Gff**
 
-GFF lines have nine required fields that must be tab-separated.
+GFF lines have nine required fields that must be tab-separated.  Gff version 3 is also supported.
 
 -----
 
