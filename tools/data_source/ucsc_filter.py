@@ -34,7 +34,7 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
             else:
                 ext = "interval"
         
-        data = datatypes.change_datatype(data, ext)
+        data = app.datatypes_registry.change_datatype(data, ext)
         out_data[name] = data
         
 
@@ -57,7 +57,7 @@ def exec_after_process( app, inp_data, out_data, param_dict, tool=None, stdout=N
                     err_msg = err_msg +" (line "+str(line_count)+")"+line
             data.set_peek()
             if isinstance(data.datatype, datatypes.interval.Interval) and data.missing_meta():
-                data = datatypes.change_datatype(data, 'tabular')
+                data = app.datatypes_registry.change_datatype(data, 'tabular')
                 out_data[name] = data
                 
             if err_flag:
