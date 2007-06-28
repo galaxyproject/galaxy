@@ -214,9 +214,9 @@ def is_gff3(headers):
     >>> headers = get_headers(__file__, sep=' ')
     >>> is_fasta(headers)
     False
-    >>> fname = get_test_fname('test.gff')
+    >>> fname = get_test_fname('gff_version_3.gff')
     >>> headers = get_headers(fname,sep='\\t')
-    >>> is_gff(headers)
+    >>> is_gff3(headers)
     True
     """
     try:

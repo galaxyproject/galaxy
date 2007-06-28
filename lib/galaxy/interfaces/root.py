@@ -111,23 +111,29 @@ class Universe(common.Root):
             except: 
                 return "This item contains no content"
         else:
-            return "No data with id=%s" % id
-        
+            return "No data with id=%d" % id
+
     @web.expose
-    def display_bed( self, trans, id=None ):
-        """Returns a bed file"""
+    def display_as( self, trans, id=None, display_app="ucsc" ):
+        """Returns a file in a format that can successfully be displayed in display_app"""
         data = self.app.model.Dataset.get( id )
         if data:
-            if isinstance(data.datatype, datatypes.interval.Interval) or isinstance(data.datatype, datatypes.interval.CustomTrack):
+            if display_app == 'ucsc':
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
-                file_name = data.as_bedfile()
-                trans.log_event( "Display dataset id %s as BED" % str(id) )
+                file_name = data.as_ucsc_display_file()
+                trans.log_event( "Formatted dataset id %s for display at UCSC" % str(id) )
+                return open(file_name)
+            elif display_app == 'gbrowse':
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
+                trans.response.set_content_type(mime)
+                file_name = data.as_gbrowse_display_file()
+                trans.log_event( "Formatted dataset id %s for display at GBrowse" % str(id) )
                 return open(file_name)
             else:
-                return 'This file cannot be displayed as bed'
+                return "Dataset '%s' cannot be displayed at %s." %(data.name, display_app)
         else:
-            return "No data with id=%s" % id
+            return "No data with id=%d" % id
 
     @web.expose
     def peek(self, trans, id=None):
@@ -138,7 +144,7 @@ class Universe(common.Root):
             yield data.peek
             yield "</pre></body></html>"
         else:
-            yield "No data with is=%s" % id
+            yield "No data with id=%d" % id
 
     @web.expose
     def edit(self, trans, id=None, hid=None, **kwd):
@@ -283,7 +289,7 @@ class Universe(common.Root):
         tool = toolbox.tools_by_id.get(id, '')
         yield "<html><body>"
         if not tool:
-            yield "Unkown tool id '%s'" % id
+            yield "Unknown tool id '%d'" % id
         elif tool.help:
             yield tool.help
         else:
@@ -335,10 +341,6 @@ class Universe(common.Root):
                 new_history = self.copy_history(history, trans)
                 new_history.name = history.name+" from "+user.email
                 new_history.user_id = send_to_user.id
-                """
-                gvk TODO: how should we handle galaxy_session_to_history association here?
-                I'll do the following for now, but not sure if this is what we want...
-                """
                 new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
                 trans.log_event( "History share, id: %s, name: '%s': to new id: %s" % (str(history.id), history.name, str(new_history.id)) )
             self.app.model.flush()

@@ -9,10 +9,16 @@ log = logging.getLogger(__name__)
 
 class Sequence( data.Text ):
     """Class describing a sequence"""
-    pass
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []
 
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []
+
     def set_peek( self, dataset ):
         Sequence.set_peek( self, dataset )
         count = size = 0
@@ -27,14 +33,24 @@ class Fasta( Sequence ):
         else:
             dataset.blurb = '%d sequences' % count
 
+    def get_estimated_display_viewport( self, dataset ):
+        #TODO: fix me...
+        return ('', '', '')
+
 class Maf( Sequence ):
     """Class describing a Maf alignment"""
-    pass
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []
 
 class Axt( Sequence ):
     """Class describing an axt alignment"""
-    pass
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []
 
 class Lav( Sequence ):
     """Class describing a LAV alignment"""
-    pass
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []

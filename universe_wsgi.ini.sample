@@ -87,6 +87,7 @@ mailing_join_addr = galaxy-user-join@bx.psu.edu
 use_heartbeat = True
 # Comma separated list of UCSC browsers to use for viewing
 ucsc_display_sites = main,test,archaea
+gbrowse_display_sites = wormbase,flybase
 
 # Static files
 
@@ -127,3 +128,4 @@ laj = galaxy.datatypes.images:Laj
 lav = galaxy.datatypes.sequence:Lav
 html = galaxy.datatypes.images:Html,text/html
 customtrack = galaxy.datatypes.interval:CustomTrack
+gbrowsetrack = galaxy.datatypes.interval:GBrowseTrack

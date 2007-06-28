@@ -238,10 +238,12 @@ class Dataset( object ):
         return self.datatype.set_meta( self, first_line_is_header )
     def missing_meta( self ):
         return self.datatype.missing_meta( self )
-    def bed_viewport( self ):
-        return self.datatype.bed_viewport( self )
-    def as_bedfile( self ):
-        return self.datatype.as_bedfile( self )
+    def get_estimated_display_viewport( self ):
+        return self.datatype.get_estimated_display_viewport( self )
+    def as_ucsc_display_file( self ):
+        return self.datatype.as_ucsc_display_file( self )
+    def as_gbrowse_display_file( self ):
+        return self.datatype.as_gbrowse_display_file( self )
     def display_peek( self ):
         return self.datatype.display_peek( self )
     def display_name( self ):
@@ -250,6 +252,8 @@ class Dataset( object ):
         return self.datatype.display_info( self )
     def get_ucsc_sites( self ):
         return self.datatype.get_ucsc_sites( self )
+    def get_gbrowse_sites( self ):
+        return self.datatype.get_gbrowse_sites( self )
     def get_child_by_designation(self, designation):
         # if self.history:
         #     for data in self.history.datasets:

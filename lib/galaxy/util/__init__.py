@@ -74,7 +74,8 @@ text_types = sets.Set([
     'regions', 'simple', 'score', 'text', 'msf', 'selex', 'tagseq', 'embl', 'srspair', 'staden', 
     'strider', 'xbed', 'markx10', 'pair', 'markx1', 'markx0', 'markx3', 'markx2', 'jackknifer', 
     'ncbi', 'mega', 'fa', 'feattable', 'phylip', 'diffseq', 'bed', 'srs', 'jackknifernon', 'swiss', 
-    'phylipnon', 'nexusnon', 'nametable', 'xml', 'interval', 'tabular', 'maf','axt', 'lav', 'laj', 'customtrack'
+    'phylipnon', 'nexusnon', 'nametable', 'xml', 'interval', 'tabular', 'maf','axt', 'lav', 'laj', 'customtrack',
+    'gbrowsetrack'
 ])     
 
 def parse_xml(fname):
@@ -249,6 +250,13 @@ def get_ucsc_by_build(build):
             sites.append((site['name'],site['url']))
     return sites
 
+def get_gbrowse_sites_by_build(build):
+    sites = []
+    for site in gbrowse_build_sites:
+        if build in site['builds']:
+            sites.append((site['name'],site['url']))
+    return sites
+
 def read_dbnames(filename):
     """ Read build names from file """
     db_names = []
@@ -296,7 +304,7 @@ def read_dbnames(filename):
         db_names = [('?', 'unspecified (?)')]
     return db_names
 
-def read_ucsc_build_sites(filename):
+def read_build_sites(filename):
     """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
     build_sites = []
     try:
@@ -311,12 +319,12 @@ def read_ucsc_build_sites(filename):
                 build_sites.append( site_dict )
             except: continue
     except:
-        print "ERROR: Unable to read builds to ucsc site file"
+        print "ERROR: Unable to read builds for site file %s" %filename
     return build_sites
 
 dbnames = read_dbnames("static/ucsc/builds.txt") #this list is used in edit attributes and the upload tool
-ucsc_build_sites = read_ucsc_build_sites("static/ucsc/ucsc_build_sites.txt") #this list is used in history.tmpl
-
+ucsc_build_sites = read_build_sites("static/ucsc/ucsc_build_sites.txt") #this list is used in history.tmpl
+gbrowse_build_sites = read_build_sites("static/gbrowse/gbrowse_build_sites.txt") #this list is used in history.tmpl
 
 if __name__ == '__main__':
     import doctest, sys

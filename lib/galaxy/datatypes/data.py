@@ -15,6 +15,9 @@ class DataMeta( type ):
 
 class Data( object ):
     __metaclass__ = DataMeta
+    
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []
 
     def set_peek( self, dataset ):
         dataset.peek  = ''
@@ -23,10 +26,12 @@ class Data( object ):
         pass
     def missing_meta( self, dataset):
         return False
-    def bed_viewport( self, dataset ):
-        raise Exception( "'bed_viewport' not supported for this datatype" )
-    def as_bedfile( self, dataset ):
-        raise Exception( "'as_bedfile' not supported for this datatype" )
+    def get_estimated_display_viewport( self, dataset ):
+        raise Exception( "'get_estimated_display_viewport' must be overridden in subclass." )
+    def as_ucsc_display_file( self, dataset ):
+        raise Exception( "'as_ucsc_display_file' not supported for this datatype" )
+    def as_gbrowse_display_file( self, dataset ):
+        raise Exception( "'as_gbrowse_display_file' not supported for this datatype" )
     def display_peek(self, dataset):
         try:
             return escape(dataset.peek)
@@ -44,6 +49,8 @@ class Data( object ):
             return "info unavailable"
     def get_ucsc_sites(self, dataset):
         return util.get_ucsc_by_build(dataset.dbkey)
+    def get_gbrowse_sites(self, dataset):
+        return util.get_gbrowse_sites_by_build(dataset.dbkey)
     def validate(self, dataset):
         """Unimplemented validate, return no exceptions"""
         return list()
@@ -56,6 +63,10 @@ class Data( object ):
         return cls._metadataspec
 
 class Text( Data ):
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []
+
     def write_from_stream(self, stream):
         "Writes data from a stream"
         # write it twice for now 
@@ -107,6 +118,10 @@ class Text( Data ):
 
 class Binary( Data ):
     """Binary data"""
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []
+
     def set_peek( self, dataset ):
         dataset.peek  = 'binary data'
         dataset.blurb = 'data'

@@ -220,15 +220,40 @@ main();">
                     #if $data.ext in [ "bed", "interval", "tabular", "txt", "text", "axt", "maf", "fasta", "gff", "gmaj.zip" ]:
                          <a href="display?id=$data.id&tofile=yes&toext=$data.ext" target="_blank">save</a>
                     #end if
-                    #if $data.ext in ["bed", "interval", "customtrack" ]:
-                      #set $value = $data.bed_viewport()
-                      #if $value
-                         | display at UCSC 
-                           #for $site_name,$site_url in $data.get_ucsc_sites:
-                               #if $site_name in $app.config.ucsc_display_sites:
-                         <a target="_blank" href="$[site_url]db=$data.dbkey&position=$value&hgt.customText=$request.base/display_bed?id=$data.id">$site_name</a> 
-                               #end if
-                           #end for
+                    #if "ucsc" in $data.datatype.supported_display_apps:
+                      #set $viewport_tuple = $data.get_estimated_display_viewport()
+                      #if $viewport_tuple
+                        #set $chrom = $viewport_tuple[0]
+                        #set $start = $viewport_tuple[1]
+                        #set $stop = $viewport_tuple[2]
+                        #set $displayed = "false"
+                        #for $site_name,$site_url in $data.get_ucsc_sites:
+                          #if $site_name in $app.config.ucsc_display_sites:
+                            #if $displayed == "false":
+                              | display at UCSC 
+                              #set $displayed = "true"
+                            #end if
+                            <a target="_blank" href="$[site_url]db=$data.dbkey&position=$chrom:$start-$stop&hgt.customText=$request.base/display_as?id=$data.id&display_app=ucsc">$site_name</a> 
+                          #end if
+                        #end for
+                      #end if
+                    #end if
+                    #if "gbrowse" in $data.datatype.supported_display_apps:
+                      #set $viewport_tuple = $data.get_estimated_display_viewport()
+                      #if $viewport_tuple
+                        #set $chrom = $viewport_tuple[0]
+                        #set $start = $viewport_tuple[1]
+                        #set $stop = $viewport_tuple[2]
+                        #set $displayed = "false"
+                        #for $site_name, $site_url in $data.get_gbrowse_sites:
+                          #if $site_name in $app.config.gbrowse_display_sites:
+                            #if $displayed == "false":
+                              | display in GBrowse 
+                              #set $displayed = "true"
+                            #end if
+                            <a target="_blank" href="$[site_url]&name=$data.dbkey&ref=$chrom:$start..$stop&eurl=$request.base/display_as?id=$data.id&display_app=gbrowse">$site_name</a> 
+                          #end if
+                        #end for
                       #end if
                     #end if
                     </div>
@@ -303,13 +328,40 @@ main();">
                     #if $child.ext in [ "bed", "interval", "tabular", "txt", "text", "axt", "maf", "fasta", "gff", "gmaj.zip" ]:
                          <a href="display?id=$child.id&tofile=yes&toext=$child.ext" target="_blank">save</a>
                     #end if
-                    #if $child.ext in ["bed", "interval" ]:
-                      #set $value = $child.bed_viewport()
-                      #if $value
-                         | display at UCSC 
-                           #for $site_name,$site_url in $child.get_ucsc_sites:
-                         <a target="_blank" href="$[site_url]db=$child.dbkey&position=$value&hgt.customText=$request.base/display_bed?id=$child.id">$site_name</a> 
-                           #end for
+					#if "ucsc" in $child.datatype.supported_display_apps:
+                      #set $viewport_tuple = $child.get_estimated_display_viewport()
+                      #if $viewport_tuple
+                        #set $chrom = $viewport_tuple[0]
+                        #set $start = $viewport_tuple[1]
+                        #set $stop = $viewport_tuple[2]
+                        #set $displayed = "false"
+                        #for $site_name,$site_url in $child.get_ucsc_sites:
+                          #if $site_name in $app.config.ucsc_display_sites:
+                            #if $displayed == "false":
+                              | display at UCSC 
+                              #set $displayed = "true"
+                            #end if
+                            <a target="_blank" href="$[site_url]db=$child.dbkey&position=$chrom:$start-$stop&hgt.customText=$request.base/display_as?id=$child.id&display_app=ucsc">$site_name</a> 
+                          #end if
+                        #end for
+                      #end if
+                    #end if
+                    #if "gbrowse" in $child.datatype.supported_display_apps:
+                      #set $viewport_tuple = $child.get_estimated_display_viewport()
+                      #if $viewport_tuple
+                        #set $chrom = $viewport_tuple[0]
+                        #set $start = $viewport_tuple[1]
+                        #set $stop = $viewport_tuple[2]
+                        #set $displayed = "false"
+                        #for $site_name,$site_url in $child.get_gbrowse_sites:
+                          #if $site_name in $app.config.ucsc_display_sites:
+                            #if $displayed == "false":
+                              | display in GBrowse  
+                              #set $displayed = "true"
+                            #end if
+                            <a target="_blank" href="$[site_url]&name=$child.dbkey&ref=$chrom:$start..$stop&eurl=$request.base/display_as?id=$data.id&display_app=gbrowse">$site_name</a> 
+                          #end if
+                        #end for
                       #end if
                     #end if
                     </div>

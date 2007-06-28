@@ -33,6 +33,9 @@ for key, value in alias_spec.items():
 class Tabular( data.Text ):
     """Tab delimited data"""
 
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []
+    
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
@@ -77,14 +80,21 @@ class Tabular( data.Text ):
         except Exception, exc:
             out = "Can't create peek %s" % exc
         return out
-        
+
+    def get_estimated_display_viewport( self, dataset ):
+        #TODO: fix me...
+        return ('', '', '')
+
     def display_peek( self, dataset ):
         m_peek = self.make_html_table( dataset.peek )
         return m_peek
 
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
-      
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = ['ucsc']
+
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
@@ -125,13 +135,9 @@ class Interval( Tabular ):
                         for lower in values[start:]:
                             del valid[lower]  # removes lower priority keys 
                 dataset.mark_metadata_changed()
-    
-    
 
-    def bed_viewport( self, dataset ):
-        """
-        Return a start position for viewing a bed file.
-        """
+    def get_estimated_display_viewport( self, dataset ):
+        """Return a chrom, start, stop tuple for viewing a file."""
         if dataset.has_data() and dataset.state == dataset.states.OK:
             try:
                 c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
@@ -152,13 +158,13 @@ class Interval( Tabular ):
                         stop  = max( stop, int( p[e] ) )
             except Exception, exc:
                 log.error( 'Viewport generation error -> %s ' % str(exc) )
-                chr, start, stop = 'chr1', 1, 1000
-            return "%s:%d-%d" % ( chr, start, stop ) 
+                (chr, start, stop) = 'chr1', 1, 1000
+            return (chr, str( start ), str( stop )) 
         else:
-            return ""
+            return ('', '', '')
 
-    def as_bedfile( self, dataset ):
-        '''Returns a file that contains only the bed data'''
+    def as_ucsc_display_file( self, dataset ):
+        """Returns a file that contains only the bed data"""
         fd, temp_name = tempfile.mkstemp()
         c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
         c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
@@ -203,6 +209,10 @@ class Interval( Tabular ):
 
 class Bed( Interval ):
     """Tab delimited data in BED format"""
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = ['ucsc']
+
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         return Tabular.missing_meta(self, dataset)
@@ -237,8 +247,8 @@ class Bed( Interval ):
             dataset.metadata.strandCol = 0
             dataset.mark_metadata_changed()
         
-    def as_bedfile( self, dataset ):
-        '''Returns a file that contains only the bed data. If bed 6+, treat as interval.'''
+    def as_ucsc_display_file( self, dataset ):
+        """Returns a file that contains only the bed data. If bed 6+, treat as interval."""
         for line in open(dataset.file_name):
             line = line.strip()
             if line == "" or line.startswith("#"):
@@ -247,14 +257,14 @@ class Bed( Interval ):
             #check to see if this file doesn't conform to strict genome browser accepted bed
             try:
                 if len(fields) > 12:
-                    return Interval.as_bedfile(self, dataset) #too many fields
+                    return Interval.as_ucsc_display_file(self, dataset) #too many fields
                 if len(fields) > 6:
                     int(fields[6])
                     if len(fields) > 7:
                         int(fields[7])
                         if len(fields) > 8:
                             if int(fields[8]) != 0:
-                                return Interval.as_bedfile(self, dataset)
+                                return Interval.as_ucsc_display_file(self, dataset)
                             if len(fields) > 9:
                                 int(fields[9])
                                 if len(fields) > 10:
@@ -265,56 +275,143 @@ class Bed( Interval ):
                                         fields2 = fields[11].rstrip(",").split(",") #remove trailing comma and split on comma
                                         for field in fields2:
                                             int(field)
-            except: return Interval.as_bedfile(self, dataset)
+            except: return Interval.as_ucsc_display_file(self, dataset)
             #only check first line for proper form
             break
             
         try: return dataset.file_name
         except: return "This item contains no content"
 
+    def get_estimated_display_viewport( self, dataset ):
+        #TODO: fix me...
+        return Interval.get_estimated_display_viewport( self, dataset )
+
 class Gff( Tabular ):
     """Tab delimited data in Gff format"""
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = ['gbrowse']
+
+    def __init__(self, id=None):
+        data.Text.__init__(self, id=id)
+    
+    def make_html_table(self, data):
+        return Tabular.make_html_table(self, data, skipchar='#')
+    
+    def as_gbrowse_display_file( self, dataset ):
+        '''Returns a file that can be displayed in GBrowse apps.'''
+        #TODO: fix me...
+        return dataset.file_name
+
+    def get_estimated_display_viewport( self, dataset ):
+        """
+        Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff and gff version 3
+        formats.  This function should correctly handle both...
+        """
+        if dataset.has_data() and dataset.state == dataset.states.OK:
+            try:
+                """
+                TODO: the metadata stuff needs to work for this and other formats (besides bed and interval).
+                When this works, we should be able to have just 1 get_estimated_display_viewport() method at 
+                possibly the Tabular level that should handle most tabular formats.
+                
+                c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
+                c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
+                """
+                seqid_col = 0
+                start_col = 3
+                stop_col = 4
+                
+                peek = []
+                for idx, line in enumerate(file(dataset.file_name)):
+                    if line[0] != '#':
+                        peek.append( line.split() )
+                        if idx > 10:
+                            break
+
+                seqid, start, stop = peek[0][seqid_col], int( peek[0][start_col] ), int( peek[0][stop_col] )
+                
+                for p in peek[1:]:
+                    if p[0] == seqid:
+                        start = min( start, int( p[start_col] ) )
+                        stop  = max( stop, int( p[stop_col] ) )
+            except Exception, exc:
+                log.error( 'Viewport generation error -> %s ' % str(exc) )
+                seqid, start, stop = ('', '', '') 
+            return (seqid, str( start ), str( stop ))
+        else:
+            return ('', '', '')
+
+class Wiggle( Tabular ):
+    """Tab delimited data in wiggle format"""
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = []
+
     def __init__(self, id=None):
         data.Text.__init__(self, id=id)
     
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
 
-class Wiggle( Tabular ):
-    """Tab delimited data in wiggle format"""
-    def __init__(self, id=None):
-        data.Text.__init__(self, id=id)
-    
-    def make_html_table(self, data):
-        return Tabular.make_html_table(self, data, skipchar='#')
+    def get_estimated_display_viewport( self, dataset ):
+        #TODO: fix me...
+        return ('', '', '')
     
 #Extend Tabular type, since interval tools will fail on track def line (we should fix this)
 #This is a skeleton class for now, allows viewing at ucsc and formatted peeking.
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = ['ucsc']
+
     def __init__(self, id=None):
         data.Text.__init__(self, id=id)
     
     def make_html_table(self, dataset):
         return Tabular.make_html_table(self, dataset, skipchar='track')
     
-    def bed_viewport( self, dataset ):
+    def get_estimated_display_viewport( self, dataset ):
         try:
             for line in open(dataset.file_name):
                 if (line.startswith("chr") or line.startswith("scaffold")):  
                     start = line.split("\t")[1].replace(",","")   
                     end = line.split("\t")[2].replace(",","")
+
                     if int(start) < int(end):
-                        value = line.split("\t")[0] + ":" + start + "-" + end
+                        value = ( line.split("\t")[0], start, end )
                     else:
-                        value = line.split("\t")[0] + ":" + end + "-" + start
+                        value = ( line.split("\t")[0], end, start )
+
                     break
             return value #returns the co-ordinates of the 1st track/dataset
         except:
-            return "."
+            #return "."
+            return ('', '', '')
     
-    def as_bedfile( self, dataset ):
+    def as_ucsc_display_file( self, dataset ):
         return dataset.file_name
+
+#Extend Tabular type, since interval tools will fail on track def line (we should fix this)
+#This is a skeleton class for now, allows viewing at ucsc and formatted peeking.
+class GBrowseTrack ( Tabular ):
+
+    """Provide the set of display formats supported by this datatype """
+    supported_display_apps = ['gbrowse']
+
+    def __init__(self, id=None):
+        data.Text.__init__(self, id=id)
+    
+    def make_html_table(self, dataset):
+        return Tabular.make_html_table(self, dataset, skipchar='track')
+    
+    def display_formats_supported( self, dataset ):
+        return set(['gbrowse track'])
+
+    def get_estimated_display_viewport( self, dataset ):
+        #TODO: fix me...
+        return ('', '', '')
 
 if __name__ == '__main__':
     import doctest, sys
