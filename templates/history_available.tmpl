@@ -4,7 +4,6 @@
 <title> Available Histories </title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css">
-<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/universe.js')"></script>
 <style>
 tr.history_row_deleted td
 {
@@ -13,7 +12,14 @@ tr.history_row_deleted td
 </style>
 </head>
 <body>
-<SCRIPT language="JavaScript">
+<script type="text/javascript">
+q(document).ready( function() {
+    // Links with confirmation
+    q( "a[@confirm]" ).click( function() {
+        return confirm( q(this).attr( "confirm"  ) )
+    })
+})
+
 function OnSubmitForm()
 {
   if(document.history_actions.operation[0].checked == true)
@@ -70,7 +76,7 @@ function OnSubmitForm()
   	        <td>
   	          <a href="$h.url_for('history_rename', id=$history.id )">rename</a><br />
   	          <a href="$h.url_for('history_switch', id=$history.id )">switch to</a><br />
-  	          <a href="$h.url_for('/history_delete', id=$history.id )" onclick="confirm_click('$h.url_for('/history_delete', id=$history.id)');return false;">delete</a>
+  	          <a href="$h.url_for('/history_delete', id=$history.id )" confirm="Are you sure you want to delete this history?">delete</a>
   	        </td>
 	        </tr>
 	      #end if

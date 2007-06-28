@@ -2,35 +2,36 @@
 <html>
 
 <head>
-<title>Galaxy</title>
+<title>Galaxy Tools</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
 <link href="$h.url_for('/static/style/tool_menu.css')" rel="stylesheet" type="text/css" />
-<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/dojo.js')"></script>
-<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/wipe.js')"></script>
-<script language="JavaScript" type="text/javascript">
 
-    var wipe_DURATION = 150;
-    var last_expanded = null;
-    
-    function toggle( id )
-    {
-        var elem = document.getElementById( id );
-        
-        if ( elem.style.display == "none" )
-        {
-            // Comment these two lines to allow seperate expansion/collapse
-            if ( last_expanded ) wipeOut( last_expanded, wipe_DURATION );
-            last_expanded  = elem;
-            wipeIn(elem, wipe_DURATION);	
-        } 
-        else 
-        {
-            wipeOut(elem, wipe_DURATION);	  
-        }
-    }
+<script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
 
+<script type="text/javascript">
+    var q = jQuery.noConflict();
+    q(document).ready(function() { 
+        q( "div.toolSectionBody" ).hide();
+        q( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" )
+        var last_expanded = null;
+        q( "div.toolSectionTitle" ).click( function() { 
+           var body = q(this).next( "div.toolSectionBody" );
+           if ( body.is( ":hidden" ) ) 
+           {
+               if ( last_expanded ) last_expanded.slideUp( "fast" );
+               last_expanded = body;
+               body.slideDown( "fast" );
+           }
+           else
+           {
+               body.slideUp( "fast" );
+               last_expanded = null;
+           }
+        });
+    });
 </script>
+
 <style type="text/css">
 #footer {
   /* Netscape 4, IE 4.x-5.0/Win and other lesser browsers will use this */
@@ -41,6 +42,7 @@ body > div#footer {
   position: fixed;
 }
 </style>
+
 <!--[if gte IE 5.5]>
 <![if lt IE 7]>
 <style type="text/css">
@@ -68,28 +70,28 @@ div#footer {
       <hr> 
    #end if
    <div class="toolSectionTitle" id="title_$section.id">
-      <a href="javascript:toggle('$section.id')">$section.name</a>
+      <span>$section.name</span>
    </div>
-   <div style="display: none;" id="$section.id">
+   <div id="$section.id" class="toolSectionBody">
       <div class="toolSectionBg">
          #for $tool in $section.tools
-	 #if not $tool.hidden:
+            #if not $tool.hidden:
             <div class="toolTitle">
-							 #if $tool.input_required
-							   #set $link = $h.url_for( 'tool_runner', tool_id=$tool.id )
-							 #else
-							   #set $link = $h.url_for( $tool.action, ** $tool.get_static_param_values( $t ) )
-							 #end if
+              #if $tool.input_required
+                #set $link = $h.url_for( 'tool_runner', tool_id=$tool.id )
+              #else
+                #set $link = $h.url_for( $tool.action, ** $tool.get_static_param_values( $t ) )
+              #end if
 
-               #if "[[" in $tool.description and "]]" in $tool.description
-               $tool.description.replace( '[[', '<a href="$link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
-               #elif $tool.name
-               <a href="$link" target="galaxy_main">$tool.name</a> $tool.description 
-               #else
-               <a href="$link" target="galaxy_main">$tool.description</a>
-               #end if
+              #if "[[" in $tool.description and "]]" in $tool.description
+                $tool.description.replace( '[[', '<a href="$link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
+              #elif $tool.name
+                <a href="$link" target="galaxy_main">$tool.name</a> $tool.description 
+              #else
+                <a href="$link" target="galaxy_main">$tool.description</a>
+              #end if
             </div>
-	#end if
+            #end if
         #end for
       </div>
    </div>

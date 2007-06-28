@@ -5,7 +5,8 @@
 <html>
 
 <head>
-<title>Galaxy</title>
+<title>Galaxy History</title>
+
 #if $refresh
 <meta http-equiv="refresh" content="10">
 #end if
@@ -15,85 +16,137 @@
 <link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
 <link href="$h.url_for('/static/style/history.css')" rel="stylesheet" type="text/css" />
 
-<!--[if lt IE 7]>
-<script defer type="text/javascript" src="/static/scripts/ie_pngfix.js"></script>
-<![endif]-->
 
-<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/universe.js')"></script>
-<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/dojo.js')"></script>
-<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/wipe.js')"></script>
-<script language="JavaScript" type="text/javascript" src="$h.url_for('/static/scripts/prototype.js')"></script>
+## <!--[if lt IE 7]>
+## <script defer type="text/javascript" src="/static/scripts/ie_pngfix.js"></script>
+## <![endif]-->
 
+<script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
+<script type="text/javascript" src="$h.url_for('/static/scripts/jquery.cookie.js')"></script>
+<script type="text/javascript" src="$h.url_for('/static/scripts/cookie_set.js')"></script>
 
-<script language="JavaScript" type="text/javascript">
-
-    dojo.require("dojo.fx.html");
-
-    var wipe_DURATION = 150;
-    
-    function expand(name)
-    {
-    	var elem = get(name);
-    	if (elem) 
-    	{
-    		if (elem.style.display=="none")
-    		{
-    			wipeIn(elem, wipe_DURATION);
-    		} 
-    		else 
-    		{
-    			wipeOut(elem, wipe_DURATION);
-    		}
-    		toggle_value(name);
-    	}
-    }
-
-   function add_refresh( i )
-   {
-       // Not all data are ready, refreshing
-       if ( i > 0 )
-       {                      
-           get( "refreshCounterSpan" ).innerHTML = i;
-           
-           setTimeout( "add_refresh(" + (i-1) + ")", 1000 ); //
-       }
-       else
-       {
-           refresh();
-       }
-   }
-
-   function refresh()
-   {
-      window.location.href = 'history';
-   }
-   
-   function delete_item( id )
-   {
-       var item = get( id )
-       dojo.fx.html.fadeOut( item, 300, function( n, a ) { n.parentNode.removeChild( n ) } )
-   }
-   
+<script type="text/javascript">
+    var q = jQuery.noConflict();
+    q( document ).ready( function() {
+        q( "div.historyItemBody" ).hide();
+        // Load saved state and show as neccesary
+        var state = new CookieSet( "galaxy.history.expand_state" );
+        for ( id in state.store ) { q( "#" + id ).find( "div.historyItemBody" ).show(); } 
+        if ( q.browser.mozilla ) {
+            q( "div.historyItemBody" ).each( function() {
+                if ( ! q(this).is( ":visible" ) ) q(this).find( "pre.peek" ).css( "overflow", "hidden" );
+            })
+        }
+        // Add history item show / hide
+        q( "div.historyItemWrapper" ).each( function() {
+            var id = this.id;
+            var body = q(this).children( "div.historyItemBody" );
+            q(this).children( "table" ).find( "span.historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
+                if ( body.is(":visible") ) {
+                    if ( q.browser.mozilla ) { body.find( "pre.peek" ).css( "overflow", "hidden" ) }
+                    body.slideUp( "fast" );
+                    state.remove( id); state.save();
+                } 
+                else {
+                    body.slideDown( "fast", function() { 
+                        if ( q.browser.mozilla ) { body.find( "pre.peek" ).css( "overflow", "auto" ); } 
+                    });
+                    state.add( id ); state.save();
+                }
+            })
+        })
+        // Collapse all
+        q("#top-links").append( " | " ).append( q("<a href='#'>collapse all</a>").click( function() {
+            q( "div.historyItemBody:visible" ).each( function() {
+                if ( q.browser.mozilla )
+                {
+                    q(this).find( "pre.peek" ).css( "overflow", "hidden" );
+                    q(this).slideUp( "fast" );
+                }
+            })
+            state.removeAll().save();
+        }))
+        // Add footer show / hide 
+        q( "div.footerheader" ).each( function() {
+            var menu = q(this).next();
+            menu.hide();
+            q(this).append( q("<a href='#'>options...</a>").click( function() {
+                if ( menu.is( ":visible" ) ) { menu.slideUp( "fast" ) }
+                else { menu.slideDown( "fast" ) } 
+            }))
+        })
+        // Add AJAX delete buttons
+        q( "a.historyItemDelete" ).each( function() {
+            var data_id = this.id.split( "-" )[1];
+            q(this).click( function() {
+                q( '#progress-' + data_id ).show();
+                q.ajax({
+                    url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { alert( "Delete failed" ) },
+                    success: function() { q( "#historyItem-" + data_id ).fadeOut( "fast", function() { q(this).remove(); } ) }
+                })
+                return false;
+            })
+        })
+        // Links with confirmation
+        q( "a[@confirm]" ).click( function() {
+            return confirm( q(this).attr( "confirm"  ) )
+        })
+        // Refresh    
+        #if $refresh:
+            function add_refresh( i ) {
+                if ( i > 0 ) {                      
+                    q( "#refreshCounterSpan" ).text( i.toString() );
+                    setTimeout( function() { add_refresh( i - 1 ) }, 1000 );
+                }
+                else {
+                    window.location.href = 'history';
+                }
+            }
+            add_refresh( 9 )
+        #end if
+    })
 </script>
+
+<![if gte IE 7]>
+<script type="text/javascript">
+    q( document ).ready( function() {
+        // Add rollover effect to any image with a 'rollover' attribute
+        preload_images = {}
+        q( "img[@rollover]" ).each( function() {
+            var r = q(this).attr('rollover');
+            var s = q(this).attr('src');
+            preload_images[r] = true;
+            q(this).hover( 
+                function() { q(this).attr( 'src', r ) },
+                function() { q(this).attr( 'src', s ) }
+            )
+        })
+        for ( r in preload_images ) { q( "<img>" ).attr( "src", r ) }
+    })
+</script>
+<![endif]>
+
 <style type="text/css">
 #footer {
-  /* Netscape 4, IE 4.x-5.0/Win and other lesser browsers will use this */
-  position: absolute; left: 0px; bottom: 0px;
+    /* Netscape 4, IE 4.x-5.0/Win and other lesser browsers will use this */
+    position: absolute; left: 0px; bottom: 0px;
 }
 body > div#footer {
-  /* used by Opera 5+, Netscape6+/Mozilla, Konqueror, Safari, OmniWeb 4.5+, iCab, ICEbrowser */
-  position: fixed;
+    /* used by Opera 5+, Netscape6+/Mozilla, Konqueror, Safari, OmniWeb 4.5+, iCab, ICEbrowser */
+    position: fixed;
 }
 </style>
+
 <!--[if gte IE 5.5]>
 <![if lt IE 7]>
 <style type="text/css">
 div#footer {
-  /* IE5.5+/Win - this is more specific than the IE 5.0 version */
-  width:100%;
-  right: auto; bottom: auto;
-  left: expression( ( -5 - footer.offsetWidth + ( document.documentElement.clientWidth ? document.documentElement.clientWidth : document.body.clientWidth ) + ( ignoreMe2 = document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft ) ) + 'px' );
-  top: expression( ( - footer.offsetHeight + ( document.documentElement.clientHeight ? document.documentElement.clientHeight : document.body.clientHeight ) + ( ignoreMe = document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop ) ) + 'px' );
+    /* IE5.5+/Win - this is more specific than the IE 5.0 version */
+    width:100%;
+    right: auto; bottom: auto;
+    left: expression( ( -5 - footer.offsetWidth + ( document.documentElement.clientWidth ? document.documentElement.clientWidth : document.body.clientWidth ) + ( ignoreMe2 = document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft ) ) + 'px' );
+    top: expression( ( - footer.offsetHeight + ( document.documentElement.clientHeight ? document.documentElement.clientHeight : document.body.clientHeight ) + ( ignoreMe = document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop ) ) + 'px' );
 }
 </style>
 <![endif]>
@@ -101,354 +154,212 @@ div#footer {
 
 </head>
 
+<body class="historyPage">
 
-<body class="historyPage" onLoad="
-#if $refresh
-add_refresh( 9 );
-#end if
-main();">
-<div class="historyItem">
-   #if $refresh
-      <a href="$h.url_for('/history')">refreshing in <span id="refreshCounterSpan">10</span> sec</a> 
-   #else
-      <a href="$h.url_for('/history')">refresh</a> 
-   #end if
-   | <a href="javascript:collapse_all()">collapse all</a>
-      #if $mode == 'stacked'
-      | <a href="javascript:frame_up();" >
-         <img src="$h.url_for('/static/images/history_up_arrow.gif')" align="absmiddle" border="0"> 
-      </a> 
-      | <a href="javascript:frame_dw();">
-         <img src="$h.url_for('/static/images/history_down_arrow.gif')" align="absmiddle" border="0"> 
-      </a>
-      #end if
+<div id="top-links" class="historyItem">
+    #if $refresh
+        <a href="$h.url_for('/history')">refreshing in <span id="refreshCounterSpan">10</span> sec</a> 
+    #else
+        <a href="$h.url_for('/history')">refresh</a> 
+    #end if
 </div>
 
 #if $history.deleted 
-  <div class="warningmessagesmall">
-    You are currently viewing a deleted history!
-  </div>
-  <p></p>
+    <div class="warningmessagesmall">
+        You are currently viewing a deleted history!
+    </div>
+    <p></p>
 #end if
 
-#if $len($history.active_datasets)<1
-	<div class="infomessagesmall">
-      Your history is empty. Click 'Get Data' on the left pane to start
-	</div>
-#else    
+##
+## Render the dataset `$data`, using `$hid` as the displayed id
+##
 
-#for $data in reversed($history.active_datasets)
-    <div id="historyItem-$data.id">
-        #if $data.state in ["no state","",None]:
-          #set $data_state = "queued"
-        #else
-          #set $data_state = $data.state
-        #end if
-        <div class="historyItem-$data_state">
-            <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                <tr>
-                    <td>
-                        <div style='padding-right: 5px; display: none;' id="progress-$data.id">
+#def render_dataset( $data, $hid )
+
+    #if $data.state in ["no state","",None]:
+        #set $data_state = "queued"
+    #else
+        #set $data_state = $data.state
+    #end if
+    <div class="historyItemWrapper historyItem-$data_state" id="historyItem-$data.id">
+        
+        ##
+        ## Header row for history items (name, state, action buttons)
+        ##
+        
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+                <td>
+                    <div style='padding-right: 5px; display: none;' id="progress-$data.id">
                         <img src="$h.url_for('/static/style/data_running.gif')" border="0" align="middle" >
-                        </div>
-        								#if $data_state == 'running'
-        									<div style='padding-right: 5px;'><img src="$h.url_for('/static/style/data_running.gif')" border="0" align="middle"></div>
-												#elif $data_state == 'ok'
-													#pass
-        								#else
-                            #set $src = $h.url_for( "/static/style/data_%s.png" % $data_state )
-                            <div style='padding-right: 5px;'><img src="$src" border="0" align="middle"></div>
-                        #end if
-                        </div>
-                     </td>
-                    <td>
+                    </div>
+                    #if $data_state == 'running'
+                        <div style='padding-right: 5px;'><img src="$h.url_for('/static/style/data_running.gif')" border="0" align="middle"></div>
+                    #elif $data_state == 'ok'
+                        #pass
+                    #else
+                        #set $src = $h.url_for( "/static/style/data_%s.png" % $data_state )
+                        <div style='padding-right: 5px;'><img src="$src" border="0" align="middle"></div>
+                    #end if
+                </td>
+                <td>
                     <div>
-                    <div style="float: right;"><a href="$h.url_for( 'display', id=data.id )" target="_top"><img src="$h.url_for('/static/images/eye_icon.png')" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>#* 
-                    *#<a href="edit?id=$data.id" target="galaxy_main"><img src="$h.url_for('/static/images/pencil_icon.png')" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>#*
-                    *#$h.link_to_remote( "<img src='%s' width='16' height='16' alt='delete' class='deleteButton' border='0'>" % $h.url_for('/static/images/delete_icon.png'), 
+                        <div style="float: right;"><a href="$h.url_for( 'display', id=data.id )" target="_top"><img src="$h.url_for('/static/images/eye_icon.png')" rollover="$h.url_for('/static/images/eye_icon_dark.png')" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>#* 
+                        *#<a href="edit?id=$data.id" target="galaxy_main"><img src="$h.url_for('/static/images/pencil_icon.png')" rollover="$h.url_for('/static/images/pencil_icon_dark.png')" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>#*
+                        *#<a href="delete?id=$data.id" class="historyItemDelete" id="historyItemDelter-${data.id}"><img src="$h.url_for('/static/images/delete_icon.png')" rollover="$h.url_for('/static/images/delete_icon_dark.png')" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
+                        <!--
+                        $h.link_to_remote( "<img src='%s' rollover='%s' width='16' height='16' alt='delete' class='deleteButton' border='0'>" % ( $h.url_for('/static/images/delete_icon.png'), $h.url_for('/static/images/delete_icon_dark.png') ),
                                            dict( url=$h.url( action="delete_async", id=$data.id ), 
                                                  before=( "$( 'progress-%s' ).show()" % $data.id ),
                                                  success=( "delete_item( 'historyItem-%s' )" % $data.id ),
                                                  failure="alert( 'delete failed' )" ),
                                            href="delete?id=%d" % $data.id,
-                                           title='delete this item' )
+                                           title='delete this item' ) -->
+                        </div>
+                        <span class="historyItemTitle"><b>$hid: $data.display_name</b></span>
                     </div>
-                    <b><a href="javascript:expand('info$data.id')">$data.hid: $data.display_name</a></b>  
-                    </div>
-                    </td>
-            </table>
-            <div style="display: none;" id="info$data.id" class="historyItemBody">
-                    #if $data_state == "queued"
-                    	<div>Job is waiting to run</div>
-                    	#* THIS SHOULD SAY CANCEL, DELETING QUEUED/RUNNING JOBS SHOULD REMOVE THEM FROM THE QUEUE *#
-                    	#* <a href="delete?id=$data.id">delete</a> *#
-                    #elif $data_state == "running"
-                    	<div>Job is currently running</div>
-                    	#*<a href="delete?id=$data.id">delete</a> *#
-                    #elif $data_state == "error"
-                    	<div>An error occurred running this job: <i>$data.display_info.strip()</i>, <a href="${h.url_for( controller='dataset', action='errors', id=$data.id )}" target="galaxy_main">report this error</a></div>
-                    	#*<a href="delete?id=$data.id">delete</a> *#
-                    #elif $data_state == "empty"
-                    	<div>No data: <i>$data.display_info</i></div>
-                    #else
-                    <div>
-                    	$data.blurb,
-       					format: <span class="$data.ext">$data.ext</span>, 
-                     	database:
-                        #if $data.dbkey == '?'
-                           <a href="edit?id=$data.id" target="galaxy_main"><span class="$data.dbkey">$data.dbkey</span></a>
-                        #else
-                           <span class="$data.dbkey">$data.dbkey</span>
-                        #end if
-                    </div>
-
-                    <div class="info">Info: $data.display_info </div>
-        #*
+                </td>
+            </tr>
+        </table>
         
-		    #if $len($data.validation_errors)>1
-		    <div class="info"><i>
-		    There are $len($data.validation_errors) possibles errors in this dataset (<a href="dataset_errors?id=$data.id" target="galaxy_main">view</a>).
-		    </i></div>
-		    #elif $len($data.validation_errors)==1
-		    <div class="info"><i>
-		    There is 1 possible error in this dataset (<a href="dataset_errors?id=$data.id" target="galaxy_main">view</a>).
-		    </i></div>
-		    #end if
-		    
-		    *#
-                    <div> 
-                    #if $data.ext in [ "bed", "interval", "tabular", "txt", "text", "axt", "maf", "fasta", "gff", "gmaj.zip" ]:
-                         <a href="display?id=$data.id&tofile=yes&toext=$data.ext" target="_blank">save</a>
-                    #end if
-                    #if "ucsc" in $data.datatype.supported_display_apps:
-                      #set $viewport_tuple = $data.get_estimated_display_viewport()
-                      #if $viewport_tuple
-                        #set $chrom = $viewport_tuple[0]
-                        #set $start = $viewport_tuple[1]
-                        #set $stop = $viewport_tuple[2]
-                        #set $displayed = "false"
-                        #for $site_name,$site_url in $data.get_ucsc_sites:
-                          #if $site_name in $app.config.ucsc_display_sites:
-                            #if $displayed == "false":
-                              | display at UCSC 
-                              #set $displayed = "true"
-                            #end if
-                            <a target="_blank" href="$[site_url]db=$data.dbkey&position=$chrom:$start-$stop&hgt.customText=$request.base/display_as?id=$data.id&display_app=ucsc">$site_name</a> 
-                          #end if
-                        #end for
-                      #end if
-                    #end if
-                    #if "gbrowse" in $data.datatype.supported_display_apps:
-                      #set $viewport_tuple = $data.get_estimated_display_viewport()
-                      #if $viewport_tuple
-                        #set $chrom = $viewport_tuple[0]
-                        #set $start = $viewport_tuple[1]
-                        #set $stop = $viewport_tuple[2]
-                        #set $displayed = "false"
-                        #for $site_name, $site_url in $data.get_gbrowse_sites:
-                          #if $site_name in $app.config.gbrowse_display_sites:
-                            #if $displayed == "false":
-                              | display in GBrowse 
-                              #set $displayed = "true"
-                            #end if
-                            <a target="_blank" href="$[site_url]&name=$data.dbkey&ref=$chrom:$start..$stop&eurl=$request.base/display_as?id=$data.id&display_app=gbrowse">$site_name</a> 
-                          #end if
-                        #end for
-                      #end if
-                    #end if
-                    </div>
-                    #if $data.peek != "no peek"
-                    <div><pre id="peek$data.id" class="peek">$data.display_peek</pre></div>
-                    #end if
-                #end if
-                              
-        #if $len($data.children)>0
-        <div>
-	        There are $len($data.children) secondary datasets.
-	        #for $idx, $child_assoc in $enumerate($data.children)
-							#set $child = $child_assoc.child
-	            <div id="historyItem-$child.id">
-        #if $child.state in ["no state","",None]:
-          #set $data_state = "queued"
-        #else
-          #set $data_state = $data.state
-        #end if
-        <div class="historyItem-$data_state">
-            <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                <tr>
-                    <td>
-                        <div style='padding-right: 5px; display: none;' id="progress-$data.id">
-                        <img src="$h.url_for('/static/style/data_running.gif')" border="0" align="middle" >
-                        </div>
-                        #if $data_state == 'running'
-                        	<div style='padding-right: 5px;'><img src="$h.url_for('/static/style/data_running.gif')" border="0" align="middle"></div>
-                        #elif $data_state == 'ok'
-                          #pass
-                        #else
-                          #set $src = $h.url_for( "/static/style/data_%s.png" % $data_state )
-                          <div style='padding-right: 5px;'><img src="$src" border="0" align="middle"></div>
-                        #end if
-                        </div>
-                     </td>
-                    <td>
-                    <div>
-                    <div style="float: right;"><a href="display?id=$child.id" target="_top"><img src="$h.url_for('static/images/eye_icon.png')" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>#* 
-                    *#<a href="edit?id=$child.id" target="galaxy_main"><img src="$h.url_for('static/images/pencil_icon.png')" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>#*
-                    *#<a href="dataset_make_primary?id=$child.id" target="galaxy_main"><img src="$h.url_for('static/images/thumbtack_icon.png')" width='16' height='16' alt='make a primary dataset' title='make a primary dataset' class='primaryButton' border='0'></a>
-                    </div>
-                    <b><a href="javascript:expand('info$child.id')">#echo $idx +1#: $child.display_name</a></b>  
-                    </div>
-                    </td>
-            </table>
-            <div style="display: none;" id="info$child.id" class="historyItemBody">
-                    #if $data_state == "queued"
-                    	<div>Job is waiting to run</div>
-                    	#* THIS SHOULD SAY CANCEL, DELETING QUEUED/RUNNING JOBS SHOULD REMOVE THEM FROM THE QUEUE *#
-                    	<a href="delete?id=$child.id">delete</a> 
-                    #elif $data_state == "running"
-                    	<div>Job is currently running</div>
-                    	<a href="delete?id=$child.id">delete</a> 
-                    #elif $data_state == "error"
-                    	<div>An error occurred running this job: <i>$child.display_info</i></div>
-                    	<a href="delete?id=$child.id">delete</a> 
+        ##
+        ## Body for history items, extra info and actions, data "peek"
+        ##
+        
+        <div id="info$data.id" class="historyItemBody">
+            #if $data_state == "queued"
+                <div>Job is waiting to run</div>
+            #elif $data_state == "running"
+                <div>Job is currently running</div>
+            #elif $data_state == "error"
+                <div>
+                    An error occurred running this job: <i>$data.display_info.strip()</i>, 
+                    <a href="${h.url_for( controller='dataset', action='errors', id=$data.id )}" target="galaxy_main">report this error</a>
+                </div>
+            #elif $data_state == "empty"
+                <div>No data: <i>$data.display_info</i></div>
+            #else
+                <div>
+                    $data.blurb,
+                    format: <span class="$data.ext">$data.ext</span>, 
+                    database:
+                    #if $data.dbkey == '?'
+                        <a href="edit?id=$data.id" target="galaxy_main"><span class="$data.dbkey">$data.dbkey</span></a>
                     #else
-                    <div>
-                    $child.blurb, 
-                        format: <span class="$child.ext">$child.ext</span>, 
-                        database:
-                        #if $child.dbkey == '?'
-                           <a href="edit?id=$child.id" target="galaxy_main"><span class="$child.dbkey">$child.dbkey</span></a>
-                        #else
-                           <span class="$child.dbkey">$child.dbkey</span>
-                        #end if
-                    </div>
-
-                    <div class="info">Info: $child.display_info </div>
-                    <div> 
-                    #if $child.ext in [ "bed", "interval", "tabular", "txt", "text", "axt", "maf", "fasta", "gff", "gmaj.zip" ]:
-                         <a href="display?id=$child.id&tofile=yes&toext=$child.ext" target="_blank">save</a>
-                    #end if
-					#if "ucsc" in $child.datatype.supported_display_apps:
-                      #set $viewport_tuple = $child.get_estimated_display_viewport()
-                      #if $viewport_tuple
-                        #set $chrom = $viewport_tuple[0]
-                        #set $start = $viewport_tuple[1]
-                        #set $stop = $viewport_tuple[2]
-                        #set $displayed = "false"
-                        #for $site_name,$site_url in $child.get_ucsc_sites:
-                          #if $site_name in $app.config.ucsc_display_sites:
-                            #if $displayed == "false":
-                              | display at UCSC 
-                              #set $displayed = "true"
-                            #end if
-                            <a target="_blank" href="$[site_url]db=$child.dbkey&position=$chrom:$start-$stop&hgt.customText=$request.base/display_as?id=$child.id&display_app=ucsc">$site_name</a> 
-                          #end if
-                        #end for
-                      #end if
-                    #end if
-                    #if "gbrowse" in $child.datatype.supported_display_apps:
-                      #set $viewport_tuple = $child.get_estimated_display_viewport()
-                      #if $viewport_tuple
-                        #set $chrom = $viewport_tuple[0]
-                        #set $start = $viewport_tuple[1]
-                        #set $stop = $viewport_tuple[2]
-                        #set $displayed = "false"
-                        #for $site_name,$site_url in $child.get_gbrowse_sites:
-                          #if $site_name in $app.config.ucsc_display_sites:
-                            #if $displayed == "false":
-                              | display in GBrowse  
-                              #set $displayed = "true"
-                            #end if
-                            <a target="_blank" href="$[site_url]&name=$child.dbkey&ref=$chrom:$start..$stop&eurl=$request.base/display_as?id=$data.id&display_app=gbrowse">$site_name</a> 
-                          #end if
-                        #end for
-                      #end if
-                    #end if
-                    </div>
-                    #if $child.peek != "no peek"
-                    <div><pre id="peek$child.id" class="peek">$child.display_peek</pre></div>
+                        <span class="$data.dbkey">$data.dbkey</span>
                     #end if
                 </div>
+                <div class="info">Info: $data.display_info </div>
+                <div> 
+                    #if $data.ext in [ "bed", "interval", "tabular", "txt", "text", "axt", "maf", "fasta", "gff", "gmaj.zip" ]:
+                        <a href="display?id=$data.id&tofile=yes&toext=$data.ext" target="_blank">save</a>
+                    #end if
+
+                    #if "ucsc" in $data.datatype.supported_display_apps:
+                        #set $viewport_tuple = $data.get_estimated_display_viewport()
+                        #if $viewport_tuple
+                            #set $chrom = $viewport_tuple[0]
+                            #set $start = $viewport_tuple[1]
+                            #set $stop = $viewport_tuple[2]
+                            #set $displayed = "false"
+                            #for $site_name,$site_url in $data.get_ucsc_sites:
+                                #if $site_name in $app.config.ucsc_display_sites:
+                                    #if $displayed == "false":
+                                        | display at UCSC 
+                                        #set $displayed = "true"
+                                    #end if
+                                    <a target="_blank" href="$[site_url]db=$data.dbkey&position=$chrom:$start-$stop&hgt.customText=$request.base/display_as?id=$data.id&display_app=ucsc">$site_name</a> 
+                                #end if
+                            #end for
+                        #end if
+                    #end if
+                    
+                    #if "gbrowse" in $data.datatype.supported_display_apps:
+                        #set $viewport_tuple = $data.get_estimated_display_viewport()
+                        #if $viewport_tuple
+                            #set $chrom = $viewport_tuple[0]
+                            #set $start = $viewport_tuple[1]
+                            #set $stop = $viewport_tuple[2]
+                            #set $displayed = "false"
+                            #for $site_name, $site_url in $data.get_gbrowse_sites:
+                                #if $site_name in $app.config.gbrowse_display_sites:
+                                    #if $displayed == "false":
+                                        | display in GBrowse 
+                                        #set $displayed = "true"
+                                    #end if
+                                    <a target="_blank" href="$[site_url]&name=$data.dbkey&ref=$chrom:$start..$stop&eurl=$request.base/display_as?id=$data.id&display_app=gbrowse">$site_name</a> 
+                                #end if
+                            #end for
+                        #end if
+                    #end if
+ 
+                </div>
+                #if $data.peek != "no peek"
+                    <div><pre id="peek$data.id" class="peek">$data.display_peek</pre></div>
                 #end if
-
-	        
-	        
-	        
-	        
-	        </div></div>
-	        #end for
-        </div></div></div>
-        #end if
-            </div>
-
-        </div>
+            #end if
+               
+            ##  
+            ## Child datasets
+            ## 
+                              
+            #if $len( $data.children ) > 0:
+                <div>
+                    There are ${len( $data.children )} secondary datasets.
+                    #for $idx, $child_assoc in $enumerate($data.children)
+							#set $child = $child_assoc.child
+							$render_dataset( $child, $idx + 1 )
+					#end for
+				</div>
+			#end if
+							    
+	    </div>
     </div>
-#end for  
 
+#end def
+
+#if $len($history.active_datasets)<1
+    <div class="infomessagesmall">
+        Your history is empty. Click 'Get Data' on the left pane to start
+    </div>
+#else    
+    ## Render all active (not deleted) datasets, ordered from newest to oldest
+    #for $data in reversed( $history.active_datasets )
+        $render_dataset( $data, $data.hid )
+    #end for
 #end if
 
 </body>
 
 <div style="height: 20px"></div>
 <div id="footer" >
-<div class="footerheader"><b>History</b> 
-<a href="javascript:expand('history_options')">options...</a>
+    <div class="footerheader">
+        <b>History</b> 
+    </div>
+    <div>
+        <div class="footermenu">
+            #if $t.user
+                <div style="padding-top: 5px;">
+                    #if $history.user
+                        <div class="footermenuitem">currently stored as "<a href="$h.url_for('/history_rename', id=$history.id )" target="galaxy_main">$history.name</a>"</div>
+                    #else
+                        <div class="footermenuitem"><a href="$h.url_for('/history_store')" target="galaxy_main">store</a> this history for later</div>
+                    #end if
+                    <div class="footermenuitem"><a href="$h.url_for('/history_available')" target="galaxy_main">view</a> previously stored histories</div>
+                    #if $len( $history.active_datasets ) > 0 and $history.user not in [ None , "" ]:
+                        <div class="footermenuitem"><a href="$h.url_for('/history_new')">create</a> a new empty history</div>
+                    #end if
+                </div>
+            #else
+                <div class="footermenumessage">
+                    <div class="infomark">You must be <a target="galaxy_main" href="$h.url_for('/user/login')">logged in</a> to store or switch histories.</div>
+                </div>
+            #end if
+            <div class="footermenuitem"><a href="$h.url_for('/history_share')" target="galaxy_main">share</a> current history</div>
+            <div class="footermenuitem"><a href="$h.url_for('/history_delete', id=$history.id )" confirm="Are you sure you want to delete the current history?">delete</a> current history</div>
+        </div>
+    </div>
 </div>
-<div style="display: none;" id="history_options">
-<div class="footermenu">
-#if $t.user
-<div style="padding-top: 5px;">
-#if $history.user
-<div class="footermenuitem">currently stored as "<a href="$h.url_for('/history_rename', id=$history.id )" target="galaxy_main">$history.name</a>"</div>
-#else
-<div class="footermenuitem"><a href="$h.url_for('/history_store')" target="galaxy_main">store</a> this history for later</div>
-#end if
-<div class="footermenuitem"><a href="$h.url_for('/history_available')" target="galaxy_main">view</a> previously stored histories</div>
-#if $len($history.active_datasets)>0 and $history.user not in [None,""]:
-<div class="footermenuitem"><a href="$h.url_for('/history_new')">create</a> a new empty history</div>
-#end if
-</div>
-#else
-<div class="footermenumessage">
-<div class="infomark">You must be <a target="galaxy_main" href="$h.url_for('/user/login')">logged in</a> to store or switch histories.</div>
-</div>
-#end if
-<div class="footermenuitem"><a href="$h.url_for('/history_share')" target="galaxy_main">share</a> current history</div>
-<div class="footermenuitem"><a href="$h.url_for('/history_delete', id=$history.id )" onclick="confirm_click('$h.url_for('/history_delete', id=$history.id )');return false;">delete</a> current history</div>
-</div>
-</div>
-</div>
-
-<![if gte IE 7]>
-
-<script language="JavaScript" type="text/javascript">
-
-// Rollovers for delete button
-
-new Image().src = $h.url_for("/static/images/delete_icon_dark.png")
-new Image().src = $h.url_for("/static/images/pencil_icon_dark.png")
-new Image().src = $h.url_for("/static/images/eye_icon_dark.png")
-new Image().src = $h.url_for("/static/images/thumbtack_icon_dark.png")
-
-document.getElementsByClassName( 'deleteButton' ).each( function( e ) {
-    e.onmouseover = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/delete_icon_dark.png") };
-    e.onmouseout = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/delete_icon.png") };
-} )
-document.getElementsByClassName( 'displayButton' ).each( function( e ) {
-    e.onmouseover = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/eye_icon_dark.png") };
-    e.onmouseout = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/eye_icon.png") };
-} )
-document.getElementsByClassName( 'editButton' ).each( function( e ) {
-    e.onmouseover = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/pencil_icon_dark.png") };
-    e.onmouseout = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/pencil_icon.png") };
-} )
-document.getElementsByClassName( 'primaryButton' ).each( function( e ) {
-    e.onmouseover = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/thumbtack_icon_dark.png") };
-    e.onmouseout = function ( ev ) { Event.element( ev ).src = $h.url_for("/static/images/thumbtack_icon.png") };
-} )
-
-</script>
-
-<![endif]>
 
 </html>

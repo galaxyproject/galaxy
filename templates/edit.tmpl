@@ -5,10 +5,25 @@
 <title>Galaxy</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="$h.url_for('/static/universe.js')">var dummy1=0;</script>
+<script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
+<script type="text/javascript">
+q = jQuery.noConflict();
+q( document ).ready( function() {
+    #if $data.missing_meta():
+    q('#metadata').hide();
+    q("#has-meta").change( function() {
+        q(this).is(":checked") ? q('#metadata').show() : q('#metadata').hide();
+    })
+    #end if
+    q('#strandcol').hide();
+    q('#has-strand').change( function() {
+        q(this).is(":checked") ? q('#strandcol').show() : q('#strandcol').hide();
+    })
+})
+</script>
 </head>
 
-<body onLoad="frame_dw();">
+<body>
 
 <div class="toolForm">
   <div class="toolFormTitle">Editing: $data.name</div>
@@ -38,7 +53,7 @@
             <tr>
                <td colspan="2">
                   #if $data.missing_meta():
-                     <input type="checkbox" onclick="javascript:expand('metadata')" name="ignore">
+                     <input type="checkbox" id="has-meta" name="ignore">
                      Check this box if the data contains intervals
                   #end if
                </td>
@@ -46,11 +61,8 @@
 
             <tr>
                <td colspan="2">
-                  #if $data.missing_meta():
-                     <div id="metadata" style="display:none;">
-                  #else:
-                     <div id="metadata" style="display:block;">
-                  #end if    
+                  <div id="metadata">
+   
                   Chromosome: <input type="textfield" size="2" name="chromCol" value="$data.metadata.get('chromCol', '')"> 
                   Start:  <input type="textfield" size="2" name="startCol" value="$data.metadata.get('startCol', '')"> 
                   End:    <input type="textfield" size="2" name="endCol" value="$data.metadata.get('endCol', '')"> 
@@ -63,7 +75,7 @@
                   #end if
 
                   #if not $strand
-                     <p><input type="checkbox" onclick="javascript:expand('strandcol')" name="ignore">
+                     <p><input type="checkbox" id="has-strand" name="ignore">
                      Check this box if the data contains a strand column </p>
                      <div id="strandcol" style="display:none;">
                         <p>Strand: <input type="textfield" size="2" name="strandCol" value=""> </p>
