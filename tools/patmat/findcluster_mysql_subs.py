@@ -310,6 +310,21 @@ def scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, 
    patterns_len = dict()
    for pattern in patterns : 
       patterns_len[patterns_name[pattern]] = len(pattern)
+
+   #--------print bed file header---------
+   out_file.write("#1. chrom")
+   out_file.write("#2. chromStart.Note:The first base in a chromosome is numbered 0.")
+   out_file.write("#3. chromEnd")
+   out_file.write("#4. Pattern order. E.g. BABCBD, each letter represents one pattern.")
+   out_file.write("#5. score. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray.")
+   out_file.write("#6. strand")
+   out_file.write("#7. thickStart. The starting position at which the feature is drawn thickly.")
+   out_file.write("#8. thickEnd. The ending position at which the feature is drawn thickly.")
+   out_file.write("#9. itemRgb. An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb attribute is set to "On", this RBG value will determine the display color. ")
+   out_file.write("#10. blockCount. The number of blocks (exons) in the BED line.")
+   out_file.write("#11. blockSizes. A comma-separated list of the block sizes. ")
+   out_file.write("#12. blockStarts. A comma-separated list of block starts.")
+
    kk = 0
    while kk < nclusters:
       if clusters.get(kk) != None : 
