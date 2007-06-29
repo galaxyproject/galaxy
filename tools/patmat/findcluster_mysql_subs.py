@@ -320,7 +320,7 @@ def scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, 
    out_file.write("#6. strand")
    out_file.write("#7. thickStart. The starting position at which the feature is drawn thickly.")
    out_file.write("#8. thickEnd. The ending position at which the feature is drawn thickly.")
-   out_file.write("#9. itemRgb. An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb attribute is set to "On", this RBG value will determine the display color. ")
+   out_file.write("#9. itemRgb. An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb attribute is set to 'On', this RBG value will determine the display color. ")
    out_file.write("#10. blockCount. The number of blocks (exons) in the BED line.")
    out_file.write("#11. blockSizes. A comma-separated list of the block sizes. ")
    out_file.write("#12. blockStarts. A comma-separated list of block starts.")
