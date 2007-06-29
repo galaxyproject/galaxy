@@ -290,7 +290,7 @@ class TwillTestCase(unittest.TestCase):
             count += 1
             tc.go("./history")
             page = tc.browser.get_html()
-            if page.find('add_refresh( 9 );') > -1:
+            if page.find( '<!-- running: do not change this comment, used by TwillTestCase.wait -->' ) > -1:
                 time.sleep( sleep_amount )
                 sleep_amount += 1
             else:
