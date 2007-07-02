@@ -33,6 +33,7 @@
         // Load saved state and show as neccesary
         var state = new CookieSet( "galaxy.history.expand_state" );
         for ( id in state.store ) { q( "#" + id ).find( "div.historyItemBody" ).show(); } 
+        // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
         if ( q.browser.mozilla ) {
             q( "div.historyItemBody" ).each( function() {
                 if ( ! q(this).is( ":visible" ) ) q(this).find( "pre.peek" ).css( "overflow", "hidden" );
@@ -42,15 +43,16 @@
         q( "div.historyItemWrapper" ).each( function() {
             var id = this.id;
             var body = q(this).children( "div.historyItemBody" );
+            var peek = body.find( "pre.peek" )
             q(this).children( "table" ).find( "span.historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
                 if ( body.is(":visible") ) {
-                    if ( q.browser.mozilla ) { body.find( "pre.peek" ).css( "overflow", "hidden" ) }
+                    if ( q.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
                     body.slideUp( "fast" );
                     state.remove( id); state.save();
                 } 
                 else {
                     body.slideDown( "fast", function() { 
-                        if ( q.browser.mozilla ) { body.find( "pre.peek" ).css( "overflow", "auto" ); } 
+                        if ( q.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
                     });
                     state.add( id ); state.save();
                 }

@@ -15,19 +15,19 @@
         q( "div.toolSectionBody" ).hide();
         q( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" )
         var last_expanded = null;
-        q( "div.toolSectionTitle" ).click( function() { 
+        q( "div.toolSectionTitle" ).each( function() { 
            var body = q(this).next( "div.toolSectionBody" );
-           if ( body.is( ":hidden" ) ) 
-           {
-               if ( last_expanded ) last_expanded.slideUp( "fast" );
-               last_expanded = body;
-               body.slideDown( "fast" );
-           }
-           else
-           {
-               body.slideUp( "fast" );
-               last_expanded = null;
-           }
+           q(this).click( function() {
+               if ( body.is( ":hidden" ) ) {
+                   if ( last_expanded ) last_expanded.slideUp( "fast" );
+                   last_expanded = body;
+                   body.slideDown();
+               }
+               else {
+                   body.slideUp();
+                   last_expanded = null;
+               }
+           });
         });
     });
 </script>
