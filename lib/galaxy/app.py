@@ -67,7 +67,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_controller( 'error', error.Error( app ) )
     webapp.add_controller( 'dataset', dataset.DatasetInterface( app ) )
     # These two routes handle our simple needs at the moment
-    webapp.add_route( '/async/:tool_id/:data_id/:history_id', controller='async', action='index', tool_id=None, data_id=None, history_id=None )
+    webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='root', action='index' )
     webapp.finalize_config()
