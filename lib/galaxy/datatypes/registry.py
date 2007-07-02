@@ -46,7 +46,8 @@ class Registry( object ):
                 'laj'      : images.Laj(),
                 'lav'      : sequence.Lav(),
                 'html'     : images.Html(),
-                'customtrack' : interval.CustomTrack()
+                'customtrack' : interval.CustomTrack(),
+                'gbrowsetrack' : interval.GBrowseTrack()
             }
             self.mimetypes_by_extension = { 
                 'data'     : 'application/octet-stream', 
@@ -66,7 +67,8 @@ class Registry( object ):
                 'laj'      : 'text/plain',
                 'lav'      : 'text/plain',
                 'html'     : 'text/html',
-                'customtrack' : 'text/plain'
+                'customtrack' : 'text/plain',
+                'gbrowsetrack' : 'text/plain'
             }
     
     def get_mimetype_by_extension(self, ext ):
