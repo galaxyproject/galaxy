@@ -111,7 +111,7 @@ def __main__():
     # Iterate over input ranges 
     num_blocks=0
     num_lines = 0
-    for region in bx.intervals.io.GenomicIntervalReader( open(interval_file, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True):
+    for region in bx.intervals.io.GenomicIntervalReader( open(interval_file, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False):
         try:
             num_lines += 1
             src = "%s.%s" % (dbkey,region.chrom)

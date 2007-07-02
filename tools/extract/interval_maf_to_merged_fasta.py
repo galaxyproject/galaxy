@@ -146,7 +146,7 @@ def __main__():
         sys.exit()
 
     #Step through interval file
-    for region in bx.intervals.io.GenomicIntervalReader( open(interval_file, 'r' ), chrom_col=chr_col, start_col=start_col, end_col=end_col, strand_col=strand_col, fix_strand=True):
+    for region in bx.intervals.io.GenomicIntervalReader( open(interval_file, 'r' ), chrom_col=chr_col, start_col=start_col, end_col=end_col, strand_col=strand_col, fix_strand=True, return_header=False):
         target_sequences = {}
         alignment = Genomic_Region()
         for i in range(region.end-region.start): alignment.append(Genomic_Position(dbkey, target_dbkey))
