@@ -21,10 +21,10 @@
                if ( body.is( ":hidden" ) ) {
                    if ( last_expanded ) last_expanded.slideUp( "fast" );
                    last_expanded = body;
-                   body.slideDown();
+                   body.slideDown( "fast" );
                }
                else {
-                   body.slideUp();
+                   body.slideUp( "fast" );
                    last_expanded = null;
                }
            });

@@ -59,13 +59,13 @@
             })
         })
         // Collapse all
-        q("#top-links").append( " | " ).append( q("<a href='#'>collapse all</a>").click( function() {
+        q("#top-links").append( "|&nbsp;" ).append( q("<a href='#'>collapse all</a>").click( function() {
             q( "div.historyItemBody:visible" ).each( function() {
                 if ( q.browser.mozilla )
                 {
                     q(this).find( "pre.peek" ).css( "overflow", "hidden" );
-                    q(this).slideUp( "fast" );
                 }
+                q(this).slideUp( "fast" );
             })
             state.removeAll().save();
         }))
