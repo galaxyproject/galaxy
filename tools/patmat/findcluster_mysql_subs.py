@@ -132,7 +132,7 @@ def sortedDictValues(adict):
    keys.sort()
    return map(adict.get, keys)
 
-def pattern_match(conn, shsize, pat, table_name, log_file):
+def pattern_match(conn, shsize, pat, chrom, table_name, log_file):
    mpattern = len(pat)
    patterns = expand_pattern(pat)
    patterns_cmpl = expand_pattern_cmpl(pat)
@@ -146,9 +146,17 @@ def pattern_match(conn, shsize, pat, table_name, log_file):
    for pattern in patterns:
       num=dna2num(pattern, mpattern, shsize)
       sqlquery = sqlquery + "or num>=%s " % num[0] + "and num<%s " % num[1]
+      if chrom[1] != 0 :
+         sqlquery = sqlquery + "and chromStart>=%s " % chrom[1] 
+      if chrom[2] != 0 :
+         sqlquery = sqlquery + "and chromStart<=%s " % chrom[2]
    for pattern in patterns_cmpl:
       num=dna2num(pattern, mpattern, shsize)
       sqlquery = sqlquery + "or num>=%s " % num[0] + "and num<%s " % num[1]
+      if chrom[1] != 0 :
+         sqlquery = sqlquery + "and chromStart>=%s " % chrom[1] 
+      if chrom[2] != 0 :
+         sqlquery = sqlquery + "and chromStart<=%s " % chrom[2]
    sqlquery = sqlquery + " order by chromStart" 
    log_file.write(strftime("\t%H:%M:%S", localtime()))
    log_file.write("...query database") 
@@ -162,9 +170,12 @@ def pattern_match(conn, shsize, pat, table_name, log_file):
 
    return matchs_tmp
 
-def scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) :
+def scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) :
+   chrom_name = chrom[0]
    log_file.write(strftime("\n%Y-%b-%d %H:%M:%S", localtime()))
-   log_file.write("\tStart on chrom %s" % chrom_name)
+   log_file.write("\tStart on chrom %s " % chrom[0])
+   if chrom[1] != 0 or chrom[2] != 0 :
+      log_file.write(": %s - %s " % (chrom[1], chrom[2]) )
    result = dict()
    result['M'] = dict()
 
@@ -176,7 +187,7 @@ def scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, 
    total_matchs = 0
    table_name = genome_name + "_" + chrom_name
    for pattern in patterns: 
-      result['M'][pattern] = pattern_match(conn, shsize, pattern, table_name, log_file)
+      result['M'][pattern] = pattern_match(conn, shsize, pattern, chrom, table_name, log_file)
       total_matchs = total_matchs + len(result['M'][pattern])
    conn.close()
 
@@ -310,20 +321,6 @@ def scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, 
    patterns_len = dict()
    for pattern in patterns : 
       patterns_len[patterns_name[pattern]] = len(pattern)
-
-   #--------print bed file header---------
-   out_file.write("#1. chrom")
-   out_file.write("\n#2. chromStart.Note:The first base in a chromosome is numbered 0.")
-   out_file.write("\n#3. chromEnd")
-   out_file.write("\n#4. Pattern order. E.g. BABCBD, each letter represents one pattern.")
-   out_file.write("\n#5. score. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray.")
-   out_file.write("\n#6. strand")
-   out_file.write("\n#7. thickStart. The starting position at which the feature is drawn thickly.")
-   out_file.write("\n#8. thickEnd. The ending position at which the feature is drawn thickly.")
-   out_file.write("\n#9. itemRgb. An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb attribute is set to 'On', this RBG value will determine the display color. ")
-   out_file.write("\n#10. blockCount. The number of blocks (exons) in the BED line.")
-   out_file.write("\n#11. blockSizes. A comma-separated list of the block sizes. ")
-   out_file.write("\n#12. blockStarts. A comma-separated list of block starts.\n")
 
    kk = 0
    while kk < nclusters:

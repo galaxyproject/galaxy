@@ -17,6 +17,8 @@ if __name__ == '__main__':
    genome_name = ''
    chrom_name = ''
    chroms = []
+   chrstring = ''
+   chrs = []
    ptnstring = ''
    ptns = []
    patterns = []
@@ -25,13 +27,53 @@ if __name__ == '__main__':
    n = 1
    info_file = 'None'
    while n < nargv :
-      if sys.argv[n] == "-g" : genome_name = sys.argv[n+1]
-      elif sys.argv[n] == "-c" : chroms = sys.argv[n+1].strip('\n').split(',')
+      #get the genome parameter
+      if   sys.argv[n] == "-g" : genome_name = sys.argv[n+1]
+
+      #get the chroms or positions
+      elif sys.argv[n] == "-f" : 
+         while 1: 
+	    if sys.argv[n+1][0]!='-': chrstring = chrstring + sys.argv[n+1] + ' '
+	    else: break
+	    n = n + 1
+	 n = n - 1
+	 nn = 0
+	 while nn < len(chrstring) :
+	    if chrstring[nn]=='X' and chrstring[nn+1]=='X' : 
+	       chrstring=chrstring[:nn]+' '+chrstring[nn+2:]
+	       nn = nn - 2
+	    if chrstring[nn]==' ' : 
+	       if chrstring[nn-1]!=' ': chrstring=chrstring[:nn]+' '+chrstring[nn+1:] 
+	       else : 
+	          chrstring=chrstring[:nn]+chrstring[nn+1:]
+		  nn = nn - 1
+	    nn = nn + 1
+	 chrs = chrstring.strip().split(' ')
+	 for chr in chrs :
+	   chrom = []
+	   chrom.append(chr.split(':')[0].split('chr')[1])
+	   chrom.append(chr.split(':')[1].split('-')[0])
+	   chrom.append(chr.split(':')[1].split('-')[1])
+	   chroms.append(chrom)
+
+      elif sys.argv[n] == "-c" : 
+         chromstmp = sys.argv[n+1].strip('\n').split(',')
+	 for  chromtmp in chromstmp:
+	    chrom=[]
+	    chrom.append(chromtmp)
+	    chrom.append(0)
+	    chrom.append(0)
+	    chroms.append(chrom)
+      
+      #get the window size and header size. In our program, the header size is fixed to be 32.
       elif sys.argv[n] == "-w" : wsize = int(sys.argv[n+1])
       elif sys.argv[n] == "-s" : shsize = int(sys.argv[n+1])
+
+      #output files
       elif sys.argv[n] == "-o" : out_file = open(sys.argv[n+1], 'w')
       elif sys.argv[n] == "-i" : info_file = open(sys.argv[n+1], 'w')
       elif sys.argv[n] == "-l" : log_file = open(sys.argv[n+1], 'w')
+
       #get the patterns information
       elif sys.argv[n] == "-p" : 
          while 1: 
@@ -49,7 +91,7 @@ if __name__ == '__main__':
 		  nn = nn - 1
 	    nn = nn + 1
 	 ptns = ptnstring.strip().split(' ')
-      n = n + 2
+      n = n + 1
    
    #check the genome, chroms, and ptns not to be empty
    if genome_name=='' or chroms=='' or ptns=='': 
@@ -81,23 +123,40 @@ if __name__ == '__main__':
 
    #----------------------------------------------------------------------------------------
    #-------------------------- find clusters -----------------------------------------------
+   #--------print bed file header---------
+   out_file.write("#1. chrom")
+   out_file.write("\n#2. chromStart.Note:The first base in a chromosome is numbered 0.")
+   out_file.write("\n#3. chromEnd")
+   out_file.write("\n#4. Pattern order. E.g. BABCBD, each letter represents one pattern.")
+   out_file.write("\n#5. score. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray.")
+   out_file.write("\n#6. strand")
+   out_file.write("\n#7. thickStart. The starting position at which the feature is drawn thickly.")
+   out_file.write("\n#8. thickEnd. The ending position at which the feature is drawn thickly.")
+   out_file.write("\n#9. itemRgb. An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb is set to 'On', this RBG value will determine the display color. ")
+   out_file.write("\n#10. blockCount. The number of blocks (exons) in the BED line.")
+   out_file.write("\n#11. blockSizes. A comma-separated list of the block sizes. ")
+   out_file.write("\n#12. blockStarts. A comma-separated list of block starts.\n")
+
    result = dict()
-   for chrom_name in chroms : 
+   for chrom in chroms : 
+      chrom_name = chrom[0]
       if chrom_name != '' :
-         result[chrom_name] = findcluster_mysql_subs.scan_chromosome(genome_name, chrom_name, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) 
+         result[chrom_name] = findcluster_mysql_subs.scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) 
    
    #----------------------------------------------------------------------------------------
    #-------------------------- print out results -------------------------------------------
    if info_file != 'None' : 
       info_file.write("%-35s\t" % "Chromome arm:")
-      for chrom_name in chroms: 
+      for chrom in chroms: 
+         chrom_name = chrom[0]
          if chrom_name != '' :
             info_file.write("%s\t" % chrom_name)
       info_file.write("\n")
 
       for pattern in patterns :
          info_file.write("Occurrences of site %-s\t" % str(patterns_name[pattern]+"("+pattern+"):"))
-         for chrom_name in chroms: 
+         for chrom in chroms: 
+            chrom_name = chrom[0]
             if chrom_name != '' :
                info_file.write("%d\t" % len(result[chrom_name]['M'][pattern]))
          info_file.write("\n")
@@ -107,13 +166,15 @@ if __name__ == '__main__':
          if combines[pattern] != 0 : 
             info_file.write(" %-d%s" % (combines[pattern], patterns_name[pattern]))
       info_file.write(" ':%s\t" % "")
-      for chrom_name in chroms: 
+      for chrom in chroms: 
+         chrom_name = chrom[0]
          if chrom_name != '' :
             info_file.write("%d\t" % result[chrom_name]['C'])
       info_file.write("\n")
       
       info_file.write("%-s\t" % "After merging overlapping clusters:")
-      for chrom_name in chroms: 
+      for chrom in chroms: 
+         chrom_name = chrom[0]
          if chrom_name != '' :
             info_file.write("%d\t" % len(result[chrom_name]['NO']))
       info_file.write("\n")
@@ -121,14 +182,16 @@ if __name__ == '__main__':
    #-------------------------------------------------------------------------------------	 
    else :
       print "%-50s" % "Chromome arm:",   
-      for chrom_name in chroms: 
+      for chrom in chroms: 
+         chrom_name = chrom[0]
          if chrom_name != '' :
             print "%10s" % chrom_name, 
       print 
       
       for pattern in patterns :
          print "Occurrences of site %-30s" % str(patterns_name[pattern]+"("+pattern+"):"), 
-         for chrom_name in chroms: 
+         for chrom in chroms: 
+            chrom_name = chrom[0]
             if chrom_name != '' :
                print "%10d" % len(result[chrom_name]['M'][pattern]),
          print 
@@ -138,13 +201,15 @@ if __name__ == '__main__':
          if combines[pattern] != 0 : 
             print "%-d%s" % (combines[pattern], patterns_name[pattern]), 
       print "':%14s" % "", 
-      for chrom_name in chroms: 
+      for chrom in chroms: 
+         chrom_name = chrom[0]
          if chrom_name != '' :
             print "%10d" % result[chrom_name]['C'],
       print 
       
       print "%-50s" % "After merging overlapping clusters:",   
-      for chrom_name in chroms: 
+      for chrom in chroms: 
+         chrom_name = chrom[0]
          if chrom_name != '' :
             print "%10d" % len(result[chrom_name]['NO']),
       print 
