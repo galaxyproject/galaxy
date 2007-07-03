@@ -40,10 +40,9 @@ class Data( object ):
         dataset.peek  = ''
         dataset.blurb = 'data'
     def init_meta( self, dataset ):
-        # set values according to defaults set in metadata_spec
-        if "metadata" not in dataset: dataset.metadata = MetadataCollection()
-        for item in self.get_metadata_spec():
-            dataset.metadata[item.name] = item.default
+        # Metadata should be left mostly uninitialized.  Dataset will
+        # handle returning default values when metadata is not set.
+        pass
     def missing_meta( self, dataset):
         return False
     def get_estimated_display_viewport( self, dataset ):
@@ -128,9 +127,10 @@ class Text( Data ):
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
 
-    def get_mime(self):
-        """Returns the mime type of the data"""
-        return galaxy.datatypes.registry.Registry().get_mimetype_by_extension( self.extension.lower() )
+# Removed for now ... this should be handled specifically by the registry
+##     def get_mime(self):
+##         """Returns the mime type of the data"""
+##         return galaxy.datatypes.registry.Registry().get_mimetype_by_extension( self.extension.lower() )
    
     def set_peek(self, dataset):
         dataset.peek  = get_file_peek( dataset.file_name )
