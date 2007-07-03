@@ -1,7 +1,6 @@
 import logging, os, sys, time, sets, tempfile
 from galaxy import util
 from cgi import escape
-import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import *
 log = logging.getLogger(__name__)
 
@@ -9,11 +8,29 @@ log = logging.getLogger(__name__)
 DATA_NEW, DATA_OK, DATA_FAKE = 'new', 'ok', 'fake'
 
 class DataMeta( type ):
+    """
+    Metaclass for Data class.  Sets up metadata spec.
+    """
     def __init__( cls, name, bases, dict_ ):
         cls._metadataspec = MetadataSpecCollection()
         Statement.process( cls )
 
 class Data( object ):
+    """
+    Base class for all datatypes.  Implements basic interfaces as well
+    as class methods for metadata.
+
+    >>> class DataTest( Data ):
+    ...     MetadataElement( name="test" )
+    ...
+    >>> DataTest.get_metadata_spec()['test'].name
+    'test'
+    >>> DataTest.get_metadata_spec()['test'].desc
+    >>> DataTest.get_metadata_spec()['test'].attributes
+    >>> DataTest.get_metadata_spec()['test'].wrapper
+    <class 'galaxy.datatypes.metadata.MetadataWrapper'>
+    
+    """
     __metaclass__ = DataMeta
     
     """Provide the set of display formats supported by this datatype """
@@ -23,7 +40,10 @@ class Data( object ):
         dataset.peek  = ''
         dataset.blurb = 'data'
     def init_meta( self, dataset ):
-        pass
+        # set values according to defaults set in metadata_spec
+        if "metadata" not in dataset: dataset.metadata = MetadataCollection()
+        for item in self.get_metadata_spec():
+            dataset.metadata[item.name] = item.default
     def missing_meta( self, dataset):
         return False
     def get_estimated_display_viewport( self, dataset ):

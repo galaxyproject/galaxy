@@ -284,7 +284,20 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
+            
+    # change datatype
+    def set_datatype( self, ext ):
+        current = datatypes_registry.get_datatype_by_extension( self.extension )
+        new = datatypes_registry.get_datatype_by_extension( ext )
 
+        # Copy over metadata that applies...according to spec (?)
+        new_meta = new.get_metadata_spec()
+        new_meta_bunch = Bunch()
+        for item in new_meta:
+            if item.name in self.metadata:
+                new_meta_bunch[item.name] = self.metadata[item.name]
+        self.metadata = new_meta_bunch
+        
 class ValidationError( object ):
     def __init__( self, message=None, err_type=None, attributes=None ):
         self.message = message
