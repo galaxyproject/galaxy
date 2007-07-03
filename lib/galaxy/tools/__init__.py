@@ -21,7 +21,6 @@ from grouping import *
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
-import galaxy.datatypes.registry
 
 log = logging.getLogger( __name__ )
 
@@ -33,7 +32,7 @@ class ToolBox( object ):
     Container for a collection of tools
     """
 
-    def __init__( self, config_filename, tool_root_dir, datatypes_registry = galaxy.datatypes.registry.Registry() ):
+    def __init__( self, config_filename, tool_root_dir, app ):
         """
         Create a toolbox from the config file names by `config_filename`,
         using `tool_root_directory` as the base directory for finding 
@@ -43,7 +42,7 @@ class ToolBox( object ):
         self.tools_and_sections_by_id = {}
         self.sections = []
         self.tool_root_dir = tool_root_dir
-        self.datatypes_registry = datatypes_registry
+        self.app = app
         try:
             self.init_tools( config_filename )
         except:
@@ -88,7 +87,7 @@ class ToolBox( object ):
             ToolClass = getattr( mod, cls )
         else:
             ToolClass = Tool
-        return ToolClass( config_file, root, datatypes_registry = self.datatypes_registry )
+        return ToolClass( config_file, root, self.app )
         
     def reload( self, tool_id ):
         """
@@ -165,14 +164,14 @@ class Tool:
     """
     Represents a computational tool that can be executed through Galaxy. 
     """
-    def __init__( self, config_file, root, datatypes_registry = galaxy.datatypes.registry.Registry() ):
+    def __init__( self, config_file, root, app ):
         """
         Load a tool from the config named by `config_file`
         """
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
-        self.datatypes_registry = datatypes_registry
+        self.app = app
         # Parse XML element containing configuration
         self.parse( root )
         
@@ -435,7 +434,7 @@ class Tool:
         Also, if the parameter has a 'required_enctype' add it to the set
         enctypes.
         """
-        param = ToolParameter.build( self, input_elem, datatypes_registry=self.datatypes_registry )
+        param = ToolParameter.build( self, input_elem )
         param_enctype = param.get_required_enctype()
         if param_enctype:
             enctypes.add( param_enctype )

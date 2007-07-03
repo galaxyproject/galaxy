@@ -13,12 +13,13 @@ from galaxy import util
 import tempfile
 import galaxy.datatypes.registry
 
-datatypes_registry = galaxy.datatypes.registry.Registry()
+datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
 
 def set_datatypes_registry( d_registry ):
     """
     Set up datatypes_registry
     """
+    global datatypes_registry
     datatypes_registry = d_registry
 
 class User( object ):

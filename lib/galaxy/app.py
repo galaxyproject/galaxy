@@ -28,7 +28,7 @@ class UniverseApplication( object ):
                                                     "sqlite://%s?isolation_level=IMMEDIATE" % self.config.database,
                                                     create_tables = True )
         # Initialize the tools
-        self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, datatypes_registry = self.datatypes_registry )
+        self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         # Start the job queue
         self.job_queue = jobs.JobQueue( self )
         self.heartbeat = None
