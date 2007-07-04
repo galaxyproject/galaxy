@@ -3,7 +3,7 @@
 	
 	<description>Central server</description>
 	
-	<command>noop</command>
+	<command/>
 	
 	<inputs action="http://www.biomart.org/biomart/martview" check_values="false" method="get" target="_top">
 		<display>go to BioMart Central $GALAXY_URL</display>
