@@ -16,6 +16,8 @@
 		<param name="GALAXY_URL" type="baseurl" value="/async/encode_db1" />
 	</inputs>
 	
+  <uihints minwidth="800"/>
+	
 	<code file="encodedb_filter.py"/>
 	
 	<options sanitize="False" refresh="True"/>

@@ -11,6 +11,8 @@
 		<param name="tool_id" type="hidden" value = "hbvar"/>
 	</inputs>
 	
+	<uihints minwidth="800"/>
+	
 	<code file="hbvar_filter.py"/>
 	
 	<outputs>

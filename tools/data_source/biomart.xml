@@ -10,6 +10,8 @@
 		<param name="GALAXY_URL" type="baseurl" value="/tool_runner/biomart" />
 	</inputs>
 	
+	<uihints minwidth="800"/>
+	
 	<code file="biomart_filter.py"/>
 	
 	<outputs>
