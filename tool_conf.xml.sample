@@ -45,6 +45,7 @@
     <tool file="filters/tailWrapper.xml" />
   </section>
   <section name="Filter, Sort, Join, Compare, Subtract" id="filter">
+  	<tool file="stats/grouping.xml" />
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
