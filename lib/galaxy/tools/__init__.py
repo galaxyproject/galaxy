@@ -258,6 +258,12 @@ class Tool:
             cls = action_elem.get( 'class' )
             mod = __import__( module, globals(), locals(), [cls])
             self.tool_action = getattr( mod, cls )()
+        # User interface hints
+        self.uihints = {}
+        uihints_elem = root.find( "uihints" )
+        if uihints_elem is not None:
+            for key, value in uihints_elem.attrib.iteritems():
+                self.uihints[ key ] = value
         # Tests
         tests_elem = root.find( "tests" )
         if tests_elem:

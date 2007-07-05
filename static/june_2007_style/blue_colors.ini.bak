@@ -1,0 +1,50 @@
+base_text=#303030
+base_bg=#F4EBE2
+base_bg_top=#FFFFFF
+link_text=#303030
+header_text=#023858
+menu_bg_top=#EEEEFF
+menu_bg_over=#CCCCFF
+menu_bg_hatch=-
+#menu_bg_hatch=#AAAAFF
+# Forms
+form_title_bg=#FFFFFF
+form_title_bg_hatch=#d2c099
+form_border=#AAAACC
+form_body_bg=#FFFFDB
+odd_row_bg=#FFFF99
+# Messages
+error_message_border=#AA6666
+error_message_bg=#FFCCCC
+warn_message_border=#AAAA66
+warn_message_bg=#FFFFCC
+done_message_border=#66AA66
+done_message_bg=#CCFFCC
+info_message_border=#6666AA
+info_message_bg=#CCCCFF
+# Tables
+table_header_bg=#ebd9b2
+table_row_bg=white
+table_border=#d8b365
+# Footers
+footer_bg=#023858
+footer_title_bg=#023858
+footer_title_hatch=#000000
+# History
+history_error_border=#AA6666
+history_error_bg=#FFCCCC
+history_running_border=#AAAA66
+history_running_bg=#FFFFCC
+history_ok_border=#66AA66
+history_ok_bg=#CCFFCC
+history_queued_border=#888888
+history_queued_bg=#EEEEEE
+peek_table_header=#023858
+# Masthead
+masthead_bg=#011e30
+masthead_text=#eeeeee
+masthead_bg_hatch=-
+masthead_link=#eeeeee
+# Layout 
+panel_header_bg_top=#f5f5f5
+panel_header_bg_bottom=#cccccc

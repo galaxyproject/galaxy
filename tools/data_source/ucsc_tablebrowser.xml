@@ -14,6 +14,8 @@
 		<param name="hgta_outputType" type="hidden" value="bed" />
 	</inputs>
 	
+	<uihints minwidth="800"/>
+	
 	<code file="ucsc_tablebrowser_code.py"/>
 	
 	<outputs>

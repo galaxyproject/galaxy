@@ -1,0 +1,104 @@
+body
+{
+    background: #C1C9E5;
+    color: #303030;
+    background-image: url(menu_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    margin-top: 5px;
+    margin-right: 0;
+    margin-left: 0;
+    border: 0;
+    padding: 0;
+}
+
+a
+{
+    color: #base_text;
+}
+
+div.historyLinks
+{
+    padding: 5px;
+    margin: 5px;
+    padding-right: 5px;
+    padding-left: 5px;
+    margin-bottom: 5px;
+}
+
+div.historyItem
+{
+    margin: 5px;
+    margin-right: 0px;
+    padding: 5px;
+    padding-right: 11px;
+
+    border: solid #888888 1px;
+    border-left: solid #888888 5px;
+    border-right: none;
+    background: #EEEEEE;
+    background-image: url(gray_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+}
+
+div.historyItem div.historyItem
+{
+    margin-right: -11px;
+}
+
+div.historyItem-ok
+{
+    border-color: #66AA66;
+    background: #CCFFCC;
+    /*
+    background-image: url(ok_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    */
+}
+
+div.historyItem-error, div.historyItem-empty
+{
+    border-color: #AA6666;
+    background: #FFCCCC;
+    /*
+    background-image: url(error_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    */
+}
+
+div.historyItem-running
+{
+    border-color: #AAAA66;
+    background: #FFFFCC;
+    /*
+    background-image: url(warn_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    */
+}
+
+div.historyItem-queued
+{
+}
+
+div.historyItemBody div
+{
+    padding-top: 2px;
+}
+
+pre.peek
+{
+    background: white;
+    color: black;
+    width: 100%; 
+    overflow: auto;
+}
+
+pre.peek th
+{
+    color: white;
+    background: #023858;
+}

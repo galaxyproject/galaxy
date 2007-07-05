@@ -159,7 +159,7 @@ div#footer {
 
 <body class="historyPage">
 
-<div id="top-links" class="historyItem">
+<div id="top-links" class="historyLinks">
     #if $refresh
         <a href="$h.url_for('/history')">refreshing in <span id="refreshCounterSpan">10</span> sec</a> 
     #else
@@ -185,7 +185,7 @@ div#footer {
     #else
         #set $data_state = $data.state
     #end if
-    <div class="historyItemWrapper historyItem-$data_state" id="historyItem-$data.id">
+    <div class="historyItemWrapper historyItem historyItem-$data_state" id="historyItem-$data.id">
         
         ##
         ## Header row for history items (name, state, action buttons)
@@ -335,6 +335,7 @@ div#footer {
 
 </body>
 
+#if $app.config.get( "new_style_july_2007", "false" ) == "true"
 <div style="height: 20px"></div>
 <div id="footer" >
     <div class="footerheader">
@@ -364,5 +365,6 @@ div#footer {
         </div>
     </div>
 </div>
+#end if
 
 </html>

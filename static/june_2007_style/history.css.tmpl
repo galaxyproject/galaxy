@@ -1,0 +1,104 @@
+body
+{
+    background: $menu_bg_over;
+    color: $base_text;
+    background-image: url(menu_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    margin-top: 5px;
+    margin-right: 0;
+    margin-left: 0;
+    border: 0;
+    padding: 0;
+}
+
+a
+{
+    color: #base_text;
+}
+
+div.historyLinks
+{
+    padding: 5px;
+    margin: 5px;
+    padding-right: 5px;
+    padding-left: 5px;
+    margin-bottom: 5px;
+}
+
+div.historyItem
+{
+    margin: 5px;
+    margin-right: 0px;
+    padding: 5px;
+    padding-right: 11px;
+
+    border: solid $history_queued_border 1px;
+    border-left: solid $history_queued_border 5px;
+    border-right: none;
+    background: $history_queued_bg;
+    background-image: url(gray_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+}
+
+div.historyItem div.historyItem
+{
+    margin-right: -11px;
+}
+
+div.historyItem-ok
+{
+    border-color: $history_ok_border;
+    background: $history_ok_bg;
+    /*
+    background-image: url(ok_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    */
+}
+
+div.historyItem-error, div.historyItem-empty
+{
+    border-color: $history_error_border;
+    background: $history_error_bg;
+    /*
+    background-image: url(error_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    */
+}
+
+div.historyItem-running
+{
+    border-color: $history_running_border;
+    background: $history_running_bg;
+    /*
+    background-image: url(warn_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    */
+}
+
+div.historyItem-queued
+{
+}
+
+div.historyItemBody div
+{
+    padding-top: 2px;
+}
+
+pre.peek
+{
+    background: white;
+    color: black;
+    width: 100%; 
+    overflow: auto;
+}
+
+pre.peek th
+{
+    color: white;
+    background: $peek_table_header;
+}

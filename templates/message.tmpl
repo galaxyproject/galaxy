@@ -7,14 +7,15 @@
 </head>
 <script type="text/javascript">
 #if 'masthead' in $refresh_frames
-if ( parent.parent && parent.parent.frames && parent.parent.frames.galaxy_masthead )
-{
+if ( parent.frames && parent.frames.galaxy_masthead ) {
+    parent.frames.galaxy_masthead.location.href="$h.url_for('/masthead')";
+}
+else if ( parent.parent && parent.parent.frames && parent.parent.frames.galaxy_masthead ) {
     parent.parent.frames.galaxy_masthead.location.href="$h.url_for('/masthead')";
 }
 #end if
 #if 'history' in $refresh_frames
-if ( parent.frames && parent.frames.galaxy_history )
-{
+if ( parent.frames && parent.frames.galaxy_history ) {
     parent.frames.galaxy_history.location.href="$h.url_for('/history')";
 }
 #end if

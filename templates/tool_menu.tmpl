@@ -29,6 +29,11 @@
                }
            });
         });
+        q( "a[@minsizehint]" ).click( function() {
+            if ( parent.handle_minwidth_hint ) {
+                parent.handle_minwidth_hint( q(this).attr( "minsizehint" ) );
+            }
+        });
     });
 </script>
 
@@ -67,7 +72,7 @@ div#footer {
 <div class="toolSectionList">
 #for $i, $section in enumerate( $toolbox.sections )
    #if $i > 0 
-      <hr> 
+      <div class="toolSectionPad"></div> 
    #end if
    <div class="toolSectionTitle" id="title_$section.id">
       <span>$section.name</span>
@@ -82,13 +87,12 @@ div#footer {
               #else
                 #set $link = $h.url_for( $tool.action, ** $tool.get_static_param_values( $t ) )
               #end if
-
               #if "[[" in $tool.description and "]]" in $tool.description
                 $tool.description.replace( '[[', '<a href="$link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
               #elif $tool.name
-                <a href="$link" target="galaxy_main">$tool.name</a> $tool.description 
+                <a id="link-$tool.id" href="$link" target="galaxy_main" minsizehint="$tool.uihints.get( 'minwidth', -1 )">$tool.name</a> $tool.description 
               #else
-                <a href="$link" target="galaxy_main">$tool.description</a>
+                <a id="link-$tool.id" href="$link" target="galaxy_main" minsizehint="$tool.uihints.get( 'minwidth', -1 )">$tool.description</a>
               #end if
             </div>
             #end if
@@ -100,11 +104,13 @@ div#footer {
 
 </div>
 
+#if $app.config.get( "new_style_july_2007", "false" ) == "true"
 <div style="height: 20px"></div>
 
 <div id="footer">
 <div class="footerheader"><b>Tools</b></div>
 </div>
 </body>
+#end if
 
 </html>

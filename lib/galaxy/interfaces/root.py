@@ -24,14 +24,18 @@ class Universe(common.Root):
     
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, **kwd):
-        if mode:
-            trans.set_cookie(name=self.pref_cookie_name, value=mode)
+        # if mode:
+        #             trans.set_cookie(name=self.pref_cookie_name, value=mode)
+        #         else:
+        #             mode = trans.get_cookie(name=self.pref_cookie_name)
+        #         trans.ensure_valid_galaxy_session()
+        #         result = trans.fill_template('index_frames.tmpl', mode=mode)
+        #         return [ result ]
+        if trans.app.config.get( "new_style_june_2007", "false" ) == "true":
+            return trans.fill_template( "root/index.tmpl" )
         else:
-            mode = trans.get_cookie(name=self.pref_cookie_name)
-        trans.ensure_valid_galaxy_session()
-        result = trans.fill_template('index_frames.tmpl', mode=mode)
-        return [ result ]
-
+            return trans.fill_template( "index_frames.tmpl" )
+        
     @web.expose
     def tool_menu( self, trans ):
         return trans.fill_template('tool_menu.tmpl', toolbox=self.get_toolbox() )
@@ -243,6 +247,11 @@ class Universe(common.Root):
                trans.log_event( "Dataset id %s marked as deleted async" % str(id) )
             self.app.model.flush()
         return "OK"
+
+    @web.expose
+    def history_options( self, trans ):
+        """Displays a list of history related actions"""
+        return trans.fill_template( "history_options.tmpl", history = trans.get_history() )
 
     @web.expose
     def history_delete( self, trans, id = None, **kwd):
