@@ -30,13 +30,12 @@ if __name__ == '__main__':
       #get the genome parameter
       if   sys.argv[n] == "-g" : genome_name = sys.argv[n+1]
 
-      #get the chroms or positions
+      #get the chroms or blocks
       elif sys.argv[n] == "-f" : 
          while 1: 
 	    if sys.argv[n+1][0]!='-': chrstring = chrstring + sys.argv[n+1] + ' '
 	    else: break
 	    n = n + 1
-	 n = n - 1
 	 nn = 0
 	 while nn < len(chrstring) :
 	    if chrstring[nn]=='X' and chrstring[nn+1]=='X' : 
@@ -48,14 +47,23 @@ if __name__ == '__main__':
 	          chrstring=chrstring[:nn]+chrstring[nn+1:]
 		  nn = nn - 1
 	    nn = nn + 1
-	 chrs = chrstring.strip().split(' ')
-	 for chr in chrs :
-	   chrom = []
-	   chrom.append(chr.split(':')[0].split('chr')[1])
-	   chrom.append(chr.split(':')[1].split('-')[0])
-	   chrom.append(chr.split(':')[1].split('-')[1])
-	   chroms.append(chrom)
-
+	 if len(chrstring) != 0 :  
+	    chrs = chrstring.strip().split(' ')
+	    for chr in chrs :
+	       chrom = []
+	       chrom.append(chr.split(':')[0].split('chr')[1])
+	       chrom.append(chr.split(':')[1].split('-')[0])
+	       chrom.append(chr.split(':')[1].split('-')[1])
+	       chroms.append(chrom)
+      elif sys.argv[n] == "-b" : 
+         if os.path.exists(sys.argv[n+1]) : 
+            bed_file = open(sys.argv[n+1], 'r')
+	    for line in bed_file.readlines() :
+	       chrom = []
+	       chrom.append(line.split('\t')[0].split('chr')[1])
+	       chrom.append(line.split('\t')[1])
+	       chrom.append(line.split('\t')[2])
+	       chroms.append(chrom)
       elif sys.argv[n] == "-c" : 
          chromstmp = sys.argv[n+1].strip('\n').split(',')
 	 for  chromtmp in chromstmp:
@@ -80,7 +88,6 @@ if __name__ == '__main__':
 	    if sys.argv[n+1][0]!='-': ptnstring = ptnstring + sys.argv[n+1] + ' '
 	    else: break
 	    n = n + 1
-	 n = n - 1
 	 nn = 0
 	 code = 'ACGTMRWSYKBDHVN0123456789'
 	 while nn < len(ptnstring) :
@@ -94,7 +101,7 @@ if __name__ == '__main__':
       n = n + 1
    
    #check the genome, chroms, and ptns not to be empty
-   if genome_name=='' or chroms=='' or ptns=='': 
+   if genome_name=='' or len(chroms)==0 or ptns=='': 
       findcluster_mysql_subs.usage()
       sys.exit()
    
