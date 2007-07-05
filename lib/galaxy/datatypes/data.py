@@ -39,10 +39,15 @@ class Data( object ):
     def set_peek( self, dataset ):
         dataset.peek  = ''
         dataset.blurb = 'data'
-    def init_meta( self, dataset ):
+    def init_meta( self, dataset, copy_from=None ):
         # Metadata should be left mostly uninitialized.  Dataset will
         # handle returning default values when metadata is not set.
-        pass
+        # copy_from allows metadata to be passed in that will be
+        # copied. (although this seems ambiguous, see
+        # Dataset.set_metadata.  It always copies the rhs in order to
+        # flag the object as modified for SQLAlchemy.
+        if copy_from:
+            dataset.metadata = copy_from.metadata
     def missing_meta( self, dataset):
         return False
     def get_estimated_display_viewport( self, dataset ):

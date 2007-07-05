@@ -114,10 +114,8 @@ class DefaultToolAction( object ):
             # FIXME: Datatypes -- this propertype has a lot of hidden logic
             data.extension = ext
             # Copy metadata from one of the inputs if requested. 
-            # FIXME: init_meta should take a dataset to copy from as an 
-            # argument
             if metadata_source:
-                data.metadata = inp_data[metadata_source].metadata
+                data.init_meta( copy_from=inp_data[metadata_source] )
             else:
                 data.init_meta()
             # Take dbkey from LAST input

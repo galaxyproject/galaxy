@@ -10,6 +10,7 @@ import data
 from galaxy import util
 from cgi import escape
 from bx.intervals.io import *
+from galaxy.datatypes.metadata import MetadataElement
 
 log = logging.getLogger(__name__)
 
@@ -104,7 +105,8 @@ class Interval( Tabular ):
         return False
     
     
-    def init_meta( self, dataset ):
+    def init_meta( self, dataset, copy_from=None ):
+        Tabular.init_meta( self, dataset, copy_from=copy_from )
         for key in alias_spec:
             setattr( dataset.metadata, key, '' ) 
         setattr( dataset.metadata, 'strandCol', '0' )                 
@@ -213,11 +215,19 @@ class Bed( Interval ):
     """Provide the set of display formats supported by this datatype """
     supported_display_apps = ['ucsc']
 
+
+    """Add metadata elements"""
+    MetadataElement( name="chromCol", default=1 )
+    MetadataElement( name="startCol", default=2 )
+    MetadataElement( name="endCol", default=3 )
+    MetadataElement( name="strandCol", default=6 )
+    
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         return Tabular.missing_meta(self, dataset)
     
-    def init_meta( self, dataset ):
+    def init_meta( self, dataset, copy_from=None ):
+        Interval.init_meta( self, dataset, copy_from=copy_from )
         dataset.metadata.chromCol  = 1
         dataset.metadata.startCol  = 2
         dataset.metadata.endCol    = 3
