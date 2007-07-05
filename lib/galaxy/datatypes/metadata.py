@@ -22,6 +22,8 @@ class MetadataSpecCollection( dict ):
         self[item.name] = item
     def iter( self ):
         return self.itervalues()
+    def __getattr__( self, name ):
+        return self[name]
 
 class MetadataParameter( object ):
     def marshal( self, value ):
@@ -45,7 +47,7 @@ class MetadataElementSpec( object ):
         self.param = param
         self.attributes = attributes
         self.default = default
-        datatype._metadataspec.append( self )
+        datatype.metadata_spec.append( self )
     def hasAttribute( self, attribute ):
         return ((self.permission & attribute) == attribute)
     def wrap( self, metadata ):

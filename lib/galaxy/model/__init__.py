@@ -189,7 +189,7 @@ class Dataset( object ):
 
     def get_metadata( self ):
         if not self._metadata: self._metadata = Bunch()
-        return MetadataCollection( self, self.datatype.get_metadata_spec() )
+        return MetadataCollection( self, self.datatype.metadata_spec )
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = Bunch( **dict( bunch.items() ) )

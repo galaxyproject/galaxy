@@ -12,7 +12,7 @@ class DataMeta( type ):
     Metaclass for Data class.  Sets up metadata spec.
     """
     def __init__( cls, name, bases, dict_ ):
-        cls._metadataspec = MetadataSpecCollection()
+        cls.metadata_spec = MetadataSpecCollection()
         Statement.process( cls )
 
 class Data( object ):
@@ -23,11 +23,11 @@ class Data( object ):
     >>> class DataTest( Data ):
     ...     MetadataElement( name="test" )
     ...
-    >>> DataTest.get_metadata_spec()['test'].name
+    >>> DataTest.metadata_spec.test.name
     'test'
-    >>> DataTest.get_metadata_spec()['test'].desc
-    >>> DataTest.get_metadata_spec()['test'].attributes
-    >>> DataTest.get_metadata_spec()['test'].param
+    >>> DataTest.metadata_spec.test.desc
+    >>> DataTest.metadata_spec.test.attributes
+    >>> DataTest.metadata_spec.test.param
     <class 'galaxy.datatypes.metadata.MetadataParameter'>
     
     """
@@ -76,10 +76,6 @@ class Data( object ):
     def repair_methods(self, dataset):
         """Unimplemented method, returns dict with method/option for repairing errors"""
         return None
-
-    @classmethod
-    def get_metadata_spec( cls ):
-        return cls._metadataspec
 
 class Text( Data ):
 
