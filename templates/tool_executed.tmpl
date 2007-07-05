@@ -15,7 +15,10 @@
       inside_galaxy_frameset = true;
   }
   
-  if ( parent.tool_finished )
+  if ( parent.handle_minwidth_hint )
+  {
+      parent.handle_minwidth_hint( -1 );
+  }
 
   function main()
   {
