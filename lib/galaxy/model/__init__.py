@@ -12,6 +12,7 @@ from cookbook.patterns import Bunch
 from galaxy import util
 import tempfile
 import galaxy.datatypes.registry
+from galaxy.datatypes.metadata import MetadataCollection
 
 datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
 
@@ -152,7 +153,7 @@ class Dataset( object ):
         self.extension = extension
         self.dbkey = dbkey
         self.state = state
-        self.metadata = metadata or Bunch()
+        self._metadata = metadata or Bunch()
         self.parent_id = parent_id
         self.designation = designation
         self.deleted = False
@@ -160,6 +161,9 @@ class Dataset( object ):
         # Relationships
         self.history = history
         self.validation_errors = validation_errors
+
+    # Deprecated: the metadatacollection now updates the object
+    # reference whenever any metadata is changed
     def mark_metadata_changed( self ):
         """
         Register changes to metadata with the history
@@ -167,8 +171,10 @@ class Dataset( object ):
         FIXME: This is just temporary, I'd like to implement some kind of 
                object proxy mapper property for SQLAlchemy that handles 
                this magically.
+
+               Fixed.  INS, 7/5/2007  Waiting to remove...
         """
-        self.metadata = Bunch( **self.metadata.__dict__ )
+        self._metadata = Bunch( **self._metadata.__dict__ )
         
     @property
     def ext( self ):
@@ -180,6 +186,15 @@ class Dataset( object ):
     @property
     def datatype( self ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
+
+    def get_metadata( self ):
+        if not self._metadata: self._metadata = Bunch()
+        return MetadataCollection( self, self.datatype.get_metadata_spec() )
+    def set_metadata( self, bunch ):
+        # Needs to accept a MetadataCollection, a bunch, or a dict
+        self._metadata = Bunch( **dict( bunch.items() ) )
+    metadata = property( get_metadata, set_metadata )
+    
     def change_datatype( self, new_ext ):
         datatypes_registry.change_datatype( self, new_ext )
     def get_size( self ):
@@ -286,19 +301,6 @@ class Dataset( object ):
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
             
-    # change datatype
-    def set_datatype( self, ext ):
-        current = datatypes_registry.get_datatype_by_extension( self.extension )
-        new = datatypes_registry.get_datatype_by_extension( ext )
-
-        # Copy over metadata that applies...according to spec (?)
-        new_meta = new.get_metadata_spec()
-        new_meta_bunch = Bunch()
-        for item in new_meta:
-            if item.name in self.metadata:
-                new_meta_bunch[item.name] = self.metadata[item.name]
-        self.metadata = new_meta_bunch
-        
 class ValidationError( object ):
     def __init__( self, message=None, err_type=None, attributes=None ):
         self.message = message

@@ -117,7 +117,7 @@ class DefaultToolAction( object ):
             # FIXME: init_meta should take a dataset to copy from as an 
             # argument
             if metadata_source:
-                data.metadata = Bunch( ** inp_data[metadata_source].metadata.__dict__ )
+                data.metadata = inp_data[metadata_source].metadata
             else:
                 data.init_meta()
             # Take dbkey from LAST input

@@ -31,7 +31,7 @@ class MappingTests( unittest.TestCase ):
         assert hists[1].name == ( "H" * 255 )
         assert hists[0].user == users[0]
         assert hists[1].user is None
-        assert hists[1].datasets[0].metadata['chromCol'] == 1
+        assert hists[1].datasets[0].metadata.chromCol == 1
         assert hists[1].datasets[0].file_name == "/tmp/dataset_%d.dat" % hists[1].datasets[0].id
         # Do an update and check
         hists[1].name = "History 2b"

@@ -27,8 +27,8 @@ class Data( object ):
     'test'
     >>> DataTest.get_metadata_spec()['test'].desc
     >>> DataTest.get_metadata_spec()['test'].attributes
-    >>> DataTest.get_metadata_spec()['test'].wrapper
-    <class 'galaxy.datatypes.metadata.MetadataWrapper'>
+    >>> DataTest.get_metadata_spec()['test'].param
+    <class 'galaxy.datatypes.metadata.MetadataParameter'>
     
     """
     __metaclass__ = DataMeta
