@@ -1,6 +1,6 @@
-#TODO: Set dbkey to proper UCSC build, if known
 # Greg Von Kuster
 import urllib
+from galaxy.datatypes import sniff
 
 from galaxy import datatypes, config
 import tempfile, shutil
@@ -9,8 +9,9 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     """Sets the name of the data"""
     data_name = param_dict.get( 'name', 'Biomart query' )
     data_type = param_dict.get( 'type', 'text' )
-    if data_type == 'text': data_type='interval' #All data from biomart is TSV, assume interval
     name, data = out_data.items()[0]
+    if data_type == 'text':
+        data_type = sniff.guess_ext(data.file_name)
     data = app.datatypes_registry.change_datatype(data, data_type)
     data.name = data_name
     out_data[name] = data
@@ -38,16 +39,23 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
     
     fp = open(data.file_name, 'wb')
     size = 0
+    max_size_exceeded = False
     while 1:
         chunk = page.read(CHUNK_SIZE)
         if not chunk:
             break
-        if size > MAX_SIZE:
-            raise Exception('----- maximum datasize exceeded ---')
         size += len(chunk)
+        if size > MAX_SIZE:
+            max_size_exceeded = True
+            break
         fp.write(chunk)
 
     fp.close()
+    
+    if max_size_exceeded:
+        data.info = 'Maximum data size of 100 MB exceeded, incomplete data retrieval.'
+    else:
+        data.info = data.name
     #Set meta data, format file to be valid interval type
     if isinstance(data.datatype, datatypes.interval.Interval):
         data.set_meta(first_line_is_header=True)
@@ -106,6 +114,10 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
             shutil.move(temp_filename,data.file_name)
             
         else:
-            data = app.datatypes_registry.change_datatype(data, 'tabular')
+            data_type = sniff.guess_ext(data.file_name)
+            data = app.datatypes_registry.change_datatype(data, data_type)
+    else:
+        data_type = sniff.guess_ext(data.file_name)
+        data = app.datatypes_registry.change_datatype(data, data_type)
     data.set_peek()
     data.flush()
