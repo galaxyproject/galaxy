@@ -97,32 +97,36 @@ heliPylo_J99_1	Helicobacter pylori J99 01/29/1999 (heliPylo_J99_1)
 #
 #Harvested from http://www.wormbase.org/db/seq/gbrowse/wormbase/
 #
-brugia	Brugia malayi (current release)
-briggsae_cb25	C. briggsae (cb25.agp8 release; 2003)
-briggsae	C. briggsae (current release)
-elegans	C. elegans (current release)
-elegans_gmap	C. elegans (genetic map)
-elegans_pmap	C. elegans (physical map)
-nGASP	C. elegans WS160 Gene Prediction Assessment Browser
-ws77	C. elegans WS77 gene predictions
-remanei	C. remanei (preliminary analysis)
-fly	D. melanogaster (via Gadfly Release 2)
-fly31	D. melanogaster (via Gadfly Release 3.1)
-nGASP_submissions	nGASP WS160 Phase 1 Gene Predictions
-yeast_chr1	S. cerevisiae chromosome I
+#brugia	Brugia malayi (current release)
+#briggsae_cb25	C. briggsae (cb25.agp8 release; 2003)
+#briggsae	C. briggsae (current release)
+#elegans	C. elegans (current release)
+#elegans_gmap	C. elegans (genetic map)
+#elegans_pmap	C. elegans (physical map)
+#nGASP	C. elegans WS160 Gene Prediction Assessment Browser
+#ws77	C. elegans WS77 gene predictions
+#remanei	C. remanei (preliminary analysis)
+#fly	D. melanogaster (via Gadfly Release 2)
+#fly31	D. melanogaster (via Gadfly Release 3.1)
+#nGASP_submissions	nGASP WS160 Phase 1 Gene Predictions
+#yeast_chr1	S. cerevisiae chromosome I
 #
 #Harvested from http://flybase.bio.indiana.edu/cgi-bin/gbrowse/dmel/
 #
-dana	D. ananassae Genome
-dere	D. erecta Genome
-dgri	D. grimshawi Genome
-dmel	D. melanogaster Genome (R5.1)
-dmoj	D. mojavensis Genome
-dper	D. persimilis Genome
-dpse	D. pseudoobscura Genome (R2.0)
-dsec	D. sechellia Genome
-dsim	D. simulans Genome
-dvir	D. virilis Genome
-dwil	D. willistoni Genome
-dyak	D. yakuba Genome
-dmelstocks	Insertions in Stock Collections
+#dana	D. ananassae Genome
+#dere	D. erecta Genome
+#dgri	D. grimshawi Genome
+#dmel	D. melanogaster Genome (R5.1)
+#dmoj	D. mojavensis Genome
+#dper	D. persimilis Genome
+#dpse	D. pseudoobscura Genome (R2.0)
+#dsec	D. sechellia Genome
+#dsim	D. simulans Genome
+#dvir	D. virilis Genome
+#dwil	D. willistoni Genome
+#dyak	D. yakuba Genome
+#dmelstocks	Insertions in Stock Collections
+#
+# Added for gbrowse prototype (TODO: remove)
+#
+#ctgA	GBrowse prototype volvox (ctgA)

@@ -259,7 +259,7 @@ div#footer {
                         <a href="display?id=$data.id&tofile=yes&toext=$data.ext" target="_blank">save</a>
                     #end if
 
-                    #if "ucsc" in $data.datatype.supported_display_apps:
+                    #if $data.has_data and "ucsc" in $data.datatype.supported_display_apps:
                         #set $viewport_tuple = $data.get_estimated_display_viewport()
                         #if $viewport_tuple
                             #set $chrom = $viewport_tuple[0]
@@ -278,7 +278,7 @@ div#footer {
                         #end if
                     #end if
                     
-                    #if "gbrowse" in $data.datatype.supported_display_apps:
+                    #if $data.has_data and "gbrowse" in $data.datatype.supported_display_apps:
                         #set $viewport_tuple = $data.get_estimated_display_viewport()
                         #if $viewport_tuple
                             #set $chrom = $viewport_tuple[0]

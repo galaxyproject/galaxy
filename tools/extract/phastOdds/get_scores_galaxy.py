@@ -59,13 +59,19 @@ def main():
         end = int( fields[ end_col ] )
         # Find matching interval
         matches = intersecters[ chr ].find( start, end )
-        assert len( matches ) == 1, "Interval must match exactly one target region"
+        if not len( matches ) == 1:
+            print "Interval must match exactly one target region"
+            break
         region = matches[0]
-        assert start >= region.start and end <= region.end, "Interval must fall entirely within region"
+        if not (start >= region.start and end <= region.end):
+            print "Interval must fall entirely within region"
+            break
         region_name = region.value
         rel_start = start - region.start
         rel_end = end - region.start
-        assert rel_start < rel_end, "Empty region"
+        if not rel_start < rel_end:
+            print "Region %s is empty - relative start:%d, relative end:%d" % ( region_name, rel_start, rel_end )
+            break
         s = h5.getNode( h5.root, "scores_" + region_name )
         c = h5.getNode( h5.root, "counts_" + region_name )
         score = s[rel_end-1]
