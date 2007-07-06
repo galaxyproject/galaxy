@@ -96,10 +96,7 @@ class Registry( object ):
 
     def change_datatype(self, data, ext ):
         data.extension = ext
-        # call init_meta and copy metadata from itself.  The datatype
-        # being converted *to* will handle any metadata copying and
-        # initialization.
-        data.init_meta( copy_from=data )
+        data.init_meta()
         if data.has_data():
             data.set_peek()
         return data

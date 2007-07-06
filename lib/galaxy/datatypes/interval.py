@@ -38,12 +38,6 @@ class Interval( Tabular ):
     """Provide the set of display formats supported by this datatype """
     supported_display_apps = ['ucsc']
 
-    """Add metadata elements"""
-    MetadataElement( name="chromCol" )
-    MetadataElement( name="startCol" )
-    MetadataElement( name="endCol" )
-    MetadataElement( name="strandCol" )
-
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
@@ -176,6 +170,11 @@ class Bed( Interval ):
     
     def init_meta( self, dataset, copy_from=None ):
         Interval.init_meta( self, dataset, copy_from=copy_from )
+        dataset.metadata.chromCol  = 1
+        dataset.metadata.startCol  = 2
+        dataset.metadata.endCol    = 3
+        dataset.metadata.strandCol = 6
+        dataset.mark_metadata_changed()
         
     def set_meta( self, dataset ):
         """
