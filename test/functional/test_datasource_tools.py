@@ -7,10 +7,22 @@ class UcscTests(TwillTestCase):
         """Clearing history"""
         self.clear_history()
 
-    # def test_Biomart_Uniprot(self):
-    #     """Connection to Biomart"""
-    #     #All this test does, is check to see if biomart is accessible through Galaxy. A dataset is never retrieved or checked.
-    # 
+    def test_Biomart_Uniprot(self):
+        """Connection to Biomart"""
+        #All this test does, is check to see if biomart is accessible through Galaxy. A dataset is never retrieved or checked.
+        self.go2myurl('http://www.biomart.org/biomart/martview/b15f707b4956f926636a8d79b80b201f?do_export=1&resultsButton=1') 
+
+        current_file = self.get_fname('temp_biomart_hs_mt.dat')
+        diff_file = self.get_fname('biomart_hs_mt.dat')
+        currentpage = self.last_page()
+        file(current_file, 'wb').write(currentpage)
+    
+        try:
+            self.diff( current_file, diff_file )
+            os.remove( current_file )
+        except AssertionError, err:
+            raise AssertionError( "Biomart changes:" + str( err ) )
+
     #     # some button indices are hardcoded (twill limitation)
     #     self.run_tool('biomart')
     #     
@@ -31,8 +43,6 @@ class UcscTests(TwillTestCase):
     #     #    outtype='Features', outformat='tsv'
     #     #)
     #     
-    #     #self.check_data('biomart_uniprot.dat')
-
     # def test_UCSC_interface(self):
     #     """Diffing first page of UCSC proxy."""
     #     # hgsid needs to be set or else we get a different one every time.
