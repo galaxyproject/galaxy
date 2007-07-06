@@ -65,13 +65,14 @@ if __name__ == '__main__':
 	       chrom.append(line.split('\t')[2])
 	       chroms.append(chrom)
       elif sys.argv[n] == "-c" : 
-         chromstmp = sys.argv[n+1].strip('\n').split(',')
-	 for  chromtmp in chromstmp:
-	    chrom=[]
-	    chrom.append(chromtmp)
-	    chrom.append(0)
-	    chrom.append(0)
-	    chroms.append(chrom)
+         if sys.argv[n+1][0]!='-':
+            chromstmp = sys.argv[n+1].strip('\n').split(',')
+	    for  chromtmp in chromstmp:
+	       chrom=[]
+	       chrom.append(chromtmp)
+	       chrom.append(0)
+	       chrom.append(0)
+	       chroms.append(chrom)
       
       #get the window size and header size. In our program, the header size is fixed to be 32.
       elif sys.argv[n] == "-w" : wsize = int(sys.argv[n+1])
