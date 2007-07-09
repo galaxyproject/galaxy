@@ -6,6 +6,12 @@ from cookbook.patterns import Bunch
 STATEMENTS = "__galaxy_statements__"
 
 class Statement( object ):
+    '''
+    This class inserts its target into a list in the surrounding
+    class.  the data.Data class has a metaclass which executes these
+    statements.  This is how we shove the metadata element spec into
+    the class.
+    '''
     def __init__( self, target ):
         self.target = target
     def __call__( self, *args, **kwargs ):
@@ -18,6 +24,12 @@ class Statement( object ):
             statement.target( element, *args, **kwargs )
 
 class MetadataSpecCollection( dict ):
+    '''
+    A simple extension of dict which allows cleaner access to items
+    and allows the values to be iterated over directly as if it were a
+    list.  append() is also implemented for simplicity and does not
+    "append".
+    '''
     def append( self, item ):
         self[item.name] = item
     def iter( self ):
@@ -26,6 +38,17 @@ class MetadataSpecCollection( dict ):
         return self[name]
 
 class MetadataParameter( object ):
+    def __init__( self, metadata, context ):
+        '''
+        The "context" is simply the metadata collection/bunch holding
+        this piece of metadata.  This is passed in to allow for
+        metadata to validate against each other (note: this could turn
+        into a huge, recursive mess if not done with care).  For
+        example, a column assignment should validate against the
+        number of columns in the dataset.
+        '''
+        self.metadata = metadata
+        self.context = context
     def marshal( self, value ):
         '''
         This method should/can be overridden to convert the incomming
@@ -39,8 +62,20 @@ class MetadataParameter( object ):
         '''
         pass
 
+    def get_html_field( self, value=None, other_values={} ):
+        raise TypeError("Abstract Method")
+    
+    @classmethod
+    def build_param( cls, element, context ):
+        return element.param( element, context )
+
+
 class MetadataElementSpec( object ):
-    READONLY = 1
+    '''
+    Defines a metadata element and adds it to the metadata_spec (which
+    is a MetadataSpecCollection) of datatype.
+    '''
+
     def __init__( self, datatype, name=None, desc=None, param=MetadataParameter, attributes=None, default=None ):
         self.name = name
         self.desc = desc
@@ -52,6 +87,13 @@ class MetadataElementSpec( object ):
         return ((self.permission & attribute) == attribute)
     def wrap( self, metadata ):
         return self.param(metadata)
+
+
+# Basic attributes for describing metadata elements
+MetadataAttributes = Bunch(
+    READONLY = 1
+    )
+    
 
 class MetadataCollection:
     """
@@ -68,20 +110,20 @@ class MetadataCollection:
     def __iter__(self):
         return self.bunch.__iter__()
     def get( self, key, default=None ):
-        if self.spec:
-            if self.spec.get(name, None):
-                default = default or self.spec[name].default
-        return self.bunch.get( key, default )
+        try:
+            return self.bunch.get( key, default ) or self.spec[key].default
+        except:
+            return default
     def items(self):
-        return self.bunch.items()
+        return iter( [(k, self.get(k)) for k in self.spec.iterkeys() ] )
     def __str__(self):
-        return self.bunch.__str__()
+        return dict( self.items() ).__str__()
     def __nonzero__(self):
         return self.bunch.__nonzero__()
     def __getattr__(self, name):
-        try:
+        if self.bunch.get( name ):
             return self.bunch.get( name )
-        except AttributeError, e:
+        else:
             if self.spec.get(name, None):
                 return self.spec[name].default
             else:
@@ -94,3 +136,5 @@ class MetadataCollection:
             self.bunch = self.parent._metadata = Bunch( **self.bunch.__dict__ )
 
 MetadataElement = Statement(MetadataElementSpec)
+
+
