@@ -81,7 +81,7 @@ def get_headers(fname, sep, count=30):
     """
     headers = []
     for idx, line in enumerate(file(fname)):
-        line = line.strip()
+        line = line.rstrip('\n\r')
         if idx == count:
             break
         headers.append( line.split(sep) )
@@ -105,8 +105,11 @@ def is_column_based(fname, sep='\t'):
     False
     >>> is_column_based(fname, sep=' ')
     True
+    >>> fname = get_test_fname('test_ensembl.tab')
+    >>> is_column_based(fname)
+    True
     """
-    headers  = get_headers(fname, sep=sep)
+    headers = get_headers(fname, sep=sep)
     
     if not headers:
         return False
