@@ -594,101 +594,217 @@ fprintf (resultFile,"Total Tree\\t",ttl,"\\t",ttl*cmx[0][0],"\\t",ttl*cmx[0][2],
 fprintf (resultFile,CLOSE_FILE);
 """
 
-
 SimpleLocalFitter = """
-VERBOSITY_LEVEL			   = -1;
+VERBOSITY_LEVEL               = -1;
 COUNT_GAPS_IN_FREQUENCIES  = 0;
 
 /*---------------------------------------------------------*/
 
 function returnResultHeaders (dummy)
 {
-	_analysisHeaders = {};
-	_analysisHeaders[0] = "GENE";
-	_analysisHeaders[1] = "BP";
-	_analysisHeaders[2] = "S_sites";
-	_analysisHeaders[3] = "NS_sites";
-	_analysisHeaders[4] = "LogL";
-	_analysisHeaders[5] = "AC";
-	_analysisHeaders[6] = "AT";
-	_analysisHeaders[7] = "CG";
-	_analysisHeaders[8] = "CT";
-	_analysisHeaders[9] = "GT";
+    _analysisHeaders = {};
+    _analysisHeaders[0] = "GENE";
+    _analysisHeaders[1] = "BP";
+    _analysisHeaders[2] = "S_sites";
+    _analysisHeaders[3] = "NS_sites";
+    _analysisHeaders[4] = "Stop_codons";
+    _analysisHeaders[5] = "LogL";
+    _analysisHeaders[6] = "AC";
+    _analysisHeaders[7] = "AT";
+    _analysisHeaders[8] = "CG";
+    _analysisHeaders[9] = "CT";
+    _analysisHeaders[10] = "GT";
+    _analysisHeaders[11] = "Tree";
 
-	for (_biterator = 0; _biterator < treeBranchCount; _biterator = _biterator + 1)
-	{
-		branchName = treeBranchNames[_biterator];
-		
-		_analysisHeaders [Abs(_analysisHeaders)] = "length("+branchName+")";
-		_analysisHeaders [Abs(_analysisHeaders)] = "dS("+branchName+")";
-		_analysisHeaders [Abs(_analysisHeaders)] = "dN("+branchName+")";
-		_analysisHeaders [Abs(_analysisHeaders)] = "omega("+branchName+")";
-	}
+    for (_biterator = 0; _biterator < treeBranchCount; _biterator = _biterator + 1)
+    {
+        branchName = treeBranchNames[_biterator];
+        
+        _analysisHeaders [Abs(_analysisHeaders)] = "length("+branchName+")";
+        _analysisHeaders [Abs(_analysisHeaders)] = "dS("+branchName+")";
+        _analysisHeaders [Abs(_analysisHeaders)] = "dN("+branchName+")";
+        _analysisHeaders [Abs(_analysisHeaders)] = "omega("+branchName+")";
+    }
 
-	return _analysisHeaders;
+    return _analysisHeaders;
 }
 
 /*---------------------------------------------------------*/
 
 function runAGeneFit (myID)
 {
-	DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
+    DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
 
-	if (_currentGene==1)
-	{
-		_MG94stdinOverload = {};
-		_MG94stdinOverload ["0"] = "Local";
-		_MG94stdinOverload ["1"] = modelSpecString;
+    if (_currentGene==1)
+    {
+        _MG94stdinOverload = {};
+        _MG94stdinOverload ["0"] = "Local";
+        _MG94stdinOverload ["1"] = modelSpecString;
 
-		ExecuteAFile 			(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"MG94custom.mdl",
-							     _MG94stdinOverload);
-		
-		Tree	codonTree		   = treeString;
-	}
-	else
-	{
-		HarvestFrequencies 			  (observedFreq,filteredData,3,1,1);
-		MULTIPLY_BY_FREQS 		    = PopulateModelMatrix ("MG94custom", observedFreq);
-		vectorOfFrequencies 	    = BuildCodonFrequencies (observedFreq);
-		Model MG94customModel 		= (MG94custom,vectorOfFrequencies,0);
+        ExecuteAFile             (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"MG94custom.mdl",
+                                 _MG94stdinOverload);
+        
+        Tree    codonTree           = treeString;
+    }
+    else
+    {
+        HarvestFrequencies               (observedFreq,filteredData,3,1,1);
+        MULTIPLY_BY_FREQS             = PopulateModelMatrix ("MG94custom", observedFreq);
+        vectorOfFrequencies         = BuildCodonFrequencies (observedFreq);
+        Model MG94customModel         = (MG94custom,vectorOfFrequencies,0);
 
-		Tree	codonTree		    = treeString;
-	}
+        Tree    codonTree            = treeString;
+    }
 
-	LikelihoodFunction lf     = (filteredData,codonTree);
+    LikelihoodFunction lf     = (filteredData,codonTree);
 
-	Optimize 					(res,lf);
+    Optimize                     (res,lf);
 
-	_snsAVL	   = 				_computeSNSSites ("filteredData", _Genetic_Code, vectorOfFrequencies, 0);
-	_cL		   =  				ReturnVectorsOfCodonLengths (ComputeScalingStencils (0), "codonTree");
-
-
-	_returnMe = {};
-	_returnMe ["GENE"]  			= myID;
-	_returnMe ["LogL"]  			= res[1][0];
-	_returnMe ["BP"] 				= _snsAVL ["Sites"];
-	_returnMe ["S_sites"] 			= _snsAVL ["SSites"];
-	_returnMe ["NS_sites"] 			= _snsAVL ["NSSites"];
-	_returnMe ["AC"] 				= AC;
-	_returnMe ["AT"] 				= AT;
-	_returnMe ["CG"] 				= CG;
-	_returnMe ["CT"] 				= CT;
-	_returnMe ["GT"] 				= GT;
+    _snsAVL       =                 _computeSNSSites ("filteredData", _Genetic_Code, vectorOfFrequencies, 0);
+    _cL           =                  ReturnVectorsOfCodonLengths (ComputeScalingStencils (0), "codonTree");
 
 
-	for (_biterator = 0; _biterator < treeBranchCount; _biterator = _biterator + 1)
-	{
-		branchName = treeBranchNames[_biterator];
+    _returnMe = {};
+    _returnMe ["GENE"]              = myID;
+    _returnMe ["LogL"]              = res[1][0];
+    _returnMe ["BP"]                 = _snsAVL ["Sites"];
+    _returnMe ["S_sites"]             = _snsAVL ["SSites"];
+    _returnMe ["NS_sites"]             = _snsAVL ["NSSites"];
+    _returnMe ["AC"]                 = AC;
+    _returnMe ["AT"]                 = AT;
+    _returnMe ["CG"]                 = CG;
+    _returnMe ["CT"]                 = CT;
+    _returnMe ["GT"]                 = GT;
+    _returnMe ["Tree"]                 = Format(codonTree,0,1);
 
-		_returnMe ["length("+branchName+")"] 		= (_cL["Total"])[_biterator];
-		_returnMe ["dS("+branchName+")"] 				= (_cL["Syn"])[_biterator]*(_returnMe ["BP"]/_returnMe ["S_sites"]);
-		_returnMe ["dN("+branchName+")"] 				= (_cL["NonSyn"])[_biterator]*(_returnMe ["BP"]/_returnMe ["NS_sites"]);
-		
-		ExecuteCommands ("_lom = _standardizeRatio(codonTree."+treeBranchNames[_biterator]+".nonSynRate,codonTree."+treeBranchNames[_biterator]+".synRate);");
-		_returnMe ["omega("+branchName+")"] 				= _lom;
-	}
-	
-	return _returnMe;
+    for (_biterator = 0; _biterator < treeBranchCount; _biterator = _biterator + 1)
+    {
+        branchName = treeBranchNames[_biterator];
+
+        _returnMe ["length("+branchName+")"]         = (_cL["Total"])[_biterator];
+        _returnMe ["dS("+branchName+")"]                 = (_cL["Syn"])[_biterator]*(_returnMe ["BP"]/_returnMe ["S_sites"]);
+        _returnMe ["dN("+branchName+")"]                 = (_cL["NonSyn"])[_biterator]*(_returnMe ["BP"]/_returnMe ["NS_sites"]);
+        
+        ExecuteCommands ("_lom = _standardizeRatio(codonTree."+treeBranchNames[_biterator]+".nonSynRate,codonTree."+treeBranchNames[_biterator]+".synRate);");
+        _returnMe ["omega("+branchName+")"]                 = _lom;
+    }
+    
+    return _returnMe;
+}
+
+"""
+
+SimpleGlobalFitter = """
+VERBOSITY_LEVEL               = -1;
+COUNT_GAPS_IN_FREQUENCIES  = 0;
+
+/*---------------------------------------------------------*/
+
+function returnResultHeaders (dummy)
+{
+    _analysisHeaders = {};
+    _analysisHeaders[0]  = "GENE";
+    _analysisHeaders[1]  = "BP";
+    _analysisHeaders[2]  = "S_sites";
+    _analysisHeaders[3]  = "NS_sites";
+    _analysisHeaders[4]  = "Stop_codons";
+    _analysisHeaders[5]  = "LogL";
+    _analysisHeaders[6]  = "omega";
+    _analysisHeaders[7]  = "omega_range";
+    _analysisHeaders[8]  = "AC";
+    _analysisHeaders[9]  = "AT";
+    _analysisHeaders[10] = "CG";
+    _analysisHeaders[11] = "CT";
+    _analysisHeaders[12] = "GT";
+    _analysisHeaders[13] = "Tree";
+
+    return _analysisHeaders;
+}
+
+/*---------------------------------------------------------*/
+
+function runAGeneFit (myID)
+{
+    fprintf (stdout, "[SimpleGlobalFitter.bf on GENE ", myID, "]\\n");
+    taxonNameMap = {};
+    
+    for (k=0; k<ds.species; k=k+1)
+    {
+        GetString         (thisName, ds,k);
+        shortName         = (thisName^{{"\\\\..+",""}})&&1;
+        taxonNameMap[shortName] = thisName;
+        SetParameter (ds,k,shortName);
+    }
+
+    DataSetFilter filteredData = CreateFilter (ds,1);
+    _nucSites                    = filteredData.sites;
+    
+    if (Abs(treeString))
+    {
+        givenTreeString = treeString;
+    }
+    else
+    {
+        if (_currentGene==1)
+        {
+            ExecuteAFile             (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"NJ.bf");
+        }
+        givenTreeString = InferTreeTopology (0);
+        treeString        = "";
+    }
+
+    DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
+
+    if (_currentGene==1)
+    {
+        _MG94stdinOverload = {};
+        _MG94stdinOverload ["0"] = "Global";
+        _MG94stdinOverload ["1"] = modelSpecString;
+
+        ExecuteAFile             (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"MG94custom.mdl",
+                                 _MG94stdinOverload);
+        
+        Tree    codonTree           = givenTreeString;
+    }
+    else
+    {
+        HarvestFrequencies               (observedFreq,filteredData,3,1,1);
+        MULTIPLY_BY_FREQS             = PopulateModelMatrix ("MG94custom", observedFreq);
+        vectorOfFrequencies         = BuildCodonFrequencies (observedFreq);
+        Model MG94customModel         = (MG94custom,vectorOfFrequencies,0);
+
+        Tree    codonTree            = givenTreeString;
+    }
+
+    LikelihoodFunction lf     = (filteredData,codonTree);
+
+    Optimize                     (res,lf);
+
+    _snsAVL       =                 _computeSNSSites ("filteredData", _Genetic_Code, vectorOfFrequencies, 0);
+    _cL           =                  ReturnVectorsOfCodonLengths (ComputeScalingStencils (0), "codonTree");
+
+
+    _returnMe = {};
+    _returnMe ["GENE"]              = myID;
+    _returnMe ["LogL"]              = res[1][0];
+    _returnMe ["BP"]                 = _snsAVL ["Sites"];
+    _returnMe ["S_sites"]             = _snsAVL ["SSites"];
+    _returnMe ["NS_sites"]             = _snsAVL ["NSSites"];
+    _returnMe ["Stop_codons"]         = (_nucSites-filteredData.sites*3)$3;
+    _returnMe ["AC"]                 = AC;
+    _returnMe ["AT"]                 = AT;
+    _returnMe ["CG"]                 = CG;
+    _returnMe ["CT"]                 = CT;
+    _returnMe ["GT"]                 = GT;
+    _returnMe ["omega"]             = R;
+    COVARIANCE_PARAMETER             = "R";
+    COVARIANCE_PRECISION             = 0.95;
+    CovarianceMatrix                 (cmx,lf);
+    _returnMe ["omega_range"]         = ""+cmx[0]+"-"+cmx[2];
+    _returnMe ["Tree"]                 = Format(codonTree,0,1);
+
+
+    return _returnMe;
 }
 """
 
@@ -813,7 +929,7 @@ function _finishFileOutput (dummy)
 }
 """
 
-def get_dN_dS_config_filename(SimpleLocalFitter_filename, TabWriter_filename, genetic_code, tree_filename, input_filename, nuc_model, output_filename, FastaReader_filename ):
+def get_dnds_config_filename(Fitter_filename, TabWriter_filename, genetic_code, tree_filename, input_filename, nuc_model, output_filename, FastaReader_filename ):
     contents = """
 _genomeScreenOptions = {};
 
@@ -821,23 +937,23 @@ _genomeScreenOptions = {};
 to the DATA READER */
 
 _genomeScreenOptions ["0"] = "%s"; 
-	/* which analysis to run on each gene; */	
+    /* which analysis to run on each gene; */    
 _genomeScreenOptions ["1"] = "%s"; 
-	/* what output to produce; */	
+    /* what output to produce; */    
 
 _genomeScreenOptions ["2"] = "%s"; 
-	/* genetic code */	
+    /* genetic code */    
 _genomeScreenOptions ["3"] = "%s"; 
-	/* tree file */
+    /* tree file */
 _genomeScreenOptions ["4"] = "%s"; 
-	/* alignment file */
+    /* alignment file */
 _genomeScreenOptions ["5"] = "%s"; 
-	/* nucleotide bias string; can define any of the 203 models */
+    /* nucleotide bias string; can define any of the 203 models */
 _genomeScreenOptions ["6"] = "%s"; 
-	/* output csv file */
-	
-ExecuteAFile ("%s", _genomeScreenOptions);	
-""" % (SimpleLocalFitter_filename, TabWriter_filename, genetic_code, tree_filename, input_filename, nuc_model, output_filename, FastaReader_filename )
+    /* output csv file */
+    
+ExecuteAFile ("%s", _genomeScreenOptions);    
+""" % (Fitter_filename, TabWriter_filename, genetic_code, tree_filename, input_filename, nuc_model, output_filename, FastaReader_filename )
     return get_filled_temp_filename(contents)
     
     

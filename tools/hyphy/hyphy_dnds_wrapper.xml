@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<tool name="dN/dS Ratio" id="hyphy_dnds_wrapper1">
+	
+	<description>Estimation</description>
+	
+	<command interpreter="python2.4">hyphy_dnds_wrapper.py $input1 $out_file1 "$tree" "$model" $analysis</command>
+	
+    <inputs>
+        <page>
+            <param format="fasta" name="input1" type="data" label="Fasta file"/>
+            <param name="analysis" type="select" label="Analysis to run on every gene">
+      	    	<option value="global">Global</option>
+      	        <option value="local">Local</option>
+            </param>
+            <param name="tree" type="text" label="Tree Definition" size="20" help="For example: ((hg17,panTro1),(mm5,rn3),canFam1)"/>
+            <param name="model" type="select" label="Substitution Model">
+      	        <option value="000000">F81</option>
+                <option value="010010">HKY85</option>
+                <option value="012345">REV</option>
+            </param>
+        </page>
+    </inputs>
+	<outputs>
+		<data name="out_file1" format="tabular" />
+	</outputs>
+    <tests>
+      <test>
+        <param name="input1" value="dnds_inp.fasta"/>
+        <param name="tree" values="(human, chimp, mouse)"/>
+        <param name="model" values="000000"/>
+        <param name="analysis" values="global"/>
+        <output name="out_file1" file="dnds_out.dat"/>
+      </test>
+    </tests>
+	<help>
+
+.. class:: infomark
+
+This tool takes a FASTA alignment file and estimates dN/dS ratio using HYPHY_, a maximum likelihood analyses package.
+
+-----
+
+.. class:: warningmark
+
+The tool returns an error message if no tree definition or an invalid tree definition is supplied.
+
+-----
+
+For the tree definition, you only need to specify the species build names. For example, you could use the tree *((hg17,panTro1),(mm5,rn3),canFam1)*, if your FASTA file looks like the example below. You may also use **Neighbor Joining Tree Builder** tool to obtain the tree definition::
+
+    &gt;hg17.chr7(+):26907301-26907310|hg17_0
+    GTGGGAGGT
+    &gt;panTro1.chr6(+):28037319-28037328|panTro1_0
+    GTGGGAGGT
+    &gt;mm5.chr6(+):52104022-52104031|mm5_0
+    GTGGGAGGT
+    &gt;rn3.chr4(+):80734395-80734404|rn3_0
+    GTGGGAGGT
+    &gt;canFam1.chr14(+):42826409-42826418|canFam1_0
+    GTGGGAGGT
+
+    &gt;hg17.chr7(+):26907310-26907326|hg17_1
+    AGTCAGAGTGTCTGAG
+    &gt;panTro1.chr6(+):28037328-28037344|panTro1_1
+    AGTCAGAGTGTCTGAG
+    &gt;mm5.chr6(+):52104031-52104047|mm5_1
+    AGTCAGAGTGTCTGAG
+    &gt;rn3.chr4(+):80734404-80734420|rn3_1
+    AGTCAGAGTATCTGAG
+    &gt;canFam1.chr14(+):42826418-42826434|canFam1_1
+    AGTCAGAGTGTCTGAG
+
+    &gt;hg17.chr7(+):26907326-26907338|hg17_2
+    GTAGAAGACCCC
+    &gt;panTro1.chr6(+):28037344-28037356|panTro1_2
+    GTAGAAGACCCC
+    &gt;mm5.chr6(+):52104047-52104059|mm5_2
+    GTAGACGATGCC
+    &gt;rn3.chr4(+):80734420-80734432|rn3_2
+    GTAGATGATGCG
+    &gt;canFam1.chr14(+):42826434-42826446|canFam1_2
+    GTAGAAGACCCC
+
+    &gt;hg17.chr7(+):26907338-26907654|hg17_3
+    GGGGAAGGAACGCAGGGCGAAGAGCTGGACTTCTCTGAGGAT---TCCTCGGCCTTCTCGT-----CGTTTCCTGG----CGGGGTGGCCGGAGAGATGGGCAAGAGACCCTCCTTCTCACGTTTCTTTTGCTTCATTCGGCGGTTCTGGAACCAGATCTTCACTTGGGTCTCGTTGAGCTGCAGGGATGCAGCGATCTCCACCCTGCGGGCGCGCGTCAGGTACTTGTTGAAGTGGAACTCCTTCTCCAGTTCCGTGAGCTGCTTGGTAGTGAAGTTGGTGCGCACCGCGTTGGGTTGACCCAGGTAGCCGTACTCTCCAACTTTCC
+    &gt;panTro1.chr6(+):28037356-28037672|panTro1_3
+    GGGGAAGGAACGCAGGGCGAAGAGCTGGACTTCTCTGAGGAT---TCCTCGGCCTTCTCGT-----CGTTTCCTGG----CGGGGTGGCCGGAGAGATGGGCAAGAGACCCTCCTTCTCACGTTTCTTTTGCTTCATTCGGCGGTTCTGGAACCAGATCTTCACTTGGGTCTCGTTGAGCTGCAGGGATGCAGCGATCTCCACCCTGCGGGCGCGCGTCAGGTACTTGTTGAAGTGGAACTCCTTCTCCAGTTCCGTGAGCTGCTTGGTAGTGAAGTTGGTGCGCACCGCGTTGGGTTGACCCAGGTAGCCGTACTCTCCAACTTTCC
+    &gt;mm5.chr6(+):52104059-52104375|mm5_3
+    GGAGAAGGGGCACTGGGCGAGGGGCTAGATTTCTCAGATGAT---TCTTCCGTTTTCTCAT-----CGCTGCCAGG----AGGAGTGGCAGGGGAGATGGGCAGGAGCCCCTCCTTCTCACGCTTCTTCTGCTTCATGCGGCGATTCTGGAACCAGATCTTCACCTGGGTCTCATTGAGCTGTAGGGACGCGGCAATCTCCACCCTGCGCGCTCGTGTAAGGTACTTGTTGAAGTGGAACTCCTTCTCCAGCTCTGTGAGCTGCTTGGTGGTGAAATTGGTGCGCACTGCGTTGGGTTGACCCACGTAGCCGTACTCTCCAACTTTCC
+    &gt;rn3.chr4(+):80734432-80734748|rn3_3
+    GGAGAAGGGGCGCTGGGCGAGGAGCTGGATTTCTCAGATGAT---TCTTCAGTTTTCTCAT-----CGCTTCCAGG----AGGGGTGGCGGGTGAAATGGGCAAGAGCCCCTCTTTCTCGCGCTTCTTCTGCTTCATGCGGCGATTCTGGAACCAGATCTTCACCTGGGTCTCATTGAGTTGCAGGGACGCGGCTATCTCCACCCTGCGGGCTCTTGTTAGGTACTTGTTGAAGTGGAACTCCTTCTCCAGCTCTGTGAGCTGCTTGGTGGTGAAGTTGGTGCGCACTGCGTTGGGTTGACCCACGTAGCCATACTCTCCAACTTTCC
+    &gt;canFam1.chr14(+):42826446-42826762|canFam1_3
+    GGAGACGGAATGCAGGGCGAGGAGCTGGATTTCTCTGAAGAT---TCCTCCGCCTTCTCCT-----CACTTCCTGG----CGGGGTGGCAGGGGAGATGGGCAAAAGGCCCTCTTTCTCTCGTTTCTTCTGCTTCATCCGGCGGTTCTGGAACCAGATCTTCACCTGGGTCTCGTTGAGCTGCAGGGATGCTGCGATCTCCACCCTGCGGGCGCGGGTCAGATACTTATTGAAGTGGAACTCCTTTTCCAGCTCGGTGAGCTGCTTGGTGGTGAAGTTGGTACGCACTGCATTCGGTTGACCCACGTAGCCGTACTCTCCAACTTTCC
+    
+
+
+.. _HYPHY: http://www.hyphy.org
+	</help>
+</tool>
+
