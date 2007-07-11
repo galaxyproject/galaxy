@@ -9,6 +9,7 @@ import logging, os, sys, time, sets, tempfile, shutil
 import data
 from galaxy import util
 from cgi import escape
+import urllib
 from bx.intervals.io import *
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
@@ -35,15 +36,18 @@ for key, value in alias_spec.items():
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
 
-    """Provide the set of display formats supported by this datatype """
-    supported_display_apps = ['ucsc']
-
     """Add metadata elements"""
     MetadataElement( name="chromCol" )
     MetadataElement( name="startCol" )
     MetadataElement( name="endCol" )
     MetadataElement( name="strandCol" )
 
+
+    def __init__(self, **kwd):
+        """Initialize interval datatype, by adding UCSC display apps"""
+        Tabular.__init__(self, **kwd)
+        self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
+    
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
@@ -52,17 +56,18 @@ class Interval( Tabular ):
                 return True
         return False
     
-    
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
         for key in alias_spec:
             setattr( dataset.metadata, key, '' ) 
-        setattr( dataset.metadata, 'strandCol', '0' )                 
+        setattr( dataset.metadata, 'strandCol', '0' )
     
     def set_peek( self, dataset ):
+        """Set the peek and blurb text"""
         dataset.peek  = data.get_file_peek( dataset.file_name )
         ## dataset.peek  = self.make_html_table( dataset.peek )
         dataset.blurb = util.commaify( str( data.get_line_count( dataset.file_name ) ) ) + " regions"
+        #i don't think set_meta should not be called here, it should be called separately
         self.set_meta( dataset )
     
     def set_meta( self, dataset, first_line_is_header=False ):
@@ -85,7 +90,7 @@ class Interval( Tabular ):
                         for lower in values[start:]:
                             del valid[lower]  # removes lower priority keys 
                 dataset.mark_metadata_changed()
-
+    
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
         if dataset.has_data() and dataset.state == dataset.states.OK:
@@ -107,14 +112,14 @@ class Interval( Tabular ):
                         start = min( start, int( p[s] ) )
                         stop  = max( stop, int( p[e] ) )
             except Exception, exc:
-                log.error( 'Viewport generation error -> %s ' % str(exc) )
+                #log.error( 'Viewport generation error -> %s ' % str(exc) )
                 (chr, start, stop) = 'chr1', 1, 1000
             return (chr, str( start ), str( stop )) 
         else:
             return ('', '', '')
 
-    def as_ucsc_display_file( self, dataset ):
-        """Returns a file that contains only the bed data"""
+    def as_ucsc_display_file( self, dataset, **kwd ):
+        """Returns file contents with only the bed data"""
         fd, temp_name = tempfile.mkstemp()
         c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
         c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
@@ -129,7 +134,22 @@ class Interval( Tabular ):
                 tmp = [ elems[c], elems[s], elems[e] ]
                 os.write(fd, '%s\n' % '\t'.join(tmp) )    
         os.close(fd)
-        return temp_name
+        return open(temp_name)
+
+    def ucsc_links( self, dataset, type, app, base_url ):
+        ret_val = []
+        if dataset.has_data:
+            viewport_tuple = self.get_estimated_display_viewport(dataset)
+            if viewport_tuple:
+                chrom = viewport_tuple[0]
+                start = viewport_tuple[1]
+                stop = viewport_tuple[2]
+                for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
+                    if site_name in app.config.ucsc_display_sites:
+                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                        link = "%sdb=%s&position=%s:%s-%s&hgt.customText=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )
+                        ret_val.append( (site_name, link) )
+        return ret_val
 
     def validate( self, dataset ):
         """Validate an interval file using the bx GenomicIntervalReader"""
@@ -160,10 +180,6 @@ class Interval( Tabular ):
 class Bed( Interval ):
     """Tab delimited data in BED format"""
 
-    """Provide the set of display formats supported by this datatype """
-    supported_display_apps = ['ucsc']
-
-
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1 )
     MetadataElement( name="startCol", default=2 )
@@ -176,7 +192,7 @@ class Bed( Interval ):
     
     def init_meta( self, dataset, copy_from=None ):
         Interval.init_meta( self, dataset, copy_from=copy_from )
-        
+    
     def set_meta( self, dataset ):
         """
         Overrides the default setting for dataset.metadata.strandCol for BED
@@ -200,8 +216,8 @@ class Bed( Interval ):
             dataset.metadata.strandCol = 0
             dataset.mark_metadata_changed()
         
-    def as_ucsc_display_file( self, dataset ):
-        """Returns a file that contains only the bed data. If bed 6+, treat as interval."""
+    def as_ucsc_display_file( self, dataset, **kwd ):
+        """Returns file contents with only the bed data. If bed 6+, treat as interval."""
         for line in open(dataset.file_name):
             line = line.strip()
             if line == "" or line.startswith("#"):
@@ -232,29 +248,24 @@ class Bed( Interval ):
             #only check first line for proper form
             break
             
-        try: return dataset.file_name
+        try: return open(dataset.file_name)
         except: return "This item contains no content"
-
-    def get_estimated_display_viewport( self, dataset ):
-        #TODO: fix me...
-        return Interval.get_estimated_display_viewport( self, dataset )
 
 class Gff( Tabular ):
     """Tab delimited data in Gff format"""
 
-    """Provide the set of display formats supported by this datatype """
-    supported_display_apps = ['gbrowse']
-
-    def __init__(self, id=None):
-        data.Text.__init__(self, id=id)
+    def __init__(self, **kwd):
+        """Initialize datatype, by adding GBrowse display app"""
+        Tabular.__init__(self, **kwd)
+        self.add_display_app ('gbrowse', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
     
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
     
-    def as_gbrowse_display_file( self, dataset ):
-        '''Returns a file that can be displayed in GBrowse apps.'''
+    def as_gbrowse_display_file( self, dataset, **kwd ):
+        """Returns file contents that can be displayed in GBrowse apps."""
         #TODO: fix me...
-        return dataset.file_name
+        return open(dataset.file_name)
 
     def get_estimated_display_viewport( self, dataset ):
         """
@@ -289,42 +300,45 @@ class Gff( Tabular ):
                         start = min( start, int( p[start_col] ) )
                         stop  = max( stop, int( p[stop_col] ) )
             except Exception, exc:
-                log.error( 'Viewport generation error -> %s ' % str(exc) )
+                #log.error( 'Viewport generation error -> %s ' % str(exc) )
                 seqid, start, stop = ('', '', '') 
             return (seqid, str( start ), str( stop ))
         else:
             return ('', '', '')
 
+    def gbrowse_links( self, dataset, type, app, base_url ):
+        ret_val = []
+        if dataset.has_data:
+            viewport_tuple = self.get_estimated_display_viewport(dataset)
+            if viewport_tuple:
+                chrom = viewport_tuple[0]
+                start = viewport_tuple[1]
+                stop = viewport_tuple[2]
+                for site_name, site_url in util.get_gbrowse_sites_by_build(dataset.dbkey):
+                    if site_name in app.config.gbrowse_display_sites:
+                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                        link = "%sname=%s&ref=%s:%s..%s&eurl=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )                        
+                        ret_val.append( (site_name, link) )
+        return ret_val
+
 class Wiggle( Tabular ):
     """Tab delimited data in wiggle format"""
-
-    """Provide the set of display formats supported by this datatype """
-    supported_display_apps = []
-
-    def __init__(self, id=None):
-        data.Text.__init__(self, id=id)
     
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
-
-    def get_estimated_display_viewport( self, dataset ):
-        #TODO: fix me...
-        return ('', '', '')
     
 #Extend Tabular type, since interval tools will fail on track def line (we should fix this)
 #This is a skeleton class for now, allows viewing at ucsc and formatted peeking.
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""
-
-    """Provide the set of display formats supported by this datatype """
-    supported_display_apps = ['ucsc']
-
-    def __init__(self, id=None):
-        data.Text.__init__(self, id=id)
+    
+    def __init__(self, **kwd):
+        """Initialize interval datatype, by adding UCSC display app"""
+        Tabular.__init__(self, **kwd)
+        self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
     
     def make_html_table(self, dataset):
         return Tabular.make_html_table(self, dataset, skipchar='track')
-    
     def get_estimated_display_viewport( self, dataset ):
         try:
             for line in open(dataset.file_name):
@@ -344,28 +358,62 @@ class CustomTrack ( Tabular ):
             return ('', '', '')
     
     def as_ucsc_display_file( self, dataset ):
-        return dataset.file_name
+        return open(dataset.file_name)
+    def ucsc_links( self, dataset, type, app, base_url ):
+        ret_val = []
+        if dataset.has_data:
+            viewport_tuple = self.get_estimated_display_viewport(dataset)
+            if viewport_tuple:
+                chrom = viewport_tuple[0]
+                start = viewport_tuple[1]
+                stop = viewport_tuple[2]
+                for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
+                    if site_name in app.config.ucsc_display_sites:
+                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                        link = "%sdb=%s&position=%s:%s-%s&hgt.customText=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )
+                        ret_val.append( (site_name, link) )
+        return ret_val
+
+
+
 
 #Extend Tabular type, since interval tools will fail on track def line (we should fix this)
-#This is a skeleton class for now, allows viewing at ucsc and formatted peeking.
+#This is a skeleton class for now, allows viewing at GBrowse and formatted peeking.
 class GBrowseTrack ( Tabular ):
 
-    """Provide the set of display formats supported by this datatype """
-    supported_display_apps = ['gbrowse']
+    def __init__(self, **kwd):
+        """Initialize datatype, by adding GBrowse display app"""
+        Tabular.__init__(self, **kwd)
+        self.add_display_app ('gbrowse', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
-    def __init__(self, id=None):
-        data.Text.__init__(self, id=id)
     
     def make_html_table(self, dataset):
         return Tabular.make_html_table(self, dataset, skipchar='track')
     
-    def display_formats_supported( self, dataset ):
-        return set(['gbrowse track'])
-
     def get_estimated_display_viewport( self, dataset ):
         #TODO: fix me...
         return ('', '', '')
+    
+    def gbrowse_links( self, dataset, type, app, base_url ):
+        ret_val = []
+        if dataset.has_data:
+            viewport_tuple = self.get_estimated_display_viewport(dataset)
+            if viewport_tuple:
+                chrom = viewport_tuple[0]
+                start = viewport_tuple[1]
+                stop = viewport_tuple[2]
+                for site_name, site_url in util.get_gbrowse_sites_by_build(dataset.dbkey):
+                    if site_name in app.config.gbrowse_display_sites:
+                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                        link = "%sname=%s&ref=%s:%s..%s&eurl=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )                        
+                        ret_val.append( (site_name, link) )
+        return ret_val
+        
+    def as_gbrowse_display_file( self, dataset, **kwd ):
+        """Returns file contents that can be displayed in GBrowse apps."""
+        #TODO: fix me...
+        return open(dataset.file_name)
 
 if __name__ == '__main__':
     import doctest, sys
-    doctest.testmod(sys.modules[__name__])        
+    doctest.testmod(sys.modules[__name__])

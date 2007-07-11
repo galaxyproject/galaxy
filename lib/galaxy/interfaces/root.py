@@ -108,7 +108,10 @@ class Universe(common.Root):
                 trans.response.headers['Content-Length'] = int(fStat.st_size)
                 if toext[0:1] != ".":
                     toext = "." + toext
-                trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s%s" % (data.hid, toext)
+                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                fname = data.name
+                fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
+                trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, toext)
             trans.log_event( "Display dataset id: %s" % str(id) )
             try:
                 return open( data.file_name )
@@ -118,24 +121,13 @@ class Universe(common.Root):
             return "No data with id=%d" % id
 
     @web.expose
-    def display_as( self, trans, id=None, display_app="ucsc" ):
+    def display_as( self, trans, id=None, display_app=None, **kwd ):
         """Returns a file in a format that can successfully be displayed in display_app"""
         data = self.app.model.Dataset.get( id )
         if data:
-            if display_app == 'ucsc':
-                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-                trans.response.set_content_type(mime)
-                file_name = data.as_ucsc_display_file()
-                trans.log_event( "Formatted dataset id %s for display at UCSC" % str(id) )
-                return open(file_name)
-            elif display_app == 'gbrowse':
-                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-                trans.response.set_content_type(mime)
-                file_name = data.as_gbrowse_display_file()
-                trans.log_event( "Formatted dataset id %s for display at GBrowse" % str(id) )
-                return open(file_name)
-            else:
-                return "Dataset '%s' cannot be displayed at %s." %(data.name, display_app)
+            trans.response.set_content_type(data.get_mime())
+            trans.log_event( "Formatted dataset id %s for display at %s" % ( str(id), display_app ) )
+            return data.as_display_type(display_app, **kwd)
         else:
             return "No data with id=%d" % id
 

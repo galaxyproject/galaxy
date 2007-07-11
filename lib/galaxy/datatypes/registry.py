@@ -11,7 +11,7 @@ class Registry( object ):
         self.mimetypes_by_extension = {}
         for ext, kind in datatypes:
             try:
-                mime_type = 'text/plain' #default type of plain text
+                mime_type = None
                 fields = kind.split(",")
                 if len(fields)>1:
                     kind = fields[0].strip()
@@ -23,6 +23,9 @@ class Registry( object ):
                 module = __import__(fields.pop(0))
                 for mod in fields: module = getattr(module,mod)
                 self.datatypes_by_extension[ext] = getattr(module, datatype_class)()
+                if mime_type is None:
+                    # Use default mime type as per datatype spec
+                    mime_type = self.datatypes_by_extension[ext].get_mime()
                 self.mimetypes_by_extension[ext] = mime_type
             except:
                 self.log.warning('error loading datatype: %s' % ext)

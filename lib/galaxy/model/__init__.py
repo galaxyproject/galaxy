@@ -210,40 +210,14 @@ class Dataset( object ):
         return self.get_size() > 0        
     def get_raw_data( self ):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
-        try:
-            return file(self.file_name, 'rb').read(-1)
-        except OSError, e:
-            log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__))
-            return ''
-    def write_from_stream(self, stream):
-        "Writes data from a stream"
-        # write it twice for now 
-        fd, temp_name = tempfile.mkstemp()
-        while 1:
-            chunk = stream.read(1048576)
-            if not chunk:
-                break
-            os.write(fd, chunk)
-        os.close(fd)
-        # rewrite the file with unix newlines
-        fp = open(self.file_name, 'wt')
-        for line in file(temp_name, "U"):
-            line = line.strip() + '\n'
-            fp.write(line)
-        fp.close()
-    def set_raw_data(self, data):
+        return self.datatype.get_raw_data( self )
+    def write_from_stream( self, stream ):
+        """Writes data from a stream"""
+        self.datatype.write_from_stream(self, stream)
+    def set_raw_data( self, data ):
         """Saves the data on the disc"""
-        fd, temp_name = tempfile.mkstemp()
-        os.write(fd, data)
-        os.close(fd)
-        # rewrite the file with unix newlines
-        fp = open(self.file_name, 'wt')
-        for line in file(temp_name, "U"):
-            line = line.strip() + '\n'
-            fp.write(line)
-        fp.close()
-        os.remove( temp_name )
-    def get_mime(self):
+        self.datatype.set_raw_data(self, data)
+    def get_mime( self ):
         """Returns the mime type of the data"""
         return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
     def set_peek( self ):
@@ -254,22 +228,14 @@ class Dataset( object ):
         return self.datatype.set_meta( self, first_line_is_header )
     def missing_meta( self ):
         return self.datatype.missing_meta( self )
-    def get_estimated_display_viewport( self ):
-        return self.datatype.get_estimated_display_viewport( self )
-    def as_ucsc_display_file( self ):
-        return self.datatype.as_ucsc_display_file( self )
-    def as_gbrowse_display_file( self ):
-        return self.datatype.as_gbrowse_display_file( self )
+    def as_display_type( self, type, **kwd ):
+        return self.datatype.as_display_type( self, type, **kwd )
     def display_peek( self ):
         return self.datatype.display_peek( self )
     def display_name( self ):
         return self.datatype.display_name( self )
     def display_info( self ):
         return self.datatype.display_info( self )
-    def get_ucsc_sites( self ):
-        return self.datatype.get_ucsc_sites( self )
-    def get_gbrowse_sites( self ):
-        return self.datatype.get_gbrowse_sites( self )
     def get_child_by_designation(self, designation):
         # if self.history:
         #     for data in self.history.datasets:

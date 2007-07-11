@@ -255,48 +255,18 @@ div#footer {
                 </div>
                 <div class="info">Info: $data.display_info </div>
                 <div> 
-                    #if $data.ext in [ "bed", "interval", "tabular", "txt", "text", "axt", "maf", "fasta", "gff", "gmaj.zip" ]:
+                    #if $data.has_data:
                         <a href="display?id=$data.id&tofile=yes&toext=$data.ext" target="_blank">save</a>
+                    	#for $display_app in $data.datatype.get_display_types():
+                            #set $display_links = $data.datatype.get_display_links($data, $display_app, $app, $request.base)
+                            #if $len($display_links) > 0:
+                                | $data.datatype.get_display_label($display_app)
+                                    #for $display_name, $display_link in display_links:
+                                        <a target="_blank" href="$display_link">$display_name</a> 
+                                    #end for
+                            #end if
+                        #end for
                     #end if
-
-                    #if $data.has_data and "ucsc" in $data.datatype.supported_display_apps:
-                        #set $viewport_tuple = $data.get_estimated_display_viewport()
-                        #if $viewport_tuple
-                            #set $chrom = $viewport_tuple[0]
-                            #set $start = $viewport_tuple[1]
-                            #set $stop = $viewport_tuple[2]
-                            #set $displayed = "false"
-                            #for $site_name,$site_url in $data.get_ucsc_sites:
-                                #if $site_name in $app.config.ucsc_display_sites:
-                                    #if $displayed == "false":
-                                        | display at UCSC 
-                                        #set $displayed = "true"
-                                    #end if
-                                    <a target="_blank" href="$[site_url]db=$data.dbkey&position=$chrom:$start-$stop&hgt.customText=$request.base/display_as?id=$data.id&display_app=ucsc">$site_name</a> 
-                                #end if
-                            #end for
-                        #end if
-                    #end if
-                    
-                    #if $data.has_data and "gbrowse" in $data.datatype.supported_display_apps:
-                        #set $viewport_tuple = $data.get_estimated_display_viewport()
-                        #if $viewport_tuple
-                            #set $chrom = $viewport_tuple[0]
-                            #set $start = $viewport_tuple[1]
-                            #set $stop = $viewport_tuple[2]
-                            #set $displayed = "false"
-                            #for $site_name, $site_url in $data.get_gbrowse_sites:
-                                #if $site_name in $app.config.gbrowse_display_sites:
-                                    #if $displayed == "false":
-                                        | display in GBrowse 
-                                        #set $displayed = "true"
-                                    #end if
-                                    <a target="_blank" href="$[site_url]&name=$data.dbkey&ref=$chrom:$start..$stop&eurl=$request.base/display_as?id=$data.id&display_app=gbrowse">$site_name</a> 
-                                #end if
-                            #end for
-                        #end if
-                    #end if
- 
                 </div>
                 #if $data.peek != "no peek"
                     <div><pre id="peek$data.id" class="peek">$data.display_peek</pre></div>

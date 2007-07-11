@@ -11,16 +11,12 @@ from galaxy import util
 from cgi import escape
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.metadata import MetadataAttributes
-
 log = logging.getLogger(__name__)
 
 
 class Tabular( data.Text ):
     """Tab delimited data"""
 
-    """Provide the set of display formats supported by this datatype """
-    supported_display_apps = []
-    
     MetadataElement( name="columns",
                      default=0,
                      desc="Number of columns",
@@ -43,7 +39,6 @@ class Tabular( data.Text ):
             setattr( dataset.metadata, "columns", maxcols )
         except:
             pass
-    
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
@@ -52,6 +47,7 @@ class Tabular( data.Text ):
         return False
         
     def make_html_table(self, data, skipchar=None):
+        """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         first = True
         comments = []
@@ -89,10 +85,7 @@ class Tabular( data.Text ):
             out = "Can't create peek %s" % exc
         return out
 
-    def get_estimated_display_viewport( self, dataset ):
-        #TODO: fix me...
-        return ('', '', '')
-
     def display_peek( self, dataset ):
+        """Returns formated html of peek"""
         m_peek = self.make_html_table( dataset.peek )
         return m_peek

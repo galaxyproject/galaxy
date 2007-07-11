@@ -14,6 +14,7 @@ class Image( data.Data ):
         dataset.peek  = 'Image in %s format (%s)' % ( dataset.extension, data.nice_size( dataset.get_size() ) )
         dataset.blurb = 'image' 
 
+
 class Gmaj( data.Data ):
     """Class describing a GMAJ Applet"""
     def set_peek( self, dataset ):
@@ -25,7 +26,11 @@ class Gmaj( data.Data ):
             return dataset.peek
         except:
             return "peek unavailable"
-            
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/zip'
+
+
 class Laj( data.Text ):
     """Class describing a LAJ Applet"""
     def set_peek( self, dataset ):
@@ -45,8 +50,6 @@ class Html( data.Text ):
         dataset.peek  = "HTML file (%s)" % ( data.nice_size( dataset.get_size() ) )
         dataset.blurb = data.nice_size( dataset.get_size() )
         
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except:
-            return "peek unavailable"
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'text/html'
