@@ -403,13 +403,21 @@ def is_bed(headers, skip=1):
     >>> is_bed(headers)
     True
     """
+    
+    col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
+    
     try:
         if not headers:
             return False
         for hdr in headers[skip:]:
+            valid_col1 = False
             if len(hdr) < 3 or len(hdr) > 12:
                 return False
-            if hdr[0].startswith('chr') or hdr[0].startswith('scaffold'):
+            for str in col1_startswith:
+                if hdr[0].lower().startswith(str):
+                    valid_col1 = True
+                    break
+            if valid_col1:
                 try:
                     map( int, [hdr[1], hdr[2]] )
                 except:
@@ -454,6 +462,8 @@ def is_bed(headers, skip=1):
                                 is_valid_strand = True
                         if not is_valid_strand:
                             return False
+            else:
+                return False
         return True
     except:
         return False
@@ -554,7 +564,7 @@ def guess_ext(fname):
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a  1  2  x\\nb  3  4  y")
     >>> guess_ext(fname)
-    'bed'
+    'interval'
     
     """
     try:
