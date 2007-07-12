@@ -17,6 +17,12 @@ a
     color: #base_text;
 }
 
+div.historyLinks
+{
+    padding: 5px;
+    margin: 5px;
+}
+
 div.historyItem
 {
     padding: 5px;

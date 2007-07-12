@@ -88,6 +88,8 @@ use_heartbeat = True
 # Comma separated list of UCSC browsers to use for viewing
 ucsc_display_sites = main,test,archaea
 gbrowse_display_sites = wormbase,flybase
+# Use the new iframe/javascript based layout
+use_new_layout=true
 
 # Static files
 
@@ -103,7 +105,10 @@ document_root = %(here)s/static/favicon.ico
 [app:static_style]
 paste.app_factory = galaxy.web.static:make_static
 cache_seconds = 360
-document_root = %(here)s/static/light_hatched_style/blue
+# The new (June 2007) style
+document_root = %(here)s/static/june_2007_style/blue
+# The old hatched style
+#document_root = %(here)s/static/light_hatched_style/blue
 #document_root = %(here)s/static/light_hatched_style/green
 #document_root = %(here)s/static/old_blue_style
 

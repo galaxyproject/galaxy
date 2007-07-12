@@ -31,7 +31,7 @@ class Universe(common.Root):
         #         trans.ensure_valid_galaxy_session()
         #         result = trans.fill_template('index_frames.tmpl', mode=mode)
         #         return [ result ]
-        if trans.app.config.get( "new_style_june_2007", "false" ) == "true":
+        if trans.app.config.get( "use_new_layout", "false" ) == "true":
             return trans.fill_template( "root/index.tmpl" )
         else:
             return trans.fill_template( "index_frames.tmpl" )

@@ -48,12 +48,12 @@ div.toolFormTitle
 
 div.toolParamHelp
 {
-  font-style: italic;
+  color: #666;
 }
 
 div.toolFormBody
 { 
-  padding: 5px;
+  padding: 10px;
   background: #FFFFFF;
   background-image: url(form_body_bg.png);
   background-repeat: repeat-x;
@@ -79,18 +79,38 @@ div.toolHelpBody
 	overflow: auto;
 }
 
-select
+/* Forms */
+
+div.form-row 
 {
-    max-width: 300px;
+    margin-bottom: 1em;
 }
+
+div.form-row label
+{
+    font-weight: bold;
+    display: block;
+    margin-bottom: .1em;
+}
+
+select, input, textarea
+{
+    font-size: 115%;
+}
+
+select, textarea, input[type="text"], input[type="file"]
+{
+    max-width: 400px;
+}
+
+/* Messages */
 
 .errormessage, .warningmessage, .donemessage, .infomessage, .welcomemessage
 {
     padding: 10px;
     padding-left: 52px;
     min-height: 32px;
-    border-top: 1px solid #AA6666;
-    border-bottom: 1px solid #AA6666;
+    border: 1px solid #AA6666;
     background-color: #FFCCCC;
     background-image: url(error_message_icon.png);
     background-repeat: no-repeat;
@@ -130,8 +150,7 @@ select
     padding: 5px;
     padding-left: 25px;
     min-height: 25px;
-    border-top: 1px solid #AA6666;
-    border-bottom: 1px solid #AA6666;
+    border: 1px solid #AA6666;
     background-color: #FFCCCC;
     background-image: url(error_small.png);
     background-repeat: no-repeat;
@@ -222,45 +241,5 @@ div.odd_row
 }
     
 #footer {
-  position: fixed;
-  background: #023858;
-  width: 100%;
-  left: 0px;
-  bottom: 0px;
-  color: white;
-  z-index:10000;
-  opacity:0.9;
-  filter:alpha(opacity:90);
-}
-
-#footer a {
-    color: white;
-}
-
-.footerheader
-{
-  padding: 5px;
-  text-align:center;
-  background-image: url(footer_title_bg.png);
-  background-position: bottom right;
-}
-
-.footermenu
-{
-  /*border-top: solid white 1px; */
-}
-
-.footermenuitem
-{
-    margin-top: 5px;
-    margin-bottom: 5px;
-    margin-right: 5px;
-    margin-left: 25px;
-    display: list-item;
-    list-style: square outside;
-}
-
-.footermenumessage
-{
-    margin: 5px;
+  display: none;
 }

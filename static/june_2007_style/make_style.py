@@ -17,6 +17,7 @@ templates = [ ( "base.css.tmpl", "base.css" ),
               
 images = [ 
            ( "./gradient.py 9 30 $panel_header_bg_top - $panel_header_bg_bottom 0 0 $panel_header_bg_bottom 1 1", "panel_header_bg.png" ),
+           ( "./gradient.py 9 30 $panel_header_bg_bottom - $panel_header_bg_top 0 0 $panel_header_bg_top 1 1", "panel_header_bg_pressed.png" ),
            ( "./gradient.py 9 1000 $menu_bg_top $menu_bg_hatch $menu_bg_over 0 0 $menu_bg_over 1 1", "menu_bg.png" ),
            ( "./gradient.py 9 1000 $base_bg_top - $base_bg_bottom 0 0 $base_bg_bottom 1 1", "base_bg.png" ),
            ( "./gradient.py 9 500 $form_body_bg_top - $form_body_bg_bottom 0 0 $form_body_bg_bottom 1 1", "form_body_bg.png" ),
