@@ -83,6 +83,7 @@ try:
                 strand = "+"
         
         # Find which partition it overlaps
+        overlap = 0
         for name, score, bb in partitions:
             # Is there at least 1bp overlap?
             if chr in bb:
@@ -95,6 +96,8 @@ try:
             # that does not even overlap an encode region
             warning = "warning: Interval (%s, %d, %d) does not overlap any partition" % ( chr, start, end )+", line["+str(line_count)+"]"
             warnings.append(warning)
+            name = "no_overlap"
+            score = 0
         # Annotate with the name of the partition
         frac_overlap = overlap / (end-start)
         # BED6 plus?
