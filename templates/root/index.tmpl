@@ -6,9 +6,7 @@
     <link rel="stylesheet" type="text/css" href="$h.url_for('/static/style/reset.css')"></link>
     <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
     <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.dimensions.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.interface2.iutil.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.interface2.behavior.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.interface2.draggables.js')"></script>
+    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.ui-jt.js')"></script>
 	<script type="text/javascript">
 	<!--
 	var jq = jQuery.noConflict();
@@ -117,29 +115,31 @@
     	    function() { jq( this ).removeClass( "hover" ) }
     	).draggable( {
     			axis:	'x',
-    			onDrag: function( _, pos ) {
+    			start: function( el ) { 
+    			  this.before_drag_left = jq(el).position().left;
+    			  jq( '#DD-helper' ).show();
+    			},
+    			stop: function( helper, pos ) { 
+			      jq( '#DD-helper' ).hide();
+			      return false;
+    			},
+    			drag: function( helper, position ) {
+    			    x = position[0]; y = position[1]
+    			    // Limit range
+    			    x = Math.max( 100, position[0] );
+    			    x = Math.min( 400, x );
+    			    // Resize
     			    if ( left_hidden ) {
     			        jq( "#left" ).css( "left", 0 );
     			        jq( "#left-border" ).removeClass( "hidden" );
     			        left_hidden = false;
     			    }
-    			    resize_left( pos.x );
+    			    resize_left( x );
+    			    // Return limited position
+    			    return { x: x, y: y}
     			},
-    			onStart: function( el ) { 
-    			  this.before_drag_left = jq(el).position().left;
-    			  jq( '#DD-helper' ).show();
-    			},
-    			onStop: function( helper, pos ) { 
-			      jq( '#DD-helper' ).hide();
-			      return false;
-    			},
-    			onClickOnly: function() {
+    			click: function() {
     			    toggle_left();
-    			},
-    			dragModifier: function( position ) {
-    			    x = Math.max( 100, position.x );
-    			    x = Math.min( 400, x );
-    			    return { x: x, y: position.y }
     			}
     		}
     	);
@@ -149,35 +149,44 @@
     	    function() { jq( this ).removeClass( "hover" ) }
     	).draggable( {
     			axis:	'x',
-    			onDrag: function( _, pos ) {
+    			start: function() {
+    			  jq( '#DD-helper' ).show();
+    			},
+    			stop: function( helper, pos ) {  
+    			  x = pos[0]; y = pos[1]
+    			  // Limit range
+  			      x = Math.min( jq(window).width() - 100, x );
+  			      x = Math.max( jq(window).width() - 400, x );
+  			      // Final resize
+    			  resize_right( jq(document).width() - x - border_tweak );
+			      jq( '#DD-helper' ).hide();
+			      return false;
+    			},
+    			click: function() {
+    			    toggle_right();
+    			},
+    			drag: function( helper, position ) {
+    			    x = position[0]; y = position[1]
+    			    // Limit range
+    			    x = Math.min( jq(window).width() - 100, x );
+    			    x = Math.max( jq(window).width() - 400, x );
+    			    // Resize
     			    if ( right_hidden ) {
     			        jq( "#right" ).css( "right", 0 );
     			        jq( "#right-border" ).removeClass( "hidden" );
     			        right_hidden = false;
     			    }
-    			    resize_right( jq(document).width() - pos.x - border_tweak );
-    			},
-    			onStart: function() {
-    			  jq( '#DD-helper' ).show();
-    			},
-    			onStop: function( helper, pos ) {  
-    			  resize_right( jq(document).width() - pos.x - border_tweak );
-			      jq( '#DD-helper' ).hide();
-			      return false;
-    			},
-    			onClickOnly: function() {
-    			    toggle_right();
-    			},
-    			dragModifier: function( position ) {
-    			    x = Math.min( jq(window).width() - 100, position.x );
-    			    x = Math.max( jq(window).width() - 400, x );
-    			    return { x: x, y: position.y }
+    			    resize_right( jq(document).width() - x - border_tweak );
+    			    // Return limited position
+    			    return { x: x, y: y }
     			}
     		}
     	);
         // Insert div that covers everything when dragging the borders
     	jq("<div id='DD-helper' style='background: white; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 9000;'></div>")
-    	  .css("opacity", "0.01").appendTo("body").hide();    
+    	  .css("opacity", "0.01").appendTo("body").hide(); 
+    	// Show border visual cues
+    	jq( "#left-border-inner, #right-border-inner" ).show();   
     });
     // -->
 	</script>
@@ -359,14 +368,14 @@
            <iframe name="galaxy_tools" src="$h.url_for( 'tool_menu' )" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;"> </iframe>
       </td></tr></table>
   </div>
-  <div id="left-border"><div></div></div>
+  <div id="left-border"><div id="left-border-inner" style="display: none;"></div></div>
   <div id="center">
       <table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
       <tr height="100%" style="height: 100%"><td height="100%" style="height: 100%;">
        	  <iframe name="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( '/static/welcome.html' )}"> </iframe>
 	  </td></tr></table>
   </div>
-  <div id="right-border"><div></div></div>
+  <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
   <div id="right">
       <table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
       <tr class="panel-header">
