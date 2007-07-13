@@ -1,51 +1,64 @@
-<tool id="maf_stats1" name="Alignment Coverage Statistics">
-  <description>for a set of genomic intervals</description>
-  <command interpreter="python2.4">maf_stats.py $input1 $input2 $out_file1 $dbkey $input2_chromCol $input2_startCol $input2_endCol</command>
+<tool id="maf_stats1" name="MAF Coverage Stats">
+  <description>Alignment coverage information</description>
+  <command interpreter="python2.4">
+maf_stats.py
+#if $maf_source_type.maf_source == "user":
+$maf_source_type.maf_source $input2 $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol
+#else:
+$maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol
+#end if
+  </command>
   <inputs>
     <page>
-        <param format="interval" name="input2" label="Interval File" type="data"/>
-        <param format="maf" name="input1" label="MAF File" type="data"/>
+        <param format="interval" name="input1" label="Interval File" type="data"/>
+    </page>
+    <page>
+        <conditional name="maf_source_type">
+            <param name="maf_source" type="select" label="MAF Source">
+              <option value="cached" selected="true">Locally Cached Alignments</option>
+              <option value="user">Alignments in Your History</option>
+            </param>
+            <when value="user">
+                <param format="maf" name="input2" label="MAF File" type="data"/>
+            </when>
+            <when value="cached">
+                <param name="mafType" label="MAF Type" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
+            </when>
+        </conditional>
     </page>
    </inputs>
   <outputs>
-    <data format="interval" name="out_file1" metadata_source="input2"/>
+    <data format="interval" name="out_file1" metadata_source="input1"/>
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="4.maf" dbkey="hg17"/>
-      <param name="input2" value="maf_stats_interval_in.dat" dbkey="hg17" format="bed"/>
+      <param name="maf_source_type" value="user"/>
+      <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
+      <param name="input2" value="gene_bed_maf_to_fasta_user_maf_in.dat" dbkey="hg17"/>
       <output name="out_file1" file="maf_stats_interval_out.dat"/>
     </test>
   </tests>
   <help>
+This tool takes a MAF file and an interval file and relates coverage information by interval for each species.
+If a column does not exist in the reference genome, it is not included in the output.
 
-**What It Does**
+Consider the interval: "chrX 1000 1100 myInterval"
+  Let's suppose we want to do stats on three way alignments for H, M, and R. The result look like this:
 
-This tool takes two inputs: (1) a list of genomic intervals and (2) alignments in MAF format. For interval it computes the number of bases and gaps in the corresponding alignment. 
-
-.. class:: infomark
-
-**TIP**: To create a set of alignments corresponding to a set of your genomic intervals first use the **Extract MAF blocks from locally cached alignments** tool.
-
-------
-
-**Example**
-
-Consider the interval::
- 
-  chrX 1000 1100 myInterval
-
-And three way multiple alignments that includes hg18 (human), mm7 (mouse), and canFam2 (dog).  The output will look like this (it contains three rows because the output is produced for each species in the alignment. In this case the alignment contains three species)::
-
-  chrX 1000 1100 myInterval hg18    XXX YYY 
-  chrX 1000 1100 myInterval mm7     XXX YYY 
-  chrX 1000 1100 myInterval canFam2 XXX YYY 
+    chrX 1000 1100 myInterval H XXX YYY 
     
-where XXX and YYY are:
-  
- *  XXX = number of bases within the interval covered by **nucleotides** in the alignment;
- *  YYY = number of bases within the interval covered by **gaps** in the alignemnts.
- 
+    chrX 1000 1100 myInterval M XXX YYY 
+    
+    chrX 1000 1100 myInterval R XXX YYY 
+    
+
+  where XXX and YYY are:
+
+    XXX = number of nucleotides
+    
+    YYY = number of gaps
+
 
   </help>
+  <code file="maf_stats_code.py"/>
 </tool>

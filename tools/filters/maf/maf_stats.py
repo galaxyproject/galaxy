@@ -14,6 +14,7 @@ import psyco_full
 
 def __main__():
 
+    maf_source_type = sys.argv.pop(1)
     input_maf_filename = sys.argv[1].strip()
     input_interval_filename = sys.argv[2].strip()
     output_filename = sys.argv[3].strip()
@@ -22,26 +23,67 @@ def __main__():
     start_col = int(sys.argv[6].strip())-1
     end_col = int(sys.argv[7].strip())-1
     
-    #index maf for use here
-    indexes = bx.interval_index_file.Indexes()
-    try:
-        maf_reader = bx.align.maf.Reader( open( input_maf_filename ) )
-        # Need to be a bit tricky in our iteration here to get the 'tells' right
-        while 1:
-            pos = maf_reader.file.tell()
-            block = maf_reader.next()
-            if block is None: break
-            for c in block.components:
-                indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
-        index_filename = tempfile.NamedTemporaryFile().name
-        out = open(index_filename,'w')
-        indexes.write(out)
-        out.close()
-    except:
-        print >>sys.stderr, "Your MAF file appears to be malformed."
+    index = None
+    if maf_source_type == "user":
+        #index maf for use here
+        indexes = bx.interval_index_file.Indexes()
+        try:
+            maf_reader = bx.align.maf.Reader( open( input_maf_filename ) )
+            # Need to be a bit tricky in our iteration here to get the 'tells' right
+            while 1:
+                pos = maf_reader.file.tell()
+                block = maf_reader.next()
+                if block is None: break
+                for c in block.components:
+                    indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
+            index_filename = tempfile.NamedTemporaryFile().name
+            out = open(index_filename,'w')
+            indexes.write(out)
+            out.close()
+        except:
+            print >>sys.stderr, "Your MAF file appears to be malformed."
+            sys.exit()
+        index = bx.align.maf.Indexed(input_maf_filename, index_filename = index_filename, keep_open=True)
+    elif maf_source_type == "cached":
+        #access existing indexes
+        try:
+            maf_sets = {}
+            for line in open( "/depot/data2/galaxy/maf_index.loc" ):
+                if line[0:1] == "#" : continue
+                fields = line.split('\t')
+                #read each line, if not enough fields, go to next line
+                try:
+                    maf_desc = fields[0]
+                    maf_uid = fields[1]
+                    builds = fields[2]
+                    build_to_common_list = {}
+                    common_to_build_list = {}
+                    split_builds = builds.split(",")
+                    for build in split_builds:
+                        this_build = build.split("=")[0]
+                        try:
+                            this_common = build.split("=")[1]
+                        except:
+                            this_common = this_build
+                        build_to_common_list[this_build]=this_common
+                        common_to_build_list[this_common]=this_build
+                        
+                    paths = fields[3].replace("\n","").replace("\r","")
+                    maf_sets[maf_uid]={}
+                    maf_sets[maf_uid]['description']=maf_desc
+                    maf_sets[maf_uid]['builds']=build_to_common_list
+                    maf_sets[maf_uid]['common']=common_to_build_list
+                    maf_sets[maf_uid]['paths']=paths.split(",")
+                except:
+                    continue
+            index = bx.align.maf.MultiIndexed( maf_sets[input_maf_filename]['paths'], keep_open=True, parse_e_rows=True )
+        except Exception, exc:
+            print >>sys.stdout, 'interval2maf.py initialization error -> %s' % exc 
+            sys.exit()
+    else:
+        print >>sys.stdout, 'Invalid source type specified: %s' % maf_source_type 
         sys.exit()
-    index = bx.align.maf.Indexed(input_maf_filename, index_filename = index_filename, keep_open=True)
-    
+        
     out = open(output_filename, 'w')
     
     num_region = 0

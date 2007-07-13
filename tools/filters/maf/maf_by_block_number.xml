@@ -11,6 +11,14 @@
   <outputs>
     <data format="maf" name="out_file1" />
   </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="maf_by_block_numbers.dat"/>
+      <param name="input2" value="3.maf"/>
+      <param name="block_col" value="1"/>
+      <output name="out_file1" file="maf_by_block_number_out.dat" />
+    </test>
+  </tests>
   <help>
 This tool takes a list of block numbers, one per line, and extracts the corresponding MAF blocks from the provided file. Block numbers start at 0.
   </help>
