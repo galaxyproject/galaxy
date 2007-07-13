@@ -157,55 +157,43 @@ class Universe(common.Root):
             return self.index( trans )
 
         p = util.Params(kwd, safe=False)
-        if p.edit_genome_btn:
-            err = None
-            # check for "valid" column assignments first
-            # Patch: don't validate these fields for mafs, etc.
-            # This will all go away soon
-            if isinstance( data.datatype, datatypes.interval.Tabular ):
-                for attr in 'chromCol', 'startCol', 'endCol', 'strandCol':
-                    try:
-                        num = int( getattr(p, attr) )
-                        if num < 0: raise Exception()
-                    except:
-                        if getattr(p, attr) != "" or attr != 'strandCol':
-                            err = "Column assignments must be numbers greater than zero.  Strand column may be ommitted (set to 0)."
-                if err:
-                    trans.log_event( "Edit submitted bad values on dataset %s" % str(id) )
-                    return trans.fill_template( "edit.tmpl", data=data, dbnames=util.dbnames, err=err )
-            
-            data.name  = p.name
-            data.info  = p.info
-            data.dbkey = p.dbkey
-            
-            # detect metadata changes, kind of ugly
-            changed = False
-            for attr in 'chromCol', 'startCol', 'endCol', 'strandCol':
-                try:
-                    oldv = str(getattr(data.metadata, attr)).strip() or None
-                except:
-                    oldv = None
-                newv = str(getattr(p, attr)).strip() or None
-                if oldv != newv:
-                    changed = True
-            
-            if changed and isinstance( data.datatype, datatypes.interval.Tabular ):
-                data.metadata.chromCol  = p.chromCol
-                data.metadata.startCol  = p.startCol
-                data.metadata.endCol    = p.endCol
-                data.metadata.strandCol = p.strandCol or '0'
-                data.mark_metadata_changed()
-                if data.missing_meta():
-                    data.extension = 'tabular'
+        
+        if p.change:
+            trans.app.datatypes_registry.change_datatype( data, p.datatype )
+            trans.app.model.flush()
+        elif p.save:
+            for name, spec in data.datatype.metadata_spec.items():
+                optional = p.get("is_"+name, None)
+                if optional and optional == 'true':
+                    # optional element...
+                    # == 'true' actually means it is NOT checked (and therefore ommitted)
+                    setattr(data.metadata,name,None)
                 else:
-                    data.extension = 'interval'
-                    
-            data.flush()
-            trans.log_event( "Completed editing of dataset id %s" % str(id) )
+                    setattr(data.metadata,name,spec.unwrap(p.get(name, None), p))
+
+            data.datatype.after_edit( data )
+            trans.app.model.flush()
+            
             return trans.fill_template( "edit_complete.tmpl" )
-        else:
-            trans.log_event( "Opened edit view on dataset %s" % str(id) )
-            return trans.fill_template( "edit.tmpl", data=data, dbnames=util.dbnames, err=None )
+        
+        data.datatype.before_edit( data )
+        
+        if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
+            # Copy dbkey into metadata, for backwards compatability
+            # This looks like it does nothing, but getting the dbkey
+            # returns the metadata dbkey unless it is None, in which
+            # case it resorts to the old dbkey.  Setting the dbkey
+            # sets it properly in the metadata
+            data.metadata.dbkey = data.dbkey
+        metadata = list()
+        # a list of MetadataParemeters
+        for name, spec in data.datatype.metadata_spec.items():
+            metadata.append( spec.wrap( data.metadata.get(name),
+                                        data ) )
+        datatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
+        trans.log_event( "Opened edit view on dataset %s" % str(id) )
+        return trans.fill_template( "edit_data.tmpl", data=data, metadata=metadata,
+                                    datatypes=datatypes, err=None )
 
     @web.expose
     def delete( self, trans, id = None, **kwd):

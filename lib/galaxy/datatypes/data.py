@@ -13,6 +13,9 @@ class DataMeta( type ):
     """
     def __init__( cls, name, bases, dict_ ):
         cls.metadata_spec = MetadataSpecCollection()
+        for base in bases:
+            if hasattr(base, "metadata_spec"):
+                cls.metadata_spec.update(base.metadata_spec)
         Statement.process( cls )
 
 class Data( object ):
@@ -26,7 +29,7 @@ class Data( object ):
     >>> DataTest.metadata_spec.test.name
     'test'
     >>> DataTest.metadata_spec.test.desc
-    >>> DataTest.metadata_spec.test.attributes
+    'test'
     >>> DataTest.metadata_spec.test.param
     <class 'galaxy.datatypes.metadata.MetadataParameter'>
     
@@ -154,6 +157,14 @@ class Data( object ):
         except:
             log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' % (self.supported_display_apps[type]['links_function'], self.__class__.__name__, type) )
         return []
+
+    def before_edit( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
+
+    def after_edit( self, dataset ):
+        """This function is called on the dataset after metadata is edited."""
+        pass
 
 class Text( Data ):
 

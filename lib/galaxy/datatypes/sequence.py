@@ -4,6 +4,9 @@ Image classes
 
 import data
 import logging
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes import metadata
+from galaxy import util
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +34,8 @@ class Fasta( Sequence ):
 
 class Maf( Sequence ):
     """Class describing a Maf alignment"""
-    pass
+    MetadataElement( name="dbkey", desc="Database/Build", default="?",
+                     param=metadata.SelectParameter, multiple=True, values=util.dbnames )
 
 class Axt( Sequence ):
     """Class describing an axt alignment"""

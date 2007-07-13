@@ -63,7 +63,7 @@ Dataset.table = Table( "dataset", metadata,
     Column( "blurb", TrimmedString( 255 ) ),
     Column( "peek" , TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
-    Column( "dbkey", TrimmedString( 64 ) ),
+    Column( "dbkey", TrimmedString( 64 ), key="old_dbkey" ), # maps to old_dbkey, see __init__.py
     Column( "state", TrimmedString( 64 ) ),
     Column( "metadata", PickleType(), key="_metadata" ),
     Column( "parent_id", Integer, nullable=True ),

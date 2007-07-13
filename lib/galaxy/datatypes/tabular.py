@@ -20,25 +20,10 @@ class Tabular( data.Text ):
     MetadataElement( name="columns",
                      default=0,
                      desc="Number of columns",
-                     attributes=MetadataAttributes.READONLY )
+                     readonly=True )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
-        try:
-            # This actually doesn't work at the moment.  There needs
-            # to be hooks for the file corresponding to a dataset, so
-            # that when the file is written and closed, code can be
-            # run.  That is idealy where this block would go.
-            maxcols = 0
-            count = 0
-            for line in open( dataset.file_name ):
-                count += 1
-                if count > 1000: break
-                cols = len( line.split("\t") )
-                if cols > maxcols: maxcols = cols
-            setattr( dataset.metadata, "columns", maxcols )
-        except:
-            pass
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
@@ -89,3 +74,17 @@ class Tabular( data.Text ):
         """Returns formated html of peek"""
         m_peek = self.make_html_table( dataset.peek )
         return m_peek
+
+    def before_edit( self, dataset ):
+        data.Text.before_edit( self, dataset )
+        try:
+            maxcols = 0
+            count = 0
+            for line in open( dataset.file_name ):
+                count += 1
+                if count > 1000: break
+                cols = len( line.split("\t") )
+                if cols > maxcols: maxcols = cols
+            setattr( dataset.metadata, "columns", maxcols )
+        except:
+            pass        

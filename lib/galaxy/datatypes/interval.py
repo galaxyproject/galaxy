@@ -11,6 +11,7 @@ from galaxy import util
 from cgi import escape
 import urllib
 from bx.intervals.io import *
+from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
 
@@ -37,10 +38,12 @@ class Interval( Tabular ):
     """Tab delimited data containing interval information"""
 
     """Add metadata elements"""
-    MetadataElement( name="chromCol" )
-    MetadataElement( name="startCol" )
-    MetadataElement( name="endCol" )
-    MetadataElement( name="strandCol" )
+    MetadataElement( name="chromCol", desc="Chrom column", param=metadata.ColumnParameter )
+    MetadataElement( name="startCol", desc="Start column", param=metadata.ColumnParameter )
+    MetadataElement( name="endCol", desc="End column", param=metadata.ColumnParameter )
+    MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True )
+    MetadataElement( name="dbkey", desc="Database/Build", default="?",
+                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
 
 
     def __init__(self, **kwd):
@@ -58,9 +61,6 @@ class Interval( Tabular ):
     
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
-        for key in alias_spec:
-            setattr( dataset.metadata, key, '' ) 
-        setattr( dataset.metadata, 'strandCol', '0' )
     
     def set_peek( self, dataset ):
         """Set the peek and blurb text"""
@@ -181,10 +181,13 @@ class Bed( Interval ):
     """Tab delimited data in BED format"""
 
     """Add metadata elements"""
-    MetadataElement( name="chromCol", default=1 )
-    MetadataElement( name="startCol", default=2 )
-    MetadataElement( name="endCol", default=3 )
-    MetadataElement( name="strandCol", default=6 )
+    """Add metadata elements"""
+    MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
+    MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
+    MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
+    MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True )
+    MetadataElement( name="dbkey", desc="Database/Build", default=None,
+                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
     
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""

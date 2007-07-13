@@ -1,5 +1,7 @@
 import sys
 from cookbook.patterns import Bunch
+from cookbook.odict import odict
+from galaxy import form_builder
 
 # Taken in part from Elixir and how they do it: http://elixir.ematia.de
 
@@ -23,75 +25,99 @@ class Statement( object ):
         for statement, args, kwargs in getattr( element, STATEMENTS, [] ):
             statement.target( element, *args, **kwargs )
 
-class MetadataSpecCollection( dict ):
+class MetadataSpecCollection( odict ):
     '''
     A simple extension of dict which allows cleaner access to items
     and allows the values to be iterated over directly as if it were a
     list.  append() is also implemented for simplicity and does not
     "append".
     '''
+    def __init__(self, dict = None):
+        odict.__init__(self, dict = None)
     def append( self, item ):
         self[item.name] = item
     def iter( self ):
         return self.itervalues()
     def __getattr__( self, name ):
-        return self[name]
+        return self.get(name)
 
 class MetadataParameter( object ):
-    def __init__( self, metadata, context ):
+    def __init__( self, spec, value, context ):
         '''
         The "context" is simply the metadata collection/bunch holding
-        this piece of metadata.  This is passed in to allow for
+        this piece of metadata. This is passed in to allow for
         metadata to validate against each other (note: this could turn
-        into a huge, recursive mess if not done with care).  For
+        into a huge, recursive mess if not done with care). For
         example, a column assignment should validate against the
         number of columns in the dataset.
         '''
-        self.metadata = metadata
+        self.spec = spec
+        self.value = value
         self.context = context
-    def marshal( self, value ):
+
+    @classmethod
+    def marshal( cls, value ):
         '''
         This method should/can be overridden to convert the incomming
         value to whatever type it is supposed to be.
         '''
         return value
 
-    def validate( self, value ):
+    @classmethod
+    def validate( cls, value ):
         '''
         Throw an exception if the value is invalid.
         '''
         pass
 
     def get_html_field( self, value=None, other_values={} ):
-        raise TypeError("Abstract Method")
-    
+        return form_builder.TextField( self.spec.name, value=value or self.value )
+
+    def get_html( self ):
+        if self.spec.get("readonly"):
+            return self.value
+        if self.spec.get("optional"):
+            checked = False
+            if self.value: checked = "true"
+            checkbox = form_builder.CheckboxField( "is_" + self.spec.name, checked=checked )
+            return checkbox.get_html() + self.get_html_field().get_html()
+        else:
+            return self.get_html_field().get_html()
+
     @classmethod
-    def build_param( cls, element, context ):
-        return element.param( element, context )
-
-
+    def unwrap( cls, form_value ):
+        value = cls.marshal(form_value)
+        cls.validate(value)
+        return value
+    
 class MetadataElementSpec( object ):
     '''
     Defines a metadata element and adds it to the metadata_spec (which
     is a MetadataSpecCollection) of datatype.
     '''
 
-    def __init__( self, datatype, name=None, desc=None, param=MetadataParameter, attributes=None, default=None ):
+    def __init__( self, datatype, name=None, desc=None, param=MetadataParameter, default=None, **kwargs ):
         self.name = name
-        self.desc = desc
+        self.desc = desc or name
         self.param = param
-        self.attributes = attributes
         self.default = default
+        # Catch-all, allows for extra attributes to be set
+        self.__dict__.update(kwargs)
         datatype.metadata_spec.append( self )
+    def get( self, name ):
+        return self.__dict__.get(name, None)
     def hasAttribute( self, attribute ):
         return ((self.permission & attribute) == attribute)
-    def wrap( self, metadata ):
-        return self.param(metadata)
-
+    def wrap( self, value, context ):
+        return self.param( self, value, context )
+    def unwrap( self, form_value, context ):
+        return self.param.unwrap( form_value )
+            
 
 # Basic attributes for describing metadata elements
 MetadataAttributes = Bunch(
-    READONLY = 1
+    READONLY = 1, 
+    OPTIONAL = 2
     )
     
 
@@ -106,7 +132,8 @@ class MetadataCollection:
     def __init__(self, parent, spec):
         self.parent = parent
         self.bunch = parent._metadata or Bunch()
-        self.spec = spec or dict()
+        if spec is None: self.spec = MetadataSpecCollection()
+        else: self.spec = spec
     def __iter__(self):
         return self.bunch.__iter__()
     def get( self, key, default=None ):
@@ -137,4 +164,54 @@ class MetadataCollection:
 
 MetadataElement = Statement(MetadataElementSpec)
 
+
+"""
+MetadataParameter sub-classes.
+"""
+
+class SelectParameter( MetadataParameter ):
+    def __init__( self, spec, value, context ):
+        MetadataParameter.__init__( self, spec, value, context )
+        self.values = spec.get("values")
+    def get_html_field( self, value=None, other_values={} ):
+        field = form_builder.SelectField( self.spec.name,
+                                          multiple=self.spec.get("multiple"),
+                                          display=self.spec.get("display") )
+        for value, label in self.values:
+            try:
+                if value == self.value or value in self.value:
+                    field.add_option( label, value, selected=True )
+                else:
+                    field.add_option( label, value, selected=False )
+            except TypeError:
+                field.add_option( value, label, selected=False )
+
+        return field
+
+    @classmethod
+    def marshal( cls, value ):
+        # split into a list, or return single value if list length = 1
+        if len(value) == 1: return value[0]
+        return value
+    
+class RangeParameter( SelectParameter ):
+    def __init__( self, spec, value, context ):
+        SelectParameter.__init__( self, spec, value, context )
+        # The spec must be set with min and max values
+        _min = spec.get("min") or 1
+        _max = spec.get("max") or 1
+        step = self.spec.get("step") or 1
+        self.values = zip(range( _min, _max, step ), range( _min, _max, step ))
+
+    @classmethod
+    def marshal( cls, value ):
+        values = [int(x) for x in value]
+        if len(values) == 1: return values[0]
+        return values
+    
+class ColumnParameter( RangeParameter ):
+    def __init__( self, spec, value, context ):
+        RangeParameter.__init__( self, spec, value, context )
+        column_range = range( 1, context.metadata.columns+1, 1 )
+        self.values = zip( column_range, column_range )
 

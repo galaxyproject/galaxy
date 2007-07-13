@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+#from galaxy.util.expressions import ExpressionContext 
+
+<html>
+
+<head>
+<title>Galaxy</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+
+#if $getVar( 'error_message', None )
+   <div class="errormessagesmall">$error_message</div>
+   <p></p>
+#end if
+
+#def do_metadata( $metadata, $data )
+#for $element in $metadata
+    <tr><td>$element.spec.desc</td>
+    <td>$element.get_html()</td>
+    </tr>
+#end for
+#end def
+
+#def datatype( $dataset, $datatypes )
+<select name="datatype">
+#for $ext in $datatypes:
+   #if $dataset.ext == $ext
+   <option value="$ext" selected="yes">$ext</option>
+   #else
+   <option value="$ext">$ext</option>
+   #end if
+#end for
+</select>
+#end def
+
+<div class="toolForm" id="edit_data">
+  <div class="toolFormTitle">Edit Attributes</div>
+  <div class="toolFormBody">
+  <form name="datatype" action="$h.url_for( action='edit' )" method="post">
+      <input type="hidden" name="id" value="$data.id">
+      <table width="100%">
+          <tr>
+	      <td>Datatype:</td>
+	      <td>$datatype( $data, $datatypes )</td>
+	  </tr>
+	  <tr>
+	      <td></td><td><input type="submit" name="change" value="Change">
+	  </tr>
+      </table>
+  </form>
+  </div>
+  <div class="toolFormBody">
+  <form name="tool_form" action="$h.url_for( action='edit' )" method="post">
+      <input type="hidden" name="id" value="$data.id">
+      <table width="100%">
+          <tr><td>Name:</td><td><input type="text" name="name" value="$data.name" size="40"></td></tr>
+	  <tr><td>Info:</td><td><input type="text" name="info" value="$data.info" size="40"><input type="hidden" name="id" value="$data.id"></td></tr>
+          $do_metadata( $metadata, $data )
+          <tr><td></td><td>
+            <input type="submit" name="save" value="Save">
+          </td></tr>    
+      </table>
+  </form>
+  </div>
+</div>
+
+<div class="toolHelp">
+     <div class="toolHelpBody">
+     
+     </div>        
+</div>
+
+</body>
+
+</html>

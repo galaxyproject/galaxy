@@ -194,6 +194,29 @@ class Dataset( object ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = Bunch( **dict( bunch.items() ) )
     metadata = property( get_metadata, set_metadata )
+
+
+    # This provide backwards compatibility with using the old dbkey
+    # field in the database.  That field now maps to "old_dbkey" (see
+    # mapping.py)
+    def get_dbkey( self ):
+        try:
+            dbkey = self.metadata.dbkey[0]
+        except TypeError:
+            dbkey = self.metadata.dbkey
+        return dbkey or self.old_dbkey
+    def set_dbkey( self, value ):
+        if "dbkey" in self.datatype.metadata_spec:
+            if self.datatype.metadata_spec.dbkey.get("multiple"):
+                # Initialize a list if there isn't one
+                db_list = self.metadata.dbkey or list()
+                db_list[0] = value
+                self.metadata.dbkey = db_list
+            else:
+                self.metadata.dbkey = value
+        else:
+            self.old_dbkey = value
+    dbkey = property( get_dbkey, set_dbkey )
     
     def change_datatype( self, new_ext ):
         datatypes_registry.change_datatype( self, new_ext )
