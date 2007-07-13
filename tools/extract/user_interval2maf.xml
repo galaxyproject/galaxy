@@ -1,5 +1,5 @@
-<tool id="User_Interval2Maf1" name="Extract User MAF blocks">
-  <description>given a set of genomic intervals and a MAF file</description>
+<tool id="User_Interval2Maf1" name="Extract MAF blocks">
+  <description>from user supplied alignments</description>
   <command interpreter="python2.4">user_interval2maf.py --dbkey=$dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafFile=$mafFile --interval_file=$input1 --output_file=$out_file1</command>
   <inputs>
     <page>
@@ -12,28 +12,25 @@
   </outputs>
   <help>
 
+.. class:: warningmark
+
+If your query does not work, you need to ensure that you have specified a database build for your data.
+
 .. class:: infomark
 
-**TIP:** If your query does not work, you need to ensure that you have specified a database build for your data.
+What is the differences between these two tools: **Extract MAF blocks from locally cached alignments** and **Extract MAF blocks from user supplied alignments**?
  
------
-
-**Syntax**
-
-This tool uses coordinate and strand information to extract multiple sequence alignments in MAF format from a user specified source.
-
-- **MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes.
-
-  - The .maf format is line-oriented. Each multiple alignment ends with a blank line.
-  - Each sequence in an alignment is on a single line.
-  - Lines starting with # are considered to be comments.
-  - Each multiple alignment is in a separate paragraph that begins with an "a" line and contains an "s" line for each sequence in the multiple alignment.
-  - Some MAF files may contain two optional line types:
-
-    - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line;
-    - An "e" line containing information about the size of the gap between the alignments that span the current block.
+ * **Extract MAF blocks from locally cached alignments** uses alignments stored at Galaxy installation at Penn State and is appropriate for most situations.  It takes only one dataset as the input - a list of genomic intervals.
+ * **Extract MAF blocks from user supplied alignments** allows the user to work with his/her own alignemnts instead of those cached at Galaxy site. This tool takes two datasets as inputs - (1) genomic intervals and (2) alignemnts. 
 
 -----
+
+**What it does**
+
+This tool takes genomic coordinates, superimposes them on multiple alignments (in MAF format) uploaded by the user, and excises alignment blocks corresponding to each set of coordinates. Alignments blocks that extend past START and/or END positions of an interval are trimmed. Note that a single genomic interval may correspond to two or more alignment blocks. In the following example user supplies two sets of genomic coordinates (intervals) and recieves two MAF blocks.
+
+-----
+
 
 **Example**
 

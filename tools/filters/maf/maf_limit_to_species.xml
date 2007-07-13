@@ -1,5 +1,5 @@
-<tool id="MAF_Limit_To_Species1" name="Maf Limit to Species">
-    <description>Remove undesired species from a MAF file</description>
+<tool id="MAF_Limit_To_Species1" name="Filter MAF blocks">
+    <description>by Species</description>
     <command interpreter="python2.4">maf_limit_to_species.py $species $input1 $out_file1 $allow_partial $min_species</command>
     <inputs>
         <page>
@@ -32,11 +32,15 @@
       </test>
     </tests>
     <help>
-This tool allows the user to remove any undesired species from a MAF file. Columns which contain only gaps are removed.
 
-The user can choose to keep or discard blocks which do not have all the desired species. 
+**What It Does**
 
-The user can also choose to include blocks which contain only a single species.
+This tool allows the user to remove any undesired species from a MAF file. Columns which contain only gaps are removed. The options for this tool are:
+
+ * **Exclude blocks which have missing species** - suppose you want to restrict an 8-way alignment to human, mouse, and rat.  The tool will first remove all other species. Next, if this option is set to **YES** the tool WILL NOT return MAF blocks, which do not include human, mouse, or rat. This means that all alignment blocks returned by the tool will have exactly three sequences in this example.
+
+ * **Exclude blocks with have only one species** - if this option is set to **YES** all single sequence alignment blocks WILL NOT be returned.
+
     </help>
     <code file="maf_limit_to_species_code.py"/>
 </tool>

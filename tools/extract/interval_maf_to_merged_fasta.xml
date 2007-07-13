@@ -1,5 +1,5 @@
-<tool id="Interval_Maf_Merged_Fasta1" name="Extract Interval blocks">
-  <description>from locally cached alignments</description>
+<tool id="Interval_Maf_Merged_Fasta1" name="Stitch MAF blocks">
+  <description>for intervals using locally cached alignments</description>
   <command interpreter="python2.4">interval_maf_to_merged_fasta.py $dbkey $species $mafSource $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol -</command>
   <inputs>
     <page>
@@ -29,7 +29,29 @@
     </test>
   </tests> -->
   <help>
-This tool takes an interval file and creates a FASTA file which contains merged alignments of user specified species which correspond to the supplied regions using locally cached alignments.  
+
+.. class:: infomark
+
+What is the differences between these two tools: **Stitch MAF blocks for intervals using locally cached alignments** and **Stitch MAF blocks for intervals from user supplied alignments**?
+ 
+ * **Stitch MAF blocks for intervals using locally cached alignments** uses alignments stored at Galaxy installation at Penn State and is appropriate for most situations.  It takes only one dataset as the input - a list of genomic intervals.
+ * **Stitch MAF blocks for intervals from user supplied alignments** allows the user to work with his/her own alignemnts instead of those cached at Galaxy site. This tool takes two datasets as inputs - (1) genomic intervals and (2) alignemnts. 
+
+In the future these two tools will be merged.
+
+-------
+
+**What It Does**
+
+A single genomic region can be covered by multiple alignment blocks. In many cases it is desirable to stitch these alignment blocks together.  This tool accepts **a list of genomic intervals**. For every interval it performs the following:
+
+  * finds all MAF blocks that overlap the interval;
+  * sorts MAF blocks by alignment score;
+  * stitches blocks together and resolves overlaps based on alignment score;
+  * outputs alignments in FASTA format.
+
+The tool outputs exactly one alignment per interval.
+
   </help>
   <code file="interval_maf_to_merged_fasta_code.py"/>
 </tool>

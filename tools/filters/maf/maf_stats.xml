@@ -1,5 +1,5 @@
-<tool id="maf_stats1" name="MAF Coverage Stats">
-  <description>Alignment coverage information</description>
+<tool id="maf_stats1" name="Alignment Coverage Statistics">
+  <description>for a set of genomic intervals</description>
   <command interpreter="python2.4">maf_stats.py $input1 $input2 $out_file1 $dbkey $input2_chromCol $input2_startCol $input2_endCol</command>
   <inputs>
     <page>
@@ -18,25 +18,34 @@
     </test>
   </tests>
   <help>
-This tool takes a MAF file and an interval file and relates coverage information by interval for each species.
-If a column does not exist in the reference genome, it is not included in the output.
 
-Consider the interval: "chrX 1000 1100 myInterval"
-  Let's suppose we want to do stats on three way alignments for H, M, and R. The result look like this:
+**What It Does**
 
-    chrX 1000 1100 myInterval H XXX YYY 
+This tool takes two inputs: (1) a list of genomic intervals and (2) alignments in MAF format. For interval it computes the number of bases and gaps in the corresponding alignment. 
+
+.. class:: infomark
+
+**TIP**: To create a set of alignments corresponding to a set of your genomic intervals first use the **Extract MAF blocks from locally cached alignments** tool.
+
+------
+
+**Example**
+
+Consider the interval::
+ 
+  chrX 1000 1100 myInterval
+
+And three way multiple alignments that includes hg18 (human), mm7 (mouse), and canFam2 (dog).  The output will look like this (it contains three rows because the output is produced for each species in the alignment. In this case the alignment contains three species)::
+
+  chrX 1000 1100 myInterval hg18    XXX YYY 
+  chrX 1000 1100 myInterval mm7     XXX YYY 
+  chrX 1000 1100 myInterval canFam2 XXX YYY 
     
-    chrX 1000 1100 myInterval M XXX YYY 
-    
-    chrX 1000 1100 myInterval R XXX YYY 
-    
-
-  where XXX and YYY are:
-
-    XXX = number of nucleotides
-    
-    YYY = number of gaps
-
+where XXX and YYY are:
+  
+ *  XXX = number of bases within the interval covered by **nucleotides** in the alignment;
+ *  YYY = number of bases within the interval covered by **gaps** in the alignemnts.
+ 
 
   </help>
 </tool>
