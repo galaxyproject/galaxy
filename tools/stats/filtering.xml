@@ -40,7 +40,7 @@ The filter tool allows you to restrict the datset using simple conditional state
 - Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
 - When using 'equal-to' operator **double equal sign (==) must be used** (e.g., **c1 == 'chr1'**)
 - Non-numerical values must be included in single or double quotes (e.g., **c6 == '+'**)
-- Filtering condition can include logical operators (e.g., **c1 != 'chrX' and c1 != 'chrY'**)
+- Filtering condition can include logical operators, but **make sure operators are all lower case** (e.g., **(c1 != 'chrX' and c1 != 'chrY') or not c6 == '+'**)
 
 -----
 

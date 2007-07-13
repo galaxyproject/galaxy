@@ -66,7 +66,7 @@ for key, value in mapped_str.items():
 """
 Attempt to ensure the expression is valid Python
 """
-validator_msg = 'Invalid syntax in "%s". See tool tips and warnings for examples of proper expression syntax.' %cond_text
+validator_msg = 'Invalid syntax in "%s". See tool tips, warnings and syntax for examples of proper expression syntax.' %cond_text
 try:
     validator = validation.ExpressionValidator(validator_msg, cond_text)
 except:
@@ -126,6 +126,7 @@ skipped_lines = 0
 first_invalid_line = 0
 invalid_line = None
 flags = []
+all_is_well = True
 
 # Read and filter input file, skipping invalid lines
 code = '''
@@ -149,22 +150,28 @@ for i, line in enumerate( open( inp_file )):
         flags.append(False)
 ''' % (assign, wrap, cond_text)
 
-exec code
+try:
+    exec code
+except:
+    all_is_well = False
 
-# Write filtered output file
-fp = open(out_file, 'wt')
-keep = 0
-total = 0
-for flag, line in zip(flags, file(inp_file)):
-    total += 1
-    if flag:
-        fp.write(line)
-        keep  += 1
-fp.close()
+if all_is_well:
+    # Write filtered output file
+    fp = open(out_file, 'wt')
+    keep = 0
+    total = 0
+    for flag, line in zip(flags, file(inp_file)):
+        total += 1
+        if flag:
+            fp.write(line)
+            keep  += 1
+    fp.close()
 
-print 'Filtering with %s, ' % cond_text
-print 'kept %4.2f%% of %d lines.' % ( 100.0*keep/len(flags), total )
-if skipped_lines > 0:
-    print 'Condition/data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+    print 'Filtering with %s, ' % cond_text
+    print 'kept %4.2f%% of %d lines.' % ( 100.0*keep/len(flags), total )
+    if skipped_lines > 0:
+        print 'Condition/data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+else:
+    print 'Invalid syntax in "%s". See tool syntax for proper logical operator expression syntax.' %cond_text
     
     
