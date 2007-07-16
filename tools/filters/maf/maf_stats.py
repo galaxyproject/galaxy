@@ -4,7 +4,7 @@
 Reads a list of intervals and a maf. Outputs a new set of intervals with statistics appended.
 """
 
-import sys, tempfile
+import sys, tempfile, os
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align
 import bx.align.maf
@@ -24,6 +24,7 @@ def __main__():
     end_col = int(sys.argv[7].strip())-1
     
     index = None
+    index_filename = None
     if maf_source_type == "user":
         #index maf for use here
         indexes = bx.interval_index_file.Indexes()
@@ -119,7 +120,7 @@ def __main__():
             except:
                 #print "slicing failed!"
                 continue
-            
+            ref = sliced.get_component_by_src( ref.src )
             #look for gaps (indels) in primary sequence, we do not include these columns in our stats
             gaps = []
             for i in range(len(ref.text)):
@@ -144,4 +145,6 @@ def __main__():
         num_region += 1
     print "%i regions were processed." % num_region
     out.close()
+    if index_filename is not None:
+        os.unlink(index_filename)
 if __name__ == "__main__": __main__()
