@@ -66,7 +66,7 @@ class TwillTestCase(unittest.TestCase):
         """Uploads a file"""
         fname = self.get_fname(fname)
         tc.go("./tool_runner/index?tool_id=upload1")
-	try: 
+        try: 
             tc.fv("1","file_type", ftype)
             tc.fv("1","dbkey", dbkey)
             tc.formfile("1","file_data", fname)

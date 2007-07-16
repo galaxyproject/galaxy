@@ -181,7 +181,6 @@ class Bed( Interval ):
     """Tab delimited data in BED format"""
 
     """Add metadata elements"""
-    """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
@@ -257,6 +256,10 @@ class Bed( Interval ):
 class Gff( Tabular ):
     """Tab delimited data in Gff format"""
 
+    """Add metadata elements"""
+    MetadataElement( name="dbkey", desc="Database/Build", default="?",
+                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
@@ -326,6 +329,8 @@ class Gff( Tabular ):
 
 class Wiggle( Tabular ):
     """Tab delimited data in wiggle format"""
+    MetadataElement( name="dbkey", desc="Database/Build", default="?",
+                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
     
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')

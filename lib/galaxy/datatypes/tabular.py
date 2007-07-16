@@ -9,6 +9,7 @@ import logging
 import data
 from galaxy import util
 from cgi import escape
+from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.metadata import MetadataAttributes
 log = logging.getLogger(__name__)
@@ -17,10 +18,13 @@ log = logging.getLogger(__name__)
 class Tabular( data.Text ):
     """Tab delimited data"""
 
+    """Add metadata elements"""
     MetadataElement( name="columns",
                      default=0,
                      desc="Number of columns",
                      readonly=True )
+    MetadataElement( name="dbkey", desc="Database/Build", default="?",
+                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )

@@ -200,10 +200,19 @@ class Dataset( object ):
     # field in the database.  That field now maps to "old_dbkey" (see
     # mapping.py)
     def get_dbkey( self ):
+        """
+        FIXME: gvk 07/16/07: Not sure why Ian's is using dbkey[0] here because in most cases it breaks things
+        (e.g., instead of hg17, we get h).  Until Ian returns, I'll make it simpler...
         try:
             dbkey = self.metadata.dbkey[0]
         except TypeError:
             dbkey = self.metadata.dbkey
+        return dbkey or self.old_dbkey
+        """
+        try:
+            dbkey = self.metadata.dbkey
+        except TypeError:
+            dbkey = self.old_dbkey
         return dbkey or self.old_dbkey
     def set_dbkey( self, value ):
         if "dbkey" in self.datatype.metadata_spec:

@@ -98,12 +98,15 @@ class UploadToolAction( object ):
         data.state = data.states.OK
         data.init_meta()
         data.set_peek()
+        """
+        gvk: 07/16/07: I believe this will soon be going away.  Tests are breaking, so I'll comment it out for now...
         if isinstance( data.datatype, datatypes.interval.Interval ):
             if data.missing_meta():
                 if isinstance( data.datatype, datatypes.interval.Bed ):
                     data.extension = 'interval'
                 if data.missing_meta():
                     data.extension = 'tabular'
+        """
 
         # validate incomming data
         """
