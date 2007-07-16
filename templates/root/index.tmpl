@@ -19,6 +19,8 @@
 	var right_saved_size = null;
 	var hidden_width = 7;
 	
+	var border_tweak = $.browser.msie ? 14 : 9
+	
 	var resize_left = function( x ) {
 	    oldx = x;
 	    if ( x < 0 ) x = 0;
@@ -73,7 +75,7 @@
         }
         else
         {
-            right_saved_size = jq(document).width() - jq("#right-border").position().left;
+            right_saved_size = jq(document).width() - jq("#right-border").position().left - border_tweak;
             // Move center
             jq( "#center" ).css( "right", hidden_width + 1 );
             // Hide border
@@ -143,7 +145,7 @@
     			}
     		}
     	);
-    	var border_tweak = $.browser.msie ? 14 : 9
+
         jq('#right-border').hover( 
     	    function() { jq( this ).addClass( "hover" ) },
     	    function() { jq( this ).removeClass( "hover" ) }
