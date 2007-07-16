@@ -47,7 +47,7 @@
    <tests>
 	    <test>
 	      <param name="input1" value="5.gff"/>
-	      <param name="column_choice|col" value="0" />
+	      <param name="column_choice" value="0 chr5" />
 	      <param name="column_choice|feature" value="chr5,chr6,chr7,chr8" />
 	      <output name="out_file1" file="gff_features.gff"/>
 	    </test>
@@ -58,6 +58,13 @@
 .. class:: infomark
 
 **Info:** This tool extracts selected features from the input GFF file into an output GFF file. To convert the output GFF file to BED format, please use *GFF-to-BED converter* under *Convert Formats* section.
+
+----
+
+.. class:: warningmark
+
+If the chosen column is absent in the input GFF file, the tool displays a message in the "Select Features" drop-down menu. Running the tool in this case will return an empty output.
+Also, running the tool on columns with ONLY one feature will return an output same as the input.
 
 ----
 

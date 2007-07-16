@@ -68,18 +68,20 @@
     </test>
 	</tests>
   -->
-	<help>
+<help>
 
-**Info**
+.. class:: infomark
 
-This tool displays the selected datasets with their custom track attributes (if any) in the UCSC genome browser. 
+This tool allows you to build custom tracks using datasets in your history for the UCSC genome browser. You can view these custom tracks on the UCSC genome browser by clicking on **display at UCSC main/test** link in the history panel of the output dataset.
 
-This tool allows you to set the **Color** and **Visibility** attributes and you can edit the **Name** attribute of the dataset by clicking on **"edit attributes"** button (pencil icon) next to the dataset name in the history panel. 
+-----
 
-Please note that the primary dataset in step 1 of the tool sets the database build for the datasets in following steps. For example, if your first dataset belogs to hg18, you will only be able to select hg18 associated datasets on the next step.
+.. class:: warningmark
 
-	</help>
+Please note that this tool requires **all input datasets(tracks) to have the same genome build**. The tool throws an error when this requirement is not met. You may then have to choose a valid dataset or remove invalid tracks.
 
-  <code file="build_ucsc_custom_track_code.py" />
+</help>
+
+<code file="build_ucsc_custom_track_code.py" />
   
 </tool>
