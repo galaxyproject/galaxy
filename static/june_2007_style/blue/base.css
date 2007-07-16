@@ -100,7 +100,7 @@ select, input, textarea
 
 select, textarea, input[type="text"], input[type="file"]
 {
-    max-width: 400px;
+    max-width: 300px;
 }
 
 /* Messages */
