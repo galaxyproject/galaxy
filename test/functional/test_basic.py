@@ -41,7 +41,10 @@ class BasicFunctions(TwillTestCase):
         #
         #self.edit_data(hid=1, dbkey='hg15', chromCol='1', info='foo')
         #self.check_history('hg15 Testdata interval foo')
-        self.edit_data(hid=1, dbkey='hg16', is_strandCol='')
+        """
+        TODO: Ian make sure this test is functioning as you expect...
+        """
+        self.edit_data(hid=1, dbkey='hg16', is_strandCol="true")
         self.check_history('hg16 Testdata bed')
         
     def test_delete(self):

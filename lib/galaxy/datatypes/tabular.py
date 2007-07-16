@@ -19,10 +19,7 @@ class Tabular( data.Text ):
     """Tab delimited data"""
 
     """Add metadata elements"""
-    MetadataElement( name="columns",
-                     default=0,
-                     desc="Number of columns",
-                     readonly=True )
+    MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True )
     MetadataElement( name="dbkey", desc="Database/Build", default="?",
                      param=metadata.SelectParameter, multiple=False, values=util.dbnames )
 
@@ -85,10 +82,14 @@ class Tabular( data.Text ):
             maxcols = 0
             count = 0
             for line in open( dataset.file_name ):
-                count += 1
-                if count > 1000: break
-                cols = len( line.split("\t") )
-                if cols > maxcols: maxcols = cols
+                line = line.rstrip('\r\n')
+                if line and not line.startswith( '#' ):
+                    count += 1
+                    if count > 1000: 
+                        break
+                    cols = len( line.split("\t") )
+                    if cols > maxcols: 
+                        maxcols = cols
             setattr( dataset.metadata, "columns", maxcols )
         except:
             pass        

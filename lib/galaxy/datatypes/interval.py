@@ -44,6 +44,7 @@ class Interval( Tabular ):
     MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True )
     MetadataElement( name="dbkey", desc="Database/Build", default="?",
                      param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
 
 
     def __init__(self, **kwd):
@@ -187,6 +188,7 @@ class Bed( Interval ):
     MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True )
     MetadataElement( name="dbkey", desc="Database/Build", default=None,
                      param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
     
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
@@ -204,18 +206,20 @@ class Bed( Interval ):
         valid_bed_data = False
         if dataset.has_data():
             for i, line in enumerate( file(dataset.file_name) ):
-                line = line.strip()
-                if len(line) > 0 and ( line.startswith('chr') or line.startswith('scaff') ):
+                line = line.rstrip('\r\n')
+                if line and len(line) > 0 and ( line.startswith('chr') or line.startswith('scaff') ):
                     valid_bed_data = True
                     elems = line.split("\t")
                     if len(elems) < 6:
-                        dataset.metadata.strandCol = 0
+                        dataset.metadata.is_strandCol = "false"
+                        dataset.metadata.strandCol = None
                         dataset.mark_metadata_changed()
                     break
                 if i == 30:
                     break
         if not valid_bed_data:
-            dataset.metadata.strandCol = 0
+            dataset.metadata.is_strandCol = "false"
+            dataset.metadata.strandCol = None
             dataset.mark_metadata_changed()
         
     def as_ucsc_display_file( self, dataset, **kwd ):
@@ -259,6 +263,7 @@ class Gff( Tabular ):
     """Add metadata elements"""
     MetadataElement( name="dbkey", desc="Database/Build", default="?",
                      param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True )
     
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
@@ -331,6 +336,7 @@ class Wiggle( Tabular ):
     """Tab delimited data in wiggle format"""
     MetadataElement( name="dbkey", desc="Database/Build", default="?",
                      param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
     
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
