@@ -162,6 +162,13 @@ class Universe(common.Root):
             trans.app.datatypes_registry.change_datatype( data, p.datatype )
             trans.app.model.flush()
         elif p.save:
+            
+            data.name  = p.name
+            data.info  = p.info
+            
+            """
+            The following for loop will save all metadata_spec items
+            """
             for name, spec in data.datatype.metadata_spec.items():
                 optional = p.get("is_"+name, None)
                 if optional and optional == 'true':
@@ -190,6 +197,7 @@ class Universe(common.Root):
         for name, spec in data.datatype.metadata_spec.items():
             metadata.append( spec.wrap( data.metadata.get(name),
                                         data ) )
+
         datatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
         trans.log_event( "Opened edit view on dataset %s" % str(id) )
         return trans.fill_template( "edit_data.tmpl", data=data, metadata=metadata,
