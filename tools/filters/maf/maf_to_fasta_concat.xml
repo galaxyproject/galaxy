@@ -21,50 +21,58 @@
     </tests>
     <help>
 
-**Syntax**
+.. class:: infomark
 
-This tool converts a MAF formated file to the FASTA format, and concatenates the results in the same organism.
+What is the differences between these two tools: **MAF to FASTA** and **MAF to concatenated FASTA**?
 
-- **MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes.
+ * **MAF to FASTA** converts a single MAF block to a single FASTA block. For example, if you have 6 MAF blocks, they will be converted to 6 FASTA blocks.
+ * **MAF to concatenated FASTA** converts MAF blocks to a single aggregated FASTA block. For example, if you have 6 MAF blocks, they will be converted and concatenated into a single FASTA block.
 
-  - The .maf format is line-oriented. Each multiple alignment ends with a blank line.
-  - Each sequence in an alignment is on a single line.
-  - Lines starting with # are considered to be comments.
-  - Each multiple alignment is in a separate paragraph that begins with an "a" line and contains an "s" line for each sequence in the multiple alignment.
-  - Some MAF files may contain two optional line types:
+In the future these two tools will be merged.
 
-    - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line;
-    - An "e" line containing information about the size of the gap between the alignments that span the current block.
+-------
 
-- **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
+**What it does**
 
-  - This format contains a one line header. It starts with a " >" symbol. The first word on this line is the name of the sequence. The rest of the line is a description of the sequence.
-  - The remaining lines contain the sequence itself.
-  - Blank lines in a FASTA file are ignored, and so are spaces or other gap symbols (dashes, underscores, periods) in a sequence.
-  - Fasta files containing multiple sequences are just the same, with one sequence listed right after another. This format is accepted for many multiple sequence alignment programs.
+This tool converts MAF blocks to FASTA format and concatenates them into a single FASTA block.  
+
+The interface for this tool contains two pages (steps): 
+
+ * **Step 1 of 2**. Choose multiple alignments from history to be converted to FASTA format.
+ * **Step 2 of 2**. Choose species from the alignment to be included in the output.
 
 -----
 
-**Example**
+**Example**:
 
-- MAF format::
+The following alignment::
 
-    ##maf version=1 scoring=multiz.v7
-    # multiz.v7 R=10 M=0 /cluster/bluearc/hg17/multiz.2004-07-13/danRer1/chrY.maf /cluster/bluearc/hg17/multiz.2004-07-13/panTro1mm5rn3canFam1galGal2fr1/chrY.maf -
+  ##maf version=1
+  a score=68686.000000
+  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
+  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
+  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA------- 
+  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------- 
+  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C 
 
-    a score=236.0
-    s hg17.chrY          3757 13 +  57701691 GATCCACTGTTCC
-    s galGal2.chrUn 101379810 13 + 165033910 GCCCCGCTCACCC
+  a score=10289.000000
+  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG 
 
-    a score=418.0
-    s hg17.chrY          3770 3 +  57701691 TGT
-    s galGal2.chrUn 101379823 3 + 165033910 TTT
-    s danRer1.chrUn 354601716 3 + 367113659 TGT
+will be converted to (**note** that because mm8 (mouse) and canFam2 (dog) are absent from the second block, they are replaced with gaps after concatenation)::
 
-- Converts the hg17 in the above file to concatenated FASTA format::
+  &gt;canFam2
+  CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C-------------------------------------
+  &gt;hg18
+  GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  &gt;mm8
+  AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC--------------------------------------------
+  &gt;panTro2
+  GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  &gt;rheMac2
+  GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA-------ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG
 
-    &gt;hg17
-    GATCCACTGTTCCTGT
 
     </help>
     <code file="maf_to_fasta_code.py"/>

@@ -3,14 +3,14 @@
     <command interpreter="python2.4">maf_to_fasta_multiple_sets.py $input1 $out_file1 $species $complete_blocks</command>
     <inputs>
         <page>
-            <param format="maf" name="input1" type="data" label="MAF file"/>
+            <param format="maf" name="input1" type="data" label="MAF file to convert"/>
         </page>
         <page>
-            <param name="species" type="select" label="Species to extract" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true"/>
+            <param name="species" type="select" label="Select species" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true" help="checked taxa will be included in the output"/>
             <param name="complete_blocks" type="select">
-              <label>Exclude blocks which have missing species</label>
-              <option value="partial_allowed">No</option>
-              <option value="partial_disallowed">Yes</option>
+              <label>Choose to</label>
+              <option value="partial_allowed">include blocks with missing species</option>
+              <option value="partial_disallowed">exclude blocks with missing species</option>
             </param>
         </page>
     </inputs>
@@ -27,59 +27,94 @@
     </tests>
     <help>
 
-**Syntax**
+.. class:: infomark
 
-This tool converts a maf formated file to FASTA format.
+What is the differences between these two tools: **MAF to FASTA** and **MAF to concatenated FASTA**?
 
-- **MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes. 
+ * **MAF to FASTA** converts a single MAF block to a single FASTA block. For example, if you have 6 MAF blocks, they will be converted to 6 FASTA blocks.
+ * **MAF to concatenated FASTA** converts MAF blocks to a single aggregated FASTA block. For example, if you have 6 MAF blocks, they will be converted and concatenated into a single FASTA block.
 
-  - The .maf format is line-oriented. Each multiple alignment ends with a blank line.
-  - Each sequence in an alignment is on a single line.
-  - Lines starting with # are considered to be comments.
-  - Each multiple alignment is in a separate paragraph that begins with an "a" line and contains an "s" line for each sequence in the multiple alignment.
-  - Some MAF files may contain two optional line types: 
+In the future these two tools will be merged.
 
-    - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line; 
-    - An "e" line containing information about the size of the gap between the alignments that span the current block.
+-------
 
-- **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
+**What it does**
 
-  - This format contains a one line header. It starts with a " >" symbol. The first word on this line is the name of the sequence. The rest of the line is a description of the sequence.
-  - The remaining lines contain the sequence itself.
-  - Blank lines in a FASTA file are ignored, and so are spaces or other gap symbols (dashes, underscores, periods) in a sequence.
-  - Fasta files containing multiple sequences are just the same, with one sequence listed right after another. This format is accepted for many multiple sequence alignment programs.
+This tool converts MAF blocks to FASTA blocks separated by empty lines.  
+
+The interface for this tool contains two pages (steps): 
+
+ * **Step 1 of 2**. Choose multiple alignments from history to be converted to FASTA format.
+ * **Step 2 of 2**. Choose species from the alignment to be included in the output and specify how to deal with alignment blocks that lack one or more species:
+
+   *  **Choose species** - the tool reads the alignment provided during Step 1 and generates a list of species contained within that alignment. Using checkboxes you can specify taxa to be included in the output (all species are selected by default). 
+   *  **Choose to include/exclude blocks with missing species** - if an alignment block does not contain any one of the species you selected within **Choose species** menu and this option is set to **exclude blocks with missing species**, then such a block **will not** be included in the output (see **Example 2** below).  For example, if you want to extact human, mouse, and rat from a series of alignments and one of the blocks does not contain mouse sequence, then this block will not be converted to FASTA and will not be returned.
+
+ 
+-----
+
+**Example 1**: **Include all species** and **include blocks with missing species**:
+
+The following alignment::
+
+  ##maf version=1
+  a score=68686.000000
+  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
+  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
+  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA------- 
+  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------- 
+  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C 
+
+  a score=10289.000000
+  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG 
+
+will be converted to::
+
+  &gt;hg18.chr20(+):56827368-56827443|hg18_0
+  GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  &gt;panTro2.chr20(+):56528685-56528760|panTro2_0
+  GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  &gt;rheMac2.chr10(-):89144112-89144181|rheMac2_0
+  GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA-------
+  &gt;mm8.chr2(+):173910832-173910893|mm8_0
+  AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC-------
+  &gt;canFam2.chr24(+):46551822-46551889|canFam2_0
+  CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C
+
+  &gt;hg18.chr20(+):56827443-56827480|hg18_1
+  ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  &gt;panTro2.chr20(+):56528760-56528797|panTro2_1
+  ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  &gt;rheMac2.chr10(-):89144181-89144218|rheMac2_1
+  ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG
 
 -----
 
-**Example**
+**Example 2**: **Include hg18 and mm8** and **exclude blocks with missing species**:
 
-- MAF format::
+The following alignment::
 
-    ##maf version=1 scoring=multiz.v7
-    # multiz.v7 R=10 M=0 /cluster/bluearc/hg17/multiz.2004-07-13/danRer1/chrY.maf /cluster/bluearc/hg17/multiz.2004-07-13/panTro1mm5rn3canFam1galGal2fr1/chrY.maf -
+  ##maf version=1
+  a score=68686.000000
+  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
+  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
+  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA------- 
+  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------- 
+  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C 
 
-    a score=236.0
-    s hg17.chrY          3757 13 +  57701691 GATCCACTGTTCC
-    s galGal2.chrUn 101379810 13 + 165033910 GCCCCGCTCACCC
+  a score=10289.000000
+  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG 
 
-    a score=418.0
-    s hg17.chrY          3770 3 +  57701691 TGT
-    s galGal2.chrUn 101379823 3 + 165033910 TTT
-    s danRer1.chrUn 354601716 3 + 367113659 TGT
+will be converted to (**note** that the second MAF block, which does not have mm8, is not included in the output)::
 
-- Convert all the species of the above file to FASTA format::
-
-    &gt;hg17.chrY(+):3757-3770|hg17_0
-    GATCCACTGTTCC
-    &gt;galGal2.chrUn(+):101379810-101379823|galGal2_0
-    GCCCCGCTCACCC
-
-    &gt;hg17.chrY(+):3770-3773|hg17_1
-    TGT
-    &gt;galGal2.chrUn(+):101379823-101379826|galGal2_1
-    TTT
-    &gt;danRer1.chrUn(+):354601716-354601719|danRer1_1
-    TGT
+  &gt;hg18.chr20(+):56827368-56827443|hg18_0
+  GACAGGGTGCATCTGGGAGGGCCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC
+  &gt;mm8.chr2(+):173910832-173910893|mm8_0
+  AGAAGGATCCACCT---------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------
 
     </help>
     <code file="maf_to_fasta_code.py"/>

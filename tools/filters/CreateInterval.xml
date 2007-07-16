@@ -28,19 +28,19 @@
 
 .. class:: warningmark
 
-**WARNING:** Once your interval appears in history, you must tell Galaxy which genome it belongs to by clicking "edit attributes" link or the "?" link in the history item.
+**TIP**. Once your interval appears in history, you must tell Galaxy which genome it belongs to by clicking "edit attributes" link or the "?" link in the history item.
 
 -----
 
 **Syntax**
 
-This tool allows you to enter a single interval as a new history item. The new item is tab delimitated bed format.
+This tool allows you to enter a single genomic interval. The resulting history item will be in the BED format.
 
 -----
 
 **Example**
 
-- Your input::
+- Typing the following values in the form::
 
     Chromosome: chrX
     Start position: 151087187
@@ -48,7 +48,7 @@ This tool allows you to enter a single interval as a new history item. The new i
     Name: NM_000808
     Strand: minus
 
-- Creating single interval will be::
+- will create a single interval::
 
     chrX  151087187  151370486  NM_000808  0  -
 
