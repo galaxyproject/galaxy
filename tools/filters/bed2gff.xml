@@ -15,18 +15,43 @@
   </tests>
   <help>
 
-**Syntax**
+**What it does**
 
-This tool converts a BED format file to GFF format.
+This tool converts data from BED format to GFF format (scroll down for format description).
 
-- **BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser. It has three required fields and twelve additional optional ones::
+--------
 
-    The first three BED fields (required) are:
+**Example**
+
+The following data in BED format::
+
+    chr3   214671   265280   Hs.517745    300    +
+    chrX   156881   157496   Hs.530320    300    +
+
+Will be converted to GFF (**note** that the start coordinate is incremented by 1)::
+
+    ## gff-version 2
+    ## bed2gff.pl $Rev: 601 $
+
+    chr3    bed2gff Hs.517745       214672  265280  .       +       .       score "300";
+    chrX    bed2gff Hs.530320       156882  157496  .       +       .       score "300";
+
+------
+
+.. class:: informark
+
+**About formats**
+
+**BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser. It has three required fields and several additional optional ones:
+
+The first three BED fields (required) are::
+
     1. chrom - The name of the chromosome (e.g. chr1, chrY_random).
     2. chromStart - The starting position in the chromosome. (The first base in a chromosome is numbered 0.)
     3. chromEnd - The ending position in the chromosome, plus 1 (i.e., a half-open interval).
 
-    The twelve additional BED fields (optional) are:
+The additional BED fields (optional) are::
+
     4. name - The name of the BED line.
     5. score - A score between 0 and 1000.
     6. strand - Defines the strand - either '+' or '-'.
@@ -40,7 +65,7 @@ This tool converts a BED format file to GFF format.
    14. expIds - A comma-separated list of experiment ids. The number of items in this list should correspond to expCount.
    15. expScores - A comma-separated list of experiment scores. All of the expScores should be relative to expIds. The number of items in this list should correspond to expCount.
 
-- **GFF format** General Feature Format is a format for describing genes and other features associated with DNA, RNA and Protein sequences. GFF lines have nine tab-separated fields::
+**GFF format** General Feature Format is a format for describing genes and other features associated with DNA, RNA and Protein sequences. GFF lines have nine tab-separated fields::
 
     1. seqname - Must be a chromosome or scaffold.
     2. source - The program that generated this feature.
@@ -51,24 +76,6 @@ This tool converts a BED format file to GFF format.
     7. strand - Valid entries include '+', '-', or '.' (for don't know/care).
     8. frame - If the feature is a coding exon, frame should be a number between 0-2 that represents the reading frame of the first base. If the feature is not a coding exon, the value should be '.'.
     9. group - All lines with the same group are linked together into a single item.
-
-------
-
-**Example**
-
-- BED format::
-
-    #chrom  chromStart      chromEnd        name    score   strand  thickStart      thickEnd        reserved        blockCount     blockSizes       blockStarts
-    chr3    214671  265280  Hs.517745       300     +       214671  265280  0       3       104,80,2030,    0,46624,48579,
-    chrX    156881  157496  Hs.530320       300     +       156881  157496  0       2       231,384,        0,231,
-
-- Convert the above file to GFF format::
-
-    ## gff-version 2
-    ## bed2gff.pl $Rev: 601 $
-
-    chr3    bed2gff Hs.517745       214672  265280  .       +       .       score "300";
-    chrX    bed2gff Hs.530320       156882  157496  .       +       .       score "300";
 
 </help>
 </tool>

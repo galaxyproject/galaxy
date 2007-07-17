@@ -15,30 +15,40 @@
   </tests>
   <help>
 
-**Syntax**
+**What it does**
 
-This tool converts a GFF format file to BED format.
+This tool converts data from GFF format to BED format (scroll down for format description).
 
-- **GFF format** General Feature Format is a format for describing genes and other features associated with DNA, RNA and Protein sequences. GFF lines have nine tab-separated fields::
+--------
 
-    1. seqname - Must be a chromosome or scaffold.
-    2. source - The program that generated this feature.
-    3. feature - The name of this type of feature. Some examples of standard feature types are "CDS", "start_codon", "stop_codon", and "exon".
-    4. start - The starting position of the feature in the sequence. The first base is numbered 1.
-    5. end - The ending position of the feature (inclusive).
-    6. score - A score between 0 and 1000. If there is no score value, enter ".".
-    7. strand - Valid entries include '+', '-', or '.' (for don't know/care).
-    8. frame - If the feature is a coding exon, frame should be a number between 0-2 that represents the reading frame of the first base. If the feature is not a coding exon, the value should be '.'.
-    9. group - All lines with the same group are linked together into a single item.
+**Example**
 
-- **BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser. It has three required fields and twelve additional optional ones:: 
+The following data in GFF format::
 
-    The first three BED fields (required) are:
+    chr22  GeneA  enhancer  10000000  10001000  500	 +   .  TGA
+    chr22  GeneA  promoter  10010000  10010100  900	 +   .  TGA
+
+Will be converted to BED (**note** that 1 is subtracted from the start coordinate)::
+
+    chr22   9999999  10001000   enhancer   0   +
+    chr22  10009999  10010100   promoter   0   +
+
+------
+
+.. class:: infomark
+
+**About formats**
+
+**BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser. It has three required fields and several additional optional ones:
+
+The first three BED fields (required) are::
+
     1. chrom - The name of the chromosome (e.g. chr1, chrY_random).
     2. chromStart - The starting position in the chromosome. (The first base in a chromosome is numbered 0.)
-    3. chromEnd - The ending position in the chromosome, plus 1 (i.e., a half-open interval). 
+    3. chromEnd - The ending position in the chromosome, plus 1 (i.e., a half-open interval).
 
-    The twelve additional BED fields (optional) are:
+The additional BED fields (optional) are::
+
     4. name - The name of the BED line.
     5. score - A score between 0 and 1000.
     6. strand - Defines the strand - either '+' or '-'.
@@ -50,23 +60,19 @@ This tool converts a GFF format file to BED format.
    12. blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount.
    13. expCount - The number of experiments.
    14. expIds - A comma-separated list of experiment ids. The number of items in this list should correspond to expCount.
-   15. expScores - A comma-separated list of experiment scores. All of the expScores should be relative to expIds. The number of items in this list should correspond to expCount. 
+   15. expScores - A comma-separated list of experiment scores. All of the expScores should be relative to expIds. The number of items in this list should correspond to expCount.
 
-------
+**GFF format** General Feature Format is a format for describing genes and other features associated with DNA, RNA and Protein sequences. GFF lines have nine tab-separated fields::
 
-**Example**
-
-- GFF format::
-
-    chr22  TeleGene	enhancer  10000000  10001000  500	+  .  TG1
-    chr22  TeleGene	promoter  10010000  10010100  900	+  .  TG1
-    chr22  TeleGene	promoter  10020000  10025000  800	-  .  TG2
-
-- Convert the above file to BED format::
-
-    chr22   9999999         10001000        enhancer        0       +
-    chr22   10009999        10010100        promoter        0       +
-    chr22   10019999        10025000        promoter        0       -
+    1. seqname - Must be a chromosome or scaffold.
+    2. source - The program that generated this feature.
+    3. feature - The name of this type of feature. Some examples of standard feature types are "CDS", "start_codon", "stop_codon", and "exon".
+    4. start - The starting position of the feature in the sequence. The first base is numbered 1.
+    5. end - The ending position of the feature (inclusive).
+    6. score - A score between 0 and 1000. If there is no score value, enter ".".
+    7. strand - Valid entries include '+', '-', or '.' (for don't know/care).
+    8. frame - If the feature is a coding exon, frame should be a number between 0-2 that represents the reading frame of the first base. If the feature is not a coding exon, the value should be '.'.
+    9. group - All lines with the same group are linked together into a single item.
 
 </help>
 </tool>

@@ -5,11 +5,11 @@
   </command>
   <inputs>
     <page>
-        <param format="gff" name="input1" type="data" label="Select a GFF file"/>
+        <param format="gff" name="input1" type="data" label="Select GFF data"/>
     </page>
     <page>
     	<conditional name="column_choice">
-    		<param name="col" type="select" label="Select a field">
+    		<param name="col" type="select" label="Select field">
           		<option value="0" selected="true">Column 1 / Sequence name</option>
           		<option value="1">Column 2 / Source</option>
           		<option value="2">Column 3 / Feature</option>
@@ -17,19 +17,19 @@
           		<option value="7">Column 8 / Frame</option>
         	</param>
         	<when value="0">
-        		<param name="feature" label="Select Features" type="select" multiple="true" dynamic_options="get_features( input1, 0 )"/>        	
+        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 0 )"/>        	
         	</when>
         	<when value="1">
-        		<param name="feature" label="Select Features" type="select" multiple="true" dynamic_options="get_features( input1, 1 )"/>        	
+        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 1 )"/>        	
         	</when>
         	<when value="2">
-        		<param name="feature" label="Select Features" type="select" multiple="true" dynamic_options="get_features( input1, 2 )"/>        	
+        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 2 )"/>        	
         	</when>
         	<when value="6">
-        		<param name="feature" label="Select Features" type="select" multiple="true" dynamic_options="get_features( input1, 6 )"/>        	
+        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 6 )"/>        	
         	</when>
         	<when value="7">
-        		<param name="feature" label="Select Features" type="select" multiple="true" dynamic_options="get_features( input1, 7 )"/>        	
+        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 7 )"/>        	
         	</when>
     	</conditional>
     	<!--
@@ -55,22 +55,45 @@
   -->
   <help>
 
-.. class:: infomark
+**What it does**
 
-**Info:** This tool extracts selected features from the input GFF file into an output GFF file. To convert the output GFF file to BED format, please use *GFF-to-BED converter* under *Convert Formats* section.
+This tool extracts selected features from a history item in GFF format. To convert the output GFF file to BED format, please use **GFF-to-BED converter** under **Convert Formats** section.
+
+The interface for this tool contains two pages (steps): 
+
+ * **Step 1 of 2**. Choose GFF data from history to extract features from.
+ * **Step 2 of 2**. Choose field and features to be extracted. Once you select the field the **Select features** widget will refresh and display non-redundant set of values present in that column.  
 
 ----
 
 .. class:: warningmark
 
-If the chosen column is absent in the input GFF file, the tool displays a message in the "Select Features" drop-down menu. Running the tool in this case will return an empty output.
-Also, running the tool on columns with ONLY one feature will return an output same as the input.
+If the chosen column is absent in the input GFF file, the tool displays a message in the "Select Features" drop-down menu. Running the tool in this case will return an empty output. Also, running the tool on columns with ONLY one feature will return an output same as the input.
+
+
+-----
+
+**Example**
+
+Selecting **promoter** from the following GFF-formatted data::
+
+    chr22  GeneA  enhancer  10000000  10001000  500  +  .  TGA
+    chr22  GeneA  promoter  10010000  10010100  900  +  .  TGA
+    chr22  GeneB  promoter  10020000  10025000  400  -  .  TGB
+    chr22  GeneB  CCDS2220  10030000  10065000  800  -  .  TGB
+    
+will produce the following output::
+
+    chr22  GeneA  promoter  10010000  10010100  900  +  .  TGA
+    chr22  GeneB  promoter  10020000  10025000  400  -  .  TGB
 
 ----
 
-**Syntax**
+.. class:: infomark
 
-- **GFF format** General Feature Format is a format for describing genes and other features associated with DNA, RNA and Protein sequences. GFF lines have nine tab-separated fields::
+**About formats**
+
+**GFF format** General Feature Format is a format for describing genes and other features associated with DNA, RNA and Protein sequences. GFF lines have nine tab-separated fields::
 
     1. seqname - Must be a chromosome or scaffold.
     2. source - The program that generated this feature.
@@ -82,21 +105,6 @@ Also, running the tool on columns with ONLY one feature will return an output sa
     8. frame - If the feature is a coding exon, frame should be a number between 0-2 that represents the reading frame of the first base. If the feature is not a coding exon, the value should be '.'.
     9. group - All lines with the same group are linked together into a single item.
 
------
-
-**Example**
-
-- Input GFF file::
-
-    chr22  TeleGene	enhancer  10000000  10001000  500	+  .  TG1
-    chr22  TeleGene	promoter  10010000  10010100  900	+  .  TG1
-    chr22  TeleGene	promoter  10020000  10025000  400	-  .  TG2
-    chr22  TeleGene	CCDS2220  10030000  10065000  800	-  .  TG2
-    
-- Running this tool on the above input by choosing field as *Column 3 / Feature* and feature as *promoter* will produce the following output::
-
-    chr22  TeleGene	promoter  10010000  10010100  900	+  .  TG1
-    chr22  TeleGene	promoter  10020000  10025000  400	-  .  TG2
 
   </help>
   <code file="extract_GFF_Features_code.py"/>
