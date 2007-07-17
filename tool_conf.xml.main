@@ -3,17 +3,14 @@
   <section name="Get Data" id="getext">
     <tool file="data_source/upload.xml"/>
     <tool file="data_source/ucsc_tablebrowser.xml" />
-    <tool file="data_source/ucsc_tablebrowser_test.xml" />
+<!--    <tool file="data_source/ucsc_tablebrowser_test.xml" /> -->
     <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
-<!--    <tool file="data_source/ucsc_proxy.xml"/> 
-    <tool file="data_source/ucsc_testproxy.xml" />
-    <tool file="data_source/ucsc_archaea.xml" /> -->
     <tool file="data_source/microbial_import.xml" />
     <tool file="data_source/biomart.xml" />
-    <tool file="data_source/biomart_test.xml" />
-    <tool file="data_source/encode_db.xml" />
-    <tool file="data_source/hbvar.xml" />
-    <tool file="validation/fix_errors.xml" />
+<!--    <tool file="data_source/biomart_test.xml" /> -->
+<!--    <tool file="data_source/encode_db.xml" /> -->
+<!--    <tool file="data_source/hbvar.xml" />     -->
+<!--    <tool file="validation/fix_errors.xml" /> -->
   </section>
   <section name="Get ENCODE Data" id="encode">
     <tool file="data_source/encode_import_chromatin_and_chromosomes.xml"/>
@@ -24,15 +21,14 @@
     <tool file="data_source/encode_import_gencode.xml" />
   </section>
   <section name="ENCODE Tools" id="EncodeTools">
-    <tool file="extract/interval2maf.xml" />
+<!--    <tool file="extract/interval2maf.xml" />
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
-    <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
+    <tool file="stats/aggregate_binned_scores_in_intervals.xml" /> -->
     <tool file="encode/gencode_partition.xml" />
-    <tool file="encode/random_intervals.xml" />
+<!--    <tool file="encode/random_intervals.xml" /> -->
   </section>
-  <section name="Edit Queries" id="textutil">
+  <section name="Text Manipulation" id="textutil">
     <tool file="filters/fixedValueColumn.xml" />
-<!--    <tool file="operations/combineLists.xml" /> -->
     <tool file="stats/column_maker.xml" />
     <tool file="filters/catWrapper.xml" />
     <tool file="filters/condense_characters.xml" />
@@ -44,20 +40,21 @@
     <tool file="filters/headWrapper.xml" />
     <tool file="filters/tailWrapper.xml" />
   </section>
-  <section name="Filter, Sort, Join, Compare, Subtract" id="filter">
-  	<tool file="stats/grouping.xml" />
+  <section name="Filter and Sort" id="filter">
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
+  </section>
+  <section name="Join, Subtract and Group" id="group">
     <tool file="filters/joiner.xml" />
     <tool file="filters/compare.xml"/>
     <tool file="new_operations/subtract_query.xml"/>
+    <tool file="stats/grouping.xml" />   
   </section>
   <section name="Convert Formats" id="convert">
     <tool file="filters/maf/maf_to_fasta_multiple_sets.xml" />
     <tool file="filters/maf/maf_to_fasta_concat.xml" />
     <tool file="filters/maf/maf_to_bed.xml" />
-    <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="filters/bed2gff.xml" />
     <tool file="filters/axt_to_fasta.xml" />
@@ -65,27 +62,30 @@
     <tool file="filters/axt_to_lav.xml" />
     <tool file="filters/lav_to_bed.xml" />
   </section>
-  <section name="Pattern-Matching" id="patmat">
-    <tool file="patmat/findcluster_mysql.xml" />
+  <section name="Extract Features" id="features">
+    <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
+    <tool file="extract/extract_GFF_Features.xml" />
   </section>
-  <section name="Fetch Sequences and Alignments" id="extract">
+<!--  <section name="Pattern-Matching" id="patmat">
+    <tool file="patmat/findcluster_mysql.xml" />
+  </section> -->
+  <section name="Fetch Sequences" id="fetchSeq">
     <tool file="extract/fasta-subseq-wrapper.xml" />
     <tool file="extract/twoBitToFa_wrapper.xml" />
-    <tool file="extract/extractAxt_wrapper.xml" />
+  </section>
+  <section name="Fetch Alignments" id="fetchAlign">
     <tool file="extract/interval2maf_pairwise.xml" />
     <tool file="extract/interval2maf.xml" />
     <tool file="extract/user_interval2maf.xml" />
     <tool file="extract/interval_maf_to_merged_fasta.xml" />
     <tool file="extract/interval_maf_to_merged_fasta_user.xml" />
-    <tool file="extract/genebed_maf_to_fasta.xml"/>
+<!--    <tool file="extract/genebed_maf_to_fasta.xml"/>
     <tool file="extract/genebed_maf_to_fasta_user.xml"/>
     <tool file="filters/maf/maf_stats.xml"/>
     <tool file="filters/maf/maf_limit_to_species.xml"/>
     <tool file="filters/maf/maf_limit_size.xml"/>
-    <tool file="filters/maf/maf_by_block_number.xml"/>
-    <tool file="extract/extract_GFF_Features.xml" />
+    <tool file="filters/maf/maf_by_block_number.xml"/> -->
   </section>
-
   <section name="Get Genomic Scores" id="scores">
     <tool file="stats/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
@@ -111,11 +111,11 @@
   <section name="Graph/Display Data" id="plots">
     <tool file="plotting/histogram2.xml" />
     <tool file="plotting/scatterplot.xml" />
-    <tool file="plotting/xy_plot.xml" />
+<!--    <tool file="plotting/xy_plot.xml" /> -->
     <tool file="visualization/GMAJ.xml" />
-    <tool file="visualization/LAJ.xml" />
-    <tool file="data_source/show_in_ucsc.xml" />
-    <tool file="visualization/build_ucsc_custom_track.xml" />
+<!--    <tool file="visualization/LAJ.xml" /> -->
+<!--    <tool file="data_source/show_in_ucsc.xml" />
+    <tool file="visualization/build_ucsc_custom_track.xml" /> -->
   </section>
  <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss/emboss_cai.xml" />
@@ -350,7 +350,7 @@
     <tool file="emboss/phylip/emboss_eseqboot.xml" />
   </section>
 -->
- <section name="PHYLIP" id="phylipnew">
+<!-- <section name="PHYLIP" id="phylipnew">
     <tool file="emboss/phylipnew/emboss_fdnadist.xml" />
     <tool file="emboss/phylipnew/emboss_fdnapars.xml" />
     <tool file="emboss/phylipnew/emboss_fdrawgram.xml" />
@@ -359,7 +359,7 @@
     <tool file="emboss/phylipnew/emboss_fneighbor.xml" />
     <tool file="emboss/phylipnew/emboss_fprotdist.xml" />
     <tool file="emboss/phylipnew/emboss_fprotpars.xml" />
- </section>
+ </section> -->
  <section name="HYPHY" id="hyphy">
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
