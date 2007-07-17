@@ -10,7 +10,7 @@
         </page>
     </inputs>
     <outputs>
-        <data format="maf" name="out_file1" />
+        <data format="maf" name="out_file1"  metadata_source="input1"/>
     </outputs>
     <tests>
       <test>
