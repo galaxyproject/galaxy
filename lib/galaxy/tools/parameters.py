@@ -567,26 +567,28 @@ class DataToolParameter( ToolParameter ):
             # acceptrable build, id, or extension
             option_build, option_id, option_extension = \
                 eval( self.dynamic_options, self.tool.code_namespace, other_values )
-
-    def dataset_collector( datasets, parent_hid ):    
-        for i, data in enumerate( datasets ):
-            if parent_hid is not None:
-                hid = "%s.%d" % ( parent_hid, i + 1 )
-            else:
-                hid = str( data.hid )
-            if self.dynamic_options:
-                if ( isinstance( data.datatype, self.formats )
-                     and (data.dbkey == option_build) and (data.id != option_id) 
-                     and (data.extension in option_extension) 
-                     and not data.deleted ): 
-                    selected = ( value and ( data in value ) )
-                    field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
-            else:
-                if isinstance( data.datatype, self.formats) and not data.deleted:
-                    selected = ( value and ( data in value ) )
-                    field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
-            # Also collect children via association object
-            dataset_collector( [ assoc.child for assoc in data.children ], hid )
+        """
+        CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
+        """
+        def dataset_collector( datasets, parent_hid ):    
+            for i, data in enumerate( datasets ):
+                if parent_hid is not None:
+                    hid = "%s.%d" % ( parent_hid, i + 1 )
+                else:
+                    hid = str( data.hid )
+                if self.dynamic_options:
+                    if ( isinstance( data.datatype, self.formats )
+                         and (data.dbkey == option_build) and (data.id != option_id) 
+                         and (data.extension in option_extension) 
+                         and not data.deleted ): 
+                        selected = ( value and ( data in value ) )
+                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+                else:
+                    if isinstance( data.datatype, self.formats) and not data.deleted:
+                        selected = ( value and ( data in value ) )
+                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+                # Also collect children via association object
+                dataset_collector( [ assoc.child for assoc in data.children ], hid )
                  
         dataset_collector( history.datasets, None )
         some_data = bool( field.options )
