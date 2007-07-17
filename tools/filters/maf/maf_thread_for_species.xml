@@ -15,7 +15,7 @@
     <tests>
       <test>
         <param name="input1" value="3.maf" format="maf"/>
-        <param name="species" values="hg17,panTro1"/>
+        <param name="species" value="hg17,panTro1"/>
         <output name="out_file1" file="maf_thread_for_species.dat"/>
       </test>
     </tests>
