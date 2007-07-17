@@ -1,0 +1,56 @@
+<tool id="MAF_Thread_For_Species1" name="Join MAF Blocks">
+    <description>by Species</description>
+    <command interpreter="python2.4">maf_thread_for_species.py $input1 $out_file1 $species</command>
+    <inputs>
+        <page>
+            <param format="maf" name="input1" type="data" label="MAF file"/>
+        </page>
+        <page>
+            <param name="species" type="select" label="Species to keep" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true"/>
+        </page>
+    </inputs>
+    <outputs>
+        <data format="maf" name="out_file1" />
+    </outputs>
+    <tests>
+      <test>
+        <param name="input1" value="3.maf" format="maf"/>
+        <param name="species" values="hg17,panTro1"/>
+        <output name="out_file1" file="maf_thread_for_species.dat"/>
+      </test>
+    </tests>
+    <help>
+
+**What It Does**
+
+This tool allows the user to merge MAF blocks which are adjoining in each specified species from a MAF file. Columns which contain only gaps are removed. Species which are not desired are removed from the output.
+
+**Example**
+
+Specifying the desired species as hg17 and panTro1 with this MAF file::
+
+  ##maf version=1
+  a score=60426.000000
+  s hg17.chr7    127471195 331 + 158628139 gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTAAAACTTCCC-------------------------------AAATACT-GCCACTGATGTCCTG-----ATGGAGGTA-------TGAA-------------------AACATCCACTAA
+  s panTro1.chr6 129885076 331 + 161576975 gtttgccatcttttgctgctcttgggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTGAAACTTCCC-------------------------------AAATACT-GCCACTGATGTCCTG-----ATGGAGGTA-------TGAA-------------------AACATCCACTAA
+  s mm5.chr6      28904571 357 + 149721531 CTCCACTCTCGTTTGCTGTT----------------CTGTCACCATGGAAACAAA-CGAGGGTGGTCCAGTTACTATCTTGACTGCAGCTGGCAGTCAGTT-GCCACT-----CAGGAATAAGGCTATGCCATT-GATCCACTGAACCGTGATCTGGAAACCTGGCTGTTGTTT-------CAAGCCTTGGGGCCAGTTTGCGGTGTTACTCATGA--CTCTAAGATCGTGTGCTTG----CTGCAGGAAGAGACAGCAAGGGGGTTACATTTAAAAAGCCCCCAGTTTAGCTATAGGCAGGCCAACAGGTGTAAAAATACTCACTAGTAATGGGCTGAACTCATGGAGGTAGCATTAGTGAGACACTGTAACTGTTTTTTTAAAAATCACTAA
+  s rn3.chr4      56178191 282 + 187371129 CTTCACTCTCATTTGCTGTT----------------CTGTCACTATGGAGACAAACACAGGCTAGCCCAGTTACTATCTTGATCACAGCAGCT-GTCAGCTAGCTGCCACTCACAGGAATAAGGCCATACCATT-GATCCACTGAACCTTGATCTAGGAATTTGGC----------------------TGGGGCCAGTTTGCGGTGTCACTCATGA--CTCTAAGATTGTGTGTTTG----CTCCAGGAAGAGACGGCAAGAGGATTACCTTTAAAAGGTTC---------------------------------GGAGTCTAGCTGTAGACAGCCCA-----ATG--GGTA-------TAAC-------------------AATACTCACTAA
+
+  a score=8157.000000
+  s hg17.chr7    127471526 58 + 158628139 AATTTGTGGTTTATTCATTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG
+  s panTro1.chr6 129885407 58 + 161576975 AATTTGTGGTTTATTCGTTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG
+  s mm5.chr6      28904928 54 + 149721531 AA----CGTTTCATTGATTGCTCATCATTTAAAAAAAGAAATTCCTCAGTGGAAGAGG
+
+results in::
+
+  ##maf version=1
+  a score=0.0
+  s hg17.chr7    127471195 389 + 158628139 gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTAAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCATTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG 
+  s panTro1.chr6 129885076 389 + 161576975 gtttgccatcttttgctgctcttgggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTGAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCGTTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG 
+
+
+
+    </help>
+    <code file="maf_thread_for_species_code.py"/>
+</tool>
+
