@@ -1,10 +1,10 @@
-<tool id="Interval_Maf_Merged_Fasta_User1" name="Extract Interval User blocks">
-  <description>from a MAF File</description>
+<tool id="Interval_Maf_Merged_Fasta_User1" name="Stitch MAF blocks for intervals">
+  <description>using used-defined alignments</description>
   <command interpreter="python2.4">interval_maf_to_merged_fasta_user.py $dbkey $species $input2 $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol -</command>
   <inputs>
     <page>
-        <param format="interval" name="input1" type="data" label="Interval File"/>
-        <param format="maf" name="input2" type="data" label="MAF File"/>
+        <param format="interval" name="input1" type="data" label="Choose intervals"/>
+        <param format="maf" name="input2" type="data" label="Choose alignments"/>
 <!--        <param name="unkown_gap_char" type="select">
           <label>Character for missing data</label>
           <option value="-">-</option>
@@ -12,7 +12,7 @@
         </param> -->
     </page>
     <page>
-        <param name="species" label="Choose desired species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( input2.file_name )"/>
+        <param name="species" label="Choose species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( input2.file_name )"/>
     </page>
    </inputs>
   <outputs>
@@ -27,7 +27,35 @@
     </test>
   </tests>-->
   <help>
-This tool takes a MAF file and an interval file and creates a FASTA file which contains merged alignments of user specified species which correspond to the supplied regions.  
+
+.. class:: infomark
+
+What is the differences between these two tools: **Stitch MAF blocks for intervals using locally cached alignments** and **Stitch MAF blocks for intervals from user supplied alignments**?
+
+  * **Stitch MAF blocks for intervals using locally cached alignments** uses alignments stored at Galaxy installation at Penn State and is appropriate for most situations. It takes only one dataset as the input - a list of genomic intervals.
+  * **Stitch MAF blocks for intervals from user supplied alignments** allows the user to work with his/her own alignemnts instead of those cached at Galaxy site. This tool takes two datasets as inputs - (1) genomic intervals and (2) alignemnts.
+
+In the future these two tools will be merged.
+
+------
+
+**What It Does**
+
+A single genomic region can be covered by multiple alignment blocks. In many cases it is desirable to stitch these alignment blocks together. This tool accepts a list of genomic intervals. For every interval it performs the following:
+
+  * finds all MAF blocks that overlap the interval;
+  * sorts MAF blocks by alignment score;
+  * stitches blocks together and resolves overlaps based on alignment score;
+  * outputs alignments in FASTA format.
+
+------
+
+**Example**
+
+Here three MAF blocks overlapping a single interval are stitched together. Space between blocks 2 and 3 is filled with gaps:
+
+.. image:: ../static/images/maf_icons/stitchMaf.png
+
   </help>
   <code file="interval_maf_to_merged_fasta_user_code.py"/>
 </tool>
