@@ -203,23 +203,35 @@ class Bed( Interval ):
         files that do not contain a strand column.  This will result in changing
         the format of the file from BED to Interval.
         """
+        col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
         valid_bed_data = False
         if dataset.has_data():
             for i, line in enumerate( file(dataset.file_name) ):
                 line = line.rstrip('\r\n')
-                if line and len(line) > 0 and ( line.startswith('chr') or line.startswith('scaff') ):
-                    valid_bed_data = True
-                    elems = line.split("\t")
-                    if len(elems) < 6:
-                        dataset.metadata.is_strandCol = "false"
-                        dataset.metadata.strandCol = None
+                if line and not line.startswith('#') and len(line) > 0:
+                    elems = line.split('\t')
+                    if len(elems) > 2:
+                        for str in col1_startswith:
+                            if line.lower().startswith(str):
+                                valid_bed_data = True
+                                break
+                    if valid_bed_data:
+                        """
+                        TODO: Ian, make sure this is the behavior you were thinking of...
+                        """
+                        if len(elems) < 6:
+                            dataset.metadata.is_strandCol = "false"
+                            dataset.metadata.strandCol = 0
+                        else:
+                            dataset.metadata.is_strandCol = "true"
+                            dataset.metadata.strandCol = 6
                         dataset.mark_metadata_changed()
-                    break
+                        break
                 if i == 30:
                     break
         if not valid_bed_data:
             dataset.metadata.is_strandCol = "false"
-            dataset.metadata.strandCol = None
+            dataset.metadata.strandCol = 0
             dataset.mark_metadata_changed()
         
     def as_ucsc_display_file( self, dataset, **kwd ):

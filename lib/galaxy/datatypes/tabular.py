@@ -85,7 +85,10 @@ class Tabular( data.Text ):
                 line = line.rstrip('\r\n')
                 if line and not line.startswith( '#' ):
                     count += 1
-                    if count > 1000: 
+                    """
+                    We should be able to figure out the number of columns within 30 lines
+                    """
+                    if count > 30: 
                         break
                     cols = len( line.split("\t") )
                     if cols > maxcols: 

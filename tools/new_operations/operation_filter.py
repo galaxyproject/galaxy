@@ -25,7 +25,10 @@ def validate_input( trans, error_map, param_values, page_param_map ):
                     startCol = int( param.metadata.startCol )
                     endCol = int( param.metadata.endCol )
                     chromCol = int( param.metadata.chromCol )
-                    strandCol = int ( param.metadata.strandCol )
+                    if param.metadata.strandCol is not None:
+                        strandCol = int ( param.metadata.strandCol )
+                    else:
+                        strandCol = 0
                 except:
                     error_map[name] = "The attributes of this dataset are not the correct format."
             data_param_names.add( name )
