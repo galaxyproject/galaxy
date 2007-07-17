@@ -57,10 +57,10 @@
     <tool file="filters/maf/maf_to_bed.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="filters/bed2gff.xml" />
-    <tool file="filters/axt_to_fasta.xml" />
+<!--    <tool file="filters/axt_to_fasta.xml" />
     <tool file="filters/axt_to_concat_fasta.xml" />
     <tool file="filters/axt_to_lav.xml" />
-    <tool file="filters/lav_to_bed.xml" />
+    <tool file="filters/lav_to_bed.xml" /> -->
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
