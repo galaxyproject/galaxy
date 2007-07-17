@@ -3,10 +3,10 @@
   <command interpreter="python2.4">interval2maf.py --dbkey=$dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafType=$mafType --interval_file=$input1 --output_file=$out_file1</command>
   <inputs>
     <page>
-        <param format="interval" name="input1" type="data" label="Interval File"/>
+        <param format="interval" name="input1" type="data" label="Choose intervals"/>
     </page>
     <page>
-        <param name="mafType" label="Choose MAF source" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
+        <param name="mafType" label="Choose alignments" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
     </page>
    </inputs>
   <outputs>
@@ -21,10 +21,6 @@
   </tests>
   <help>
 
-.. class:: warningmark
-
-If your query does not work, you need to ensure that you have specified a database build for your data.  Alignments may also not be available for your build or intervals at this time. It this happens e-mail us by clicking on "report bugs" link at the top of the screen. 
-
 .. class:: infomark
 
 What is the differences between these two tools: **Extract MAF blocks from locally cached alignments** and **Extract MAF blocks from user supplied alignments**?
@@ -36,33 +32,13 @@ What is the differences between these two tools: **Extract MAF blocks from local
 
 **What it does**
 
-This tool takes genomic coordinates, superimposes them on multiple alignments (in MAF format) stored on Galaxy site, and excises alignment blocks corresponding to each set of coordinates. Alignments blocks that extend past START and/or END positions of an interval are trimmed. Note that a single genomic interval may correspond to two or more alignment blocks. In the following example user supplies two sets of genomic coordinates (intervals) and recieves two MAF blocks.
+This tool takes genomic coordinates, superimposes them on multiple alignments (in MAF format) stored on Galaxy site, and excises alignment blocks corresponding to each set of coordinates. Alignment blocks that extend past START and/or END positions of an interval are trimmed. Note that a single genomic interval may correspond to two or more alignment blocks. 
 
 -----
 
 **Example** 
 
-- Input file::
-
-    chr7	127475281	127475310	NM_000230	0	+
-    chr7	127486011	127486166	D49487	0	+
-
-- Extract 8-way multiZ alignments in MAF format from above file::
-
-    ##maf version=1
-    a score=301244.0
-    s hg17.chr7     127475281 29 + 158628139 GTAGGAATCGCAGCGCCAGCGGTTGCAAG 
-    s panTro1.chr6  129889135 29 + 161576975 GTAGGAATCGCAGCGCCAGCGGTTGCAAG 
-    s mm5.chr6       28912407 29 + 149721531 GGAGGGATCCCTGCTCCAGCAGCTGCAAG 
-    s rn3.chr4       56185364 29 + 187371129 GGAGGAATCCCTGCTCCAGCAGCTGCAAG 
-    s canFam1.chr14  52867501 29 -  63549963 GGAGGAGTCGCGGCGCCAGCAGCTGCGAG 
-
-    a score=407957.0
-    s hg17.chr7     127486011 155 + 158628139 TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG 
-    s panTro1.chr6  129900247 155 + 161576975 TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG 
-    s mm5.chr6       28921128 155 + 149721531 CAGGGAGGAAAATGTGCTGGAGACCCCTGTGTCGGTTCCTGTGGCTTTGGTCCTATCTGTCTTATGTTCAAGCAGTGCCTATCCAGAAAGTCCAGGATGACACCAAAACCCTCATCAAGACCATTGTCACCAGGATCAATGACATTTCACACACG 
-    s rn3.chr4       56195007 155 + 187371129 CAGCGAGGAAAATGTGCTGGAGACCCCTGTGCCGGTTCCTGTGGCTTTGGTCCTATCTGTCCTATGTTCAAGCTGTGCCTATCCACAAAGTCCAGGATGACACCAAAACCCTCATCAAGACCATTGTCACCAGGATCAATGACATTTCACACACG 
-    s canFam1.chr14  52877854 155 -  63549963 GGGGAAGGAAAATGCGTTGTGGACCTCTGTGCCGATTCCTGTGGCTTTGGCCCTATCTGTCCTGTGTTGAAGCTGTGCCAATCCGAAAAGTCCAGGATGACACCAAAACCCTCATCAAGACGATTGTCGCCAGGATCAATGACATTTCACACACG 
+.. image:: ../static/images/maf_icons/interval2maf.png
 
   </help>
   <code file="interval2maf_code.py"/>
