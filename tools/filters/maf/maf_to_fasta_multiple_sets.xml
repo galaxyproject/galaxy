@@ -29,7 +29,7 @@
 
 .. class:: infomark
 
-What is the differences between these two tools: **MAF to FASTA** and **MAF to concatenated FASTA**?
+What is the differences between these two tools: **MAF to FASTA** and **MAF to concatenated FASTA** (scroll down for the description of MAF format)?
 
  * **MAF to FASTA** converts a single MAF block to a single FASTA block. For example, if you have 6 MAF blocks, they will be converted to 6 FASTA blocks.
  * **MAF to concatenated FASTA** converts MAF blocks to a single aggregated FASTA block. For example, if you have 6 MAF blocks, they will be converted and concatenated into a single FASTA block.
@@ -115,6 +115,23 @@ will be converted to (**note** that the second MAF block, which does not have mm
   GACAGGGTGCATCTGGGAGGGCCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC
   &gt;mm8.chr2(+):173910832-173910893|mm8_0
   AGAAGGATCCACCT---------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------
+
+-----
+
+.. class:: infomark
+
+**About formats**
+
+**MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes. 
+
+ - The .maf format is line-oriented. Each multiple alignment ends with a blank line.
+ - Each sequence in an alignment is on a single line.
+ - Lines starting with # are considered to be comments.
+ - Each multiple alignment is in a separate paragraph that begins with an "a" line and contains an "s" line for each sequence in the multiple alignment.
+ - Some MAF files may contain two optional line types: 
+
+   - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line; 
+   - An "e" line containing information about the size of the gap between the alignments that span the current block.
 
     </help>
     <code file="maf_to_fasta_code.py"/>
