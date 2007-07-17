@@ -18,14 +18,14 @@
   <outputs>
     <data format="fasta" name="out_file1" />
   </outputs>
-<!--  <tests>
+  <tests>
     <test>
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
       <param name="input2" value="5.maf"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
       <output name="out_file1" file="gene_bed_maf_to_fasta_out.dat" />
     </test>
-  </tests>-->
+  </tests>
   <help>
 
 .. class:: infomark

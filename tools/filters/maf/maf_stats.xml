@@ -30,14 +30,14 @@ $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $
   <outputs>
     <data format="interval" name="out_file1" metadata_source="input1"/>
   </outputs>
-<!--  <tests>
+  <tests>
     <test>
       <param name="maf_source_type" value="user"/>
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
       <param name="input2" value="gene_bed_maf_to_fasta_user_maf_in.dat" dbkey="hg17"/>
       <output name="out_file1" file="maf_stats_interval_out.dat"/>
     </test>
-  </tests>-->
+  </tests>
   <help>
 This tool takes a MAF file and an interval file and relates coverage information by interval for each species.
 If a column does not exist in the reference genome, it is not included in the output.
