@@ -211,7 +211,9 @@ class Dataset( object ):
             if self.datatype.metadata_spec.dbkey.get("multiple"):
                 # Initialize a list if there isn't one
                 db_list = self.metadata.dbkey or list()
-                db_list[0] = value
+                if type( db_list ) == type( [] ):
+                    if len(db_list) < 1: db_list.append(value)
+                    else: db_list[0] = value
                 self.metadata.dbkey = db_list
             else:
                 self.metadata.dbkey = value
