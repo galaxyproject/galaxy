@@ -1,5 +1,5 @@
-<tool id="XY_Plot_1" name="XY Plot">
-  <description> of two numeric columns</description>
+<tool id="XY_Plot_1" name="Plotting tool">
+  <description>for multiple series and graph types</description>
   <command interpreter="bash">r_wrapper.sh $script_file</command>
 
   <inputs>

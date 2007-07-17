@@ -1,5 +1,5 @@
 <tool id="Extract genomic DNA 1" name="Extract genomic DNA">
-  <description>corresponding to query coordinates</description>
+  <description>using coordinates from assembled genomes</description>
   <command interpreter="perl">fasta-subseq-wrapper.pl -i $input -o $out_file1 -p $input_chromCol $input_startCol $input_endCol $input_strandCol -g $dbkey</command>
   <inputs>
     <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"/>
@@ -19,30 +19,32 @@
 
 Make sure that the genome build is specified for the interval dataset you are extracting sequences for (click the pencil icon if it is not specified). However, if the build is specified and the tool still gives you an error, your genome of interest may only be partially assembled (ie, in scaffolds).  To extract sequences from such partially assembled genomes use *Extract Genomic DNA from unassmebled genomes* tool.
 
+.. class:: infomark
+
+Why do we have two sequence extractors?
+
+ * **Extract genomic DNA using coordinates from ASSEMBLED genomes** (this tool) - will work for most cases when your intervals are located on assembled chromosomes (i.e., chr1, chrX, etc.)
+ * **Extract genomic DNA using coordinates from UNassembled genomes** - is designed to work on partially assembled or unassembled genomes when your intervals are located in contigs or scaffolds rather than assembled chromosomes (i.e., super_1 etc.)
+
+These two tools will be merged in the future.
+
 -----
 
-**Syntax**
+**What it does**
 
 This tool uses coordinate, strand, and build information to fetch genomic DNAs in FASTA format.
-
-- **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
-
-  - This format contains a one line header. It starts with a " >" symbol. The first word on this line is the name of the sequence. The rest of the line is a description of the sequence.
-  - The remaining lines contain the sequence itself.
-  - Blank lines in a FASTA file are ignored, and so are spaces or other gap symbols (dashes, underscores, periods) in a sequence.
-  - Fasta files containing multiple sequences are just the same, with one sequence listed right after another. This format is accepted for many multiple sequence alignment programs.
 
 -----
 
 **Example**
 
-- Input dataset::
+Input dataset::
 
-    chr7	127475281	127475310	NM_000230	0	+
-    chr7	127485994	127486166	NM_000230	0	+
-    chr7	127486011	127486166	D49487	0	+
+    chr7  127475281  127475310  NM_000230  0  +
+    chr7  127485994  127486166  NM_000230  0  +
+    chr7  127486011  127486166  D49487     0  +
 
-- Fetch genomic DNAs of the above data::
+Fetch genomic DNAs of the above data::
 
     &gt;hg17_chr7_127475281_127475310_+
     GTAGGAATCGCAGCGCCAGCGGTTGCAAG
