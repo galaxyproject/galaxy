@@ -536,12 +536,14 @@ class DataToolParameter( ToolParameter ):
     <option value="5" selected>5: Unnamed dataset</option>
     </select>
     """
+
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
         # Build tuple of classes for supported data formats
         formats = []
         extensions = elem.get( 'format', 'data' ).split( "," )
         for extension in extensions:
+            extension = extension.strip()
             if tool is None:
                 #This occurs for things such as unit tests
                 import galaxy.datatypes.registry
@@ -552,6 +554,7 @@ class DataToolParameter( ToolParameter ):
         self.multiple = str_bool( elem.get( 'multiple', False ) )
         self.optional = str_bool( elem.get( 'optional', False ) )
         self.dynamic_options = elem.get( "dynamic_options", None )
+
     def get_html_field( self, trans=None, value=None, other_values={} ):
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.history
@@ -564,25 +567,27 @@ class DataToolParameter( ToolParameter ):
             # acceptrable build, id, or extension
             option_build, option_id, option_extension = \
                 eval( self.dynamic_options, self.tool.code_namespace, other_values )
-        def dataset_collector( datasets, parent_hid ):            
-            for i, data in enumerate( datasets ):
-                if parent_hid is not None:
-                    hid = "%s.%d" % ( parent_hid, i + 1 )
-                else:
-                    hid = str( data.hid )
-                if self.dynamic_options:
-                    if ( isinstance( data.datatype, self.formats )
-                         and (data.dbkey == option_build) and (data.id != option_id) 
-                         and (data.extension in option_extension) 
-                         and not data.deleted ): 
-                        selected = ( value and ( data in value ) )
-                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
-                else:
-                    if isinstance( data.datatype, self.formats) and not data.deleted:
-                        selected = ( value and ( data in value ) )
-                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
-                # Also collect children via association object
-                dataset_collector( [ assoc.child for assoc in data.children ], hid )
+
+    def dataset_collector( datasets, parent_hid ):    
+        for i, data in enumerate( datasets ):
+            if parent_hid is not None:
+                hid = "%s.%d" % ( parent_hid, i + 1 )
+            else:
+                hid = str( data.hid )
+            if self.dynamic_options:
+                if ( isinstance( data.datatype, self.formats )
+                     and (data.dbkey == option_build) and (data.id != option_id) 
+                     and (data.extension in option_extension) 
+                     and not data.deleted ): 
+                    selected = ( value and ( data in value ) )
+                    field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+            else:
+                if isinstance( data.datatype, self.formats) and not data.deleted:
+                    selected = ( value and ( data in value ) )
+                    field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+            # Also collect children via association object
+            dataset_collector( [ assoc.child for assoc in data.children ], hid )
+                 
         dataset_collector( history.datasets, None )
         some_data = bool( field.options )
         if some_data:
@@ -595,6 +600,7 @@ class DataToolParameter( ToolParameter ):
         if self.optional == True:
             field.add_option( "Selection is Optional", 'None', True )
         return field
+
     def from_html( self, value, trans, other_values={} ):
         if not value:
             raise ValueError( "A data of the appropriate type is required" )
@@ -606,12 +612,14 @@ class DataToolParameter( ToolParameter ):
             return [ trans.app.model.Dataset.get( v ) for v in value ]
         else:
             return trans.app.model.Dataset.get( value )
+
     def value_to_basic( self, value, app ):
         if value is None:
             return None
         if isinstance( value, str ):
             return value
         return value.id
+
     def value_from_basic( self, value, app, ignore_errors=False ):
         if value is None:
             return None
@@ -622,6 +630,7 @@ class DataToolParameter( ToolParameter ):
                 return value
             else:
                 raise
+
     def to_param_dict_string( self, value ):
         return value.file_name
 
