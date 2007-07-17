@@ -1,17 +1,12 @@
 #!/usr/bin/env python2.4
 
 """
-Reads a gene BED and an indexed MAF. Produces a FASTA file containing
-the aligned gene sequences, based upon the provided coordinates
-
-If index_file is not provided maf_file.index is used.
-
-Alignment blocks are layered ontop of each other based upon score.
+Reads a MAF file. Produces a MAF file containing
+the reverse complement for each block in the source file.
 
 usage: %prog input_maf_file output_maf_file
 """
 #Dan Blankenberg
-#import psyco_full
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 import sys
