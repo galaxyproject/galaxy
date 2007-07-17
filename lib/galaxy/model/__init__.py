@@ -217,8 +217,7 @@ class Dataset( object ):
                 self.metadata.dbkey = db_list
             else:
                 self.metadata.dbkey = value
-        else:
-            self.old_dbkey = value
+        self.old_dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
     
     def change_datatype( self, new_ext ):
