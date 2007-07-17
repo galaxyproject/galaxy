@@ -200,7 +200,7 @@ class Dataset( object ):
     field in the database.  That field now maps to "old_dbkey" (see mapping.py).
     """
     def get_dbkey( self ):
-        if type(dbkey) == type([]):
+        if type(self.metadata.dbkey) == type([]):
             dbkey = self.metadata.dbkey[0]
         else:
             dbkey = self.metadata.dbkey
