@@ -33,10 +33,13 @@ class ToolTestCase( TwillTestCase ):
             page_inputs = dict()
             
             for key in self.testdef.tool.inputs_by_page[i].keys():
-                a_test_list = all_inputs[key].split(',')
-                if len(a_test_list) > 1:
-                    page_inputs[key] = a_test_list
-                else:
+                try:
+                    a_test_list = all_inputs[key].split(',')
+                    if len(a_test_list) > 1:
+                        page_inputs[key] = a_test_list
+                    else:
+                        page_inputs[key] = all_inputs[key]
+                except:
                     page_inputs[key] = all_inputs[key]
             self.submit_form( **page_inputs )
         # Check the result
