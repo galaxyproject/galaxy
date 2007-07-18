@@ -35,7 +35,7 @@
 What is the differences between these two tools: **Stitch MAF blocks for intervals using locally cached alignments** and **Stitch MAF blocks for intervals from user supplied alignments**?
 
   * **Stitch MAF blocks for intervals using locally cached alignments** uses alignments stored at Galaxy installation at Penn State and is appropriate for most situations. It takes only one dataset as the input - a list of genomic intervals.
-  * **Stitch MAF blocks for intervals from user supplied alignments** allows the user to work with his/her own alignemnts instead of those cached at Galaxy site. This tool takes two datasets as inputs - (1) genomic intervals and (2) alignemnts.
+  * **Stitch MAF blocks for intervals from user supplied alignments** allows the user to work with his/her own alignments instead of those cached at Galaxy site. This tool takes two datasets as inputs - (1) genomic intervals and (2) alignments.
 
 In the future these two tools will be merged.
 
