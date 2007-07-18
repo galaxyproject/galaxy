@@ -98,15 +98,6 @@ class UploadToolAction( object ):
         data.state = data.states.OK
         data.init_meta()
         data.set_peek()
-        """
-        gvk: 07/16/07: I believe this will soon be going away.  Tests are breaking, so I'll comment it out for now...
-        if isinstance( data.datatype, datatypes.interval.Interval ):
-            if data.missing_meta():
-                if isinstance( data.datatype, datatypes.interval.Bed ):
-                    data.extension = 'interval'
-                if data.missing_meta():
-                    data.extension = 'tabular'
-        """
 
         # validate incomming data
         """
@@ -116,7 +107,10 @@ class UploadToolAction( object ):
                 model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=util.object_to_string( error.__dict__ ) ) )
         """
         if data.has_data():
-            trans.history.add_dataset( data, genome_build=dbkey )
+            dbkey_to_store = dbkey
+            if type(dbkey_to_store) == type([]):
+                dbkey_to_store = dbkey[0]
+            trans.history.add_dataset( data, genome_build=dbkey_to_store )
             trans.app.model.flush()
             trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id), tool_id="upload")
         else:
@@ -133,7 +127,8 @@ class UploadToolAction( object ):
             if matches:
                 temp.close()
                 return True
-            if lineno > 1000:
+            if lineno > 100:
+                # We should be able to detmine an HTML file within 100 lines.
                 break
         temp.close()
         return False
