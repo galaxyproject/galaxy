@@ -23,7 +23,7 @@
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
       <param name="input2" value="5.maf"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
-      <output name="out_file1" file="gene_bed_maf_to_fasta_out.dat" />
+      <output name="out_file1" file="gene_bed_maf_to_fasta_user_out.dat" />
     </test>
   </tests>
   <help>
@@ -33,7 +33,7 @@
 What is the differences between these two tools: **Stitch MAF blocks for intervals using locally cached alignments** and **Stitch MAF blocks for intervals from user supplied alignments**?
 
   * **Stitch MAF blocks for intervals using locally cached alignments** uses alignments stored at Galaxy installation at Penn State and is appropriate for most situations. It takes only one dataset as the input - a list of genomic intervals.
-  * **Stitch MAF blocks for intervals from user supplied alignments** allows the user to work with his/her own alignments instead of those cached at Galaxy site. This tool takes two datasets as inputs - (1) genomic intervals and (2) alignments.
+  * **Stitch MAF blocks for intervals from user supplied alignments** allows the user to work with his/her own alignemnts instead of those cached at Galaxy site. This tool takes two datasets as inputs - (1) genomic intervals and (2) alignemnts.
 
 In the future these two tools will be merged.
 
