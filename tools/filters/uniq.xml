@@ -1,6 +1,6 @@
 <tool id="Count1" name="Count">
   <description>occurences of each record</description>
-  <command interpreter="python">uniq.py -i $input -o $out_file1 -c $column -d $delim</command>
+  <command interpreter="python">uniq.py -i $input -o $out_file1 -c "$column" -d $delim</command>
   <inputs>
     <param name="column" size="14" type="text" value="c1,c2" label="Count occurencies of values in column(s)" help="separate column indices with comma. First column is 'c1'"/>
     <param format="text" name="input" type="data" label="in Query"/>
@@ -17,6 +17,14 @@
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
+  <tests>
+    <test>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="uniq_out.dat"/>
+      <param name="column" value="c1"/>
+      <param name="delim" value="T"/>
+    </test>
+  </tests>
   <help>
 
 **Syntax**

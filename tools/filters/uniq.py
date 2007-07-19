@@ -24,24 +24,24 @@ import commands
 def getopts(argv):
     opts = {}
     while argv:
-	if argv[0][0] == '-':
-	    opts[argv[0]] = argv[1]
-	    argv = argv[2:]
-	else:
-	    argv = argv[1:]
+        if argv[0][0] == '-':
+            opts[argv[0]] = argv[1]
+            argv = argv[2:]
+        else:
+            argv = argv[1:]
     return opts
 
 def main():
     args = sys.argv[1:]
 
     try:
-	opts = getopts(args)
+        opts = getopts(args)
     except IndexError:
-	print "Usage:"
-	print " -i		Input file"
-	print " -o		Output file"
-	print " -c      	Column list (comma seperated)"
-	print " -d		Delimiter:"
+        print "Usage:"
+        print " -i        Input file"
+        print " -o        Output file"
+        print " -c          Column list (comma seperated)"
+        print " -d        Delimiter:"
         print "                     T   Tab"
         print "                     C   Comma"
         print "                     D   Dash"
@@ -49,27 +49,27 @@ def main():
         print "                     P   Pipe"
         print "                     Dt  Dot"
         print "                     Sp  Space"
-	return 0
+        return 0
 
     outputfile = opts.get("-o")
     if outputfile == None:
-	print "No output file specified."
-	return -1
+        print "No output file specified."
+        return -1
     
     inputfile = opts.get("-i")
     if inputfile == None:
-	print "No input file specified."
-	return -2
+        print "No input file specified."
+        return -2
 
     delim = opts.get("-d")
     if delim == None:
-	print "Field delimiter not specified."
-	return -3
+        print "Field delimiter not specified."
+        return -3
 
     columns = opts.get("-c")
     if columns == None:
-	print "Columns not specified."
-	return -4
+        print "Columns not specified."
+        return -4
 
     # All inputs have been specified at this point, now validate.
 
@@ -80,7 +80,7 @@ def main():
         print "Illegal column specification."
         return -4
     if not fileRegEx.match(outputfile):
-	print "Illegal output filename."
+        print "Illegal output filename."
         return -5
     if not fileRegEx.match(inputfile):
         print "Illegal input filename."
@@ -97,8 +97,8 @@ def main():
     
     # Check max column
     if maxcol > len( open(inputfile).readline().split('\t') ):
-	print "Column "+str(maxcol)+" does not exist."
-	return -9
+        print "Column "+str(maxcol)+" does not exist."
+        return -9
 
     commandline = "cut "
     # Set delimiter
@@ -125,6 +125,7 @@ def main():
     commandline += " " + inputfile + " | sed s/\ //g | sort | uniq -c | sed s/^\ *// | tr \" \" \"\t\" > " + outputfile
     errorcode, stdout = commands.getstatusoutput(commandline)
     
+    print "Count of unique values in " + opts.get("-c")
     return errorcode
 
 if __name__ == "__main__":
