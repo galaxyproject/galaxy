@@ -3,7 +3,7 @@
   <command interpreter="python2.4">interval_maf_to_merged_fasta.py $dbkey $species $mafSource $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol -</command>
   <inputs>
     <page>
-        <param format="interval" name="input1" type="data" label="hoose intervals"/>
+        <param format="interval" name="input1" type="data" label="Choose intervals"/>
 <!--        <param name="unkown_gap_char" type="select">
           <label>Character for missing data</label>
           <option value="-">-</option>
