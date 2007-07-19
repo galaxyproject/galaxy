@@ -65,7 +65,7 @@ if __name__ == '__main__':
 	       chrom.append(line.split('\t')[2])
 	       chroms.append(chrom)
       elif sys.argv[n] == "-c" : 
-         if sys.argv[n+1][0]!='-':
+         if sys.argv[n+1][0]!='-' or sys.argv[n+1]!=None or sys.argv[n+1]!='None':
             chromstmp = sys.argv[n+1].strip('\n').split(',')
 	    for  chromtmp in chromstmp:
 	       chrom=[]
