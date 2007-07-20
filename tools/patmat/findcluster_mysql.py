@@ -65,7 +65,7 @@ if __name__ == '__main__':
 	       chrom.append(line.split('\t')[2])
 	       chroms.append(chrom)
       elif sys.argv[n] == "-c" : 
-         if sys.argv[n+1][0]!='-' or sys.argv[n+1]!=None or sys.argv[n+1]!='None':
+         if sys.argv[n+1][0]!='-' and sys.argv[n+1]!=None and sys.argv[n+1]!='None':
             chromstmp = sys.argv[n+1].strip('\n').split(',')
 	    for  chromtmp in chromstmp:
 	       chrom=[]
@@ -145,10 +145,12 @@ if __name__ == '__main__':
    out_file.write("\n#11. blockSizes. A comma-separated list of the block sizes. ")
    out_file.write("\n#12. blockStarts. A comma-separated list of block starts.\n")
 
+#   fp=open("hjb.txt", "w")
    result = dict()
    for chrom in chroms : 
-      chrom_name = chrom[0]
+      chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
       if chrom_name != '' :
+#         fp.write(str(genome_name)+ str(chrom)+ str(patterns)+ str(combines)+ str(patterns_name))
          result[chrom_name] = findcluster_mysql_subs.scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) 
    
    #----------------------------------------------------------------------------------------
@@ -156,15 +158,16 @@ if __name__ == '__main__':
    if info_file != 'None' : 
       info_file.write("%-35s\t" % "Chromome arm:")
       for chrom in chroms: 
-         chrom_name = chrom[0]
+         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
          if chrom_name != '' :
-            info_file.write("%s\t" % chrom_name)
+            info_file.write("%s" % chrom_name)
+         info_file.write("\t")
       info_file.write("\n")
 
       for pattern in patterns :
          info_file.write("Occurrences of site %-s\t" % str(patterns_name[pattern]+"("+pattern+"):"))
          for chrom in chroms: 
-            chrom_name = chrom[0]
+            chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
             if chrom_name != '' :
                info_file.write("%d\t" % len(result[chrom_name]['M'][pattern]))
          info_file.write("\n")
@@ -175,14 +178,14 @@ if __name__ == '__main__':
             info_file.write(" %-d%s" % (combines[pattern], patterns_name[pattern]))
       info_file.write(" ':%s\t" % "")
       for chrom in chroms: 
-         chrom_name = chrom[0]
+         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
          if chrom_name != '' :
             info_file.write("%d\t" % result[chrom_name]['C'])
       info_file.write("\n")
       
       info_file.write("%-s\t" % "After merging overlapping clusters:")
       for chrom in chroms: 
-         chrom_name = chrom[0]
+         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
          if chrom_name != '' :
             info_file.write("%d\t" % len(result[chrom_name]['NO']))
       info_file.write("\n")
@@ -191,7 +194,7 @@ if __name__ == '__main__':
    else :
       print "%-50s" % "Chromome arm:",   
       for chrom in chroms: 
-         chrom_name = chrom[0]
+         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
          if chrom_name != '' :
             print "%10s" % chrom_name, 
       print 
@@ -199,7 +202,7 @@ if __name__ == '__main__':
       for pattern in patterns :
          print "Occurrences of site %-30s" % str(patterns_name[pattern]+"("+pattern+"):"), 
          for chrom in chroms: 
-            chrom_name = chrom[0]
+            chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
             if chrom_name != '' :
                print "%10d" % len(result[chrom_name]['M'][pattern]),
          print 
@@ -210,14 +213,14 @@ if __name__ == '__main__':
             print "%-d%s" % (combines[pattern], patterns_name[pattern]), 
       print "':%14s" % "", 
       for chrom in chroms: 
-         chrom_name = chrom[0]
+         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
          if chrom_name != '' :
             print "%10d" % result[chrom_name]['C'],
       print 
       
       print "%-50s" % "After merging overlapping clusters:",   
       for chrom in chroms: 
-         chrom_name = chrom[0]
+         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
          if chrom_name != '' :
             print "%10d" % len(result[chrom_name]['NO']),
       print 

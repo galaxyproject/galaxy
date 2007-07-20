@@ -142,7 +142,7 @@ def pattern_match(conn, shsize, pat, chrom, table_name, log_file):
    log_file.write("\tmatch: %-10s..." % pat) 
 
    num = dna2num(patterns[0], mpattern, shsize)
-   sqlquery = "SELECT chromStart from %s where " % table_name + "num>=%s " % num[0] + "and num<%s " % num[1] 
+   sqlquery = "SELECT chromStart from %s where " % table_name + "0 "
    for pattern in patterns:
       num=dna2num(pattern, mpattern, shsize)
       sqlquery = sqlquery + "or num>=%s " % num[0] + "and num<%s " % num[1]
@@ -158,6 +158,9 @@ def pattern_match(conn, shsize, pat, chrom, table_name, log_file):
       if chrom[2] != 0 :
          sqlquery = sqlquery + "and chromStart<=%s " % chrom[2]
    sqlquery = sqlquery + " order by chromStart" 
+   fp=open("hjb.txt", "a")
+   fp.write(sqlquery+"\n")
+   fp.close()
    log_file.write(strftime("\t%H:%M:%S", localtime()))
    log_file.write("...query database") 
    rr = conn.execute(sqlquery)
@@ -212,7 +215,7 @@ def scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize
 
    nn = 0
    jj = 0
-   while nn < total_matchs -1 :
+   while nn < total_matchs :
    
       # put matches of the patterns into clusters_temp: start from nnth match 
       if len(clusters_temp["positions"]) >0 : 
@@ -249,6 +252,8 @@ def scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize
 	    nn = total_matchs
          jj = jj + 1
 
+      fp=open("hjb.txt", "a")
+      fp.write(str(clusters_temp)+str(clusters)+"\n")
 
       #check if the cluster contains the minimum occurrences of patterns
       allmatch = 0
@@ -307,6 +312,7 @@ def scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize
                clusters[kk]["end"] = clusters_temp["positions"][-1] + len(clusters_temp["patterns"][-1])
                kk = kk + 1
       nn = nn + 1
+      fp.write(str(clusters)+"\n")
    log_file.write("\t%d" % nnclusters)
    nclusters = len(clusters)
    result['C'] = nnclusters
