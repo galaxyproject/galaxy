@@ -100,7 +100,7 @@ class DefaultToolAction( object ):
                 ext = input_ext
             # FIXME: What does this flush?
             trans.app.model.flush()
-            data = trans.app.model.Dataset()
+            data = trans.app.model.Dataset(extension=ext)
             # Commit the dataset immediately so it gets database assigned 
             # unique id
             data.flush()
@@ -112,7 +112,7 @@ class DefaultToolAction( object ):
             data.designation = name
             # Set the extension / datatype
             # FIXME: Datatypes -- this propertype has a lot of hidden logic
-            data.extension = ext
+            #data.extension = ext
             # Copy metadata from one of the inputs if requested. 
             if metadata_source:
                 data.init_meta( copy_from=inp_data[metadata_source] )
