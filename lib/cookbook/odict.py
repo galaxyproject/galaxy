@@ -29,8 +29,8 @@ class odict(UserDict):
 
     def copy(self):
 	    new = odict()
-	    odict.update( self )
-	    return odict
+	    new.update( self )
+	    return new
 
     def items(self):
         return zip(self._keys, self.values())
