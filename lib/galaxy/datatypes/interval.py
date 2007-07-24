@@ -42,8 +42,7 @@ class Interval( Tabular ):
     MetadataElement( name="startCol", desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True )
-    MetadataElement( name="dbkey", desc="Database/Build", default="?",
-                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
 
 
@@ -81,6 +80,8 @@ class Interval( Tabular ):
                 self.init_meta(dataset)
                 line  = line.strip("#")
                 elems = line.split("\t")
+                if len(elems) > dataset.metadata.columns:
+                    dataset.metadata.columns = len(elems)
                 valid = dict(alias_helper) # shrinks
                 for index, col_name in enumerate(elems):
                     if col_name in valid:
@@ -90,7 +91,6 @@ class Interval( Tabular ):
                         start  = values.index(col_name)
                         for lower in values[start:]:
                             del valid[lower]  # removes lower priority keys 
-                dataset.mark_metadata_changed()
     
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
@@ -186,8 +186,7 @@ class Bed( Interval ):
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True )
-    MetadataElement( name="dbkey", desc="Database/Build", default=None,
-                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="dbkey", desc="Database/Build", default=None, param=metadata.SelectParameter, multiple=False, values=util.dbnames )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
     
     def missing_meta( self, dataset ):
@@ -216,23 +215,20 @@ class Bed( Interval ):
                                 valid_bed_data = True
                                 break
                     if valid_bed_data:
-                        """
-                        TODO: Ian, make sure this is the behavior you were thinking of...
-                        """
                         if len(elems) < 6:
                             dataset.metadata.is_strandCol = "false"
                             dataset.metadata.strandCol = 0
                         else:
                             dataset.metadata.is_strandCol = "true"
                             dataset.metadata.strandCol = 6
-                        dataset.mark_metadata_changed()
+                        if len(elems) > dataset.metadata.columns:
+                            dataset.metadata.columns = len(elems)
                         break
                 if i == 30:
                     break
         if not valid_bed_data:
             dataset.metadata.is_strandCol = "false"
             dataset.metadata.strandCol = 0
-            dataset.mark_metadata_changed()
         
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
@@ -273,8 +269,7 @@ class Gff( Tabular ):
     """Tab delimited data in Gff format"""
 
     """Add metadata elements"""
-    MetadataElement( name="dbkey", desc="Database/Build", default="?",
-                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames )
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True )
     
     def __init__(self, **kwd):
@@ -346,8 +341,7 @@ class Gff( Tabular ):
 
 class Wiggle( Tabular ):
     """Tab delimited data in wiggle format"""
-    MetadataElement( name="dbkey", desc="Database/Build", default="?",
-                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
     
     def make_html_table(self, data):
@@ -399,9 +393,6 @@ class CustomTrack ( Tabular ):
                         link = "%sdb=%s&position=%s:%s-%s&hgt.customText=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )
                         ret_val.append( (site_name, link) )
         return ret_val
-
-
-
 
 #Extend Tabular type, since interval tools will fail on track def line (we should fix this)
 #This is a skeleton class for now, allows viewing at GBrowse and formatted peeking.

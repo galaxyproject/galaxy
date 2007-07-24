@@ -4,7 +4,7 @@ from galaxy.datatypes import sniff
 from galaxy import model, util
 
 import sys, traceback
-        
+      
 class UploadToolAction( object ):
     """
     Action for uploading files
@@ -107,6 +107,8 @@ class UploadToolAction( object ):
                 model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=util.object_to_string( error.__dict__ ) ) )
         """
         if data.has_data():
+            if data.missing_meta():
+                data.datatype.set_meta(data)
             dbkey_to_store = dbkey
             if type(dbkey_to_store) == type([]):
                 dbkey_to_store = dbkey[0]

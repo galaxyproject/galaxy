@@ -166,6 +166,11 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
+        # Call set_meta on each input dataset if metadata is missing
+        for dataset_assoc in job.input_datasets:
+            dataset = dataset_assoc.dataset
+            if dataset.missing_meta():
+                dataset.datatype.set_meta(dataset)
         # Resore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
@@ -258,6 +263,9 @@ class JobWrapper( object ):
             dataset.peek  = 'no peek'
             dataset.info  = stdout + stderr
             if dataset.has_data():
+                # Call set_meta on each output dataset if metadata is missing
+                if dataset.missing_meta:
+                    dataset.datatype.set_meta(dataset)
                 dataset.set_peek()
             else:
                 if stderr: 

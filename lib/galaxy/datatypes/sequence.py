@@ -12,9 +12,9 @@ log = logging.getLogger(__name__)
 
 class Sequence( data.Text ):
     """Class describing a sequence"""
-    
-    MetadataElement( name="dbkey", desc="Database/Build",
-                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+
+    """Add metadata elements"""
+    MetadataElement( name="dbkey", desc="Database/Build", param=metadata.SelectParameter, multiple=False, values=util.dbnames )
 
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
