@@ -1,0 +1,15 @@
+<tool id="CONVERTER_maf_to_interval_0" name="Convert MAF to Genomic Intervals">
+<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <command interpreter="python2.4">maf_to_interval_converter.py $output1 $input1 $input1_dbkey</command>
+  <inputs>
+    <page>
+        <param format="maf" name="input1" type="data" label="Choose MAF file"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="interval" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+<!--  <code file="maf_to_interval_converter_code.py"/> -->
+</tool>

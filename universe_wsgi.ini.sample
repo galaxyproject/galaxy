@@ -90,6 +90,9 @@ ucsc_display_sites = main,test,archaea
 gbrowse_display_sites = wormbase,flybase
 # Use the new iframe/javascript based layout
 use_new_layout=true
+#Datatype converters
+datatype_converters_config_file = datatype_converters_conf.xml
+datatype_converters_path = %(here)s/lib/galaxy/datatypes/converters
 
 # Static files
 

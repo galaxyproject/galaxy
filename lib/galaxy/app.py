@@ -29,6 +29,8 @@ class UniverseApplication( object ):
                                                     create_tables = True )
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
+        #Load datatype converters
+        self.datatypes_registry.load_datatype_converters(self.config.datatype_converters_config, self.config.datatype_converters_path, self.toolbox)
         # Start the job queue
         self.job_queue = jobs.JobQueue( self )
         self.heartbeat = None

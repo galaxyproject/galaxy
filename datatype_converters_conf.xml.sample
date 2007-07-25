@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<converters>
+  <converter file="interval_to_bed_converter.xml" source_datatype="interval" target_datatype="bed"/>
+  <converter file="maf_to_interval_converter.xml" source_datatype="maf" target_datatype="interval"/>
+  <converter file="bed_to_gff_converter.xml" source_datatype="bed" target_datatype="gff"/>
+  <converter file="gff_to_bed_converter.xml" source_datatype="gff" target_datatype="bed"/>
+  <converter file="maf_to_fasta_converter.xml" source_datatype="maf" target_datatype="fasta"/>
+</converters>

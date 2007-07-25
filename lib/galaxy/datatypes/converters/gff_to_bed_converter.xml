@@ -1,0 +1,15 @@
+<tool id="CONVERTER_gff_to_bed_0" name="Convert GFF to BED">
+<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <command interpreter="perl">gff2bed.pl $input1 > $output1</command>
+  <inputs>
+    <page>
+        <param format="gff" name="input1" type="data" label="Choose GFF file"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="bed" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+<!--  <code file="gff_to_bed_converter_code.py"/>-->
+</tool>

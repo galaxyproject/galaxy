@@ -52,20 +52,22 @@ class Configuration( object ):
         global_conf_parser = ConfigParser.ConfigParser()
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
-        #Store datatypes
+        #Store datatypes config
         try:
             self.datatypes = global_conf_parser.items("galaxy:datatypes")
         except ConfigParser.NoSectionError:
             self.datatypes = []
+        self.datatype_converters_config = kwargs.get( 'datatype_converters_config_file', "datatype_converters_conf.xml" )
+        self.datatype_converters_path = kwargs.get( 'datatype_converters_path', os.path.join(self.root,"lib/galaxy/datatypes/converters") )
     def get( self, key, default ):
         return self.config_dict.get( key, default )
     def check( self ):
         # Check that required directories exist
-        for path in self.root, self.file_path, self.tool_path, self.template_path, self.job_working_directory:
+        for path in self.root, self.file_path, self.tool_path, self.template_path, self.job_working_directory, self.datatype_converters_path:
             if not os.path.isdir( path ):
                 raise ConfigurationError("Directory does not exist: %s" % path )
         # Check that required files exist
-        for path in self.tool_config,:
+        for path in self.tool_config, self.datatype_converters_config:
             if not os.path.isfile(path):
                 raise ConfigurationError("File not found: %s" % path )
 

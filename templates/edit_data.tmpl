@@ -40,6 +40,22 @@
 <div class="toolForm" id="edit_data">
   <div class="toolFormTitle">Edit Attributes</div>
   <div class="toolFormBody">
+  
+  #set $converters = $data.get_converter_types()
+  #if $len($converters) >0
+    <div class="toolFormBody">
+    <form name="convert_data" action="$h.url_for( action='edit' )" method="post">
+        <input type="hidden" name="id" value="$data.id">
+        <select name="target_type">
+   		#for $key, $value in $converters.items():
+   		  <option value="$key">$value.name</option>
+   		#end for
+        </select>
+        <input type="submit" name="convert_data" value="Convert">
+    </form>
+    </div>
+  #end if
+  
   <form name="datatype" action="$h.url_for( action='edit' )" method="post">
       <input type="hidden" name="id" value="$data.id">
       <table width="100%">

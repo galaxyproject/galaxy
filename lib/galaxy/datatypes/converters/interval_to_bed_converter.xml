@@ -1,0 +1,15 @@
+<tool id="CONVERTER_interval_to_bed_0" name="Convert Genomic Intervals To BED">
+<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <command interpreter="python2.4">interval_to_bed_converter.py $output1 $input1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol</command>
+  <inputs>
+    <page>
+        <param format="interval" name="input1" type="data" label="Choose intervals"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="bed" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+<!--  <code file="interval_to_bed_converter_code.py"/> -->
+</tool>

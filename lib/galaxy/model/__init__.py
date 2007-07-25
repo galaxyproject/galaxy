@@ -249,8 +249,8 @@ class Dataset( object ):
         return self.datatype.set_peek( self )
     def init_meta( self, copy_from=None ):
         return self.datatype.init_meta( self, copy_from=copy_from )
-    def set_meta( self, first_line_is_header=False ):
-        return self.datatype.set_meta( self, first_line_is_header )
+    def set_meta( self, **kwd ):
+        return self.datatype.set_meta( self, **kwd )
     def missing_meta( self ):
         return self.datatype.missing_meta( self )
     def as_display_type( self, type, **kwd ):
@@ -277,7 +277,8 @@ class Dataset( object ):
         self.purged = True
         try: os.unlink(self.file_name)
         except: pass
-
+    def get_converter_types(self):
+        return self.datatype.get_converter_types( self, datatypes_registry)
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
 

@@ -16,7 +16,11 @@ if ( parent.frames && parent.frames.galaxy_history )
 <body>
 
 <div class="donemessage">
+#if $getVar( 'msg', None )
+$msg
+#else
 Attributes changed.
+#end if
 </div>
 
 </body>

@@ -182,6 +182,11 @@ class Universe(common.Root):
             trans.app.model.flush()
             
             return trans.fill_template( "edit_complete.tmpl" )
+        elif p.convert_data:
+            target_type = kwd.get("target_type", None)
+            if target_type:
+                msg = data.datatype.convert_dataset(trans, data, target_type)
+                return trans.fill_template( "edit_complete.tmpl", msg=msg )
         
         data.datatype.before_edit( data )
         

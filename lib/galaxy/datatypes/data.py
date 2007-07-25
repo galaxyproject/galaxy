@@ -158,6 +158,34 @@ class Data( object ):
             log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' % (self.supported_display_apps[type]['links_function'], self.__class__.__name__, type) )
         return []
 
+    def get_converter_types(self, original_dataset, datatypes_registry):
+        """Returns available converters by type for this dataset"""
+        return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
+    
+    def convert_dataset(self, trans, original_dataset, target_type):
+        """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
+        converter = trans.app.datatypes_registry.get_converter_by_target_type(original_dataset.ext, target_type)
+        if converter is None:
+            return "A converter does not exist for %s to %s." % (original_dataset.ext, target_type)
+        
+        #Generate parameter dictionary
+        params = {}
+        #determine input parameter name and add to params
+        input_name = 'input1'
+        for key, value in converter.inputs.items():
+            if value.type == 'data':
+                input_name = key
+                break
+        params[input_name] = original_dataset
+        
+        #Run converter, job is dispatched through Queue
+        converted_dataset = converter.execute(trans, incoming=params)
+        
+        if len(params) > 0:
+            trans.log_event( "Converter params: %s" % (str(params)), tool_id=converter.id )
+        
+        return "The file conversion of %s on data %s has been added to the Queue." % (converter.name, original_dataset.hid)
+
     def before_edit( self, dataset ):
         """This function is called on the dataset before metadata is edited."""
         pass
