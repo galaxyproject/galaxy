@@ -86,7 +86,7 @@ class TwillTestCase(unittest.TestCase):
         if check_patt:
             tc.find(check_patt)
         if kwd:
-            self.submit_form(form=2, button="save", **kwd)
+            self.submit_form(form=3, button="save", **kwd)
 
     def get_xml_history(self):
         """Returns a parsed xml object corresponding to the history"""
