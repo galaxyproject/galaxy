@@ -80,7 +80,7 @@ class Interval( Tabular ):
                 self.init_meta(dataset)
                 line  = line.strip("#")
                 elems = line.split("\t")
-                if len(elems) > dataset.metadata.columns:
+                if len(elems) != dataset.metadata.columns:
                     dataset.metadata.columns = len(elems)
                 valid = dict(alias_helper) # shrinks
                 for index, col_name in enumerate(elems):
@@ -221,7 +221,7 @@ class Bed( Interval ):
                         else:
                             dataset.metadata.is_strandCol = "true"
                             dataset.metadata.strandCol = 6
-                        if len(elems) > dataset.metadata.columns:
+                        if len(elems) != dataset.metadata.columns:
                             dataset.metadata.columns = len(elems)
                         break
                 if i == 30:
