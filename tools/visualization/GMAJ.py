@@ -43,7 +43,7 @@ out_file = zipfile.ZipFile(out_file, "w") #, ZIP_DEFLATED)
 #determine organisms located in maf file.
 species = get_species_names( maf_file )
 
-GMAJ_str = "#:gmaj\n\ntitle = \"GMAJ through Galaxy\"\nalignfile = input.maf\n"
+GMAJ_str = "#:gmaj\n\ntitle = \"GMAJ through Galaxy\"\nalignfile = input.maf\nnowarn = bed_blocks bed_thick bed_name repeat_type_missing bed_name_prefix\ntabext = .%s\n" % (dbkey)
 if dbkey in species and len(species[dbkey])>0:
     GMAJ_str = GMAJ_str + "refseq = "+dbkey+"."+species[dbkey][0]+"\n"
 else:

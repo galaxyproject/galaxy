@@ -3,17 +3,17 @@
   <command interpreter="python2.4">GMAJ.py $out_file1 $maf_input $dbkey $exons_file $highlights_file $underlays_file $repeats_file $links_file</command>
   <inputs>
       <param name="maf_input" type="data" format="maf" label="Alignment File" optional="False"/>
-      <param name="exons_file" type="data" format="txt" label="Exons File" optional="True"/>
-      <param name="highlights_file" type="data" format="txt" label="Highlights File" optional="True"/>
-      <param name="underlays_file" type="data" format="txt" label="Underlays File" optional="True"/>
-      <param name="repeats_file" type="data" format="txt" label="Repeats File" optional="True"/>
-      <param name="links_file" type="data" format="txt" label="Links File" optional="True"/>
+      <param name="exons_file" type="data" format="bed" label="Exons File" optional="True"/>
+      <param name="highlights_file" type="data" format="bed" label="Highlights File" optional="True"/>
+      <param name="underlays_file" type="data" format="bed" label="Underlays File" optional="True"/>
+      <param name="repeats_file" type="data" format="bed" label="Repeats File" optional="True"/>
+      <param name="links_file" type="data" format="bed" label="Links File" optional="True"/>
   </inputs>
   <outputs>
     <data name="out_file1" format="gmaj.zip"/>
   </outputs>
 <help>
-You can use this tool to view a set of MAF alignments.  You may also include optional additional information about the primary organism, please see the documentation for proper file formats.
+You can use this tool to view a set of MAF alignments.  You may also include optional additional information about the primary organism in the BED format.
 
 For detailed information on GMAJ, click here_.
 

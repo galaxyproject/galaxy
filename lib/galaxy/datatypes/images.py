@@ -18,7 +18,7 @@ class Image( data.Data ):
 class Gmaj( data.Data ):
     """Class describing a GMAJ Applet"""
     def set_peek( self, dataset ):
-        dataset.peek  = "<p align=\"center\"><applet code=\"edu.psu.bx.gmaj.MajApplet.class\" archive=\"static/gmaj/gmaj.jar\" width=\"200\" height=\"30\" align=\"middle\"> <param name=bundle value=\"display?id="+str(dataset.id)+"&tofile=yes&toext=.zip\"> <param name=buttonlabel value=\"Launch GMAJ\"><param name=nobutton value=\"false\"><param name=urlpause value=\"100\"><param name=debug value=\"false\"><i>Your browser is not responding to the &lt;applet&gt; tag.</i></applet></p>"
+        dataset.peek  = "<p align=\"center\"><applet code=\"edu.psu.bx.gmaj.MajApplet.class\" archive=\"/static/gmaj/gmaj.jar\" width=\"200\" height=\"30\" align=\"middle\"> <param name=bundle value=\"display?id="+str(dataset.id)+"&tofile=yes&toext=.zip\"> <param name=buttonlabel value=\"Launch GMAJ\"><param name=nobutton value=\"false\"><param name=urlpause value=\"100\"><param name=debug value=\"false\"><i>Your browser is not responding to the &lt;applet&gt; tag.</i></applet></p>"
         dataset.blurb = 'GMAJ Multiple Alignment Viewer'
         
     def display_peek(self, dataset):
