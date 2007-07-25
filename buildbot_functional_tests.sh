@@ -1,5 +1,7 @@
 #!/bin/sh
 
+cp datatype_converters_conf.xml.sample datatype_converters_conf.xml
+
 dropdb buildbot_galaxy_functional_tests
 createdb buildbot_galaxy_functional_tests
 
