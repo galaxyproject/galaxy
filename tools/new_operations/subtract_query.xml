@@ -7,7 +7,7 @@
     $begin_col 
     $end_col 
     $output 
-    #if ($input1.ext == 'bed' or $input1.ext == 'interval') and ($input2.ext == 'bed' or $input2.ext == 'interval')
+    #if ($input1.ext == 'tabular' or $input1.ext == 'interval' or $input1.ext == 'bed') and ($input2.ext == 'tabular' or $input2.ext == 'interval' or $input2.ext == 'bed')
       -n $input1_columns,$input2_columns
     #else
       -n '',''
@@ -109,10 +109,11 @@
 This tool subtracts an entire query from another query.  
 
 - Any text format is valid.
+- All blank and comment lines are skipped and not included in the resulting dataset (comment lines are lines beginning with a # character).
 - If query formats are tabular, you may restrict the subtraction to specific columns and the resulting dataset will include only the columns specified.  
 - Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file.  
 - Both queries must contain the specified columns.  If either doesn't, restriction to specific columns is ignored.
-- The beginning column must be less than the ending column.  If it is not, restriction to specific columns is ignored.
+- The begin column must be less than or equal to the end column.  If it is not, restriction to specific columns is ignored.
 - This tool assumes that each query consists of distinct lines of data (i.e., duplicate lines are eliminated from both queries prior to subtraction).  If any duplicate lines were eliminated from the first query, the number is displayed in the resulting history item.
 
 -----

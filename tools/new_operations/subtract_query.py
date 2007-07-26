@@ -12,17 +12,17 @@ import cookbook.doc_optparse
 from galaxy.datatypes import sniff
 
 def get_lines(fname, begin_col='', end_col=''):
-    i = 0
     lines = set([])
     for i, line in enumerate(file(fname)):
         line = line.rstrip('\r\n')
-        if begin_col and end_col:
-            """
-            Both begin_col and end_col must be integers at this point.
-            """
-            line = line.split('\t')
-            line = '\t'.join([line[j] for j in range(begin_col-1, end_col)])
-        lines.add( line )
+        if line != '' and not line.startswith('#'):
+            if begin_col and end_col:
+                """
+                Both begin_col and end_col must be integers at this point.
+                """
+                line = line.split('\t')
+                line = '\t'.join([line[j] for j in range(begin_col-1, end_col)])
+            lines.add( line )
     return (i+1, lines)
 
 def main():
@@ -49,7 +49,7 @@ def main():
     begin_col, but not an end_col, end_col will be set to input1_columns.  If the 
     user enters an end_col but not a begin_col, begin_col will be set to 1.
     """
-    begin_col_is_valid = end_col_is_calid = False
+    begin_col_is_valid = end_col_is_valid = False
     if begin_col or end_col:
         """
         First we'll determine if we have tabular queries.
@@ -74,7 +74,7 @@ def main():
             if begin_col and re.compile('c[0-9]+').findall(begin_col):
                 try:
                     begin_col = int(begin_col[1:])
-                    if begin_col > 0 and begin_col < num_columns1:
+                    if begin_col > 0 and begin_col <= num_columns1:
                         begin_col_is_valid = True
                     else:
                         begin_col_is_valid = False
@@ -104,18 +104,18 @@ def main():
                 begin_col = 1
                 begin_col_is_valid = True
             """
-            Next we want to make sure that begin_col < end_col
+            Next we want to make sure that begin_col <= end_col
             """
-            if begin_col >= end_col:
-                begin_col_is_valid = end_col_is_calid = False
+            if begin_col > end_col:
+                begin_col_is_valid = end_col_is_valid = False
             """
             Next we'll ensure that begin_col and end_col are valid
             for the second query.
             """
             if begin_col_is_valid and end_col_is_valid:
-                if not begin_col < num_columns2:
+                if begin_col > num_columns2:
                     begin_col_is_valid = False
-                if not end_col <= num_columns2:
+                if end_col > num_columns2:
                     end_col_is_valid = False
             """
             Finally, if all is not well, we'll blank out begin_col and end_col.
@@ -131,26 +131,32 @@ def main():
         print >> sys.stderr, "Unable to open output file"
         sys.exit()
 
+    """
+    len1 is the number of lines in inp1_file
+    lines1 is the set of unique lines in inp1_file
+    diff1 is the number of duplicate lines removed from inp1_file
+    """
     len1, lines1 = get_lines(inp1_file, begin_col, end_col)
     diff1 = len1 - len(lines1)
     len2, lines2 = get_lines(inp2_file, begin_col, end_col)
     
     lines1.difference_update(lines2)
-    
-    no_lines = 0
+    """
+    lines1 is now the set of unique lines in inp1_file - the set of unique lines in inp2_file
+    """
+
     for line in lines1:
-        no_lines += 1
         print >> fo, line
 
     fo.close()
-
-    info_msg = 'Subtracted %d lines. ' %(len1 - no_lines)
-
+    
+    info_msg = 'Subtracted %d lines. ' %((len1 - diff1) - len(lines1))
+    
     if begin_col and end_col:
         info_msg += 'Restricted to columns c' + str(begin_col) + ' thru c' + str(end_col) + '. '
 
     if diff1 > 0:
-        info_msg += 'Eliminated %d duplicate lines from first query.' %diff1
+        info_msg += 'Eliminated %d duplicate/blank/comment lines from first query.' %diff1
     
     print info_msg
 
