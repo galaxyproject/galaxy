@@ -41,7 +41,7 @@ class Interval( Tabular ):
     MetadataElement( name="chromCol", desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", desc="End column", param=metadata.ColumnParameter )
-    MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True )
+    MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
 
@@ -185,7 +185,7 @@ class Bed( Interval ):
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
-    MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True )
+    MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="dbkey", desc="Database/Build", default=None, param=metadata.SelectParameter, multiple=False, values=util.dbnames )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
     

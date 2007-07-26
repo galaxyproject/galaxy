@@ -61,6 +61,9 @@ class DefaultToolAction( object ):
                 if meta_value is not None:
                     meta_key = '%s_%s' % (name, meta_key)
                     incoming[meta_key] = meta_value
+                else:
+                    incoming_key = '%s_%s' % (name, meta_key)
+                    incoming[incoming_key] = data.datatype.metadata_spec[meta_key].no_value
 
         # Build name for output datasets based on tool name and input names
         output_base_name = tool.name
@@ -127,7 +130,7 @@ class DefaultToolAction( object ):
             out_data[ name ] = data
             # Store all changes to database
             trans.app.model.flush()
-                        
+            
         # Add all the top-level (non-child) datasets to the history
         for name in out_data.keys():
             if name not in child_dataset_names:

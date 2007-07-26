@@ -96,11 +96,12 @@ class MetadataElementSpec( object ):
     is a MetadataSpecCollection) of datatype.
     '''
 
-    def __init__( self, datatype, name=None, desc=None, param=MetadataParameter, default=None, **kwargs ):
+    def __init__( self, datatype, name=None, desc=None, param=MetadataParameter, default=None, no_value = None, **kwargs ):
         self.name = name
         self.desc = desc or name
         self.param = param
         self.default = default
+        self.no_value = no_value
         # Catch-all, allows for extra attributes to be set
         self.__dict__.update(kwargs)
         datatype.metadata_spec.append( self )
