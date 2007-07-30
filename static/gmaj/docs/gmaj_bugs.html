@@ -13,7 +13,8 @@
 <p class=vvlarge>
 The following anomalies in Gmaj's display and behavior have been
 observed, but not yet resolved.  Some of these are intermittent,
-and some may depend on your platform and/or version of Java.
+and some may depend on your computer platform and/or version of
+Java.
 <p>
 If you experience any of these (or similar) problems, it may help
 to switch to a different version of Java.  For example, the first
@@ -60,6 +61,32 @@ around the problem in future releases of Gmaj.
 	pasting elsewhere.  This is apparently due to a bug in Java;
 	hopefully Sun will fix it eventually.
 <p>
+<li>	<i>Patchy rendering of mark circle and/or red segments.</i>&nbsp;
+	When using the Large Fonts option with Mark Color Varies,
+	the red circle and plot segments may not appear as solid
+	as they should.  This is because Mark Color Varies is
+	implemented using Java's XOR drawing mode, and the thick
+	lines are built up from several thin ones, so whenever two
+	red pixels overlap they turn white again.  Fixing this will
+	likely involve a custom implementation of Mark Color Varies
+	that doesn't use XOR.  In the meantime, switching to Mark
+	Always Red when using Large Fonts should solve the problem
+	(except that it will be invisible against red underlays).
+<p>
+<!-- [fixed]
+<li>	<i>GUI rebuild breaks keyboard shortcuts.</i>&nbsp;
+	The items on the Options menu generally require all of the
+	open windows to be rebuilt, and although the window that was
+	active may still be in front, on some systems it might not
+	actually have the keyboard focus.  So when you press a key,
+	say "<code>b</code>" for "Zoom - Back", one of the other
+	windows changes instead of the one you wanted.  Even the
+	Escape key doesn't help, because it goes to the wrong
+	window too.  Investigation of how best to prevent this is
+	underway; in the meantime you can fix it by clicking on a
+	different window and then returning to the one you want.
+<p>
+-->
 <!--
 <li>	<i>Name.</i>&nbsp;
 	Description.
@@ -82,6 +109,6 @@ Thank you for using Gmaj, and helping us to make it better.
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, June 2006</i>
+<i>Cathy Riemer, July 2007</i>
 </body>
 </html>

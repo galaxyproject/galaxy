@@ -17,13 +17,16 @@ TABLE OF CONTENTS
 <li><a href="#intro">Introduction</a>
 <li><a href="#start">Starting Gmaj</a>
 <li><a href="#memory">Memory Allocation</a>
-<li><a href="#screen">Screen Layout</a>
+<li><a href="#windows">Multi-Pip and Dotplot Windows</a>
+<li><a href="#state">The Zoom and the Mark</a>
+<li><a href="#layout">Window Layout</a>
 <li><a href="#mouse">Mouse Controls</a>
-<li><a href="#menu">Menus and Buttons</a>
+<li><a href="#menu">Menus and Widgets</a>
 <li><a href="#notes">Footnotes</a>
 </ul>
 <p class=vlarge>
 
+<p class=hdr>
 <h3><a name="intro">Introduction</a></h3>
 <p>
 Gmaj can be run in two different modes: as an applet over the
@@ -33,6 +36,7 @@ computer).  These modes are mostly similar but have a few minor
 differences, as noted below.
 <p>
 
+<p class=hdr>
 <h3><a name="start">Starting Gmaj</a></h3>
 <p>
 If you are using Gmaj in applet mode, it will be started for you
@@ -44,14 +48,15 @@ skip the rest of this section.
 If you are using Gmaj in stand-alone mode, you need to start it
 yourself.  The Java runtime environment does not have its own
 GUI, so you generally need to run Gmaj from a command line (e.g.,
-in the MS-DOS Prompt window on Windows 98).  The basic command to
-type in looks like this:
+in the Command Prompt window on Windows XP).  The basic command
+to type in looks like this:
 <pre>
     [path1]java -jar [path2]gmaj.jar
 </pre>
 where <code>[path1]</code> is the location of your
-<code>java</code> program file (perhaps <code>c:\windows\</code>
-on Win98, or <code>/usr/bin/java/</code> on a Unix system), and
+<code>java</code> program file (perhaps
+<code>c:\windows\system32\</code> on WinXP, or
+<code>/usr/bin/java/</code> on a Unix system), and
 <code>[path2]</code> is the location where the
 <code>gmaj.jar</code> file was installed.  Note that you can
 leave off <code>[path1]</code> if you have set up your system
@@ -70,7 +75,7 @@ a window will appear displaying the loaded data.
 <p>
 As an alternative to using the dialog box, you can specify the
 input file (plus additional parameters) on the command line.
-As of this writing, the full command syntax is:
+As of this writing, the command syntax is:
 <pre>
     [path1]java -jar [path2]gmaj.jar
         [-version] [-help] [-debug] [-urlpause &lt;millisec&gt;]
@@ -78,7 +83,7 @@ As of this writing, the full command syntax is:
         [-bundle &lt;zipfile&gt;] [&lt;paramfile&gt;|&lt;alignfile&gt;]
 </pre>
 <p>
-This has been wrapped for easier readability, but should be
+This has been wrapped here for easier readability, but should be
 typed all on one line.  Arguments shown in square brackets
 <code>[]</code> are optional, while a vertical bar <code>|</code>
 indicates a choice between alternatives.  Angle brackets
@@ -95,7 +100,7 @@ These parameters do the following:
 <dd>	Prints a brief help message with up-to-date syntax; then
 	exits.
 <dt>	<code>-debug</code>:
-<dd>	Instructs Gmaj to print a few extra warning messages in
+<dd>	Instructs Gmaj to print extra warning messages in
 	your terminal window if certain problems occur.  Normally
 	you won't need this, as it is mainly for development
 	purposes.
@@ -131,12 +136,12 @@ These parameters do the following:
 <dd>	If you don't want to use any annotations or other
 	data-related options, you can simply specify the alignment
 	file directly, instead of creating a parameters file.  This
-	must be in <code>.maf</code> format; see
-	<a href="gmaj_input.html">Input Files for Gmaj</a> for more
-	details.
+	must be in MAF format; see <a href="gmaj_input.html"
+	>Input Files for Gmaj</a> for more details.
 </dl>
 <p>
 
+<p class=hdr>
 <h3><a name="memory">Memory Allocation</a></h3>
 <p>
 If the dataset you want to view is large, you may need to give
@@ -155,17 +160,90 @@ will affect all applets you run via the Java Plug-in, not just
 Gmaj).
 <p>
 
-<h3><a name="screen">Screen Layout</a></h3>
+<p class=hdr>
+<h3><a name="windows">Multi-Pip and Dotplot Windows</a></h3>
 <p>
-The Gmaj window is divided into several sections.  Across the
-top you will see a menu bar, and below that two lines containing
-indicator boxes with information about the position of the mouse
-pointer, the endpoints of the currently displayed zoom region,
-and the location of the "mark" (<a href="#red">red</a> circle),
-along with buttons for sliding the zoom region and selecting
-alternative blocks at the marked position.  (The menus and
-buttons will be discussed individually in the <a href="#menu"
->Menus and Buttons</a> section of this document.)
+Gmaj has two kinds of windows.  The main one displays a number
+of pips (percent identity plots) showing the pairwise alignments,
+projected from the multiple alignment, of the reference sequence
+against each of the other sequences.  A pip is similar to a
+dotplot, with the horizontal <code>x</code>-axis representing
+positions in the reference sequence, but the vertical
+<code>y</code>-axis represents the percentage of matching
+nucleotides in each gap-free segment of the pairwise alignment,
+instead of its position in the second sequence.  The window you
+see first when Gmaj opens is of this type, and if the alignment
+is reference-independent, you can open more of these with other
+sequences as the reference.
+<p>
+The second type of window focuses exclusively on a particular
+pair of sequences, and displays one pip together with its
+corresponding dotplot representation (similar to Gmaj's
+predecessor, <a href="http://globin.bx.psu.edu/dist/laj/"
+>Laj</a>).  These windows are opened upon request, by clicking
+on a button in the header for a particular pip in the multi-pip
+window.  Conceptually the dotplot windows are like children of
+their parent multi-pip window: they have the same reference
+sequence, and if you close a dotplot only that one window closes,
+but if you close the parent all of its children close too.
+<p>
+
+<p class=hdr>
+<h3><a name="state">The Zoom and the Mark</a></h3>
+<p>
+Gmaj has two main elements of user state that reflect the user's
+interactive manipulation of the display.  The first is the zoom
+region, i.e. the portion of the reference and secondary sequences
+that is currently displayed; this is one-dimensional for
+multi-pip windows and two-dimensional for dotplots.  As the zoom
+is changed, the previous regions are remembered in a history
+list, so you can go back and forward through it similar to a web
+browser.  Each Gmaj window has its own separate zoom and history;
+when opening a new window the current zoom region is translated
+initially, but then they are independent.  As a convenience,
+each new window begins with several zoom regions already in the
+history: the fully unzoomed sequence length(s), as specified in
+the MAF file; the aligning portion of the applicable sequence(s);
+and an approximate translation of the previous window's current
+zoom (or in the case of the very first window, the initial zoom
+specified in the command-line or applet parameters, if any).
+The boundaries of the current region are displayed in a status
+indicator in the upper right corner of the window, below the
+menu bar.
+<p>
+The second state element is called the "mark", and it represents
+a particular selected point in a particular pairwise pip+dotplot
+and a particular MAF block.  It is typically selected by clicking
+in a pip, dotplot, or text alignment, and is drawn as a small
+<a href="#red">red</a> circle in the plots, and also as a red
+highlight in the text alignment.  Unlike the zoom regions, the
+mark is shared among several windows: there is at most one mark
+for each reference sequence, and it appears in both the multi-pip
+window for that sequence and the dotplot corresponding to
+whichever pip the mark is currently in (the other dotplots, with
+different secondary sequences, will show some indirect information
+about the mark, but not the mark itself).  Thus, moving the mark
+in a dotplot window will also move it in the parent multi-pip and
+vice-versa, but the mark for a different reference sequence is
+independent.  Information about the current mark and plot block
+is displayed in one of the status indicators below the menu bar.
+<p>
+
+<p class=hdr>
+<h3><a name="layout">Window Layout</a></h3>
+<p>
+Each Gmaj window is divided into several sections.  Across the
+top you will see a menu bar (including a text box for setting the
+percent identity threshold), and below that two lines containing
+status indicators with information about the position of the
+mouse pointer, the boundaries of the currently displayed zoom
+region, and the location of the mark (<a href="#red">red</a>
+circle), along with buttons for sliding the zoom region and
+selecting alternative blocks at the marked position.  Several of
+the dividers between these items are draggable, so you can adjust
+the relative space they occupy.  (The menus, threshold box, and
+buttons are discussed individually in the <a href="#menu">Menus
+and Widgets</a> section of this document.)
 <p>
 <i>Ruler:</i><br>
 The first graphical panel is a horizontal ruler that displays
@@ -176,89 +254,119 @@ displayed.  Precise locations can be determined via the position
 indicator, which displays the exact coordinate of the mouse
 pointer.
 <p>
-<i>Annotation links:</i><br>
-Below the ruler is a panel that can display links to additional
-information about various sequence regions.  Each annotation is
-represented by a color-coded bar spanning the region's position
-in the reference sequence.  (The bars' vertical positions are
-not meaningful; they are only placed in rows for convenience, to
-keep them from overlapping.)  Pointing to a particular bar will
-cause the position indicator to display the <code>x</code>
+<i>Reconstruction scores:</i><br>
+For ancestral reconstruction alignments, the MAF file may contain
+scores indicating the confidence that 1) a particular inferred
+ancestral nucleotide is correct, and that 2) it was present at
+all.  The next two panels display bar graphs of these scores when
+the ancestral sequence is the reference.  The scores are binned
+according to the current zoom region and panel width, and the
+mean score for each bin is graphed on a scale of 0 - 1 (note that
+the scores are transformed via simple linear scaling, and should
+not be interpreted as probabilities).  For this to work, the
+parameters file must specify which organism the scores apply to.
+Otherwise, or if there are no scores in the file, or if a
+different sequence is currently the reference, these panels will
+not appear.  The position indicator displays the horizontal
+coordinate and vertical score position of the mouse pointer,
+along with the score for the bar at that location (if any).
+<p>
+<i>Linkbars:</i><br>
+Next is a panel that can display links to additional information
+about various regions in the current reference sequence.  Each
+annotation is represented by a color-coded bar spanning the
+region's position in the sequence.  (The bars' vertical positions
+are not meaningful; they are only placed in rows for convenience,
+to keep them from overlapping.)  Pointing to a particular bar
+will cause the position indicator to display the <code>x</code>
 coordinate of the pointer, and also the type and description of
 that bar's annotation; otherwise only the <code>x</code>
-coordinate will be shown.  In applet mode, clicking on a bar
-will open a separate browser window to visit the corresponding
-web site.  In stand-alone mode Gmaj is not working within a web
+coordinate will be shown.  In applet mode, clicking on a bar will
+open a separate browser window to visit the corresponding web
+site.  In stand-alone mode Gmaj is not working within a web
 browser, so instead it displays the URL for you to visit manually
-via copy-and-paste.  If you do not provide a links file, this
-panel will not appear.
+via copy-and-paste.  If no links file is provided for the current
+sequence, this panel will not appear.
 <p>
 <i>Sequence features:</i><br>
 The next two panels contain schematic diagrams of the known
-exons and repeats in the current reference sequence, respectively
-(if these files were provided).  Any additional features such as
-CpG islands are included with the repeats.  Again, the position
-indicator displays the <code>x</code> coordinate of the mouse
-pointer, and also identifies any features at that position.
+exons and interspersed repeats in the current reference sequence,
+respectively (if these files are provided).  Any additional
+features such as CpG islands are included with the repeats.
+The diagram for repeats uses the same symbols as 
+<a href="http://pipmaker.bx.psu.edu/pipmaker/">PipMaker</a> to
+indicate the various repeat categories (Alu, MIR, etc.), but only
+if either the PipMaker category or the
+<a href="http://www.repeatmasker.org/">RepeatMasker</a> name and
+class/family are available.  For example, BED and GTF repeat
+files from the <a href="http://genome.ucsc.edu/cgi-bin/hgTables"
+>UCSC Table Browser</a> include the RepeatMasker name but not the
+class/family, so Gmaj cannot determine the PipMaker category and
+draws all of them as "Other".  As usual, the position indicator
+displays the <code>x</code> coordinate of the mouse pointer, and
+also identifies any features at that position.
 <p>
-<i>Pips:</i><br>
-The following panels display a number of pips (percent identity
-plots) showing the pairwise alignments, projected from the
-multiple alignment, of the reference sequence against each of
-the other sequences.  A pip is similar to a dotplot, with the
-horizontal <code>x</code>-axis representing the position in the
-reference sequence, but the vertical <code>y</code>-axis
-represents the percentage of matching nucleotides in each
-gap-free segment of the pairwise alignment, instead of its
-position in the second sequence.  Only the top half of each plot
-is shown, since segments matching less than 50% are usually not
-very interesting.  An additional feature of these panels is that
-colored backgrounds, or "underlays", can be used to highlight
-regions of interest (if you provide files with this information).
-Vertical blue bars at the edges of the pips represent the
-boundaries of the current zoom region, whose endpoints are
-displayed in the zoom indicator.  The position indicator displays
-the horizontal coordinate and vertical percentage position of the
+<i>Plots:</i><br>
+The following panels display the alignment plots according to the
+window type: either a scrollable stack of <a href="#windows"
+>pips</a> (for the reference sequence against each of the others)
+or a single pip and its corresponding dotplot.  For pips, only
+the top half of each plot is shown, since segments matching less
+than 50% are usually not very interesting.  Plots that are
+completely empty (i.e. if that pair of sequences never occurs
+together in any of the alignment blocks) will be painted gray.
+An additional feature of these panels is that colored backgrounds,
+or "underlays", can be used to highlight regions of interest (if
+files with this information are provided); dotplots can display
+these for both the reference and secondary sequences.  Vertical
+blue bars at the edges of the plots represent the boundaries of
+the current zoom region, whose endpoints are displayed in the
+zoom indicator.  For a pip, the position indicator displays the
+horizontal coordinate and vertical percentage position of the
 mouse pointer, along with a list of <a href="#block">block
-numbers</a> covering that location.  It will also display labels
-for the colored regions if these are included in the underlay
-files.
+numbers</a> covering that location.  For a dotplot, it displays
+the horizontal and vertical coordinates in the reference and
+secondary sequences, respectively.  It will also display labels
+for the colored regions in both types of plots, if these are
+included in the underlay files.
 <p>
 <i>Text view:</i><br>
 The bottom panel displays a nucleotide-level view of a single
-selected alignment block.  (Initially it is empty, since you
-haven't selected anything yet.)  The top row of this display
-shows the current reference sequence, while the rows for the
-other sequences show a dot "<code>.</code>" wherever they match
-the reference sequence, and only explicitly list the nucleotides
-that don't match.  (This matching is case-insensitive to deal
-with soft masking, but non-nucleotide characters such as
+selected alignment block: the one containing the mark
+(<a href="#red">red</a> circle).  Initially it is empty, since
+you haven't set the mark yet.  The top row of this display shows
+the current reference sequence, while the rows for the other
+sequences show a dot (<code>.</code>) wherever they match the
+reference sequence, and only explicitly list the nucleotides that
+don't match.  (This matching is case-insensitive to deal with
+soft masking, but non-nucleotide characters such as
 <code>X</code> or <code>N</code> never match anything, even
 themselves.)  All of the sequences will likely have had gaps
-"<code>-</code>" inserted by the alignment program.  Note that
+(<code>-</code>) inserted by the alignment program.  Note that
 most of the blocks will be much too long to fit across this
 window, so a scrollbar is provided; the relative size of the
 scrollbar's slider indicates what fraction of the alignment is
-shown in the window.  Shaded "highlights" (analogous to the pip
+shown in the window.  Colored "highlights" (analogous to the plot
 underlays) can also be specified for each sequence; otherwise
 Gmaj will provide default highlights based on the exons files
 (if any).  Whenever the mouse pointer is in this bottom panel,
 the position indicator displays its location in the format
-"<code>n:x</code>", where <code>n</code> is the column position
-in the aligned block (starting with 0), and <code>x</code> is the
-sequence position in the individual row (starting with 1).  Note
-that <code>x</code> does not include the gaps, but <code>n</code>
-does.  Labels for any highlights at that position are also
-displayed.
+<code>n:x</code>, where <code>n</code> is the column position
+in this aligned block (starting with 0), and <code>x</code> is
+the sequence position in the individual row (i.e., in that entire
+chromosome or contig, starting with 1).  Note that <code>x</code>
+does not include the gaps, but <code>n</code> does.  Labels for
+any highlights at that position are also displayed.
 <p>
 With the exception of the text view, all of these panels use the
 same horizontal coordinate scale (i.e., position in the current
 reference sequence), and they are always kept vertically aligned
-so they can be compared easily.  Note that the partition between
-the graphical panels and the text view is draggable, so you can
-adjust the relative amount of space they occupy.  Also,
-individual panels can be hidden if desired, using the Options -
-Show dialog (see <a href="#menu">Menus and Buttons</a>).
+so they can be compared easily.  Note that in the multi-pip
+window the partition between the graphical panels and the text
+view is draggable, so you can adjust the relative amount of space
+they occupy.  Also, individual panels can be hidden if desired,
+using the Options - Show dialog (see <a href="#menu">Menus and
+Widgets</a>).
 <p>
 <!--
 <i>Dotplot:</i><br>
@@ -269,7 +377,7 @@ with the reference sequence along the horizontal
 contigs, they will appear as separate horizontal bands across the
 plot, each with its own <code>y</code>-axis coordinate system.
 Whenever the mouse pointer is in this panel, the position
-indicator displays its location in the format "<code>x,y</code>",
+indicator displays its location in the format <code>x,y</code>,
 where <code>x</code> is the position in the horizontal sequence
 and <code>y</code> is the position in the vertical sequence.  If
 there are multiple contigs, then the contig name will be
@@ -278,32 +386,34 @@ prevent long names from crowding out the other information).
 <p>
 -->
 
+<p class=hdr>
 <h3><a name="mouse">Mouse Controls</a></h3>
 <p>
 You can select a particular alignment block by clicking on one
-of its segments in any of the pips with the left mouse button.
-(Actually you don't have to click exactly on it, because
-Gmaj will automatically jump to the nearest point if you miss.)
-The spot will be marked with a small <a href="#red">red</a>
-circle, and the entire alignment block containing the mark will
-change color from black to <a href="#red">red</a> in all of the
-pips (each block typically spans several gap-free segments).
-Also, the corresponding text view for that block will appear in
-the bottom panel with the selected position highlighted.  Lastly,
-the mark indicator will be filled in with information about the
-marked block and position, and a row of buttons will appear next
-to it showing the <a href="#block">block numbers</a> covering
-the marked location.  These buttons allow convenient selection
-of a different block at the same position (see <a href="#menu"
->Menus and Buttons</a>).  Note that there is only one mark at a
-time in each window, so the previous one, if any, will be
-unmarked.
+of its segments in any of the plots (pips or dotplots) with the
+left mouse button.  (Actually you don't have to click exactly on
+it, because Gmaj will automatically jump to the nearest point if
+you miss.)  The spot will be marked with a small <a href="#red"
+>red</a> circle, and the entire alignment block containing the
+mark will change color from black to <a href="#red">red</a> in
+all of the plots for that reference sequence (each block typically
+spans several gap-free segments).  Also, the corresponding text
+view for that block will appear in the bottom panel with the
+marked position highlighted.  Lastly, the mark indicator will be
+filled in with information about the marked block and position,
+and a row of buttons will appear next to it showing the
+<a href="#block">block numbers</a> covering the marked location.
+These buttons allow convenient selection of a different block at
+the same position in the reference sequence (see <a href="#menu"
+>Menus and Widgets</a>).  Note that there is only one mark at
+a time for each reference sequence, so the previous one, if any,
+will be unmarked.
 <p>
 In a similar fashion, clicking the left mouse button in the
 text view will move the mark (both the highlight and the
 <a href="#red">red</a> circle) to that position.  However, gap
 positions cannot be selected in this manner because they do not
-correspond to pip segments; if you click in a gap, the nearest
+correspond to plot segments; if you click in a gap, the nearest
 gap-free position is selected instead.  Also, if you click on a
 position in the reference sequence (which has no corresponding
 pip), the mark will move to the new column but will remain in
@@ -311,12 +421,12 @@ the same pip as before.
 <p>
 You can "zoom in" on a particular region by dragging out a
 rectangle with the left mouse button in any of the white panels
-(ruler, links, exons, repeats, or pip).  All of these panels
+(ruler, annotations, pip, or dotplot).  All of these panels
 will always zoom together, to keep them lined up.  This can be
 repeated until the maximum resolution is reached; after that
 Gmaj will display an error message.  Additional zoom features
 are available via the Zoom menu and arrow buttons (see
-<a href="#menu">Menus and Buttons</a>).  Note that selecting
+<a href="#menu">Menus and Widgets</a>).  Note that selecting
 a new region will cause any entries in your zoom history that
 are forward of the current point to be discarded (similar to
 a web browser).
@@ -329,7 +439,8 @@ effect by applying the <code>Shift</code> key when initially
 pressing the mouse button.
 <p>
 
-<h3><a name="menu">Menus and Buttons</a></h3>
+<p class=hdr>
+<h3><a name="menu">Menus and Widgets</a></h3>
 <p>
 <dl>
 <dt>File - Open:
@@ -367,27 +478,32 @@ Exits from Gmaj.  In stand-alone mode, also exits from Java.
 <dd>
 This menu controls some of the aesthetic aspects of Gmaj.  You
 can choose between two sizes of fonts, which will also affect
-some other visibility settings, such as the radius and thickness
-of the mark circle, the blackness of the ruler numbers, and the
-height of the pips.  You can also choose to make the mark circle
-and the selected block's pip segments always red, instead of
-changing with the background color (this is easier to explain in
-a figure legend, but makes them invisible against red underlays).
-Lastly, the Show item opens a dialog where you can choose which
-individual panels to display or hide (currently it does not
-affect which text rows are displayed, however).  The choices on
-this menu affect all of the windows, not just the current one.
+some other visibility settings, such as the thickness of the plot
+segments, the radius and thickness of the mark circle, the
+blackness of the ruler numbers, and the height of the pips.  You
+can also choose to make the mark circle and the selected block's
+plot segments always red, instead of changing with the background
+color (this is easier to explain in a figure legend, but makes
+them invisible against red underlays).  Lastly, the Show item
+opens a dialog where you can choose which individual panels to
+display or hide (the sequence selections here also affect which
+text rows and dotplot windows are shown), and whether the
+underlays should be painted on dotplots.  The choices on this
+menu affect all of the windows, not just the current one.
 <p>
-<dt>RefSequence:
+<dt>Reference:
 <dd>
 This menu allows you to select a different reference sequence
 (unless the parameters file indicates that the alignment has a
-fixed, intrinsic reference sequence).  A new window will open,
-showing the same data from the perspective of the sequence you
-chose.  The mark (if any) will be copied to the new window as
-closely as possible, but the zoom will not.  Thereafter, the
-windows will operate independently.  You can have one window
-open for each sequence in the data.
+fixed, intrinsic reference sequence).  A new multi-pip window
+will open, showing the same data from the perspective of the
+sequence you chose.  The mark (if any) will be copied to the new
+window as closely as possible, and the current zoom region will
+be translated to a roughly equivalent one showing the same blocks.
+Thereafter, the windows will operate independently.  You can have
+one multi-pip window for each sequence in the data; if you
+already have one for the newly-chosen reference sequence, it will
+just be brought to the front unchanged.
 <p>
 <dt>Zoom - Back:
 <dd>
@@ -401,15 +517,17 @@ affect the mark.
 <p>
 <dt>Zoom - Unzoom:
 <dd>
-Sets the zoom region to the widest, unzoomed view, i.e., the
-full range for this reference sequence as specified in the
-<code>.maf</code> file.  Has the same effect as entering the
-"valid range" endpoints in Set Zoom.  Does not affect the mark.
+Sets the zoom region for this window to the widest, unzoomed
+view, i.e., the full length of this entire reference sequence
+(and also this secondary sequence, for a dotplot) as specified in
+the MAF file.  Has the same effect as entering the "valid range"
+endpoints in Set Zoom.  Does not affect the mark.
 <p>
 <dt>Zoom - Set Zoom:
 <dd>
 Presents a dialog box that allows you to enter arbitrary zoom
-endpoints (within the valid range for this reference sequence).
+endpoints (within the valid ranges for the applicable sequences).
+Any left empty will be interpreted to mean "leave unchanged".
 The new region, if different from the current one, is added to
 your zoom history for this window.  Any regions forward of the
 current point in your history are discarded (similar to a web
@@ -430,60 +548,98 @@ via copy-and-paste.
 <p>
 <dt>Help - Keys:
 <dd>
-Displays a message window listing Gmaj's keyboard shortcuts.  No
-<code>Alt</code> key is needed, since Gmaj doesn't use the
-keyboard for much else.
+Displays a message window listing Gmaj's keyboard shortcuts.
+No <code>Alt</code> key is needed, since Gmaj doesn't use the
+keyboard for much else.  The shortcuts will not work if the
+keyboard focus is in a text box (e.g. the one for % Identity);
+in this case press <code>Esc</code> first to cancel the text
+entry and restore the focus to the active window's menu bar.
+<code>Esc</code> will also cancel dialog and message boxes.
+<p>
+<dt>% Identity Box:
+<dd>
+Allows you to set a threshold for limiting the displayed
+alignments by the percent identity of the plot blocks (which are
+pairwise projections of the MAF blocks).  The percent identity
+of each plot block is computed as the length-weighted average
+percent identity of its gap-free segments.  Blocks below the
+threshold are not drawn or clickable in the plots, but still
+exist otherwise (e.g. in the position indicator's block list for
+pips; also a block already displayed in the text panel will not
+disappear).  The same threshold applies across all windows, and
+keyboard shortcuts make it easy to adjust it up and down.  Also,
+the percent identity of the current plot block is shown in the
+mark indicator when applicable (this is either the marked one,
+or if a dotplot has a different secondary sequence, the
+corresponding projection from the same MAF block).
 <p>
 <dt>Arrow Buttons:
 <dd>
-These two buttons are located to the right of the zoom indicator.
-Clicking on one of them will slide the zoom region to the left or
-right, respectively, by half of its width.  The new region is
+These buttons are located to the right of the zoom indicator.
+Clicking on one of them will move the zoom region in the
+indicated direction by half of its width.  The new region is
 added to your zoom history like any other zoom selection, so the
 Zoom - Back command will return to where you were as usual.
 <p>
 <dt>Block Buttons:
 <dd>
-When a block is selected by clicking on a pip, a row of buttons
-will appear to the right of the mark indicator showing all of the
-<a href="#block">block numbers</a> covering the marked position.
-(If there is not enough room for all of the buttons, a scrollbar
-will appear; also the partition between this panel and the mark
-indicator is draggable.)  Clicking on one of the buttons causes
-the mark to move to that block (in the same pip), and the pip
-segment colors, text alignment, and mark indicator will be
-updated accordingly.  The new marked position (red circle) will
-be as close as possible to the same coordinate in the reference
-sequence, but it may have to move slightly to avoid gaps.  This
-makes it theoretically possible, though rare, that the resulting
-block list (and therefore the row of buttons) may change.
+When a mark is set (e.g. by clicking in a pip or dotplot), a row
+of buttons will appear to the right of the mark indicator showing
+all of the <a href="#block">block numbers</a> covering the marked
+position in the pip.  (If there is not enough room for
+all of the buttons, a scrollbar will appear; also the partition
+between this panel and the mark indicator is draggable.)
+Clicking on one of the buttons causes the mark to move to that
+block (in the same pip), and the segment colors, text alignment,
+and mark indicator will be updated accordingly in all applicable
+windows.  The new marked position (<a href="#red">red</a> circle)
+will be as close as possible to the same coordinate in the
+reference sequence, but it may have to move slightly to avoid
+gaps.  This makes it theoretically possible, though rare, that
+the resulting block list (and therefore the row of buttons) may
+change.
+<p>
+<dt>Dotplot Buttons:
+<dd>
+These buttons are located to the right of each pip's sequence
+label in the multi-pip window.  Clicking on one of them will
+open a dotplot window for that pair of reference and secondary
+sequences.  The zoom region will initially be translated from the
+current one to show the same blocks, and will thereafter operate
+independently.  The mark, however, is shared between the
+multi-pip window and all of its dotplots (see <a href="#state"
+>The Zoom and the Mark</a>).  If you already have a window for
+that dotplot, it will just be brought to the front unchanged.
 </dl>
 <p>
 
 <!-- <hr align=left noshade size=1 width="20%" color=black> -->
+<p class=hdr>
 <h3><a name="notes">Footnotes</a></h3>
 <p>
 <a name="red"></a>
 [1]&nbsp;
-The circular mark and the selected block's pip segments are red
+The circular mark and the selected block's plot segments are red
 when the background is white, but by default are displayed in
-different colors against other backgrounds to ensure good
-contrast.  A setting on the Options menu can make them always
-red if desired.  The selected pip segments are drawn last, so
+different colors against other backgrounds for improved contrast.
+A setting on the Options menu can make them always red if
+desired.  The selected block's plot segments are drawn last, so
 they will not be obscured by other blocks.
 <p>
 <a name="block"></a>
 [2]&nbsp;
-An alignment block is considered to cover a pip position if it
-contains rows for both of the pip's sequences and the position
-falls within the endpoints of the reference sequence's row; there
-are no "holes" due to gaps.  Blocks in the <code>.maf</code> file
-are numbered consecutively, starting with 0.
+An alignment block is considered to cover a plot position if it
+contains rows for both of the plot's sequences and the position
+falls within the endpoints of the <b>reference</b> sequence's
+row (not necessarily the row for the other sequence, as this is
+a pip-oriented computation); there are no "holes" due to gaps.
+Blocks in the MAF file are numbered consecutively, starting
+with 0.
 <p>
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, June 2006</i>
+<i>Cathy Riemer, July 2007</i>
 
 <p class=scrollspace>
 </body>

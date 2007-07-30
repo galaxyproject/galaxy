@@ -12,13 +12,121 @@
 <h2>What's New in Gmaj</h2>
 <p class=vvlarge>
 <dl>
+<dt><b>2007-Jul-26</b><br>
+<dd>	<ul>
+	<li>	Gmaj can now display dotplots in addition to the main multi-pip views,
+		with color underlays for both sequences.
+		<ul>
+		<li>	Dotplots are opened by clicking on buttons in the pip headers.
+		<li>	Each dotplot opens in a separate window, similar to the multi-pip
+			view except it has pip, dotplot, and text panels for two sequences
+			only.
+		<li>	Dotplot windows share the same reference sequence and mark with
+			their parent multi-pip window but have independent zoom, and close
+			automatically when the parent does.
+		<li>	There is only one mark for each reference sequence, so the circle
+			will not appear in dotplots having a different secondary sequence
+			than the mark.
+		</ul>
+	<li>	Gmaj can now read annotation data in
+		<a href="http://www.sanger.ac.uk/Software/formats/GFF/GFF_Spec.shtml"
+		>GFF</a> (v1 & v2),
+		<a href="http://genome.ucsc.edu/goldenPath/help/hgTracksHelp.html#GTF"
+		>GTF</a>, and
+		<a href="http://genome.ucsc.edu/goldenPath/help/hgTracksHelp.html#BED"
+		>BED</a> formats in addition to its previous PipMaker-style formats.
+		<ul>
+		<li>	UCSC
+			<a href="http://genome.ucsc.edu/goldenPath/help/hgTracksHelp.html#CustomTracks"
+			>custom track</a> headers are supported, with multiple tracks and
+			sequence names allowed in a single file.
+		<li>	There is currently no way to use just one particular track from a
+			file, but lines in
+			<a href="http://genome.ucsc.edu/goldenPath/help/wiggle.html"
+			>WIG</a> or other unrecognized formats are skipped.
+		<li>	Files in these generic formats can be reused in multiple panels
+			(e.g. as both exons and underlays).
+		<li>	A new <code>tabext</code> field and file specification modifiers
+			(seqname alias and type hint) in the parameters file facilitate
+			interpretation of these formats.
+		<li>	Colors can be specified using UCSC-style RGB triplets (either
+			per-line or per-track), or Gmaj provides defaults.
+		<li>	Currently there is no special support for multiple transcripts;
+			when inferring UTRs, the largest bounding range of given CDS data
+			is used.
+		</ul>
+	<li>	A new control in the menu bar allows the user to limit the displayed
+		alignments by their average % identity.
+		<ul>
+		<li>	Keyboard shortcuts make it easy to move the threshold up and down.
+		<li>	The value for the current plot block is displayed with the mark
+			information when applicable.
+		</ul>
+	<li>	If the alignment file contains per-nucleotide reconstruction scores
+		for an inferred ancestral sequence, they can be displayed as a pair of
+		bar graphs, binned according to the current zoom region and panel size.
+		<ul>
+		<li>	The scores are transformed via simple linear scaling, and should
+			not be interpreted as probabilities.
+		<li>	A new <code>reconseq</code> field in the parameters file
+			identifies the organism for the scores.
+		</ul>
+	<li>	Miscellaneous:
+		<ul>
+		<li>	"Unsupported MAF version" is now a warning instead of a fatal
+			error.
+		<li>	A new <code>nowarn</code> field in the parameters file suppresses
+			certain warnings/errors using a keyword shown in the message.
+		<li>	When opening a new window, the current zoom is translated to a
+			roughly equivalent one in the new sequence(s).
+		<li>	Sequence choices in the Show dialog affect text rows and dotplots
+			in addition to pips.
+		<li>	The default highlights built from exons now include the genes
+			(light yellow).
+		<li>	The divider between the position indicator and the zoom indicator
+			is draggable.
+		<li>	Plot segments are drawn thicker in Large Fonts mode.
+		<li>	Plots that are completely empty have a gray background.
+		<li>	The Set Zoom dialog accepts a blank box to mean "leave unchanged".
+		<li>	Tabbing is easier in input dialogs: labels are skipped unless the
+			mouse is pointing at them.
+		<li>	Note that "<code>=</code>" is now required for settings in the
+			parameters file (except <code>seq&nbsp;N:</code> lines), and
+			lines with empty values (e.g. unused template items) are allowed
+			and skipped.
+		</ul>
+<!--
+	<li>	Bug fixes:
+		<ul>
+		<li>	Linkbar URLs are supposed to be optional; missing ones are now
+			handled gracefully.
+		<li>	Entries in the parameters file for particular-pip underlays were
+			not recognized properly if the underlay file was bundled.
+		<li>	Attempting to display a reference sequence that had no alignments
+			would cause a Java error.
+		<li>	On some platforms, rebuilding all of the Gmaj windows (e.g. when
+			Options settings were changed) would leave the keyboard focus in
+			the wrong window.
+		</ul>
+-->
+	<li>	Various minor bug fixes, and improvements in appearance, behavior,
+		messages, efficiency, and robustness.
+	<li>	Updated documentation.
+		<ul>
+		<li>	Terminology: the optional colored clickable bars located above
+			the exons panel were formerly called "annotations", "annotation
+			links", or "hyperlink annotations", but are now referred to as
+			"linkbars" so that "annotation" can be used in the general sense.
+		</ul>
+	</ul>
+<p>
 <dt><b>2006-Jun-17</b><br>
 <dd>	<ul>
 	<li>	Gmaj can now be deployed as a web-based applet, as an alternative to
 		the regular stand-alone mode.
 		&nbsp;<a href="http://globin.bx.psu.edu/java/gmaj/demo.html">Demo</a>
 		<ul>
-		<li> New parameters <code>bundle</code>, <code>initzoom</code>, and
+		<li>	New parameters <code>bundle</code>, <code>initzoom</code>, and
 			<code>urlpause</code> facilitate applet use, but also work in
 			stand-alone mode.
 		<li>	Clicking on hyperlinked annotations (colored bars) visits the
@@ -27,14 +135,13 @@
 			stand-alone mode, displays the file location).
 		<li>	The "File - Export" feature does not work yet for applets.
 		</ul>
-	<li>	Better conformance with the official UCSC specs for <code>.maf</code>
-		format.
+	<li>	Better conformance with the official UCSC specs for MAF format.
 	<li>	A new <code>refseq</code> field in the parameters file can be used
 		to prevent selection of an inappropriate reference sequence when the
 		alignments are not sequence-symmetric (e.g. from <i>multiz</i>).
-	<li>	Maximum zoom bounds are now the stated sequence length from the
-		<code>.maf</code> file (not just the extent of the blocks), but the
-		default initial view zooms to the aligned portion.
+	<li>	Maximum zoom bounds are now the stated sequence length from the MAF
+		file (not just the extent of the blocks), but the default initial
+		view zooms to the aligned portion.
 	<li>	Search rules for relative filenames have been simplified, and Windows
 		names starting with "<code>\</code>" are now handled better.
 	<li>	The panel for hyperlinked annotations is now labeled, and it displays
@@ -183,8 +290,8 @@
 		they are the same.  The old <code>underlays.N</code> parameters are
 		still supported as well, and override these new ones.
 	<li>	The <code>seqfile</code> parameter has been renamed to
-		<code>seqname</code>, in order to reflect <code>.maf</code> semantics
-		(but <code>seqfile</code> is still supported for backward compatibility).
+		<code>seqname</code>, in order to reflect MAF semantics (but
+		<code>seqfile</code> is still supported for backward compatibility).
 	<li>	Sequence label widths are now computed dynamically, based on the longest
 		name and the current font.
 	<li>	When the font size is changed, pip heights are also adjusted.
@@ -204,7 +311,7 @@
 	<li>	The jar manifest and About information have been updated.
 	<li>	Support for alignment files in <code>.bb</code> format (from the old
 		<i>blockbuilder</i> program) has been discontinued.  The only alignment
-		format currently supported is <code>.maf</code>.
+		format currently supported is MAF.
 	<li>	Due to a new mechanism for registering keyboard shortcuts, Gmaj now
 		requires <b>Java 1.3 or higher</b>.
 	<li>	This version should still be considered <b>beta quality</b>; please
@@ -214,8 +321,8 @@
 <p>
 <dt><b>2005-May-16</b><br>
 <dd>	<ul>
-	<li>	Gmaj can now handle a wider variety of <code>.maf</code> files, including
-		those containing reverse-complement alignments.
+	<li>	Gmaj can now handle a wider variety of MAF files, including those
+		containing reverse-complement alignments.
 	<li>	The "proper threading" requirement has been eliminated.
 	<li>	Dynamic memory management for plot and underlay data allows larger files
 		to be viewed.
@@ -243,9 +350,9 @@
 		<i>chained</i>, i.e., that for each sequence it is possible to order
 		the blocks so that every nucleotide from that sequence in the interval
 		<code>[1,length]</code> appears exactly once, and in the same order as
-		the original sequence.  (Note that <code>.maf</code> files are 0-based,
-		so <code>+1</code> is added to all <code>.maf</code> coordinates to
-		convert them to Gmaj's 1-based system.)
+		the original sequence.  (Note that MAF files are 0-based, so
+		<code>+1</code> is added to all MAF coordinates to convert them to
+		Gmaj's 1-based system.)
 		However, sometimes you may want to use Gmaj to display a subset of such
 		data (e.g., output from the <i>slice_maf</i> program).  Gmaj can now
 		handle input data where the chain starts after position <code>1</code>
@@ -257,11 +364,11 @@
 <p>
 <dt><b>2003-Sep-16</b><br>
 <dd>	<ul>
-	<li>	Gmaj can now handle alignment files in the <code>.maf</code> format
-		produced by the <i>tba</i> program, in addition to the <code>.bb</code>
-		format produced by <i>blockbuilder</i>.
-	<li>	When using a <code>.maf</code> alignment, the semantics of the parameters
-		file are a bit different, and its rules are stricter.  (See
+	<li>	Gmaj can now handle alignment files in the MAF format produced by
+		the <i>TBA</i> program, in addition to the <code>.bb</code> format
+		produced by <i>blockbuilder</i>.
+	<li>	When using a MAF alignment, the semantics of the parameters file
+		are a bit different, and its rules are stricter.  (See
 		<code><a href="sample.gmaj">sample.gmaj</a></code> for details.)
 	<li>	Gmaj still doesn't support reverse complement alignments, or multiple
 		contigs per sequence.
@@ -315,6 +422,6 @@
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, June 2006</i>
+<i>Cathy Riemer, July 2007</i>
 </body>
 </html>

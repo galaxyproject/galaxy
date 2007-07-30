@@ -17,14 +17,9 @@ You can use this tool to view a set of MAF alignments.  You may also include opt
 
 For detailed information on GMAJ, click here_.
 
-.. _here: http://globin.cse.psu.edu/dist/gmaj/
+.. _here: /static/gmaj/docs/gmaj_readme.html
 
 Gmaj is a tool for viewing and manipulating Generalized Multiple Alignments (GMAs) produced by programs such as TBA (though it can also be used with maf-format alignments from other sources). It can display interactive graphical and text representations of the alignments, a diagram showing the locations of exons and repeats, and other annotations -- all with the user's choice of reference sequence.
-
-.. class:: infomark
-
-**Note:** This Applet version of GMAJ is still under beta development. 
-
 
   </help>
 </tool>
