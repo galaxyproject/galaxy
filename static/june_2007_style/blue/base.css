@@ -271,11 +271,6 @@ td.panel-body
     background: #C1C9E5 url(menu_bg.png) top repeat-x;
 }
 
-div.toolMenu
-{
-    padding: 10px;
-}
-
 div.toolSectionPad
 {
     margin: 0;
