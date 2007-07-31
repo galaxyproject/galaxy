@@ -1,17 +1,19 @@
 """
 Contains the main interface in the Universe class
 """
+from galaxy.web.base.controller import *
+
 import logging, os, sets, string, shutil
 import re, socket
 
 from galaxy import util, datatypes, jobs, web, util
-import common
+
 from cgi import escape, FieldStorage
 import urllib
 
 log = logging.getLogger( __name__ )
 
-class Universe(common.Root):
+class Universe( BaseController ):
     pref_cookie_name = 'universe_prefs'
     
     @web.expose

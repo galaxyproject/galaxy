@@ -1,13 +1,15 @@
 """
 Contains the user interface in the Universe class
 """
-import logging, common, os, string
+
+from galaxy.web.base.controller import *
+
+import logging, os, string
 from random import choice
-from galaxy import web, config
 
 log = logging.getLogger( __name__ )
 
-class User( common.Root ):
+class User( BaseController ):
     @web.expose
     def index( self, trans, **kwd ):
         if trans.get_user():

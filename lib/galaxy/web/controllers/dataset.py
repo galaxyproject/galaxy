@@ -1,8 +1,10 @@
+from galaxy.web.base.controller import *
+
 import logging, os, sets, string, shutil
 import re, socket
 
 from galaxy import util, datatypes, jobs, web, util, model
-import common
+
 from cgi import escape, FieldStorage
 
 import smtplib
@@ -36,7 +38,7 @@ ${stdout}
 (This is an automated message).
 """
 
-class DatasetInterface( common.Root ):
+class DatasetInterface( BaseController ):
 
     @web.expose
     def errors( self, trans, id ):

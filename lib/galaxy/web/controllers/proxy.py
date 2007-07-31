@@ -1,15 +1,17 @@
 """
 Contains the UCSC proxy
-
 """
+
+from galaxy.web.base.controller import *
+
 import sys
 from galaxy import web, util
-import common
+
 import re, urllib, logging
 
 log = logging.getLogger( __name__ )
 
-class UCSCProxy(common.Root):
+class UCSCProxy( BaseController ):
 
     def create_display(self, store):
         """Creates a more meaningulf display name"""

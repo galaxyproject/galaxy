@@ -1,11 +1,10 @@
-import logging, sets, time
+from galaxy.web.base.controller import *
 
-from galaxy import util, datatypes, jobs, web, config
-import common
+import logging, sets, time
 
 log = logging.getLogger( __name__ )
 
-class Admin( common.Root ):
+class Admin( BaseController ):
     @web.expose
     def index( self, trans, **kwd ):
         msg = ''

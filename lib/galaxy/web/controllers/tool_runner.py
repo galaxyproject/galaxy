@@ -1,15 +1,13 @@
 """
 Upload class
-
 """
 
-from galaxy import util, web
-import common
-import logging
+from galaxy.web.base.controller import *
 
+import logging
 log = logging.getLogger( __name__ )
 
-class ToolRunner(common.Root):
+class ToolRunner( BaseController ):
 
     #Hack to get biomart to work, ideally, we could pass tool_id to biomart and receive it back
     @web.expose

@@ -1,16 +1,17 @@
 """
 Upload class
-
 """
 
+from galaxy.web.base.controller import *
+
 from galaxy import jobs, util, datatypes, web
-import common
+
 import logging, urllib
 import sha, hmac
 
 log = logging.getLogger( __name__ )
 
-class ASync(common.Root):
+class ASync( BaseController ):
 
     @web.expose
     def default(self, trans, tool_id=None, data_id=None, data_secret=None, **kwd):

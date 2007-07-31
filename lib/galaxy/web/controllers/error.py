@@ -1,7 +1,6 @@
-import common
-from galaxy import web
+from galaxy.web.base.controller import *
 
-class Error( common.Root ):
+class Error( BaseController ):
     @web.expose
     def index( self, trans ):
         raise Exception, "Fake error"
