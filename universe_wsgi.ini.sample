@@ -1,121 +1,96 @@
-# The HTTP server to use, this loads a simple WSGI server from Paste
-
-# [server:main]
-# paste.server_runner = galaxy.web.server:serve
-# port = 8080
-# # Change this to 0.0.0.0 to make public
-# host = 127.0.0.1
-# # Size of worker thread pool for web server
-# nworkers = 10
+# ---- HTTP Server ----------------------------------------------------------
 
 [server:main]
+
 use = egg:Paste#http
 port = 8080
 host = 127.0.0.1
 use_threadpool = true
 threadpool_workers = 10
 
-## Start an AJP listener on port 4001 with 10 processes and 10 threads per process
-# [server:main]
-# paste.server_factory = galaxy.web.flupservers.ajp_forkthreaded:factory
-# minSpare = 10
-# maxSpare = 10
-# maxThreads = 10
-# host = localhost
-# port = 4001
+# ---- Galaxy Web Interface -------------------------------------------------
 
-# The base application dispatches some queries to universe and others to 
-# static files
+[app:main]
 
-[composite:main]
-use = egg:Paste#urlmap
-/ = universe
-/static = static
-/images = static_images
-/static/style = static_style
-/favicon.ico = static_favicon
-## Uncomment the following if running behind a proxy with a prefix, and 
-## set the prefix in the next section
-# filter-with = proxy-prefix
-
-[filter:proxy-prefix]
-use = egg:PasteDeploy#prefix
-prefix = /galaxy
-
-# The universe web interface
-
-[app:universe]
 # Specifies the factory for the universe WSGI application
-paste.app_factory = galaxy.app:app_factory
-# Configuration for the universe application
+paste.app_factory = galaxy.web.buildapp:app_factory
+log_level = DEBUG
+
+# Should jobs be tracked through the database, rather than in memory
+## track_jobs_in_database = true
+
+# Number of concurrent jobs to run (local runner)
 job_queue_workers = 5
-# Jobs should be tracked by querying the database (MUST when forking)
-## track_jobs_in_database = True
-template_path = templates
+
+# Database connection
 database_file = database/universe.sqlite
-#You may use a SQLAlchemy connection string to specify an external database
-#database_connection = postgres:///database_name
+# You may use a SQLAlchemy connection string to specify an external database instead
+## database_connection = postgres:///galaxy_test
+
+# Where dataset files are saved
 file_path = database/files
+
+# Tools
 tool_config_file = tool_conf.xml
 tool_path = tools
-test_conf = test.conf
-# Session support (flup)
-use_session = False
-# session_type = shelve
-# session_file = %(here)s/database/flup_session.shelve
+
+# Datatype converters
+datatype_converters_config_file = datatype_converters_conf.xml
+datatype_converters_path = %(here)s/lib/galaxy/datatypes/converters
+
 # Session support (beaker)
 use_beaker_session = True
 session_type = file
 session_data_dir = %(here)s/database/beaker_sessions
 session_key = galaxysessions
 session_secret = changethisinproduction
+
 # Configuration for debugging middleware
 debug = true
+use_lint = false
+
 # NEVER enable this on a public site (even test or QA)
-use_interactive = True
+use_interactive = true
+
 # Admin Password
 admin_pass = "galaxy"
+
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
-# SMTP server
-## smtp_server = ...
-# Address to email error reports to
-## error_email_to = ...
+
 # Address to join mailing list
 mailing_join_addr = galaxy-user-join@bx.psu.edu
-# Write thread status periodically to 'heartbeat.log'
-use_heartbeat = True
-# Comma separated list of UCSC browsers to use for viewing
+
+# Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
+## use_heartbeat = True
+
+# Profiling middleware (cProfile based)
+## use_profile = True
+
+# Mail
+smtp_server = coltrane.bx.psu.edu
+error_email_to = james@bx.psu.edu
+
+# Use the new iframe / javascript based layout
+use_new_layout = true
+
+# Comma separated list of UCSC / gbrowse browsers to use for viewing
 ucsc_display_sites = main,test,archaea
 gbrowse_display_sites = wormbase,flybase
-# Use the new iframe/javascript based layout
-use_new_layout=true
-#Datatype converters
-datatype_converters_config_file = datatype_converters_conf.xml
-datatype_converters_path = %(here)s/lib/galaxy/datatypes/converters
 
-# Static files
+# Serving static files (needed if running standalone)
+static_enabled = True
+static_cache_time = 360
+static_dir = %(here)s/static/
+static_images_dir = %(here)s/static/images
+static_favicon_dir = %(here)s/static/favicon.ico
+static_scripts_dir = %(here)s/static/scripts/
+static_style_dir = %(here)s/static/june_2007_style/blue
 
-[app:static]
-use = egg:Paste#static
-document_root = %(here)s/static/
-[app:static_images]
-use = egg:Paste#static
-document_root = %(here)s/static/images/
-[app:static_favicon]
-use = egg:Paste#static
-document_root = %(here)s/static/favicon.ico
-[app:static_style]
-paste.app_factory = galaxy.web.static:make_static
-cache_seconds = 360
-# The new (June 2007) style
-document_root = %(here)s/static/june_2007_style/blue
-# The old hatched style
-#document_root = %(here)s/static/light_hatched_style/blue
-#document_root = %(here)s/static/light_hatched_style/green
-#document_root = %(here)s/static/old_blue_style
+# ---- Datatypes ------------------------------------------------------------
 
 [galaxy:datatypes]
+
 data = galaxy.datatypes.data:Data,application/octet-stream
 bed = galaxy.datatypes.interval:Bed
 txt = galaxy.datatypes.data:Text

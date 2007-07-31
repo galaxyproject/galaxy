@@ -9,7 +9,7 @@ pkg_resources.require( "Cheetah" )
 
 import twill, unittest, time
 import os, os.path, subprocess, sys, threading
-import galaxy.web.server
+from galaxy.web.framework.servers import threadpool_server
 import galaxy.app
 from galaxy.app import UniverseApplication
 
@@ -69,7 +69,7 @@ def setup():
                                          use_translogger = False,
                                          app=app )
 
-        server = galaxy.web.server.serve( webapp, dict(), 
+        server = threadpool_server.serve( webapp, dict(), 
                                           host=galaxy_test_host, 
                                           port=galaxy_test_port, 
                                           start_loop=False )

@@ -3,6 +3,9 @@ HTTPServer implementation that uses a thread pool based SocketServer (similar
 to the approach used by CherryPy) and the WSGIHandler request handler from
 Paste. 
 
+NOTE: Most of the improvments from this implementation have been moved into
+      the Paste HTTP server, this should be considered deprecated.
+
 Preliminary numbers from "ab -c 50 -n 500 http://localhost:8080/", all tests
 with transaction level logging. Application processes a simple cheetah 
 template (using compiled NameMapper).

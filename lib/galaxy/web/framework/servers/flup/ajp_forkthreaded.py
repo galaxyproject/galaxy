@@ -83,7 +83,7 @@ import socket
 import logging
 
 from flup.server.ajp_base import BaseAJPServer, Connection
-from galaxy.web.flupservers.preforkthreadedserver import PreforkThreadedServer
+from preforkthreadedserver import PreforkThreadedServer
 
 __all__ = ['WSGIServer']
 

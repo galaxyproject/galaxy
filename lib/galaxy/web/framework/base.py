@@ -1,3 +1,7 @@
+"""
+A simple WSGI application/framework.
+"""
+
 import socket
 import types
 import logging

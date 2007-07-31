@@ -1,4 +1,8 @@
-import logging
+"""
+Provides factory methods to assemble the Galaxy web application
+"""
+
+import logging, atexit
 
 from paste.request import parse_formvars
 from paste.util import import_string
@@ -9,25 +13,55 @@ import pkg_resources
 
 log = logging.getLogger( __name__ )
 
-class XForwardedHostMiddleware( object ):
-    """
-    A WSGI middleware that changes the HTTP host header in the WSGI environ
-    based on the X-Forwarded-Host header IF found 
-    """
-    def __init__( self, app, global_conf=None ):
-        self.app = app
-    def __call__( self, environ, start_response ):
-        x_forwarded_host = environ.get( 'HTTP_X_FORWARDED_HOST', None )
-        if x_forwarded_host:
-            environ[ 'ORGINAL_HTTP_HOST' ] = environ[ 'HTTP_HOST' ]
-            environ[ 'HTTP_HOST' ] = x_forwarded_host
-        x_forwarded_for = environ.get( 'HTTP_X_FORWARDED_FOR', None )
-        if x_forwarded_for:
-            environ[ 'ORGINAL_REMOTE_ADDR' ] = environ[ 'REMOTE_ADDR' ]
-            environ[ 'REMOTE_ADDR' ] = x_forwarded_for
-        return self.app( environ, start_response )
+from galaxy import config, db, jobs, util, tools
+import galaxy.model
+import galaxy.model.mapping
+import galaxy.datatypes.registry
+from galaxy.web.controllers import root, tool_runner, proxy, async, admin, user, error, dataset
 
-def make_middleware( app, global_conf, **local_conf ):
+import galaxy.web.framework
+
+def app_factory( global_conf, **kwargs ):
+    """
+    Return a wsgi application serving the root object
+    """
+    # Create the Galaxy application unless passed in
+    if 'app' in kwargs:
+        app = kwargs.pop( 'app' )
+    else:
+        from galaxy.app import UniverseApplication
+        app = UniverseApplication( global_conf = global_conf, **kwargs )
+    atexit.register( app.shutdown )
+    # Create the universe WSGI application
+    webapp = galaxy.web.framework.WebApplication( app )
+    # Add controllers to the web application
+    webapp.add_controller( 'root', root.Universe( app ) )
+    webapp.add_controller( 'tool_runner', tool_runner.ToolRunner( app ) )
+    webapp.add_controller( 'ucsc_proxy', proxy.UCSCProxy( app ) )
+    webapp.add_controller( 'async', async.ASync( app ) )
+    webapp.add_controller( 'admin', admin.Admin( app ) )
+    webapp.add_controller( 'user', user.User( app ) )
+    webapp.add_controller( 'error', error.Error( app ) )
+    webapp.add_controller( 'dataset', dataset.DatasetInterface( app ) )
+    # These two routes handle our simple needs at the moment
+    webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
+    webapp.add_route( '/:controller/:action', action='index' )
+    webapp.add_route( '/:action', controller='root', action='index' )
+    webapp.finalize_config()
+    # Wrap the webapp in some useful middleware
+    if kwargs.get( 'middleware', True ):
+        webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
+    if kwargs.get( 'static_enabled', True ):
+        webapp = wrap_in_static( webapp, global_conf, **kwargs )
+    # Close any pooled database connections before forking
+    try:
+        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
+    except:
+        pass
+    # Return
+    return webapp
+    
+def wrap_in_middleware( app, global_conf, **local_conf ):
     """
     Based on the configuration wrap `app` in a set of common and useful 
     middleware.
@@ -47,11 +81,11 @@ def make_middleware( app, global_conf, **local_conf ):
         from paste import recursive
         app = recursive.RecursiveMiddleware( app, conf )
         log.debug( "Enabling 'recursive' middleware" )
-    # Session middleware puts a session factory into the environment 
-    if asbool( conf.get( 'use_session', True ) ):
-        store = flup_session.MemorySessionStore()
-        app = flup_session.SessionMiddleware( store, app )
-        log.debug( "Enabling 'flup session' middleware" )
+    ## # Session middleware puts a session factory into the environment 
+    ## if asbool( conf.get( 'use_session', True ) ):
+    ##     store = flup_session.MemorySessionStore()
+    ##     app = flup_session.SessionMiddleware( store, app )
+    ##     log.debug( "Enabling 'flup session' middleware" )
     # Beaker session middleware
     if asbool( conf.get( 'use_beaker_session', False ) ):
         pkg_resources.require( "Beaker" )
@@ -105,6 +139,31 @@ def make_middleware( app, global_conf, **local_conf ):
     app = ConfigMiddleware( app, conf )
     log.debug( "Enabling 'config' middleware" )
     # X-Forwarded-Host handling
+    from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
     log.debug( "Enabling 'x-forwarded-host' middleware" )
     return app
+    
+def wrap_in_static( app, global_conf, **local_conf ):
+    from paste.urlmap import URLMap
+    from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
+    urlmap = URLMap()
+    # Merge the global and local configurations
+    conf = global_conf.copy()
+    conf.update(local_conf)
+    # Get cache time in seconds
+    cache_time = conf.get( "static_cache_time", None )
+    if cache_time is not None:
+        cache_time = int( cache_time )
+    # Send to dynamic app by default
+    urlmap["/"] = app
+    # Define static mappings from config
+    urlmap["/static"] = Static( conf.get( "static_dir" ), cache_time )
+    urlmap["/images"] = Static( conf.get( "static_images_dir" ), cache_time )
+    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir" ), cache_time )
+    urlmap["/static/style"] = Static( conf.get( "static_style_dir" ), cache_time )
+    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
+    # URL mapper becomes the root webapp
+    return urlmap
+    
+    

@@ -2,6 +2,8 @@
 HTTPServer implementation that uses a thread pool based SocketServer (similar
 to the approach used by CherryPy) and the WSGIHandler request handler from
 Paste. 
+
+NOTE: NOT HEAVILY TESTED, DO NOT USE IN PRODUCTION!
 """
 
 import SocketServer
