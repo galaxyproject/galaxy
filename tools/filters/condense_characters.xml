@@ -26,13 +26,7 @@
   </tests>
   <help>
 
-.. class:: warningmark
-
-**WARNING:** This tool might condense some consecutive character, which is useful.
-
------
-
-**Syntax**
+**What it does**
 
 This tool condenses all consecutive characters of a specified type.
 

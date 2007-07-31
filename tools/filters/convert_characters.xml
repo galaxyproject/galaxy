@@ -35,13 +35,7 @@
   </tests>
   <help>
 
-.. class:: warningmark
-
-**WARNING:** This tool might convert some character which is meaningful.
-
------
-
-**Syntax**
+**What it does**
 
 Converts all delimiters of a specified type into TABs.  Consecutive characters are condensed. For example, if columns are separated by 5 spaces they will converted into 1 tab.
 
