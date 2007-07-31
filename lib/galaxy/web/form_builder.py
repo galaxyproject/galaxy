@@ -2,8 +2,7 @@
 Classes for generating HTML forms
 """
 
-import logging, util
-
+import logging
 log = logging.getLogger(__name__)
 
 class BaseField(object):

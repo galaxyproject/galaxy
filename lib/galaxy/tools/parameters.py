@@ -3,12 +3,13 @@ Classes encapsulating tool parameters
 """
 
 import logging, string, sys
-from galaxy import config, datatypes, util, form_builder
+from galaxy import config, datatypes, util
 import validation
 from elementtree.ElementTree import XML, Element
 
 # For BaseURLToolParameter
 from galaxy.web import url_for
+from galaxy.web import form_builder
 
 log = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 import sys
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
-from galaxy import form_builder
+from galaxy.web import form_builder
 
 # Taken in part from Elixir and how they do it: http://elixir.ematia.de
 
