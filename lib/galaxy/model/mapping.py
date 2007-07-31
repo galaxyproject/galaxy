@@ -4,8 +4,12 @@ are encapsulated here.
 """
 
 import pkg_resources
-pkg_resources.require( "psycopg2", "pysqlite>=2", "sqlalchemy>=0.3" )
-## pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
+pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
+
+# Attempt to load psycopg but fail quietly since it may not be in an egg 
+# or even needed.
+try: pkg_resources.require( "psycopg2" )
+except: pass
 
 import sys
 
