@@ -24,7 +24,7 @@ from bx.binned_array import BinnedArray, FileBinnedArray
 from bx.bitset import *
 from bx.bitset_builders import *
 from fpconst import isNaN
-import cookbook.doc_optparse
+from bx.cookbook import doc_optparse
 
 class FileBinnedArrayDir( DictMixin ):
     """
@@ -114,7 +114,7 @@ def load_scores_ba_dir( dir ):
 def main():
 
     # Parse command line
-    options, args = cookbook.doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse( __doc__ )
 
     try:
         score_fname = args[0]
@@ -129,7 +129,7 @@ def main():
         binned = bool( options.binned )
         mask_fname = options.mask
     except:
-        cookbook.doc_optparse.exit()
+        doc_optparse.exit()
 
     if score_fname == 'None':
         print 'Invalid genome build - this tool currently only works with data from genome builds hg16, hg17 or hg18.  Click "edit attributes" (the pencil icon) in your history item to correct the genome build if appropriate.'

@@ -5,7 +5,7 @@ import os
 import logging
 import data, interval, images, sequence
 import galaxy.util
-from cookbook.odict import odict
+from galaxy.util.odict import odict
 
 class Registry( object ):
     def __init__( self, datatypes = [] ):

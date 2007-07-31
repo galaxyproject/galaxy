@@ -8,8 +8,11 @@ usage: %prog input errorsfile output
     -x, --ext: dataset extension (type)
     -m, --methods=N: comma separated list of repair methods
 """
-from cookbook import doc_optparse
-from galaxy import util, model
+
+import pkg_resources; pkg_resources.require( "bx-python" )
+from bx.cookbook import doc_optparse
+
+from galaxy import util
 
 def main():
     options, args = doc_optparse.parse( __doc__ )

@@ -468,7 +468,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     as "selected".
     
     >>> # Create a mock transcation with 'hg17' as the current build
-    >>> from cookbook.patterns import Bunch
+    >>> from galaxy.util.bunch import Bunch
     >>> trans = Bunch( history=Bunch( genome_build='hg17' ) )
     
     >>> p = GenomeBuildParameter( None, XML( 
@@ -519,7 +519,7 @@ class DataToolParameter( ToolParameter ):
 
     >>> # Mock up a history (not connected to database)
     >>> from galaxy.model import History, Dataset
-    >>> from cookbook.patterns import Bunch
+    >>> from galaxy.util.bunch import Bunch
     >>> hist = History()
     >>> hist.flush()
     >>> hist.add_dataset( Dataset( id=1, extension='text' ) )
@@ -669,7 +669,7 @@ class DataToolParameter( ToolParameter ):
 #            I also probably wrote this docstring test thing wrong.
 #     
 #     >>> from galaxy.model import History, Dataset
-#     >>> from cookbook.patterns import Bunch
+#     >>> from galaxy.util.bunch import Bunch
 #     >>> hist = History( id=1 )
 #     >>> p = HistoryIDParameter( None, XML( '<param name="blah" type="history"/>' ) )
 #     >>> print p.name

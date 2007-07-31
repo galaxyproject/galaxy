@@ -13,13 +13,13 @@ from numarray.ieeespecial import *
 from tables import *
 
 import pkg_resources; pkg_resources.require( "bx-python" )
+from bx.cookbook import doc_optparse
 
-import cookbook.doc_optparse
 from bx import intervals
 
 def main():
     # Parse command line
-    options, args = cookbook.doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse( __doc__ )
     try:
         h5_fname = args[0]
         mapping_fname = args[1]
@@ -28,8 +28,7 @@ def main():
         chrom_col, start_col, end_col = map( lambda x: int( x ) - 1, args[4:7] )
         per_col = bool( options.perCol )
     except Exception, e:
-        print e
-        cookbook.doc_optparse.exit()
+        doc_optparse.exception()
         
     if h5_fname == 'None.h5':
         print 'Invalid genome build - this tool currently only works with data from genome build hg17.  Click "edit attributes" (the pencil icon) in your history item to correct the genome build if appropriate.'

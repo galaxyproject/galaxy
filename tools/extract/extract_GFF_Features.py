@@ -7,17 +7,19 @@ usage: %prog input1 out_file1 column features out_format
 """
 
 import sys, os
-import cookbook.doc_optparse
+
+import pkg_resources; pkg_resources.require( "bx-python" )
+from bx.cookbook import doc_optparse
 
 def main():   
     # Parsing Command Line here
-    options, args = cookbook.doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse( __doc__ )
     
     try:
         inp_file, out_file, column, features = args
         column = int(column)
     except:
-        cookbook.doc_optparse.exception()
+        doc_optparse.exception()
     
     if features == None:
         print "Column %d has no features to display. Please select another column." %(column+1)

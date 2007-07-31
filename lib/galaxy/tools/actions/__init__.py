@@ -1,4 +1,4 @@
-from cookbook.patterns import Bunch
+from galaxy.util.bunch import Bunch
 from galaxy.tools.parameters import *
 
 class ToolAction( object ):

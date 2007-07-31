@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.3
+#!/usr/bin/env python2.4
 
 """
 Reads a list of intervals and a maf. Produces a new maf containing the
@@ -22,9 +22,9 @@ usage: %prog maf_file index_file [options] < interval_file
 
 #import psyco_full
 
-import cookbook.doc_optparse
-
 import pkg_resources; pkg_resources.require( "bx-python" )
+from bx.cookbook import doc_optparse
+
 import bx.align.maf
 from bx import interval_index_file
 import bx.intervals.io
@@ -36,7 +36,7 @@ def __main__():
 
     # Parse Command Line
 
-    options, args = cookbook.doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse( __doc__ )
     
     #dictionary of available maf files
     maf_sets = {}

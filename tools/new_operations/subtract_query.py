@@ -8,7 +8,10 @@ usage: %prog in_file_1 in_file_2 begin_col end_col output
 """
 
 import sys, sets, re
-import cookbook.doc_optparse
+
+import pkg_resources; pkg_resources.require( "bx-python" )
+from bx.cookbook import doc_optparse
+
 from galaxy.datatypes import sniff
 
 def get_lines(fname, begin_col='', end_col=''):
@@ -28,7 +31,7 @@ def get_lines(fname, begin_col='', end_col=''):
 def main():
     
     # Parsing Command Line here
-    options, args = cookbook.doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse( __doc__ )
     
     try:
         num_columns1, num_columns2 = options.num_cols.split(',')
@@ -41,7 +44,7 @@ def main():
             inp1_file, inp2_file, out_file = args
             begin_col = end_col = ''
         except:
-            cookbook.doc_optparse.exception()
+            doc_optparse.exception()
     
     """
     If we are to restrict to specific columns, make sure input datasets are tabular.

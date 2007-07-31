@@ -20,7 +20,7 @@ from warnings import warn
 from bx.intervals import *
 from bx.intervals.io import *
 from bx.intervals.operations.join import *
-import cookbook.doc_optparse
+from bx.cookbook import doc_optparse
 
 from galaxyops import *
 
@@ -32,7 +32,7 @@ def main():
     leftfill = False
     rightfill = False
     
-    options, args = cookbook.doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse( __doc__ )
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols1 )
         chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )      
@@ -45,7 +45,7 @@ def main():
                 leftfill = options.fill == "left"
         in_fname, in2_fname, out_fname = args
     except:
-        cookbook.doc_optparse.exception()
+        doc_optparse.exception()
 
     g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
                                 chrom_col=chr_col_1,

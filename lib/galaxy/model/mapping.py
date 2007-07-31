@@ -4,8 +4,8 @@ are encapsulated here.
 """
 
 import pkg_resources
-## pkg_resources.require( "psycopg2", "pysqlite>=2", "sqlalchemy>=0.3" )
-pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
+pkg_resources.require( "psycopg2", "pysqlite>=2", "sqlalchemy>=0.3" )
+## pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
 
 import sys
 
@@ -14,8 +14,7 @@ from sqlalchemy.ext.assignmapper import assign_mapper
 
 from sqlalchemy import *
 from galaxy.model import *
-
-from cookbook.patterns import Bunch
+from galaxy.util.bunch import Bunch
 
 class TrimmedString( TypeDecorator ):
     impl = String

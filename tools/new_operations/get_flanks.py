@@ -10,14 +10,15 @@ usage: %prog input out_file size direction region
 """
 
 import sys, sets, re, os
-import cookbook.doc_optparse
-import pkg_resources
-pkg_resources.require( "bx-python" )
+
+import pkg_resources; pkg_resources.require( "bx-python" )
+from bx.cookbook import doc_optparse
+
 from galaxyops import *
 
 def main():   
     # Parsing Command Line here
-    options, args = cookbook.doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse( __doc__ )
     
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols )
@@ -27,7 +28,7 @@ def main():
         if strand_col_1 <= 0:
             strand = "+"        #if strand is not defined, default it to +
     except:
-        cookbook.doc_optparse.exception()
+        doc_optparse.exception()
         
     try:
         fi = open(inp_file,'r')

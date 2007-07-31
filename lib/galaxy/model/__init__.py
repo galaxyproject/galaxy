@@ -8,7 +8,7 @@ the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 import os.path
 import sha
 import galaxy.datatypes
-from cookbook.patterns import Bunch
+from galaxy.util.bunch import Bunch
 from galaxy import util
 import tempfile
 import galaxy.datatypes.registry

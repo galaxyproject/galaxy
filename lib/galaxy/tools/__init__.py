@@ -12,8 +12,8 @@ import sha, hmac, binascii
 
 from UserDict import DictMixin
 from Cheetah.Template import Template
-from cookbook.odict import odict
-from cookbook.patterns import Bunch
+from galaxy.util.odict import odict
+from galaxy.util.bunch import Bunch
 from galaxy import util, jobs, model
 from elementtree import ElementTree
 from parameters import *
