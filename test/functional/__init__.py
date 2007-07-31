@@ -12,6 +12,7 @@ import os, os.path, subprocess, sys, threading
 from galaxy.web.framework.servers import threadpool_server
 import galaxy.app
 from galaxy.app import UniverseApplication
+from galaxy.web import buildapp
 
 log = logging.getLogger( __name__ )
 
@@ -65,9 +66,9 @@ def setup():
                                    
         log.info( "Embedded Universe application started" )
 
-        webapp = galaxy.app.app_factory( dict(),
-                                         use_translogger = False,
-                                         app=app )
+        webapp = buildapp.app_factory( dict(),
+                                       use_translogger = False,
+                                       app=app )
 
         server = threadpool_server.serve( webapp, dict(), 
                                           host=galaxy_test_host, 
