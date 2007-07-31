@@ -9,8 +9,6 @@ body
     background-repeat: repeat-x;
     background-position: top;
     margin: 10px;
-    margin-right: 15px;
-    margin-left: 15px;
 }
 
 a:link, a:visited, a:active
@@ -39,6 +37,8 @@ div.toolFormTitle
 { 
   font-weight: bold;
   padding: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
   background: $form_title_bg_bottom;
   background-image: url(form_title_bg.png);
   background-repeat: repeat-x;
@@ -53,11 +53,13 @@ div.toolParamHelp
 
 div.toolFormBody
 { 
-  padding: 10px;
   background: $form_body_bg_bottom;
   background-image: url(form_body_bg.png);
   background-repeat: repeat-x;
   background-position: top;
+  padding: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 div.toolFormBody div.toolFormTitle
@@ -86,11 +88,28 @@ div.form-row
     margin-bottom: 1em;
 }
 
+div.form-title-row
+{
+    margin-bottom: 0.5em;
+}
+
+div.repeat-group-item
+{
+    border-left: solid $form_border 5px;
+    padding-left: 10px;
+}
+
+div.form-row-error
+{
+    background: $error_message_bg;
+    padding: 5px;
+}
+
 div.form-row label
 {
     font-weight: bold;
     display: block;
-    margin-bottom: .1em;
+    margin-bottom: .2em;
 }
 
 select, input, textarea
@@ -242,4 +261,48 @@ div.odd_row
     
 #footer {
   display: none;
+}
+
+## Tool panel stuff
+
+td.panel-body
+{
+    background: white;
+    color: $base_text;
+    background: $menu_bg_over url(menu_bg.png) top repeat-x;
+}
+
+div.toolMenu
+{
+    padding: 10px;
+}
+
+div.toolSectionPad
+{
+    margin: 0;
+    padding: 0;
+    height: 5px;
+    font-size: 0px;
+}
+
+div.toolSectionDetailsInner
+{ 
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+div.toolSectionTitle
+{
+  padding-bottom: 0px;
+  font-weight: bold;
+}
+
+div.toolTitle
+{
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-left: 16px;
+  margin-right: 10px;
+  display: list-item;
+  list-style: square outside;
 }
