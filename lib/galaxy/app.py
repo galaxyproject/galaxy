@@ -34,7 +34,7 @@ class UniverseApplication( object ):
         self.heartbeat = None
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
-            from galaxy import heartbeat
+            from galaxy.util import heartbeat
             if heartbeat.Heartbeat:
                 self.heartbeat = heartbeat.Heartbeat()
                 self.heartbeat.start()
