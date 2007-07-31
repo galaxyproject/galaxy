@@ -20,6 +20,9 @@
     </test>
   </tests>
   <help>
+
+**What it does**
+
 This tool takes a MAF file and a size range and extracts the MAF blocks which fall within the specified range.
   </help>
 </tool>

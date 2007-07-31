@@ -1,20 +1,29 @@
-<tool id="Interval_Maf_Merged_Fasta1" name="Stitch MAF blocks for intervals">
-  <description>using locally cached alignments</description>
-  <command interpreter="python2.4">interval_maf_to_merged_fasta.py $dbkey $species $mafSource $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol -</command>
+<tool id="Interval_Maf_Merged_Fasta1" name="Stitch MAF blocks">
+  <description>given a set of genomic intervals</description>
+  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#interval_maf_to_merged_fasta_user.py $dbkey $species $maf_source_type.input2 $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol -
+#else:#interval_maf_to_merged_fasta.py $dbkey $species $maf_source_type.maf_uid $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol -
+#end if
+</command>
   <inputs>
     <page>
         <param format="interval" name="input1" type="data" label="Choose intervals"/>
-<!--        <param name="unkown_gap_char" type="select">
-          <label>Character for missing data</label>
-          <option value="-">-</option>
-          <option value="?">?</option>
-        </param> -->
     </page>
     <page>
-        <param name="mafSource" label="Choose alignments" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
+        <conditional name="maf_source_type">
+            <param name="maf_source" type="select" label="MAF Source">
+              <option value="cached" selected="true">Locally Cached Alignments</option>
+              <option value="user">Alignments in Your History</option>
+            </param>
+            <when value="user">
+                <param format="maf" name="input2" type="data" label="Choose alignments"/>
+            </when>
+            <when value="cached">
+                <param name="maf_uid" label="Choose alignments" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
+            </when>
+        </conditional>
     </page>
     <page>
-        <param name="species" label="Choose species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( mafSource )" help="select species to be included in the final alignment" />
+        <param name="species" label="Choose species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( maf_source_type )" help="select species to be included in the final alignment" />
     </page>
    </inputs>
   <outputs>
@@ -23,25 +32,21 @@
   <tests>
     <test>
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
-      <param name="mafSource" value="8_WAY_MULTIZ_hg17"/>
+      <param name="maf_source" value="cached"/>
+      <param name="maf_uid" value="8_WAY_MULTIZ_hg17"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
-      <output name="out_file1" file="gene_bed_maf_to_fasta_out.dat" />
+      <output name="out_file1" file="interval_maf_to_merged_fasta_out.dat" />
+    </test>
+    <test>
+      <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
+      <param name="maf_source" value="user"/>
+      <param name="input2" value="5.maf"/>
+      <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
+      <output name="out_file1" file="interval_maf_to_merged_fasta_user_out.dat" />
     </test>
   </tests>
   <help>
-
-.. class:: infomark
-
-What is the differences between these two tools: **Stitch MAF blocks for intervals using locally cached alignments** and **Stitch MAF blocks for intervals from user supplied alignments**?
-
-  * **Stitch MAF blocks for intervals using locally cached alignments** uses alignments stored at Galaxy installation at Penn State and is appropriate for most situations. It takes only one dataset as the input - a list of genomic intervals.
-  * **Stitch MAF blocks for intervals from user supplied alignments** allows the user to work with his/her own alignments instead of those cached at Galaxy site. This tool takes two datasets as inputs - (1) genomic intervals and (2) alignments.
-
-In the future these two tools will be merged.
-
-------
-
-**What It Does**
+**What it does**
 
 A single genomic region can be covered by multiple alignment blocks. In many cases it is desirable to stitch these alignment blocks together. This tool accepts a list of genomic intervals. For every interval it performs the following:
 

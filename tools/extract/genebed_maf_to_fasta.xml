@@ -1,9 +1,12 @@
-<tool id="GeneBed_Maf_Fasta1" name="Extract Gene blocks">
-  <description>from locally cached alignments</description>
-  <command interpreter="python2.4">genebed_maf_to_fasta.py $dbkey $species $mafSource $input1 $out_file1 -</command>
+<tool id="GeneBed_Maf_Fasta1" name="Stitch Gene blocks">
+  <description>given a set of coding exon intervals</description>
+  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#genebed_maf_to_fasta_user.py $dbkey $species $maf_source_type.input2 $input1 $out_file1 -
+#else:#genebed_maf_to_fasta.py $dbkey $species $maf_source_type.maf_uid $input1 $out_file1 -
+#end if
+  </command>
   <inputs>
     <page>
-        <param format="interval" name="input1" type="data" label="Interval File"/>
+        <param format="bed" name="input1" type="data" label="Gene BED File"/>
 <!--        <param name="unkown_gap_char" type="select">
           <label>Character for missing data</label>
           <option value="-">-</option>
@@ -11,10 +14,21 @@
         </param> -->
     </page>
     <page>
-        <param name="mafSource" label="Choose MAF source" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
+        <conditional name="maf_source_type">
+            <param name="maf_source" type="select" label="MAF Source">
+              <option value="cached" selected="true">Locally Cached Alignments</option>
+              <option value="user">Alignments in Your History</option>
+            </param>
+            <when value="user">
+                <param format="maf" name="input2" label="MAF File" type="data"/>
+            </when>
+            <when value="cached">
+                <param name="maf_uid" label="MAF Type" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
+            </when>
+        </conditional>
     </page>
     <page>
-        <param name="species" label="Choose desired species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( mafSource )"/>
+        <param name="species" label="Choose species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( maf_source_type )" help="select species to be included in the final alignment" />
     </page>
    </inputs>
   <outputs>
@@ -23,13 +37,31 @@
 <!--  <tests>
     <test>
       <param name="input1" value="gene_bed.dat"/>
-      <param name="mafSource" value="8_WAY_MULTIZ_hg17"/>
+      <param name="maf_source" value="cached"/>
+      <param name="maf_uid" value="8_WAY_MULTIZ_hg17"/>
+      <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
+      <output name="out_file1" file="gene_bed_maf_to_fasta_out.dat" />
+    </test>
+    <test>
+      <param name="input1" value="gene_bed.dat"/>
+      <param name="input2" value="gene_bed_maf_to_fasta_user_maf_in.dat"/>
+      <param name="maf_source" value="user"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
       <output name="out_file1" file="gene_bed_maf_to_fasta_out.dat" />
     </test>
   </tests> -->
   <help>
-This tool takes a Gene BED file and creates a FASTA file which contains alignments of user specified species which correspond to the coding exons of the supplied Gene using locally cached alignments.  
+
+**What it does**
+
+The coding sequence of genes are usually composed of several coding exons. Each of these coding exons is an individual genomic region, which when concatenated with each other constitutes the coding sequence. A single genomic region can be covered by multiple alignment blocks. In many cases it is desirable to stitch these alignment blocks together. This tool accepts a list of gene-based intervals, in the Gene BED format. For every interval it performs the following:
+
+  * finds all MAF blocks that overlap the coding regions;
+  * sorts MAF blocks by alignment score;
+  * stitches blocks together and resolves overlaps based on alignment score;
+  * outputs alignments in FASTA format.
+
+
   </help>
   <code file="genebed_maf_to_fasta_code.py"/>
 </tool>

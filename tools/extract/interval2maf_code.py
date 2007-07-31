@@ -38,6 +38,7 @@ def get_available_data( build ):
     return available_sets
 
 
-def exec_before_job(app,inp_data, out_data, param_dict, tool):
-    for name, data in out_data.items():
-        data.name = data.name + " [" + maf_sets[param_dict['mafType']]['description'] + "]"
+def exec_before_job(app, inp_data, out_data, param_dict, tool):
+    if param_dict['maf_source_type']['maf_source'] == "cached":
+        for name, data in out_data.items():
+            data.name = data.name + " [" + maf_sets[str(param_dict['maf_source_type']['mafType'])]['description'] + "]"

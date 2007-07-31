@@ -39,6 +39,9 @@ $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $
     </test>
   </tests>
   <help>
+
+**What it does**
+
 This tool takes a MAF file and an interval file and relates coverage information by interval for each species.
 If a column does not exist in the reference genome, it is not included in the output.
 

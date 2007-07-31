@@ -1,4 +1,4 @@
-<tool id="MAF_Thread_For_Species1" name="Join MAF Blocks">
+<tool id="MAF_Thread_For_Species1" name="Join MAF blocks">
     <description>by Species</description>
     <command interpreter="python2.4">maf_thread_for_species.py $input1 $out_file1 $species</command>
     <inputs>
@@ -21,7 +21,7 @@
     </tests>
     <help>
 
-**What It Does**
+**What it does**
 
 This tool allows the user to merge MAF blocks which are adjoining in each specified species from a MAF file. Columns which contain only gaps are removed. Species which are not desired are removed from the output.
 

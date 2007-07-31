@@ -1,5 +1,7 @@
 #build list of available data
 import os, sys
+import pkg_resources; pkg_resources.require( "bx-python" )
+import bx.align.maf
 maf_sets = {}
 
 try:
@@ -37,14 +39,52 @@ def get_available_data( build ):
         available_sets.append(('No data available for this build','None',True))
     return available_sets
 
-def get_available_species( maf_uid ):
-    available_sets = []
-    for key in maf_sets[maf_uid]['builds']:
-        available_sets.append((key,key,True))
-    if len(available_sets) < 1:
-        available_sets.append(('No data available for this configuration','None',True))
-    return available_sets
+def get_available_species( maf_source_type ):
+    if maf_source_type['maf_source'] == 'cached':
+        maf_uid = maf_source_type['maf_uid']
+        available_sets = []
+        for key in maf_sets[maf_uid]['builds']:
+            available_sets.append((key,key,True))
+        if len(available_sets) < 1:
+            available_sets.append(('No data available for this configuration','None',True))
+        return available_sets
+    else:
+        try:
+            rval = []
+            species={}
+            input_filename = maf_source_type['input2'].file_name
+            try:
+                file_in = open(input_filename, 'r')
+                maf_reader = bx.align.maf.Reader( file_in )
+                
+                for i, m in enumerate( maf_reader ):
+                    l = m.components
+                    for c in l:
+                        spec,chrom = bx.align.maf.src_split( c.src )
+                        if not spec or not chrom:
+                            spec = chrom = c.src
+                        if spec not in species:
+                            species[spec]={"bases":0,"nongaps":0}
+                        species[spec]["bases"] = species[spec]["bases"] + c.size + c.text.count("-")
+                        species[spec]["nongaps"] = species[spec]["nongaps"] + c.size 
+                
+                file_in.close()
+            except Exception:
+                return [("There is a problem with your MAF file",'None',True)]
+            species_names = species.keys()
+            species_names.sort()
+            
+            for spec in species_names:
+                #species_sequence[spec] = "".join(species_sequence[spec])
+                
+                display = "%s: %i nongap, %i total bases" % (spec, species[spec]["nongaps"], species[spec]["bases"] )
+                rval.append( ( display,spec,True) )
+                    
+            return rval
+        except:
+            return [("<B>You must wait for the MAF file to be created before you can use this tool.</B>",'None',True)]
 
-def exec_before_job(app,inp_data, out_data, param_dict, tool):
-    for name, data in out_data.items():
-        data.name = data.name + " [" + maf_sets[param_dict['mafSource']]['description'] + "]"
+def exec_before_job(app, inp_data, out_data, param_dict, tool):
+    if param_dict['maf_source_type']['maf_source'] == "cached":
+        for name, data in out_data.items():
+            data.name = data.name + " [" + maf_sets[str(param_dict['maf_source_type']['maf_uid'])]['description'] + "]"

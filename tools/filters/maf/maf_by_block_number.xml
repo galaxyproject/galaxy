@@ -20,6 +20,9 @@
     </test>
   </tests>
   <help>
+
+**What it does**
+
 This tool takes a list of block numbers, one per line, and extracts the corresponding MAF blocks from the provided file. Block numbers start at 0.
   </help>
 </tool>

@@ -52,8 +52,7 @@
     <tool file="stats/grouping.xml" />   
   </section>
   <section name="Convert Formats" id="convert">
-    <tool file="filters/maf/maf_to_fasta_multiple_sets.xml" />
-    <tool file="filters/maf/maf_to_fasta_concat.xml" />
+    <tool file="filters/maf/maf_to_fasta.xml" />
     <tool file="filters/maf/maf_to_bed.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="filters/bed2gff.xml" />
@@ -76,9 +75,7 @@
   <section name="Fetch Alignments" id="fetchAlign">
     <tool file="extract/interval2maf_pairwise.xml" />
     <tool file="extract/interval2maf.xml" />
-    <tool file="extract/user_interval2maf.xml" />
     <tool file="extract/interval_maf_to_merged_fasta.xml" />
-    <tool file="extract/interval_maf_to_merged_fasta_user.xml" />
 <!--    <tool file="extract/genebed_maf_to_fasta.xml"/>
     <tool file="extract/genebed_maf_to_fasta_user.xml"/>
     <tool file="filters/maf/maf_stats.xml"/> -->
