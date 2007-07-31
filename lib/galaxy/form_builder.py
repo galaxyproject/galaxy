@@ -155,65 +155,18 @@ class SelectField(BaseField):
         else:
             return self.get_html_default( prefix )
     def get_html_checkboxes( self, prefix="" ):
-        
         rval = []
-        box_len = 0
-        for text, value, selected in self.options:
-            if box_len < len(text) :
-                box_len = len(text) 
-                
-        if box_len <= 5 :
-            rval.append('<table><tr>')
-	
-        nn = 0
         ctr = 0
-        style = ""
-        
         for text, value, selected in self.options:
+            style = ""
             if len(self.options) > 2 and ctr % 2 == 1:
-            #if ctr % 2 == 1:
                 style = " class=\"odd_row\""
+            if selected:
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked>%s</div>' % ( style, prefix, self.name, value, text) )
             else:
-                style = ""
-            if box_len > 5: 
-                if selected:
-                    rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked>%s</div>' % ( style, prefix, self.name, value, text) )
-                else:
-                    rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s">%s</div>' % ( style, prefix, self.name, value, text) )
-            else:
-                #If maximum length of all the texts is less than or equal 5, put 5 checkboxes on one line.
-                if nn == 5: 
-                    nn = 0
-                    rval.append('</tr><tr>')
-                if selected:
-                    rval.append( '<td><input type="checkbox" name="%s%s" value="%s" checked>%s</td>' % ( prefix, self.name, value, text) )
-                else:
-                    rval.append( '<td><input type="checkbox" name="%s%s" value="%s">%s</td>' % ( prefix, self.name, value, text) )
-            nn = nn + 1
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s">%s</div>' % ( style, prefix, self.name, value, text) )
             ctr += 1
-            
-        if box_len <= 5 : 
-            rval.append('</tr></table>')
-
-#            if selected:
-#                rval.append( '<div%s><input type="checkbox" name="%s" value="%s" checked>%s</div>' % ( style, self.name, value, text) )
-#            else:
-#                rval.append( '<div%s><input type="checkbox" name="%s" value="%s">%s</div>' % ( style, self.name, value, text) )
-
         return "\n".join( rval )
-#        rval = []
-	
-#        ctr = 0
-#        for text, value, selected in self.options:
-#            style = ""
-#            if len(self.options) > 2 and ctr % 2 == 1:
-#                style = " class=\"odd_row\""
-#            if selected:
-#                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked>%s</div>' % ( style, prefix, self.name, value, text) )
-#            else:
-#                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s">%s</div>' % ( style, prefix, self.name, value, text) )
-#            ctr += 1
-#        return "\n".join( rval )
     def get_html_radio( self, prefix="" ):
         rval = []
         ctr = 0
