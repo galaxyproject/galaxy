@@ -23,32 +23,32 @@
 
 -----
 
-**Syntax**
+**What it does**
 
-Concatenate Query2 to the end of Query1, and print on the output file.
+Concatenates two queries
 
 -----
 
 **Example**
 
-- Query1::
+Query1::
 
-    chrX  151087187  151087355  NM_000808_utr3_0_0_chrX_151087188_r  0  -
-    chrX  151572400  151572481  NM_018558_utr3_8_0_chrX_151572401_f  0  +
+    chrX  151087187  151087355  A  0  -
+    chrX  151572400  151572481  B  0  +
 
-- Query2::
+Query2::
 
-    chr1  151242630  151242955  NM_005416_utr3_2_0_chr1_151242631_f  0  +
-    chr1  151271715  151271999  NM_003125_utr3_1_0_chr1_151271716_f  0  +
-    chr1  151278832  151279227  NM_006945_utr3_0_0_chr1_151278833_r  0  -
+    chr1  151242630  151242955  X  0  +
+    chr1  151271715  151271999  Y  0  +
+    chr1  151278832  151279227  Z  0  -
 
-- Concatenate Query2 to the end of Query1. The result is::
+The result of concatenation is::
 
-    chrX  151087187  151087355  NM_000808_utr3_0_0_chrX_151087188_r  0  -
-    chrX  151572400  151572481  NM_018558_utr3_8_0_chrX_151572401_f  0  +
-    chr1  151242630  151242955  NM_005416_utr3_2_0_chr1_151242631_f  0  +
-    chr1  151271715  151271999  NM_003125_utr3_1_0_chr1_151271716_f  0  +
-    chr1  151278832  151279227  NM_006945_utr3_0_0_chr1_151278833_r  0  -
+    chrX  151087187  151087355  A  0  -
+    chrX  151572400  151572481  B  0  +
+    chr1  151242630  151242955  X  0  +
+    chr1  151271715  151271999  Y  0  +
+    chr1  151278832  151279227  Z  0  -
 
 </help>
 </tool>

@@ -32,7 +32,7 @@
 
 -----
 
-**Syntax**
+**What it does**
 
 This tool computes an expression for every row of a query and appends the result as a new column (field).
 
@@ -44,30 +44,30 @@ This tool computes an expression for every row of a query and appends the result
 
 **Example**
 
-- Input file::
+If this is your input::
 
-    chr1	151077881	151077918	2	200	-
-    chr1	151081985	151082078	3	500	+
+   chr1  151077881  151077918  2  200  -
+   chr1  151081985  151082078  3  500  +
 
-- Using Input file, compute "c4*c5" results in::
+computing "c4*c5" will produce::
 
-    chr1	151077881	151077918	2	200	-	400.0
-    chr1	151081985	151082078	3	500	+	1500.0
+   chr1  151077881  151077918  2  200  -   400.0
+   chr1  151081985  151082078  3  500  +  1500.0
     
-- If "Round result?" is YES, compute "c4*c5" results in::
+if, at the same time, "Round result?" is set to **YES** results will look like this::
 
-    chr1	151077881	151077918	2	200	-	400
-    chr1	151081985	151082078	3	500	+	1500
+   chr1  151077881  151077918  2  200  -   400
+   chr1  151081985  151082078  3  500  +  1500
 
-- Many operations are functional.  For example, compute "c3>=c2" for Input file results in::
+You can also use this tool to evaluate expressions. For example, computing "c3>=c2" for Input will result in the following::
 
-    chr1	151077881	151077918	2	200	-	True
-    chr1	151081985	151082078	3	500	+	True
+   chr1  151077881  151077918  2  200  -  True
+   chr1  151081985  151082078  3  500  +  True
 
-- Another example, compute "type(c2)==type('') for Input file resutls in::
+or computing "type(c2)==type('') for Input will return::
 
-    chr1	151077881	151077918	2	200	-	False
-    chr1	151081985	151082078	3	500	+	False
+   chr1  151077881  151077918  2  200  -  False
+   chr1  151081985  151082078  3  500  +  False
 
 </help>
 </tool>

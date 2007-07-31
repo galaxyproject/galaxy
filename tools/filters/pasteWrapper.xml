@@ -29,31 +29,31 @@
 
 .. class:: infomark
 
-**TIP:** Paste preserves column assignments of Query1 
+Paste preserves column assignments of the first dataset
 
 -----
 
-**Syntax**
+**What it does**
 
-This tool merges two queries side by side. If the first (left) query contains column assignments such as chromosome, start, end and strand, these will be preserved. However, if you would like to change column assignments, use "edit attributes" link in the history item.
+This tool merges two datasets side by side. If the first (left) query contains column assignments such as chromosome, start, end and strand, these will be preserved. However, if you would like to change column assignments, click the pencil icon in the history item.
 
 -----
 
 **Example**
 
-- Query 1::
+First dataset::
   
     a 1
     a 2
     a 3
 
-- Query 2::
+Second dataset::
 
     20
     30
     40
 
-- Pasting them together will produce::
+Pasting them together will produce::
 
     a 1 20
     a 2 30

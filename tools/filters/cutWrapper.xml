@@ -29,7 +29,7 @@
 
 .. class:: warningmark
 
-**WARNING: This tool breaks column assignments.** To re-establish column assignments run the tools and click on "edit attributes" link in the latest history item.
+**WARNING: This tool breaks column assignments.** To re-establish column assignments run the tools and click on the pencil icon in the latest history item.
 
 .. class:: infomark
 
@@ -47,9 +47,9 @@ The output of this tool is always in tabular format (e.g., if your original deli
 
 -----
 
-**Syntax**
+**What it does**
 
-This tool selects specified columns from the dataset.
+This tool selects (cuts out) specified columns from the dataset.
 
 - Columns are specified as **c1**, **c2**, and so on. Column count begins with **1**
 - Columns can be specified in any order (e.g., **c2,c1,c6**)
@@ -59,23 +59,23 @@ This tool selects specified columns from the dataset.
 
 **Example**
 
-- Input dataset (six columns: c1, c2, c3, c4, c5, and c6)::
+Input dataset (six columns: c1, c2, c3, c4, c5, and c6)::
 
    chr1 10   1000  gene1 0 +
    chr2 100  1500  gene2 0 +
 
-- **cut** on columns "**c1,c4,c6**" will return::
+**cut** on columns "**c1,c4,c6**" will return::
 
    chr1 gene1 +
    chr2 gene2 +
 
-- **cut** on columns "**c6,c5,c4,c1**" will return::
+**cut** on columns "**c6,c5,c4,c1**" will return::
 
    + 0 gene1 chr1 
    + 0 gene2 chr2
 
 
-- **cut** on columns "**c8,c7,c4**" will return::
+**cut** on columns "**c8,c7,c4**" will return::
 
    . . gene1 
    . . gene2

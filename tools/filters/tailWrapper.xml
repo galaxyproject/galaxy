@@ -2,8 +2,8 @@
   <description>lines from a Query</description>
   <command interpreter="perl">tailWrapper.pl $input $lineNum $out_file1</command>
   <inputs>
-    <param name="lineNum" size="5" type="integer" value="10" label="Show last"/>
-    <param format="text" name="input" type="data" label="lines of"/>
+    <param name="lineNum" size="5" type="integer" value="10" label="Select last" help="lines"/>
+    <param format="text" name="input" type="data" label="from"/>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input"/>
@@ -17,11 +17,9 @@
   </tests>
   <help>
 
-**Syntax**
+**What it does**
 
-This tool output the last part of the input file.
-
-- **Show last** sets the number of lines to output. For example, **10** refers to output the last 10 lines of the selected query.
+This tool outputs specified number of lines from the **end** of a dataset
 
 -----
 

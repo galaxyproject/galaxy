@@ -2,8 +2,8 @@
   <description>lines from a Query</description>
   <command interpreter="perl">headWrapper.pl $input $lineNum $out_file1</command>
   <inputs>
-    <param name="lineNum" size="5" type="integer" value="10" label="Show first"/>
-    <param format="text" name="input" type="data" label="lines of"/>
+    <param name="lineNum" size="5" type="integer" value="10" label="Select first" help="lines"/>
+    <param format="text" name="input" type="data" label="from"/>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input"/>
@@ -17,28 +17,26 @@
   </tests>
   <help>
 
-**Syntax**
+**What it does**
 
-This tool output the first part of the input file.
-
-- **Show first** sets the number of lines to output. For example, **10** refers to output the first 10 lines of the selected query.
+This tool outputs specified number of lines from the **beginning** of a dataset
 
 -----
 
 **Example**
 
-- Input File::
+Selecting 2 lines from this::
 
-    chr7    56632   56652   D17003_CTCF_R6  310     +
-    chr7    56736   56756   D17003_CTCF_R7  354     +
-    chr7    56761   56781   D17003_CTCF_R4  220     +
-    chr7    56772   56792   D17003_CTCF_R7  372     +
-    chr7    56775   56795   D17003_CTCF_R4  207     +
+    chr7  56632  56652  D17003_CTCF_R6  310  +
+    chr7  56736  56756  D17003_CTCF_R7  354  +
+    chr7  56761  56781  D17003_CTCF_R4  220  +
+    chr7  56772  56792  D17003_CTCF_R7  372  +
+    chr7  56775  56795  D17003_CTCF_R4  207  +
 
-- Show first 2 lines of above file. The result is::
+will produce::
 
-    chr7    56632   56652   D17003_CTCF_R6  310     +
-    chr7    56736   56756   D17003_CTCF_R7  354     +
+    chr7  56632  56652  D17003_CTCF_R6  310  +
+    chr7  56736  56756  D17003_CTCF_R7  354  +
 
   </help>
 </tool>
