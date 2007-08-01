@@ -40,4 +40,7 @@ def get_available_data( build ):
 
 def exec_before_job(app,inp_data, out_data, param_dict, tool):
     for name, data in out_data.items():
-        data.name = data.name + " [" + maf_sets[param_dict['mafType']]['description'] + "]"
+        try:
+            data.name = data.name + " [" + maf_sets[param_dict['mafType']]['description'] + "]"
+        except KeyError:
+            data.name = data.name + " [unknown MAF source specified]"
