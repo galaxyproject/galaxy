@@ -20,7 +20,7 @@ from warnings import warn
 from bx.intervals import *
 from bx.intervals.io import *
 from bx.intervals.operations.coverage import *
-from bx.cookbook.doc_optparse
+from bx.cookbook import doc_optparse
 
 from galaxyops import *
 
