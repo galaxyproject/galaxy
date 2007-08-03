@@ -25,6 +25,7 @@ class Configuration( object ):
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
+        self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )

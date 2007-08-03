@@ -6,7 +6,7 @@ import pkg_resources;
 pkg_resources.require( "Cheetah" )
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile
+import logging, os, string, sys, tempfile, glob, shutil
 import simplejson
 import sha, hmac, binascii
 
@@ -782,7 +782,10 @@ class Tool:
                 child = child_association.child
                 key = "_CHILD___%s___%s" % ( name, child.designation ) 
                 param_dict[ key ] = DatasetFilenameWrapper( child )
-        # Return the dictionary of parameters        
+        # We add access to app here, this allows access to app.config, etc
+        param_dict['__app__'] = RawObjectWrapper( self.app )
+        param_dict['__new_file_path__'] = self.app.config.new_file_path #More convienent access to this value; we don't need to wrap a string
+        # Return the dictionary of parameters
         return param_dict
     
     def build_param_file( self, param_dict, directory=None ):
@@ -859,12 +862,90 @@ class Tool:
             e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ) )
             raise 
         
+    def collect_child_datasets( self, output):
+        children = {}
+        #Loop through output file names, looking for generated children in form of 'child_parentId_designation_visibility_extension'
+        for name, outdata in output.items():
+            for filename in glob.glob(os.path.join(self.app.config.new_file_path,"child_%i_*" % outdata.id) ):
+                if not name in children:
+                    children[name] = {}
+                fields = os.path.basename(filename).split("_")
+                fields.pop(0)
+                parent_id = int(fields.pop(0))
+                designation = fields.pop(0)
+                visible = fields.pop(0).lower()
+                if visible == "visible": visible = True
+                else: visible = False
+                ext = fields.pop(0).lower()
+                # Create new child dataset
+                child_data = self.app.model.Dataset(extension=ext, parent_id=parent_id, designation=designation, visible=visible, dbkey=outdata.dbkey)
+                child_data.flush()
+                # Move data from temp location to dataset location
+                shutil.move(filename, child_data.file_name)
+                child_data.name = "Secondary Dataset (%s)" % (designation)
+                child_data.state = child_data.states.OK
+                child_data.init_meta()
+                child_data.set_peek()
+                child_data.flush()
+                # Add to child accociation table
+                assoc = self.app.model.DatasetChildAssociation()
+                assoc.child = child_data
+                assoc.designation = child_data.designation
+                outdata.children.append( assoc )
+                # Add child to return dict 
+                children[name][designation] = child_data
+        return children
+        
+    def collect_primary_datasets( self, output):
+        primary_datasets = {}
+        #Loop through output file names, looking for generated primary datasets in form of 'primary_associatedWithDatasetID_designation_visibility_extension'
+        for name, outdata in output.items():
+            for filename in glob.glob(os.path.join(self.app.config.new_file_path,"primary_%i_*" % outdata.id) ):
+                if not name in primary_datasets:
+                    primary_datasets[name] = {}
+                fields = os.path.basename(filename).split("_")
+                fields.pop(0)
+                parent_id = int(fields.pop(0))
+                designation = fields.pop(0)
+                visible = fields.pop(0).lower()
+                if visible == "visible": visible = True
+                else: visible = False
+                ext = fields.pop(0).lower()
+                # Create new primary dataset
+                primary_data = self.app.model.Dataset(extension=ext, designation=designation, visible=visible, dbkey=outdata.dbkey)
+                primary_data.flush()
+                self.app.model.History.get(outdata.history_id).add_dataset(primary_data)
+                # Move data from temp location to dataset location
+                shutil.move(filename, primary_data.file_name)
+                primary_data.name = outdata.name
+                primary_data.info = outdata.info
+                primary_data.state = primary_data.states.OK
+                primary_data.init_meta(copy_from=outdata)
+                primary_data.set_peek()
+                primary_data.flush()
+                # Add dataset to return dict 
+                primary_datasets[name][designation] = primary_data
+        return primary_datasets
+
+        
 # ---- Utility classes to be factored out -----------------------------------
         
 class BadValue( object ):
     def __init__( self, value ):
         self.value = value
         
+
+class RawObjectWrapper( object ):
+    """
+    Wraps an object so that __str__ returns module_name:class_name.
+    """
+    def __init__( self, obj ):
+        self.obj = obj
+    def __str__( self ):
+        return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
+    def __getattr__( self, key ):
+        return getattr( self.obj, key )
+
 class InputValueWrapper( object ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.

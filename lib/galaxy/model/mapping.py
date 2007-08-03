@@ -73,6 +73,7 @@ Dataset.table = Table( "dataset", metadata,
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean ),
     Column( "purged", Boolean ),
+    Column( "visible", Boolean ),
     ForeignKeyConstraint(['parent_id'],['dataset.id'], ondelete="CASCADE") )
 
 ValidationError.table = Table( "validation_error", metadata,

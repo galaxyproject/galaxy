@@ -143,7 +143,7 @@ class Dataset( object ):
     engine = None
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, state=None, metadata=None, history=None, parent_id=None, designation=None,
-                  validation_errors=None ):
+                  validation_errors=None, visible=True ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.hid = hid
@@ -158,6 +158,7 @@ class Dataset( object ):
         self.designation = designation
         self.deleted = False
         self.purged = False
+        self.visible = visible
         # Relationships
         self.history = history
         self.validation_errors = validation_errors
@@ -267,9 +268,9 @@ class Dataset( object ):
         #         if data.parent_id and data.parent_id == self.id:
         #             if designation == data.designation:
         #                 return data
-        for child_assocation in self.children:
+        for child_association in self.children:
             if child_association.designation == designation:
-                return child
+                return child_association.child
         return None
     def purge( self ):
         """Removes the file contents from disk """

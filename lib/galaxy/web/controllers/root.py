@@ -123,6 +123,21 @@ class Universe( BaseController ):
             return "No data with id=%d" % id
 
     @web.expose
+    def display_child(self, trans, parent_id=None, designation=None, tofile=None, toext=".txt"):
+        """
+        Returns child data directly into the browser, based upon parent_id and designation.
+        """
+        try:
+            data = self.app.model.Dataset.get( parent_id )
+            if data:
+                child = data.get_child_by_designation(designation)
+                if child:
+                    return self.display(trans, id=child.id, tofile=tofile, toext=toext)
+        except Exception:
+            pass
+        return "A child named %s could not be found for data %s" % ( designation, parent_id )
+
+    @web.expose
     def display_as( self, trans, id=None, display_app=None, **kwd ):
         """Returns a file in a format that can successfully be displayed in display_app"""
         data = self.app.model.Dataset.get( id )
