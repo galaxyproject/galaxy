@@ -1,6 +1,6 @@
 import sys, os, atexit
 
-from galaxy import config, db, jobs, util, tools, web
+from galaxy import config, jobs, util, tools, web
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry

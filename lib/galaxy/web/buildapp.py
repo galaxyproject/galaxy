@@ -13,7 +13,7 @@ import pkg_resources
 
 log = logging.getLogger( __name__ )
 
-from galaxy import config, db, jobs, util, tools
+from galaxy import config, jobs, util, tools
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
