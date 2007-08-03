@@ -104,12 +104,12 @@ def main():
     
     #set up bounding regions to hold random intervals
     bounds = []
-    for bound in bx.intervals.io.GenomicIntervalReader( open( region_fname, 'r' ), chrom_col=0, start_col=1, end_col=2, fix_strand=True): bounds.append(bound)
+    for bound in bx.intervals.io.NiceReaderWrapper( open( region_fname, 'r' ), chrom_col=0, start_col=1, end_col=2, fix_strand=True): bounds.append(bound)
     
     #set up length and number of regions to mimic
     regions = [ [] for i in range(len(bounds)) ]
     
-    for region in bx.intervals.io.GenomicIntervalReader( open(intervals_fname, 'r' ), chrom_col=interval_chr, start_col=interval_start, end_col=interval_end, strand_col=interval_strand, fix_strand=True, return_header=False):
+    for region in bx.intervals.io.NiceReaderWrapper( open(intervals_fname, 'r' ), chrom_col=interval_chr, start_col=interval_start, end_col=interval_end, strand_col=interval_strand, fix_strand=True, return_header=False):
         #loop through bounds, find first proper bounds then add
         #if an interval crosses bounds, it will be added to the first bound
         for i in range(len(bounds)):
@@ -127,7 +127,7 @@ def main():
     #read mask file
     mask = []
     if use_mask != "no_mask":
-        for region in bx.intervals.io.GenomicIntervalReader( open(mask_fname, 'r' ), chrom_col=mask_chr, start_col=mask_start, end_col=mask_end, fix_strand=True): mask.append(region)
+        for region in bx.intervals.io.NiceReaderWrapper( open(mask_fname, 'r' ), chrom_col=mask_chr, start_col=mask_start, end_col=mask_end, fix_strand=True): mask.append(region)
     
     out_file = open (out_fname, "w") or die ("Can not open output file")
     

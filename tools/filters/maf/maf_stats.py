@@ -89,7 +89,7 @@ def __main__():
     
     num_region = 0
     #loop through interval file
-    for region in bx.intervals.io.GenomicIntervalReader( open(input_interval_filename, 'r' ), chrom_col=chr_col, start_col=start_col, end_col=end_col, fix_strand=True, return_header=False):
+    for region in bx.intervals.io.NiceReaderWrapper( open(input_interval_filename, 'r' ), chrom_col=chr_col, start_col=start_col, end_col=end_col, fix_strand=True, return_header=False):
         sequences = {dbkey: [ False for i in range( region.end - region.start)]}
         
         src = dbkey + "." + region.chrom
