@@ -132,7 +132,7 @@ def sortedDictValues(adict):
    keys.sort()
    return map(adict.get, keys)
 
-def pattern_match(conn, shsize, pat, chrom, table_name, log_file):
+def pattern_match(conn, shsize, pat, table_name, log_file):
    mpattern = len(pat)
    patterns = expand_pattern(pat)
    patterns_cmpl = expand_pattern_cmpl(pat)
@@ -146,21 +146,10 @@ def pattern_match(conn, shsize, pat, chrom, table_name, log_file):
    for pattern in patterns:
       num=dna2num(pattern, mpattern, shsize)
       sqlquery = sqlquery + "or num>=%s " % num[0] + "and num<%s " % num[1]
-      if chrom[1] != 0 :
-         sqlquery = sqlquery + "and chromStart>=%s " % chrom[1] 
-      if chrom[2] != 0 :
-         sqlquery = sqlquery + "and chromStart<=%s " % chrom[2]
    for pattern in patterns_cmpl:
       num=dna2num(pattern, mpattern, shsize)
       sqlquery = sqlquery + "or num>=%s " % num[0] + "and num<%s " % num[1]
-      if chrom[1] != 0 :
-         sqlquery = sqlquery + "and chromStart>=%s " % chrom[1] 
-      if chrom[2] != 0 :
-         sqlquery = sqlquery + "and chromStart<=%s " % chrom[2]
    sqlquery = sqlquery + " order by chromStart" 
-   fp=open("hjb.txt", "a")
-   fp.write(sqlquery+"\n")
-   fp.close()
    log_file.write(strftime("\t%H:%M:%S", localtime()))
    log_file.write("...query database") 
    rr = conn.execute(sqlquery)
@@ -169,16 +158,14 @@ def pattern_match(conn, shsize, pat, chrom, table_name, log_file):
    for match in rr : 
       matchs.append(match[0])
    matchs_tmp = del_same(matchs) 
-   log_file.write("\t(%d)" % len(matchs_tmp))
+   log_file.write("-->(%d)" % len(matchs_tmp))
 
    return matchs_tmp
 
-def scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) :
-   chrom_name = chrom[0]
+def scan_chromosome(genome_name, chrom, blocks, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) :
+   chrom_name = chrom
    log_file.write(strftime("\n%Y-%b-%d %H:%M:%S", localtime()))
-   log_file.write("\tStart on chrom %s " % chrom[0])
-   if chrom[1] != 0 or chrom[2] != 0 :
-      log_file.write(": %s - %s " % (chrom[1], chrom[2]) )
+   log_file.write("\tStart on chrom %s " % chrom)
    result = dict()
    result['M'] = dict()
 
@@ -189,13 +176,27 @@ def scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize
    conn = db.connect()
    total_matchs = 0
    table_name = genome_name + "_" + chrom_name
+   fp = open('hjb.txt', 'w') 
    for pattern in patterns: 
-      result['M'][pattern] = pattern_match(conn, shsize, pattern, chrom, table_name, log_file)
+      result['M'][pattern] = pattern_match(conn, shsize, pattern, table_name, log_file)
+      nmatch = len (result['M'][pattern]) 
+      while nmatch > 0 : 
+         flag = 0
+         for block in blocks : 
+	    if block[0] == chrom :
+	       if int(block[2])==0 or int(block[1])<result['M'][pattern][nmatch-1]+len(pattern) and result['M'][pattern][nmatch-1]<int(block[2]) :
+	          flag = 1
+		  break
+         if flag == 0 :
+	    del result['M'][pattern][nmatch-1]
+         nmatch = nmatch -1
       total_matchs = total_matchs + len(result['M'][pattern])
+      log_file.write(strftime("\t%H:%M:%S", localtime()))
+      log_file.write("...get matchs in blocks-->(%d)" % len(result['M'][pattern]))
    conn.close()
 
    #----------------------------------------------------------------------------------------
-   #---------------find pattern combination in window---------------------------------------
+   #---------------find clusters in window size---------------------------------------------
    log_file.write(strftime("\n%Y-%b-%d %H:%M:%S", localtime()))
    log_file.write("\tFind clusters in %d wsize ... " % wsize)
    kk = 0
@@ -252,8 +253,6 @@ def scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize
 	    nn = total_matchs
          jj = jj + 1
 
-      fp=open("hjb.txt", "a")
-      fp.write(str(clusters_temp)+str(clusters)+"\n")
 
       #check if the cluster contains the minimum occurrences of patterns
       allmatch = 0
@@ -312,7 +311,6 @@ def scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize
                clusters[kk]["end"] = clusters_temp["positions"][-1] + len(clusters_temp["patterns"][-1])
                kk = kk + 1
       nn = nn + 1
-      fp.write(str(clusters)+"\n")
    log_file.write("\t%d" % nnclusters)
    nclusters = len(clusters)
    result['C'] = nnclusters

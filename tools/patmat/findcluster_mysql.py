@@ -16,8 +16,9 @@ if __name__ == '__main__':
    #--------------------------read params and files-----------------------------------------
    genome_name = ''
    chrom_name = ''
-   chroms = []
-   chrstring = ''
+   chroms = dict()
+   blocks = []
+   blkstring = ''
    chrs = []
    ptnstring = ''
    ptns = []
@@ -30,49 +31,63 @@ if __name__ == '__main__':
       #get the genome parameter
       if   sys.argv[n] == "-g" : genome_name = sys.argv[n+1]
 
-      #get the chroms or blocks
+      elif sys.argv[n] == "-x" : 
+         flag = sys.argv[n+1].split(',')
+	 flags=dict()
+	 for ff in flag: 
+	    flags[ff] = 1
+      #get the blocks from input box
       elif sys.argv[n] == "-f" : 
-         while 1: 
-	    if sys.argv[n+1][0]!='-': chrstring = chrstring + sys.argv[n+1] + ' '
-	    else: break
-	    n = n + 1
-	 nn = 0
-	 while nn < len(chrstring) :
-	    if chrstring[nn]=='X' and chrstring[nn+1]=='X' : 
-	       chrstring=chrstring[:nn]+' '+chrstring[nn+2:]
-	       nn = nn - 2
-	    if chrstring[nn]==' ' : 
-	       if chrstring[nn-1]!=' ': chrstring=chrstring[:nn]+' '+chrstring[nn+1:] 
-	       else : 
-	          chrstring=chrstring[:nn]+chrstring[nn+1:]
-		  nn = nn - 1
-	    nn = nn + 1
-	 if len(chrstring) != 0 :  
-	    chrs = chrstring.strip().split(' ')
-	    for chr in chrs :
-	       chrom = []
-	       chrom.append(chr.split(':')[0].split('chr')[1])
-	       chrom.append(chr.split(':')[1].split('-')[0])
-	       chrom.append(chr.split(':')[1].split('-')[1])
-	       chroms.append(chrom)
+         if flags.get('f') == 1 : 
+            while 1: 
+	       if sys.argv[n+1][0]!='-': blkstring = blkstring + sys.argv[n+1] + ' '
+	       else: break
+	       n = n + 1
+	    nn = 0
+	    while nn < len(blkstring) :
+	       if blkstring[nn]=='X' and blkstring[nn+1]=='X' : 
+	          blkstring=blkstring[:nn]+' '+blkstring[nn+2:]
+	          nn = nn - 2
+	       if blkstring[nn]==' ' : 
+	          if blkstring[nn-1]!=' ': blkstring=blkstring[:nn]+' '+blkstring[nn+1:] 
+	          else : 
+	             blkstring=blkstring[:nn]+blkstring[nn+1:]
+		     nn = nn - 1
+	       nn = nn + 1
+	    if len(blkstring) != 0 :  
+	       blks = blkstring.strip().split(' ')
+	       for blk in blks :
+	          block = []
+	          block.append(blk.split(':')[0].split('chr')[1])
+	          block.append(blk.split(':')[1].split('-')[0]-range)
+	          block.append(blk.split(':')[1].split('-')[1]+range)
+	          blocks.append(block)
+	          chroms[blk.split(':')[0].split('chr')[1]] = 1
+      #get the blocks from bed file
       elif sys.argv[n] == "-b" : 
-         if os.path.exists(sys.argv[n+1]) : 
+         if flags.get('b')==1 and os.path.exists(sys.argv[n+1]) : 
             bed_file = open(sys.argv[n+1], 'r')
 	    for line in bed_file.readlines() :
-	       chrom = []
-	       chrom.append(line.split('\t')[0].split('chr')[1])
-	       chrom.append(line.split('\t')[1])
-	       chrom.append(line.split('\t')[2])
-	       chroms.append(chrom)
+	       block = []
+	       block.append(line.split('\t')[0].split('chr')[1])
+	       block.append(line.split('\t')[1]-range)
+	       block.append(line.split('\t')[2]+range)
+	       blocks.append(block)
+	       chroms[line.split('\t')[0].split('chr')[1]] = 1
+      #get the chroms from check box
       elif sys.argv[n] == "-c" : 
-         if sys.argv[n+1][0]!='-' and sys.argv[n+1]!=None and sys.argv[n+1]!='None':
+         if flags.get('c')==1 and sys.argv[n+1][0]!='-' and sys.argv[n+1]!=None and sys.argv[n+1]!='None':
             chromstmp = sys.argv[n+1].strip('\n').split(',')
 	    for  chromtmp in chromstmp:
-	       chrom=[]
-	       chrom.append(chromtmp)
-	       chrom.append(0)
-	       chrom.append(0)
-	       chroms.append(chrom)
+	       block=[]
+	       block.append(chromtmp)
+	       block.append(0)
+	       block.append(0)
+	       blocks.append(block)
+               chroms[chromtmp] = 1
+      #get the chroms from check box
+      elif sys.argv[n] == "-r" : range = int(sys.argv[n+1])
+	       
       
       #get the window size and header size. In our program, the header size is fixed to be 32.
       elif sys.argv[n] == "-w" : wsize = int(sys.argv[n+1])
@@ -147,18 +162,16 @@ if __name__ == '__main__':
 
 #   fp=open("hjb.txt", "w")
    result = dict()
-   for chrom in chroms : 
-      chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
+   for chrom_name in chroms.keys() : 
       if chrom_name != '' :
 #         fp.write(str(genome_name)+ str(chrom)+ str(patterns)+ str(combines)+ str(patterns_name))
-         result[chrom_name] = findcluster_mysql_subs.scan_chromosome(genome_name, chrom, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) 
+         result[chrom_name] = findcluster_mysql_subs.scan_chromosome(genome_name, chrom_name, blocks, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) 
    
    #----------------------------------------------------------------------------------------
    #-------------------------- print out results -------------------------------------------
    if info_file != 'None' : 
       info_file.write("%-35s\t" % "Chromome arm:")
-      for chrom in chroms: 
-         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
+      for chrom_name in chroms.keys() : 
          if chrom_name != '' :
             info_file.write("%s" % chrom_name)
          info_file.write("\t")
@@ -166,8 +179,7 @@ if __name__ == '__main__':
 
       for pattern in patterns :
          info_file.write("Occurrences of site %-s\t" % str(patterns_name[pattern]+"("+pattern+"):"))
-         for chrom in chroms: 
-            chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
+         for chrom_name in chroms.keys() : 
             if chrom_name != '' :
                info_file.write("%d\t" % len(result[chrom_name]['M'][pattern]))
          info_file.write("\n")
@@ -177,15 +189,13 @@ if __name__ == '__main__':
          if combines[pattern] != 0 : 
             info_file.write(" %-d%s" % (combines[pattern], patterns_name[pattern]))
       info_file.write(" ':%s\t" % "")
-      for chrom in chroms: 
-         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
+      for chrom_name in chroms.keys() : 
          if chrom_name != '' :
             info_file.write("%d\t" % result[chrom_name]['C'])
       info_file.write("\n")
       
       info_file.write("%-s\t" % "After merging overlapping clusters:")
-      for chrom in chroms: 
-         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
+      for chrom_name in chroms.keys() : 
          if chrom_name != '' :
             info_file.write("%d\t" % len(result[chrom_name]['NO']))
       info_file.write("\n")
@@ -193,16 +203,14 @@ if __name__ == '__main__':
    #-------------------------------------------------------------------------------------	 
    else :
       print "%-50s" % "Chromome arm:",   
-      for chrom in chroms: 
-         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
+      for chrom_name in chroms.keys() : 
          if chrom_name != '' :
             print "%10s" % chrom_name, 
       print 
       
       for pattern in patterns :
          print "Occurrences of site %-30s" % str(patterns_name[pattern]+"("+pattern+"):"), 
-         for chrom in chroms: 
-            chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
+         for chrom_name in chroms.keys() : 
             if chrom_name != '' :
                print "%10d" % len(result[chrom_name]['M'][pattern]),
          print 
@@ -212,15 +220,13 @@ if __name__ == '__main__':
          if combines[pattern] != 0 : 
             print "%-d%s" % (combines[pattern], patterns_name[pattern]), 
       print "':%14s" % "", 
-      for chrom in chroms: 
-         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
+      for chrom_name in chroms.keys() : 
          if chrom_name != '' :
             print "%10d" % result[chrom_name]['C'],
       print 
       
       print "%-50s" % "After merging overlapping clusters:",   
-      for chrom in chroms: 
-         chrom_name = chrom[0]+":"+chrom[1]+"-"+chrom[2]
+      for chrom_name in chroms.keys() : 
          if chrom_name != '' :
             print "%10d" % len(result[chrom_name]['NO']),
       print 
