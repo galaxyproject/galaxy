@@ -69,6 +69,8 @@ def main():
                 print >> out_file, outfields
     except ParseError, exc:
         print >> sys.stderr, "Invalid file format: ", str( exc )
+    except MemoryError:
+        print >> sys.stderr, "Input datasets were too large to complete the join operation."
 
     if g1.skipped > 0:
         print skipped( g1, filedesc=" of 1st dataset" )
