@@ -36,7 +36,11 @@ while args:
         print >> out
     else:
         # Assume type is interval (don't pass this script anything else!)
-        c, s, e, st = map( int, colspec.split( "," ) )
+        try:
+            c, s, e, st = map( int, colspec.split( "," ) )
+        except:
+            print "Columns in interval file invalid for UCSC custom track."
+            sys.exit()
         
         print >> out, '''track name="%s" description="%s" color=%s visibility=%s''' \
                       % ( name, description, color, visibility )
