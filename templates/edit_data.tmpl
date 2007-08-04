@@ -27,6 +27,7 @@
 
 #def datatype( $dataset, $datatypes )
 <select name="datatype">
+#$datatypes.sort()
 #for $ext in $datatypes:
    #if $dataset.ext == $ext
    <option value="$ext" selected="yes">$ext</option>
