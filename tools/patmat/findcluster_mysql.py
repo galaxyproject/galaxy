@@ -59,8 +59,8 @@ if __name__ == '__main__':
 	       for blk in blks :
 	          block = []
 	          block.append(blk.split(':')[0].split('chr')[1])
-	          block.append(blk.split(':')[1].split('-')[0]-range)
-	          block.append(blk.split(':')[1].split('-')[1]+range)
+	          block.append(int(blk.split(':')[1].split('-')[0])-range)
+	          block.append(int(blk.split(':')[1].split('-')[1])+range)
 	          blocks.append(block)
 	          chroms[blk.split(':')[0].split('chr')[1]] = 1
       #get the blocks from bed file
@@ -70,8 +70,8 @@ if __name__ == '__main__':
 	    for line in bed_file.readlines() :
 	       block = []
 	       block.append(line.split('\t')[0].split('chr')[1])
-	       block.append(line.split('\t')[1]-range)
-	       block.append(line.split('\t')[2]+range)
+	       block.append(int(line.split('\t')[1])-range)
+	       block.append(int(line.split('\t')[2])+range)
 	       blocks.append(block)
 	       chroms[line.split('\t')[0].split('chr')[1]] = 1
       #get the chroms from check box
