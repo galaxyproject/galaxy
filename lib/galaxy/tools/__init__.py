@@ -778,6 +778,8 @@ class Tool:
                 param_dict[ key ] = DatasetFilenameWrapper( child )
         for name, data in output_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data )
+            # Provide access to a path to store additional files
+            param_dict[name].files_path = os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) )
             for child_association in data.children:
                 child = child_association.child
                 key = "_CHILD___%s___%s" % ( name, child.designation ) 
@@ -860,8 +862,18 @@ class Tool:
                 return code( *args, **kwargs )
         except Exception, e:
             e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ) )
-            raise 
-        
+            raise
+    
+    def collect_associated_files( self, output):
+        for name, outdata in output.items():
+            temp_file_path = os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (outdata.id) )
+            try:
+                if len(os.listdir(temp_file_path)) > 0:
+                    store_file_path = os.path.join(self.app.config.file_path, "dataset_%s_files" % (outdata.id) )
+                    shutil.move(temp_file_path, store_file_path)
+            except:
+                continue
+    
     def collect_child_datasets( self, output):
         children = {}
         #Loop through output file names, looking for generated children in form of 'child_parentId_designation_visibility_extension'

@@ -111,7 +111,7 @@
                 </td>
                 <td>
                     <div>
-                        <div style="float: right;"><a href="$h.url_for( 'display', id=data.id )" target="_top"><img src="$h.url_for('/static/images/eye_icon.png')" rollover="$h.url_for('/static/images/eye_icon_dark.png')" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>
+                        <div style="float: right;"><a href="/datasets/$data.id/display/index" target="_top"><img src="$h.url_for('/static/images/eye_icon.png')" rollover="$h.url_for('/static/images/eye_icon_dark.png')" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>
                         <a href="edit?id=$data.id" target="galaxy_main"><img src="$h.url_for('/static/images/pencil_icon.png')" rollover="$h.url_for('/static/images/pencil_icon_dark.png')" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>
                         <a href="delete?id=$data.id" class="historyItemDelete" id="historyItemDelter-${data.id}"><img src="$h.url_for('/static/images/delete_icon.png')" rollover="$h.url_for('/static/images/delete_icon_dark.png')" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
                         <!--

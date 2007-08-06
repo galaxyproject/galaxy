@@ -10,6 +10,10 @@ from cgi import escape, FieldStorage
 import smtplib
 from email.MIMEText import MIMEText
 
+import pkg_resources; 
+pkg_resources.require( "Paste" )
+import paste.httpexceptions
+
 log = logging.getLogger( __name__ )
 
 error_report_template = """
@@ -83,3 +87,33 @@ class DatasetInterface( BaseController ):
             return trans.show_ok_message( "Your error report has been sent" )
         except:
             return trans.show_error_message( "An error occurred sending the report by email" )
+    
+    @web.expose
+    def default(self, trans, dataset_id=None, **kwd):
+        return 'This link may not be followed from within Galaxy.'
+    
+    @web.expose
+    def display(self, trans, dataset_id=None, filename=None, **kwd):
+        """Catches the dataset id and displays file contents as directed"""
+        if filename is None or filename.lower() == "index":
+            try:
+                data = trans.app.model.Dataset.get( dataset_id )
+                if data:
+                    mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
+                    trans.response.set_content_type(mime)
+                    trans.log_event( "Display dataset id: %s" % str(dataset_id) )
+                    try:
+                        return open( data.file_name )
+                    except: 
+                        return "This item contains no content"
+            except:
+                pass
+            return "Invalid dataset specified"
+        else:
+            #display files from directory here
+            try:
+                file_path = os.path.join(trans.app.config.file_path, "dataset_%s_files" % (dataset_id))
+                file_path = os.path.join(file_path, filename)
+                return open(file_path)
+            except:
+                raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % (filename) )

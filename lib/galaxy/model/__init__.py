@@ -278,6 +278,8 @@ class Dataset( object ):
         self.purged = True
         try: os.unlink(self.file_name)
         except: pass
+        try: os.unlink(os.path.join(self.file_path, "dataset_%d_files" % (self.id)))
+        except: pass
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
     def add_validation_error( self, validation_error ):
