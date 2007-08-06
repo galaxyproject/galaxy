@@ -31,17 +31,19 @@ class TrimmedString( TypeDecorator ):
 metadata = DynamicMetaData( threadlocal=False )
 context = SessionContext( create_session ) 
 
+now = func.current_timestamp( type=DateTime ) 
+
 User.table = Table( "galaxy_user", metadata,
     Column( "id", Integer, primary_key=True),
-    Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
-    Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
+    Column( "create_time", DateTime, PassiveDefault( now ) ),
+    Column( "update_time", DateTime, PassiveDefault( now ), onupdate=now ),
  	Column( "email", TrimmedString( 255 ), nullable=False ),
     Column( "password", TrimmedString( 40 ), nullable=False ) )
 
 History.table = Table( "history", metadata,
     Column( "id", Integer, primary_key=True),
-    Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
-    Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
+    Column( "create_time", DateTime, PassiveDefault( now ) ),
+    Column( "update_time", DateTime, PassiveDefault( now ), onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ) ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "hid_counter", Integer, default=1 ),
@@ -57,8 +59,8 @@ History.table = Table( "history", metadata,
 
 Dataset.table = Table( "dataset", metadata, 
     Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
-    Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
+    Column( "create_time", DateTime, PassiveDefault( now ) ),
+    Column( "update_time", DateTime, PassiveDefault( now ), onupdate=now ),
     Column( "hid", Integer ),
     Column( "history_id", Integer, ForeignKey( "history.id" ) ),
     Column( "name", TrimmedString( 255 ) ),
@@ -91,8 +93,8 @@ DatasetChildAssociation.table = Table( "dataset_child_association", metadata,
     
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
-    Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
+    Column( "create_time", DateTime, PassiveDefault( now ) ),
+    Column( "update_time", DateTime, PassiveDefault( now ), onupdate=now ),
     Column( "history_id", Integer, ForeignKey( "history.id" ) ),
     Column( "tool_id", String( 255 ) ),
     Column( "state", String( 64 ) ),
@@ -124,8 +126,8 @@ JobToOutputDatasetAssociation.table = Table( "job_to_output_dataset", metadata,
     
 Event.table = Table( "event", metadata, 
     Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
-    Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
+    Column( "create_time", DateTime, PassiveDefault( now ) ),
+    Column( "update_time", DateTime, PassiveDefault( now ), onupdate=now ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), nullable=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True ),
     Column( "message", TrimmedString( 1024 ) ),
@@ -134,8 +136,8 @@ Event.table = Table( "event", metadata,
 
 GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
-    Column( "update_time", DateTime, PassiveDefault( func.current_timestamp() ), onupdate=func.current_timestamp() ),
+    Column( "create_time", DateTime, PassiveDefault( now ) ),
+    Column( "update_time", DateTime, PassiveDefault( now ), onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True ),
     Column( "remote_host", String( 255 ) ),
     Column( "remote_addr", String( 255 ) ),
@@ -143,7 +145,7 @@ GalaxySession.table = Table( "galaxy_session", metadata,
 
 GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, PassiveDefault( func.current_timestamp() ) ),
+    Column( "create_time", DateTime, PassiveDefault( now ) ),
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ) ),
     Column( "history_id", Integer, ForeignKey( "history.id" ) ) )
 
