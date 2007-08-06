@@ -235,6 +235,14 @@ def init( file_path, url, **kwargs ):
     create_tables = kwargs.pop( 'create_tables', False )
     # Connect dataset to the file path
     Dataset.file_path = file_path
+    # MySQL hacking, doesn't support passive defaults for anything but TIMESTAMP
+    if url.startswith( "mysql" ):
+        for table in metadata.tables.values():
+            if table.columns.has_key( "create_time" ):
+                table.columns['create_time'].type = TIMESTAMP()
+            if table.columns.has_key( "update_time" ):
+                table.columns['update_time'].type = TIMESTAMP()
+                table.columns['update_time'].type = TIMESTAMP()
     # Connect the metadata the database. 
     metadata.connect( url, **kwargs )
     ## metadata.engine.echo = True
