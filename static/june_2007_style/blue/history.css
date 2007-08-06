@@ -89,6 +89,13 @@ div.historyItemBody div
     padding-top: 2px;
 }
 
+div.historyItemContainer
+{
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
 pre.peek
 {
     background: white;

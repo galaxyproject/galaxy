@@ -1,14 +1,13 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
-#set $refresh = bool ( [ data for data in $history.active_datasets if data.state in ['running', 'queued', '', None ] ] )
-
 <html>
 
 <head>
 <title>Galaxy History</title>
 
-#if $refresh
-<meta http-equiv="refresh" content="10">
+## This is now only necessary for tests
+#set $running = bool ( [ data for data in $history.active_datasets if data.state in ['running', 'queued', '', None ] ] )
+#if $running
 <!-- running: do not change this comment, used by TwillTestCase.wait -->
 #end if
 
@@ -22,6 +21,7 @@
 ## <script defer type="text/javascript" src="/static/scripts/ie_pngfix.js"></script>
 ## <![endif]-->
 
+<script type="text/javascript" src="$h.url_for('/static/scripts/prototype.js')"></script>
 <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
 <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.cookie.js')"></script>
 <script type="text/javascript" src="$h.url_for('/static/scripts/cookie_set.js')"></script>
@@ -29,35 +29,6 @@
 <script type="text/javascript">
     var q = jQuery.noConflict();
     q( document ).ready( function() {
-        q( "div.historyItemBody" ).hide();
-        // Load saved state and show as neccesary
-        var state = new CookieSet( "galaxy.history.expand_state" );
-        for ( id in state.store ) { q( "#" + id ).find( "div.historyItemBody" ).show(); } 
-        // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
-        if ( q.browser.mozilla ) {
-            q( "div.historyItemBody" ).each( function() {
-                if ( ! q(this).is( ":visible" ) ) q(this).find( "pre.peek" ).css( "overflow", "hidden" );
-            })
-        }
-        // Add history item show / hide
-        q( "div.historyItemWrapper" ).each( function() {
-            var id = this.id;
-            var body = q(this).children( "div.historyItemBody" );
-            var peek = body.find( "pre.peek" )
-            q(this).children( "table" ).find( "span.historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
-                if ( body.is(":visible") ) {
-                    if ( q.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
-                    body.slideUp( "fast" );
-                    state.remove( id); state.save();
-                } 
-                else {
-                    body.slideDown( "fast", function() { 
-                        if ( q.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
-                    });
-                    state.add( id ); state.save();
-                }
-            })
-        })
         // Collapse all
         q("#top-links").append( "|&nbsp;" ).append( q("<a href='#'>collapse all</a>").click( function() {
             q( "div.historyItemBody:visible" ).each( function() {
@@ -67,6 +38,7 @@
                 }
                 q(this).slideUp( "fast" );
             })
+            var state = new CookieSet( "galaxy.history.expand_state" );
             state.removeAll().save();
         }))
         // Add footer show / hide 
@@ -78,37 +50,37 @@
                 else { menu.slideDown( "fast" ) } 
             }))
         })
-        // Add AJAX delete buttons
-        q( "a.historyItemDelete" ).each( function() {
-            var data_id = this.id.split( "-" )[1];
-            q(this).click( function() {
-                q( '#progress-' + data_id ).show();
-                q.ajax({
-                    url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { alert( "Delete failed" ) },
-                    success: function() { q( "#historyItem-" + data_id ).fadeOut( "fast", function() { q(this).remove(); } ) }
-                })
-                return false;
-            })
-        })
-        // Links with confirmation
-        q( "a[@confirm]" ).click( function() {
-            return confirm( q(this).attr( "confirm"  ) )
-        })
-        // Refresh    
-        #if $refresh:
-            function add_refresh( i ) {
-                if ( i > 0 ) {                      
-                    q( "#refreshCounterSpan" ).text( i.toString() );
-                    setTimeout( function() { add_refresh( i - 1 ) }, 1000 );
-                }
-                else {
-                    window.location.href = 'history';
-                }
-            }
-            add_refresh( 9 )
-        #end if
     })
+    function updater( id, state_url, code_url, orig_state ) {
+        this.id = id
+        this.state_url = state_url
+        this.code_url = code_url
+        this.old_state = orig_state
+        this.stop_states = new Array( "ok", "error" );
+    }
+    updater.prototype.go = function() {
+        stop_states = new Array( "ok", "error" );
+        if (stop_states.indexOf(this.old_state) >= 0) { return; }
+        this.executer = new PeriodicalExecuter( function() {
+	    ## IE will cache if we use a GET
+            ## this.request = new Ajax.Request( this.state_url, {asynchronous:true, method:"get",
+            this.request = new Ajax.Request( this.state_url, {asynchronous:true,
+                onSuccess:function () {
+                    var new_state = this.request.getHeader('x-dataset-state');
+                    if (stop_states.indexOf(new_state) >= 0) { this.executer.stop(); }
+                    if (this.old_state != new_state) {
+                        new Ajax.Updater('historyItemContainer-' + this.id, this.code_url,
+                            ## {asynchronous:true, method:"get", evalScripts:true});
+                            {asynchronous:true, evalScripts:true});
+                    }
+                    this.old_state = new_state;
+                }.bind(this)
+            });
+        }.bind(this), 3 );
+    }
+    updater.prototype.stop = function() {
+        this.executer.stop();
+    }
 </script>
 
 <![if gte IE 7]>
@@ -160,11 +132,7 @@ div#footer {
 <body class="historyPage">
 
 <div id="top-links" class="historyLinks">
-    #if $refresh
-        <a href="$h.url_for('/history')">refreshing in <span id="refreshCounterSpan">10</span> sec</a> 
-    #else
-        <a href="$h.url_for('/history')">refresh</a> 
-    #end if
+    <a href="$h.url_for('/history')">refresh</a> 
 </div>
 
 #if $history.deleted 
@@ -178,6 +146,7 @@ div#footer {
 ## Render the dataset `$data`, using `$hid` as the displayed id
 ##
 
+## FIXME: duplicated in dataset_code, argh!
 #def render_dataset( $data, $hid )
 
     #if $data.state in ["no state","",None]:
@@ -208,9 +177,9 @@ div#footer {
                 </td>
                 <td>
                     <div>
-                        <div style="float: right;"><a href="$h.url_for( 'display', id=data.id )" target="_top"><img src="$h.url_for('/static/images/eye_icon.png')" rollover="$h.url_for('/static/images/eye_icon_dark.png')" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>#* 
-                        *#<a href="edit?id=$data.id" target="galaxy_main"><img src="$h.url_for('/static/images/pencil_icon.png')" rollover="$h.url_for('/static/images/pencil_icon_dark.png')" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>#*
-                        *#<a href="delete?id=$data.id" class="historyItemDelete" id="historyItemDelter-${data.id}"><img src="$h.url_for('/static/images/delete_icon.png')" rollover="$h.url_for('/static/images/delete_icon_dark.png')" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
+                        <div style="float: right;"><a href="$h.url_for( 'display', id=data.id )" target="_top"><img src="$h.url_for('/static/images/eye_icon.png')" rollover="$h.url_for('/static/images/eye_icon_dark.png')" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>
+                        <a href="edit?id=$data.id" target="galaxy_main"><img src="$h.url_for('/static/images/pencil_icon.png')" rollover="$h.url_for('/static/images/pencil_icon_dark.png')" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>
+                        <a href="delete?id=$data.id" class="historyItemDelete" id="historyItemDelter-${data.id}"><img src="$h.url_for('/static/images/delete_icon.png')" rollover="$h.url_for('/static/images/delete_icon_dark.png')" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
                         <!--
                         $h.link_to_remote( "<img src='%s' rollover='%s' width='16' height='16' alt='delete' class='deleteButton' border='0'>" % ( $h.url_for('/static/images/delete_icon.png'), $h.url_for('/static/images/delete_icon_dark.png') ),
                                            dict( url=$h.url( action="delete_async", id=$data.id ), 
@@ -276,7 +245,7 @@ div#footer {
             ##  
             ## Child datasets
             ## 
-            
+                              
             #if $len( $data.children ) > 0:
                 #set $children = []
                 #for $child_assoc in $data.children:
@@ -293,24 +262,40 @@ div#footer {
                     </div>
                 #end if
             #end if
-                                
+
         </div>
     </div>
 
 #end def
 
 #if $len($history.active_datasets)<1
-    <div class="infomessagesmall">
-        Your history is empty. Click 'Get Data' on the left pane to start
-    </div>
+    <div class="infomessagesmall" id="emptyHistoryMessage">
 #else    
     ## Render all active (not deleted) datasets, ordered from newest to oldest
     #for $data in reversed( $history.active_datasets )
         #if $data.visible:
-            $render_dataset( $data, $data.hid )
+            ## FIXME: uncessary overhead here, find a way to prevent this if javascript is on
+            <div class="historyItemContainer" id="historyItemContainer-$data.id"><noscript>
+                $render_dataset( $data, $data.hid )
+            </noscript></div>
         #end if
     #end for
+    <script type="text/javascript">
+    #for $data in reversed( $history.active_datasets )
+        #if $data.visible:
+            #set $state_url = $h.url_for( action='dataset_state', id=$data.id )
+            #set $code_url = $h.url_for( action='dataset_code', id=$data.id, hid=$data.hid )
+            ## new Ajax.Updater('historyItemContainer-$data.id', '$code_url', {asynchronous:true, method:"get", evalScripts:"true"});
+            new Ajax.Updater('historyItemContainer-$data.id', '$code_url', {asynchronous:true, evalScripts:"true"});
+            var updater_${data.id} = new updater( $data.id, '$state_url', '$code_url', '$data.state' );
+            updater_${data.id}.go();
+        #end if
+    #end for
+    </script>
+    <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
 #end if
+        Your history is empty. Click 'Get Data' on the left pane to start
+    </div>
 
 </body>
 
