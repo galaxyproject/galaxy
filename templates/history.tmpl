@@ -146,7 +146,9 @@ div#footer {
 ## Render the dataset `$data`, using `$hid` as the displayed id
 ##
 
-## FIXME: duplicated in dataset_code, argh!
+## FIXME: This function is duplicated in dataset_code.tmpl!
+## This copy is used for rendering datasets when the client's javascript
+## is NOT enabled.
 #def render_dataset( $data, $hid )
 
     #if $data.state in ["no state","",None]:

@@ -77,6 +77,9 @@
 
 #end def
 
+## FIXME: This function is duplicated in history.tmpl!
+## This copy is used for rendering datasets when the client's javascript
+## is enabled.
 #def render_dataset( $data, $hid )
 
     #if $data.state in ["no state","",None]:
@@ -157,7 +160,7 @@
                 <div> 
                     #if $data.has_data:
                         <a href="display?id=$data.id&tofile=yes&toext=$data.ext" target="_blank">save</a>
-                    	#for $display_app in $data.datatype.get_display_types():
+                        #for $display_app in $data.datatype.get_display_types():
                             #set $display_links = $data.datatype.get_display_links($data, $display_app, $app, $request.base)
                             #if $len($display_links) > 0:
                                 | $data.datatype.get_display_label($display_app)
@@ -176,18 +179,25 @@
             ##  
             ## Child datasets
             ## 
-                              
+
             #if $len( $data.children ) > 0:
-                <div>
-                    There are ${len( $data.children )} secondary datasets.
-                    #for $idx, $child_assoc in $enumerate($data.children)
-							#set $child = $child_assoc.child
-							$render_dataset( $child, $idx + 1 )
-					#end for
-				</div>
-			#end if
-							    
-	    </div>
+                #set $children = []
+                #for $child_assoc in $data.children:
+                    #if $child_assoc.child.visible:
+                        $children.append($child_assoc.child)
+                    #end if
+                #end for
+                #if $len( $children ) > 0:
+                    <div>
+                        There are ${len( $children )} secondary datasets.
+                        #for $idx, $child in $enumerate($children)
+                            $render_dataset( $child, $idx + 1 )
+                        #end for
+                    </div>
+                #end if
+            #end if
+
+        </div>
     </div>
 
 #end def
