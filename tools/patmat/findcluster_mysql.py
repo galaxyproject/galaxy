@@ -18,6 +18,7 @@ if __name__ == '__main__':
    chrom_name = ''
    chroms = dict()
    blocks = []
+   range = 0
    blkstring = ''
    chrs = []
    ptnstring = ''
@@ -58,9 +59,11 @@ if __name__ == '__main__':
 	       blks = blkstring.strip().split(' ')
 	       for blk in blks :
 	          block = []
+		  start = int(blk.split(':')[1].split('-')[0])
+		  end   = int(blk.split(':')[1].split('-')[1])
 	          block.append(blk.split(':')[0].split('chr')[1])
-	          block.append(int(blk.split(':')[1].split('-')[0])-range)
-	          block.append(int(blk.split(':')[1].split('-')[1])+range)
+	          block.append(start-range)
+	          block.append(end+range)
 	          blocks.append(block)
 	          chroms[blk.split(':')[0].split('chr')[1]] = 1
       #get the blocks from bed file
@@ -69,9 +72,11 @@ if __name__ == '__main__':
             bed_file = open(sys.argv[n+1], 'r')
 	    for line in bed_file.readlines() :
 	       block = []
+	       start = int(line.split('\t')[1])
+	       end   = int(line.split('\t')[2])
 	       block.append(line.split('\t')[0].split('chr')[1])
-	       block.append(int(line.split('\t')[1])-range)
-	       block.append(int(line.split('\t')[2])+range)
+	       block.append(start-range)
+	       block.append(end+range)
 	       blocks.append(block)
 	       chroms[line.split('\t')[0].split('chr')[1]] = 1
       #get the chroms from check box
