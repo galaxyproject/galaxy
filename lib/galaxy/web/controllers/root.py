@@ -407,7 +407,7 @@ class Universe( BaseController ):
         return trans.fill_template("history_import.tmpl", history=import_history)
 
     @web.expose
-    def dataset_state ( self, trans, id=None ):
+    def dataset_state ( self, trans, id=None, stamp=None ):
         if id is not None:
             try:
                 data = self.app.model.Dataset.get( id )
@@ -416,10 +416,12 @@ class Universe( BaseController ):
         else:
             return trans.show_error_message( "Must specify a dataset id.")
 	trans.response.headers['X-Dataset-State'] = data.state
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
 	return data.state
 
     @web.expose
-    def dataset_code( self, trans, id=None, hid=None ):
+    def dataset_code( self, trans, id=None, hid=None, stamp=None ):
         if id is not None:
             try:
                 data = self.app.model.Dataset.get( id )
@@ -427,6 +429,8 @@ class Universe( BaseController ):
                 return trans.show_error_message( "Unable to check dataset $id.")
         else:
             return trans.show_error_message( "Must specify a dataset id.")
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
         return trans.fill_template("dataset_code.tmpl", data=data, hid=hid)
 
     @web.expose

@@ -206,6 +206,6 @@
 ## after deletion, until the history is reloaded
 ## FIXME: still necessary now that we don't re-pull finished datasets?  test.
 #if $data.deleted is not True
-    $render_script( $data )
     $render_dataset( $data, $hid )
+    $render_script( $data )
 #end if

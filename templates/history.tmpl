@@ -21,7 +21,6 @@
 ## <script defer type="text/javascript" src="/static/scripts/ie_pngfix.js"></script>
 ## <![endif]-->
 
-<script type="text/javascript" src="$h.url_for('/static/scripts/prototype.js')"></script>
 <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
 <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.cookie.js')"></script>
 <script type="text/javascript" src="$h.url_for('/static/scripts/cookie_set.js')"></script>
@@ -29,6 +28,41 @@
 <script type="text/javascript">
     var q = jQuery.noConflict();
     q( document ).ready( function() {
+        q( "div.historyItemBody" ).hide();
+        // Load saved state and show as neccesary
+        var state = new CookieSet( "galaxy.history.expand_state" );
+	for ( id in state.store ) { q( "#" + id ).find( "div.historyItemBody" ).show(); }
+        // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
+        if ( q.browser.mozilla ) {
+            q( "div.historyItemBody" ).each( function() {
+                if ( ! q(this).is( ":visible" ) ) q(this).find( "pre.peek" ).css( "overflow", "hidden" );
+            })
+        }
+        delete state;
+        // Add history item show / hide
+        q( "div.historyItemWrapper" ).each( function() {
+            var id = this.id;
+            var body = q(this).children( "div.historyItemBody" );
+            var peek = body.find( "pre.peek" )
+            q(this).children( "table" ).find( "span.historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
+                if ( body.is(":visible") ) {
+                    if ( q.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
+                    body.slideUp( "fast" );
+                    ## other instances of this could be editing the cookie, refetch
+                    var state = new CookieSet( "galaxy.history.expand_state" );
+                    state.remove( id ); state.save();
+                    delete state;
+                } 
+                else {
+                    body.slideDown( "fast", function() { 
+                        if ( q.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
+                    });
+                    var state = new CookieSet( "galaxy.history.expand_state" );
+                    state.add( id ); state.save();
+                    delete state;
+                }
+            })
+        })
         // Collapse all
         q("#top-links").append( "|&nbsp;" ).append( q("<a href='#'>collapse all</a>").click( function() {
             q( "div.historyItemBody:visible" ).each( function() {
@@ -50,36 +84,67 @@
                 else { menu.slideDown( "fast" ) } 
             }))
         })
+        // Add AJAX delete buttons
+        q( "a.historyItemDelete" ).each( function() {
+            var data_id = this.id.split( "-" )[1];
+            q(this).click( function() {
+                q( '#progress-' + data_id ).show();
+                q.ajax({
+                    url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { alert( "Delete failed" ) },
+                    success: function() { q( "#historyItem-" + data_id ).fadeOut( "fast", function() {
+                        q( "div#historyItemContainer-" + data_id ).remove();
+                        if ( q( "div.historyItemContainer" ).length < 1 ) {
+                            q ( "div#emptyHistoryMessage" ).show();
+                        }
+                    } ) }
+                })
+                return false;
+            })
+        })
     })
+    // lifted from prototype.js
+    var \$A = Array.from = function(iterable) {
+        if (!iterable) return [];
+        if (iterable.toArray) {
+            return iterable.toArray();
+        } else {
+            var results = [];
+            for (var i = 0, length = iterable.length; i < length; i++)
+                results.push(iterable[i]);
+            return results;
+        }
+    }
+    Function.prototype.bind = function() {
+        var __method = this, args = \$A(arguments), object = args.shift();
+        return function() {
+            return __method.apply(object, args.concat(\$A(arguments)));
+        }
+    }
     function updater( id, state_url, code_url, orig_state ) {
-        this.id = id
-        this.state_url = state_url
-        this.code_url = code_url
-        this.old_state = orig_state
-        this.stop_states = new Array( "ok", "error" );
+        this.id = id;
+        this.state_url = state_url;
+        this.code_url = code_url;
+        this.old_state = orig_state;
     }
     updater.prototype.go = function() {
-        stop_states = new Array( "ok", "error" );
-        if (stop_states.indexOf(this.old_state) >= 0) { return; }
-        this.executer = new PeriodicalExecuter( function() {
-	    ## IE will cache if we use a GET
-            ## this.request = new Ajax.Request( this.state_url, {asynchronous:true, method:"get",
-            this.request = new Ajax.Request( this.state_url, {asynchronous:true,
-                onSuccess:function () {
-                    var new_state = this.request.getHeader('x-dataset-state');
-                    if (stop_states.indexOf(new_state) >= 0) { this.executer.stop(); }
-                    if (this.old_state != new_state) {
-                        new Ajax.Updater('historyItemContainer-' + this.id, this.code_url,
-                            ## {asynchronous:true, method:"get", evalScripts:true});
-                            {asynchronous:true, evalScripts:true});
-                    }
-                    this.old_state = new_state;
-                }.bind(this)
-            });
-        }.bind(this), 3 );
+        //Apparently IE doesn't do Array.indexOf...
+        //stop_states = new Array( "ok", "error" );
+        this.interval = setInterval( function() {
+            $.get(this.state_url, function(new_state) {
+                //if (stop_states.indexOf(new_state) >= 0) { clearInterval( this.interval ); }
+                if ((new_state == "ok") || (new_state == "error")) {
+                    clearInterval( this.interval );
+                }
+                if (this.old_state != new_state) {
+                    q( 'div#historyItemContainer-' + this.id ).load(this.code_url);
+                }
+                this.old_state = new_state;
+            }.bind(this) );
+        }.bind(this), 3000 );
     }
     updater.prototype.stop = function() {
-        this.executer.stop();
+        clearInterval( this.interval );
     }
 </script>
 
@@ -132,7 +197,7 @@ div#footer {
 <body class="historyPage">
 
 <div id="top-links" class="historyLinks">
-    <a href="$h.url_for('/history')">refresh</a> 
+    <a href="$h.url_for('history')">refresh</a> 
 </div>
 
 #if $history.deleted 
@@ -276,19 +341,18 @@ div#footer {
     ## Render all active (not deleted) datasets, ordered from newest to oldest
     #for $data in reversed( $history.active_datasets )
         #if $data.visible:
-            ## FIXME: uncessary overhead here, find a way to prevent this if javascript is on
-            <div class="historyItemContainer" id="historyItemContainer-$data.id"><noscript>
+            <div class="historyItemContainer" id="historyItemContainer-$data.id">
                 $render_dataset( $data, $data.hid )
-            </noscript></div>
+            </div>
         #end if
     #end for
     <script type="text/javascript">
     #for $data in reversed( $history.active_datasets )
-        #if $data.visible:
+        #if $data.visible and $data.state not in [ "error", "ok" ]:
+        ##if $data.visible:
             #set $state_url = $h.url_for( action='dataset_state', id=$data.id )
             #set $code_url = $h.url_for( action='dataset_code', id=$data.id, hid=$data.hid )
-            ## new Ajax.Updater('historyItemContainer-$data.id', '$code_url', {asynchronous:true, method:"get", evalScripts:"true"});
-            new Ajax.Updater('historyItemContainer-$data.id', '$code_url', {asynchronous:true, evalScripts:"true"});
+            ## new Ajax.Updater('historyItemContainer-$data.id', '$code_url', {asynchronous:true, evalScripts:"true"});
             var updater_${data.id} = new updater( $data.id, '$state_url', '$code_url', '$data.state' );
             updater_${data.id}.go();
         #end if
