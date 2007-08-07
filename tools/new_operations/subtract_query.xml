@@ -1,31 +1,19 @@
 <tool id="subtract_query1" name="Subtract Whole Query">
   <description>from another query</description>
-  <command interpreter="python2.4">
-    subtract_query.py 
-    $input1 
-    $input2 
-    $begin_col 
-    $end_col 
-    $output 
-    #if ($input1.ext == 'tabular' or $input1.ext == 'interval' or $input1.ext == 'bed') and ($input2.ext == 'tabular' or $input2.ext == 'interval' or $input2.ext == 'bed')
-      -n $input1_columns,$input2_columns
-    #else
-      -n '',''
-    #end if
-  </command>
+  <command interpreter="python2.4">subtract_query.py $input1 $input2 $begin_col $end_col $output</command>
   <inputs>
-    <param format="text" name="input2" type="data" help="Second query">
-      <label>Subtract</label>
-    </param>
-    <param format="text" name="input1" type="data" help="First query">
-      <label>from</label>
-    </param>
-    <param format="text" name="begin_col" size="4" type="text" value="" help="Begin column (leave blank for all columns or if format of queries is not tabular)">
-      <label>Between column (e.g., c2)</label>
-    </param>
-     <param format="text" name="end_col" size="4" type="text" value="" help="End column (leave blank for all columns or if format of queries is not tabular)">
-      <label>and column (e.g., c4)</label>
-    </param>
+    <page>
+      <param format="text" name="input2" type="data" help="Second query">
+        <label>Subtract</label>
+      </param>
+      <param format="text" name="input1" type="data" help="First query">
+        <label>from</label>
+      </param>
+    </page>
+    <page>
+      <param name="begin_col" label="If both queries are tabular format, restrict subtraction between 'begin column'" type="select" dynamic_options="get_columns( input1, input2 )"/>
+      <param name="end_col" label="and 'end column'" type="select" help="Specifying columns for restricting subtraction is available only for tabular formatted queries" dynamic_options="get_columns( input1, input2 )"/>
+    </page>
   </inputs>
   <outputs>
     <data format="input" name="output" metadata_source="input1" />
@@ -37,19 +25,8 @@
     <test>
       <param name="input1" value="1.txt" />
       <param name="input2" value="2.txt" />
-      <param name="begin_col" value="" />
-      <param name="end_col" value="" />
-      <output name="output" file="subtract-query-1.dat" />
-    </test>
-  	<!--
-  	Subtract 2 non-tabular files with column restrictions (column
-  	restrictions should be ignored).
-  	-->
-    <test>
-      <param name="input1" value="1.txt" />
-      <param name="input2" value="2.txt" />
-      <param name="begin_col" value="c3" />
-      <param name="end_col" value="c65" />
+      <param name="begin_col" value="None" />
+      <param name="end_col" value="None" />
       <output name="output" file="subtract-query-1.dat" />
     </test>
   	<!--
@@ -58,12 +35,12 @@
     <test>
       <param name="input1" value="eq-showbeginning.dat" />
       <param name="input2" value="eq-showtail.dat" />
-      <param name="begin_col" value="" />
-      <param name="end_col" value="" />
+      <param name="begin_col" value="None" />
+      <param name="end_col" value="None" />
       <output name="output" file="subtract-query-2.dat" />
     </test>
   	<!--
-  	Subtract 2 tabular files with valid column restrictions.
+  	Subtract 2 tabular files with column restrictions.
   	-->
     <test>
       <param name="input1" value="eq-showbeginning.dat" />
@@ -73,26 +50,14 @@
       <output name="output" file="subtract-query-3.dat" />
     </test>
   	<!--
-  	Subtract 2 tabular files with invalid column restrictions (invalid
-  	column restrictions should be ignored).
-  	-->
-    <test>
-      <param name="input1" value="eq-showbeginning.dat" />
-      <param name="input2" value="eq-removebeginning.dat" />
-      <param name="begin_col" value="0" />
-      <param name="end_col" value="boo" />
-      <output name="output" file="subtract-query-4.dat" />
-    </test>
-  	<!--
-  	Subtract a non-tabular file from a tabular file with valid 
-  	column restrictions (column restrictions should be ignored).
+  	Subtract a non-tabular file from a tabular file with no column restrictions.
   	-->
     <test>
       <param name="input1" value="eq-showbeginning.dat" />
       <param name="input2" value="2.txt" />
-      <param name="begin_col" value="c3" />
-      <param name="end_col" value="c4" />
-      <output name="output" file="subtract-query-5.dat" />
+      <param name="begin_col" value="None" />
+      <param name="end_col" value="None" />
+      <output name="output" file="subtract-query-4.dat" />
     </test>
   </tests>
   <help>
@@ -109,12 +74,11 @@
 This tool subtracts an entire query from another query.  
 
 - Any text format is valid.
-- All blank and comment lines are skipped and not included in the resulting dataset (comment lines are lines beginning with a # character).
-- If query formats are tabular, you may restrict the subtraction to specific columns and the resulting dataset will include only the columns specified.  
-- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file.  
-- Both queries must contain the specified columns.  If either doesn't, restriction to specific columns is ignored.
-- The begin column must be less than or equal to the end column.  If it is not, restriction to specific columns is ignored.
-- This tool assumes that each query consists of distinct lines of data (i.e., duplicate lines are eliminated from both queries prior to subtraction).  If any duplicate lines were eliminated from the first query, the number is displayed in the resulting history item.
+- If both query formats are tabular, you may restrict the subtraction to specific columns **contained in both queries** and the resulting query will include only the columns specified. 
+- The begin column must be less than or equal to the end column.  If it is not, begin column is switched with end column.
+- If begin column is specified but end column is not, end column will default to begin_column (and vice versa).
+- All blank and comment lines are skipped and not included in the resulting query (comment lines are lines beginning with a # character).
+- Duplicate lines are eliminated from both queries prior to subtraction.  If any duplicate lines were eliminated from the first query, the number is displayed in the resulting history item.
 
 -----
 
@@ -157,4 +121,5 @@ Subtracting the **Second query** from the **First query** (restricting to column
   chr10           2
 
 </help>
+  <code file="subtract_query_code.py"/>
 </tool>
