@@ -20,18 +20,17 @@ class ToolTestCase( TwillTestCase ):
         # Upload any needed files
         for fname, extra in self.testdef.required_files:
             self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ) )
+	    print fname, extra
         # Run the tool
         all_inputs = dict( ( name, value ) for ( name, value, _ ) in self.testdef.inputs )
         # Do the first page
+        fp = open('hjb.txt', 'a')
         page_inputs = dict( ( key, all_inputs[key] )
-                            for key in self.testdef.tool.inputs_by_page[0].keys() )   
-             
+             for key in self.testdef.tool.inputs_by_page[0].keys() )   
         self.run_tool( self.testdef.tool.id, **page_inputs )
         # Do other pages if they exist
         for i in range( 1, self.testdef.tool.npages ):
-            
             page_inputs = dict()
-            
             for key in self.testdef.tool.inputs_by_page[i].keys():
                 try:
                     a_test_list = all_inputs[key].split(',')
@@ -40,8 +39,12 @@ class ToolTestCase( TwillTestCase ):
                     else:
                         page_inputs[key] = all_inputs[key]
                 except:
-                    page_inputs[key] = all_inputs[key]
+		    try: 
+                        page_inputs[key] = all_inputs[key]
+	            except: 
+		        hjb = 0
             self.submit_form( **page_inputs )
+            print "page_inputs", page_inputs     
         # Check the result
         assert len( self.testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."
         for name, file in self.testdef.outputs:
