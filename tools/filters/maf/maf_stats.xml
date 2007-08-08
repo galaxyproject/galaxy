@@ -32,9 +32,9 @@ $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $
   </outputs>
   <tests>
     <test>
-      <param name="maf_source_type" value="user"/>
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
-      <param name="input2" value="maf_stats_interval_in.dat" dbkey="hg17"/>
+      <param name="maf_source" value="cached"/>
+      <param name="mafType" value="8_WAY_MULTIZ_hg17"/>
       <output name="out_file1" file="maf_stats_interval_out.dat"/>
     </test>
   </tests>

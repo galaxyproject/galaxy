@@ -26,7 +26,7 @@
                 <param name="species" type="select" label="Species to extract" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true"/>
             </when>
         </conditional>
-    </page>
+      </page>
     </inputs>
     <outputs>
         <data format="fasta" name="out_file1" />
@@ -34,7 +34,7 @@
     <tests>
       <test>
         <param name="input1" value="3.maf"/>
-        <param name="species" values="canFam1,hg17,mm5,panTro1,rn3"/>
+        <param name="species" values="canFam1"/>
         <output name="out_file1" file="cf_maf2fasta_concat.dat"/>
       </test>
       <test>
