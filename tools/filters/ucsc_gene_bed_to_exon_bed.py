@@ -95,8 +95,8 @@ def main():
 		if options.region == 'intron':
 			i=0
 	    		while i < len(exon_starts)-1:
-            			intron_starts = exon_ends[i] + 1
-				intron_ends = exon_starts[i+1] - 1
+            			intron_starts = exon_ends[i]
+				intron_ends = exon_starts[i+1]
 				if strand: print_tab_sep(out_file, chrom, intron_starts, intron_ends, name, "0", strand )
                 		else: print_tab_sep(out_file, chrom, intron_starts, intron_ends )
 				i+=1
