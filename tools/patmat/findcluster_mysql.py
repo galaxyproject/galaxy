@@ -39,7 +39,8 @@ if __name__ == '__main__':
 	    flags[ff] = 1
       #get the blocks from input box
       elif sys.argv[n] == "-f" : 
-         if flags.get('f') == 1 : 
+#         if flags.get('f') == 1 : 
+         if 1 : 
             while 1: 
 	       if sys.argv[n+1][0]!='-': blkstring = blkstring + sys.argv[n+1] + ' '
 	       else: break
@@ -68,7 +69,8 @@ if __name__ == '__main__':
 	          chroms[blk.split(':')[0].split('chr')[1]] = 1
       #get the blocks from bed file
       elif sys.argv[n] == "-b" : 
-         if flags.get('b')==1 and os.path.exists(sys.argv[n+1]) : 
+#         if flags.get('b')==1 and os.path.exists(sys.argv[n+1]) : 
+         if os.path.exists(sys.argv[n+1]) : 
             bed_file = open(sys.argv[n+1], 'r')
 	    for line in bed_file.readlines() :
 	       block = []
