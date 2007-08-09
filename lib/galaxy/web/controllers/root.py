@@ -187,6 +187,8 @@ class Universe( BaseController ):
             The following for loop will save all metadata_spec items
             """
             for name, spec in data.datatype.metadata_spec.items():
+                if spec.get("readonly"):
+                    continue
                 optional = p.get("is_"+name, None)
                 if optional and optional == 'true':
                     # optional element...

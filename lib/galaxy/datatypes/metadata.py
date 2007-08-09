@@ -189,11 +189,24 @@ class SelectParameter( MetadataParameter ):
 
         return field
 
+    def get_html( self ):
+        if self.spec.get("readonly"):
+            if self.value in [None, [] ]:
+                return "None"
+            return ", ".join(self.value)
+        return MetadataParameter.get_html(self)
+
     @classmethod
     def marshal( cls, value ):
-        # split into a list, or return single value if list length = 1
-        if len(value) == 1: return value[0]
+        # Store select as list, even if single item
+        if value is None: return []
+        if not isinstance(value, list): return [value]
         return value
+    
+    def __str__(self):
+        if self.value in [None, []]:
+            return "None"
+        return ",".join(self.value)
     
 class RangeParameter( SelectParameter ):
     def __init__( self, spec, value, context ):
