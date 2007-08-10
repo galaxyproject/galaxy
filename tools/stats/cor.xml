@@ -1,18 +1,33 @@
 <tool id="cor2" name="Correlation">
   <description>for numeric columns</description>
-  <command interpreter="python">cor.py $input $out_file1 $method "$columns"</command>
+  <command interpreter="python">cor.py $input1 $out_file1 $columns $method</command>
   <inputs>
-    <param format="tabular" name="input" type="data" label="Dataset" help="Query missing? See TIP below"/>
-    <param name="columns" size="10" type="text" value="5, 6, 7" label="Columns" help="Comma seperated list of column indexes starting with 1"/>
-    <param name="method" type="select" label="Method">
-      <option value="pearson">Pearson</option>
-      <option value="kendall">Kendall rank</option>
-      <option value="spearman">Spearman rank</option>
-    </param>
+    <page>
+      <param format="tabular" name="input1" type="data" label="Dataset" help="Query missing? See TIP below"/>
+    </page>
+    <page>
+      <param name="columns" label="Columns" type="select" multiple="True" dynamic_options="get_columns( input1 )" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+      <param name="method" type="select" label="Method">
+        <option value="pearson">Pearson</option>
+        <option value="kendall">Kendall rank</option>
+        <option value="spearman">Spearman rank</option>
+      </param>
+    </page>
   </inputs>
   <outputs>
     <data format="txt" name="out_file1" />
   </outputs>
+  <tests>
+    <!--
+    Test a tabular input with the first line being a comment without a # character to start
+    -->
+    <test>
+      <param name="input1" value="cor.tabular" />
+      <param name="columns" value="2,3" />
+      <param name="method" value="pearson" />
+      <output name="out_file1" file="cor_out.txt" />
+    </test>
+  </tests>
   <help>
 
 .. class:: infomark
@@ -27,7 +42,7 @@ Missing data ("nan") removed from each pairwise comparison
 
 **Syntax**
 
-This tool computes matrix of correlation coefficients between numeric columns.
+This tool computes the matrix of correlation coefficients between numeric columns.
 
 - Columns are referenced with a **number**, starting at 1. For example, **2** refers to the second column of a tab-delimited file
 
@@ -77,11 +92,12 @@ This tool computes matrix of correlation coefficients between numeric columns.
     19 		63 		3.4
     20 		61 		3.6
 
-- Computing the correlation coefficients between columns 2 and 3 of the above file, the output is::
+- Computing the correlation coefficients between columns 2 and 3 of the above file (using Pearson's Correlation), the output is::
 
     1.0	0.730635686279
     0.730635686279	1.0
 
-    So the correlation for our twenty cases is .73, which is a fairly strong positive relationship.
+  So the correlation for our twenty cases is .73, which is a fairly strong positive relationship.
   </help>
+  <code file="cor_code.py"/>
 </tool>
