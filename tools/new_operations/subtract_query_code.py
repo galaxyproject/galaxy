@@ -8,7 +8,7 @@ def get_columns( input1, input2 ):
     selected if the user does nothing.  Not sure why this is the behavior...
     """
     columns.append(('?','None',False))
-    if isinstance(input1.datatype, interval.Tabular().__class__) and isinstance(input2.datatype, interval.Tabular().__class__):
+    if isinstance(input1.datatype, tabular.Tabular().__class__) and isinstance(input2.datatype, tabular.Tabular().__class__):
         num_columns = min(input1.metadata.columns, input2.metadata.columns)
         for col in range(1, num_columns+1):
             option = "c" + str(col)
