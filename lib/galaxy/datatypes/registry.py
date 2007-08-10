@@ -3,7 +3,7 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 """
 import os
 import logging
-import data, interval, images, sequence
+import data, tabular, interval, images, sequence
 import galaxy.util
 from galaxy.util.odict import odict
 
@@ -41,7 +41,7 @@ class Registry( object ):
                 'txt'      : data.Text(), 
                 'text'     : data.Text(),
                 'interval' : interval.Interval(), 
-                'tabular'  : interval.Tabular(),
+                'tabular'  : tabular.Tabular(),
                 'png'      : images.Image(), 
                 'pdf'      : images.Image(), 
                 'fasta'    : sequence.Fasta(),

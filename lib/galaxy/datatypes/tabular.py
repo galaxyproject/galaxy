@@ -20,18 +20,33 @@ class Tabular( data.Text ):
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True )
-    MetadataElement( name="dbkey", desc="Database/Build", default="?",
-                     param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
+        
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
             if not value:
                 return True
         return False
-        
+
+    def set_meta( self, dataset ):
+        """
+        Tries to determine the number of columns in the dataset
+        """
+        if dataset.has_data():
+            for i, line in enumerate( file(dataset.file_name) ):
+                line = line.rstrip('\r\n')
+                if line and not line.startswith('#') and len(line) > 0:
+                    elems = line.split('\t')
+                    if len(elems) != dataset.metadata.columns:
+                        dataset.metadata.columns = len(elems)
+                        break
+                if i == 30:
+                    break
+
     def make_html_table(self, data, skipchar=None):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']

@@ -162,20 +162,6 @@ class Dataset( object ):
         # Relationships
         self.history = history
         self.validation_errors = validation_errors
-
-    # Deprecated: the metadatacollection now updates the object
-    # reference whenever any metadata is changed
-    def mark_metadata_changed( self ):
-        """
-        Register changes to metadata with the history
-        
-        FIXME: This is just temporary, I'd like to implement some kind of 
-               object proxy mapper property for SQLAlchemy that handles 
-               this magically.
-
-               Fixed.  INS, 7/5/2007  Waiting to remove...
-        """
-        self._metadata = Bunch( **self._metadata.__dict__ )
         
     @property
     def ext( self ):

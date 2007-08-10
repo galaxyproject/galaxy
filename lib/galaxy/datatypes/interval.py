@@ -292,14 +292,6 @@ class Gff( Tabular ):
         """
         if dataset.has_data() and dataset.state == dataset.states.OK:
             try:
-                """
-                TODO: the metadata stuff needs to work for this and other formats (besides bed and interval).
-                When this works, we should be able to have just 1 get_estimated_display_viewport() method at 
-                possibly the Tabular level that should handle most tabular formats.
-                
-                c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
-                c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
-                """
                 seqid_col = 0
                 start_col = 3
                 stop_col = 4

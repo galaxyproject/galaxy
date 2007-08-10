@@ -4,7 +4,10 @@ from galaxy.datatypes import sniff
 from galaxy import model, util
 
 import sys, traceback
-      
+
+import logging
+log = logging.getLogger( __name__ )
+
 class UploadToolAction( object ):
     """
     Action for uploading files
@@ -31,7 +34,7 @@ class UploadToolAction( object ):
                 file_name = file_name.split('/')[-1]
                 data_list.append( self.add_file(trans, data_file.file, file_name, file_type, dbkey, "uploaded file",space_to_tab=space_to_tab) )
             except BadFileException:
-                return self.upload_empty( trans, "Error", "error in uploaded file")
+                return self.upload_empty( trans, "Error", "attempted to upload an empty or inappropriate file")
             except:
                 pass
         
@@ -42,18 +45,18 @@ class UploadToolAction( object ):
                     try:
                         data_list.append( self.add_file(trans, urllib.urlopen(line), line, file_type, dbkey, "uploaded url",space_to_tab=space_to_tab) )
                     except BadFileException:
-                        return self.upload_empty( trans, "Error", "error in uploaded file")
+                        return self.upload_empty( trans, "Error", "attempted to upload an empty or inappropriate file")
                     except:
                         pass
             else:
                 try:
                     data_list.append( self.add_file(trans, StringIO.StringIO(url_paste), 'Pasted Entry', file_type, dbkey, "pasted entry",space_to_tab=space_to_tab) )
                 except BadFileException:
-                    return self.upload_empty( trans, "Error", "error in uploaded file" )
+                    return self.upload_empty( trans, "Error", "attempted to upload an empty or inappropriate file" )
                 except:
                     pass
         if self.empty:
-            return self.upload_empty(trans, "Empty file error:", "you attempted to upload an empty file")
+            return self.upload_empty(trans, "Empty file error:", "attempted to upload an empty file")
         elif len(data_list)<1:
             return self.upload_empty(trans, "No data error:","either you pasted no data, the url you specified is invalid, or you have not specified a file")
         return dict( output=data_list[0] )
@@ -73,10 +76,16 @@ class UploadToolAction( object ):
     def add_file(self, trans, file_obj, file_name, file_type, dbkey, info, space_to_tab = False ):
         temp_name = sniff.stream_to_file(file_obj)
 
-        # Check against html:
-        if self.check_html( temp_name ):
+        try:
+            # Check against html:
+            if self.check_html( temp_name ):
+                self.empty = True
+        except:
+            #User is attempting to upload a non-text file
             self.empty = True
-            raise BadFileException( "Error in uploaded file" )
+        
+        if self.empty:
+            raise BadFileException( "attempted to upload an empty or inappropriate file" )
         
         sniff.convert_newlines(temp_name)
         
