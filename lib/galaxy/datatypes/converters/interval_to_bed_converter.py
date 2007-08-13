@@ -14,7 +14,7 @@ def __main__():
     strandCol = int(sys.argv.pop(1))-1
     out = open(output_name,'w')
     count = 0
-    for region in bx.intervals.io.NiceReaderWrapper( open(input_name, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False):
+    for region in bx.intervals.io.NiceReaderWrapper( open(input_name, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False):
         out.write(region.chrom+"\t"+str(region.start)+"\t"+str(region.end)+"\tregion_"+str(count)+"\t"+"0\t"+region.strand+"\n")
         count += 1
     out.close()
