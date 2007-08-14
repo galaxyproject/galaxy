@@ -75,22 +75,37 @@ class Interval( Tabular ):
         Tries to guess from the line the location number of the column for the chromosome, region start-end and strand
         """
         if dataset.has_data():
-            line = file(dataset.file_name).readline().strip()
-            if len(line)>0 and (first_line_is_header or line[0] == '#'):
-                self.init_meta(dataset)
-                line  = line.strip("#")
-                elems = line.split("\t")
-                if len(elems) != dataset.metadata.columns:
-                    dataset.metadata.columns = len(elems)
-                valid = dict(alias_helper) # shrinks
-                for index, col_name in enumerate(elems):
-                    if col_name in valid:
-                        meta_name = valid[col_name]
-                        setattr(dataset.metadata, meta_name, index+1)
-                        values = alias_spec[meta_name]
-                        start  = values.index(col_name)
-                        for lower in values[start:]:
-                            del valid[lower]  # removes lower priority keys 
+            for i, line in enumerate( file(dataset.file_name) ):
+                line = line.rstrip('\r\n')
+
+                if len(line)>0:
+                    if (first_line_is_header or line[0] == '#'):
+                        self.init_meta(dataset)
+                        line  = line.strip("#")
+                        elems = line.split("\t")
+                        if len(elems) != dataset.metadata.columns:
+                            dataset.metadata.columns = len(elems)
+                        valid = dict(alias_helper) # shrinks
+                        for index, col_name in enumerate(elems):
+                            if col_name in valid:
+                                meta_name = valid[col_name]
+                                setattr(dataset.metadata, meta_name, index+1)
+                                values = alias_spec[meta_name]
+                                start  = values.index(col_name)
+                                for lower in values[start:]:
+                                    del valid[lower]  # removes lower priority keys 
+                        break  # Our metadata is set, so break out of the outer loop
+                    else:
+                        """
+                        We must have an interval file without a header line, so 
+                        at most we can set the number of columns.
+                        """
+                        elems = line.split("\t")
+                        if len(elems) != dataset.metadata.columns:
+                            dataset.metadata.columns = len(elems)
+                        break  # Our metadata is set, so break out of the outer loop
+                if i == 30:
+                    break  # Hopefully we'll never get here...
     
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
