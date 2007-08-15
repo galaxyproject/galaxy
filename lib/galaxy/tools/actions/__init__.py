@@ -59,6 +59,7 @@ class DefaultToolAction( object ):
                 input_dbkey = data.dbkey
             for meta_key, meta_value in data.metadata.items():
                 if meta_value is not None:
+                    meta_value = str(data.datatype.metadata_spec[meta_key].wrap(meta_value, data))
                     meta_key = '%s_%s' % (name, meta_key)
                     incoming[meta_key] = meta_value
                 else:

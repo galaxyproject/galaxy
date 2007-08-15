@@ -195,16 +195,10 @@ class Dataset( object ):
 
     def set_dbkey( self, value ):
         if "dbkey" in self.datatype.metadata_spec:
-            if self.datatype.metadata_spec.dbkey.get("multiple"):
-                # Initialize a list if there isn't one
-                db_list = self.metadata.dbkey or list()
-                if type( db_list ) == type( [] ):
-                    if len(db_list) < 1: db_list.append(value)
-                    else: db_list[0] = value
-                self.metadata.dbkey = db_list
-            else:
-                self.metadata.dbkey = value
-        self.old_dbkey = value
+            if not isinstance(value, list): self.metadata.dbkey = [value]
+            else: self.metadata.dbkey = value
+        if isinstance(value, list): self.old_dbkey = value[0]
+        else: self.old_dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
     
     def change_datatype( self, new_ext ):

@@ -55,6 +55,9 @@ class MetadataParameter( object ):
         self.value = value
         self.context = context
 
+    def __str__(self):
+        return str(self.value)
+
     @classmethod
     def marshal( cls, value ):
         '''
@@ -174,13 +177,25 @@ class SelectParameter( MetadataParameter ):
     def __init__( self, spec, value, context ):
         MetadataParameter.__init__( self, spec, value, context )
         self.values = spec.get("values")
+    
+    def __setattr__(self, name, value):
+        MetadataParameter.__setattr__(self, name, value)
+        if name in ['value']:
+            if value is None: MetadataParameter.__setattr__(self, name, [])
+            elif not isinstance(value, list): MetadataParameter.__setattr__(self, name, [value])
+    
+    def __str__(self):
+        if self.value in [None, []]:
+            return "None"
+        return ",".join(map(str,self.value))
+    
     def get_html_field( self, value=None, other_values={} ):
         field = form_builder.SelectField( self.spec.name,
                                           multiple=self.spec.get("multiple"),
                                           display=self.spec.get("display") )
         for value, label in self.values:
             try:
-                if value == self.value or value in self.value:
+                if value in self.value:
                     field.add_option( label, value, selected=True )
                 else:
                     field.add_option( label, value, selected=False )
@@ -193,7 +208,7 @@ class SelectParameter( MetadataParameter ):
         if self.spec.get("readonly"):
             if self.value in [None, [] ]:
                 return "None"
-            return ", ".join(self.value)
+            return ", ".join(map(str,self.value))
         return MetadataParameter.get_html(self)
 
     @classmethod
@@ -202,11 +217,6 @@ class SelectParameter( MetadataParameter ):
         if value is None: return []
         if not isinstance(value, list): return [value]
         return value
-    
-    def __str__(self):
-        if self.value in [None, []]:
-            return "None"
-        return ",".join(self.value)
     
 class RangeParameter( SelectParameter ):
     def __init__( self, spec, value, context ):
@@ -220,7 +230,6 @@ class RangeParameter( SelectParameter ):
     @classmethod
     def marshal( cls, value ):
         values = [int(x) for x in value]
-        if len(values) == 1: return values[0]
         return values
     
 class ColumnParameter( RangeParameter ):

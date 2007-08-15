@@ -48,7 +48,7 @@ class Maf( Alignment ):
     """Class describing a Maf alignment"""
     
     def init_meta( self, dataset, copy_from=None ):
-        Sequence.init_meta( self, dataset, copy_from=copy_from )
+        Alignment.init_meta( self, dataset, copy_from=copy_from )
     
     def set_meta( self, dataset, first_line_is_header=False ):
         """
