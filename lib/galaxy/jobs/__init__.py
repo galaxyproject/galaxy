@@ -42,20 +42,48 @@ class JobQueue( object ):
         self.app = app
         # Should we use IPC to communicate (needed if forking)
         self.track_jobs_in_database = app.config.get( 'track_jobs_in_database', False )
+        
+        # Check if any special scheduling policy should be used. If not, default is FIFO.
+        sched_policy = app.config.get('job_scheduler_policy', 'FIFO')
+        # Parse the scheduler policy string. The policy class implements a special queue. 
+        # Ready-to-run jobs are inserted into this queue
+        if sched_policy != 'FIFO' :
+            try :
+                self.use_policy = True
+                if ":" in sched_policy :
+                    modname , policy_class = sched_policy.split(":")
+                    modfields = modname.split(".")
+                    module = __import__(modname)
+                    for mod in modfields[1:] : module = getattr( module, mod)
+                    # instantiate the policy class
+                    self.squeue = getattr( module , policy_class )(self.app)
+                else :
+                    self.use_policy = False
+                    log.info("Scheduler policy not defined as expected, defaulting to FIFO")
+            except AttributeError, detail : # try may throw AttributeError
+                self.use_policy = False
+                log.exception("Error while loading scheduler policy class, defaulting to FIFO")
+        else :
+            self.use_policy = False
+
+        log.info("Job scheduler policy is " + sched_policy)
         # Keep track of the pid that started the job manager, only it
         # has valid threads
         self.parent_pid = os.getpid()
-        # Contains new jobs
+        # Contains new jobs. Note this is not used if track_jobs_in_database is True
         self.queue = Queue()
+        
         # Contains jobs that are waiting (only use from monitor thread)
+        ## This and new_jobs[] are closest to a "Job Queue"
         self.waiting = []
+                
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
         self.running = True
         self.dispatcher = DefaultJobDispatcher( app )
         self.monitor_thread = threading.Thread( target=self.monitor )
-        self.monitor_thread.start()
-        log.debug( "job manager started" )
+        self.monitor_thread.start()        
+        log.info( "job manager started" )
 
     def monitor( self ):
         """
@@ -89,25 +117,46 @@ class JobQueue( object ):
             # Iterate over new and waiting jobs and look for any that are 
             # ready to run
             new_waiting = []
+           
             for job in ( new_jobs + self.waiting ):
                 try:
                     # Run the job, requeue if not complete                    
                     job_state = job.check_if_ready_to_run()
                     if job_state == JOB_WAIT: 
                         new_waiting.append( job )
-                        #log.debug( "the job has been requeued" )
+                        log.debug( "the job has been requeued" )
                     elif job_state == JOB_ERROR:
                         log.info( "job %d ended with an error" % job.job_id )
                     elif job_state == JOB_READY:
-                        self.dispatcher.put( job )
-                        log.debug( "job %d dispatched" % job.job_id )
+                        # If special queuing is enabled, put the ready jobs in the special queue
+                        if self.use_policy :
+                            self.squeue.put( job ) 
+                            log.debug( "job %d put in policy queue" % job.job_id )
+                        else : # or dispatch the job directly
+                            self.dispatcher.put( job )
+                            log.debug( "job %d dispatched" % job.job_id)
                     else:
                         log.error( "unknown job state '%s' for job '%d'", job_state, job.job_id )
                 except:
-                    job.fail("failure running job")
                     log.exception( "failure running job %d" % job.job_id  )
+            
             # Update the waiting list
             self.waiting = new_waiting
+            
+            # If special (eg. fair) scheduling is enabled, dispatch all jobs
+            # currently in the special queue    
+            if self.use_policy :
+                while 1 :
+                    try :
+                        sjob = self.squeue.get()
+                        self.dispatcher.put( sjob )
+                        log.debug( "job %d dispatched" % sjob.job_id )
+                    except Empty : # squeue is empty, so stop dispatching
+                        break
+                    except : # if something else breaks while dispatching
+                        job.fail("failure running job")
+                        log.exception( "failure running job %d" % sjob.job_id  )
+
             # Sleep
             self.sleeper.sleep( 1 )
             
@@ -130,6 +179,7 @@ class JobQueue( object ):
             self.sleeper.wake()
             log.info( "job queue stopped" )
             self.dispatcher.shutdown()
+            
 
 class JobWrapper( object ):
     """
@@ -363,7 +413,7 @@ class DefaultJobDispatcher( object ):
             
     def dispatch_default( self, job_wrapper ):
         self.local_job_runner.put( job_wrapper )
-        log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
+        log.debug( "dispatch_default(): dispatching job %d to local runner", job_wrapper.job_id )
             
     def dispatch_pbs( self, job_wrapper ):
         # command_line = job_wrapper.get_command_line()
@@ -375,11 +425,10 @@ class DefaultJobDispatcher( object ):
             self.local_job_runner.put( job_wrapper )
         else:
             self.pbs_job_runner.put( job_wrapper )
-            log.debug( "dispatching job %d to pbs runner", job_wrapper.job_id )
+            log.debug( "dispatch_pbs(): dispatching job %d to pbs runner", job_wrapper.job_id )
         
     def shutdown( self ):
         self.local_job_runner.shutdown()
         if self.use_pbs:
             self.pbs_job_runner.shutdown()  
-    
     

@@ -22,6 +22,14 @@ log_level = DEBUG
 # Number of concurrent jobs to run (local runner)
 job_queue_workers = 5
 
+# Job scheduling policy to be used. 
+# (Currently either 'FIFO' (default) or UserRoundRobin )
+# module/package name and classname should be in "modu.le:classname" format. For FIFO, put FIFO.
+job_scheduler_policy = galaxy.jobs.schedulingpolicy.roundrobin:UserRoundRobin
+
+# Job queue cleanup interval in minutes. Currently only used by RoundRobin
+job_queue_cleanup_interval = 30
+
 # Database connection
 database_file = database/universe.sqlite
 # You may use a SQLAlchemy connection string to specify an external database instead
