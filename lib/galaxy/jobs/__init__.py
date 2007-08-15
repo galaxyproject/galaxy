@@ -174,13 +174,24 @@ class JobWrapper( object ):
         # Resore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        # add some useful session info to param_dict via incoming - ross august 2007
+        # these can be passed on the commandline if wanted as $userId $userEmail
+        if job.history.user: # check for anonymous user!
+             userId = '%d' % job.history.user.id
+             userEmail = str(job.history.user.email)
+        else:
+             userId = 'Anonymous'
+             userEmail = 'Anonymous'
+        incoming['userId'] = userId
+        incoming['userEmail'] = userEmail
         # Build params, done before hook so hook can use
         param_dict = self.tool.build_param_dict( incoming, inp_data, out_data )
         # Run the before queue ("exec_before_job") hook "trans" is no
         # longer available to this hook, and has been replaced with
         # app - 5/31/2007, by INS
+        # job added so we can get at the user if needed 14/august/2007 ross
         self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data, 
-                             out_data=out_data, tool=self.tool, param_dict=incoming )
+                             out_data=out_data, tool=self.tool, param_dict=incoming)
         mapping.context.current.flush()
         # Build any required config files
         config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
@@ -284,7 +295,7 @@ class JobWrapper( object ):
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
-        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here?
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
         self.tool.collect_associated_files(out_data)
@@ -294,6 +305,11 @@ class JobWrapper( object ):
         # Call 'exec_after_process' hook
         self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, param_dict=param_dict, 
+                             tool=self.tool, stdout=stdout, stderr=stderr )
+        # hack by ross for testing passing self.param_dict rather than recreating it
+        self.param_dict.update({'__collected_datasets__':collected_datasets})
+        self.tool.call_hook( 'exec_after_process_plus', self.queue.app, inp_data=inp_data, 
+                             out_data=out_data, param_dict=self.param_dict, 
                              tool=self.tool, stdout=stdout, stderr=stderr )
         # remove 'fake' datasets 
         for dataset_assoc in job.input_datasets:
