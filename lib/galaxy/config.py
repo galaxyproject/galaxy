@@ -33,6 +33,8 @@ class Configuration( object ):
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
         self.job_queue_workers = int( kwargs.get( "job_queue_workers", "10" ) )
+        self.job_scheduler_policy = kwargs.get("job_scheduler_policy", "FIFO")
+        self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
         self.admin_pass = kwargs.get('admin_pass',"galaxy")
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
