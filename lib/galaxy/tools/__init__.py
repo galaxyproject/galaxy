@@ -609,7 +609,7 @@ class Tool:
                 # Check for addition
                 if input.name + "_add" in incoming:
                     new_state = {}
-                    self.fill_in_new_state( trans, input.inputs, new_state )
+                    self.fill_in_new_state( trans, input.inputs, new_state, context )
                     group_state.append( new_state )
                     if any_group_errors:
                         group_errors.append( {} )
