@@ -56,6 +56,8 @@ class MetadataParameter( object ):
         self.context = context
 
     def __str__(self):
+        if self.value is None:
+            return str(self.spec.no_value)
         return str(self.value)
 
     @classmethod
@@ -186,7 +188,7 @@ class SelectParameter( MetadataParameter ):
     
     def __str__(self):
         if self.value in [None, []]:
-            return "None"
+            return str(self.spec.no_value)
         return ",".join(map(str,self.value))
     
     def get_html_field( self, value=None, other_values={} ):
@@ -207,7 +209,7 @@ class SelectParameter( MetadataParameter ):
     def get_html( self ):
         if self.spec.get("readonly"):
             if self.value in [None, [] ]:
-                return "None"
+                return str(self.spec.no_value)
             return ", ".join(map(str,self.value))
         return MetadataParameter.get_html(self)
 

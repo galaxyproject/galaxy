@@ -14,13 +14,13 @@ class Sequence( data.Text ):
     """Class describing a sequence"""
 
     """Add metadata elements"""
-    MetadataElement( name="dbkey", desc="Database/Build", param=metadata.SelectParameter, multiple=False, values=util.dbnames )
+    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames, no_value="?" )
 
 class Alignment( Sequence ):
     """Class describing an alignmnet"""
 
     """Add metadata elements"""
-    MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=[] )
+    MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
 
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
