@@ -195,7 +195,7 @@ class SelectParameter( MetadataParameter ):
         field = form_builder.SelectField( self.spec.name,
                                           multiple=self.spec.get("multiple"),
                                           display=self.spec.get("display") )
-        for value, label in self.values:
+        for value, label in self.values or [(value, value) for value in self.value]:
             try:
                 if value in self.value:
                     field.add_option( label, value, selected=True )
