@@ -124,7 +124,7 @@ class UserRoundRobin( object ):
             except StopIteration :
                 # this 2nd exception means there are no users queues at this moment
                 # returning None implies DOQ is empty
-                log.debug("RoundRobin queue: there are no user queues at this time")
+                #log.debug("RoundRobin queue: there are no user queues at this time")
                 self.iterator = None # this will cause the iterator to be recreated next call
                 return None
  
