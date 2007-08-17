@@ -137,7 +137,7 @@ class MetadataCollection:
     """
     def __init__(self, parent, spec):
         self.parent = parent
-        self.bunch = parent._metadata or Bunch()
+        self.bunch = parent._metadata or dict()
         if spec is None: self.spec = MetadataSpecCollection()
         else: self.spec = spec
     def __iter__(self):
@@ -165,8 +165,8 @@ class MetadataCollection:
         if name in ["parent","bunch","spec"]:
             self.__dict__[name] = value
         else:
-            setattr(self.__dict__["bunch"], name, value)
-            self.bunch = self.parent._metadata = Bunch( **self.bunch.__dict__ )
+            self.__dict__["bunch"][name] = value
+            self.bunch = self.parent._metadata = dict( self.bunch )
 
 MetadataElement = Statement(MetadataElementSpec)
 

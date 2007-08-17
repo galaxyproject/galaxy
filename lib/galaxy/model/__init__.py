@@ -153,7 +153,7 @@ class Dataset( object ):
         self.extension = extension
         self.dbkey = dbkey
         self.state = state
-        self._metadata = metadata or Bunch()
+        self._metadata = metadata or dict()
         self.parent_id = parent_id
         self.designation = designation
         self.deleted = False
@@ -175,11 +175,11 @@ class Dataset( object ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
 
     def get_metadata( self ):
-        if not self._metadata: self._metadata = Bunch()
+        if not self._metadata: self._metadata = dict()
         return MetadataCollection( self, self.datatype.metadata_spec )
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
-        self._metadata = Bunch( **dict( bunch.items() ) )
+        self._metadata = dict( bunch.items() )
     metadata = property( get_metadata, set_metadata )
 
     """
@@ -275,6 +275,9 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
+
+class Old_Dataset( Dataset ):
+    pass
             
 class ValidationError( object ):
     def __init__( self, message=None, err_type=None, attributes=None ):

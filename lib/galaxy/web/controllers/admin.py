@@ -136,3 +136,5 @@ class Admin( BaseController ):
             msg = 'Invalid password'
         return msg
 
+    def update_metadata( self, **kwd ):
+        pass
