@@ -44,7 +44,7 @@ Missing data ("nan") removed from each pairwise comparison
 
 This tool computes the matrix of correlation coefficients between numeric columns.
 
-- Columns are referenced with a **number**, starting at 1. For example, **2** refers to the second column of a tab-delimited file
+- All invalid, blank and comment lines are skipped when performing computations.  The number of skipped lines is displayed in the resulting history item.
 
 - **Pearson's Correlation** reflects the degree of linear relationship between two variables. It ranges from +1 to -1. A correlation of +1 means that there is a perfect positive linear relationship between variables. The formula for Pearson's correlation is:
 

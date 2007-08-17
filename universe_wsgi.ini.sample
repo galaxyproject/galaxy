@@ -23,8 +23,9 @@ log_level = DEBUG
 job_queue_workers = 5
 
 # Job scheduling policy to be used. 
-# (Currently either 'FIFO' (default) or UserRoundRobin )
-# module/package name and classname should be in "modu.le:classname" format. For FIFO, put FIFO.
+# module/package name and classname should be in "module:classname" format.
+# Comment / uncomment the following policies depending upon which is to be used.
+#job_scheduler_policy = FIFO
 job_scheduler_policy = galaxy.jobs.schedulingpolicy.roundrobin:UserRoundRobin
 
 # Job queue cleanup interval in minutes. Currently only used by RoundRobin

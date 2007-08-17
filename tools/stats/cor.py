@@ -30,7 +30,7 @@ def main():
     invalid_value = ''
     invalid_column = 0
 
-    for i, line in enumerate( open( sys.argv[1] ) ):
+    for i, line in enumerate( file( sys.argv[1] ) ):
         valid = True
         line = line.rstrip('\n\r')
 
@@ -52,9 +52,9 @@ def main():
                         except:
                             valid = False
                             skipped_lines += 1
+                            invalid_value = fields[column]
+                            invalid_column = column+1
                             if not first_invalid_line:
-                                invalid_value = fields[column]
-                                invalid_column = column+1
                                 first_invalid_line = i+1
         else:
             valid = False
