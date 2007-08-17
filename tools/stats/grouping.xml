@@ -2,39 +2,49 @@
   <description>data by a column and perform aggregate operation on other columns.</description>
   <command interpreter="python2.4">
     grouping.py 
-      "$out_file1"
-      "$input"
-      "$groupcol"
+      $out_file1
+      $input1
+      $groupcol
       #for $op in $operations
        '${op.optype}
         ${op.opcol}'
       #end for
   </command>
   <inputs>
-    <param format="tabular, interval" name="input" type="data" label="Select data" help="Query missing? See TIP below."/>
-    <param name="groupcol" size="40" type="integer" value="1" label="Group by column" />
-  	<repeat name="operations" title="Operation">
+    <page>
+      <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+  	</page>
+  	<page>
+      <param name="groupcol" label="Group by column" type="select" dynamic_options="get_columns( input1 )" />
+  	  <repeat name="operations" title="Operation">
   		<param name="optype" type="select" label="Type">
-            <option value="mean">Mean</option>
-            <option value="max">Maximum</option>
-            <option value="min">Minimum</option>
-            <option value="sum">Sum</option>
-            <option value="c">Concatenate</option>
-         </param>
-         <param name="opcol" size="40" type="integer" value="2" label="On column" />
-  	</repeat>
+          <option value="mean">Mean</option>
+          <option value="max">Maximum</option>
+          <option value="min">Minimum</option>
+          <option value="sum">Sum</option>
+          <option value="c">Concatenate</option>
+        </param>
+        <param name="opcol" label="On column" type="select" dynamic_options="get_columns( input1 )" />
+  	  </repeat>
+  	</page>
   </inputs>
-  
-  
   <outputs>
-    <data format="input" name="out_file1"/>
+    <data format="input" name="out_file1" metadata_source="input1" />
   </outputs>
   <tests>
+  	<!-- Test valid data -->
     <test>
-      <param name="input" value="1.bed"/>
+      <param name="input1" value="1.bed"/>
       <param name="groupcol" value="1"/>
       <param name="operations" value="mean 2"/>
-      <output name="out_file1" file="groupby_1.bed"/>
+      <output name="out_file1" file="groupby_out1.dat"/>
+    </test>
+    <!-- Test data with an invalid value in a column -->
+    <test>
+      <param name="input1" value="1.tabular"/>
+      <param name="groupcol" value="1"/>
+      <param name="operations" value="mean 2,c 3"/>
+      <output name="out_file1" file="groupby_out2.dat"/>
     </test>
   </tests>
   <help>
@@ -48,6 +58,8 @@
 **Syntax**
 
 This tool allows you to group the input dataset by a particular column and perform aggregate functions like Mean, Sum, Max, Min and Concatenate on other columns. 
+
+- All invalid, blank and comment lines are skipped when performing the aggregate functions.  The number of skipped lines is displayed in the resulting history item.
 
 -----
 
@@ -63,7 +75,8 @@ This tool allows you to group the input dataset by a particular column and perfo
 
 - running this tool with **Group by column 1**, Operations **Mean on column 2** and **Concatenate on column 3** will return::
 
-   chr10  1700.00  ['NM_10', 'NM_11']
-   chr22  1533.33  ['NM_17', 'NM_18', 'NM_19']
+   chr10	1700.00	['NM_11', 'NM_10']
+   chr22	1533.33	['NM_17', 'NM_19', 'NM_18']
 </help>
+  <code file="grouping_code.py" />
 </tool>
