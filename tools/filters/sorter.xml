@@ -2,16 +2,21 @@
   <description>data in ascending or descending order</description>
   <command interpreter="python">sorter.py -i $input -o $out_file1 -cols $column -order $order -style $style</command>
   <inputs>
-    <param format="tabular" name="input" type="data" label="Sort Query"/>
-    <param name="column" size="4" type="integer" value="1" label="on column"/>
-    <param name="order" type="select" label="in">
-      <option value="ASC">Ascending order</option>
-      <option value="DESC">Descending order</option>
-    </param>
-    <param name="style" type="select" label="Flavor">
-      <option value="alpha">Alphabetical sort</option>
-      <option value="num">Numerical sort</option>
-    </param>
+    <page>
+      <param format="tabular" name="input" type="data" label="Sort Query"/>
+    </page>
+    <page>
+      <param name="column" size="4" type="integer" value="1" label="on column"/>
+      <param name="column" label="on columns" type="select" dynamic_options="get_columns( input )" />
+      <param name="order" type="select" label="in">
+        <option value="ASC">Ascending order</option>
+        <option value="DESC">Descending order</option>
+      </param>
+      <param name="style" type="select" label="Flavor">
+        <option value="alpha">Alphabetical sort</option>
+        <option value="num">Numerical sort</option>
+      </param>
+    </page>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input"/>
@@ -37,9 +42,8 @@
 
 This tool sorts the dataset on any column in either ascending or descending order.
 
-* Columns are referenced with a **number**. For example, **1** refers to the first column of a tab-delimited file.
 * Numerical sort orders numbers by their magnitude, ignores all characters besides numbers, and evaluates a string of numbers to the value they signify.  
-* Alphabetical sort is a phonebook type sort, based on the conventional order of letters in an alphabet. Each nth letter is compared with the nth letter of other words in the list, starting at the first letter of each word and advancing to the second, third, fourth, and so on, until the order is established. Therefor, in an alphabetical sort, 2 comes after 100 (1 &lt; 2).
+* Alphabetical sort is a phonebook type sort based on the conventional order of letters in an alphabet. Each nth letter is compared with the nth letter of other words in the list, starting at the first letter of each word and advancing to the second, third, fourth, and so on, until the order is established. Therefore, in an alphabetical sort, 2 comes after 100 (1 &lt; 2).
 
 -----
 
@@ -48,4 +52,5 @@ This tool sorts the dataset on any column in either ascending or descending orde
 The list of numbers 4,17,3,5 collates to 3,4,5,17 by numerical sorting, while it collates to 17,3,4,5 by alphabetical sorting.
 
 </help>
+  <code file="sorter_code.py"/>
 </tool>
