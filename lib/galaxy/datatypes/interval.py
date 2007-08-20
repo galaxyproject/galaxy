@@ -42,7 +42,6 @@ class Interval( Tabular ):
     MetadataElement( name="startCol", desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True, no_value=0 )
-    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames, no_value="?" )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
 
 
@@ -201,7 +200,6 @@ class Bed( Interval ):
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True, no_value=0 )
-    MetadataElement( name="dbkey", desc="Database/Build", default=None, param=metadata.SelectParameter, multiple=False, values=util.dbnames, no_value="?" )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
     
     def missing_meta( self, dataset ):
@@ -284,7 +282,6 @@ class Gff( Tabular ):
     """Tab delimited data in Gff format"""
 
     """Add metadata elements"""
-    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames, no_value="?" )
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True )
     
     def __init__(self, **kwd):
@@ -348,7 +345,6 @@ class Gff( Tabular ):
 
 class Wiggle( Tabular ):
     """Tab delimited data in wiggle format"""
-    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames, no_value="?" )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
     
     def make_html_table(self, data):

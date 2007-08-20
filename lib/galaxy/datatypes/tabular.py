@@ -20,7 +20,6 @@ class Tabular( data.Text ):
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True )
-    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )

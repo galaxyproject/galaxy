@@ -12,9 +12,7 @@ log = logging.getLogger(__name__)
 
 class Sequence( data.Text ):
     """Class describing a sequence"""
-
-    """Add metadata elements"""
-    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames, no_value="?" )
+    pass
 
 class Alignment( Sequence ):
     """Class describing an alignmnet"""

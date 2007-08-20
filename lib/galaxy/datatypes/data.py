@@ -3,6 +3,8 @@ from galaxy import util
 from cgi import escape
 from galaxy.datatypes.metadata import *
 log = logging.getLogger(__name__)
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes import metadata
 
 # Constants for data states
 DATA_NEW, DATA_OK, DATA_FAKE = 'new', 'ok', 'fake'
@@ -35,6 +37,9 @@ class Data( object ):
     
     """
     __metaclass__ = DataMeta
+    
+    """Add metadata elements"""
+    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames, no_value="?" )
     
     """Stores the set of display applications, and viewing methods, supported by this datatype """
     supported_display_apps = {}
