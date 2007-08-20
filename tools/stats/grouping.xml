@@ -33,19 +33,24 @@
   </outputs>
   <tests>
   	<!-- Test valid data -->
+  	<!-- Testing this tool will not be possible unless / until the twill team inplements an
+  	enhancement to allow for mouse clicks in the test cases...
     <test>
       <param name="input1" value="1.bed"/>
       <param name="groupcol" value="1"/>
       <param name="operations" value="mean 2"/>
       <output name="out_file1" file="groupby_out1.dat"/>
     </test>
+    -->
     <!-- Test data with an invalid value in a column -->
+    <!--
     <test>
       <param name="input1" value="1.tabular"/>
       <param name="groupcol" value="1"/>
       <param name="operations" value="mean 2,c 3"/>
       <output name="out_file1" file="groupby_out2.dat"/>
     </test>
+    -->
   </tests>
   <help>
 

@@ -1,21 +1,18 @@
-<tool id="Summary Statistics1" name="Summary Statistics">
+<tool id="Summary_Statistics1" name="Summary Statistics">
   <description>for any numerical column</description>
   <command interpreter="python">gsummary.py $input $out_file1 "$cond" "none"</command>
   <inputs>
-    <param name="cond" size="40" type="text" value="c5" label="expression" help="Columns are specified as c1, c2, c3 ... First column is c1"/>
-<!--    <param name="groups" size="40" type="text" value="none" label="group terms (c1,c4,etc.)"/>
- -->
-    <param format="tabular" name="input" type="data" label="summary statistics on" help="Query missing? See TIP below"/>
-
+    <param format="tabular" name="input" type="data" label="Summary statistics on" help="Query missing? See TIP below"/>
+    <param name="cond" size="40" type="text" value="c5" label="Column or expression" help="See tool syntax below" />
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
   <tests>
     <test>
-      <param name="cond" value="c2"/>
       <param name="input" value="1.bed"/>
       <output name="out_file1" file="sta_summary.dat"/>
+      <param name="cond" value="c2"/>
     </test>
   </tests>
   <help>

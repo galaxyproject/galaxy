@@ -9,6 +9,10 @@ def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
 
+def stop_out(msg):
+    sys.stdout.write(msg)
+    sys.exit()
+
 def mode_func(c):
     try:
         check = float(c)
@@ -85,15 +89,8 @@ def S3_METHODS(all="key"):
     "lgamma", "gamma", "gammaCody",
     "digamma", "trigamma",
     "cumsum", "cumprod", "cummax", "cummin"]
-
-    Group_Ops = [ "+", "-", "*", "/", "^", "%%", "%/%",
-    "&", "|", "!",
-    "==", "!=", "<", "<=", ">=", ">"]
-
-    Group_Summary = [ "all", "any"
-    "sum", "prod",
-    "min", "max",
-    "range" ]
+    Group_Ops = [ "+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">"]
+    Group_Summary = [ "all", "any", "sum", "prod", "min", "max", "range" ]
 
     if all is "key": return { 'Math' : Group_Math, 'Ops' : Group_Ops, 'Summary' : Group_Summary }
 
@@ -104,7 +101,7 @@ def read_table(datafile, cols):
     first_invalid_line = 0
     for i, line in enumerate(file(datafile)):
         valid = True
-        line = line.strip()
+        line = line.rstrip('\r\n')
         if line and not line.startswith( '#' ):
             f = line.split()
             for col in cols:
@@ -139,7 +136,7 @@ def read_table(datafile, cols):
                     width = len(f)
     if len(table) > 0:
         """
-        terms will look like this: r dataframe:  c1=table['c1'], c2=table['c2'], ...
+        terms will look like this: c7 = r.as_numeric(table["c7"]), c8 = r.as_numeric(table["c8"]), ...
         """
         terms = ["%s = %s(table[\"%s\"])" % (x, mode_func(table[x][0]), x) for x in ["c" + str(col_i + 1) for col_i in range(0, width)]]
         code = "d = r.data_frame(%s)" % ",".join(terms)
@@ -156,10 +153,10 @@ def main():
     if len(sys.argv) >= 4:
         datafile = sys.argv[1]
         outfile = sys.argv[2]
-        formula = sys.argv[3]
+        expression = sys.argv[3]
     else: 
         print sys.argv
-        stop_err('Usage: python gsummary.py input_file ouput_file formula')
+        stop_err('Usage: python gsummary.py input_file ouput_file expression')
 
     if len(sys.argv) == 5:
         if sys.argv[4].find('none') < 0:
@@ -169,7 +166,7 @@ def main():
             if len(group_terms) > 0:
                 dep_var = group_terms[0]
                 tmp_rhs = "|".join([ dep_var, tmp_rhs])
-                formula = '~'.join([formula,tmp_rhs])
+                expression = '~'.join([expression,tmp_rhs])
             else:
                 stop_err("%s unrecognized for groups" % tmp_rhs)
         elif sys.argv[4] is 'none': 
@@ -192,20 +189,32 @@ def main():
 
     of = open(outfile,'w')
     
-    if formula.find("~") > 0:
-        lhs,rhs = formula.split('~')
+    if expression.find("~") > 0:
+        lhs,rhs = expression.split('~')
     else: 
-        lhs = formula
+        lhs = expression
 
-    for word in re.compile('[a-zA-Z]+').findall(formula):
+    for word in re.compile('[a-zA-Z]+').findall(expression):
         if word and not word in lhs_allowed: 
             of.close()
-            stop_err("Invalid formula '%s': Function/term '%s' is not recognized or allowed" % (formula, word))
+            stop_out("Invalid expression '%s': term '%s' is not recognized or allowed" % (expression, word))
 
-    for symbol in re.compile('[^a-z0-9\s]+').findall(formula):
+    """
+    Users sometimes want statistics for more than 1 column, so they enter a comma-separated
+    string of columns in the free text field.  This tool only handles a single column or an
+    expression (computed for 1 or more columns), so we'll use the following hack to provide a
+    useful response for multiple column entries.
+    """
+    symbols = sets.Set()
+    for symbol in re.compile('[^a-z0-9\s]+').findall(expression):
         if symbol and not symbol in ops_allowed:
             of.close()
-            stop_err("Invalid formula '%s': Operator '%s' is not recognized or allowed" % (formula, symbol))
+            stop_out("Invalid expression '%s': operator '%s' is not recognized or allowed" % (expression, symbol))
+        else:
+            symbols.add(symbol)
+    if len(symbols) == 1 and ',' in symbols:
+        of.close()
+        stop_out( "Invalid columns '%s': this tool requires a single column or expression" %expression )
 
     cols = []
     if lhs:
@@ -235,7 +244,8 @@ def main():
                 summary = f(r(lhs))
             except RException, s:
                 # Due to previous checking, this should not occur
-                stop_err("Computation attempted on invalid data in column %s.  Exception:\n\t%s" %(lhs, s))
+                of.close()
+                stop_err("Computation attempted on invalid data in column %s.  Exception: %s" %(lhs, s))
 
             summary = summary.as_py(BASIC_CONVERSION)
             print >>of,"#%s" % "\t".join(returns)
@@ -249,10 +259,10 @@ def main():
             set_default_mode(NO_CONVERSION)
 
             try:
-                df_g = r.groupedData(r.formula(formula), df)
-                df_r = r.groupedData(r.formula(formula), r.data_frame(df_g, response=r.getResponse(df_g)))
+                df_g = r.groupedData(r.expression(expression), df)
+                df_r = r.groupedData(r.expression(expression), r.data_frame(df_g, response=r.getResponse(df_g)))
             except RException, s:
-                stop-err("Computation attempted on invalid data in column on the left hand side of expression.  Excpetion:\n\t%s" % s)
+                stop-err("Computation attempted on invalid data in column on the left hand side of expression.  Exception:\n\t%s" % s)
 
             """
             Try some plotting stuff
