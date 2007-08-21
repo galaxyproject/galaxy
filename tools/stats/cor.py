@@ -52,10 +52,10 @@ def main():
                         except:
                             valid = False
                             skipped_lines += 1
-                            invalid_value = fields[column]
-                            invalid_column = column+1
                             if not first_invalid_line:
                                 first_invalid_line = i+1
+                                invalid_value = fields[column]
+                                invalid_column = column+1
         else:
             valid = False
             skipped_lines += 1

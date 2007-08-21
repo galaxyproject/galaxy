@@ -6,7 +6,7 @@
       <param format="tabular" name="input1" type="data" label="Dataset" help="Query missing? See TIP below"/>
     </page>
     <page>
-      <param name="columns" label="Columns" type="select" multiple="True" dynamic_options="get_columns( input1 )" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+      <param name="columns" label="Numerical columns" type="select" multiple="True" dynamic_options="get_columns( input1 )" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
       <param name="method" type="select" label="Method">
         <option value="pearson">Pearson</option>
         <option value="kendall">Kendall rank</option>

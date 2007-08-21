@@ -6,8 +6,7 @@
       <param format="tabular" name="input" type="data" label="Sort Query"/>
     </page>
     <page>
-      <param name="column" size="4" type="integer" value="1" label="on column"/>
-      <param name="column" label="on columns" type="select" dynamic_options="get_columns( input )" />
+      <param name="column" label="on column" type="select" dynamic_options="get_columns( input )" />
       <param name="order" type="select" label="in">
         <option value="ASC">Ascending order</option>
         <option value="DESC">Descending order</option>

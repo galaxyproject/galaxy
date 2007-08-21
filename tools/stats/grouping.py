@@ -75,6 +75,8 @@ prev_vals = []
 skipped_lines = 0
 first_invalid_line = 0
 invalid_line = ''
+invalid_value = ''
+invalid_column = 0
 fout = open(sys.argv[1], "w")
 
 for ii, line in enumerate( file( tmpfile.name )):
@@ -105,6 +107,8 @@ for ii, line in enumerate( file( tmpfile.name )):
                                 skipped_lines += 1
                                 if not first_invalid_line:
                                     first_invalid_line = ii+1
+                                    invalid_value = fields[col]
+                                    invalid_column = col+1
                         if valid:
                             prev_vals[i].append(fields[col].strip())
                 else:   
@@ -181,6 +185,6 @@ for i,op in enumerate(ops):
         op = 'concat'
     msg += op + "[c" + cols[i] + "] "
 if skipped_lines > 0:
-    msg+= "--skipped %d blank/comment/invalid lines starting with line #%d.  " %( skipped_lines, first_invalid_line )
+    msg+= "--skipped %d invalid lines starting with line %d.  Value '%s' in column %d is not numeric." % ( skipped_lines, first_invalid_line, invalid_value, invalid_column )
 
 print msg
