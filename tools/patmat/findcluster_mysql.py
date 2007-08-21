@@ -141,13 +141,13 @@ if __name__ == '__main__':
       patterns_name[ptns[2*n]] = patterns_c[n]
       n = n + 1
 
-   #restrict the pattern to be longer than 3bp(not include N)
+   #restrict the pattern to be longer than 2bp(not include 2)
    code = 'ACGTMRWSYKBDHV'
    for pattern in patterns:
       n = 0
       for c in pattern:
          if code.find(c)!=-1 : n = n + 1
-      if n < 4: sys.exit() 
+      if n < 3: sys.exit() 
    
 
 
