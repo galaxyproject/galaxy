@@ -123,7 +123,7 @@ class DefaultToolAction( object ):
             else:
                 data.init_meta()
             # Take dbkey from LAST input
-            data.dbkey = input_dbkey
+            data.dbkey = str(input_dbkey)
             # Default attributes
             data.state = data.states.QUEUED
             data.blurb = "queued"
