@@ -18,10 +18,13 @@ def get_columns( input ):
                 for col in range(1, input.metadata.columns+1):
                     try:
                         val = float(elems[col-1])
+                        valid = True
                     except:
                         val = elems[col-1]
                         if val:
-                            if val.strip().lower() != "na":
+                            if val.strip().lower() == "na":
+                                valid = True
+                            else:
                                 valid = False
                         else:
                             valid = False

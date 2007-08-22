@@ -143,7 +143,7 @@ def read_table(datafile, cols):
         try:
             exec code
         except Exception, e: 
-            stop_err(e)
+            stop_err(str(e))
         return (skipped_lines, first_invalid_line, d)
     else:
         return (skipped_lines, first_invalid_line, None)
