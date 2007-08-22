@@ -23,7 +23,7 @@
   <tests>
     <test>
       <param name="input" value="1.bed"/>
-      <param name="column" value="1"/>
+      <param name="column" value="c1"/>
       <param name="order" value="ASC"/>
       <param name="style" value="num"/>
       <output name="out_file1" file="fs-sort.dat"/>
