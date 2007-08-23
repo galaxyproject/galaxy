@@ -28,10 +28,42 @@
 <script type="text/javascript">
     var q = jQuery.noConflict();
     q( document ).ready( function() {
+        initShowHide( q );
+        showHideLink( q, 'all' );
+        deleteLink( q );
+        // Collapse all
+        q("#top-links").append( "|&nbsp;" ).append( q("<a href='#'>collapse all</a>").click( function() {
+            q( "div.historyItemBody:visible" ).each( function() {
+                if ( q.browser.mozilla )
+                {
+                    q(this).find( "pre.peek" ).css( "overflow", "hidden" );
+                }
+                q(this).slideUp( "fast" );
+            })
+            var state = new CookieSet( "galaxy.history.expand_state" );
+            state.removeAll().save();
+        }))
+        // Add footer show / hide 
+        q( "div.footerheader" ).each( function() {
+            var menu = q(this).next();
+            menu.hide();
+            q(this).append( q("<a href='#'>options...</a>").click( function() {
+                if ( menu.is( ":visible" ) ) { menu.slideUp( "fast" ) }
+                else { menu.slideDown( "fast" ) } 
+            }))
+        })
+        // Links with confirmation
+        q( "a[@confirm]" ).click( function() {
+            return confirm( q(this).attr( "confirm"  ) )
+        })
+    })
+    // Functionized so AJAX'd datasets can call them
+    // Get shown/hidden state from cookie
+    function initShowHide( q ) {
         q( "div.historyItemBody" ).hide();
         // Load saved state and show as neccesary
         var state = new CookieSet( "galaxy.history.expand_state" );
-	for ( id in state.store ) { q( "#" + id ).find( "div.historyItemBody" ).show(); }
+	for ( id in state.store ) { q( "#" + id ).children( "div.historyItemBody" ).show(); }
         // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
         if ( q.browser.mozilla ) {
             q( "div.historyItemBody" ).each( function() {
@@ -39,8 +71,15 @@
             })
         }
         delete state;
-        // Add history item show / hide
-        q( "div.historyItemWrapper" ).each( function() {
+    }
+    // Add show/hide link
+    function showHideLink( q, data_id ) {
+        if ( data_id == "all" ) {
+            var element = "div.historyItemWrapper";
+        } else {
+            var element = "div#historyItem-" + data_id;
+        }
+        q( element ).each( function() {
             var id = this.id;
             var body = q(this).children( "div.historyItemBody" );
             var peek = body.find( "pre.peek" )
@@ -63,28 +102,9 @@
                 }
             })
         })
-        // Collapse all
-        q("#top-links").append( "|&nbsp;" ).append( q("<a href='#'>collapse all</a>").click( function() {
-            q( "div.historyItemBody:visible" ).each( function() {
-                if ( q.browser.mozilla )
-                {
-                    q(this).find( "pre.peek" ).css( "overflow", "hidden" );
-                }
-                q(this).slideUp( "fast" );
-            })
-            var state = new CookieSet( "galaxy.history.expand_state" );
-            state.removeAll().save();
-        }))
-        // Add footer show / hide 
-        q( "div.footerheader" ).each( function() {
-            var menu = q(this).next();
-            menu.hide();
-            q(this).append( q("<a href='#'>options...</a>").click( function() {
-                if ( menu.is( ":visible" ) ) { menu.slideUp( "fast" ) }
-                else { menu.slideDown( "fast" ) } 
-            }))
-        })
-        // Add AJAX delete buttons
+    }
+    // Add AJAX delete buttons
+    function deleteLink( q ) {
         q( "a.historyItemDelete" ).each( function() {
             var data_id = this.id.split( "-" )[1];
             q(this).click( function() {
@@ -102,7 +122,7 @@
                 return false;
             })
         })
-    })
+    }
     // lifted from prototype.js
     var \$A = Array.from = function(iterable) {
         if (!iterable) return [];
@@ -349,10 +369,8 @@ div#footer {
     <script type="text/javascript">
     #for $data in reversed( $history.active_datasets )
         #if $data.visible and $data.state not in [ "error", "ok" ]:
-        ##if $data.visible:
             #set $state_url = $h.url_for( action='dataset_state', id=$data.id )
             #set $code_url = $h.url_for( action='dataset_code', id=$data.id, hid=$data.hid )
-            ## new Ajax.Updater('historyItemContainer-$data.id', '$code_url', {asynchronous:true, evalScripts:"true"});
             var updater_${data.id} = new updater( $data.id, '$state_url', '$code_url', '$data.state' );
             updater_${data.id}.go();
         #end if

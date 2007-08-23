@@ -2,76 +2,15 @@
 ## Render the dataset `$data`, using `$hid` as the displayed id
 ##
 
+## separate so it's only called once
 #def render_script( $data )
 
     <script type="text/javascript">
     q( document ).ready( function() {
-        q( "div#historyItem-$data.id" ).children( "div.historyItemBody" ).hide();
-        // Load saved state and show as neccesary
-        var state = new CookieSet( "galaxy.history.expand_state" );
-        for ( id in state.store ) {
-            if ( id == "historyItem-$data.id" ) {
-                q( "div#" + id ).children( "div.historyItemBody" ).show();
-            }
-        }
-        // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
-        if ( q.browser.mozilla ) {
-            q( "div#historyItem-$data.id" ).children( "div.historyItemBody" ).each( function() {
-                if ( ! q(this).is( ":visible" ) ) q(this).find( "pre.peek" ).css( "overflow", "hidden" );
-            })
-        }
-	delete state;
-        // Add history item show / hide
-        //q( "div.historyItemWrapper" ).each( function() {
-        q( "div#historyItem-$data.id" ).each( function() {
-            var id = this.id;
-            var body = q(this).children( "div.historyItemBody" );
-            var peek = body.find( "pre.peek" )
-            q(this).children( "table" ).find( "span.historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
-                if ( body.is(":visible") ) {
-                    if ( q.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
-                    body.slideUp( "fast" );
-                    ## other instances of this could be editing the cookie, refetch
-                    var state = new CookieSet( "galaxy.history.expand_state" );
-                    state.remove( id ); state.save();
-                    delete state;
-                } 
-                else {
-                    body.slideDown( "fast", function() { 
-                        if ( q.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
-                    });
-                    var state = new CookieSet( "galaxy.history.expand_state" );
-                    state.add( id ); state.save();
-                    delete state;
-                }
-            })
-        })
-        // Add AJAX delete buttons
-        q( "a.historyItemDelete" ).each( function() {
-            var data_id = this.id.split( "-" )[1];
-            q(this).click( function() {
-                q( '#progress-' + data_id ).show();
-                q.ajax({
-                    url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { alert( "Delete failed" ) },
-                    success: function() { q( "#historyItem-" + data_id ).fadeOut( "fast", function() {
-		        q( "div#historyItemContainer-" + data_id ).remove();
-                        if ( q( "div.historyItemContainer" ).length < 1 ) {
-                            q ( "div#emptyHistoryMessage" ).show();
-                        }
-                    } ) }
-                })
-                return false;
-            })
-        })
-        // Links with confirmation
-        q( "a[@confirm]" ).click( function() {
-            return confirm( q(this).attr( "confirm"  ) )
-        })
-        // After all the above is applied, actually show the entire element.
-        // This solves the problem of .hide() and .show() for the body div
-        // not executing until after it's already rendered.
-        q( "div#historyItem-$data.id" ).show()
+        initShowHide( q );
+        ## This solves the problem of .hide() and .show() for the body div
+        ## not executing until after it's already rendered.
+        q( "div.ajaxHistoryItem" ).show()
     })
     </script>
 
@@ -88,7 +27,7 @@
         #set $data_state = $data.state
     #end if
 
-    <div class="historyItemWrapper historyItem historyItem-$data_state" id="historyItem-$data.id" style="display:none;">
+    <div class="historyItemWrapper historyItem historyItem-$data_state ajaxHistoryItem" id="historyItem-$data.id" style="display:none;">
         
         ##
         ## Header row for history items (name, state, action buttons)
@@ -199,6 +138,12 @@
 
         </div>
     </div>
+    <script type="text/javascript">
+    q( document ).ready( function() {
+        showHideLink( q, $data.id );
+        deleteLink( q );
+    })
+    </script>
 
 #end def
 
