@@ -2,7 +2,7 @@
 Classes for generating HTML forms
 """
 
-import logging
+import logging,sys
 log = logging.getLogger(__name__)
 
 class BaseField(object):
@@ -56,16 +56,17 @@ class CheckboxField(BaseField):
     <input type="checkbox" name="bar" value="true" checked><input type="hidden" name="bar" value="true">
     """
     def __init__( self, name, checked=None ):
-        if checked is None: checked = False
         self.name = name
-        self.checked = ( checked in ( True, "yes", "true", "on" ) )
+        self.checked = (checked == True) or (type(checked) == type('a') and (checked.lower() in (  "yes", "true", "on" ))) 
     def get_html( self, prefix="" ):
-        if self.checked: checked_text = " checked"
+        if self.checked: checked_text = "checked"
         else: checked_text = ""
-        return '<input type="checkbox" name="%s%s" value="true"%s><input type="hidden" name="%s" value="true">' \
+        return '<input type="checkbox" name="%s%s" value="true" %s><input type="hidden" name="%s" value="true">' \
             % ( prefix, self.name, checked_text, self.name )
     @staticmethod
     def is_checked( value ):
+        if value == True: # wierd behaviour caused by following check for 2 valued list - wtf? ross august 22
+           return value
         if type( value ) == list and len( value ) == 2:
             return True
         else:
