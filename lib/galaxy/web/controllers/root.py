@@ -176,10 +176,15 @@ class Universe( BaseController ):
         p = util.Params(kwd, safe=False)
         
         if p.change:
+            """
+            Ths user clicked the Save button on the 'Set data type' form
+            """
             trans.app.datatypes_registry.change_datatype( data, p.datatype )
             trans.app.model.flush()
         elif p.save:
-            
+            """
+            The user clicked the Save button on the 'Set other attributes' form
+            """
             data.name  = p.name
             data.info  = p.info
             
@@ -191,8 +196,7 @@ class Universe( BaseController ):
                     continue
                 optional = p.get("is_"+name, None)
                 if optional and optional == 'true':
-                    # optional element...
-                    # == 'true' actually means it is NOT checked (and therefore ommitted)
+                    # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
                     setattr(data.metadata,name,None)
                 else:
                     setattr(data.metadata,name,spec.unwrap(p.get(name, None), p))
@@ -219,8 +223,7 @@ class Universe( BaseController ):
         metadata = list()
         # a list of MetadataParemeters
         for name, spec in data.datatype.metadata_spec.items():
-            metadata.append( spec.wrap( data.metadata.get(name),
-                                        data ) )
+            metadata.append( spec.wrap( data.metadata.get(name), data ) )
 
         datatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
         trans.log_event( "Opened edit view on dataset %s" % str(id) )

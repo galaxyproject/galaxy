@@ -1,7 +1,10 @@
-import sys
+import sys, logging
+
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
+
+log = logging.getLogger( __name__ )
 
 # Taken in part from Elixir and how they do it: http://elixir.ematia.de
 
@@ -183,8 +186,10 @@ class SelectParameter( MetadataParameter ):
     def __setattr__(self, name, value):
         MetadataParameter.__setattr__(self, name, value)
         if name in ['value']:
-            if value is None: MetadataParameter.__setattr__(self, name, [])
-            elif not isinstance(value, list): MetadataParameter.__setattr__(self, name, [value])
+            if value is None: 
+                MetadataParameter.__setattr__(self, name, [])
+            elif not isinstance(value, list):
+                MetadataParameter.__setattr__(self, name, [value])
     
     def __str__(self):
         if self.value in [None, []]:
@@ -192,9 +197,7 @@ class SelectParameter( MetadataParameter ):
         return ",".join(map(str,self.value))
     
     def get_html_field( self, value=None, other_values={} ):
-        field = form_builder.SelectField( self.spec.name,
-                                          multiple=self.spec.get("multiple"),
-                                          display=self.spec.get("display") )
+        field = form_builder.SelectField( self.spec.name, multiple=self.spec.get("multiple"), display=self.spec.get("display") )
         for value, label in self.values or [(value, value) for value in self.value]:
             try:
                 if value in self.value:
@@ -239,4 +242,8 @@ class ColumnParameter( RangeParameter ):
         RangeParameter.__init__( self, spec, value, context )
         column_range = range( 1, context.metadata.columns+1, 1 )
         self.values = zip( column_range, column_range )
+        
+    @classmethod
+    def marshal( cls, value ):
+        return int(value)
 

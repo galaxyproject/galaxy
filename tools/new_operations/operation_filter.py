@@ -30,7 +30,9 @@ def validate_input( trans, error_map, param_values, page_param_map ):
                     else:
                         strandCol = 0
                 except:
-                    error_map[name] = "The attributes of this dataset are not the correct format."
+                    error_msg = "The attributes of this dataset are not properly set. " + \
+                    "Click the pencil icon in the history item to set the chrom, start, end and strand columns."
+                    error_map[name] = error_msg
             data_param_names.add( name )
     if len( dbkeys ) > 1:
         for name in data_param_names:

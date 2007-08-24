@@ -94,19 +94,14 @@ class Tabular( data.Text ):
         data.Text.before_edit( self, dataset )
         try:
             maxcols = 0
-            count = 0
-            for line in open( dataset.file_name ):
+            for i, line in enumerate ( file( dataset.file_name )):
                 line = line.rstrip('\r\n')
                 if line and not line.startswith( '#' ):
-                    count += 1
-                    """
-                    We should be able to figure out the number of columns within 30 lines
-                    """
-                    if count > 30: 
-                        break
                     cols = len( line.split("\t") )
                     if cols > maxcols: 
                         maxcols = cols
+                if i == 30:
+                    break
             setattr( dataset.metadata, "columns", maxcols )
         except:
             pass        

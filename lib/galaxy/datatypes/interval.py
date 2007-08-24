@@ -41,7 +41,7 @@ class Interval( Tabular ):
     MetadataElement( name="chromCol", desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", desc="End column", param=metadata.ColumnParameter )
-    MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True, no_value=0 )
+    MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
 
 
@@ -199,7 +199,7 @@ class Bed( Interval ):
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
-    MetadataElement( name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True, no_value=0 )
+    MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
     
     def missing_meta( self, dataset ):
