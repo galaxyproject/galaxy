@@ -51,7 +51,7 @@ class CheckboxField(BaseField):
     A checkbox (boolean input)
     
     >>> print CheckboxField( "foo" ).get_html()
-    <input type="checkbox" name="foo" value="true"><input type="hidden" name="foo" value="true">
+    <input type="checkbox" name="foo" value="true" ><input type="hidden" name="foo" value="true">
     >>> print CheckboxField( "bar", checked="yes" ).get_html()
     <input type="checkbox" name="bar" value="true" checked><input type="hidden" name="bar" value="true">
     """
