@@ -225,7 +225,7 @@ class JobWrapper( object ):
         """
         for dataset_assoc in job.input_datasets:
             dataset = dataset_assoc.dataset
-            if isinstance(dataset.datatype, Tabular) and dataset.missing_meta():
+            if issubclass(type(dataset.datatype), type(self.app.datatypes_registry.get_datatype_by_extension('tabular'))) and dataset.missing_meta():
                 Tabular().set_meta(dataset)
         # Resore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
@@ -335,7 +335,7 @@ class JobWrapper( object ):
                 is a temporary work-around to ensure columns metadata attribute is set.
                 This code will be eliminated soon...
                 """
-                if isinstance(dataset.datatype, Tabular) and dataset.missing_meta():
+                if issubclass(type(dataset.datatype), type(self.app.datatypes_registry.get_datatype_by_extension('tabular'))) and dataset.missing_meta():
                     Tabular().set_meta(dataset)
                 dataset.set_peek()
             else:

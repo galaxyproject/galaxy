@@ -44,7 +44,7 @@ for k,col in enumerate(cols):
         only aggregation function that can be used on columns containing strings.
         """
         try:
-            map( float, elems[col] )
+            float( elems[col] )
         except:
             print >> sys.stderr, "Operation '%s' cannot be performed on non-numeric column %d containing value %s." %(ops[k], col+1, elems[col])
             sys.exit()
