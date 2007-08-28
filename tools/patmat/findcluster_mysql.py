@@ -167,16 +167,76 @@ if __name__ == '__main__':
    out_file.write("\n#11. blockSizes. A comma-separated list of the block sizes. ")
    out_file.write("\n#12. blockStarts. A comma-separated list of block starts.\n")
 
-#   fp=open("hjb.txt", "w")
    result = dict()
    for chrom_name in chroms.keys() : 
       if chrom_name != '' :
-#         fp.write(str(genome_name)+ str(chrom)+ str(patterns)+ str(combines)+ str(patterns_name))
          result[chrom_name] = findcluster_mysql_subs.scan_chromosome(genome_name, chrom_name, blocks, patterns, combines, patterns_name, wsize, shsize, out_file, log_file) 
    
    #----------------------------------------------------------------------------------------
    #-------------------------- print out results -------------------------------------------
-   if info_file != 'None' : 
+   if info_file == 'None' :
+      print "%-30s\t" % " ", 
+      ii = 0 
+      while ii<len(patterns) :
+         print patterns_c[ii], "\t", 
+         ii = ii + 1
+      print "clust\tclust(no-overlap)\n",
+      for block in blocks :
+         strtmp = block[0]+":"+str(block[1])+"-"+str(block[2])
+         print "%-30s\t" % strtmp, 
+         for pattern in patterns :
+            npos = 0
+            for pos in result[block[0]]['M'][pattern]:
+               if pos>=block[1] and (pos<=block[2] or block[2]==0) : 
+                  npos = npos + 1
+            print npos, "\t",
+         nclus = 0
+         for key in result[block[0]]['NO'].keys() :
+            clus = result[block[0]]['NO'][key]
+            if clus['start']>=block[1] and ( clus['start']<=block[2] or block[2]==0) or  clus['end']>=block[1] and ( clus['end']<=block[2] or block[2]==0) : 
+               nclus = nclus + 1
+         print result[chrom_name]['C'], "\t", nclus
+      print "Note:\n1)",
+      ii = 0 
+      while ii<len(patterns) :
+         print patterns_c[ii], "-", patterns[ii], "\t",
+         ii = ii + 1
+      print "\n", 
+      print "2) clust - clusters in all the blocks on the curent chromosome"
+      print "3) clust(no-overlap) - clusters without overlap in current block"
+      
+   else: 
+      ii = 0 
+      info_file.write("%-30s\t" % " ")
+      while ii<len(patterns) :
+         info_file.write(str(patterns_c[ii])+"\t") 
+         ii = ii + 1
+      info_file.write("clust\tclust(no-overlap)\n")
+      for block in blocks :
+         strtmp = block[0]+":"+str(block[1])+"-"+str(block[2])
+         info_file.write("%-30s\t" % strtmp) 
+         for pattern in patterns :
+            npos = 0
+            for pos in result[block[0]]['M'][pattern]:
+               if pos>=block[1] and (pos<=block[2] or block[2]==0) : 
+                  npos = npos + 1
+            info_file.write(str(npos)+"\t")
+         nclus = 0
+         for key in result[block[0]]['NO'].keys() :
+            clus = result[block[0]]['NO'][key]
+            if clus['start']>=block[1] and ( clus['start']<=block[2] or block[2]==0) or  clus['end']>=block[1] and ( clus['end']<=block[2] or block[2]==0) : 
+               nclus = nclus + 1
+         info_file.write(str(result[chrom_name]['C'])+"\t"+str(nclus)+"\n")
+      info_file.write("Note:\n1) ") 
+      ii = 0 
+      while ii<len(patterns) :
+         info_file.write(str(patterns_c[ii])+"-"+str(patterns[ii])+"\t") 
+         ii = ii + 1
+      info_file.write(str("\n") )
+      info_file.write("2) clust-clusters in all the blocks on the curent chromosome\n")
+      info_file.write("3) clust(no-overlap)-clusters without overlap in current block\n")
+
+   """if info_file != 'None' : 
       info_file.write("%-35s\t" % "Chromome arm:")
       for chrom_name in chroms.keys() : 
          if chrom_name != '' :
@@ -237,4 +297,4 @@ if __name__ == '__main__':
          if chrom_name != '' :
             print "%10d" % len(result[chrom_name]['NO']),
       print 
-
+   """
