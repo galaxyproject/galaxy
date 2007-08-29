@@ -330,13 +330,8 @@ class JobWrapper( object ):
             dataset.peek  = 'no peek'
             dataset.info  = stdout + stderr
             if dataset.has_data():
-                """
-                Call set_meta on each tabular input dataset if metadata is missing.  This
-                is a temporary work-around to ensure columns metadata attribute is set.
-                This code will be eliminated soon...
-                """
-                if issubclass(type(dataset.datatype), type(self.app.datatypes_registry.get_datatype_by_extension('tabular'))) and dataset.missing_meta():
-                    Tabular().set_meta(dataset)
+                # Call set_meta on each output dataset if metadata is missing
+                if dataset.missing_meta: dataset.set_meta()
                 dataset.set_peek()
             else:
                 if stderr: 
