@@ -63,6 +63,12 @@ class Maf( Alignment ):
                 if i > 100000: break
         except: pass
         dataset.metadata.species = species
+    
+    def missing_meta( self, dataset ):
+        """Checks to see if species is set"""
+        if dataset.metadata.species in [None, []]:
+            return True
+        return False
 
 class Axt( Alignment ):
     """Class describing an axt alignment"""
