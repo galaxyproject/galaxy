@@ -54,22 +54,15 @@ class Maf( Alignment ):
         """
         species = []
         try:
-            maf_reader = bx.align.maf.Reader( open(dataset.file_name) )
-            for i, m in enumerate( maf_reader ):
-                l = m.components
-                for c in l:
+            for i, m in enumerate( bx.align.maf.Reader( open(dataset.file_name) ) ):
+                for c in m.components:
                     spec,chrom = bx.align.maf.src_split( c.src )
-                    if not spec or not chrom:
-                        spec = chrom = c.src
-                    if spec not in species:
-                        species.append(spec)
-                #only check first million blocks for species
-                if i > 1000000:
-                    break
-        except:
-            pass
+                    if not spec or not chrom: spec = chrom = c.src
+                    if spec not in species: species.append(spec)
+                #only check first 100,000 blocks for species
+                if i > 100000: break
+        except: pass
         dataset.metadata.species = species
-
 
 class Axt( Alignment ):
     """Class describing an axt alignment"""
