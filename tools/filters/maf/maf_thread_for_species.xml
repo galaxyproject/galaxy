@@ -6,7 +6,7 @@
             <param format="maf" name="input1" type="data" label="MAF file"/>
         </page>
         <page>
-            <param name="species" type="select" label="Species to keep" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true"/>
+            <param name="species" type="select" label="Species to keep" dynamic_options="map(lambda spec: (spec, spec, True), input1.metadata.species)" display="checkboxes" multiple="true"/>
         </page>
     </inputs>
     <outputs>
@@ -51,6 +51,6 @@ results in::
 
 
     </help>
-    <code file="maf_thread_for_species_code.py"/>
+    <!--<code file="maf_thread_for_species_code.py"/>-->
 </tool>
 

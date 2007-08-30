@@ -22,6 +22,9 @@ def __main__():
     chr_col  = int(sys.argv[5].strip())-1
     start_col = int(sys.argv[6].strip())-1
     end_col = int(sys.argv[7].strip())-1
+    summary = sys.argv[8].strip()
+    if summary.lower() == "true": summary = True
+    else: summary = False
     
     index = None
     index_filename = None
@@ -79,7 +82,7 @@ def __main__():
                     continue
             index = bx.align.maf.MultiIndexed( maf_sets[input_maf_filename]['paths'], keep_open=True, parse_e_rows=True )
         except Exception, exc:
-            print >>sys.stdout, 'interval2maf.py initialization error -> %s' % exc 
+            print >>sys.stdout, 'maf_stats.py initialization error -> %s' % exc 
             sys.exit()
     else:
         print >>sys.stdout, 'Invalid source type specified: %s' % maf_source_type 
@@ -88,6 +91,8 @@ def __main__():
     out = open(output_filename, 'w')
     
     num_region = 0
+    species_summary = {}
+    total_length = 0
     #loop through interval file
     for region in bx.intervals.io.NiceReaderWrapper( open(input_interval_filename, 'r' ), chrom_col=chr_col, start_col=start_col, end_col=end_col, fix_strand=True, return_header=False, return_comments=False):
         sequences = {dbkey: [ False for i in range( region.end - region.start)]}
@@ -95,6 +100,8 @@ def __main__():
         src = dbkey + "." + region.chrom
         start = region.start
         end = region.end
+        
+        total_length += (end - start)
         
         blocks = index.get( src, start, end )
         for maf in blocks:
@@ -135,15 +142,25 @@ def __main__():
                     if i in gaps: gap_offset += 1
                     elif c.text[i] not in ['-']: sequences[spec][i-gap_offset+slice_start-start] = True
             
-        #print sequences
-        out.write("%s\t%s\t%s\t%s\n" % ( "\t".join(region.fields), dbkey, sequences[dbkey].count(True), sequences[dbkey].count(False) ) )
-        keys = sequences.keys()
-        keys.remove(dbkey)
-        keys.sort()
-        for key in keys:
-            out.write("%s\t%s\t%s\t%s\n" % ( "\t".join(region.fields), key, sequences[key].count(True), sequences[key].count(False) ) )
+        if summary:
+            #record summary
+            for key in sequences.keys():
+                if key not in species_summary: species_summary[key] = 0
+                species_summary[key] = species_summary[key] + sequences[key].count(True)
+        else:
+            #print sequences
+            out.write("%s\t%s\t%s\t%s\n" % ( "\t".join(region.fields), dbkey, sequences[dbkey].count(True), sequences[dbkey].count(False) ) )
+            keys = sequences.keys()
+            keys.remove(dbkey)
+            keys.sort()
+            for key in keys:
+                out.write("%s\t%s\t%s\t%s\n" % ( "\t".join(region.fields), key, sequences[key].count(True), sequences[key].count(False) ) )
         num_region += 1
-    print "%i regions were processed." % num_region
+    if summary:
+        out.write("#species\tnucleotides\tcoverage\n")
+        for spec in species_summary:
+            out.write("%s\t%s\t%.4f\n" % ( spec, species_summary[spec], float(species_summary[spec]) / total_length ))
+    print "%i regions were processed with a total length of %i." % (num_region, total_length)
     out.close()
     if index_filename is not None:
         os.unlink(index_filename)

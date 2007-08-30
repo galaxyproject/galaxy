@@ -15,7 +15,7 @@
               <option value="concatenated">One Sequence per Species</option>
             </param>
             <when value="multiple">
-	          <param name="species" type="select" label="Select species" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true" help="checked taxa will be included in the output"/>
+	          <param name="species" type="select" label="Select species" dynamic_options="map(lambda spec: (spec, spec, True), input1.metadata.species)" display="checkboxes" multiple="true" help="checked taxa will be included in the output"/>
 	          <param name="complete_blocks" type="select">
 	            <label>Choose to</label>
 	            <option value="partial_allowed">include blocks with missing species</option>
@@ -23,7 +23,7 @@
 	          </param>
             </when>
             <when value="concatenated">
-                <param name="species" type="select" label="Species to extract" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true"/>
+                <param name="species" type="select" label="Species to extract" dynamic_options="map(lambda spec: (spec, spec, True), input1.metadata.species)" display="checkboxes" multiple="true"/>
             </when>
         </conditional>
       </page>
@@ -184,5 +184,5 @@ will be converted to (**note** that the second MAF block, which does not have mm
 
 
     </help>
-    <code file="maf_to_fasta_code.py"/>
+    <!--<code file="maf_to_fasta_code.py"/>-->
 </tool>

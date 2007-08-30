@@ -49,37 +49,7 @@ def get_available_species( maf_source_type ):
         return available_sets
     else:
         try:
-            rval = []
-            species={}
-            input_filename = maf_source_type['input2'].file_name
-            try:
-                file_in = open(input_filename, 'r')
-                maf_reader = bx.align.maf.Reader( file_in )
-                
-                for i, m in enumerate( maf_reader ):
-                    l = m.components
-                    for c in l:
-                        spec,chrom = bx.align.maf.src_split( c.src )
-                        if not spec or not chrom:
-                            spec = chrom = c.src
-                        if spec not in species:
-                            species[spec]={"bases":0,"nongaps":0}
-                        species[spec]["bases"] = species[spec]["bases"] + c.size + c.text.count("-")
-                        species[spec]["nongaps"] = species[spec]["nongaps"] + c.size 
-                
-                file_in.close()
-            except Exception:
-                return [("There is a problem with your MAF file",'None',True)]
-            species_names = species.keys()
-            species_names.sort()
-            
-            for spec in species_names:
-                #species_sequence[spec] = "".join(species_sequence[spec])
-                
-                display = "%s: %i nongap, %i total bases" % (spec, species[spec]["nongaps"], species[spec]["bases"] )
-                rval.append( ( display,spec,True) )
-                    
-            return rval
+            return map(lambda spec: (spec, spec, True), maf_source_type['input2'].metadata.species)
         except:
             return [("<B>You must wait for the MAF file to be created before you can use this tool.</B>",'None',True)]
 

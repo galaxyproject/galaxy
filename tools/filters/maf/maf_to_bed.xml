@@ -6,7 +6,7 @@
             <param format="maf" name="input1" type="data" label="MAF file to convert"/>
         </page>
         <page>
-            <param name="species" type="select" label="Select species" dynamic_options="get_available_species( input1.dbkey, input1.file_name )" display="checkboxes" multiple="true" help="a separate history item will be created for each checked species" />
+            <param name="species" type="select" label="Select species" dynamic_options="map(lambda spec: (spec, spec, True), input1.metadata.species)" display="checkboxes" multiple="true" help="a separate history item will be created for each checked species" />
             <param name="complete_blocks" type="select">
               <label>Exclude blocks which have a requested species missing</label>
               <option value="partial_allowed">include blocks with missing species</option>

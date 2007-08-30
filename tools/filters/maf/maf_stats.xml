@@ -3,9 +3,9 @@
   <command interpreter="python2.4">
 maf_stats.py
 #if $maf_source_type.maf_source == "user":
-$maf_source_type.maf_source $input2 $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol
+$maf_source_type.maf_source $input2 $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary
 #else:
-$maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol
+$maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary
 #end if
   </command>
   <inputs>
@@ -25,6 +25,10 @@ $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $
                 <param name="mafType" label="MAF Type" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
             </when>
         </conditional>
+        <param name="summary" type="select" label="Type of Output">
+          <option value="false" selected="true">Coverage by Region</option>
+          <option value="true">Summarize Coverage</option>
+        </param>
     </page>
    </inputs>
   <outputs>
@@ -36,6 +40,7 @@ $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $
       <param name="maf_source" value="cached"/>
       <param name="mafType" value="8_WAY_MULTIZ_hg17"/>
       <output name="out_file1" file="maf_stats_interval_out.dat"/>
+      <param name="summary" value="false"/>
     </test>
   </tests>
   <help>
@@ -61,7 +66,19 @@ Consider the interval: "chrX 1000 1100 myInterval"
     
     YYY = number of gaps
 
+----
 
+Alternatively, you can request only summary information for a set of intervals:
+  
+  ========  ===========  ========
+  #species  nucleotides  coverage
+  ========  ===========  ========
+  hg18         30639      0.2372
+  rheMac2      7524       0.0582
+  panTro2      30390      0.2353
+  ========  ===========  ========
+
+  where **coverage** is the number of nucleotides divided by the total length of the provided intervals.
   </help>
   <code file="maf_stats_code.py"/>
 </tool>

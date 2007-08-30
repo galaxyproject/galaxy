@@ -16,7 +16,7 @@
             </param>
         </page>
         <page>
-            <param name="species" type="select" label="Species to keep" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true"/>
+            <param name="species" type="select" label="Species to keep" dynamic_options="map(lambda spec: (spec, spec, True), input1.metadata.species)" display="checkboxes" multiple="true"/>
         </page>
     </inputs>
     <outputs>
@@ -42,6 +42,6 @@ This tool allows the user to remove any undesired species from a MAF file. Colum
  * **Exclude blocks with have only one species** - if this option is set to **YES** all single sequence alignment blocks WILL NOT be returned.
 
     </help>
-    <code file="maf_limit_to_species_code.py"/>
+    <!--<code file="maf_limit_to_species_code.py"/>-->
 </tool>
 
