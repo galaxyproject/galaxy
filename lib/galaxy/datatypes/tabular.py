@@ -20,6 +20,7 @@ class Tabular( data.Text ):
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True )
+    MetadataElement( name="numerical_columns", default=[], desc="Numerical columns", readonly=True )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
@@ -33,18 +34,38 @@ class Tabular( data.Text ):
 
     def set_meta( self, dataset ):
         """
-        Tries to determine the number of columns in the dataset
+        Tries to determine the number of columns as well as those columns
+        that contain numerical values in the dataset
         """
         if dataset.has_data():
-            for i, line in enumerate( file(dataset.file_name) ):
+            numerical_columns = []
+            
+            for i, line in enumerate( file ( dataset.file_name ) ):
                 line = line.rstrip('\r\n')
-                if line and not line.startswith('#') and len(line) > 0:
-                    elems = line.split('\t')
-                    if len(elems) != dataset.metadata.columns:
-                        dataset.metadata.columns = len(elems)
-                        break
-                if i == 30:
-                    break
+                valid = True
+                if line and not line.startswith( '#' ): 
+                    elems = line.split( '\t' )
+                    elems_len = len(elems)
+
+                    if elems_len > 0:
+                        """Set the columns metadata attribute"""
+                        if elems_len != dataset.metadata.columns:
+                            dataset.metadata.columns = elems_len
+                        """Set the numerical_columns metadata attribute"""
+                        for col in range(0, elems_len):
+                            try:
+                                val = float(elems[col])
+                                valid = True
+                            except:
+                                val = elems[col]
+                                if val:
+                                    if val.strip().lower() == "na": valid = True
+                                    else: valid = False
+                                else: valid = False
+                            if valid: numerical_columns.append(col+1)
+                    if len(numerical_columns) > 0: break 
+                if i == 30: break # Hopefully we never get here...
+            dataset.metadata.numerical_columns = numerical_columns
 
     def make_html_table(self, data, skipchar=None):
         """Create HTML table, used for displaying peek"""

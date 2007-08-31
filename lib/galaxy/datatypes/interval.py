@@ -70,9 +70,9 @@ class Interval( Tabular ):
         self.set_meta( dataset )
     
     def set_meta( self, dataset, first_line_is_header=False ):
-        """
-        Tries to guess from the line the location number of the column for the chromosome, region start-end and strand
-        """
+        Tabular.set_meta( dataset )
+        
+        """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         if dataset.has_data():
             for i, line in enumerate( file(dataset.file_name) ):
                 line = line.rstrip('\r\n')
@@ -82,8 +82,6 @@ class Interval( Tabular ):
                         self.init_meta(dataset)
                         line  = line.strip("#")
                         elems = line.split("\t")
-                        if len(elems) != dataset.metadata.columns:
-                            dataset.metadata.columns = len(elems)
                         valid = dict(alias_helper) # shrinks
                         for index, col_name in enumerate(elems):
                             if col_name in valid:
@@ -94,17 +92,6 @@ class Interval( Tabular ):
                                 for lower in values[start:]:
                                     del valid[lower]  # removes lower priority keys 
                         break  # Our metadata is set, so break out of the outer loop
-                    else:
-                        """
-                        We must have an interval file without a header line, so 
-                        at most we can set the number of columns.
-                        """
-                        elems = line.split("\t")
-                        if len(elems) != dataset.metadata.columns:
-                            dataset.metadata.columns = len(elems)
-                        break  # Our metadata is set, so break out of the outer loop
-                if i == 30:
-                    break  # Hopefully we'll never get here...
     
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
@@ -210,6 +197,8 @@ class Bed( Interval ):
         Interval.init_meta( self, dataset, copy_from=copy_from )
     
     def set_meta( self, dataset ):
+        Tabular().set_meta( dataset )
+        
         """
         Overrides the default setting for dataset.metadata.strandCol for BED
         files that do not contain a strand column.  This will result in changing
@@ -234,11 +223,8 @@ class Bed( Interval ):
                         else:
                             dataset.metadata.is_strandCol = "true"
                             dataset.metadata.strandCol = 6
-                        if len(elems) != dataset.metadata.columns:
-                            dataset.metadata.columns = len(elems)
                         break
-                if i == 30:
-                    break
+                if i == 30: break
         if not valid_bed_data:
             dataset.metadata.is_strandCol = "false"
             dataset.metadata.strandCol = 0
@@ -250,7 +236,7 @@ class Bed( Interval ):
             if line == "" or line.startswith("#"):
                 continue
             fields = line.split('\t')
-            #check to see if this file doesn't conform to strict genome browser accepted bed
+            """check to see if this file doesn't conform to strict genome browser accepted bed"""
             try:
                 if len(fields) > 12:
                     return Interval.as_ucsc_display_file(self, dataset) #too many fields
