@@ -250,6 +250,10 @@ class TwillTestCase(unittest.TestCase):
                 tc.fv(str(form), str(key), str(elem) )
         tc.submit(button)
 
+    def clear_form(self, form=0):
+        """Clears a form"""
+        tc.formclear(str(form))
+
     def last_page(self):
         return tc.browser.get_html()
 
@@ -273,6 +277,7 @@ class TwillTestCase(unittest.TestCase):
         tc.go("%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
         tc.code(200)
         tc.find('runtool_btn')
+        self.clear_form()
         self.submit_form(**kwd)
         tc.code(200)
 
