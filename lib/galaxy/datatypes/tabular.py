@@ -12,6 +12,7 @@ from cgi import escape
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.metadata import MetadataAttributes
+
 log = logging.getLogger(__name__)
 
 
@@ -20,7 +21,7 @@ class Tabular( data.Text ):
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True )
-    MetadataElement( name="numerical_columns", default=[], desc="Numerical columns", readonly=True )
+    MetadataElement( name="column_types", default=[], desc="Column types", readonly=True )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
@@ -38,7 +39,7 @@ class Tabular( data.Text ):
         that contain numerical values in the dataset
         """
         if dataset.has_data():
-            numerical_columns = []
+            column_types = []
             
             for i, line in enumerate( file ( dataset.file_name ) ):
                 line = line.rstrip('\r\n')
@@ -48,24 +49,43 @@ class Tabular( data.Text ):
                     elems_len = len(elems)
 
                     if elems_len > 0:
+
                         """Set the columns metadata attribute"""
                         if elems_len != dataset.metadata.columns:
                             dataset.metadata.columns = elems_len
-                        """Set the numerical_columns metadata attribute"""
+
+                        """Set the column_types metadata attribute"""
                         for col in range(0, elems_len):
-                            try:
-                                val = float(elems[col])
-                                valid = True
-                            except:
-                                val = elems[col]
-                                if val:
-                                    if val.strip().lower() == "na": valid = True
-                                    else: valid = False
-                                else: valid = False
-                            if valid: numerical_columns.append(col+1)
-                    if len(numerical_columns) > 0: break 
+                            col_type = None
+                            val = elems[col]
+                            if not col_type:
+                                """See if val is an int"""
+                                try:
+                                    int( val )
+                                    col_type = 'int'
+                                except: 
+                                    pass
+                            if not col_type:
+                                """See if val is a float"""
+                                try:
+                                    float( val )
+                                    col_type = 'float'
+                                except:
+                                    if val and val.strip().lower() == 'na':
+                                        col_type = 'float'
+                            if not col_type:
+                                """See if val is a list"""
+                                val_elems = val.split(',')
+                                if len( val_elems ) > 1:
+                                    col_type = 'list'
+                            if not col_type:
+                                """All parameters are strings, so this will be the default"""
+                                col_type = 'str'
+
+                            column_types.append(col_type)
+                    if len(column_types) > 0: break 
                 if i == 30: break # Hopefully we never get here...
-            dataset.metadata.numerical_columns = numerical_columns
+            dataset.metadata.column_types = column_types
 
     def make_html_table(self, data, skipchar=None):
         """Create HTML table, used for displaying peek"""
@@ -113,16 +133,5 @@ class Tabular( data.Text ):
 
     def before_edit( self, dataset ):
         data.Text.before_edit( self, dataset )
-        try:
-            maxcols = 0
-            for i, line in enumerate ( file( dataset.file_name )):
-                line = line.rstrip('\r\n')
-                if line and not line.startswith( '#' ):
-                    cols = len( line.split("\t") )
-                    if cols > maxcols: 
-                        maxcols = cols
-                if i == 30:
-                    break
-            setattr( dataset.metadata, "columns", maxcols )
-        except:
-            pass        
+        if self.missing_meta( dataset ):
+            self.set_meta( dataset )    

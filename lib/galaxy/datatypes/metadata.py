@@ -3,6 +3,7 @@ import sys, logging
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
+from types import *
 
 log = logging.getLogger( __name__ )
 
@@ -55,6 +56,14 @@ class MetadataParameter( object ):
         number of columns in the dataset.
         '''
         self.spec = spec
+        """Since strings are stored as unicode, we need to decode them for display"""
+        if isinstance( value, ListType ):
+            for i, elem in enumerate( value ):
+                if type ( elem ) == unicode:
+                    value[i] = str( elem )
+        elif isinstance ( value, basestring ):
+            if type( value ) == unicode:
+                value = str( value )
         self.value = value
         self.context = context
 
