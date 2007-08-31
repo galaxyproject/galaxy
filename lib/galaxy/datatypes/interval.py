@@ -70,7 +70,7 @@ class Interval( Tabular ):
         self.set_meta( dataset )
     
     def set_meta( self, dataset, first_line_is_header=False ):
-        Tabular.set_meta( dataset )
+        Tabular().set_meta( dataset )
         
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         if dataset.has_data():
