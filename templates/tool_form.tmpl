@@ -47,7 +47,12 @@
       $row_for_param( $prefix, $input.test_param, $group_state, $group_errors, $context, refresh=True )
       $do_inputs( $input.cases[$current_case].inputs, $group_state, $group_errors, $prefix, $context )
     #else
-      $row_for_param( $prefix, $input, $tool_state, $errors, $context )
+    #try
+      #set refresh = $input.refresh_on_change
+    #except
+      #set refresh = False
+    #end try
+      $row_for_param( $prefix, $input, $tool_state, $errors, $context, $refresh )
     #end if
   #end for  
 #end def
