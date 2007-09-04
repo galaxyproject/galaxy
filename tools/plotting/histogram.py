@@ -1,60 +1,74 @@
 #!/usr/bin/env python2.4
 
-import sys, rpy
-from Numeric import *
+import sys
 from rpy import *
 
-def fail( message ):
-    print >> sys.stderr, message
-    return -1
+def stop_err(msg):
+    sys.stderr.write(msg)
+    sys.exit()
 
 def main():
 
+    # Handle input params
     in_fname = sys.argv[1]
     out_fname = sys.argv[2]
-    
-    columns = ( int( sys.argv[3] ) - 1 ),
-    
+    column = int( sys.argv[3] ) - 1
     title = sys.argv[4]
     xlab = sys.argv[5]
-    
     breaks = int( sys.argv[6] )
     if breaks == 0: breaks = "Sturges"
-    
     if sys.argv[7] == "true": density = True
     else: density = False
 
     matrix = []
-    nan_row = False
-    for i, line in enumerate( open( sys.argv[1] ) ):
+    skipped_lines = 0
+    first_invalid_line = 0
+    invalid_value = ''
+
+    for i, line in enumerate( file( in_fname ) ):
+        valid = True
+        line = line.rstrip('\r\n')
         # Skip comments
-        if  line.startswith( '#' ) or ( sys.argv[8] == "true" and i == 0 ): 
-            continue
-        # Extract values and convert to floats
-        row = []
-        for column in columns:
+        if line and not line.startswith( '#' ): 
+            # Extract values and convert to floats
+            row = []
             fields = line.split( "\t" )
-            if len( fields ) <= column:
-                return fail( "No column %d on line %d" % ( column+1, i ) )
             val = fields[column]
-            if val.lower() == "na": 
-                nan_row = True
+            if val.lower() == "na":
+                row.append( float( "nan" ) )
             else:
                 try:
-                    row.append( float( fields[column] ) )
+                    row.append( float( val ) )
                 except ValueError:
-                    return fail( "Value '%s' in column %d on line %d is not numeric" % ( fields[column], column+1, i ) )
-        if not nan_row:
+                    valid = False
+                    skipped_lines += 1
+                    if not first_invalid_line:
+                        first_invalid_line = i+1
+                        invalid_value = fields[column]
+        else:
+            valid = False
+            skipped_lines += 1
+            if not first_invalid_line:
+                first_invalid_line = i+1
+
+        if valid:
             matrix.append( row )
-        
-    a = array( matrix )
-        
-    r.pdf( out_fname, 8, 8 )
-    r.hist( a, probability=True, main=title, xlab=xlab, breaks=breaks )
-    if density:
-        r.lines( r.density( a ) )
-    r.dev_off()
-    r.quit( save="no" )
-    
+
+    if skipped_lines < i:
+        print "..on columnn %s" %sys.argv[3]
+        try:
+            a = array( matrix )
+            r.pdf( out_fname, 8, 8 )
+            r.hist( a, probability=True, main=title, xlab=xlab, breaks=breaks )
+            if density:
+                r.lines( r.density( a ) )
+        except exc:
+            stop_err("Building histogram resulted in error: %s." %str( exc ))
+    else:
+        print "..all values in column %s are non-numeric." %sys.argv[3]
+
+    if skipped_lines > 0:
+        print "..skipped %d invalid lines starting with line #%d.  Value '%s' is not numeric." % ( skipped_lines, first_invalid_line, invalid_value )
+
 if __name__ == "__main__":
     main()
