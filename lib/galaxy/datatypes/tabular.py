@@ -42,48 +42,54 @@ class Tabular( data.Text ):
             column_types = []
             
             for i, line in enumerate( file ( dataset.file_name ) ):
-                line = line.rstrip('\r\n')
-                valid = True
-                if line and not line.startswith( '#' ): 
-                    elems = line.split( '\t' )
-                    elems_len = len(elems)
+                """
+                This seems kind of hacky, but many times an input file will have
+                an invalid comment on the first line (a comment without a # character
+                to start), so we'll always skip the first line.
+                """
+                if i > 1:
+                    line = line.rstrip('\r\n')
+                    valid = True
+                    if line and not line.startswith( '#' ): 
+                        elems = line.split( '\t' )
+                        elems_len = len(elems)
 
-                    if elems_len > 0:
+                        if elems_len > 0:
 
-                        """Set the columns metadata attribute"""
-                        if elems_len != dataset.metadata.columns:
-                            dataset.metadata.columns = elems_len
+                            """Set the columns metadata attribute"""
+                            if elems_len != dataset.metadata.columns:
+                                dataset.metadata.columns = elems_len
 
-                        """Set the column_types metadata attribute"""
-                        for col in range(0, elems_len):
-                            col_type = None
-                            val = elems[col]
-                            if not col_type:
-                                """See if val is an int"""
-                                try:
-                                    int( val )
-                                    col_type = 'int'
-                                except: 
-                                    pass
-                            if not col_type:
-                                """See if val is a float"""
-                                try:
-                                    float( val )
-                                    col_type = 'float'
-                                except:
-                                    if val and val.strip().lower() == 'na':
+                            """Set the column_types metadata attribute"""
+                            for col in range(0, elems_len):
+                                col_type = None
+                                val = elems[col]
+                                if not col_type:
+                                    """See if val is an int"""
+                                    try:
+                                        int( val )
+                                        col_type = 'int'
+                                    except: 
+                                        pass
+                                if not col_type:
+                                    """See if val is a float"""
+                                    try:
+                                        float( val )
                                         col_type = 'float'
-                            if not col_type:
-                                """See if val is a list"""
-                                val_elems = val.split(',')
-                                if len( val_elems ) > 1:
-                                    col_type = 'list'
-                            if not col_type:
-                                """All parameters are strings, so this will be the default"""
-                                col_type = 'str'
+                                    except:
+                                        if val and val.strip().lower() == 'na':
+                                            col_type = 'float'
+                                if not col_type:
+                                    """See if val is a list"""
+                                    val_elems = val.split(',')
+                                    if len( val_elems ) > 1:
+                                        col_type = 'list'
+                                if not col_type:
+                                    """All parameters are strings, so this will be the default"""
+                                    col_type = 'str'
 
-                            column_types.append(col_type)
-                    if len(column_types) > 0: break 
+                                column_types.append(col_type)
+                        if len(column_types) > 0: break 
                 if i == 30: break # Hopefully we never get here...
             dataset.metadata.column_types = column_types
 
