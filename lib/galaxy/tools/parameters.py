@@ -4,14 +4,22 @@ Classes encapsulating tool parameters
 
 import logging, string, sys
 from galaxy import config, datatypes, util
+from galaxy.datatypes.tabular import *
 import validation
 from elementtree.ElementTree import XML, Element
 
 # For BaseURLToolParameter
 from galaxy.web import url_for
 from galaxy.web import form_builder
+from galaxy.model import Dataset
 
 log = logging.getLogger(__name__)
+
+class NoProperDataError( Exception ):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
 
 class ToolParameter( object ):
     """
@@ -510,6 +518,92 @@ class GenomeBuildParameter( SelectToolParameter ):
     def get_legal_values( self, other_values ):
         return set( dbkey for dbkey, _ in util.dbnames )
 
+class ColumnListParameter( SelectToolParameter ):
+    """
+    Select list that consists of either the total number of columns or only
+    those columns that contain numerical values in the associated DataToolParameter.
+    
+    # TODO: we need better testing here, but not sure how to associate a DatatoolParameter with a ColumnListParameter
+    # from a twill perspective...
+
+    >>> # Mock up a history (not connected to database)
+    >>> from galaxy.model import History, Dataset
+    >>> from galaxy.util.bunch import Bunch
+    >>> hist = History()
+    >>> hist.flush()
+    >>> hist.add_dataset( Dataset( id=1, extension='interval' ) )
+    >>> dtp =  DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
+    >>> print dtp.name
+    blah
+    >>> clp = ColumnListParameter ( None, XML( '<param name="numerical_column" type="columnlist" assoc_dataset="blah" numerical="true"/>' ) )
+    >>> print clp.name
+    numerical_column
+    """
+    def __init__( self, tool, elem ):
+        SelectToolParameter.__init__( self, tool, elem )
+
+        self.tool = tool
+        self.numerical = elem.get( "numerical", False )
+        self.assoc_dataset = elem.get( "assoc_dataset", None )
+
+    def get_options( self, trans, other_values ):
+        columnList = []
+        dataset_id = 0
+        dataset = None
+        assoc_dataset = self.tool.get_param( self.assoc_dataset )
+
+        assert assoc_dataset is not None, "Tools that include a ColumnListParameter must also include a DataToolParameter"
+
+        if len( self.tool.updated_params ) == 0:
+            """
+            This will execute when the tool page is initially loading and the
+            user has not yet manually selected a dataset.  In this case, ad_val
+            will be a DataToolParameter.
+            """
+            field = assoc_dataset.get_html_field(trans, assoc_dataset, other_values )
+        
+            """We need to make sure there is a dataset of the proper format in the history."""
+            if len( field.options ) == 0:
+                raise NoProperDataError( ",".join( param.extensions ))
+
+            if dataset_id == 0:
+                for txt, val, selected in field.options:
+                    if selected: 
+                        dataset_id = val
+                        break
+            if dataset_id == 0:
+                """This should be the latest dataset in the history"""
+                dataset_id = str(field.options[-1][1])
+
+            dataset = assoc_dataset.from_html(dataset_id, trans, other_values )
+
+        else:
+            """
+            This will execute whenever the user selects a dataset from the input data
+            select list.  Doing this results in executing the tool's update_state function,
+            so we can retrieve the selected dataset from the tool.
+            """
+            dataset = self.tool.updated_params[self.assoc_dataset]
+
+        assert dataset is not None, "Error retrieving required dataset for ColumnListParameter"
+            
+        if dataset.missing_meta():
+            """Just to be safe..."""
+            Tabular().set_meta(dataset)
+ 
+        if self.numerical:
+            for i, col in enumerate( dataset.metadata.column_types ):
+                if col == 'int' or col == 'float':
+                    self.legal_values.add(str( i+1 ))
+                    option = 'c' + str( i+1 )
+                    columnList.append((option,str( i+1 ),False))
+        else:
+            for col in range (0, dataset.metadata.columns):
+                self.legal_values.add(str(col+1))
+                option = 'c' + str(col+1)
+                columnList.append((option,str(col+1),False))
+
+        return columnList
 
 class DataToolParameter( ToolParameter ):
     """
@@ -542,8 +636,8 @@ class DataToolParameter( ToolParameter ):
         ToolParameter.__init__( self, tool, elem )
         # Build tuple of classes for supported data formats
         formats = []
-        extensions = elem.get( 'format', 'data' ).split( "," )
-        for extension in extensions:
+        self.extensions = elem.get( 'format', 'data' ).split( "," )
+        for extension in self.extensions:
             extension = extension.strip()
             if tool is None:
                 #This occurs for things such as unit tests
@@ -554,6 +648,7 @@ class DataToolParameter( ToolParameter ):
         self.formats = tuple( formats )
         self.multiple = str_bool( elem.get( 'multiple', False ) )
         self.optional = str_bool( elem.get( 'optional', False ) )
+        self.refresh_on_change = str_bool( elem.get( "refresh_on_change", False ))
         self.dynamic_options = elem.get( "dynamic_options", None )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
@@ -562,15 +657,12 @@ class DataToolParameter( ToolParameter ):
         assert history is not None, "DataToolParameter requires a history"
         if value is not None:
             if type( value ) != list: value = [ value ]
-        field = form_builder.SelectField( self.name, self.multiple )
+        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change )
         if self.dynamic_options:
-            # Dynamic options for a DataToolParameter specify limits on 
-            # acceptrable build, id, or extension
+            """Dynamic options for a DataToolParameter specify limits on acceptrable build, id, or extension"""
             option_build, option_id, option_extension = \
                 eval( self.dynamic_options, self.tool.code_namespace, other_values )
-        """
-        CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
-        """
+        """CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()"""
         def dataset_collector( datasets, parent_hid ):    
             for i, data in enumerate( datasets ):
                 if parent_hid is not None:
@@ -606,7 +698,7 @@ class DataToolParameter( ToolParameter ):
 
     def from_html( self, value, trans, other_values={} ):
         if not value:
-            raise ValueError( "A data of the appropriate type is required" )
+            raise NoProperDataError( ",".join( self.extensions ))
         if value in [None, "None"]:
             temp_data = trans.app.model.Dataset()
             temp_data.state = temp_data.states.FAKE
@@ -692,6 +784,7 @@ parameter_types = dict( text        = TextToolParameter,
                         boolean     = BooleanToolParameter,
                         genomebuild = GenomeBuildParameter,
                         select      = SelectToolParameter,
+                        columnlist  = ColumnListParameter,
                         hidden      = HiddenToolParameter,
                         baseurl     = BaseURLToolParameter,
                         file        = FileToolParameter,
