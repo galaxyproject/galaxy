@@ -172,6 +172,7 @@ class Tool:
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
+        self.updated_params = {}
         # Parse XML element containing configuration
         self.parse( root )
         
@@ -453,6 +454,7 @@ class Tool:
         """
         state = DefaultToolState()
         state.inputs = {}
+        self.updated_params = {}
         self.fill_in_new_state( trans, self.inputs_by_page[ 0 ], state.inputs )
         return state
 
@@ -653,6 +655,7 @@ class Tool:
                 if error:
                     errors[ input.name ] = error
                 state[input.name] = value
+                self.updated_params[input.name] = value
         return errors
             
     def check_param( self, trans, param, incoming_value, param_values ):
