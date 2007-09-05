@@ -15,12 +15,6 @@ from galaxy.model import Dataset
 
 log = logging.getLogger(__name__)
 
-class NoProperDataError( Exception ):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
 class ToolParameter( object ):
     """
     Describes a parameter accepted by a tool. This is just a simple stub at the
@@ -561,10 +555,13 @@ class ColumnListParameter( SelectToolParameter ):
             will be a DataToolParameter.
             """
             field = assoc_dataset.get_html_field(trans, assoc_dataset, other_values )
-        
+
             """We need to make sure there is a dataset of the proper format in the history."""
-            if len( field.options ) == 0:
-                raise NoProperDataError( ",".join( param.extensions ))
+            some_data = bool( field.options )
+            if not some_data:
+                return columnList
+            elif len( field.options ) == 1 and field.options[0][0] == 'no data has the proper type':
+                return columnList
 
             if dataset_id == 0:
                 for txt, val, selected in field.options:
@@ -698,7 +695,7 @@ class DataToolParameter( ToolParameter ):
 
     def from_html( self, value, trans, other_values={} ):
         if not value:
-            raise NoProperDataError( ",".join( self.extensions ))
+            raise ValueError( "A data of the appropriate type is required" ) 
         if value in [None, "None"]:
             temp_data = trans.app.model.Dataset()
             temp_data.state = temp_data.states.FAKE

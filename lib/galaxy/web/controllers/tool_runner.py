@@ -3,7 +3,6 @@ Upload class
 """
 
 from galaxy.web.base.controller import *
-from galaxy.tools.parameters import NoProperDataError
 
 import logging
 log = logging.getLogger( __name__ )
@@ -37,10 +36,7 @@ class ToolRunner( BaseController ):
         params = util.Params(kwd, sanitize = tool.options.sanitize)
         history = trans.get_history()
         trans.ensure_valid_galaxy_session()
-        try:
-            template, vars = tool.handle_input( trans, params.__dict__ )
-        except NoProperDataError, exc:
-            return trans.fill_template( 'no_proper_data.tmpl', error_msg=exc.value )
+        template, vars = tool.handle_input( trans, params.__dict__ )
         if len(params) > 0:
             trans.log_event( "Tool params: %s" % (str(params)), tool_id=tool_id )
         return trans.fill_template( template, history=history, toolbox=toolbox, tool=tool, util=util, **vars )
