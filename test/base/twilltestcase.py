@@ -7,7 +7,7 @@ from itertools import *
 
 import twill
 import twill.commands as tc
-import twill.other_packages.ClientForm
+from twill.other_packages import ClientForm
 from elementtree import ElementTree
 
 buffer = StringIO.StringIO()
@@ -258,7 +258,7 @@ class TwillTestCase(unittest.TestCase):
                         for elem in kwd[control.name]:
                             tc.fv(str(form), str(i+1), str(elem) )                        
                         #Create a new submit control, allows form to refresh, instead of going to next page
-                        control = twill.other_packages.ClientForm.SubmitControl('SubmitControl','___refresh_grouping___',{'name':'refresh_grouping'})
+                        control = ClientForm.SubmitControl('SubmitControl','___refresh_grouping___',{'name':'refresh_grouping'})
                         control.add_to_form(tc.showforms()[form-1])
                         #submit for refresh
                         tc.submit('___refresh_grouping___')
@@ -268,13 +268,16 @@ class TwillTestCase(unittest.TestCase):
         
         for key, value in kwd.items():
             # needs to be able to handle multiple values per key
-            if type(value) != type([]):
+            if not isinstance(value, list):
                 value = [ value ]
             for i, control in enumerate(tc.showforms()[form-1].controls):
                 if control.name == key:
                     control.clear()
-                    for elem in value:
-                        tc.fv(str(form), str(i+1), str(elem) )
+                    if control.is_of_kind("text"):
+                        tc.fv(str(form), str(i+1), ",".join(value) )
+                    else:
+                        for elem in value:
+                            tc.fv(str(form), str(i+1), str(elem) )
                     break
         tc.submit(button)
 
