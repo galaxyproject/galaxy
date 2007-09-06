@@ -8,7 +8,7 @@
 # of occurences of each unique column, inserted before the columns.
 #
 # This executes the command pipeline:
-#       cut -f $fields | sort | uniq -C
+#       cut -f $fields | sort  | uniq -C
 #
 # -i            Input file
 # -o            Output file
@@ -40,7 +40,7 @@ def main():
         print "Usage:"
         print " -i        Input file"
         print " -o        Output file"
-        print " -c          Column list (comma seperated)"
+        print " -c        Column list (comma seperated)"
         print " -d        Delimiter:"
         print "                     T   Tab"
         print "                     C   Comma"
@@ -72,9 +72,8 @@ def main():
         return -4
 
     # All inputs have been specified at this point, now validate.
-
     fileRegEx = re.compile("^[A-Za-z0-9./\-_]+$")
-    columnRegEx = re.compile("(c[0-9]{1,},?)+")
+    columnRegEx = re.compile("([0-9]{1,},?)+")
 
     if not columnRegEx.match(columns):
         print "Illegal column specification."
@@ -86,19 +85,10 @@ def main():
         print "Illegal input filename."
         return -6
 
-    # Remove "c"
-    columns = re.split(",",columns)
-
-    # Convert to integers
-    intcolumns = []
-    for col in columns:
-        intcolumns.append(int(re.search("(\d+)",col).group(1)))
-    maxcol = max(intcolumns)
-    
-    # Check max column
-    if maxcol > len( open(inputfile).readline().split('\t') ):
-        print "Column "+str(maxcol)+" does not exist."
-        return -9
+    column_list = re.split(",",columns)
+    columns_for_display = ""
+    for col in column_list:
+        columns_for_display += "c"+col+", "
 
     commandline = "cut "
     # Set delimiter
@@ -116,16 +106,11 @@ def main():
         commandline += "-d \" \" "
 
     # set columns
-    commandline += "-f "
-    while len(intcolumns)>1:
-        commandline += str(intcolumns[0]) + ","
-        intcolumns = intcolumns[1:]
-    commandline += str(intcolumns[0])
-
+    commandline += "-f " + columns
     commandline += " " + inputfile + " | sed s/\ //g | sort | uniq -c | sed s/^\ *// | tr \" \" \"\t\" > " + outputfile
     errorcode, stdout = commands.getstatusoutput(commandline)
     
-    print "Count of unique values in " + opts.get("-c")
+    print "Count of unique values in " + columns_for_display
     return errorcode
 
 if __name__ == "__main__":

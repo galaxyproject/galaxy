@@ -537,7 +537,7 @@ class ColumnListParameter( SelectToolParameter ):
         SelectToolParameter.__init__( self, tool, elem )
 
         self.tool = tool
-        self.numerical = elem.get( "numerical", False )
+        self.numerical = str_bool( elem.get( "numerical", False ))
         self.assoc_dataset = elem.get( "assoc_dataset", None )
 
     def get_options( self, trans, other_values ):

@@ -2,8 +2,8 @@
   <description>occurences of each record</description>
   <command interpreter="python">uniq.py -i $input -o $out_file1 -c "$column" -d $delim</command>
   <inputs>
-    <param name="column" size="14" type="text" value="c1,c2" label="Count occurencies of values in column(s)" help="separate column indices with comma. First column is 'c1'"/>
-    <param format="text" name="input" type="data" label="in Query"/>
+    <param name="column" type="columnlist" assoc_dataset="input" multiple="True" numerical="False" label="Count occurencies of values in column(s)" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+    <param name="input" type="data" format="tabular" label="from query" refresh_on_change="True" help="Query missing? See TIP below"/>
     <param name="delim" type="select" label="Delimited by">
       <option value="T">Tab</option>
       <option value="Sp">Whitespace</option>
@@ -26,13 +26,20 @@
     </test>
   </tests>
   <help>
+  
+ .. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
 
 **Syntax**
 
-This tool grabs unique lines based on the user input columns, and returns those columns with a count of occurences of each unique column, inserted before the columns.
+This tool counts occurences of unique values in selected column(s).
 
-- **Count occurencies of values in column(s):** Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of the input file.
- 
+- If multiple columns are selected, counting is performed on each unique group of all values in the selected columns.
+- The first column of the resulting query will be the count of unique values in the selected column(s) and will be followed by each value.
+
 -----
 
 **Example**
@@ -48,14 +55,21 @@ This tool grabs unique lines based on the user input columns, and returns those 
        chr4   10 1765  gene7
        chr4   10 1765  gene8
 
-- Count occurencies of values in the first column of the above file. The output will look like this::
+- Counting unique values in column c1 will result in::
 
        3 chr1
        2 chr2
        1 chr3
        2 chr4   
 
-       Because in this query values **chr1**, **chr2**, **chr3**, and **chr4** occur 3, 2, 1, and 2 times, respectively.
+- Counting unique values in the grouping of columns c2 and c3 will result in::
+
+       2    10    100
+       2    10    1765
+       1    1000  1900
+       1    105   200
+       1    15    1656
+       1    205   300
 
 </help>
 </tool>
