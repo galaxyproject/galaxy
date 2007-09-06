@@ -29,8 +29,8 @@ def main():
         sys.exit()
     try:
         maf_writer = FusingAlignmentWriter( bx.align.maf.Writer( open(output_file, 'w') ) )
-    except Exception, e:
-        print >> sys.stderr, "Unable to open output file", e
+    except:
+        print >> sys.stderr, "Unable to open output file"
         sys.exit()
     try:
         for m in maf_reader:            

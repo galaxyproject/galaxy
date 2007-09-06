@@ -34,14 +34,14 @@
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
       <param name="maf_source" value="cached"/>
       <param name="maf_uid" value="8_WAY_MULTIZ_hg17"/>
-      <param name="species" value="canFam1,hg17,mm6,panTro1,rn3"/>
+      <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
       <output name="out_file1" file="interval_maf_to_merged_fasta_out.dat" />
     </test>
     <test>
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
       <param name="maf_source" value="user"/>
       <param name="input2" value="5.maf"/>
-      <param name="species" value="canFam1,hg17,mm6,panTro1,rn3"/>
+      <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
       <output name="out_file1" file="interval_maf_to_merged_fasta_user_out.dat" />
     </test>
   </tests>

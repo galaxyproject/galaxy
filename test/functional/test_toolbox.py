@@ -24,27 +24,44 @@ class ToolTestCase( TwillTestCase ):
         # Run the tool
         all_inputs = dict( ( name, value ) for ( name, value, _ ) in self.testdef.inputs )
         # Do the first page
-        fp = open('hjb.txt', 'a')
-        page_inputs = dict( ( key, all_inputs[key] )
-             for key in self.testdef.tool.inputs_by_page[0].keys() )   
+        page_inputs =  self.__expand_grouping(self.testdef.tool.inputs_by_page[0], all_inputs)
         self.run_tool( self.testdef.tool.id, **page_inputs )
+        print "page_inputs (0)", page_inputs
         # Do other pages if they exist
         for i in range( 1, self.testdef.tool.npages ):
-            self.clear_form(i)
-            page_inputs = dict()
-            for key in self.testdef.tool.inputs_by_page[i].keys():
-                try:
-                    page_inputs[key] = all_inputs[key]
-                    page_inputs[key] = all_inputs[key].split(',')
-                except: pass
+            page_inputs = self.__expand_grouping(self.testdef.tool.inputs_by_page[i], all_inputs)
             self.submit_form( **page_inputs )
-            print "page_inputs", page_inputs     
+            print "page_inputs (%i)" % i, page_inputs
         # Check the result
         assert len( self.testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."
         for name, file in self.testdef.outputs:
             self.check_data( file )
     def shortDescription( self ):
         return self.name
+
+    def __expand_grouping(self, tool_inputs, declared_inputs ):
+        expanded_inputs = {}
+        for key, value in tool_inputs.items():
+            import galaxy.tools.grouping
+            if isinstance(value, galaxy.tools.grouping.Conditional):
+                for i, case in enumerate(value.cases):
+                    if declared_inputs[value.test_param.name] == case.value:
+                        if isinstance(case.value, str):
+                            expanded_inputs["%s|%s" % (value.name, value.test_param.name)] = case.value.split(",")
+                        else:
+                            expanded_inputs["%s|%s" % (value.name, value.test_param.name)] = case.value
+                        for input_name, input_value in case.inputs.items():
+                            if isinstance(input_value, galaxy.tools.grouping.Conditional):
+                                expanded_inputs.update(self.__expand_grouping({input_name:input_value}), declared_inputs)
+                            elif isinstance(declared_inputs[input_name], str):
+                                expanded_inputs.update({"%s|%s" % (value.name, input_name):declared_inputs[input_name].split(",")})
+                            else:
+                                expanded_inputs.update({"%s|%s" % (value.name, input_name):declared_inputs[input_name]})
+            elif isinstance(declared_inputs[value.name], str):
+                expanded_inputs[value.name] = declared_inputs[value.name].split(",")
+            else:
+                expanded_inputs[value.name] = declared_inputs[value.name]
+        return expanded_inputs
 
 def get_testcase( testdef, name ):
     """

@@ -35,12 +35,14 @@
       <test>
         <param name="input1" value="3.maf"/>
         <param name="species" values="canFam1"/>
+        <param name="fasta_type" values="concatenated"/>
         <output name="out_file1" file="cf_maf2fasta_concat.dat"/>
       </test>
       <test>
         <param name="input1" value="4.maf"/>
         <param name="species" values="bosTau2,canFam2,dasNov1,hg17,mm7,panTro1,rheMac2,rn3"/>
         <param name="complete_blocks" value="partial_allowed"/>
+        <param name="fasta_type" values="multiple"/>
         <output name="out_file1" file="cf_maf2fasta.dat"/>
       </test>
     </tests>

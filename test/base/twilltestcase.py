@@ -7,6 +7,7 @@ from itertools import *
 
 import twill
 import twill.commands as tc
+import twill.other_packages.ClientForm
 from elementtree import ElementTree
 
 buffer = StringIO.StringIO()
@@ -242,12 +243,39 @@ class TwillTestCase(unittest.TestCase):
 
     def submit_form(self, form=1, button="runtool_btn", **kwd):
         """Populates and submits a form from the keyword arguments"""
+        #Check for onchange attribute, submit a change if required
+        for i, control in enumerate(tc.showforms()[form-1].controls):
+            try:
+                if 'onchange' in control.attrs.keys():
+                    changed = False
+                    for elem in kwd[control.name]:
+                        if elem not in control.value:
+                            changed = True
+                            break
+                    if changed:
+                        #Clear Control and set to proper value
+                        control.clear()
+                        for elem in kwd[control.name]:
+                            tc.fv(str(form), str(i+1), str(elem) )                        
+                        #Create a new submit control, allows form to refresh, instead of going to next page
+                        control = twill.other_packages.ClientForm.SubmitControl('SubmitControl','___refresh_grouping___',{'name':'refresh_grouping'})
+                        control.add_to_form(tc.showforms()[form-1])
+                        #submit for refresh
+                        tc.submit('___refresh_grouping___')
+                        #start over submit_form()
+                        return self.submit_form(form, button, **kwd)
+            except: continue
+        
         for key, value in kwd.items():
             # needs to be able to handle multiple values per key
             if type(value) != type([]):
                 value = [ value ]
-            for elem in value:
-                tc.fv(str(form), str(key), str(elem) )
+            for i, control in enumerate(tc.showforms()[form-1].controls):
+                if control.name == key:
+                    control.clear()
+                    for elem in value:
+                        tc.fv(str(form), str(i+1), str(elem) )
+                    break
         tc.submit(button)
 
     def clear_form(self, form=0):
@@ -277,7 +305,6 @@ class TwillTestCase(unittest.TestCase):
         tc.go("%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
         tc.code(200)
         tc.find('runtool_btn')
-        self.clear_form()
         self.submit_form(**kwd)
         tc.code(200)
 
