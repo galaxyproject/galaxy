@@ -2,16 +2,12 @@
   <description>of two numeric columns</description>
   <command interpreter="python">scatterplot.py $input $out_file1 $col1 $col2 "$title" "$xlab" "$ylab"</command>
   <inputs>
-    <page>
-      <param name="input" format="tabular" type="data" label="Dataset" help="Query missing? See TIP below"/>
-    </page>
-    <page>
-      <param name="col1" type="select" label="Column for x axis" dynamic_options="get_columns( input )" />
-      <param name="col2" type="select" label="Column for y axis" dynamic_options="get_columns( input )" />
-      <param name="title" size="30" type="text" value="Scatterplot" label="Plot title"/>
-      <param name="xlab" size="30" type="text" value="V1" label="Label for x axis"/>
-      <param name="ylab" size="30" type="text" value="V2" label="Label for y axis"/>
-    </page>
+    <param name="input" type="data" format="tabular" label="Dataset" refresh_on_change="True" help="Query missing? See TIP below"/>
+    <param name="col1" type="columnlist" assoc_dataset="input" numerical="True" label="Numerical column for x axis" />
+    <param name="col2" type="columnlist" assoc_dataset="input" numerical="True" label="Numerical column for y axis" />
+    <param name="title" size="30" type="text" value="Scatterplot" label="Plot title"/>
+    <param name="xlab" size="30" type="text" value="V1" label="Label for x axis"/>
+    <param name="ylab" size="30" type="text" value="V2" label="Label for y axis"/>
   </inputs>
   <outputs>
     <data format="pdf" name="out_file1" />
@@ -55,5 +51,4 @@ This tool creates a simple scatter plot between two variables containing numeric
 .. image:: ../static/images/scatterplot.png
 
 </help>
-  <code file="scatterplot_code.py" />
 </tool>

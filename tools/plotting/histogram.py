@@ -62,6 +62,7 @@ def main():
             r.hist( a, probability=True, main=title, xlab=xlab, breaks=breaks )
             if density:
                 r.lines( r.density( a ) )
+            r.dev_off()
         except exc:
             stop_err("Building histogram resulted in error: %s." %str( exc ))
     else:
@@ -70,5 +71,7 @@ def main():
     if skipped_lines > 0:
         print "..skipped %d invalid lines starting with line #%d.  Value '%s' is not numeric." % ( skipped_lines, first_invalid_line, invalid_value )
 
+    r.quit( save="no" )
+    
 if __name__ == "__main__":
     main()
