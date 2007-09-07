@@ -4,6 +4,7 @@ File format detector
 import logging, sys, os, csv, tempfile, shutil, re
 
 log = logging.getLogger(__name__)
+
 valid_strand = ['+', '-', '.']
 valid_gff3_strand = ['+', '-', '.', '?']
 valid_gff3_phase = ['.', '0', '1', '2']
@@ -65,29 +66,29 @@ def sep2tabs(fname, patt="\\s+"):
     regexp = re.compile(patt)
     fp = open(fname, 'wt')
     for line in file(temp_name):
-        line  = line.strip()
+        line  = line.rstrip('\r\n')
         elems = regexp.split(line)
         fp.write('\t'.join(elems) + '\n')
     fp.close()
     os.remove(temp_name)
 
-def get_headers(fname, sep, count=30):
+def get_headers(fname, sep, count=60):
     """
     Returns a list with the first 'count' lines split by 'sep'
     
-    >>> fname = get_test_fname('interval.bed')
-    >>> get_headers(fname, sep='\\t', count=2)
-    [['#chrom', 'start', 'end', 'name', 'value', 'strand'], ['chr7', '115444712', '115444739', 'CCDS5763.1_cds_0_0_chr7_115444713_f', '0', '+']]
+    >>> fname = get_test_fname('complete.bed')
+    >>> get_headers(fname,'\\t')
+    [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
     """
     headers = []
     for idx, line in enumerate(file(fname)):
         line = line.rstrip('\n\r')
+        headers.append( line.split(sep) )
         if idx == count:
             break
-        headers.append( line.split(sep) )
     return headers
     
-def is_column_based(fname, sep='\t'):
+def is_column_based(fname, sep='\t', skip=0):
     """
     Checks whether the file is column based with respect to a separator 
     (defaults to tab separator).
@@ -109,21 +110,22 @@ def is_column_based(fname, sep='\t'):
     >>> is_column_based(fname)
     True
     """
-    headers = get_headers(fname, sep=sep)
+    headers = get_headers(fname, sep)
+    count = 0
     
     if not headers:
         return False
     
-    for hdr in headers:
-        if hdr[0] and not (hdr[0] == '' or hdr[0].startswith( '#' )):
+    for hdr in headers[skip:]:
+        if len(hdr) > 1 and hdr[0] and not hdr[0].startswith('#'):
             count = len(hdr)
             break
     
     if count < 2:
         return False
     
-    for hdr in headers:
-        if hdr[0] and not (hdr[0] == '' or hdr[0].startswith( '#' )) and len(hdr) != count:
+    for hdr in headers[skip:]:
+        if len(hdr) > 1 and hdr[0] and not hdr[0].startswith('#') and len(hdr) != count:
             return False
     return True
         
@@ -137,11 +139,11 @@ def is_fasta(headers):
     
     For complete details see http://www.g2l.bio.uni-goettingen.de/blast/fastades.html
     
-    >>> headers = get_headers(__file__, sep=' ')
+    >>> headers = get_headers(__file__, ' ')
     >>> is_fasta(headers)
     False
     >>> fname = get_test_fname('sequence.fasta')
-    >>> headers = get_headers(fname,sep=' ')
+    >>> headers = get_headers(fname,' ')
     >>> is_fasta(headers)
     True
     """
@@ -158,20 +160,20 @@ def is_gff(headers):
     
     For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
     
-    >>> headers = get_headers(__file__, sep=' ')
+    >>> headers = get_headers(__file__,' ')
     >>> is_fasta(headers)
     False
     >>> fname = get_test_fname('test.gff')
-    >>> headers = get_headers(fname,sep='\\t')
+    >>> headers = get_headers(fname,'\\t')
     >>> is_gff(headers)
     True
     """
     try:
         if len(headers) < 2:
             return False
-        for idx, hdr in enumerate(headers):
-            if len(hdr) > 1 and hdr[0] != '' and not hdr[0].startswith( '#' ):
-                if len(hdr) != 9: 
+        for hdr in headers:
+            if len( hdr ) > 1 and hdr[0] and not hdr[0].startswith( '#' ):
+                if len(hdr) != 9:
                     return False
                 try:
                     map( int, [hdr[3], hdr[4]] )
@@ -186,8 +188,6 @@ def is_gff(headers):
                         return False
                 if hdr[6] not in valid_strand:
                     return False
-            if idx > 29:
-                break
         return True
     except:
         return False
@@ -214,19 +214,19 @@ def is_gff3(headers):
 
     For complete details see http://song.sourceforge.net/gff3.shtml
     
-    >>> headers = get_headers(__file__, sep=' ')
+    >>> headers = get_headers(__file__,' ')
     >>> is_fasta(headers)
     False
     >>> fname = get_test_fname('gff_version_3.gff')
-    >>> headers = get_headers(fname,sep='\\t')
+    >>> headers = get_headers(fname,'\\t')
     >>> is_gff3(headers)
     True
     """
     try:
         if len(headers) < 2:
             return False
-        for idx, hdr in enumerate(headers):
-            if len(hdr) > 1 and hdr[0] != '' and not hdr[0].startswith( '#' ):
+        for hdr in headers:
+            if len(hdr) > 1 and hdr[0] and not hdr[0].startswith( '#' ):
                 if len(hdr) != 9: 
                     return False
                 try:
@@ -250,8 +250,6 @@ def is_gff3(headers):
                     return False
                 if hdr[7] not in valid_gff3_phase:
                     return False
-            if idx > 29:
-                break
         return True
     except:
         return False
@@ -271,11 +269,11 @@ def is_maf(headers):
  
     For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format5
     
-    >>> headers = get_headers(__file__, sep=' ')
+    >>> headers = get_headers(__file__,' ')
     >>> is_maf(headers)
     False
     >>> fname = get_test_fname('sequence.maf')
-    >>> headers = get_headers(fname, sep=' ')
+    >>> headers = get_headers(fname,' ')
     >>> is_maf(headers)
     True
     """
@@ -293,11 +291,11 @@ def is_lav(headers):
 
     For complete details see http://www.bioperl.org/wiki/LAV_alignment_format
     
-    >>> headers = get_headers(__file__, sep=' ')
+    >>> headers = get_headers(__file__,' ')
     >>> is_lav(headers)
     False
     >>> fname = get_test_fname('alignment.lav')
-    >>> headers = get_headers(fname, sep=' ')
+    >>> headers = get_headers(fname,' ')
     >>> is_lav(headers)
     True
     """
@@ -318,11 +316,11 @@ def is_axt(headers):
 
     For complete details see http://genome.ucsc.edu/goldenPath/help/axt.html
     
-    >>> headers = get_headers(__file__, sep=None)
+    >>> headers = get_headers(__file__,None)
     >>> is_axt(headers)
     False
     >>> fname = get_test_fname('alignment.axt')
-    >>> headers = get_headers(fname, sep=None)
+    >>> headers = get_headers(fname,None)
     >>> is_axt(headers)
     True
    """
@@ -362,25 +360,23 @@ def is_wiggle(headers):
     
     For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
     
-    >>> headers = get_headers(__file__, sep=' ')
+    >>> headers = get_headers(__file__,' ')
     >>> is_wiggle(headers)
     False
     >>> fname = get_test_fname('wiggle.wig')
-    >>> headers = get_headers(fname, sep=' ')
+    >>> headers = get_headers(fname,' ')
     >>> is_wiggle(headers)
     True
     """
     try:
-        for idx, hdr in enumerate(headers):
-            if hdr and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
+        for hdr in headers:
+            if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
                 return True
-            if idx > 29:
-                break
         return False
     except:
         return False
 
-def is_bed(headers, skip=1):
+def is_bed(headers):
     """
     Checks for 'bedness'
     
@@ -391,15 +387,15 @@ def is_bed(headers, skip=1):
     For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format1
     
     >>> fname = get_test_fname('test_tab.bed')
-    >>> headers = get_headers(fname, sep='\\t')
+    >>> headers = get_headers(fname,'\\t')
     >>> is_bed(headers)
     True
     >>> fname = get_test_fname('interval.bed')
-    >>> headers = get_headers(fname, sep='\\t')
+    >>> headers = get_headers(fname,'\\t')
     >>> is_bed(headers)
-    True
+    False
     >>> fname = get_test_fname('complete.bed')
-    >>> headers = get_headers(fname, sep='\\t')
+    >>> headers = get_headers(fname,'\\t')
     >>> is_bed(headers)
     True
     """
@@ -409,7 +405,7 @@ def is_bed(headers, skip=1):
     try:
         if not headers:
             return False
-        for hdr in headers[skip:]:
+        for hdr in headers:
             valid_col1 = False
             if len(hdr) < 3 or len(hdr) > 12:
                 return False
@@ -468,7 +464,7 @@ def is_bed(headers, skip=1):
     except:
         return False
 
-def is_interval(headers, skip=1):
+def is_interval(headers):
     """
     Checks for 'intervalness'
 
@@ -476,11 +472,11 @@ def is_interval(headers, skip=1):
     the format is_column_based, but not any of the other formats, then it must be interval.
     
     >>> fname = get_test_fname('test_space.bed')
-    >>> headers = get_headers(fname, sep='\\t')
+    >>> headers = get_headers(fname,'\\t')
     >>> is_interval(headers)
     False
     >>> fname = get_test_fname('interval.interval')
-    >>> headers = get_headers(fname, sep='\\t')
+    >>> headers = get_headers(fname,'\\t')
     >>> is_interval(headers)
     True
     """
@@ -491,7 +487,7 @@ def is_interval(headers, skip=1):
         If we got here, we already know the file is_column_based and is not bed,
         so we'll just look for some valid data.
         """
-        for hdr in headers[skip:]:
+        for hdr in headers:
             if not (hdr[0] == '' or hdr[0].startswith( '#' )):
                 if len(hdr) < 3:
                     return False
@@ -507,11 +503,11 @@ def is_html(headers):
     """
     Determines wether the file is in html format
     
-    >>> headers = get_headers(__file__, sep=' ')
+    >>> headers = get_headers(__file__,' ')
     >>> is_html(headers)
     False
     >>> fname = get_test_fname('file.html')
-    >>> headers = get_headers(fname, sep=' ')
+    >>> headers = get_headers(fname,' ')
     >>> is_html(headers)
     True
     """
@@ -538,7 +534,7 @@ def guess_ext(fname):
     'interval'
     >>> fname = get_test_fname('interval.bed')
     >>> guess_ext(fname)
-    'bed'
+    'interval'
     >>> fname = get_test_fname('test_tab.bed')
     >>> guess_ext(fname)
     'bed'
@@ -579,7 +575,7 @@ def guess_ext(fname):
                 if ord(char) > 128:
                     return "data"
         
-        headers = get_headers(fname, sep=None)
+        headers = get_headers(fname, None)
         if is_maf(headers):
             return 'maf'
         elif is_lav(headers):
@@ -593,23 +589,25 @@ def guess_ext(fname):
         elif is_axt(headers):
             return 'axt'
 
-        if is_column_based(fname, sep='\t'):
-            headers = get_headers(fname, sep='\t')
-            if is_gff(headers) or is_gff3(headers):
-                return 'gff'
-        elif is_column_based(fname, sep=' '):
+        if is_column_based(fname, ' ', 1):
             sep2tabs(fname)
 
-        if is_column_based(fname, sep='\t'):
-            headers = get_headers(fname, sep='\t')
+        if is_column_based(fname, '\t', 0):
+            headers = get_headers(fname, '\t')
             if is_bed(headers):
                 return 'bed'
+
+        if is_column_based(fname, '\t', 1):
+            headers = get_headers(fname, '\t')
+            if is_gff(headers) or is_gff3(headers):
+                return 'gff'
             elif is_interval(headers):
                 return 'interval'
             else:
                 return 'tabular'
     except:
         pass
+
     return 'text'
 
 if __name__ == '__main__':

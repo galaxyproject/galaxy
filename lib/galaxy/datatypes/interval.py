@@ -269,6 +269,7 @@ class Gff( Tabular ):
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True )
+    MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], desc="Column types", readonly=True )
     
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""

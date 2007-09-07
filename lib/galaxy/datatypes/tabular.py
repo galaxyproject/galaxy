@@ -6,7 +6,7 @@ import pkg_resources
 pkg_resources.require( "bx-python" )
 
 import logging
-import data
+import data, sniff
 from galaxy import util
 from cgi import escape
 from galaxy.datatypes import metadata
@@ -40,6 +40,13 @@ class Tabular( data.Text ):
         """
         if dataset.has_data():
             column_types = []
+            format = sniff.guess_ext( dataset.file_name )
+            """
+            The 'proceed' value allows us to skip different numbers of lines based on the data 
+            format (type).  We need this because different formats can include lines of information 
+            that are not properly commented (properly commented lines start with a '#' character).
+            """
+            proceed = False
             
             for i, line in enumerate( file ( dataset.file_name ) ):
                 """
@@ -47,7 +54,7 @@ class Tabular( data.Text ):
                 an invalid comment on the first line (a comment without a # character
                 to start), so we'll always skip the first line.
                 """
-                if i > 1:
+                if proceed:
                     line = line.rstrip('\r\n')
                     valid = True
                     if line and not line.startswith( '#' ): 
@@ -89,8 +96,12 @@ class Tabular( data.Text ):
                                     col_type = 'str'
 
                                 column_types.append(col_type)
-                        if len(column_types) > 0: break 
-                if i == 30: break # Hopefully we never get here...
+                        if len(column_types) > 0: break
+                elif ( format=='tabular' or format=='interval' or format=='bed' or format=='gff') and i > 1:
+                    proceed = True
+                elif format=='wig' and i > 30:
+                    proceed = True
+                if i > 100: break # Hopefully we never get here...
             dataset.metadata.column_types = column_types
 
     def make_html_table(self, data, skipchar=None):
