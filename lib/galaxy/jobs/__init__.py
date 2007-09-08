@@ -218,22 +218,6 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
-        """
-        Call set_meta on each tabular input dataset if metadata is missing.  This
-        is a temporary work-around to ensure columns metadata attribute is set.
-        This code will be eliminated soon...
-        """
-        """
-        gvk: commented out on 9/6/2007 - This code seems to be causing concurrent update problems in the database.
-        At the current time, tabular datasets are missing the 'column_types' metadata attribute, which is currently
-        used only for the ColumnListParameter tool parameter.  To be safe, I'm calling Tabular().set_meta() there
-        anyway, so we don't need this.  Also, when we run Dan's script again, it will eliminate the need for this.
-
-        for dataset_assoc in job.input_datasets:
-            dataset = dataset_assoc.dataset
-            if issubclass(type(dataset.datatype), type(self.app.datatypes_registry.get_datatype_by_extension('tabular'))) and dataset.missing_meta():
-                Tabular().set_meta(dataset)
-        """
         # Resore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )

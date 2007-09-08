@@ -95,8 +95,9 @@ class Tabular( data.Text ):
                                     if elems[0].lower().startswith(str):
                                         proceed = True
                                         break
-                        elif format =='tabular' and i > 1:
+                        elif ( format =='tabular' or format == "customtrack" or format == 'gbrowsetrack' ) and i > 1:
                             proceed = True
+            
                         if proceed:
                             """Set the columns metadata attribute"""
                             if elems_len != dataset.metadata.columns:
