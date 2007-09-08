@@ -41,28 +41,63 @@ class Tabular( data.Text ):
         if dataset.has_data():
             column_types = []
             format = sniff.guess_ext( dataset.file_name )
+
+            if dataset.extension != format:
+                """
+                We need to rely on the ability of our sniffer to properly detect datatypes here since
+                there are many ways that the datatype could be improperly set.  
+                TODO: we may want to automatically convert the datset to the proper datatype here,
+                but for now we'll leave it and just rely on the value in format.
+                """
+                pass
+
             """
             The 'proceed' value allows us to skip different numbers of lines based on the data 
             format (type).  We need this because different formats can include lines of information 
             that are not properly commented (properly commented lines start with a '#' character).
-            """
+            """  
             proceed = False
-            
+            col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
+ 
             for i, line in enumerate( file ( dataset.file_name ) ):
-                """
-                This seems kind of hacky, but many times an input file will have
-                an invalid comment on the first line (a comment without a # character
-                to start), so we'll always skip the first line.
-                """
-                if proceed:
-                    line = line.rstrip('\r\n')
-                    valid = True
-                    if line and not line.startswith( '#' ): 
-                        elems = line.split( '\t' )
-                        elems_len = len(elems)
+                line = line.rstrip('\r\n')
+                valid = True
+                if line and not line.startswith( '#' ):
+                    elems = line.split( '\t' )
+                    elems_len = len(elems)
 
-                        if elems_len > 0:
-
+                    if elems_len > 0:
+                        if format == 'bed':
+                            for str in col1_startswith:
+                                if elems[0].lower().startswith(str):
+                                    proceed = True
+                                    break
+                        elif forrmat == 'interval':
+                            if elems_len > 2:
+                                try:
+                                    map( int, [elems[1], elems[2]] )
+                                    proceed = True
+                                except:
+                                    pass  # proceed is False
+                        elif format == 'gff':
+                            if elems_len == 9:
+                                try:
+                                    map( int, [hdr[3], hdr[4]] )
+                                    proceed = True
+                                except:
+                                    pass
+                        elif format=='wig':
+                            try:
+                                int( elems[0] )
+                                proceed = True
+                            except:
+                                for str in col1_startswith:
+                                    if elems[0].lower().startswith(str):
+                                        proceed = True
+                                        break
+                        elif format =='tabular' and i > 1:
+                            proceed = True
+                        if proceed:
                             """Set the columns metadata attribute"""
                             if elems_len != dataset.metadata.columns:
                                 dataset.metadata.columns = elems_len
@@ -97,10 +132,7 @@ class Tabular( data.Text ):
 
                                 column_types.append(col_type)
                         if len(column_types) > 0: break
-                elif ( format=='tabular' or format=='interval' or format=='bed' or format=='gff') and i > 1:
-                    proceed = True
-                elif format=='wig' and i > 30:
-                    proceed = True
+
                 if i > 100: break # Hopefully we never get here...
             dataset.metadata.column_types = column_types
 
