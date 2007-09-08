@@ -72,7 +72,7 @@ class Tabular( data.Text ):
                                 if elems[0].lower().startswith(str):
                                     proceed = True
                                     break
-                        elif forrmat == 'interval':
+                        elif format == 'interval':
                             if elems_len > 2:
                                 try:
                                     map( int, [elems[1], elems[2]] )
