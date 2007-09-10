@@ -213,7 +213,8 @@ class JobWrapper( object ):
         # Create the working directory
         self.working_directory = \
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
-        os.mkdir( self.working_directory )
+	if not os.path.exists( self.working_directory ): 
+           os.mkdir( self.working_directory )
         # Restore parameters from the database
         job = model.Job.get( self.job_id )
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
