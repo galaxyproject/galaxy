@@ -249,9 +249,11 @@ class TwillTestCase(unittest.TestCase):
                 if 'onchange' in control.attrs.keys():
                     changed = False
                     for elem in kwd[control.name]:
-                        if elem not in control.value:
+		        #This is just a temporary solution to the Count1 problem. Need more work here....
+                        if control_name!="input" and elem not in control.value:
                             changed = True
                             break
+		    
                     if changed:
                         #Clear Control and set to proper value
                         control.clear()
@@ -270,6 +272,7 @@ class TwillTestCase(unittest.TestCase):
             # needs to be able to handle multiple values per key
             if not isinstance(value, list):
                 value = [ value ]
+
             for i, control in enumerate(tc.showforms()[form-1].controls):
                 if control.name == key:
                     control.clear()
@@ -306,9 +309,12 @@ class TwillTestCase(unittest.TestCase):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and pass it the key/values from the *kwd"""
         tc.go("%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
+	print tc.show()
         tc.code(200)
         tc.find('runtool_btn')
+	print kwd.items()
         self.submit_form(**kwd)
+	print kwd.items()
         tc.code(200)
 
     def save_log(*path):
