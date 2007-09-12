@@ -9,6 +9,7 @@
       <option value="utr5">5'-UTR Exons</option>
       <option value="utr3">3'-UTR Exons</option>
       <option value="intron">Introns</option>
+      <option value="codon">Codons</option>
     </param>
     <param name="input1" type="data" format="bed" label="from" help="this history item must contain a 12 field BED (see below)"/>
   </inputs>
