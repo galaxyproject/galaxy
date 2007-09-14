@@ -249,11 +249,24 @@ class TwillTestCase(unittest.TestCase):
                 if 'onchange' in control.attrs.keys():
                     changed = False
                     for elem in kwd[control.name]:
-		        #This is just a temporary solution to the Count1 problem. Need more work here....
-                        if control_name!="input" and elem not in control.value:
+		     
+		        #----------------------------------------------
+			#---for file parameter, control.value is the index of the file list, but elem is the filename
+			#---the following is to get the filename of that index
+			param_text = ''
+	                for param in tc.show().split('<select') : 
+	                    param = ('<select' + param.split('select>')[0] + 'select>').replace('selected', 'selected="yes"')
+	                    if param.find('onchang') != -1 and param.find('name="%s"' % control.name) != -1: 
+	                        tree = ElementTree.fromstring(param)
+                                for option in tree.findall('option') : 
+	            	            if option.get('value') in control.value :  
+				        param_text = option.text.strip()
+					break
+				break
+		        #----------------------------------------------
+                        if elem not in control.value and param_text.find(elem)==-1 :
                             changed = True
                             break
-		    
                     if changed:
                         #Clear Control and set to proper value
                         control.clear()
@@ -309,12 +322,9 @@ class TwillTestCase(unittest.TestCase):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and pass it the key/values from the *kwd"""
         tc.go("%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
-	print tc.show()
         tc.code(200)
         tc.find('runtool_btn')
-	print kwd.items()
         self.submit_form(**kwd)
-	print kwd.items()
         tc.code(200)
 
     def save_log(*path):
