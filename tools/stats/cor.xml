@@ -1,18 +1,14 @@
 <tool id="cor2" name="Correlation">
   <description>for numeric columns</description>
-  <command interpreter="python">cor.py $input1 $out_file1 $columns $method</command>
+  <command interpreter="python">cor.py $input1 $out_file1 $numeric_columns $method</command>
   <inputs>
-    <page>
-      <param format="tabular" name="input1" type="data" label="Dataset" help="Query missing? See TIP below"/>
-    </page>
-    <page>
-      <param name="columns" label="Numerical columns" type="select" multiple="True" dynamic_options="get_columns( input1 )" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
-      <param name="method" type="select" label="Method">
-        <option value="pearson">Pearson</option>
-        <option value="kendall">Kendall rank</option>
-        <option value="spearman">Spearman rank</option>
-      </param>
-    </page>
+    <param format="tabular" name="input1" type="data" label="Dataset" refresh_on_change="True" help="Query missing? See TIP below"/>
+    <param name="numeric_columns" label="Numeric columns" type="columnlist" numerical="True" multiple="True" assoc_dataset="input1" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+    <param name="method" type="select" label="Method">
+      <option value="pearson">Pearson</option>
+      <option value="kendall">Kendall rank</option>
+      <option value="spearman">Spearman rank</option>
+    </param>
   </inputs>
   <outputs>
     <data format="txt" name="out_file1" />
@@ -23,7 +19,7 @@
     -->
     <test>
       <param name="input1" value="cor.tabular" />
-      <param name="columns" value="2,3" />
+      <param name="numeric_columns" value="2,3" />
       <param name="method" value="pearson" />
       <output name="out_file1" file="cor_out.txt" />
     </test>
@@ -99,5 +95,4 @@ This tool computes the matrix of correlation coefficients between numeric column
 
   So the correlation for our twenty cases is .73, which is a fairly strong positive relationship.
   </help>
-  <code file="cor_code.py"/>
 </tool>

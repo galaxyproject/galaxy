@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#Greg Von Kuster
 
 """
 Calculate correlations between numeric columns in a tab delim file.
@@ -7,7 +8,6 @@ usage: %prog infile output.txt columns method
 """
 
 import sys
-from Numeric import *
 from rpy import *
 
 def stop_err(msg):
@@ -77,9 +77,9 @@ def main():
         try:
             value = r.cor( array( matrix ), use="pairwise.complete.obs", method=method )
         except ValueError, exc:
-            stop_err("Computing correlation resulted in error: %s." %exc)
+            stop_err("Computing correlation resulted in error: %s." %str( exc ))
         except IndexError, exc:
-            stop_err("Computing correlation resulted in error: %s." %exc)
+            stop_err("Computing correlation resulted in error: %s." %str( exc ))
 
         for row in value:
             print >> out, "\t".join( map( str, row ) )
@@ -87,7 +87,10 @@ def main():
         out.close()
 
     if skipped_lines > 0:
-        print "Skipped %d invalid lines starting with line #%d.  Value '%s' in column %d is not numeric." % ( skipped_lines, first_invalid_line, invalid_value, invalid_column )
+        msg = "..Skipped %d lines starting with line #%d. " %( skipped_lines, first_invalid_line )
+        if invalid_value and invalid_column > 0:
+            msg += "Value '%s' in column %d is not numeric." % ( invalid_value, invalid_column )
+        print msg
 
 if __name__ == "__main__":
     main()
