@@ -1,7 +1,7 @@
 #!/usr/bin/env python
+#Greg Von Kuster
 
 import sys
-from Numeric import *
 from rpy import *
 
 def fail( message ):

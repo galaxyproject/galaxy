@@ -34,8 +34,7 @@ class FilterTests(TwillTestCase):
 
     def test_21_Sort1(self):
         """3E_Filter: Sort on column one"""
-        self.run_tool("sort1", input="7.bed")
-        self.submit_form(1, column="1", order="ASC", style="alpha")
+        self.run_tool("sort1", input="7.bed", column="1", order="ASC", style="alpha")
         self.wait()
         self.check_data('sc_3E_sort.bed')
 

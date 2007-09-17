@@ -40,7 +40,7 @@ If your original data has the following format:
 |chrom|start|end|
 +-----+-----+---+
 
-and you choose to compute phastCons scores, your output will look like this:
+and you choose to compute phastOdds scores, your output will look like this:
 
 +-----+-----+---+-----+
 |chrom|start|end|score|

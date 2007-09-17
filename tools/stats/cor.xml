@@ -3,7 +3,7 @@
   <command interpreter="python">cor.py $input1 $out_file1 $numeric_columns $method</command>
   <inputs>
     <param format="tabular" name="input1" type="data" label="Dataset" refresh_on_change="True" help="Query missing? See TIP below"/>
-    <param name="numeric_columns" label="Numeric columns" type="columnlist" numerical="True" multiple="True" assoc_dataset="input1" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+    <param name="numeric_columns" label="Numerical columns" type="columnlist" numerical="True" multiple="True" assoc_dataset="input1" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
     <param name="method" type="select" label="Method">
       <option value="pearson">Pearson</option>
       <option value="kendall">Kendall rank</option>

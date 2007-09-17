@@ -2,20 +2,16 @@
   <description>data in ascending or descending order</description>
   <command interpreter="python">sorter.py -i $input -o $out_file1 -cols $column -order $order -style $style</command>
   <inputs>
-    <page>
-      <param format="tabular" name="input" type="data" label="Sort Query"/>
-    </page>
-    <page>
-      <param name="column" label="on column" type="select" dynamic_options="get_columns( input )" />
-      <param name="order" type="select" label="in">
-        <option value="ASC">Ascending order</option>
-        <option value="DESC">Descending order</option>
-      </param>
-      <param name="style" type="select" label="Flavor">
-        <option value="alpha">Alphabetical sort</option>
-        <option value="num">Numerical sort</option>
-      </param>
-    </page>
+    <param format="tabular" name="input" type="data" label="Sort Query" refresh_on_change="True" />
+    <param name="column" label="on column" type="columnlist" assoc_dataset="input" />
+    <param name="order" type="select" label="in">
+      <option value="ASC">Ascending order</option>
+      <option value="DESC">Descending order</option>
+    </param>
+    <param name="style" type="select" label="Flavor">
+      <option value="alpha">Alphabetical sort</option>
+      <option value="num">Numerical sort</option>
+    </param>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input"/>
@@ -23,7 +19,7 @@
   <tests>
     <test>
       <param name="input" value="1.bed"/>
-      <param name="column" value="c1"/>
+      <param name="column" value="1"/>
       <param name="order" value="ASC"/>
       <param name="style" value="num"/>
       <output name="out_file1" file="fs-sort.dat"/>
@@ -50,6 +46,5 @@ This tool sorts the dataset on any column in either ascending or descending orde
 
 The list of numbers 4,17,3,5 collates to 3,4,5,17 by numerical sorting, while it collates to 17,3,4,5 by alphabetical sorting.
 
-</help>
-  <code file="sorter_code.py"/>
+  </help>
 </tool>

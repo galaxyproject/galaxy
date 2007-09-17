@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.4
+#Greg Von Kuster
 
 import sys
 from rpy import *
