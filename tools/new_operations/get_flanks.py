@@ -74,6 +74,7 @@ def main():
                         else:
                             elems[start_col_1] = str(int(elems[end_col_1]) - offset)
                             elems[end_col_1] = str(int(elems[start_col_1]) + size)
+                    assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                     print >>fo, '\t'.join(elems)
                                 
                 elif direction == 'Downstream':
@@ -91,6 +92,7 @@ def main():
                         else:
                             elems[start_col_1] = str(int(elems[end_col_1]) + offset)
                             elems[end_col_1] = str(int(elems[start_col_1]) + size)
+                    assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                     print >>fo, '\t'.join(elems)
                     
                 elif direction == 'Both':
@@ -101,9 +103,11 @@ def main():
                             end2 = str(int(start) - size)
                             elems[start_col_1]=start
                             elems[end_col_1]=end1
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                             elems[start_col_1]=end2
                             elems[end_col_1]=start
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                         elif region == 'end':
                             start = str(int(elems[start_col_1]) - offset)
@@ -111,9 +115,11 @@ def main():
                             end2 = str(int(start) - size)
                             elems[start_col_1]=start
                             elems[end_col_1]=end1
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                             elems[start_col_1]=end2
                             elems[end_col_1]=start
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                         else:
                             start1 = str(int(elems[end_col_1]) - offset)
@@ -122,9 +128,11 @@ def main():
                             end2 = str(int(start2) - size)
                             elems[start_col_1]=start1
                             elems[end_col_1]=end1
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                             elems[start_col_1]=end2
                             elems[end_col_1]=start2
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                     elif strand == '+':
                         if region == 'start':
@@ -133,9 +141,11 @@ def main():
                             end2 = str(int(start) + size)
                             elems[start_col_1]=end1
                             elems[end_col_1]=start
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                             elems[start_col_1]=start
                             elems[end_col_1]=end2
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                         elif region == 'end':
                             start = str(int(elems[end_col_1]) + offset)
@@ -143,9 +153,11 @@ def main():
                             end2 = str(int(start) + size)
                             elems[start_col_1]=end1
                             elems[end_col_1]=start
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                             elems[start_col_1]=start
                             elems[end_col_1]=end2
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                         else:
                             start1 = str(int(elems[start_col_1]) + offset)
@@ -154,9 +166,11 @@ def main():
                             end2 = str(int(start2) + size)
                             elems[start_col_1]=end1
                             elems[end_col_1]=start1
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                             elems[start_col_1]=start2
                             elems[end_col_1]=end2
+                            assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
                             print >>fo, '\t'.join(elems)
                 
             except:
