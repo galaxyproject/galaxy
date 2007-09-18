@@ -70,7 +70,7 @@ mime_types = {
 
 text_types = sets.Set([ 
     'txt', 'text', 'wig', 'genbank', 'motif', 'acedb', 'nexus', 'fitch', 'meganon', 'codata', 'dbmotif', 
-    'table', 'fasta', 'txt', 'gff', 'pir', 'ig', 'seqtable', 'clustal', 'gcg', 'hennig86', 'excel', 'asn1', 
+    'table', 'fasta', 'txt', 'gff', 'gff3', 'pir', 'ig', 'seqtable', 'clustal', 'gcg', 'hennig86', 'excel', 'asn1', 
     'regions', 'simple', 'score', 'text', 'msf', 'selex', 'tagseq', 'embl', 'srspair', 'staden', 
     'strider', 'xbed', 'markx10', 'pair', 'markx1', 'markx0', 'markx3', 'markx2', 'jackknifer', 
     'ncbi', 'mega', 'fa', 'feattable', 'phylip', 'diffseq', 'bed', 'srs', 'jackknifernon', 'swiss', 

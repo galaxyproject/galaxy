@@ -86,6 +86,26 @@ class Tabular( data.Text ):
                                     proceed = True
                                 except:
                                     pass
+                        elif format == 'gff3':
+                            valid_gff3_strand = ['+', '-', '.', '?']
+                            valid_start = False
+                            valid_end = False
+                            if elems_len == 9:
+                                try:
+                                    start = int(hdr[3])
+                                    valid_start = True                                    
+                                except:
+                                    if hdr[3] == '.':
+                                        valid_start = True                                        
+                                try:
+                                    end = int(hdr[4])
+                                    valid_end = True
+                                except:
+                                    if hdr[4] == '.':
+                                        valid_end = True
+                                    srand = hdr[6]
+                                if valid_start and valid_end and start < end and strand in valid_gff3_strand:
+                                    proceed = True                
                         elif format=='wig':
                             try:
                                 int( elems[0] )

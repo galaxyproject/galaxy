@@ -22,6 +22,8 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
             ext = "maf"
         elif outputType == 'gff':
             ext = "gff"
+        elif outputType == 'gff3':
+            ext = "gff3"
         else:
             if 'hgta_doPrintSelectedFields' in param_dict:
                 ext = "interval"

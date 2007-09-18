@@ -116,6 +116,7 @@ fasta = galaxy.datatypes.sequence:Fasta
 maf = galaxy.datatypes.sequence:Maf
 axt = galaxy.datatypes.sequence:Axt
 gff = galaxy.datatypes.interval:Gff
+gff3 = galaxy.datatypes.interval:Gff3
 wig = galaxy.datatypes.interval:Wiggle
 gmaj.zip = galaxy.datatypes.images:Gmaj,application/zip
 laj = galaxy.datatypes.images:Laj

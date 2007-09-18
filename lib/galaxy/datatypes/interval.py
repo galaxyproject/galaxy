@@ -330,6 +330,16 @@ class Gff( Tabular ):
                         ret_val.append( (site_name, link) )
         return ret_val
 
+class Gff3( Gff ):
+    """Tab delimited data in Gff3 format"""
+
+    """Add metadata elements"""
+    MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], desc="Column types", readonly=True )
+    
+    def __init__(self, **kwd):
+        """Initialize datatype, by adding GBrowse display app"""
+        Gff.__init__(self, **kwd)
+
 class Wiggle( Tabular ):
     """Tab delimited data in wiggle format"""
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )

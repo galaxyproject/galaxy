@@ -25,6 +25,7 @@
 			<option value="axt">AXT</option>
 			<option value="tabular">Tab delimited</option>
 			<option value="gff">Gff</option>
+			<option value="gff3">Gff3</option>
 			<option value="lav">LAV</option>
 			<option value="html">HTML</option>
 			<option value="wig">Wiggle</option>
@@ -112,7 +113,13 @@ A sequence in FASTA format consists of a single-line description, followed by li
 
 **Gff**
 
-GFF lines have nine required fields that must be tab-separated.  Gff version 3 is also supported.
+GFF lines have nine required fields that must be tab-separated.
+
+-----
+
+**Gff3**
+
+The proposed GFF3 format addresses the most common extensions to GFF, while preserving backward compatibility with previous formats.
 
 -----
 

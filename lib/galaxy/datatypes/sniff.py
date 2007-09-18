@@ -599,8 +599,10 @@ def guess_ext(fname):
 
         if is_column_based(fname, '\t', 1):
             headers = get_headers(fname, '\t')
-            if is_gff(headers) or is_gff3(headers):
+            if is_gff(headers):
                 return 'gff'
+            if is_gff3(headers):
+                return 'gff3'
             elif is_interval(headers):
                 return 'interval'
             else:
