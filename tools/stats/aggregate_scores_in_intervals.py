@@ -25,6 +25,7 @@ from bx.bitset import *
 from bx.bitset_builders import *
 from fpconst import isNaN
 from bx.cookbook import doc_optparse
+from galaxy.tools.exception_handling import *
 
 class FileBinnedArrayDir( DictMixin ):
     """
@@ -46,39 +47,6 @@ class FileBinnedArrayDir( DictMixin ):
         if value is None:
             raise KeyError( "File does not exist: " + fname )
         return value
-
-"""
-TODO: move the following 2 classes  to a better location so that other tools can take advantage of them.
-Talk to Ian about possibly moving them to the bx egg.
-"""
-class UCSCLimitException( Exception ):
-    pass
-
-class UCSCOutWrapper( object ):
-    """
-    File-like object that throws an exception if it encounters the UCSC limit error lines
-    """
-    def __init__( self, other ):
-        self.other = iter( other )
-        # Need one line of lookahead to be sure we are hitting the limit message
-        self.lookahead = None
-    def __iter__( self ):
-        return self
-    def __next__( self ):
-        if self.lookahead is None:
-            line = self.other.next()
-        else:
-            line = self.lookahead
-            self.lookahead = None
-        if line.startswith( "----------" ):
-            next_line = self.other.next()
-            if next_line.startswith( "Reached output limit" ):
-                raise UCSCLimitException( next_line.strip() )
-            else:
-                self.lookahead = next_line
-        return line 
-    def readline(self):
-        return self.__next__()
 
 def stop_err(msg):
     sys.stderr.write(msg)
@@ -132,7 +100,7 @@ def main():
         doc_optparse.exit()
 
     if score_fname == 'None':
-        print 'Invalid genome build - this tool currently only works with data from genome builds hg16, hg17 or hg18.  Click "edit attributes" (the pencil icon) in your history item to correct the genome build if appropriate.'
+        print 'This tool works with data from genome builds hg16, hg17 or hg18.  Click the pencil icon in your history item to set the genome build if appropriate.'
         sys.exit()
     
     try:
@@ -140,11 +108,11 @@ def main():
         start_col = int(start_col) - 1
         stop_col = int(stop_col) - 1
     except:
-        print 'Invalid column number for chrom, start or end column, chrom: %s start: %s end: %s' %(chrom_col, start_col, stop_col)
+        print 'Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.'
         sys.exit()
 
     if chrom_col < 0 or start_col < 0 or stop_col < 0:
-        print 'Invalid column number for chrom, start or end column, chrom: %s start: %s end: %s' %(chrom_col, start_col, stop_col)
+        print 'Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.'
         sys.exit()
         
     if binned:
@@ -159,32 +127,46 @@ def main():
 
     skipped_lines = 0
     first_invalid_line = 0
-    invalid_line = None
+    invalid_line = ''
 
     for i, line in enumerate( open( interval_fname )):
-        line = line.strip()
-        if line and line != '' and not line.startswith( '#' ):
+        valid = True
+        line = line.rstrip('\r\n')
+        if line and not line.startswith( '#' ):
             fields = line.split()
             
             try:
-                chrom, start, stop = fields[chrom_col], int( fields[start_col] ), int( fields[stop_col] )                
+                chrom, start, stop = fields[chrom_col], int( fields[start_col] ), int( fields[stop_col] )
+            except:
+                valid = False
+                skipped_lines += 1
+                if not invalid_line:
+                    first_invalid_line = i + 1
+                    invalid_line = line
+            if valid:
                 total = 0
                 count = 0
                 min_score = 100000000
                 max_score = -100000000
                 for j in range( start, stop ):
-                    if chrom in scores_by_chrom and scores_by_chrom[chrom][j]:
-                        # Skip if base is masked
-                        if masks and chrom in masks:
-                            if masks[chrom][j]:
-                                continue
-                        # Get the score, only count if not 'nan'
-                        score = scores_by_chrom[chrom][j]
-                        if not isNaN( score ):
-                            total += score
-                            count += 1
-                            max_score = max( score, max_score )
-                            min_score = min( score, min_score )
+                    valid2 = True
+                    if chrom in scores_by_chrom:
+                        try:
+                            scores_by_chrom[chrom][j]
+                        except:
+                            valid2 = False
+                        if valid2:
+                            # Skip if base is masked
+                            if masks and chrom in masks:
+                                if masks[chrom][j]:
+                                    continue
+                            # Get the score, only count if not 'nan'
+                            score = scores_by_chrom[chrom][j]
+                            if not isNaN( score ):
+                                total += score
+                                count += 1
+                                max_score = max( score, max_score )
+                                min_score = min( score, min_score )
                 if count > 0:
                     avg = total/count
                 else:
@@ -201,7 +183,7 @@ def main():
                 out_line.append(max_score)
                 
                 print >> out_file, "\t".join( map( str, out_line ) )
-            except:
+            else:
                 skipped_lines += 1
                 if not invalid_line:
                     first_invalid_line = i + 1
