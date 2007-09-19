@@ -4,17 +4,18 @@
 import sys
 from rpy import *
 
-def fail( message ):
-    print >> sys.stderr, message
+def stop_err(msg):
+    sys.stderr.write(msg)
     sys.exit()
 
 def main():
 
     in_fname = sys.argv[1]
     out_fname = sys.argv[2]
-    
-    columns = int( sys.argv[3] ) - 1, int( sys.argv[4] ) - 1
-    
+    try:
+        columns = int( sys.argv[3] ) - 1, int( sys.argv[4] ) - 1
+    except:
+        stop_err( "..Columns not specified, your query does not contain a column of numerical data." )
     title = sys.argv[5]
     xlab = sys.argv[6]
     ylab = sys.argv[7]
@@ -36,7 +37,7 @@ def main():
                     break
                 fields = line.split( "\t" )
                 if len( fields ) <= column:
-                    return fail( "Column %d on line %d missing, line: %s" % ( column+1, i, line ) )
+                    stop_err( "Column %d on line %d missing, line: %s" % ( column+1, i, line ) )
                 val = fields[column]
                 if val.lower() == "na": 
                     row.append( float( "nan" ) )

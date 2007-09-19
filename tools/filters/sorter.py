@@ -48,7 +48,7 @@ def main():
 	return -2
 
     column = opts.get("-cols")
-    if column == None:
+    if column == None or column == 'None':
 	print "Sort column not specified."
 	return -3
 

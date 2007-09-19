@@ -12,8 +12,11 @@ def main():
 
     # Handle input params
     in_fname = sys.argv[1]
-    out_fname = sys.argv[2]
-    column = int( sys.argv[3] ) - 1
+    out_fname = sys.argv[2] 
+    try:
+        column = int( sys.argv[3] ) - 1
+    except:
+        stop_err( "..Column not specified, your query does not contain a column of numerical data." )
     title = sys.argv[4]
     xlab = sys.argv[5]
     breaks = int( sys.argv[6] )

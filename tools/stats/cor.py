@@ -22,7 +22,7 @@ def main():
     try:
         columns = map( int, sys.argv[3].split( ',' ) )
     except:
-        stop_err("Problem determining columns '%s'" %sys.argv[3])
+        stop_err( "Problem determining columns, perhaps your query does not contain a column of numerical data." )
     
     matrix = []
     skipped_lines = 0

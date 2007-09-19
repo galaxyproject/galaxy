@@ -67,7 +67,7 @@ def main():
         return -3
 
     columns = opts.get("-c")
-    if columns == None:
+    if columns == None or columns == 'None':
         print "Columns not specified."
         return -4
 
