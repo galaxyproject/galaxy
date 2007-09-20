@@ -2,19 +2,24 @@
 Galaxy web application framework
 """
 
+import pkg_resources
+
 import os, sys, time
-import pkg_resources; pkg_resources.require( "Cheetah" )
+pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 import base
 import pickle
 from galaxy import util
 
-import pkg_resources
 pkg_resources.require( "WebHelpers" )
 pkg_resources.require( "PasteDeploy" )
 
 import webhelpers
 from paste.deploy.converters import asbool
+
+pkg_resources.require( "Mako" )
+import mako.template
+import mako.lookup
 
 url_for = base.routes.url_for
 
@@ -30,15 +35,21 @@ NOT_SET = object()
 class WebApplication( base.WebApplication ):
     def __init__( self, galaxy_app ):
         base.WebApplication.__init__( self )
-        self.set_transaction_factory( lambda e: UniverseWebTransaction( e, galaxy_app ) )
+        self.set_transaction_factory( lambda e: UniverseWebTransaction( e, galaxy_app, self ) )
+        # Mako support
+        self.mako_template_lookup = mako.lookup.TemplateLookup(
+            directories = [ galaxy_app.config.template_path ] ,
+            module_directory = galaxy_app.config.template_cache,
+            collection_size = 500 )
     
 class UniverseWebTransaction( base.DefaultWebTransaction ):
     """
     Encapsulates web transaction specific state for the Universe application
     (specifically the user's "cookie" session and history)
     """
-    def __init__( self, environ, app ):
+    def __init__( self, environ, app, webapp ):
         self.app = app
+        self.webapp = webapp
         self.__user = NOT_SET
         self.__history = NOT_SET
         self.__galaxy_session = NOT_SET
@@ -284,13 +295,22 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         form.
         """    
         return self.fill_template( "form.tmpl", form=form )
-    def fill_template(self, file_name, **kwargs):
+    def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
         """
-        template = Template( file=os.path.join(self.app.config.template_path, file_name), 
-                             searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app)] )
-        return str(template)
+        if filename.endswith( ".mako" ):
+            return self.fill_template_mako( filename, **kwargs )
+        else:
+            template = Template( file=os.path.join(self.app.config.template_path, filename), 
+                                searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app)] )
+            return str( template )
+    def fill_template_mako( self, filename, **kwargs ):
+        template = self.webapp.mako_template_lookup.get_template( filename )
+        data = dict( caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app )
+        data.update( self.template_context )
+        data.update( kwargs )
+        return template.render( **data )
     def fill_template_string(self, template_string, context=None, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
