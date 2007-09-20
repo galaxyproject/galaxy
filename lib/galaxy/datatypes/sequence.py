@@ -56,12 +56,19 @@ class Maf( Alignment ):
         try:
             for i, m in enumerate( bx.align.maf.Reader( open(dataset.file_name) ) ):
                 for c in m.components:
-                    spec,chrom = bx.align.maf.src_split( c.src )
-                    if not spec or not chrom: spec = chrom = c.src
-                    if spec not in species: species.append(spec)
-                #only check first 100,000 blocks for species
+                    ## spec,chrom = bx.align.maf.src_split( c.src )
+                    ## if not spec or not chrom: spec = chrom = c.src
+                    # "src_split" finds the rightmost dot, which is probably
+                    # wrong in general, and certainly here. 
+                    spec = c.src
+                    if "." in spec:
+                        spec = spec.split( "." )[0]
+                    if spec not in species: 
+                        species.append(spec)
+                # only check first 100,000 blocks for species
                 if i > 100000: break
-        except: pass
+        except: 
+            pass
         dataset.metadata.species = species
     
     def missing_meta( self, dataset ):
