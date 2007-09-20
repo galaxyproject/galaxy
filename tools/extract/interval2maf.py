@@ -121,7 +121,7 @@ def __main__():
         sys.exit()
         
     if dbkey == "?": 
-        print >>sys.stderr, "You must specify a proper build in order to extract alignments."
+        print >>sys.stderr, "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
         sys.exit()
     
     
