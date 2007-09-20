@@ -223,7 +223,8 @@ class Universe( BaseController ):
         metadata = list()
         # a list of MetadataParemeters
         for name, spec in data.datatype.metadata_spec.items():
-            metadata.append( spec.wrap( data.metadata.get(name), data ) )
+            if spec.visible:
+                metadata.append( spec.wrap( data.metadata.get(name), data ) )
 
         datatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
         trans.log_event( "Opened edit view on dataset %s" % str(id) )

@@ -15,15 +15,6 @@
       <p></p>
     #end if
 
-    #def do_metadata( $metadata, $data )
-      #for $element in $metadata
-        <tr>
-          <td width="30%" align="right">$element.spec.desc</td>
-          <td width="50%" align="left">$element.get_html()</td>
-        </tr>
-      #end for
-    #end def
-
     #def datatype( $dataset, $datatypes )
       <select name="datatype">
         #$datatypes.sort()
@@ -37,87 +28,111 @@
       </select>
     #end def
 
+    <div class="toolForm">
     <div class="toolFormTitle">Edit Attributes</div>
-  
+    <div class="toolFormBody">
+        <form name="convert_data" action="$h.url_for( action='edit' )" method="post">
+            <input type="hidden" name="id" value="$data.id">
+            <div class="form-row">
+              <label>
+                  Name:
+              </label>
+              <div style="float: left; width: 250px; margin-right: 10px;">
+                  <input type="text" name="name" value="$data.name" size="40">
+              </div>
+              <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+              <label>
+                  Info:
+              </label>
+              <div style="float: left; width: 250px; margin-right: 10px;">
+                  <input type="text" name="info" value="$data.info" size="40">
+              </div>
+              <div style="clear: both"></div>
+            </div> 
+            #for $element in $metadata
+                <div class="form-row">
+                  <label>
+                      ${element.spec.desc}:
+                  </label>
+                  <div style="float: left; width: 250px; margin-right: 10px;">
+                      $element.get_html()
+                  </div>
+                  <div style="clear: both"></div>
+                </div>
+            #end for
+            <div class="form-row">
+                <input type="submit" name="save" value="Save">
+            </div>
+        </form>
+    </div>
+    </div>
+    
+    <p />
+    
     #set $converters = $data.get_converter_types()
-
-    <table border="1" width="100%">
-      #if $len($converters) > 0
-        <tr>
-          <td>
-            <div class="toolFormBody">
-              <form name="convert_data" action="$h.url_for( action='edit' )" method="post">
-                <table width="100%" border="0">
-                  <tr>
-                    <td width="30%" align="right">Convert data format</td>
-                    <td  width="50%" align="left">
-                      <input type="hidden" name="id" value="$data.id">
+    #if len( $converters ) > 0:
+        <div class="toolForm">
+        <div class="toolFormTitle">Convert to new format</div>
+        <div class="toolFormBody">
+            <form name="convert_data" action="$h.url_for( action='edit' )" method="post">
+                <input type="hidden" name="id" value="$data.id">
+                <div class="form-row">
+                  <label>
+                      Convert to:
+                  </label>
+                  <div style="float: left; width: 250px; margin-right: 10px;">
                       <select name="target_type">
                         #for $key, $value in $converters.items():
                           <option value="$key">$value.name[8:]</option>
    	                    #end for
                       </select>
-                    </td>
-                    <td width="20%" align="left" valign="center">
-                      <input type="submit" name="convert_data" value="Convert">
-                    </td>
-                  </tr>
-                </table>
-              </form>
-            </div>
-          </td>
-        </tr>
-      #end if
-      <tr>
-        <td>
-          <div class="toolFormBody">
-            <form name="datatype" action="$h.url_for( action='edit' )" method="post">
-              <table width="100%" border="0">
-                <tr>
-                  <td width="30%" align="right">Set data type</td>
-                  <td width="50%" align="left">
-                    <input type="hidden" name="id" value="$data.id">
-                    $datatype( $data, $datatypes )
-                  </td>
-	              <td width="20%" align="left" valign="center">
-	                <input type="submit" name="change" value="Save">
-	              </td>
-	            </tr>
-              </table>
-            </form>
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <div class="toolFormBody">
-            <form name="tool_form" action="$h.url_for( action='edit' )" method="post">
-              <input type="hidden" name="id" value="$data.id">
-              <table width="100%" border="0">
-                <tr><td align="center" colspan="3"><b>Set other attributes</b></td></tr>
-                <tr>
-                  <td width="30%" align="right">Name:</td>
-                  <td width="50%" align="left"><input type="text" name="name" value="$data.name" size="40"></td>
-                  <td width="20%" align="left" valign="center" rowspan="8"><input type="submit" name="save" value="Save"></td>
-                </tr>
-	            <tr>
-	              <td width="30%" align="right">Info:</td>
-	              <td width="50%" align="left">
-	                <input type="text" name="info" value="$data.info" size="40">
-	                <input type="hidden" name="id" value="$data.id">
-	              </td>
-	            </tr>
-                $do_metadata( $metadata, $data )  
-              </table>
-            </form>
-          </div>
-        </td>
-      </tr>
-    </table>
+                  </div>
 
-    <div class="toolHelp">
-    <div class="toolHelpBody">
-    </div>        
+                  <div class="toolParamHelp" style="clear: both;">
+                      This will create a new dataset with the contents of this
+                      dataset converted to a new format. 
+                  </div>
+                  <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <input type="submit" name="convert_data" value="Convert">
+                </div>
+            </form>
+        </div>
+        </div>
+        
+        <p />
+    #end if
+
+
+    <div class="toolForm">
+    <div class="toolFormTitle">Change data type</div>
+    <div class="toolFormBody">
+        <form name="convert_data" action="$h.url_for( action='edit' )" method="post">
+            <input type="hidden" name="id" value="$data.id">
+            <div class="form-row">
+              <label>
+                  New Type:
+              </label>
+              <div style="float: left; width: 250px; margin-right: 10px;">
+                  $datatype( $data, $datatypes )
+              </div>
+
+              <div class="toolParamHelp" style="clear: both;">
+                  This will change the datatype of the existing dataset
+                  but <i>not</i> modify its contents. Use this if Galaxy
+                  has incorrectly guessed the type of your dataset.
+              </div>
+              <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <input type="submit" name="change" value="Save">
+            </div>
+        </form>
     </div>
+    </div>
+    
   </body>
 </html>

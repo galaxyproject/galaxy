@@ -8,20 +8,39 @@
 <body onload="document.forms[0].email.focus()">
     
 <div class="toolForm">
-  <div class="toolFormTitle">$form.title</div>
-  <div class="toolFormBody">
-  <form name="$form.name" action="$h.url_for($form.action)" method="post" >
-    <table>
-      #for input in $form.inputs    
-          <tr><td>$input.label:</td><td><input type="$input.type" name="$input.name" value="$input.value" size="40"></td></tr>
-          #if $input.error:
-          <tr valign="top"><td></td><td><div class="errormark">$input.error</div></td></tr>
-          #end if
-          #if $input.help
-          <tr valign="top"><td></td><td><div class="toolParamHelp">$input.help</div></td></tr>
-          #end if
-      #end for
-			<tr><td></td><td><input type="submit" value="$form.submit_text">
+    <div class="toolFormTitle">$form.title</div>
+    <div class="toolFormBody">
+    <form name="$form.name" action="$h.url_for($form.action)" method="post" >
+        #for input in $form.inputs   
+            #if $input.error:
+              #set cls = "form-row form-row-error"
+            #else
+              #set cls = "form-row"
+            #end if
+            <div class="$cls">
+              <label>
+                  ${input.label}:
+              </label>
+              <div style="float: left; width: 250px; margin-right: 10px;">
+                  <input type="$input.type" name="$input.name" value="$input.value" size="40">
+              </div>
+              #if $input.error:
+              <div style="float: left; color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">
+                  <div style="width: 300px;"><img style="vertical-align: middle;" src="$h.url_for('/static/style/error_small.png')">&nbsp;<span style="vertical-align: middle;">$input.error</span></div>
+              </div>
+              #end if
+
+              #if $input.help
+              <div class="toolParamHelp" style="clear: both;">
+                  $input.help
+              </div>
+              #end if
+
+              <div style="clear: both"></div>
+
+            </div>
+        #end for
+      <tr><td></td><td><input type="submit" value="$form.submit_text">
       </table>
   </form>
   </div>

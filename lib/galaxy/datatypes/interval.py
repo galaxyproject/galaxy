@@ -42,7 +42,7 @@ class Interval( Tabular ):
     MetadataElement( name="startCol", desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
-    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
 
 
     def __init__(self, **kwd):

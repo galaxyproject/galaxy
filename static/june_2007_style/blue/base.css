@@ -51,6 +51,11 @@ div.toolParamHelp
   color: #666;
 }
 
+div.toolParamHelp a
+{
+  color: #666;
+}
+
 div.toolFormBody
 { 
   background: #FFFFFF;
