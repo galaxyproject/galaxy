@@ -617,7 +617,7 @@ class Universe( BaseController ):
         des.blurb = src.blurb
         des.peek = src.peek
         des.extension = src.extension
-        des.dbkey = src.dbkey
+        des.dbkey = str( src.dbkey )
         des.state = src.state
         des.metadata = src.metadata
         des.hid = src.hid
