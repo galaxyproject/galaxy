@@ -6,7 +6,7 @@
             <param format="maf" name="input1" type="data" label="MAF file"/>
         </page>
         <page>
-            <param name="species" type="select" label="Species to keep" dynamic_options="map(lambda spec: (spec, spec, True), input1.metadata.species)" display="checkboxes" multiple="true"/>
+            <param name="species" type="select" label="Species to keep" dynamic_options="map(lambda spec: (spec, spec, False), input1.metadata.species)" display="checkboxes" multiple="true"/>
         </page>
     </inputs>
     <outputs>

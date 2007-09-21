@@ -15,7 +15,7 @@
               <option value="concatenated">One Sequence per Species</option>
             </param>
             <when value="multiple">
-	          <param name="species" type="select" label="Select species" dynamic_options="map(lambda spec: (spec, spec, True), input1.metadata.species)" display="checkboxes" multiple="true" help="checked taxa will be included in the output"/>
+	          <param name="species" type="select" label="Select species" dynamic_options="map(lambda spec: (spec, spec, False), input1.metadata.species)" display="checkboxes" multiple="true" help="checked taxa will be included in the output"/>
 	          <param name="complete_blocks" type="select">
 	            <label>Choose to</label>
 	            <option value="partial_allowed">include blocks with missing species</option>
@@ -23,7 +23,7 @@
 	          </param>
             </when>
             <when value="concatenated">
-                <param name="species" type="select" label="Species to extract" dynamic_options="map(lambda spec: (spec, spec, True), input1.metadata.species)" display="checkboxes" multiple="true"/>
+                <param name="species" type="select" label="Species to extract" dynamic_options="map(lambda spec: (spec, spec, False), input1.metadata.species)" display="checkboxes" multiple="true"/>
             </when>
         </conditional>
       </page>

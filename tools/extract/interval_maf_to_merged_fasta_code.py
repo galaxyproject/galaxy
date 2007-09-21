@@ -43,13 +43,13 @@ def get_available_species( maf_source_type ):
         maf_uid = maf_source_type['maf_uid']
         available_sets = []
         for key in maf_sets[maf_uid]['builds']:
-            available_sets.append((key,key,True))
+            available_sets.append((key,key,False))
         if len(available_sets) < 1:
             available_sets.append(('No data available for this configuration','None',True))
         return available_sets
     else:
         try:
-            return map(lambda spec: (spec, spec, True), maf_source_type['input2'].metadata.species)
+            return map(lambda spec: (spec, spec, False), maf_source_type['input2'].metadata.species)
         except:
             return [("<B>You must wait for the MAF file to be created before you can use this tool.</B>",'None',True)]
 
