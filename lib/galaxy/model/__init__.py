@@ -187,12 +187,11 @@ class Dataset( object ):
     field in the database.  That field now maps to "old_dbkey" (see mapping.py).
     """
     def get_dbkey( self ):
-        if type(self.metadata.dbkey) == type([]):
-            dbkey = self.metadata.dbkey[0]
-        else:
-            dbkey = self.metadata.dbkey
-        return dbkey or self.old_dbkey
-
+        dbkey = self.metadata.dbkey
+        if not isinstance(dbkey, list): dbkey = [dbkey]
+        if dbkey in [["?"], [None], []]: dbkey = [self.old_dbkey]
+        if dbkey in [[None], []]: return "?"
+        return dbkey[0]
     def set_dbkey( self, value ):
         if "dbkey" in self.datatype.metadata_spec:
             if not isinstance(value, list): self.metadata.dbkey = [value]
@@ -200,7 +199,7 @@ class Dataset( object ):
         if isinstance(value, list): self.old_dbkey = value[0]
         else: self.old_dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
-    
+
     def change_datatype( self, new_ext ):
         datatypes_registry.change_datatype( self, new_ext )
     def get_size( self ):
