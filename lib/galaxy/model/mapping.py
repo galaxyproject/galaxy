@@ -74,7 +74,16 @@ Dataset.table = Table( "dataset", metadata,
     Column( "deleted", Boolean ),
     Column( "purged", Boolean ),
     Column( "visible", Boolean ),
+    Column( "filename_id", Integer, ForeignKey( "dataset_filename.id" ), nullable=True ),
     ForeignKeyConstraint(['parent_id'],['dataset.id'], ondelete="CASCADE") )
+
+DatasetFileName.table = Table( "dataset_filename", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, PassiveDefault( now ) ),
+    Column( "update_time", DateTime, PassiveDefault( now ), onupdate=now ),
+    Column( "filename", TEXT ),
+    Column( "extra_files_path", TEXT, nullable=True, default=None ),
+    Column( "readonly", Boolean, default=False ) )
 
 ValidationError.table = Table( "validation_error", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -163,8 +172,14 @@ assign_mapper( context, Dataset, Dataset.table,
             DatasetChildAssociation, 
             primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
             lazy=False,
-            backref="parent" ) ) )
-                                        
+            backref="parent" ),
+        dataset_file=relation( 
+            DatasetFileName, 
+            primaryjoin=( DatasetFileName.table.c.id == Dataset.table.c.filename_id ) )
+            ) )
+
+assign_mapper( context, DatasetFileName, DatasetFileName.table )
+
 assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
     properties=dict( child=relation( Dataset, primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
 

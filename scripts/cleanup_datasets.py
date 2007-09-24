@@ -74,13 +74,14 @@ def purge( app, days ):
     """ Purges deleted datasets older than specified number of days """
     count = 0
     now  = time.time()
-    for row in app.model.Dataset.table.select().execute():
+    for row in list(app.model.Dataset.table.select().execute()):
         data = app.model.Dataset.get(row.id)
         if data.deleted and not data.purged:
             last = time.mktime( time.strptime( data.update_time.strftime('%a %b %d %H:%M:%S %Y') ))
             diff = (now - last) /3600/24 # days
             if diff>days:
                 data.purge()
+                data.flush()
                 count += 1
     try:
         app.model.flush()

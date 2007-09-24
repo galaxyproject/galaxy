@@ -112,8 +112,7 @@ class DatasetInterface( BaseController ):
         else:
             #display files from directory here
             try:
-                file_path = os.path.join(trans.app.config.file_path, "dataset_%s_files" % (dataset_id))
-                file_path = os.path.join(file_path, filename)
+                file_path = os.path.join(trans.app.model.Dataset.get( dataset_id ).extra_files_path, filename)
                 return open(file_path)
             except:
                 raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % (filename) )

@@ -122,6 +122,26 @@ class History( object ):
         self.genome_build = genome_build
         self.datasets.append( dataset )
 
+    def copy(self):
+        des = History()
+        des.flush()
+        des.name = self.name
+        des.user_id = self.user_id
+        for data in self.datasets:
+            new_data = data.copy()
+            des.add_dataset(new_data)
+            new_data.hid = data.hid
+            new_data.flush()
+            for child_assoc in data.children:
+                new_child = child_assoc.child.copy()
+                new_assoc = DatasetChildAssociation( child_assoc.designation )
+                new_assoc.child = new_child
+                new_assoc.parent = new_data
+                new_child.flush()
+        des.hid_counter = self.hid_counter
+        des.flush()
+        return des
+
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
 #         self.name = name or "Unnamed query"
@@ -143,7 +163,7 @@ class Dataset( object ):
     engine = None
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, state=None, metadata=None, history=None, parent_id=None, designation=None,
-                  validation_errors=None, visible=True ):
+                  validation_errors=None, visible=True, filename_id = None ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.hid = hid
@@ -159,6 +179,7 @@ class Dataset( object ):
         self.deleted = False
         self.purged = False
         self.visible = visible
+        self.filename_id = filename_id
         # Relationships
         self.history = history
         self.validation_errors = validation_errors
@@ -166,10 +187,31 @@ class Dataset( object ):
     @property
     def ext( self ):
         return self.extension
+    
+    def get_file_name( self ):
+        if self.filename_id is None:
+            assert self.id is not None, "ID must be set before filename used (commit the object)"
+            return os.path.join( self.file_path, "dataset_%d.dat" % self.id )
+        else:
+            return self.dataset_file.filename
+    def set_file_name (self, filename):
+        if filename is None:
+            self.filename_id = None
+        else:
+            filename_obj = DatasetFileName.get_by(filename=filename)
+            if filename_obj is None:
+                filename_obj = DatasetFileName(filename=filename, extra_files_path=self.extra_files_path)
+                filename_obj.flush()
+            self.filename_id = filename_obj.id
+        self.flush()
+        self.refresh()
+    file_name = property( get_file_name, set_file_name )
+    
     @property
-    def file_name( self ):
-        assert self.id is not None, "ID must be set before filename used (commit the object)"
-        return os.path.join( self.file_path, "dataset_%d.dat" % self.id )
+    def extra_files_path( self ):
+        if self.dataset_file and self.dataset_file.extra_files_path: return self.dataset_file.extra_files_path
+        return os.path.join( self.file_path, "dataset_%d_files" % self.id )
+    
     @property
     def datatype( self ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
@@ -255,12 +297,46 @@ class Dataset( object ):
         """Removes the file contents from disk """
         self.deleted = True
         self.purged = True
-        try: os.unlink(self.file_name)
-        except: pass
-        try: os.unlink(os.path.join(self.file_path, "dataset_%d_files" % (self.id)))
-        except: pass
+        if self.dataset_file is None or not self.dataset_file.readonly:
+            #Check to see if another dataset is using this file
+            if self.dataset_file:
+                for data in self.select_by(purged=False, filename_id=self.dataset_file.id):
+                    if data.id != self.id: return
+            #Delete files
+            try: os.unlink(self.file_name)
+            except: pass
+            try: os.unlink(self.extra_files_path)
+            except: pass
+            
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
+    
+    def copy(self, parent_id=None):
+        des = Dataset(extension=self.ext)
+        des.flush()
+        des.name = self.name
+        des.info = self.info
+        des.blurb = self.blurb
+        des.peek = self.peek
+        des.extension = self.extension
+        des.dbkey = str( self.dbkey )
+        des.state = self.state
+        des.metadata = self.metadata
+        des.hid = self.hid
+        # Make sure source is using filename table, so purge works properly
+        if not self.dataset_file:
+            self.set_file_name(self.file_name)
+            self.flush()
+            self.refresh()
+            self.dataset_file.extra_files_path = self.extra_files_path
+            self.flush()
+        # Don't copy file contents, share original file
+        des.file_name = self.file_name
+        des.hid = self.hid
+        des.designation = self.designation
+        des.flush()
+        return des
+
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
 
@@ -274,6 +350,12 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
+
+class DatasetFileName( object ):
+    def __init__( self, filename=None, readonly=False, extra_files_path=None ):
+        self.filename = filename
+        self.readonly = readonly
+        self.extra_files_path = extra_files_path
 
 class Old_Dataset( Dataset ):
     pass

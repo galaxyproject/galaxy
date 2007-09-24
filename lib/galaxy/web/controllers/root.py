@@ -363,7 +363,7 @@ class Universe( BaseController ):
             send_to_err = "You can't send histories to yourself"
         else:
             for history in histories:
-                new_history = self.copy_history(history, trans)
+                new_history = history.copy()
                 new_history.name = history.name+" from "+user.email
                 new_history.user_id = send_to_user.id
                 new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
@@ -392,7 +392,7 @@ class Universe( BaseController ):
         if user:
             if import_history.user_id == user.id:
                 return trans.show_error_message( "You cannot import your own history.")
-            new_history = self.copy_history(import_history, trans)
+            new_history = import_history.copy()
             new_history.name = "imported: "+new_history.name
             new_history.user_id = user.id
             new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
@@ -402,7 +402,7 @@ class Universe( BaseController ):
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
             return trans.fill_template("history_imported.tmpl", history=new_history)
         elif not user_history.datasets or confirm:
-            new_history = self.copy_history(import_history, trans)
+            new_history = import_history.copy()
             new_history.name = "imported: "+new_history.name
             new_history.user_id = None
             new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
@@ -554,7 +554,7 @@ class Universe( BaseController ):
         """Copies a dataset and makes primary"""
         try:
             old_data = self.app.model.Dataset.get( id )
-            new_data = self.copy_dataset(old_data, trans)
+            new_data = old_data.copy()
             ## new_data.parent = None
             ## history = trans.app.model.History.get( old_data.history_id )
             history = trans.get_history()
@@ -605,46 +605,3 @@ class Universe( BaseController ):
             if isinstance( kwd[k], FieldStorage ):
                 rval += "-> %s" % kwd[k].file.read()
         return rval
-
-    # ---- Work methods -----------------------------------------------------
-    
-    def copy_dataset(self, src, trans, parent_id=None):
-        des = self.app.model.Dataset()
-        des.flush()
-        des.change_datatype( src.ext )
-        des.name = src.name
-        des.info = src.info
-        des.blurb = src.blurb
-        des.peek = src.peek
-        des.extension = src.extension
-        des.dbkey = str( src.dbkey )
-        des.state = src.state
-        des.metadata = src.metadata
-        des.hid = src.hid
-        ## des.parent_id = parent_id
-        shutil.copyfile(src.file_name,des.file_name)
-        des.hid = src.hid
-        des.designation = src.designation
-        des.flush()
-        return des
-        
-    def copy_history(self, src, trans):
-        des = self.app.model.History()
-        des.flush()
-        des.name = src.name
-        des.user_id = src.user_id
-        for data in src.datasets:
-            new_data = self.copy_dataset(data, trans)
-            des.add_dataset(new_data)
-            new_data.hid = data.hid
-            new_data.flush()
-            for child_assoc in data.children:
-                new_child = self.copy_dataset(child_assoc.child, trans)
-                new_assoc = self.app.model.DatasetChildAssociation( child_assoc.designation )
-                new_assoc.child = new_child
-                new_assoc.parent = new_data
-                #des.add_dataset(new_child, parent_id = new_data.id)
-                new_child.flush()
-        des.hid_counter = src.hid_counter
-        self.app.model.flush()
-        return des
