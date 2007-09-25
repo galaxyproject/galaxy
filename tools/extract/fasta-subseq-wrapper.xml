@@ -1,15 +1,21 @@
 <tool id="Extract genomic DNA 1" name="Extract genomic DNA">
   <description>using coordinates from assembled genomes</description>
-  <command interpreter="perl">fasta-subseq-wrapper.pl -i $input -o $out_file1 -p $input_chromCol $input_startCol $input_endCol $input_strandCol -g $dbkey</command>
+  <command interpreter="perl">fasta-subseq-wrapper.pl -i $input -o $out_file1 -p $input_chromCol $input_startCol $input_endCol $input_strandCol -g $dbkey -f $out_format</command>
   <inputs>
     <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"/>
+	<param name="out_format" type="select" label="Output Type">
+	<option value="0">FASTA</option>
+	<option value="1">Interval</option>
+	</param>
   </inputs>
   <outputs>
     <data format="fasta" name="out_file1" />
   </outputs>
+  <code file="fasta-subseq-wrapper_code.py" />
   <tests>
     <test>
       <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
+      <param name="out_format" value="0"/>
       <output name="out_file1" file="fsa_extract_genomic_dna.dat" />
     </test>
   </tests>

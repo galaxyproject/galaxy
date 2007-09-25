@@ -18,7 +18,7 @@ my %seen = ();
 my @locFields = ();
 my %seqLocation = ();
 
-die "Cannot fetch sequences for unspecified genome\n" unless @ARGV == 11;
+die "Cannot fetch sequences for unspecified genome\n" unless @ARGV == 13;
 die "Please specify genome build by clicking on pencil icon in the original dataset\n" if $ARGV[10] =~ m/\?/;
 
 # Read /depot/data2/galaxy/alignseq.loc
@@ -47,7 +47,7 @@ if ($ARGV[8] > 0) {
 	$ARGV[8] = 1000000;
 }
 
-
+$ARGV[12] = int($ARGV[12]);
 
 open (BED,  "<$ARGV[1]") or die "Cannot open $ARGV[1] for reading :$!\n";
 open (FASTA,">$ARGV[3]") or die "Cannot open $ARGV[3] for writing :$!\n";
@@ -64,13 +64,19 @@ while (<BED>) {
 	  if (-e "$seqLocation{$ARGV[10]}$columns[$ARGV[5]].nib") {
 	    $call = "fasta-subseq $seqLocation{$ARGV[10]}$columns[$ARGV[5]].nib ".($columns[$ARGV[6]]+1)." $columns[$ARGV[7]] $columns[$ARGV[8]]"; #+1 to start position to fix coordinate system
 	    open (GET_SUBSEQ, "$call |") or die "Cannot start fasta-subseq:$!\n";
+	    my $seq = "";
 	    while (<GET_SUBSEQ>) {
 	      if (!m/\>/) {  # unless header print seq
-		print FASTA;
+		if ($ARGV[12]) {
+		  chomp $_;
+		  $seq = $seq . $_; }
+		else {
+		  print FASTA; }
 	      } else { # if header replace with seqdata
-		print FASTA ">$ARGV[10]_$columns[$ARGV[5]]_$columns[$ARGV[6]]_$columns[$ARGV[7]]_$columns[$ARGV[8]]\n";
+		if (!($ARGV[12])) { print FASTA ">$ARGV[10]_$columns[$ARGV[5]]_$columns[$ARGV[6]]_$columns[$ARGV[7]]_$columns[$ARGV[8]]\n"; }
 	      }
 	    }
+	    if ($ARGV[12]) { print FASTA join("\t",@columns) . "\t$seq\n"; }
 	    close (GET_SUBSEQ);
 	  } else {
 	    push (@errors, "Sequence $columns[$ARGV[5]] was not found for genome build $ARGV[10]\nMost likely your data lists wrong chromosome number for this organism\nCheck your genome build selection");
