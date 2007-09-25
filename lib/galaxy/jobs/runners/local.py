@@ -1,4 +1,4 @@
-import logging,os
+import logging
 import subprocess
 from Queue import Queue
 import threading
@@ -43,24 +43,10 @@ class LocalJobRunner( object ):
                 continue
             # If we were able to get a command line, run the job
             if command_line:
-                # patched by ross lazarus to really move to job_wrapper.working_directory for execution
-                # required patches to use abspath for command line and for all datasets
-                job_working_dir = job_wrapper.working_directory
-                if not os.path.isabs(job_working_dir):
-                     job_working_dir = os.path.abspath(job_working_dir)
-                cl = command_line.split()
-                if len(cl) >= 2: # assume we have a command?
-                    for n,clp in enumerate(cl): # check for relative path in each cl parameter 
-                        if (n > 0) and os.access(clp, os.R_OK)  : 
-                              # ? is a path we might need to make absolute
-                              cl[n] = os.path.abspath(clp) # convert to absolute path
-                # this is dumb and there will be nasty edge cases but I'm not sure what else to do
-                command_line = ' '.join(cl) # munged to absolute paths
                 try:
-                    log.debug( '## local.py job runner executing: %s in cwd = %s' %  (command_line,job_working_dir ))
+                    log.debug( 'executing: %s' % command_line )
                     proc = subprocess.Popen( args = command_line, 
                                              shell = True, 
-                                             cwd = job_working_dir,
                                              stdout = subprocess.PIPE, 
                                              stderr = subprocess.PIPE )
                     stdout = proc.stdout.read() 
@@ -70,11 +56,10 @@ class LocalJobRunner( object ):
                     log.debug('execution finished: %s' % command_line)
                 except Exception, e:
                     job_wrapper.fail( "failure running job", exception=True )
-                    log.exception( "failure running job id: %d, command_line=%s" % (job_wrapper.job_id,command_line)  )
+                    log.exception( "failure running job id: %d" % job_wrapper.job_id  )
                     continue
             # Finish the job                
             job_wrapper.finish( stdout, stderr )
-
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
