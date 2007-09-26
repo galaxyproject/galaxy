@@ -191,9 +191,12 @@ class Dataset( object ):
     def get_file_name( self ):
         if self.filename_id is None:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
-            return os.path.join( self.file_path, "dataset_%d.dat" % self.id )
+            filename = os.path.join( self.file_path, "dataset_%d.dat" % self.id )
         else:
-            return self.dataset_file.filename
+            filename = self.dataset_file.filename
+        # Make filename absolute
+        return os.path.abspath( filename )
+            
     def set_file_name (self, filename):
         if filename is None:
             self.filename_id = None
@@ -205,12 +208,17 @@ class Dataset( object ):
             self.filename_id = filename_obj.id
         self.flush()
         self.refresh()
+        
     file_name = property( get_file_name, set_file_name )
     
     @property
     def extra_files_path( self ):
-        if self.dataset_file and self.dataset_file.extra_files_path: return self.dataset_file.extra_files_path
-        return os.path.join( self.file_path, "dataset_%d_files" % self.id )
+        if self.dataset_file and self.dataset_file.extra_files_path: 
+            path = self.dataset_file.extra_files_path
+        else:
+            path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
+        # Make path absolute
+        return os.path.abspath( path )
     
     @property
     def datatype( self ):
