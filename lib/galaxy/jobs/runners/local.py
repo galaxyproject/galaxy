@@ -31,35 +31,41 @@ class LocalJobRunner( object ):
             job_wrapper = self.queue.get()
             if job_wrapper is self.STOP_SIGNAL:
                 return
-            job_wrapper.change_state( 'running' )
-            stderr = stdout = command_line = ''
-            # Prepare the job to run
             try:
-                job_wrapper.prepare()
-                command_line = job_wrapper.get_command_line()
+                self.run_job( job_wrapper )
             except:
-                job_wrapper.fail( "failure preparing job", exception=True )
-                log.exception( "failure running job id: %d" % job_wrapper.job_id  )
-                continue
-            # If we were able to get a command line, run the job
-            if command_line:
-                try:
-                    log.debug( 'executing: %s' % command_line )
-                    proc = subprocess.Popen( args = command_line, 
-                                             shell = True, 
-                                             stdout = subprocess.PIPE, 
-                                             stderr = subprocess.PIPE )
-                    stdout = proc.stdout.read() 
-                    stderr = proc.stderr.read()
-                    proc.stdout.close() 
-                    proc.stderr.close()
-                    log.debug('execution finished: %s' % command_line)
-                except Exception, e:
-                    job_wrapper.fail( "failure running job", exception=True )
-                    log.exception( "failure running job id: %d" % job_wrapper.job_id  )
-                    continue
-            # Finish the job                
-            job_wrapper.finish( stdout, stderr )
+                log.exception( "Uncaught exception running job" )
+                
+    def run_job( self, job_wrapper ):
+        job_wrapper.change_state( 'running' )
+        stderr = stdout = command_line = ''
+        # Prepare the job to run
+        try:
+            job_wrapper.prepare()
+            command_line = job_wrapper.get_command_line()
+        except:
+            job_wrapper.fail( "failure preparing job", exception=True )
+            log.exception( "failure running job id: %d", job_wrapper.job_id  )
+            return
+        # If we were able to get a command line, run the job
+        if command_line:
+            try:
+                log.debug( 'executing: %s' % command_line )
+                proc = subprocess.Popen( args = command_line, 
+                                         shell = True, 
+                                         stdout = subprocess.PIPE, 
+                                         stderr = subprocess.PIPE )
+                stdout = proc.stdout.read() 
+                stderr = proc.stderr.read()
+                proc.stdout.close() 
+                proc.stderr.close()
+                log.debug('execution finished: %s' % command_line)
+            except:
+                job_wrapper.fail( "failure running job", exception=True )
+                log.exception( "failure running job id: %d", job_wrapper.job_id  )
+                return
+        # Finish the job                
+        job_wrapper.finish( stdout, stderr )
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""

@@ -948,7 +948,6 @@ class Tool:
 class BadValue( object ):
     def __init__( self, value ):
         self.value = value
-        
 
 class RawObjectWrapper( object ):
     """

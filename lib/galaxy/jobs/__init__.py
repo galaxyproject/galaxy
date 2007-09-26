@@ -95,72 +95,77 @@ class JobQueue( object ):
         # HACK: Delay until after forking, we need a way to do post fork notification!!!
         time.sleep( 10 )
         while self.running:
-            # Pull all new jobs from the queue at once
-            new_jobs = []
-            if self.track_jobs_in_database:
-                model = self.app.model
-                for j in model.Job.select( model.Job.c.state == 'new' ):
-                    job = JobWrapper( j.id, self.app.toolbox.tools_by_id[ j.tool_id ], self )
-                    new_jobs.append( job )
-            else:
-                try:
-                    while 1:
-                        message = self.queue.get_nowait()
-                        if message is self.STOP_SIGNAL:
-                            return
-                        # Unpack the message
-                        job_id, tool_id = message
-                        # Create a job wrapper from it
-                        job = JobWrapper( job_id, self.app.toolbox.tools_by_id[ tool_id ], self )
-                        # Append to watch queue
-                        new_jobs.append( job )
-                except Empty:
-                    pass
-            # Iterate over new and waiting jobs and look for any that are 
-            # ready to run
-            new_waiting = []
-           
-            for job in ( new_jobs + self.waiting ):
-                try:
-                    # Run the job, requeue if not complete                    
-                    job_state = job.check_if_ready_to_run()
-                    if job_state == JOB_WAIT: 
-                        new_waiting.append( job )
-                        log.debug( "the job has been requeued" )
-                    elif job_state == JOB_ERROR:
-                        log.info( "job %d ended with an error" % job.job_id )
-                    elif job_state == JOB_READY:
-                        # If special queuing is enabled, put the ready jobs in the special queue
-                        if self.use_policy :
-                            self.squeue.put( job ) 
-                            log.debug( "job %d put in policy queue" % job.job_id )
-                        else : # or dispatch the job directly
-                            self.dispatcher.put( job )
-                            log.debug( "job %d dispatched" % job.job_id)
-                    else:
-                        log.error( "unknown job state '%s' for job '%d'", job_state, job.job_id )
-                except:
-                    log.exception( "failure running job %d" % job.job_id  )
-            
-            # Update the waiting list
-            self.waiting = new_waiting
-            
-            # If special (eg. fair) scheduling is enabled, dispatch all jobs
-            # currently in the special queue    
-            if self.use_policy :
-                while 1 :
-                    try :
-                        sjob = self.squeue.get()
-                        self.dispatcher.put( sjob )
-                        log.debug( "job %d dispatched" % sjob.job_id )
-                    except Empty : # squeue is empty, so stop dispatching
-                        break
-                    except : # if something else breaks while dispatching
-                        job.fail("failure running job")
-                        log.exception( "failure running job %d" % sjob.job_id  )
-
+            try:
+                self.monitor_step()
+            except:
+                log.exception( "Uncaught exception in monitor_step" )
             # Sleep
             self.sleeper.sleep( 1 )
+            
+    def monitor_step( self ):
+        # Pull all new jobs from the queue at once
+        new_jobs = []
+        if self.track_jobs_in_database:
+            model = self.app.model
+            for j in model.Job.select( model.Job.c.state == 'new' ):
+                job = JobWrapper( j.id, self.app.toolbox.tools_by_id[ j.tool_id ], self )
+                new_jobs.append( job )
+        else:
+            try:
+                while 1:
+                    message = self.queue.get_nowait()
+                    if message is self.STOP_SIGNAL:
+                        return
+                    # Unpack the message
+                    job_id, tool_id = message
+                    # Create a job wrapper from it
+                    job = JobWrapper( job_id, self.app.toolbox.tools_by_id[ tool_id ], self )
+                    # Append to watch queue
+                    new_jobs.append( job )
+            except Empty:
+                pass
+        # Iterate over new and waiting jobs and look for any that are 
+        # ready to run
+        new_waiting = []
+       
+        for job in ( new_jobs + self.waiting ):
+            try:
+                # Run the job, requeue if not complete                    
+                job_state = job.check_if_ready_to_run()
+                if job_state == JOB_WAIT: 
+                    new_waiting.append( job )
+                    log.debug( "the job has been requeued" )
+                elif job_state == JOB_ERROR:
+                    log.info( "job %d ended with an error" % job.job_id )
+                elif job_state == JOB_READY:
+                    # If special queuing is enabled, put the ready jobs in the special queue
+                    if self.use_policy :
+                        self.squeue.put( job ) 
+                        log.debug( "job %d put in policy queue" % job.job_id )
+                    else : # or dispatch the job directly
+                        self.dispatcher.put( job )
+                        log.debug( "job %d dispatched" % job.job_id)
+                else:
+                    log.error( "unknown job state '%s' for job '%d'", job_state, job.job_id )
+            except:
+                log.exception( "failure running job %d" % job.job_id  )
+        
+        # Update the waiting list
+        self.waiting = new_waiting
+        
+        # If special (eg. fair) scheduling is enabled, dispatch all jobs
+        # currently in the special queue    
+        if self.use_policy :
+            while 1 :
+                try :
+                    sjob = self.squeue.get()
+                    self.dispatcher.put( sjob )
+                    log.debug( "job %d dispatched" % sjob.job_id )
+                except Empty : # squeue is empty, so stop dispatching
+                    break
+                except : # if something else breaks while dispatching
+                    job.fail( "failure dispatching job" )
+                    log.exception( "failure running job %d" % sjob.job_id  )
             
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""
@@ -195,6 +200,7 @@ class JobWrapper( object ):
         self.app = queue.app
         self.extra_filenames = []
         self.working_directory = None
+        self.command_line = None
         
     def get_param_dict( self ):
         """
@@ -213,8 +219,8 @@ class JobWrapper( object ):
         # Create the working directory
         self.working_directory = \
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
-	if not os.path.exists( self.working_directory ): 
-           os.mkdir( self.working_directory )
+        if not os.path.exists( self.working_directory ):
+            os.mkdir( self.working_directory )
         # Restore parameters from the database
         job = model.Job.get( self.job_id )
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
@@ -270,10 +276,7 @@ class JobWrapper( object ):
             dataset.info = message
             dataset.flush()
         job.state = model.Job.states.ERROR
-        try:
-            job.command_line = self.command_line
-        except:
-            job.command_line = None
+        job.command_line = self.command_line
         # If the failure is due to a Galaxy framework exception, save 
         # the traceback
         if exception:
@@ -365,10 +368,7 @@ class JobWrapper( object ):
                 data.deleted = True
         # TODO
         # validate output datasets
-        try:
-            job.command_line = self.command_line
-        except:
-            job.command_line = None
+        job.command_line = self.command_line
         mapping.context.current.flush()
         log.debug('job ended, id: %d' % self.job_id )
         self.cleanup()
