@@ -61,23 +61,6 @@ def unique_id(KEY_SIZE=128):
     id  = str( random.getrandbits( KEY_SIZE ) )
     return md5.new(id).hexdigest()
 
-# this sets the browser mime type for special downloads dowloading
-mime_types = {
-    'png'  : 'image/png', 'gif' : 'image/gif', 'jpg' : 'image/jpeg',
-    'html' : 'text/html', 'htm' : 'text/html', 'pdf' : 'application/pdf',
-    'gmaj.zip' : 'application/zip',
-}
-
-text_types = sets.Set([ 
-    'txt', 'text', 'wig', 'genbank', 'motif', 'acedb', 'nexus', 'fitch', 'meganon', 'codata', 'dbmotif', 
-    'table', 'fasta', 'txt', 'gff', 'gff3', 'pir', 'ig', 'seqtable', 'clustal', 'gcg', 'hennig86', 'excel', 'asn1', 
-    'regions', 'simple', 'score', 'text', 'msf', 'selex', 'tagseq', 'embl', 'srspair', 'staden', 
-    'strider', 'xbed', 'markx10', 'pair', 'markx1', 'markx0', 'markx3', 'markx2', 'jackknifer', 
-    'ncbi', 'mega', 'fa', 'feattable', 'phylip', 'diffseq', 'bed', 'srs', 'jackknifernon', 'swiss', 
-    'phylipnon', 'nexusnon', 'nametable', 'xml', 'interval', 'tabular', 'maf','axt', 'lav', 'laj', 'customtrack',
-    'gbrowsetrack'
-])     
-
 def parse_xml(fname):
     """Returns an parsed xml tree"""
     tree = ElementTree.parse(fname)
