@@ -36,13 +36,13 @@ class FilterTests(TwillTestCase):
         """3E_Filter: Sort on column one"""
         self.run_tool("sort1", input="7.bed", column="1", order="ASC", style="alpha")
         self.wait()
-        self.check_data('sc_3E_sort.bed')
+        self.check_data('sc_3E_sort.bed', hid=3)
 
     def test_31_select(self):
         """3E_Filter: Select on the pattern AY143171"""
         self.run_tool("Grep1", input="7.bed", invert="false", pattern="AY143171")
         self.wait()
-        self.check_data('sc_3E_select.bed')
+        self.check_data('sc_3E_select.bed', hid=4)
 
 #    def test_40_knownToEnsembl(self):
 #        """3E_Filter: Get UCSC knownToEnsembl"""
@@ -59,8 +59,8 @@ class FilterTests(TwillTestCase):
 
     def test_40_upload(self):
         """3E_Filter: Get UCSC knownToEnsembl"""
-        self.upload_file('8.bed')
-        self.check_data('sc_3E_knownToEnsembl.bed')
+        self.upload_file('8.bed', ftype='bed')
+        self.check_data('sc_3E_knownToEnsembl.bed', hid=5)
 
     def test_51_join1(self):
         """3E_Filter: Join UCSC knowntoEnsembl to UCSC knowngenes"""
