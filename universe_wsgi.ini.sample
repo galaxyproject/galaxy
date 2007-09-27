@@ -105,7 +105,6 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 data = galaxy.datatypes.data:Data,application/octet-stream
 bed = galaxy.datatypes.interval:Bed
 txt = galaxy.datatypes.data:Text
-text = galaxy.datatypes.data:Text
 interval = galaxy.datatypes.interval:Interval
 tabular = galaxy.datatypes.tabular:Tabular
 png = galaxy.datatypes.images:Image,image/png
@@ -123,7 +122,6 @@ laj = galaxy.datatypes.images:Laj
 lav = galaxy.datatypes.sequence:Lav
 html = galaxy.datatypes.images:Html,text/html
 customtrack = galaxy.datatypes.interval:CustomTrack
-gbrowsetrack = galaxy.datatypes.interval:GBrowseTrack
 #EMBOSS TOOLS
 match = galaxy.datatypes.data:Text
 genbank = galaxy.datatypes.data:Text
@@ -171,3 +169,21 @@ swiss = galaxy.datatypes.data:Text
 phylipnon = galaxy.datatypes.data:Text
 nexusnon = galaxy.datatypes.data:Text
 nametable = galaxy.datatypes.data:Text
+
+# ---- Data Type Sniff Order --------------------------------------------------
+
+[galaxy:sniff_order]
+
+05 = galaxy.datatypes.images:Gmaj
+10 = galaxy.datatypes.images:Laj
+15 = galaxy.datatypes.sequence:Maf
+20 = galaxy.datatypes.sequence:Lav
+25 = galaxy.datatypes.sequence:Fasta
+30 = galaxy.datatypes.interval:Wiggle
+35 = galaxy.datatypes.images:Html
+40 = galaxy.datatypes.sequence:Axt
+45 = galaxy.datatypes.interval:Bed
+50 = galaxy.datatypes.interval:CustomTrack
+55 = galaxy.datatypes.interval:Gff
+60 = galaxy.datatypes.interval:Gff3
+65 = galaxy.datatypes.interval:Interval

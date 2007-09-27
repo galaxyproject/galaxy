@@ -7,6 +7,7 @@ import logging
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy import util
+from sniff import *
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class Alignment( Sequence ):
 
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
+    file_ext = "fasta"
 
     def set_peek( self, dataset ):
         Sequence.set_peek( self, dataset )
@@ -37,14 +39,42 @@ class Fasta( Sequence ):
         else:
             dataset.blurb = '%d sequences' % count
 
+    def sniff(self, filename):
+        """
+        Determines whether the file is in fasta format
+        
+        A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. 
+        The first character of the description line is a greater-than (">") symbol in the first column. 
+        All lines should be shorter than 80 charcters
+        
+        For complete details see http://www.g2l.bio.uni-goettingen.de/blast/fastades.html
+        
+        >>> fname = get_test_fname( 'sequence.maf' )
+        >>> Fasta().sniff( fname )
+        ''
+        >>> fname = get_test_fname( 'sequence.fasta' )
+        >>> Fasta().sniff( fname )
+        'fasta'
+        """
+        headers = get_headers( filename, None )
+        try:
+            if len(headers) > 1 and headers[0][0] and headers[0][0][0] == ">":
+                return self.file_ext
+            else:
+                return ''
+        except:
+            return ''
+
 try:
     import pkg_resources; pkg_resources.require( "bx-python" )
     import bx.align.maf
 except:
     pass
+
 class Maf( Alignment ):
     """Class describing a Maf alignment"""
-    
+    file_ext = "maf"
+
     def init_meta( self, dataset, copy_from=None ):
         Alignment.init_meta( self, dataset, copy_from=copy_from )
     
@@ -77,9 +107,106 @@ class Maf( Alignment ):
             return True
         return False
 
+    def sniff( self, filename ):
+        """
+        Determines wether the file is in maf format
+        
+        The .maf format is line-oriented. Each multiple alignment ends with a blank line. 
+        Each sequence in an alignment is on a single line, which can get quite long, but 
+        there is no length limit. Words in a line are delimited by any white space. 
+        Lines starting with # are considered to be comments. Lines starting with ## can 
+        be ignored by most programs, but contain meta-data of one form or another.
+        
+        The first line of a .maf file begins with ##maf. This word is followed by white-space-separated 
+        variable=value pairs. There should be no white space surrounding the "=".
+     
+        For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format5
+        
+        >>> fname = get_test_fname( 'sequence.maf' )
+        >>> Maf().sniff( fname )
+        'maf'
+        >>> fname = get_test_fname( 'sequence.fasta' )
+        >>> Maf().sniff( fname )
+        ''
+        """
+        headers = get_headers( filename, None )
+        try:
+            if len(headers) > 1 and headers[0][0] and headers[0][0] == "##maf":
+                return self.file_ext
+            else:
+                return ''
+        except:
+            return ''
+
 class Axt( Alignment ):
     """Class describing an axt alignment"""
+    file_ext = "axt"
+
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in axt format
+        
+        axt alignment files are produced from Blastz, an alignment tool available from Webb Miller's lab 
+        at Penn State University.  Each alignment block in an axt file contains three lines: a summary 
+        line and 2 sequence lines. Blocks are separated from one another by blank lines.
+        
+        The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields:
+    
+        For complete details see http://genome.ucsc.edu/goldenPath/help/axt.html
+        
+        >>> fname = get_test_fname( 'alignment.axt' )
+        >>> Axt().sniff( fname )
+        'axt'
+        >>> fname = get_test_fname( 'alignment.lav' )
+        >>> Axt().sniff( fname )
+        ''
+       """
+        headers = get_headers( filename, None )
+        if len(headers) < 4:
+            return ''
+        try:
+            """Assume the summary line is the first line of the file."""   
+            line = headers[0]
+        except:
+            return ''
+ 
+        if len(line) != 9:
+            return ''
+        try:
+            map ( int, [line[0], line[2], line[3], line[5], line[6], line[8]] )
+        except:
+            return ''
+        if line[7] not in data.valid_strand:
+            return ''
+        return self.file_ext
 
 class Lav( Alignment ):
     """Class describing a LAV alignment"""
+    file_ext = "lav"
+
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in lav format
+        
+        LAV is an alignment format developed by Webb Miller's group. It is the primary output format for BLASTZ.
+        The first line of a .lav file begins with #:lav.
+    
+        For complete details see http://www.bioperl.org/wiki/LAV_alignment_format
+        
+        >>> fname = get_test_fname( 'alignment.lav' )
+        >>> Lav().sniff( fname )
+        'lav'
+        >>> fname = get_test_fname( 'alignment.axt' )
+        >>> Lav().sniff( fname )
+        ''
+        """
+        headers = get_headers( filename, None )
+        try:
+            if len(headers) > 1 and headers[0][0] and headers[0][0].startswith('#:lav'):
+                return self.file_ext
+            else:
+                return ''
+        except:
+            return ''
+
 

@@ -8,6 +8,7 @@ pkg_resources.require( "bx-python" )
 import logging, os, sys, time, sets, tempfile, shutil
 import data
 from galaxy import util
+from galaxy.datatypes.sniff import *
 from cgi import escape
 import urllib
 from bx.intervals.io import *
@@ -36,6 +37,7 @@ for key, value in alias_spec.items():
 
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
+    file_ext = "interval"
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", desc="Chrom column", param=metadata.ColumnParameter )
@@ -43,7 +45,6 @@ class Interval( Tabular ):
     MetadataElement( name="endCol", desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
-
 
     def __init__(self, **kwd):
         """Initialize interval datatype, by adding UCSC display apps"""
@@ -179,8 +180,41 @@ class Interval( Tabular ):
         """Return options for removing errors along with a description"""
         return [("lines","Remove erroneous lines")]
 
+    def sniff( self, filename ):
+        """
+        Checks for 'intervalness'
+    
+        This format is mostly used by galaxy itself.  Valid interval files should include
+        a valid header comment, but this seems to be loosely regulated.
+        
+        >>> fname = get_test_fname( 'test_space.bed' )
+        >>> Interval().sniff( fname )
+        ''
+        >>> fname = get_test_fname( 'interval.interval' )
+        >>> Interval().sniff( fname )
+        'interval'
+        """
+        headers = get_headers( filename, '\t' )   
+        try:
+            """
+            If we got here, we already know the file is_column_based and is not bed,
+            so we'll just look for some valid data.
+            """
+            for hdr in headers:
+                if not (hdr[0] == '' or hdr[0].startswith( '#' )):
+                    if len(hdr) < 3:
+                        return ''
+                    try:
+                        map( int, [hdr[1], hdr[2]] )
+                    except:
+                        return ''
+            return self.file_ext
+        except:
+            return ''
+    
 class Bed( Interval ):
     """Tab delimited data in BED format"""
+    file_ext = "bed"
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -264,8 +298,93 @@ class Bed( Interval ):
         try: return open(dataset.file_name)
         except: return "This item contains no content"
 
+    def sniff( self, filename ):
+        """
+        Checks for 'bedness'
+        
+        BED lines have three required fields and nine additional optional fields. 
+        The number of fields per line must be consistent throughout any single set of data in 
+        an annotation track.
+        
+        For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format1
+        
+        >>> fname = get_test_fname( 'test_tab.bed' )
+        >>> Bed().sniff( fname )
+        'bed'
+        >>> fname = get_test_fname( 'interval.bed' )
+        >>> Bed().sniff( fname )
+        ''
+        >>> fname = get_test_fname( 'complete.bed' )
+        >>> Bed().sniff( fname )
+        'bed'
+        """
+        col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
+        headers = get_headers( filename, '\t' )
+        try:
+            if not headers:
+                return ''
+            for hdr in headers:
+                valid_col1 = False
+                if len(hdr) < 3 or len(hdr) > 12:
+                    return ''
+                for str in col1_startswith:
+                    if hdr[0].lower().startswith(str):
+                        valid_col1 = True
+                        break
+                if valid_col1:
+                    try:
+                        map( int, [hdr[1], hdr[2]] )
+                    except:
+                        return ''
+                    if len(hdr) > 3:
+                        """
+                        Since all 9 of these fields are optional, it is difficult to test
+                        for specific column values...
+                        """
+                        optionals = hdr[3:]
+                        """
+                        ...we can, however, test complete BED definitions fairly easily.
+                        """
+                        if len(optionals) == 9:
+                            try:
+                                map ( int, [optionals[1], optionals[3], optionals[4], optionals[5], optionals[6]] )
+                            except:
+                                return ''
+                            score = int(optionals[1])
+                            if score < 0 or score > 1000:
+                                return ''
+                            if optionals[2] not in ['+', '-']:
+                                return ''
+                            if int(optionals[5]) != 0:
+                                return ''
+                            block_count = int(optionals[6])
+                            """
+                            Sometimes the blosck_sizes and block_starts lists end in extra commas
+                            """
+                            block_sizes = optionals[7].rstrip(',').split(',')
+                            block_starts = optionals[8].rstrip(',').split(',')
+                            if len(block_sizes) != block_count or len(block_starts) != block_count:
+                                return ''
+                        elif len(optionals) > 4 and len(optionals) < 9:
+                            """
+                            Here it gets a bit trickier, but in this case, we can be somewhat confident 
+                            that optionals will include a strand column
+                            """
+                            is_valid_strand = False
+                            for ele in optionals:
+                                if ele in data.valid_strand:
+                                    is_valid_strand = True
+                            if not is_valid_strand:
+                                return ''
+                else:
+                    return ''
+            return self.file_ext
+        except:
+            return ''
+
 class Gff( Tabular ):
     """Tab delimited data in Gff format"""
+    file_ext = "gff"
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True )
@@ -330,8 +449,51 @@ class Gff( Tabular ):
                         ret_val.append( (site_name, link) )
         return ret_val
 
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in gff format
+        
+        GFF lines have nine required fields that must be tab-separated.
+        
+        For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
+        
+        >>> fname = get_test_fname( 'gff_version_3.gff' )
+        >>> Gff().sniff( fname )
+        ''
+        >>> fname = get_test_fname( 'test.gff' )
+        >>> Gff().sniff( fname )
+        'gff'
+        """
+        headers = get_headers( filename, '\t' )
+        try:
+            if len(headers) < 2:
+                return ''
+            for hdr in headers:
+                if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '2' ) < 0:
+                    return ''
+                if hdr and hdr[0] and not hdr[0].startswith( '#' ):
+                    if len(hdr) != 9:
+                        return ''
+                    try:
+                        map( int, [hdr[3], hdr[4]] )
+                    except:
+                        return ''
+                    if hdr[5] != '.':
+                        try:
+                            score = int(hdr[5])
+                        except:
+                            return ''
+                        if (score < 0 or score > 1000):
+                            return ''
+                    if hdr[6] not in data.valid_strand:
+                        return ''
+            return self.file_ext
+        except:
+            return ''
+
 class Gff3( Gff ):
     """Tab delimited data in Gff3 format"""
+    file_ext = "gff3"
 
     """Add metadata elements"""
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], desc="Column types", readonly=True )
@@ -340,18 +502,116 @@ class Gff3( Gff ):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
 
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in gff version 3 format
+        
+        GFF 3 format:
+    
+        1) adds a mechanism for representing more than one level 
+           of hierarchical grouping of features and subfeatures.
+        2) separates the ideas of group membership and feature name/id
+        3) constrains the feature type field to be taken from a controlled
+           vocabulary.
+        4) allows a single feature, such as an exon, to belong to more than
+           one group at a time.
+        5) provides an explicit convention for pairwise alignments
+        6) provides an explicit convention for features that occupy disjunct regions
+        
+        The format consists of 9 columns, separated by tabs (NOT spaces).
+        
+        Undefined fields are replaced with the "." character, as described in the original GFF spec.
+    
+        For complete details see http://song.sourceforge.net/gff3.shtml
+        
+        >>> fname = get_test_fname( 'test.gff' )
+        >>> Gff3().sniff( fname )
+        ''
+        >>> fname = get_test_fname('gff_version_3.gff')
+        >>> Gff3().sniff( fname )
+        'gff3'
+        """
+        valid_gff3_strand = ['+', '-', '.', '?']
+        valid_gff3_phase = ['.', '0', '1', '2']
+        headers = get_headers( filename, '\t' )
+        try:
+            if len(headers) < 2:
+                return ''
+            for hdr in headers:
+                if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '3' ) < 0:
+                    return ''
+                if hdr and hdr[0] and not hdr[0].startswith( '#' ):
+                    if len(hdr) != 9: 
+                        return ''
+                    try:
+                        map( int, [hdr[3]] )
+                    except:
+                        if hdr[3] != '.':
+                            return ''
+                    try:
+                        map( int, [hdr[4]] )
+                    except:
+                        if hdr[4] != '.':
+                            return ''
+                    if hdr[5] != '.':
+                        try:
+                            score = int(hdr[5])
+                        except:
+                            return ''
+                        if (score < 0 or score > 1000):
+                            return ''
+                    if hdr[6] not in valid_gff3_strand:
+                        return ''
+                    if hdr[7] not in valid_gff3_phase:
+                        return ''
+            return self.file_ext
+        except:
+            return ''
+
 class Wiggle( Tabular ):
     """Tab delimited data in wiggle format"""
+    file_ext = "wig"
+
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
     
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
+
+    def sniff( self, filename ):
+        """
+        Determines wether the file is in wiggle format
     
-#Extend Tabular type, since interval tools will fail on track def line (we should fix this)
-#This is a skeleton class for now, allows viewing at ucsc and formatted peeking.
+        The .wig format is line-oriented. Wiggle data is preceeded by a track definition line,
+        which adds a number of options for controlling the default display of this track.
+        Following the track definition line is the track data, which can be entered in several
+        different formats.
+    
+        The track definition line begins with the word 'track' followed by the track type.
+        The track type with version is REQUIRED, and it currently must be wiggle_0.  For example,
+        track type=wiggle_0...
+        
+        For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
+        
+        >>> fname = get_test_fname( 'interval.bed' )
+        >>> Wiggle().sniff( fname )
+        ''
+        >>> fname = get_test_fname( 'wiggle.wig' )
+        >>> Wiggle().sniff( fname )
+        'wig'
+        """
+        headers = get_headers( filename, None )
+        try:
+            for hdr in headers:
+                if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
+                    return self.file_ext
+            return ''
+        except:
+            return ''
+
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""
-    
+    file_ext = "customtrack"
+
     def __init__(self, **kwd):
         """Initialize interval datatype, by adding UCSC display app"""
         Tabular.__init__(self, **kwd)
@@ -394,9 +654,49 @@ class CustomTrack ( Tabular ):
                         ret_val.append( (site_name, link) )
         return ret_val
 
-#Extend Tabular type, since interval tools will fail on track def line (we should fix this)
-#This is a skeleton class for now, allows viewing at GBrowse and formatted peeking.
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in customtrack format.
+        
+        CustomTrack files are built within Galaxy and are basically bed or interval files with the first line looking
+        something like this.
+        
+        track name="User Track" description="User Supplied Track (from Galaxy)" color=0,0,0 visibility=1
+        
+        >>> fname = get_test_fname( 'complete.bed' )
+        >>> CustomTrack().sniff( fname )
+        ''
+        >>> fname = get_test_fname( 'ucsc.customtrack' )
+        >>> CustomTrack().sniff( fname )
+        'customtrack'
+        """
+        headers = get_headers( filename, None )
+        first_line = True
+        for hdr in headers:
+            if first_line:
+                try:
+                    if hdr[0].startswith('track'):
+                        first_line = False
+                    else:
+                        return ''
+                except:
+                    return ''
+            else:     
+                try:
+                    if not (hdr[0] == '' or hdr[0].startswith( '#' )):
+                        if len(hdr) < 3:
+                            return ''
+                        try:
+                            map( int, [hdr[1], hdr[2]] )
+                        except:
+                            return ''
+                except:
+                    return ''
+        return self.file_ext
+
 class GBrowseTrack ( Tabular ):
+    """GMOD GBrowseTrack"""
+    file_ext = "gbrowsetrack"
 
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
@@ -430,6 +730,15 @@ class GBrowseTrack ( Tabular ):
         """Returns file contents that can be displayed in GBrowse apps."""
         #TODO: fix me...
         return open(dataset.file_name)
+
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in gbrowsetrack format.
+        
+        GBrowseTrack files are built within Galaxy.
+        TODO: Not yet sure what this file will look like.  Fix this sniffer and add some unit tests here as soon as we know.
+        """
+        return ''
 
 if __name__ == '__main__':
     import doctest, sys

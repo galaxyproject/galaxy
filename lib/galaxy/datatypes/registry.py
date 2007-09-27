@@ -8,11 +8,12 @@ import galaxy.util
 from galaxy.util.odict import odict
 
 class Registry( object ):
-    def __init__( self, datatypes = [] ):
+    def __init__( self, datatypes=[], sniff_order=[] ):
         self.log = logging.getLogger(__name__)
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
         self.datatype_converters = odict()
+        self.sniff_order = []
         for ext, kind in datatypes:
             try:
                 mime_type = None
@@ -38,8 +39,7 @@ class Registry( object ):
             self.datatypes_by_extension = { 
                 'data'     : data.Data(), 
                 'bed'      : interval.Bed(), 
-                'txt'      : data.Text(), 
-                'text'     : data.Text(),
+                'txt'      : data.Text(),
                 'interval' : interval.Interval(), 
                 'tabular'  : tabular.Tabular(),
                 'png'      : images.Image(), 
@@ -54,14 +54,12 @@ class Registry( object ):
                 'laj'      : images.Laj(),
                 'lav'      : sequence.Lav(),
                 'html'     : images.Html(),
-                'customtrack' : interval.CustomTrack(),
-                'gbrowsetrack' : interval.GBrowseTrack()
+                'customtrack' : interval.CustomTrack()
             }
             self.mimetypes_by_extension = { 
                 'data'     : 'application/octet-stream', 
                 'bed'      : 'text/plain', 
-                'txt'      : 'text/plain', 
-                'text'     : 'text/plain',
+                'txt'      : 'text/plain',
                 'interval' : 'text/plain', 
                 'tabular'  : 'text/plain',
                 'png'      : 'image/png', 
@@ -76,14 +74,63 @@ class Registry( object ):
                 'laj'      : 'text/plain',
                 'lav'      : 'text/plain',
                 'html'     : 'text/html',
-                'customtrack' : 'text/plain',
-                'gbrowsetrack' : 'text/plain'
+                'customtrack' : 'text/plain'
             }
+        """
+        The order in which we attempt to determine data types is critical
+        because some formats are much more flexibly defined than others.
+        """
+        sniff_order.sort()
+        for ord, kind in sniff_order:
+            try:
+                fields = kind.split(":")
+                datatype_module = fields[0]
+                datatype_class = fields[1]
+                fields = datatype_module.split(".")
+                module = __import__(fields.pop(0))
+                for mod in fields: module = getattr(module,mod)
+                aclass = getattr(module, datatype_class)() 
+                included = False
+                for atype in self.sniff_order:
+                    if isinstance(atype, aclass.__class__):
+                        included = True
+                        break
+                if not included:
+                    self.sniff_order.append(aclass)
+            except Exception, exc:
+                self.log.warning('error appending datatype: %s to sniff_order, error: %s' %(str(kind), str(exc)))
+        #default values
+        if len(self.sniff_order) < 1:
+            self.sniff_order = [
+                images.Gmaj(),
+                images.Laj(),
+                sequence.Maf(),
+                sequence.Lav(),
+                sequence.Fasta(),
+                interval.Wiggle(),
+                images.Html(),
+                sequence.Axt(),
+                interval.Bed(), 
+                interval.CustomTrack(),
+                interval.Gff(),
+                interval.Gff3(),
+                interval.Interval()
+            ]
+        def append_to_sniff_order():
+            """Just in case any supported data types are not included in the config's sniff_order section."""
+            for ext in self.datatypes_by_extension:
+                datatype = self.datatypes_by_extension[ext]
+                included = False
+                for atype in self.sniff_order:
+                    if isinstance(atype, datatype.__class__):
+                        included = True
+                        break
+                if not included:
+                    self.sniff_order.append(datatype)
+        append_to_sniff_order()
     
     def get_mimetype_by_extension(self, ext ):
-        """
-        Returns a mimetype based on an extension
-        """
+        """Returns a mimetype based on an extension"""
         try:
             mimetype = self.mimetypes_by_extension[ext]
         except KeyError:
@@ -93,9 +140,7 @@ class Registry( object ):
         return mimetype
     
     def get_datatype_by_extension(self, ext ):
-        """
-        Returns a datatype based on an extension
-        """
+        """Returns a datatype based on an extension"""
         try:
             builder = self.datatypes_by_extension[ext]
         except KeyError:
@@ -114,9 +159,7 @@ class Registry( object ):
         return data
 
     def old_change_datatype(self, data, ext):
-        """
-        Creates and returns a new datatype based on an existing data and an extension
-        """
+        """Creates and returns a new datatype based on an existing data and an extension"""
         newdata = factory(ext)(id=data.id)
         for key, value in data.__dict__.items():
             setattr(newdata, key, value)

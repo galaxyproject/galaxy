@@ -6,7 +6,7 @@ import pkg_resources
 pkg_resources.require( "bx-python" )
 
 import logging
-import data, sniff
+import data
 from galaxy import util
 from cgi import escape
 from galaxy.datatypes import metadata
@@ -14,7 +14,6 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.metadata import MetadataAttributes
 
 log = logging.getLogger(__name__)
-
 
 class Tabular( data.Text ):
     """Tab delimited data"""
@@ -40,118 +39,47 @@ class Tabular( data.Text ):
         """
         if dataset.has_data():
             column_types = []
-            format = sniff.guess_ext( dataset.file_name )
-
-            if dataset.extension != format:
-                """
-                We need to rely on the ability of our sniffer to properly detect datatypes here since
-                there are many ways that the datatype could be improperly set.  
-                TODO: we may want to automatically convert the datset to the proper datatype here,
-                but for now we'll leave it and just rely on the value in format.
-                """
-                pass
-
-            """
-            The 'proceed' value allows us to skip different numbers of lines based on the data 
-            format (type).  We need this because different formats can include lines of information 
-            that are not properly commented (properly commented lines start with a '#' character).
-            """  
-            proceed = False
-            col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
  
             for i, line in enumerate( file ( dataset.file_name ) ):
                 line = line.rstrip('\r\n')
-                valid = True
                 if line and not line.startswith( '#' ):
                     elems = line.split( '\t' )
                     elems_len = len(elems)
 
                     if elems_len > 0:
-                        if format == 'bed':
-                            for str in col1_startswith:
-                                if elems[0].lower().startswith(str):
-                                    proceed = True
-                                    break
-                        elif format == 'interval':
-                            if elems_len > 2:
+                        """Set the columns metadata attribute"""
+                        if elems_len != dataset.metadata.columns:
+                            dataset.metadata.columns = elems_len
+
+                        """Set the column_types metadata attribute"""
+                        for col in range(0, elems_len):
+                            col_type = None
+                            val = elems[col]
+                            if not col_type:
+                                """See if val is an int"""
                                 try:
-                                    map( int, [elems[1], elems[2]] )
-                                    proceed = True
-                                except:
-                                    pass  # proceed is False
-                        elif format == 'gff':
-                            if elems_len == 9:
-                                try:
-                                    map( int, [hdr[3], hdr[4]] )
-                                    proceed = True
-                                except:
+                                    int( val )
+                                    col_type = 'int'
+                                except: 
                                     pass
-                        elif format == 'gff3':
-                            valid_gff3_strand = ['+', '-', '.', '?']
-                            valid_start = False
-                            valid_end = False
-                            if elems_len == 9:
+                            if not col_type:
+                                """See if val is a float"""
                                 try:
-                                    start = int(hdr[3])
-                                    valid_start = True                                    
+                                    float( val )
+                                    col_type = 'float'
                                 except:
-                                    if hdr[3] == '.':
-                                        valid_start = True                                        
-                                try:
-                                    end = int(hdr[4])
-                                    valid_end = True
-                                except:
-                                    if hdr[4] == '.':
-                                        valid_end = True
-                                    srand = hdr[6]
-                                if valid_start and valid_end and start < end and strand in valid_gff3_strand:
-                                    proceed = True                
-                        elif format=='wig':
-                            try:
-                                int( elems[0] )
-                                proceed = True
-                            except:
-                                for str in col1_startswith:
-                                    if elems[0].lower().startswith(str):
-                                        proceed = True
-                                        break
-                        elif ( format =='tabular' or format == "customtrack" or format == 'gbrowsetrack' ) and i > 1:
-                            proceed = True
-            
-                        if proceed:
-                            """Set the columns metadata attribute"""
-                            if elems_len != dataset.metadata.columns:
-                                dataset.metadata.columns = elems_len
-
-                            """Set the column_types metadata attribute"""
-                            for col in range(0, elems_len):
-                                col_type = None
-                                val = elems[col]
-                                if not col_type:
-                                    """See if val is an int"""
-                                    try:
-                                        int( val )
-                                        col_type = 'int'
-                                    except: 
-                                        pass
-                                if not col_type:
-                                    """See if val is a float"""
-                                    try:
-                                        float( val )
+                                    if val and val.strip().lower() == 'na':
                                         col_type = 'float'
-                                    except:
-                                        if val and val.strip().lower() == 'na':
-                                            col_type = 'float'
-                                if not col_type:
-                                    """See if val is a list"""
-                                    val_elems = val.split(',')
-                                    if len( val_elems ) > 1:
-                                        col_type = 'list'
-                                if not col_type:
-                                    """All parameters are strings, so this will be the default"""
-                                    col_type = 'str'
+                            if not col_type:
+                                """See if val is a list"""
+                                val_elems = val.split(',')
+                                if len( val_elems ) > 1:
+                                    col_type = 'list'
+                            if not col_type:
+                                """All parameters are strings, so this will be the default"""
+                                col_type = 'str'
 
-                                column_types.append(col_type)
+                            column_types.append(col_type)
                         if len(column_types) > 0: break
 
                 if i > 100: break # Hopefully we never get here...
@@ -204,4 +132,5 @@ class Tabular( data.Text ):
     def before_edit( self, dataset ):
         data.Text.before_edit( self, dataset )
         if self.missing_meta( dataset ):
-            self.set_meta( dataset )    
+            self.set_meta( dataset )
+

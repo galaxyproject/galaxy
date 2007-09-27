@@ -14,7 +14,7 @@ class UniverseApplication( object ):
         self.config.check()
         config.configure_logging( self.config )
         #Set up datatypes registry
-        self.datatypes_registry = galaxy.datatypes.registry.Registry(datatypes = self.config.datatypes)
+        self.datatypes_registry = galaxy.datatypes.registry.Registry(datatypes=self.config.datatypes, sniff_order=self.config.sniff_order)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
         # Connect up the object model
         if self.config.database_connection:

@@ -60,6 +60,11 @@ class Configuration( object ):
             self.datatypes = global_conf_parser.items("galaxy:datatypes")
         except ConfigParser.NoSectionError:
             self.datatypes = []
+        #Store sniff order config
+        try:
+            self.sniff_order = global_conf_parser.items("galaxy:sniff_order")
+        except ConfigParser.NoSectionError:
+            self.sniff_order = []
         self.datatype_converters_config = kwargs.get( 'datatype_converters_config_file', "datatype_converters_conf.xml" )
         self.datatype_converters_path = kwargs.get( 'datatype_converters_path', os.path.join(self.root,"lib/galaxy/datatypes/converters") )
     def get( self, key, default ):

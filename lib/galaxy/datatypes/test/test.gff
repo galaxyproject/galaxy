@@ -1,7 +1,7 @@
-# gff-version 2
-## Date: Thu Dec 8 19:46:27 2005
-## gff.pl $Rev: 601 $
-## Input file: /depot/data2/galaxy/encode-data/datasets/msa.AR.20051208.bed
+##gff-version 2
+##Date: Thu Dec 8 19:46:27 2005
+##gff.pl $Rev: 601 $
+##Input file: /depot/data2/galaxy/encode-data/datasets/msa.AR.20051208.bed
 
 chr7	bed2gff	AR	26731313	26731437	.	+	.	score
 chr7	bed2gff	AR	26731491	26731536	.	+	.	score

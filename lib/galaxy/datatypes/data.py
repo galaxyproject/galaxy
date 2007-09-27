@@ -2,9 +2,13 @@ import logging, os, sys, time, sets, tempfile
 from galaxy import util
 from cgi import escape
 from galaxy.datatypes.metadata import *
-log = logging.getLogger(__name__)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
+
+log = logging.getLogger(__name__)
+
+# Valid strand column values
+valid_strand = ['+', '-', '.']
 
 # Constants for data states
 DATA_NEW, DATA_OK, DATA_FAKE = 'new', 'ok', 'fake'
