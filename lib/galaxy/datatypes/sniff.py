@@ -188,8 +188,8 @@ def guess_ext( fname ):
         break
     if is_column_based( fname, ' ', 1 ):
         sep2tabs(fname)
-        if is_column_based( fname, '\t', 1):
-            return "tabular"
+    if is_column_based( fname, '\t', 1):
+        return "tabular"
     return 'txt'
 
 if __name__ == '__main__':
