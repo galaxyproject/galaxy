@@ -2,7 +2,7 @@
   <description>lines that match an expression</description>
   <command interpreter="python">grep.py -i $input -o $out_file1 -pattern '$pattern' -v $invert</command>
   <inputs>
-    <param format="text" name="input" type="data" label="Select lines from"/>
+    <param format="txt" name="input" type="data" label="Select lines from"/>
     <param name="invert" type="select" label="that">
       <option value="false">Matching</option>
       <option value="true">NOT Matching</option>

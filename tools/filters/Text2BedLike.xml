@@ -3,7 +3,7 @@
   <command interpreter="perl">Text2BedLike.pl $chr $start $end $strand $input $out_file1</command>
   <inputs>
 <!--    <display>set the following columns: &lt;br&gt; $chr as chromosome, &lt;br&gt; $start as start, &lt;br&gt; $end as end, &lt;br&gt; $strand as strand in $input</display> -->
-    <param format="text" name="input" type="data" label="In Query"/>
+    <param format="txt" name="input" type="data" label="In Query"/>
     <param name="chr" type="select" label="Get Chromosome from">
       <option value="1">Column 1</option>
       <option value="2">Column 2</option>

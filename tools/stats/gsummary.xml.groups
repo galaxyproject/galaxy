@@ -4,7 +4,7 @@
   <inputs>
     <param name="cond" size="40" type="text" value="c5" label="expression"/>
     <param name="groups" size="40" type="text" value="none" label="group terms (c1,c4,etc.)"/>
-    <param format="text" name="input" type="data" label="summary statistics on"/>
+    <param format="txt" name="input" type="data" label="summary statistics on"/>
 
   </inputs>
   <outputs>

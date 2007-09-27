@@ -3,7 +3,7 @@
   <command interpreter="perl">tailWrapper.pl $input $lineNum $out_file1</command>
   <inputs>
     <param name="lineNum" size="5" type="integer" value="10" label="Select last" help="lines"/>
-    <param format="text" name="input" type="data" label="from"/>
+    <param format="txt" name="input" type="data" label="from"/>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input"/>

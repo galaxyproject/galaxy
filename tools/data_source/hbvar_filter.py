@@ -7,8 +7,8 @@ import tempfile, shutil
 def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     """Sets the name of the data"""
     data_name = param_dict.get( 'name', 'HbVar query' )
-    data_type = param_dict.get( 'type', 'text' )
-    if data_type == 'text': data_type='interval' #All data is TSV, assume interval
+    data_type = param_dict.get( 'type', 'txt' )
+    if data_type == 'txt': data_type='interval' #All data is TSV, assume interval
     name, data = out_data.items()[0]
     data = app.datatypes_registry.change_datatype(data, data_type)
     data.name = data_name

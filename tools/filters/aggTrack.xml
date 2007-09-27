@@ -6,7 +6,7 @@
     <param name="desc" size="20" type="text" value="my intervals" label="Type a name for your data" />    
    </inputs>
   <outputs>
-    <data format="text" name="out_file1" />
+    <data format="txt" name="out_file1" />
   </outputs>
   <help>
 

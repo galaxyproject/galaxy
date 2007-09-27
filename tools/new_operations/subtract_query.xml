@@ -3,10 +3,10 @@
   <command interpreter="python2.4">subtract_query.py $input1 $input2 $begin_col $end_col $output</command>
   <inputs>
     <page>
-      <param format="text" name="input2" type="data" help="Second query">
+      <param format="txt" name="input2" type="data" help="Second query">
         <label>Subtract</label>
       </param>
-      <param format="text" name="input1" type="data" help="First query">
+      <param format="txt" name="input1" type="data" help="First query">
         <label>from</label>
       </param>
     </page>

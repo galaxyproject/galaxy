@@ -12,7 +12,7 @@
       <option value="U">Underscore</option>
       <option value="P">Pipe</option>
     </param>
-    <param format="text" name="input" type="data" label="From"/>
+    <param format="txt" name="input" type="data" label="From"/>
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" />

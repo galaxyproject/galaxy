@@ -3,8 +3,8 @@
   <command interpreter="perl">pasteWrapper.pl $input1 $input2 $delimiter $out_file1</command>
   <inputs>
 <!--    <display>paste $input1 and $input2 using $delimiter as delimiter</display> -->
-    <param format="text" name="input1" type="data" label="Paste"/>
-    <param format="text" name="input2" type="data" label="and"/>
+    <param format="txt" name="input1" type="data" label="Paste"/>
+    <param format="txt" name="input2" type="data" label="and"/>
     <param name="delimiter" type="select" label="Delimit by">
       <option value="T">Tab</option>
       <option value="Dt">Dot</option>

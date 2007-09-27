@@ -64,7 +64,7 @@ class UploadToolAction( object ):
     def upload_empty(self, trans, err_code, err_msg):
         data = trans.app.model.Dataset()
         data.name = err_code 
-        data.extension = "text"
+        data.extension = "txt"
         data.dbkey = "?"
         data.info = err_msg
         data.flush()

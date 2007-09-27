@@ -2,7 +2,7 @@
   <description>from a file</description>
   <command interpreter="python">random_lines.py $input $out_file1 $nlines</command>
   <inputs>
-	 <param format="text" name="input" type="data" label="Dataset"/>
+	 <param format="txt" name="input" type="data" label="Dataset"/>
     <param name="nlines" size="5" type="integer" value="10" label="Lines to sample"/>
   </inputs>
   <outputs>

@@ -21,7 +21,7 @@
       <option value="U">Underscores</option>
       <option value="P">Pipes</option>
     </param> -->
-    <param format="text" name="input" type="data" lable="in Query"/>
+    <param format="txt" name="input" type="data" lable="in Query"/>
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" />

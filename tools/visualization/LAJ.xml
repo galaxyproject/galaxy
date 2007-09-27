@@ -5,11 +5,11 @@
       <param name="maf_input" type="data" format="lav" label="Alignment File" optional="False"/>
       <param name="seq_file1" type="data" format="fasta" label="First Sequence File" optional="True"/>
       <param name="seq_file2" type="data" format="fasta" label="Second Sequence File" optional="True"/>
-      <param name="exonfile" type="data" format="text" label="Exon File" optional="True"/>
-      <param name="repeatfile" type="data" format="text" label="Repeat File" optional="True"/>
-      <param name="annotationfile" type="data" format="text" label="Annotation File" optional="True"/>
-      <param name="underlayfile" type="data" format="text" label="Underlay File" optional="True"/>
-      <param name="highlightfile" type="data" format="text" label="Highlight File" optional="True"/>
+      <param name="exonfile" type="data" format="txt" label="Exon File" optional="True"/>
+      <param name="repeatfile" type="data" format="txt" label="Repeat File" optional="True"/>
+      <param name="annotationfile" type="data" format="txt" label="Annotation File" optional="True"/>
+      <param name="underlayfile" type="data" format="txt" label="Underlay File" optional="True"/>
+      <param name="highlightfile" type="data" format="txt" label="Highlight File" optional="True"/>
   </inputs>
   <outputs>
     <data name="out_file1" format="laj"/>

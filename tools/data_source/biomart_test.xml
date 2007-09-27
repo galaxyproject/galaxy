@@ -15,7 +15,7 @@
 	<code file="biomart_filter.py"/>
 	
 	<outputs>
-		<data name="output" format="text" />
+		<data name="output" format="txt" />
 	</outputs>
 	
 	<options sanitize="False" refresh="True"/>

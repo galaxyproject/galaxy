@@ -7,7 +7,7 @@
     </param>
    </inputs>
   <outputs>
-    <data format="text" name="output" />
+    <data format="txt" name="output" />
   </outputs>
   <code file="operation_filter.py"/>
   <tests>

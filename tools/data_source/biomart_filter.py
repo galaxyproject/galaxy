@@ -8,9 +8,9 @@ import tempfile, shutil
 def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     """Sets the name of the data"""
     data_name = param_dict.get( 'name', 'Biomart query' )
-    data_type = param_dict.get( 'type', 'text' )
+    data_type = param_dict.get( 'type', 'txt' )
     name, data = out_data.items()[0]
-    if data_type == 'text':
+    if data_type == 'txt':
         data_type = sniff.guess_ext(data.file_name)
     data = app.datatypes_registry.change_datatype(data, data_type)
     data.name = data_name

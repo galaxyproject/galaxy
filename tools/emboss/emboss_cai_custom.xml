@@ -5,7 +5,7 @@
     <param format="fasta" name="input1" type="data">
       <label>On query</label>
     </param>
-    <param format="text" name="input2" type="data">
+    <param format="txt" name="input2" type="data">
       <label>Codon Usage File</label>
     </param>
   </inputs>

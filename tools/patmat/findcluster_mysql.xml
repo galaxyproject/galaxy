@@ -20,7 +20,7 @@
   <outputs>
     <data format="bed" type="data" name="out_file1" />
     <data format="tabular" name="out_file2" />
-    <data format="text" name="out_file3" />
+    <data format="txt" name="out_file3" />
   </outputs>
   <code file="findcluster_mysql_subs.py"/>
   <help>
