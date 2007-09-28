@@ -97,8 +97,8 @@ class JobQueue( object ):
         while self.running:
             try:
                 self.monitor_step()
-            except Exception, exc:
-                log.exception( "Exception in monitor_step: %s" %str( exc ))
+            except:
+                log.exception( "Exception in monitor_step" )
             # Sleep
             self.sleeper.sleep( 1 )
             
@@ -147,8 +147,8 @@ class JobQueue( object ):
                         log.debug( "job %d dispatched" %job.job_id)
                 else:
                     log.error( "unknown job state '%s' for job %d" %( job_state, job.job_id ))
-            except Exception, exc:
-                log.exception("failure running job %d, error: %s" %( job.job_id, str( exc )))
+            except:
+                log.exception( "failure running job %d" %job.job_id )
         
         # Update the waiting list
         self.waiting = new_waiting
@@ -163,9 +163,9 @@ class JobQueue( object ):
                     log.debug( "job %d dispatched" %sjob.job_id )
                 except Empty : # squeue is empty, so stop dispatching
                     break
-                except Exception, exc: # if something else breaks while dispatching
+                except: # if something else breaks while dispatching
                     job.fail( "failure dispatching job" )
-                    log.exception("failure running job %d, error: %s" %( sjob.job_id, str( exc )))
+                    log.exception( "failure running job %d" %sjob.job_id )
             
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""
