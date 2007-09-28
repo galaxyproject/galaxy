@@ -106,6 +106,12 @@ def is_column_based(fname, sep='\t', skip=0):
     >>> fname = get_test_fname('test_ensembl.tab')
     >>> is_column_based(fname)
     True
+    >>> fname = get_test_fname('test_tab1.tabular')
+    >>> is_column_based(fname, sep=' ', skip=0)
+    False
+    >>> fname = get_test_fname('test_tab1.tabular')
+    >>> is_column_based(fname)
+    True
     """
     headers = get_headers(fname, sep)
     count = 0
@@ -162,6 +168,9 @@ def guess_ext( fname ):
     >>> file(fname, 'wt').write("a 1 2 x\\nb 3 4 y\\nc 5 6 z")
     >>> guess_ext(fname)
     'tabular'
+    >>> fname = get_test_fname('test_tab1.tabular')
+    >>> guess_ext(fname)
+    'tabular'
     """ 
     datatypes_registry = registry.Registry()
     for datatype in datatypes_registry.sniff_order:
@@ -184,14 +193,14 @@ def guess_ext( fname ):
     for line in file( fname ):
         for char in line:
             if ord(char) > 128:
-                return "data"
+                return 'data'
             else:
                 break
         break
     if is_column_based( fname, ' ', 1 ):
         sep2tabs(fname)
     if is_column_based( fname, '\t', 1):
-        return "tabular"
+        return 'tabular'
     return 'txt'
 
 if __name__ == '__main__':
