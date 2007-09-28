@@ -34,7 +34,7 @@ class Gmaj( data.Data ):
         return 'application/zip'
     def sniff( self, filename ):
         #TODO: fix me
-        return ''
+        return False
 
 class Html( data.Text ):
     """Class describing an html file"""
@@ -54,20 +54,20 @@ class Html( data.Text ):
 
         >>> fname = get_test_fname( 'complete.bed' )
         >>> Html().sniff( fname )
-        ''
+        False
         >>> fname = get_test_fname( 'file.html' )
         >>> Html().sniff( fname )
-        'html'
+        True
         """
         headers = get_headers( filename, None )
 
         try:
             for i, hdr in enumerate(headers):
                 if hdr and hdr[0].lower().find( '<html>' ) >=0:
-                    return self.file_ext
-            return ''
+                    return True
+            return False
         except:
-            return ''
+            return True
 
 class Laj( data.Text ):
     """Class describing a LAJ Applet"""
@@ -84,5 +84,5 @@ class Laj( data.Text ):
             return "peek unavailable"
     def sniff( self, filename ):
         #TODO: fix me...
-        return ''
+        return False
 

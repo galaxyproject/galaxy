@@ -183,11 +183,10 @@ def guess_ext( fname ):
         successfully discovered.
         """
         try:
-            format = datatype.sniff( fname )
+            if datatype.sniff( fname ):
+                return datatype.file_ext
         except:
-            format = ''
-        if format:
-            return format
+            pass
 
     """Default binary file extension"""
     for line in file( fname ):

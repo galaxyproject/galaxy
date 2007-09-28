@@ -51,19 +51,19 @@ class Fasta( Sequence ):
         
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Fasta().sniff( fname )
-        ''
+        False
         >>> fname = get_test_fname( 'sequence.fasta' )
         >>> Fasta().sniff( fname )
-        'fasta'
+        True
         """
         headers = get_headers( filename, None )
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0][0] == ">":
-                return self.file_ext
+                return True
             else:
-                return ''
+                return False
         except:
-            return ''
+            return False
 
 try:
     import pkg_resources; pkg_resources.require( "bx-python" )
@@ -124,19 +124,19 @@ class Maf( Alignment ):
         
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Maf().sniff( fname )
-        'maf'
+        True
         >>> fname = get_test_fname( 'sequence.fasta' )
         >>> Maf().sniff( fname )
-        ''
+        False
         """
         headers = get_headers( filename, None )
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0] == "##maf":
-                return self.file_ext
+                return True
             else:
-                return ''
+                return False
         except:
-            return ''
+            return False
 
 class Axt( Alignment ):
     """Class describing an axt alignment"""
@@ -156,29 +156,29 @@ class Axt( Alignment ):
         
         >>> fname = get_test_fname( 'alignment.axt' )
         >>> Axt().sniff( fname )
-        'axt'
+        True
         >>> fname = get_test_fname( 'alignment.lav' )
         >>> Axt().sniff( fname )
-        ''
+        False
        """
         headers = get_headers( filename, None )
         if len(headers) < 4:
-            return ''
+            return False
         try:
             """Assume the summary line is the first line of the file."""   
             line = headers[0]
         except:
-            return ''
+            return False
  
         if len(line) != 9:
-            return ''
+            return False
         try:
             map ( int, [line[0], line[2], line[3], line[5], line[6], line[8]] )
         except:
-            return ''
+            return False
         if line[7] not in data.valid_strand:
-            return ''
-        return self.file_ext
+            return False
+        return True
 
 class Lav( Alignment ):
     """Class describing a LAV alignment"""
@@ -195,18 +195,18 @@ class Lav( Alignment ):
         
         >>> fname = get_test_fname( 'alignment.lav' )
         >>> Lav().sniff( fname )
-        'lav'
+        True
         >>> fname = get_test_fname( 'alignment.axt' )
         >>> Lav().sniff( fname )
-        ''
+        False
         """
         headers = get_headers( filename, None )
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0].startswith('#:lav'):
-                return self.file_ext
+                return True
             else:
-                return ''
+                return False
         except:
-            return ''
+            return False
 
 

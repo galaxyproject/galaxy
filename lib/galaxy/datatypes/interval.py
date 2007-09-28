@@ -188,10 +188,10 @@ class Interval( Tabular ):
         
         >>> fname = get_test_fname( 'test_space.bed' )
         >>> Interval().sniff( fname )
-        ''
+        False
         >>> fname = get_test_fname( 'interval.interval' )
         >>> Interval().sniff( fname )
-        'interval'
+        True
         """
         headers = get_headers( filename, '\t' )   
         try:
@@ -202,14 +202,14 @@ class Interval( Tabular ):
             for hdr in headers:
                 if not (hdr[0] == '' or hdr[0].startswith( '#' )):
                     if len(hdr) < 3:
-                        return ''
+                        return False
                     try:
                         map( int, [hdr[1], hdr[2]] )
                     except:
-                        return ''
-            return self.file_ext
+                        return False
+            return True
         except:
-            return ''
+            return False
     
 class Bed( Interval ):
     """Tab delimited data in BED format"""
@@ -308,22 +308,22 @@ class Bed( Interval ):
         
         >>> fname = get_test_fname( 'test_tab.bed' )
         >>> Bed().sniff( fname )
-        'bed'
+        True
         >>> fname = get_test_fname( 'interval.bed' )
         >>> Bed().sniff( fname )
-        ''
+        False
         >>> fname = get_test_fname( 'complete.bed' )
         >>> Bed().sniff( fname )
-        'bed'
+        True
         """
         headers = get_headers( filename, '\t' )
         try:
             if not headers:
-                return ''
+                return False
             for hdr in headers:
                 valid_col1 = False
                 if len(hdr) < 3 or len(hdr) > 12:
-                    return ''
+                    return False
                 for str in data.col1_startswith:
                     if hdr[0].lower().startswith(str):
                         valid_col1 = True
@@ -332,36 +332,32 @@ class Bed( Interval ):
                     try:
                         map( int, [hdr[1], hdr[2]] )
                     except:
-                        return ''
+                        return False
                     if len(hdr) > 3:
                         """
                         Since all 9 of these fields are optional, it is difficult to test
                         for specific column values...
                         """
                         optionals = hdr[3:]
-                        """
-                        ...we can, however, test complete BED definitions fairly easily.
-                        """
+                        """...we can, however, test complete BED definitions fairly easily."""
                         if len(optionals) == 9:
                             try:
                                 map ( int, [optionals[1], optionals[3], optionals[4], optionals[5], optionals[6]] )
                             except:
-                                return ''
+                                return False
                             score = int(optionals[1])
                             if score < 0 or score > 1000:
-                                return ''
+                                return False
                             if optionals[2] not in ['+', '-']:
-                                return ''
+                                return False
                             if int(optionals[5]) != 0:
-                                return ''
+                                return False
                             block_count = int(optionals[6])
-                            """
-                            Sometimes the blosck_sizes and block_starts lists end in extra commas
-                            """
+                            """Sometimes the blosck_sizes and block_starts lists end in extra commas"""
                             block_sizes = optionals[7].rstrip(',').split(',')
                             block_starts = optionals[8].rstrip(',').split(',')
                             if len(block_sizes) != block_count or len(block_starts) != block_count:
-                                return ''
+                                return False
                         elif len(optionals) > 4 and len(optionals) < 9:
                             """
                             Here it gets a bit trickier, but in this case, we can be somewhat confident 
@@ -372,12 +368,12 @@ class Bed( Interval ):
                                 if ele in data.valid_strand:
                                     is_valid_strand = True
                             if not is_valid_strand:
-                                return ''
+                                return False
                 else:
-                    return ''
-            return self.file_ext
+                    return False
+            return True
         except:
-            return ''
+            return False
 
 class Gff( Tabular ):
     """Tab delimited data in Gff format"""
@@ -469,37 +465,37 @@ class Gff( Tabular ):
         
         >>> fname = get_test_fname( 'gff_version_3.gff' )
         >>> Gff().sniff( fname )
-        ''
+        False
         >>> fname = get_test_fname( 'test.gff' )
         >>> Gff().sniff( fname )
-        'gff'
+        True
         """
         headers = get_headers( filename, '\t' )
         try:
             if len(headers) < 2:
-                return ''
+                return False
             for hdr in headers:
                 if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '2' ) < 0:
-                    return ''
+                    return False
                 if hdr and hdr[0] and not hdr[0].startswith( '#' ):
                     if len(hdr) != 9:
-                        return ''
+                        return False
                     try:
                         map( int, [hdr[3], hdr[4]] )
                     except:
-                        return ''
+                        return False
                     if hdr[5] != '.':
                         try:
                             score = int(hdr[5])
                         except:
-                            return ''
+                            return False
                         if (score < 0 or score > 1000):
-                            return ''
+                            return False
                     if hdr[6] not in data.valid_strand:
-                        return ''
-            return self.file_ext
+                        return False
+            return True
         except:
-            return ''
+            return False
 
 class Gff3( Gff ):
     """Tab delimited data in Gff3 format"""
@@ -562,45 +558,45 @@ class Gff3( Gff ):
         
         >>> fname = get_test_fname( 'test.gff' )
         >>> Gff3().sniff( fname )
-        ''
+        False
         >>> fname = get_test_fname('gff_version_3.gff')
         >>> Gff3().sniff( fname )
-        'gff3'
+        True
         """
         headers = get_headers( filename, '\t' )
         try:
             if len(headers) < 2:
-                return ''
+                return False
             for hdr in headers:
                 if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '3' ) < 0:
-                    return ''
+                    return False
                 if hdr and hdr[0] and not hdr[0].startswith( '#' ):
                     if len(hdr) != 9: 
-                        return ''
+                        return False
                     try:
                         map( int, [hdr[3]] )
                     except:
                         if hdr[3] != '.':
-                            return ''
+                            return False
                     try:
                         map( int, [hdr[4]] )
                     except:
                         if hdr[4] != '.':
-                            return ''
+                            return False
                     if hdr[5] != '.':
                         try:
                             score = int(hdr[5])
                         except:
-                            return ''
+                            return False
                         if (score < 0 or score > 1000):
-                            return ''
+                            return False
                     if hdr[6] not in self.valid_gff3_strand:
-                        return ''
+                        return False
                     if hdr[7] not in self.valid_gff3_phase:
-                        return ''
-            return self.file_ext
+                        return False
+            return True
         except:
-            return ''
+            return False
 
 class Wiggle( Tabular ):
     """Tab delimited data in wiggle format"""
@@ -642,19 +638,19 @@ class Wiggle( Tabular ):
         
         >>> fname = get_test_fname( 'interval.bed' )
         >>> Wiggle().sniff( fname )
-        ''
+        False
         >>> fname = get_test_fname( 'wiggle.wig' )
         >>> Wiggle().sniff( fname )
-        'wig'
+        True
         """
         headers = get_headers( filename, None )
         try:
             for hdr in headers:
                 if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
-                    return self.file_ext
-            return ''
+                    return True
+            return False
         except:
-            return ''
+            return False
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""
@@ -718,10 +714,10 @@ class CustomTrack ( Tabular ):
         
         >>> fname = get_test_fname( 'complete.bed' )
         >>> CustomTrack().sniff( fname )
-        ''
+        False
         >>> fname = get_test_fname( 'ucsc.customtrack' )
         >>> CustomTrack().sniff( fname )
-        'customtrack'
+        True
         """
         headers = get_headers( filename, None )
         first_line = True
@@ -731,21 +727,21 @@ class CustomTrack ( Tabular ):
                     if hdr[0].startswith('track'):
                         first_line = False
                     else:
-                        return ''
+                        return False
                 except:
-                    return ''
+                    return False
             else:     
                 try:
                     if not (hdr[0] == '' or hdr[0].startswith( '#' )):
                         if len(hdr) < 3:
-                            return ''
+                            return False
                         try:
                             map( int, [hdr[1], hdr[2]] )
                         except:
-                            return ''
+                            return False
                 except:
-                    return ''
-        return self.file_ext
+                    return False
+        return True
 
 class GBrowseTrack ( Tabular ):
     """GMOD GBrowseTrack"""
@@ -793,7 +789,7 @@ class GBrowseTrack ( Tabular ):
         GBrowseTrack files are built within Galaxy.
         TODO: Not yet sure what this file will look like.  Fix this sniffer and add some unit tests here as soon as we know.
         """
-        return ''
+        return False
 
 if __name__ == '__main__':
     import doctest, sys
