@@ -71,13 +71,12 @@ class Interval( Tabular ):
         self.set_meta( dataset )
     
     def set_meta( self, dataset, first_line_is_header=False ):
-        Tabular.set_meta( self, dataset )
+        Tabular.set_meta( self, dataset, 1 )
         
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         if dataset.has_data():
             for i, line in enumerate( file(dataset.file_name) ):
                 line = line.rstrip('\r\n')
-
                 if len(line)>0:
                     if (first_line_is_header or line[0] == '#'):
                         self.init_meta(dataset)
@@ -231,14 +230,11 @@ class Bed( Interval ):
         Interval.init_meta( self, dataset, copy_from=copy_from )
     
     def set_meta( self, dataset ):
-        Tabular.set_meta( self, dataset )
-        
         """
         Overrides the default setting for dataset.metadata.strandCol for BED
         files that do not contain a strand column.  This will result in changing
         the format of the file from BED to Interval.
         """
-        col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
         valid_bed_data = False
         if dataset.has_data():
             for i, line in enumerate( file(dataset.file_name) ):
@@ -246,7 +242,7 @@ class Bed( Interval ):
                 if line and not line.startswith('#') and len(line) > 0:
                     elems = line.split('\t')
                     if len(elems) > 2:
-                        for str in col1_startswith:
+                        for str in data.col1_startswith:
                             if line.lower().startswith(str):
                                 valid_bed_data = True
                                 break
@@ -259,7 +255,9 @@ class Bed( Interval ):
                             dataset.metadata.strandCol = 6
                         break
                 if i == 30: break
-        if not valid_bed_data:
+        if valid_bed_data:
+            Tabular.set_meta( self, dataset, i )
+        else:
             dataset.metadata.is_strandCol = "false"
             dataset.metadata.strandCol = 0
         
@@ -318,7 +316,6 @@ class Bed( Interval ):
         >>> Bed().sniff( fname )
         'bed'
         """
-        col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
         headers = get_headers( filename, '\t' )
         try:
             if not headers:
@@ -327,7 +324,7 @@ class Bed( Interval ):
                 valid_col1 = False
                 if len(hdr) < 3 or len(hdr) > 12:
                     return ''
-                for str in col1_startswith:
+                for str in data.col1_startswith:
                     if hdr[0].lower().startswith(str):
                         valid_col1 = True
                         break
@@ -394,7 +391,20 @@ class Gff( Tabular ):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ('gbrowse', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
-    
+
+    def set_meta( self, dataset ):
+        for i, line in enumerate( file ( dataset.file_name ) ):
+            line = line.rstrip('\r\n')
+            if line and not line.startswith( '#' ):
+                elems = line.split( '\t' )
+                if len(elems) == 9:
+                    try:
+                        map( int, [hdr[3], hdr[4]] )
+                        break
+                    except:
+                        pass
+        Tabular.set_meta( self, dataset, i )
+
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
     
@@ -494,13 +504,39 @@ class Gff( Tabular ):
 class Gff3( Gff ):
     """Tab delimited data in Gff3 format"""
     file_ext = "gff3"
-
+    valid_gff3_strand = ['+', '-', '.', '?']
+    valid_gff3_phase = ['.', '0', '1', '2']
+        
     """Add metadata elements"""
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], desc="Column types", readonly=True )
     
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
+
+    def set_meta( self, dataset ):
+        for i, line in enumerate( file ( dataset.file_name ) ):
+            line = line.rstrip('\r\n')
+            if line and not line.startswith( '#' ):
+                elems = line.split( '\t' )
+                valid_start = False
+                valid_end = False
+                if len(elems) == 9:
+                    try:
+                        start = int(hdr[3])
+                        valid_start = True                                    
+                    except:
+                        if hdr[3] == '.': valid_start = True                                        
+                    try:
+                        end = int(hdr[4])
+                        valid_end = True
+                    except:
+                        if hdr[4] == '.': valid_end = True
+                    strand = hdr[6]
+                    phase = hdr[7]
+                    if valid_start and valid_end and start<end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
+                        break
+        Tabular.set_meta( self, dataset, i )
 
     def sniff( self, filename ):
         """
@@ -531,8 +567,6 @@ class Gff3( Gff ):
         >>> Gff3().sniff( fname )
         'gff3'
         """
-        valid_gff3_strand = ['+', '-', '.', '?']
-        valid_gff3_phase = ['.', '0', '1', '2']
         headers = get_headers( filename, '\t' )
         try:
             if len(headers) < 2:
@@ -560,9 +594,9 @@ class Gff3( Gff ):
                             return ''
                         if (score < 0 or score > 1000):
                             return ''
-                    if hdr[6] not in valid_gff3_strand:
+                    if hdr[6] not in self.valid_gff3_strand:
                         return ''
-                    if hdr[7] not in valid_gff3_phase:
+                    if hdr[7] not in self.valid_gff3_phase:
                         return ''
             return self.file_ext
         except:
@@ -576,6 +610,20 @@ class Wiggle( Tabular ):
     
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
+
+    def set_meta( self, dataset ):
+        for i, line in enumerate( file ( dataset.file_name ) ):
+            line = line.rstrip('\r\n')
+            if line and not line.startswith( '#' ):
+                elems = line.split( '\t' )
+                try:
+                    int( elems[0] )
+                    break
+                except:
+                    for str in data.col1_startswith:
+                        if elems[0].lower().startswith(str):
+                            break
+        Tabular.set_meta( self, dataset, i )
 
     def sniff( self, filename ):
         """
@@ -616,9 +664,13 @@ class CustomTrack ( Tabular ):
         """Initialize interval datatype, by adding UCSC display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
-    
+
+    def set_meta( self, dataset ):
+        Tabular.set_meta( self, dataset, 1 )
+
     def make_html_table(self, dataset):
         return Tabular.make_html_table(self, dataset, skipchar='track')
+
     def get_estimated_display_viewport( self, dataset ):
         try:
             for line in open(dataset.file_name):
@@ -639,6 +691,7 @@ class CustomTrack ( Tabular ):
     
     def as_ucsc_display_file( self, dataset ):
         return open(dataset.file_name)
+
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
         if dataset.has_data:
@@ -703,6 +756,8 @@ class GBrowseTrack ( Tabular ):
         Tabular.__init__(self, **kwd)
         self.add_display_app ('gbrowse', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
+    def set_meta( self, dataset ):
+        Tabular.set_meta( self, dataset, 1 )
     
     def make_html_table(self, dataset):
         return Tabular.make_html_table(self, dataset, skipchar='track')

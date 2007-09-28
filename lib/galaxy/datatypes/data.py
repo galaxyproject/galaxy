@@ -7,7 +7,8 @@ from galaxy.datatypes import metadata
 
 log = logging.getLogger(__name__)
 
-# Valid strand column values
+# Valid first column and strand column values vor bed, other formats
+col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
 valid_strand = ['+', '-', '.']
 
 # Constants for data states

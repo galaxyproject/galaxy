@@ -32,15 +32,20 @@ class Tabular( data.Text ):
                 return True
         return False
 
-    def set_meta( self, dataset ):
+    def set_meta( self, dataset, skip=0 ):
         """
         Tries to determine the number of columns as well as those columns
-        that contain numerical values in the dataset
+        that contain numerical values in the dataset.  A skip parameter is
+        used because various tabular data types reuse this function, and
+        their data type classes are responsible to determine how many invalid
+        comment lines should be skipped.
         """
         if dataset.has_data():
             column_types = []
  
             for i, line in enumerate( file ( dataset.file_name ) ):
+                if i < skip:
+                    continue
                 line = line.rstrip('\r\n')
                 if line and not line.startswith( '#' ):
                     elems = line.split( '\t' )
