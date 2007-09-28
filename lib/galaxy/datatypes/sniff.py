@@ -113,14 +113,16 @@ def is_column_based(fname, sep='\t', skip=0):
     if not headers:
         return False
     for hdr in headers[skip:]:
-        if len(hdr) > 1 and hdr[0] and not hdr[0].startswith('#'):
-            count = len(hdr)
+        if hdr and hdr[0] and not hdr[0].startswith('#'):
+            if len(hdr) > 1:
+                count = len(hdr)
             break
     if count < 2:
         return False
     for hdr in headers[skip:]:
-        if len(hdr) > 1 and hdr[0] and not hdr[0].startswith('#') and len(hdr) != count:
-            return False
+        if hdr and hdr[0] and not hdr[0].startswith('#'):
+            if len(hdr) != count:
+                return False
     return True
 
 def guess_ext( fname ):
