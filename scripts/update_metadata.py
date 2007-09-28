@@ -49,7 +49,12 @@ def main():
     #    data = app.model.Dataset.get(row.id)
     #    if issubclass(type(data.datatype), type(app.datatypes_registry.get_datatype_by_extension('tabular'))):
     #        print row.id
-    #        galaxy.datatypes.tabular.Tabular().set_meta( data ) #Call tabular set metadata method for all Classes, this will set number of columns.
+    #        #The set_meta() function for tabular subclasses are responsible for determining
+    #        #the number of 'problem' lines to skip in the file.  Problem lines are comment lines
+    #        #that do not begin with a '#' character, etc.  When the number of lines to skip is determined,
+    #        #Tabular().set_meta is called, passing the number of lines to skip.  Nothing besides this is
+    #        #currently done in set_meta() functions of subclasses of Tabular.
+    #        data.set_meta() 
     #        data.flush()
             
     #Search out maf datatypes and make sure that available species is set.

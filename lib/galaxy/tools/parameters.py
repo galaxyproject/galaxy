@@ -585,7 +585,7 @@ class ColumnListParameter( SelectToolParameter ):
         assert dataset is not None, "Error retrieving required dataset for ColumnListParameter"
             
         """Just to be safe..."""
-        Tabular().set_meta(dataset)
+        dataset.set_meta()
  
         if self.numerical:
             for i, col in enumerate( dataset.metadata.column_types ):
