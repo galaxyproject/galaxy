@@ -68,7 +68,7 @@ class JobQueue( object ):
         else :
             self.use_policy = False
 
-        log.info("Job scheduler policy is " + sched_policy)
+        log.info("job scheduler policy is %s" %sched_policy)
         # Keep track of the pid that started the job manager, only it
         # has valid threads
         self.parent_pid = os.getpid()
@@ -97,8 +97,8 @@ class JobQueue( object ):
         while self.running:
             try:
                 self.monitor_step()
-            except:
-                log.exception( "Uncaught exception in monitor_step" )
+            except Exception, exc:
+                log.exception( "Exception in monitor_step: %s" %str( exc ))
             # Sleep
             self.sleeper.sleep( 1 )
             
@@ -134,21 +134,21 @@ class JobQueue( object ):
                 job_state = job.check_if_ready_to_run()
                 if job_state == JOB_WAIT: 
                     new_waiting.append( job )
-                    log.debug( "the job has been requeued" )
+                    log.debug( "job has been requeued" )
                 elif job_state == JOB_ERROR:
-                    log.info( "job %d ended with an error" % job.job_id )
+                    log.info( "job %d ended with an error" %job.job_id )
                 elif job_state == JOB_READY:
                     # If special queuing is enabled, put the ready jobs in the special queue
                     if self.use_policy :
                         self.squeue.put( job ) 
-                        log.debug( "job %d put in policy queue" % job.job_id )
+                        log.debug( "job %d put in policy queue" %job.job_id )
                     else : # or dispatch the job directly
                         self.dispatcher.put( job )
-                        log.debug( "job %d dispatched" % job.job_id)
+                        log.debug( "job %d dispatched" %job.job_id)
                 else:
-                    log.error( "unknown job state '%s' for job '%d'", job_state, job.job_id )
-            except:
-                log.exception( "failure running job %d" % job.job_id  )
+                    log.error( "unknown job state '%s' for job %d" %( job_state, job.job_id ))
+            except Exception, exc:
+                log.exception("failure running job %d, error: %s" %( job.job_id, str( exc )))
         
         # Update the waiting list
         self.waiting = new_waiting
@@ -160,12 +160,12 @@ class JobQueue( object ):
                 try :
                     sjob = self.squeue.get()
                     self.dispatcher.put( sjob )
-                    log.debug( "job %d dispatched" % sjob.job_id )
+                    log.debug( "job %d dispatched" %sjob.job_id )
                 except Empty : # squeue is empty, so stop dispatching
                     break
-                except : # if something else breaks while dispatching
+                except Exception, exc: # if something else breaks while dispatching
                     job.fail( "failure dispatching job" )
-                    log.exception( "failure running job %d" % sjob.job_id  )
+                    log.exception("failure running job %d, error: %s" %( sjob.job_id, str( exc )))
             
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""
@@ -337,10 +337,10 @@ class JobWrapper( object ):
                     dataset.blurb = "empty"
         # Save stdout and stderr    
         if len( stdout ) > 32768:
-            log.error( "stdout for job '%d' is greater than 32K, only first part will be logged to database", job.id )
+            log.error( "stdout for job %d is greater than 32K, only first part will be logged to database" %job.id )
         job.stdout = stdout[:32768]
         if len( stderr ) > 32768:
-            log.error( "stderr for job '%d' is greater than 32K, only first part will be logged to database", job.id )
+            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" %job.id )
         job.stderr = stderr[:32768]  
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
@@ -370,7 +370,7 @@ class JobWrapper( object ):
         # validate output datasets
         job.command_line = self.command_line
         mapping.context.current.flush()
-        log.debug('job ended, id: %d' % self.job_id )
+        log.debug('job %d ended' %self.job_id )
         self.cleanup()
         
     def cleanup( self ):
@@ -410,7 +410,7 @@ class DefaultJobDispatcher( object ):
             
     def dispatch_default( self, job_wrapper ):
         self.local_job_runner.put( job_wrapper )
-        log.debug( "dispatch_default(): dispatching job %d to local runner", job_wrapper.job_id )
+        log.debug( "dispatch_default(): dispatching job %d to local runner" %job_wrapper.job_id )
             
     def dispatch_pbs( self, job_wrapper ):
         # command_line = job_wrapper.get_command_line()
@@ -418,11 +418,11 @@ class DefaultJobDispatcher( object ):
         #       be run on the cluster.
         command_line = job_wrapper.tool.command
         if ( not command_line ) or ( "/tools/data_source" in command_line ):
-            log.debug( "dispatching job %d to local runner", job_wrapper.job_id )
+            log.debug( "dispatching job %d to local runner" %job_wrapper.job_id )
             self.local_job_runner.put( job_wrapper )
         else:
             self.pbs_job_runner.put( job_wrapper )
-            log.debug( "dispatch_pbs(): dispatching job %d to pbs runner", job_wrapper.job_id )
+            log.debug( "dispatch_pbs(): dispatching job %d to pbs runner" %job_wrapper.job_id )
         
     def shutdown( self ):
         self.local_job_runner.shutdown()

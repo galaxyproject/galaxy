@@ -43,9 +43,9 @@ class LocalJobRunner( object ):
         try:
             job_wrapper.prepare()
             command_line = job_wrapper.get_command_line()
-        except:
+        except Exception, exc:
             job_wrapper.fail( "failure preparing job", exception=True )
-            log.exception( "failure running job id: %d", job_wrapper.job_id  )
+            log.exception("failure running job %d, error: %s" %( job_wrapper.job_id, str( exc )))
             return
         # If we were able to get a command line, run the job
         if command_line:
@@ -60,9 +60,9 @@ class LocalJobRunner( object ):
                 proc.stdout.close() 
                 proc.stderr.close()
                 log.debug('execution finished: %s' % command_line)
-            except:
+            except Exception, exc:
                 job_wrapper.fail( "failure running job", exception=True )
-                log.exception( "failure running job id: %d", job_wrapper.job_id  )
+                log.exception("failure running job %d, error: %s" %( job_wrapper.job_id, str( exc )))
                 return
         # Finish the job                
         job_wrapper.finish( stdout, stderr )
