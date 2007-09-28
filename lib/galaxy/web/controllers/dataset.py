@@ -2,6 +2,7 @@ from galaxy.web.base.controller import *
 
 import logging, os, sets, string, shutil
 import re, socket
+import mimetypes
 
 from galaxy import util, datatypes, jobs, web, util, model
 
@@ -113,6 +114,10 @@ class DatasetInterface( BaseController ):
             #display files from directory here
             try:
                 file_path = os.path.join(trans.app.model.Dataset.get( dataset_id ).extra_files_path, filename)
+                mime, encoding = mimetypes.guess_type(file_path)
+                if mime is None:
+                    mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
+                trans.response.set_content_type(mime)
                 return open(file_path)
             except:
                 raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % (filename) )
