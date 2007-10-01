@@ -87,6 +87,10 @@ class UploadToolAction( object ):
         if self.empty:
             raise BadFileException( "attempted to upload an empty or inappropriate file" )
         
+        """
+        NOTE: the following will keep binary and zip files (e.g., gmaj.zip) from being correctly sniffed, but
+        the files can be uploaded (they'll be sniffed as 'txt').  This should restrict some unwanted behavior.
+        """
         sniff.convert_newlines(temp_name)
         
         if space_to_tab:

@@ -161,16 +161,19 @@ def guess_ext( fname ):
     >>> guess_ext(fname)
     'gff3'
     >>> fname = get_test_fname('temp.txt')
-    >>> file(fname, 'wt').write("a 2\\nc 1\\nd 0")
+    >>> file(fname, 'wt').write("a\\t2\\nc\\t1\\nd\\t0")
     >>> guess_ext(fname)
     'tabular'
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a 1 2 x\\nb 3 4 y\\nc 5 6 z")
     >>> guess_ext(fname)
-    'tabular'
+    'txt'
     >>> fname = get_test_fname('test_tab1.tabular')
     >>> guess_ext(fname)
     'tabular'
+    >>> fname = get_test_fname('alignment.lav')
+    >>> guess_ext(fname)
+    'lav'
     """ 
     datatypes_registry = registry.Registry()
     for datatype in datatypes_registry.sniff_order:
@@ -188,19 +191,21 @@ def guess_ext( fname ):
         except:
             pass
 
-    """Default binary file extension"""
-    for line in file( fname ):
-        for char in line:
-            if ord(char) > 128:
-                return 'data'
-            else:
+    headers = get_headers( fname, None )
+    is_binary = True
+    for hdr in headers:
+        for char in hdr:
+            try:
+                if not ord(char) > 128:
+                    is_binary = False
+            except:
+                is_binary = False
                 break
-        break
-    if is_column_based( fname, ' ', 1 ):
-        sep2tabs(fname)
+    if is_binary:
+        return 'data'        #default binary data type file extension
     if is_column_based( fname, '\t', 1):
-        return 'tabular'
-    return 'txt'
+        return 'tabular'    #default tabular data type file extension
+    return 'txt'            #default text data type file extension
 
 if __name__ == '__main__':
     import doctest, sys

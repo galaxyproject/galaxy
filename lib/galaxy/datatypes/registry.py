@@ -102,8 +102,6 @@ class Registry( object ):
         #default values
         if len(self.sniff_order) < 1:
             self.sniff_order = [
-                images.Gmaj(),
-                images.Laj(),
                 sequence.Maf(),
                 sequence.Lav(),
                 sequence.Fasta(),

@@ -6,6 +6,7 @@ import data
 import logging
 from galaxy.datatypes.sniff import *
 from urllib import urlencode
+import zipfile
 
 log = logging.getLogger(__name__)
 
@@ -14,7 +15,6 @@ class Image( data.Data ):
     def set_peek( self, dataset ):
         dataset.peek  = 'Image in %s format (%s)' % ( dataset.extension, data.nice_size( dataset.get_size() ) )
         dataset.blurb = 'image' 
-
 
 class Gmaj( data.Data ):
     """Class describing a GMAJ Applet"""
@@ -32,10 +32,25 @@ class Gmaj( data.Data ):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'application/zip'
-    def sniff( self, filename ):
-        #TODO: fix me
-        return False
-
+    def sniff(self, filename):
+        """
+        NOTE: the sniff.convert_newlines() call in the upload utility will keep Gmaj data types from being 
+        correctly sniffed, but the files can be uploaded (they'll be sniffed as 'txt').  This sniff function
+        is here to provide an example of a sniffer for a zip file.
+        """
+        if not zipfile.is_zipfile( filename ):
+            return False
+        contains_gmaj_file = False
+        zip_file = zipfile.ZipFile(filename, "r")
+        for name in zip_file.namelist():
+            if name.split(".")[1].strip().lower() == 'gmaj':
+                contains_gmaj_file = True
+                break
+        zip_file.close()
+        if not contains_gmaj_file:
+            return False
+        return True
+            
 class Html( data.Text ):
     """Class describing an html file"""
     file_ext = "html"
@@ -60,7 +75,6 @@ class Html( data.Text ):
         True
         """
         headers = get_headers( filename, None )
-
         try:
             for i, hdr in enumerate(headers):
                 if hdr and hdr[0].lower().find( '<html>' ) >=0:
@@ -82,7 +96,4 @@ class Laj( data.Text ):
             return dataset.peek
         except:
             return "peek unavailable"
-    def sniff( self, filename ):
-        #TODO: fix me...
-        return False
 

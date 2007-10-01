@@ -174,16 +174,14 @@ nametable = galaxy.datatypes.data:Text
 
 [galaxy:sniff_order]
 
-05 = galaxy.datatypes.images:Gmaj
-10 = galaxy.datatypes.images:Laj
-15 = galaxy.datatypes.sequence:Maf
-20 = galaxy.datatypes.sequence:Lav
-25 = galaxy.datatypes.sequence:Fasta
-30 = galaxy.datatypes.interval:Wiggle
-35 = galaxy.datatypes.images:Html
-40 = galaxy.datatypes.sequence:Axt
-45 = galaxy.datatypes.interval:Bed
-50 = galaxy.datatypes.interval:CustomTrack
-55 = galaxy.datatypes.interval:Gff
-60 = galaxy.datatypes.interval:Gff3
-65 = galaxy.datatypes.interval:Interval
+05 = galaxy.datatypes.sequence:Maf
+10 = galaxy.datatypes.sequence:Lav
+15 = galaxy.datatypes.sequence:Fasta
+20 = galaxy.datatypes.interval:Wiggle
+25 = galaxy.datatypes.images:Html
+30 = galaxy.datatypes.sequence:Axt
+35 = galaxy.datatypes.interval:Bed
+40 = galaxy.datatypes.interval:CustomTrack
+45 = galaxy.datatypes.interval:Gff
+50 = galaxy.datatypes.interval:Gff3
+55 = galaxy.datatypes.interval:Interval
