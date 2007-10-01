@@ -220,7 +220,7 @@ class Bed( Interval ):
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
-    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
@@ -380,8 +380,8 @@ class Gff( Tabular ):
     file_ext = "gff"
 
     """Add metadata elements"""
-    MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True )
-    MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], desc="Column types", readonly=True )
+    MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], desc="Column types", readonly=True, visible=False )
     
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
@@ -504,7 +504,7 @@ class Gff3( Gff ):
     valid_gff3_phase = ['.', '0', '1', '2']
         
     """Add metadata elements"""
-    MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], desc="Column types", readonly=True )
+    MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], desc="Column types", readonly=True, visible=False )
     
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
@@ -602,7 +602,7 @@ class Wiggle( Tabular ):
     """Tab delimited data in wiggle format"""
     file_ext = "wig"
 
-    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')

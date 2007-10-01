@@ -32,7 +32,7 @@ class Tabular( data.Text ):
                 return True
         return False
 
-    def set_meta( self, dataset, skip=0 ):
+    def set_meta( self, dataset, skip=1 ):
         """
         Tries to determine the number of columns as well as those columns
         that contain numerical values in the dataset.  A skip parameter is
