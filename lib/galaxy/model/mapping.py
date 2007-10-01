@@ -117,7 +117,7 @@ JobParameter.table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ) ),
     Column( "name", String(255) ),
-    Column( "value", String(1024) ) )
+    Column( "value", TEXT ) )
     
 JobToInputDatasetAssociation.table = Table( "job_to_input_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
