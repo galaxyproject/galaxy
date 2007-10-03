@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <history_ids>
-#set $i=1
-#for $data in $t.user.histories
-<data id="$data.id" hid="$i" num="${len(data.datasets)}" name="$data.name" create="$data.create_time" update="$data.update_time" >
-#set $i=$i+1
-</data>
-#end for
+  #set $i=1
+  #for $data in $t.user.histories
+    <data id="$data.id" hid="$i" num="${len(data.datasets)}" name="$data.name" create="$data.create_time" update="$data.update_time" >
+      #set $i=$i+1
+    </data>
+  #end for
 </history_ids>

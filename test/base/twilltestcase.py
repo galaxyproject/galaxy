@@ -12,8 +12,7 @@ from elementtree import ElementTree
 
 buffer = StringIO.StringIO()
 
-# Force twill to log to a buffer -- FIXME: Should this go to stdout and be 
-# captured by nose? 
+#Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
 twill.set_output(buffer)
 tc.config('use_tidy', 0)
 
@@ -31,24 +30,111 @@ class TwillTestCase(unittest.TestCase):
         self.home()
         self.set_history()
 
-    def get_fname(self, fname):
-        full = os.path.join( self.file_dir, fname)
+    #Functions associated with files
+    def files_diff(self, file1, file2):
+        """Checks the contents of 2 files for differences"""
+        if not filecmp.cmp(file1, file2):
+            for line1, line2 in zip(file(file1), file(file2)):
+                line1 = line1.rstrip('\r\n')
+                line2 = line2.rstrip('\r\n')
+                if line1 != line2:
+                    # nicer message
+                    fromlines = open( file1, 'U').readlines()
+                    tolines = open( file2, 'U').readlines()
+                    diff = difflib.unified_diff( fromlines, tolines, "local_file", "history_data" )
+                    diff_slice = list( islice( diff, 40 ) )
+                    raise AssertionError( "".join( diff_slice ) )
+        return True
+
+    def get_filename(self, filename):
+        full = os.path.join( self.file_dir, filename)
         return os.path.abspath(full)
 
-    def home(self):
-        tc.go("%s" % self.url)
+    def save_log(*path):
+        """Saves the log to a file"""
+        filename = os.path.join( *path )
+        file(filename, 'wt').write(buffer.getvalue())
+
+    def upload_file(self, filename, ftype='auto', dbkey='hg17'):
+        """Uploads a file"""
+        filename = self.get_filename(filename)
+        tc.go("./tool_runner/index?tool_id=upload1")
+        try: 
+            tc.fv("1","file_type", ftype)
+            tc.fv("1","dbkey", dbkey)
+            tc.formfile("1","file_data", filename)
+            tc.submit("runtool_btn")
+            self.home()
+        except AssertionError, err:
+            errmsg = 'The file doesn\'t exsit. Please check' % file
+            errmsg += str( err )
+            raise AssertionError( errmsg )
+
+    #Functions associated with histories
+    def check_history_for_errors(self):
+        """Raises an exception if there are errors in a history"""
+        tc.go("./history")
+        page = self.last_page()
+        if page.find('error') > -1:
+            raise AssertionError('Errors in the history for user %s' % self.user )
+
+    def check_history_for_string(self, patt):
+        """Looks for 'string' in history page"""
+        tc.go("./history")
+        for subpatt in patt.split():
+            tc.find(subpatt)
+
+    def clear_history(self):
+        """Empties a history of all datasets"""
+        tc.go("./clear_history")
+        tc.go("./history")
+        tc.find('Your history is empty')
+
+    def delete_history(self, hid):
+        """Deletes a history"""
+        data_list = self.get_datasets_in_history()
+        self.assertTrue( data_list )
+        if hid < 0:
+            hid = len(data_list) + hid + 1
+        hid = str(hid)
+        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
+        self.assertEqual(len(elems), 1)
+        tc.go("/history_delete?id=%s" % elems[0].get('id') )
         tc.code(200)
 
-    def go2myurl(self, myurl):
-        tc.go("%s" % myurl)
-        print "+++++++++++++++++++++++++++++"
-        print tc.show()
-        print "-----------------------------"
+    def delete_history_item(self, hid):
+        """Deletes an item from a history"""
+        hid = str(hid)
+        data_list = self.get_datasets_in_history()
+        self.assertTrue( data_list )
+        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
+        self.assertEqual(len(elems), 1)
+        tc.go("/delete?id=%s" % elems[0].get('id') )
         tc.code(200)
 
-    def reload_page(self):
-        tc.reload()
-        tc.code(200)
+    def history_as_xml_tree(self):
+        """Returns a parsed xml object of a history"""
+        self.home()
+        tc.go('./history?template=history.xml' )
+        xml = self.last_page()
+        tree = ElementTree.fromstring(xml)
+        return tree
+
+    def histories_as_xml_tree(self):
+        """Returns a parsed xml object of all histories"""
+        self.home()
+        tc.go('./history?template=history_ids.xml' )
+        xml = self.last_page()
+        tree = ElementTree.fromstring(xml)
+#       print "xml=", xml
+#       print "tree=", tree
+        return tree
+
+    def new_history(self):
+        """Empties a history of all datasets"""
+        tc.go("./history_new")
+        tc.go("./history")
+        tc.find('Your history is empty')
 
     def set_history(self):
         """Sets the history (stores the cookies for this run)"""
@@ -58,110 +144,15 @@ class TwillTestCase(unittest.TestCase):
             tc.go( "./history" )
         tc.code(200)
 
-    def clear_history(self):
-        tc.go("./history_new")
-        tc.go("./history")
-        tc.find('Your history is empty')
-
-    def upload_file(self, fname, ftype='auto', dbkey='hg17'):
-        """Uploads a file"""
-        fname = self.get_fname(fname)
-        tc.go("./tool_runner/index?tool_id=upload1")
-        try: 
-            tc.fv("1","file_type", ftype)
-            tc.fv("1","dbkey", dbkey)
-            tc.formfile("1","file_data", fname)
-            tc.submit("runtool_btn")
-            self.home()
-        except AssertionError, err:
-            errmsg = 'The file doesn\'t exsit. Please check' % file
-            errmsg += str( err )
-            raise AssertionError( errmsg )
-	
-
-    def edit_data(self, hid, check_patt=None, **kwd):
-        """
-        Edits data and sets parameters accordig to the keyword arguments
-        """
-        tc.go('./edit?hid=%d' % hid )
-        if check_patt:
-            tc.find(check_patt)
-        if kwd:
-            self.submit_form(form=1, button="save", **kwd)
-
-    def get_xml_history(self):
-        """Returns a parsed xml object corresponding to the history"""
-        self.home()
-        tc.go('./history?template=history.xml' )
-        xml = self.last_page()
-        tree = ElementTree.fromstring(xml)
-        return tree
-
-    def get_data_list(self):
-        """Returns the data at history id 'hid'"""
-        tree = self.get_xml_history()
-        data_list = [ elem for elem in tree.findall("data") ]
-        return data_list
-
-    def check_genome_build(self, dbkey='hg17' ):
-        """Returns the last used genome_build at history id 'hid'"""
-        tree = self.get_xml_history()
-        elems = [ elem for elem in tree.findall("data") ]
-        self.assertTrue(len(elems)>0)
-        elem = elems[-1]
-        genome_build = elem.get('dbkey')
-        self.assertTrue( genome_build == dbkey )
-    
-    def delete_data(self, hid):
-        """Deletes data at a certain history id"""
-        hid = str(hid)
-        data_list = self.get_data_list()
-        self.assertTrue( data_list )
-        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
-        self.assertEqual(len(elems), 1)
-        tc.go("/delete?id=%s" % elems[0].get('id') )
-        tc.code(200)
-
-
-    def get_xml_history_ids(self):
-        """Returns a parsed xml object corresponding to the history"""
-        self.home()
-        tc.go('./history?template=history_ids.xml' )
-        xml = self.last_page()
-        tree = ElementTree.fromstring(xml)
-#       print "xml=", xml
-#       print "tree=", tree
-        return tree
-
-    def get_history_ids(self):
-        """Returns the data at history id 'hid'"""
-        tree = self.get_xml_history_ids()
-        data_list = [ elem for elem in tree.findall("data") ]
-#       print "data_list=", data_list
-        return data_list
-
-    def delete_history(self, hid):
-        """Deletes a history at a certain id"""
-        data_list = self.get_history_ids()
-        self.assertTrue( data_list )
-        if hid < 0:
-            hid = len(data_list) + hid +1
-            print hid
-        hid = str(hid)
-        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
-        self.assertEqual(len(elems), 1)
-        tc.go("/history_delete?id=%s" % elems[0].get('id') )
-        tc.code(200)
-
     def switch_history(self, hid=None):
-        """Deletes a history at a certain id"""
-        data_list = self.get_history_ids()
+        """Switches to a history in the current list of histories"""
+        data_list = self.get_datasets_in_all_histories()
         self.assertTrue( data_list )
         if hid is None: # take last hid
             elem = data_list[-1]
             hid = elem.get('hid')
         if hid < 0:
-            hid = len(data_list) + hid +1
+            hid = len(data_list) + hid + 1
             print hid
         hid = str(hid)
         elems = [ elem for elem in data_list if elem.get('hid') == hid ]
@@ -169,43 +160,18 @@ class TwillTestCase(unittest.TestCase):
         tc.go("/history_switch?id=%s" % elems[0].get('id') )
         tc.code(200)
 
-
-    def historyid(self):
-        data_list = self.get_data_list()
-        hid_old = -2
-        hids = []
-        same = 0
-        for elem in data_list:
-            hid = elem.get('hid')
-            hids.append(hid)
-            if int(hid) == hid_old + 1:
-                if same == 0 :
-                    print "-",
-                same =1
-            else :
-                if hid_old > 0 :
-                    print "%d," % hid_old,
-                print "%s" % hid,
-                same = 0
-            hid_old = int(hid)
-        if same == 1 :
-            print "%s" % hid
-        return hids
-
+    #unctions associated with datasets (history items) and meta data
     def _assert_dataset_state( self, elem, state ):
         assert elem.get( 'state' ) == state, \
             "Expecting dataset state '%s' but is '%s'. Dataset blurb: %s" % ( state, elem.get('state'), elem.text.strip() )
 
-    def check_data(self, fname, hid=None, wait=True):
-        """
-        Verifies that a data at a history id is indentical to
-        the contents of a file
-        """
+    def check_data(self, filename, hid=None, wait=True):
+        """Verifies that the contents of a history item are indentical to the contents of a file"""
 
         if wait:  # wait for tools to finish
             self.wait()
 
-        data_list = self.get_data_list()
+        data_list = self.get_datasets_in_history()
         self.assertTrue( data_list )
 
         if hid is None: # take last hid
@@ -225,21 +191,103 @@ class TwillTestCase(unittest.TestCase):
         self.assertTrue( hid )
         self._assert_dataset_state( elem, 'ok' )
 
-        local_name = self.get_fname(fname)
-        temp_name  = self.get_fname('temp_%s' % fname)
+        local_name = self.get_filename(filename)
+        temp_name  = self.get_filename('temp_%s' % filename)
         tc.go("./display?hid=" + str(hid) )
 
         data = self.last_page()
         file(temp_name, 'wb').write(data)
 
         try:
-            self.diff(local_name, temp_name)
+            self.files_diff(local_name, temp_name)
         except AssertionError, err:
-            errmsg = 'Data at history id %s does not match expected, diff:\n' % hid
+            errmsg = 'History item %s different than expected, difference:' % hid
             errmsg += str( err )
             raise AssertionError( errmsg )
 
         os.remove(temp_name)
+
+    def check_genome_build(self, dbkey='hg17' ):
+        """Returns the last used genome_build at history id 'hid'"""
+        tree = self.history_as_xml_tree()
+        elems = [ elem for elem in tree.findall("data") ]
+        self.assertTrue(len(elems)>0)
+        elem = elems[-1]
+        genome_build = elem.get('dbkey')
+        self.assertTrue( genome_build == dbkey )
+
+    def check_metadata_for_string(self, patt, hid=None):
+        """Looks for 'patt' in the edit page when editing a dataset"""
+        tc.go("./edit?hid=%d" % hid)
+        for subpatt in patt.split():
+            tc.find(subpatt)
+
+    def edit_metadata(self, hid, check_patt=None, **kwd):
+        """Edits the metadata sssociated with a history item"""
+        tc.go('./edit?hid=%d' % hid )
+        if check_patt:
+            tc.find(check_patt)
+        if kwd:
+            self.submit_form(form=1, button="save", **kwd)
+
+    def get_datasets_in_history(self):
+        """Returns datasets in a history"""
+        tree = self.history_as_xml_tree()
+        data_list = [ elem for elem in tree.findall("data") ]
+        return data_list
+
+    def get_dataset_ids_in_history(self):
+        """Returns the ids of datasets in a history"""
+        data_list = self.get_datasets_in_history()
+        hids = []
+        for elem in data_list:
+            hid = elem.get('hid')
+            hids.append(hid)
+        return hids
+
+    def get_datasets_in_all_histories(self):
+        """Returns all datasets in all histories"""
+        tree = self.histories_as_xml_tree()
+        data_list = [ elem for elem in tree.findall("data") ]
+#       print "data_list=", data_list
+        return data_list
+
+    #Functions associated with browsers, cookies, HTML forms and page visits
+    def clear_cookies(self):
+        tc.clear_cookies()
+
+    def clear_form(self, form=0):
+        """Clears a form"""
+        tc.formclear(str(form))
+
+    def go2myurl(self, myurl):
+        tc.go("%s" % myurl)
+        print "+++++++++++++++++++++++++++++"
+        print tc.show()
+        print "-----------------------------"
+        tc.code(200)
+
+    def home(self):
+        tc.go("%s" % self.url)
+        tc.code(200)
+
+    def last_page(self):
+        return tc.browser.get_html()
+
+    def load_cookies(self, file):
+        filename = self.get_filename(file)
+        tc.load_cookies(filename)
+
+    def reload_page(self):
+        tc.reload()
+        tc.code(200)
+
+    def show_cookies(self):
+        return tc.show_cookies()
+
+    def showforms(self):
+        """Shows form, helpful for debugging new tests"""
+        return tc.browser.showforms()
 
     def submit_form(self, form=1, button="runtool_btn", **kwd):
         """Populates and submits a form from the keyword arguments"""
@@ -297,27 +345,7 @@ class TwillTestCase(unittest.TestCase):
                     break
         tc.submit(button)
 
-    def clear_form(self, form=0):
-        """Clears a form"""
-        tc.formclear(str(form))
-
-    def last_page(self):
-        return tc.browser.get_html()
-
-    def clear_cookies(self):
-        tc.clear_cookies()
-
-    def load_cookies(self, file):
-        fname = self.get_fname(file)
-        tc.load_cookies(fname)
-
-    def show_cookies(self):
-        return tc.show_cookies()
-
-    def showforms(self):
-        """Shows form, helpful for debugging new tests"""
-        return tc.browser.showforms()
-
+    #Functions associated with Galaxy tools
     def run_tool(self, tool_id, **kwd):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and pass it the key/values from the *kwd"""
@@ -326,11 +354,6 @@ class TwillTestCase(unittest.TestCase):
         tc.find('runtool_btn')
         self.submit_form(**kwd)
         tc.code(200)
-
-    def save_log(*path):
-        """Saves the log to a file"""
-        fname = os.path.join( *path )
-        file(fname, 'wt').write(buffer.getvalue())
 
     def wait(self, maxiter=20):
         """Waits for the tools to finish"""
@@ -348,38 +371,8 @@ class TwillTestCase(unittest.TestCase):
                 break
         self.assertNotEqual(count, maxiter)
 
-    def check_history(self, patt):
-        """Checks history for a pattern"""
-        tc.go("./history")
-        for subpatt in patt.split():
-            tc.find(subpatt)
 
-    def check_data_prop(self, patt, hid=None):
-        """Check properties of data(hid=**) for patterns"""
-        tc.go("./edit?hid=%d" % hid)
-        for subpatt in patt.split():
-            tc.find(subpatt)
 
-    def check_errors(self):
-        """Waits for the tools to finish"""
-        tc.go("./history")
-        page = self.last_page()
-        if page.find('error') > -1:
-            raise AssertionError('Errors in the history for user %s' % self.user )
 
-    def diff(self, file1, file2):
-        if not filecmp.cmp(file1, file2):
-            #maybe it is just the line endings
-            lc = 0
-            for line1, line2 in zip(file(file1), file(file2)):
-                lc += 1
-                line1 = line1.strip()
-                line2 = line2.strip()
-                if line1 != line2:
-                    # nicer message
-                    fromlines = open( file1, 'U').readlines()
-                    tolines = open( file2, 'U').readlines()
-                    diff = difflib.unified_diff( fromlines, tolines, "local_file", "history_data" )
-                    diff_slice = list( islice( diff, 40 ) )
-                    raise AssertionError( "".join( diff_slice ) )
-        return True
+
+

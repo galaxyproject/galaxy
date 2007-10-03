@@ -6,19 +6,19 @@ class UploadData( TwillTestCase ):
 
     def test_upload( self ):
         """test_get_data.test_upload: Testing single upload"""
-        self.clear_history()
+        self.new_history()
         self.upload_file('MyData.bed')
         self.check_data('MyData.bed', hid=1)
         self.check_genome_build('hg17')
-        self.clear_history()
+        self.new_history()
         self.upload_file('7.bed')
         self.check_data('sc_3E_Genes.bed', hid=1)
-        self.clear_history()
+        self.new_history()
         self.upload_file('8.bed', ftype='bed')
         self.check_data('sc_3E_knownToEnsembl.bed', hid=1)
     def test_30_multi_upload(self):
         """test_get_data.test_multi_upload: Testing multiple uploads"""
-        self.clear_history()
+        self.new_history()
         self.upload_file('1.bed')
         self.check_data('1.bed', hid=1)
         self.upload_file('2.bed', dbkey='hg17')
@@ -30,7 +30,7 @@ class GetEncodeData( TwillTestCase ):
     
     def test_get_encode_data( self ):
         """test_get_data.test_get_encode_data"""
-        self.clear_history()
+        self.new_history()
         self.run_tool('encode_import_chromatin_and_chromosomes1', hg17=['cc.EarlyRepSeg.20051216.bed'] )
         #hg17=[ "cc.EarlyRepSeg.20051216.bed", "cc.EarlyRepSeg.20051216.gencode_partitioned.bed", "cc.LateRepSeg.20051216.bed", "cc.LateRepSeg.20051216.gencode_partitioned.bed", "cc.MidRepSeg.20051216.bed", "cc.MidRepSeg.20051216.gencode_partitioned.bed" ] )
         self.wait()

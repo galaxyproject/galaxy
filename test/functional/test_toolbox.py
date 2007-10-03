@@ -5,9 +5,7 @@ from base.twilltestcase import TwillTestCase
 toolbox = None
 
 class ToolTestCase( TwillTestCase ):
-    """
-    Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`
-    """
+    """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
     def do_it( self ):
         # If the test generation had an error, raise
         if self.testdef.error:
@@ -64,9 +62,7 @@ class ToolTestCase( TwillTestCase ):
         return expanded_inputs
 
 def get_testcase( testdef, name ):
-    """
-    Dynamically generate a `ToolTestCase` for `testdef`
-    """
+    """Dynamically generate a `ToolTestCase` for `testdef`"""
     n = "TestForTool_" + testdef.tool.id.replace( ' ', '_' )
     s = ( ToolTestCase, )
     def test_tool( self ):

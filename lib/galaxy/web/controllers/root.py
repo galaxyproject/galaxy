@@ -176,21 +176,15 @@ class Universe( BaseController ):
         p = util.Params(kwd, safe=False)
         
         if p.change:
-            """
-            Ths user clicked the Save button on the 'Set data type' form
-            """
+            """Ths user clicked the Save button on the 'Set data type' form"""
             trans.app.datatypes_registry.change_datatype( data, p.datatype )
             trans.app.model.flush()
         elif p.save:
-            """
-            The user clicked the Save button on the 'Set other attributes' form
-            """
+            """The user clicked the Save button on the 'Set other attributes' form"""
             data.name  = p.name
             data.info  = p.info
             
-            """
-            The following for loop will save all metadata_spec items
-            """
+            """The following for loop will save all metadata_spec items"""
             for name, spec in data.datatype.metadata_spec.items():
                 if spec.get("readonly"):
                     continue
