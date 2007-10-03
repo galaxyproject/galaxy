@@ -249,21 +249,21 @@ class TwillTestCase(unittest.TestCase):
                 if 'onchange' in control.attrs.keys():
                     changed = False
                     for elem in kwd[control.name]:
-		     
-		        #----------------------------------------------
-			#---for file parameter, control.value is the index of the file list, but elem is the filename
-			#---the following is to get the filename of that index
-			param_text = ''
-	                for param in tc.show().split('<select') : 
-	                    param = ('<select' + param.split('select>')[0] + 'select>').replace('selected', 'selected="yes"')
-	                    if param.find('onchang') != -1 and param.find('name="%s"' % control.name) != -1: 
-	                        tree = ElementTree.fromstring(param)
+                        #----------------------------------------------
+                        #---for file parameter, control.value is the index of the file list, but elem is the filename
+                        #---the following is to get the filename of that index
+                        param_text = ''
+
+                        for param in tc.show().split('<select') : 
+                            param = ('<select' + param.split('select>')[0] + 'select>').replace('selected', 'selected="yes"')
+                            if param.find('onchang') != -1 and param.find('name="%s"' % control.name) != -1: 
+                                tree = ElementTree.fromstring(param)
                                 for option in tree.findall('option') : 
-	            	            if option.get('value') in control.value :  
-				        param_text = option.text.strip()
-					break
-				break
-		        #----------------------------------------------
+                                    if option.get('value') in control.value:
+                                        param_text = option.text.strip()
+                                        break
+                                break
+                        #----------------------------------------------
                         if elem not in control.value and param_text.find(elem)==-1 :
                             changed = True
                             break
