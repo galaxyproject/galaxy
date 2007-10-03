@@ -9,10 +9,13 @@ pkg_resources.require( "Cheetah" )
 
 import twill, unittest, time
 import os, os.path, subprocess, sys, threading
+import httplib
 from galaxy.web.framework.servers import threadpool_server
 import galaxy.app
 from galaxy.app import UniverseApplication
 from galaxy.web import buildapp
+import test_toolbox
+from galaxy import tools
 
 log = logging.getLogger( __name__ )
 
@@ -21,9 +24,7 @@ log = logging.getLogger( __name__ )
 
 default_galaxy_test_host = "localhost"
 default_galaxy_test_port = "9999"
-
 galaxy_test_file_dir = "test-data"
-
 server = None
 app = None
 
@@ -37,7 +38,6 @@ def setup():
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ   
     
     if start_server:
-
         if 'GALAXY_TEST_DBPATH' in os.environ:
             db_path = os.environ['GALAXY_TEST_DBPATH']
         else: 
@@ -66,36 +66,22 @@ def setup():
                                    
         log.info( "Embedded Universe application started" )
 
-        webapp = buildapp.app_factory( dict(),
-                                       use_translogger = False,
-                                       app=app )
+        webapp = buildapp.app_factory( dict(), use_translogger = False, app=app )
+        server = threadpool_server.serve( webapp, dict(), host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
 
-        server = threadpool_server.serve( webapp, dict(), 
-                                          host=galaxy_test_host, 
-                                          port=galaxy_test_port, 
-                                          start_loop=False )
-                
         atexit.register( teardown )
-        
-        import threading
         t = threading.Thread( target=server.serve_forever )
         t.start()
-
         time.sleep( 2 )
-        
         log.info( "Embedded web server started" )
     
     if app:
         # TODO: provisions for loading toolbox from file when using external server
-        import test_toolbox
         test_toolbox.toolbox = app.toolbox
     else:
-        from galaxy import tools
-        import test_toolbox
         test_toolbox.toolbox = tools.ToolBox( 'tool_conf.xml', 'tools' )
         
     # Test if the server is up
-    import httplib
     conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port )
     conn.request( "GET", "/" )
     assert conn.getresponse().status == 200, "Test HTTP server did not return '200 OK'"

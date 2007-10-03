@@ -1,23 +1,24 @@
 <tool id="aggregate_scores_in_intervals1" description="from the table browser (equivalent to wiggle format)." name="Aggregate datapoints">
-    <description>Appends the average, min, max, sum, and count of datapoints per interval</description>
-    <command interpreter="python2.4">aggregate_scores_in_intervals.py $input2 $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1</command>
-    <inputs>
-        <page>
-            <param format="wig" name="input2" type="data" label="Datapoints from table browser"/>
-            <param format="interval" name="input1" type="data" label="Interval file"/>
-        </page>
-    </inputs>
-    <outputs>
-        <data format="interval" name="out_file1" metadata_source="input2"/>
-    </outputs>
-    <tests>
-      <test>
-        <param name="input1" value="aggregate_binned_scores_in_intervals.bed" />
-        <param name="datasets" value="aggregate_binned_scores_in_intervals.wig" />
-        <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
-      </test>
-    </tests>
-    <help>
+  <description>Appends the average, min, max, sum, and count of datapoints per interval</description>
+  <command interpreter="python2.4">aggregate_scores_in_intervals.py $input2 $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1</command>
+  <inputs>
+    <page>
+      <param format="wig" name="input2" type="data" label="Datapoints from table browser"/>
+      <param format="interval" name="input1" type="data" label="Interval file"/>
+    </page>
+  </inputs>
+  <outputs>
+    <data format="interval" name="out_file1" metadata_source="input2"/>
+  </outputs>
+  <!-- TODO: This tool is currently not being used, uncomment and correct the tests if it ever is...
+  <tests>
+    <test>
+      <param name="input1" value="aggregate_binned_scores_in_intervals.bed" />
+      <param name="datasets" value="aggregate_binned_scores_in_intervals.wig" />
+      <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
+    </test>
+  </tests> -->
+  <help>
 
 .. class:: warningmark
 

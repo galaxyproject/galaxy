@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 
 <tool name="Upload File" id="upload1">
-	<description>
-		from your computer  
-	</description>
-    <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
- 	<inputs>
-		<param name="file_data" type="file" size="30" label="File"/> 
-        <param name="url_paste" type="text" area="true" size="5x35" label="URL/Text" help="Here you may specify a list of URLs (one per line) or paste the contents of a file."/> 
-        <param name="space_to_tab" type="select" display="checkboxes" multiple="True" label="Convert spaces to tabs" help="Use this option if you are entering intervals by hand."> 
-        	<option value="Yes">Yes</option>
-        </param>
-		<param type="select" name="file_type" label="File Format" dynamic_options="get_formats()" help="Which format? See help below" />
-		<param label="Genome" name="dbkey" type="genomebuild" dynamic_options=""/>
-	</inputs>
+  <description>
+    from your computer  
+  </description>
+  <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
+  <inputs>
+    <param name="file_data" type="file" size="30" label="File"/> 
+    <param name="url_paste" type="text" area="true" size="5x35" label="URL/Text" help="Here you may specify a list of URLs (one per line) or paste the contents of a file."/> 
+    <param name="space_to_tab" type="select" display="checkboxes" multiple="True" label="Convert spaces to tabs" help="Use this option if you are entering intervals by hand."> 
+      <option value="Yes">Yes</option>
+    </param>
+    <param type="select" name="file_type" label="File Format" dynamic_options="get_formats()" help="Which format? See help below" />
+    <param label="Genome" name="dbkey" type="genomebuild" dynamic_options=""/>
+  </inputs>
   <help>
 **Auto-detect**
 
@@ -46,10 +46,6 @@ The system will attempt to detect AXT, FASTA, Gff, HTML, LAV, Maf, Wiggle, BED a
     chr22 1000 5000 cloneA 960 + 1000 5000 0 2 567,488, 0,3512
     chr22 2000 6000 cloneB 900 - 2000 6000 0 2 433,399, 0,3601
 
-Original description of the BED format can be found here_.
-
-.. _here: http://genome.ucsc.edu/goldenPath/help/customTrack.html#BED
-
 -----
 
 **Genomic Intervals**
@@ -63,6 +59,7 @@ Original description of the BED format can be found here_.
 - START - The starting position of the feature in the chromosome or contig. The first base in a chromosome is numbered 0.
 - END - The ending position of the feature in the chromosome or contig. The chromEnd base is not included in the display of the feature. For example, the first 100 bases of a chromosome are defined as chromStart=0, chromEnd=100, and span the bases numbered 0-99.
 - STRAND - Defines the strand - either '+' or '-'.
+
 - Example::
 
     #CHROM START END   STRAND NAME COMMENT
@@ -98,7 +95,7 @@ GFF lines have nine required fields that must be tab-separated.
 
 **Gff3**
 
-The proposed GFF3 format addresses the most common extensions to GFF, while preserving backward compatibility with previous formats.
+The GFF3 format addresses the most common extensions to GFF, while preserving backward compatibility with previous formats.
 
 -----
 

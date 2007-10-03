@@ -16,6 +16,11 @@
       <param name="cond" value="c1=='chr22'"/>
       <output name="out_file1" file="fs-filter.dat"/>
     </test>
+    <test>
+      <param name="input" value="7.bed"/>
+      <param name="cond" value="c1=='chr1' and c3-c2>=2000 and c6=='+'"/>
+      <output name="out_file1" file="sc_3E_filter.bed"/>
+    </test>
   </tests>
   <help>
 

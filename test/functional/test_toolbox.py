@@ -67,7 +67,7 @@ def get_testcase( testdef, name ):
     """
     Dynamically generate a `ToolTestCase` for `testdef`
     """
-    n = "GeneratedToolTestCase_" + testdef.tool.id.replace( ' ', '_' )
+    n = "TestForTool_" + testdef.tool.id.replace( ' ', '_' )
     s = ( ToolTestCase, )
     def test_tool( self ):
         self.do_it()

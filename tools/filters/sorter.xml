@@ -24,6 +24,13 @@
       <param name="style" value="num"/>
       <output name="out_file1" file="fs-sort.dat"/>
     </test>
+    <test>
+      <param name="input" value="7.bed"/>
+      <param name="column" value="1"/>
+      <param name="order" value="ASC"/>
+      <param name="style" value="alpha"/>
+      <output name="out_file1" file="sc_3E_sort.bed"/>
+    </test>
   </tests>
   <help>
 
