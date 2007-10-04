@@ -23,13 +23,6 @@
       <param name="field2" value="2"/>
       <output name="out_file1" file="fs-joiner.dat"/>
     </test>
-    <test>
-      <param name="input1" value="7.bed"/>
-      <param name="input2" value="8.bed"/>
-      <param name="field1" value="4"/>
-      <param name="field2" value="1"/>
-      <output name="out_file1" file="sc_3E_join.bed"/>
-    </test>
   </tests>
   <help>
 

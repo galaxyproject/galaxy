@@ -33,7 +33,7 @@ class ToolTestCase( TwillTestCase ):
         # Check the result
         assert len( self.testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."
         for name, file in self.testdef.outputs:
-            self.check_data( file )
+            self.verify_dataset_correctness( file )
     def shortDescription( self ):
         return self.name
 

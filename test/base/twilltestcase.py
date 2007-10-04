@@ -146,14 +146,13 @@ class TwillTestCase(unittest.TestCase):
 
     def switch_history(self, hid=None):
         """Switches to a history in the current list of histories"""
-        data_list = self.get_datasets_in_all_histories()
+        data_list = self.get_datasets_in_histories()
         self.assertTrue( data_list )
         if hid is None: # take last hid
             elem = data_list[-1]
             hid = elem.get('hid')
         if hid < 0:
             hid = len(data_list) + hid + 1
-            print hid
         hid = str(hid)
         elems = [ elem for elem in data_list if elem.get('hid') == hid ]
         self.assertEqual(len(elems), 1)
@@ -165,17 +164,17 @@ class TwillTestCase(unittest.TestCase):
         assert elem.get( 'state' ) == state, \
             "Expecting dataset state '%s' but is '%s'. Dataset blurb: %s" % ( state, elem.get('state'), elem.text.strip() )
 
-    def check_data(self, filename, hid=None, wait=True):
-        """Verifies that the contents of a history item are indentical to the contents of a file"""
+    def verify_dataset_correctness(self, filename, hid=None, wait=True):
+        """Verifies that the attributes and contents of a history item meet expectations"""
 
-        if wait:  # wait for tools to finish
-            self.wait()
+        if wait: self.wait() #wait for job to finish
 
         data_list = self.get_datasets_in_history()
         self.assertTrue( data_list )
 
         if hid is None: # take last hid
             elem = data_list[-1]
+            hid = str( elem.get('hid') )
         else:
             hid = str(hid)
             elems = [ elem for elem in data_list if elem.get('hid') == hid ]
@@ -185,15 +184,13 @@ class TwillTestCase(unittest.TestCase):
         if elem.get('state') != 'ok':
             tc.go("./history")
             tc.code(200)
-#          print tc.show()
 
-        hid = elem.get('hid')
         self.assertTrue( hid )
         self._assert_dataset_state( elem, 'ok' )
 
         local_name = self.get_filename(filename)
-        temp_name  = self.get_filename('temp_%s' % filename)
-        tc.go("./display?hid=" + str(hid) )
+        temp_name = self.get_filename('temp_%s' % filename)
+        tc.go("./display?hid=" + hid )
 
         data = self.last_page()
         file(temp_name, 'wb').write(data)
@@ -204,14 +201,13 @@ class TwillTestCase(unittest.TestCase):
             errmsg = 'History item %s different than expected, difference:' % hid
             errmsg += str( err )
             raise AssertionError( errmsg )
-
         os.remove(temp_name)
 
-    def check_genome_build(self, dbkey='hg17' ):
-        """Returns the last used genome_build at history id 'hid'"""
-        tree = self.history_as_xml_tree()
-        elems = [ elem for elem in tree.findall("data") ]
-        self.assertTrue(len(elems)>0)
+    def verify_genome_build(self, dbkey='hg17' ):
+        """Verifies that the last used genome_build at history id 'hid' is as expected"""
+        data_list = self.get_datasets_in_history()
+        self.assertTrue( data_list )
+        elems = [ elem for elem in data_list ]
         elem = elems[-1]
         genome_build = elem.get('dbkey')
         self.assertTrue( genome_build == dbkey )
@@ -223,7 +219,7 @@ class TwillTestCase(unittest.TestCase):
             tc.find(subpatt)
 
     def edit_metadata(self, hid, check_patt=None, **kwd):
-        """Edits the metadata sssociated with a history item"""
+        """Edits the metadata associated with a history item"""
         tc.go('./edit?hid=%d' % hid )
         if check_patt:
             tc.find(check_patt)
@@ -245,7 +241,7 @@ class TwillTestCase(unittest.TestCase):
             hids.append(hid)
         return hids
 
-    def get_datasets_in_all_histories(self):
+    def get_datasets_in_histories(self):
         """Returns all datasets in all histories"""
         tree = self.histories_as_xml_tree()
         data_list = [ elem for elem in tree.findall("data") ]
@@ -259,13 +255,6 @@ class TwillTestCase(unittest.TestCase):
     def clear_form(self, form=0):
         """Clears a form"""
         tc.formclear(str(form))
-
-    def go2myurl(self, myurl):
-        tc.go("%s" % myurl)
-        print "+++++++++++++++++++++++++++++"
-        print tc.show()
-        print "-----------------------------"
-        tc.code(200)
 
     def home(self):
         tc.go("%s" % self.url)
@@ -297,11 +286,11 @@ class TwillTestCase(unittest.TestCase):
                 if 'onchange' in control.attrs.keys():
                     changed = False
                     for elem in kwd[control.name]:
-                        #----------------------------------------------
-                        #---for file parameter, control.value is the index of the file list, but elem is the filename
-                        #---the following is to get the filename of that index
+                        """
+                        For file parameter, control.value is the index of the file list, but elem is the filename.
+                        The following loop gets the filename of that index.
+                        """
                         param_text = ''
-
                         for param in tc.show().split('<select') : 
                             param = ('<select' + param.split('select>')[0] + 'select>').replace('selected', 'selected="yes"')
                             if param.find('onchang') != -1 and param.find('name="%s"' % control.name) != -1: 
@@ -311,8 +300,8 @@ class TwillTestCase(unittest.TestCase):
                                         param_text = option.text.strip()
                                         break
                                 break
-                        #----------------------------------------------
-                        if elem not in control.value and param_text.find(elem)==-1 :
+
+                        if elem not in control.value and param_text.find(elem) == -1 :
                             changed = True
                             break
                     if changed:
@@ -345,6 +334,13 @@ class TwillTestCase(unittest.TestCase):
                     break
         tc.submit(button)
 
+    def visit_url(self, myurl):
+        tc.go("%s" % myurl)
+        print "+++++++++++++++++++++++++++++"
+        print tc.show()
+        print "-----------------------------"
+        tc.code(200)
+
     #Functions associated with Galaxy tools
     def run_tool(self, tool_id, **kwd):
         tool_id = tool_id.replace(" ", "+")
@@ -370,9 +366,3 @@ class TwillTestCase(unittest.TestCase):
             else:
                 break
         self.assertNotEqual(count, maxiter)
-
-
-
-
-
-
