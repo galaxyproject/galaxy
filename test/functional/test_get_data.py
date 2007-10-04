@@ -10,12 +10,6 @@ class UploadData( TwillTestCase ):
         self.upload_file('MyData.bed',ftype='auto', dbkey='hg18')
         self.verify_dataset_correctness('MyData.bed', hid=1)
         self.verify_genome_build(dbkey='hg18')
-        self.new_history()
-        self.upload_file('7.bed')
-        self.verify_dataset_correctness('7.bed', hid=1)
-        self.new_history()
-        self.upload_file('8.tabular', ftype='bed')
-        self.verify_dataset_correctness('8.tabular', hid=1)
     def test_multi_upload(self):
         """test_get_data.test_multi_upload: Testing multiple uploads"""
         self.new_history()

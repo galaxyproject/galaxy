@@ -13,8 +13,8 @@ class ToolTestCase( TwillTestCase ):
                 raise self.testdef.exception
             else:
                 raise Exception( "Test parse failure" )
-        # Start with an empty history
-        self.clear_history()
+        # Start with a new history
+        self.new_history()
         # Upload any needed files
         for fname, extra in self.testdef.required_files:
             self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ) )

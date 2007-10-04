@@ -176,11 +176,11 @@ class Universe( BaseController ):
         p = util.Params(kwd, safe=False)
         
         if p.change:
-            """Ths user clicked the Save button on the 'Set data type' form"""
+            """Ths user clicked the Save button on the 'Change data type' form"""
             trans.app.datatypes_registry.change_datatype( data, p.datatype )
             trans.app.model.flush()
         elif p.save:
-            """The user clicked the Save button on the 'Set other attributes' form"""
+            """The user clicked the Save button on the 'Edit Attributes' form"""
             data.name  = p.name
             data.info  = p.info
             
@@ -200,6 +200,7 @@ class Universe( BaseController ):
             
             return trans.fill_template( "edit_complete.tmpl" )
         elif p.convert_data:
+            """The user clicked the Convert button on the 'Convert to new format' form"""
             target_type = kwd.get("target_type", None)
             if target_type:
                 msg = data.datatype.convert_dataset(trans, data, target_type)
