@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+
+	
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html;CHARSET=iso-8859-1">
+	<META http-equiv="Content-Script-Type" content="text/javascript">
+	<META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+	<META HTTP-EQUIV="Expires" CONTENT="-1">
+	<TITLE>
+Hyperlinks to Genome Browser	</TITLE>
+	<LINK REL="STYLESHEET" HREF="/style/HGStyle.css">
+
+</HEAD>
+<BODY BGCOLOR="#FFF9D2" LINK="0000CC" VLINK="#330066" ALINK="#6600FF">
+<A NAME="TOP"></A>
+
+<TABLE BORDER=0 CELLPADDING=0 CELLSPACING=0 WIDTH="100%">
+
+<!-- +++++++++++++++++++++ HOTLINKS BAR +++++++++++++++++++ -->
+<TR><TD COLSPAN=3 HEIGHT=40 >
+<table bgcolor="#000000" cellpadding="1" cellspacing="1" width="100%%" height="27">
+<tr bgcolor="#2636D1"><td valign="middle">
+	<table BORDER=0 CELLSPACING=0 CELLPADDING=0 bgcolor="#2636D1" height="24"><TR>
+	 	<TD VALIGN="middle"><font color="#89A1DE">&nbsp;
+
+&nbsp;<A HREF="/index.html?org=Bushbaby&db=otoGar1&hgsid=1118408" class="topbar">
+           Home</A> &nbsp;&nbsp;&nbsp;
+       <A HREF="/cgi-bin/hgGateway?org=Bushbaby&db=otoGar1&hgsid=1118408" class="topbar">
+           Genomes</A> &nbsp;&nbsp;&nbsp;
+       <A HREF="/cgi-bin/hgTracks?org=Bushbaby&db=otoGar1&hgsid=1118408" class="topbar">
+           Genome Browser</A> &nbsp;&nbsp;&nbsp;
+       <A HREF="/cgi-bin/hgBlat?command=start&org=Bushbaby&db=otoGar1&hgsid=1118408" class="topbar">           Blat</A> &nbsp;&nbsp;&nbsp;
+       <A HREF="/cgi-bin/hgTables?org=Bushbaby&db=otoGar1&hgsid=1118408&hgta_doMainPage=1" class="topbar">
+           Tables</A> &nbsp;&nbsp;&nbsp;
+       <A HREF="/cgi-bin/hgNear?org=Bushbaby&db=otoGar1&hgsid=1118408" class="topbar">
+           Gene Sorter</A> &nbsp;&nbsp;&nbsp;
+<A HREF="/cgi-bin/hgSession?org=Bushbaby&db=otoGar1&hgsid=1118408&hgS_doMainPage=1" class="topbar">Session</A>&nbsp;&nbsp;&nbsp;
+       <A HREF="/FAQ/" class="topbar">
+           FAQ</A> &nbsp;&nbsp;&nbsp;
+
+       <A HREF="/goldenPath/help/hgTablesHelp.html"
+       class="topbar">
+           Help</A> 
+&nbsp;</font></TD>
+       </TR></TABLE>
+</TD></TR></TABLE>
+</TD></TR>	
+
+
+<!-- +++++++++++++++++++++ CONTENT TABLES +++++++++++++++++++ -->
+<TR><TD COLSPAN=3>	
+  	<!--outer table is for border purposes-->
+  	<TABLE WIDTH="100%" BGCOLOR="#888888" BORDER="0" CELLSPACING="0" CELLPADDING="1"><TR><TD>	
+    <TABLE BGCOLOR="#FFFEE8" WIDTH="100%"  BORDER="0" CELLSPACING="0" CELLPADDING="0"><TR><TD>	
+	<TABLE BGCOLOR="#D9E4F8" BACKGROUND="/images/hr.gif" WIDTH="100%"><TR><TD>
+		<FONT SIZE="4"><b>&nbsp;
+Hyperlinks to Genome Browser</b></FONT></TD></TR></TABLE>
+	<TABLE BGCOLOR="#FFFEE8" WIDTH="100%" CELLPADDING=0><TR><TH HEIGHT=10></TH></TR>
+	<TR><TD WIDTH=10>&nbsp;</TD><TD>
+	
+
+<A HREF="http://hgwdev.cse.ucsc.edu/cgi-bin/hgTracks?db=otoGar1&position=scaffold_0.1-193456:96554-98437&gold=pack" TARGET=_blank>scaffold_0.1-193456_25 at scaffold_0.1-193456:96554-98437</A><BR>
+<A HREF="http://hgwdev.cse.ucsc.edu/cgi-bin/hgTracks?db=otoGar1&position=scaffold_0.1-193456:100227-101729&gold=pack" TARGET=_blank>scaffold_0.1-193456_26 at scaffold_0.1-193456:100227-101729</A><BR>
+<A HREF="http://hgwdev.cse.ucsc.edu/cgi-bin/hgTracks?db=otoGar1&position=scaffold_0.1-193456:101830-103994&gold=pack" TARGET=_blank>scaffold_0.1-193456_27 at scaffold_0.1-193456:101830-103994</A><BR>
+<A HREF="http://hgwdev.cse.ucsc.edu/cgi-bin/hgTracks?db=otoGar1&position=scaffold_0.1-193456:105267-107614&gold=pack" TARGET=_blank>scaffold_0.1-193456_28 at scaffold_0.1-193456:105267-107614</A><BR>
+
+	</TD><TD WIDTH=15></TD></TR></TABLE>
+	<br></TD></TR></TABLE>
+	</TD></TR></TABLE>
+	
+</TD></TR></TABLE>
+
+</BODY></HTML>
