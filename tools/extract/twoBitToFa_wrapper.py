@@ -67,7 +67,9 @@ else:
                 end = fields[int(end_col)-1]
                 #Run twoBitToFa program
                 tmpfile = tempfile.NamedTemporaryFile()
-                cmdline = "tools/extract/twoBitToFa " + filepath.strip() + " " + tmpfile.name + " -seq=" + name + " -start=" + start + " -end=" + end + "  > /dev/null 2>&1" 
+                two_bit_cmd = os.path.join(os.path.split(sys.argv[0])[0], "twoBitToFa")
+                cmdline = two_bit_cmd + " " + filepath.strip() + " " + tmpfile.name + " -seq=" + name + " -start=" + start + " -end=" + end + "  > /dev/null 2>&1" 
+                #cmdline = "tools/extract/twoBitToFa " + filepath.strip() + " " + tmpfile.name + " -seq=" + name + " -start=" + start + " -end=" + end + "  > /dev/null 2>&1" 
                 os.system(cmdline)
                 header = tmpfile.readline()
                 seq = tmpfile.read()
