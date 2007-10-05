@@ -13,7 +13,7 @@ elif [ $1 = 'help' ]; then
 	echo "'run_functional_tests.sh -id bbb'               for testing one tool with id 'bbb'"
 	echo "'run_functional_tests.sh -list'                 for listing all the tool ids"
 elif [ $1 = '-id' ]; then
-	./nosetests.sh -v -w test functional.test_toolbox:GeneratedToolTestCase_$2 --with-nosehtml --html-report-file run_functional_tests.html
+	./nosetests.sh -v -w test functional.test_toolbox:TestForTool_$2 --with-nosehtml --html-report-file run_functional_tests.html
 elif [ $1 = '-list' ]; then
     python tool_list.py
 	echo "==========================================================================================================================================="

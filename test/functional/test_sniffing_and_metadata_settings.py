@@ -1,0 +1,103 @@
+from base.twilltestcase import TwillTestCase
+
+class SniffingAndMetaDataSettings( TwillTestCase ):
+
+    def test_axt_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing axt data type upon upload"""
+        self.upload_file('1.axt')
+        self.verify_dataset_correctness('1.axt')
+        self.check_history_for_string('1.axt format: <span class="axt">axt</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="1.axt" value="\?" Change data type selected value="axt" selected="yes"')
+    def test_bed_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing bed data type upon upload"""
+        self.upload_file('1.bed')
+        self.verify_dataset_correctness('1.bed')
+        self.check_history_for_string('1.bed format: <span class="bed">bed</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="1.bed" value="\?"')
+        self.check_metadata_for_string('Chrom column: <option value="1" selected> Start column: <option value="2" selected>')
+        self.check_metadata_for_string('End column: <option value="3" selected> Strand column <option value="6" selected>')
+        self.check_metadata_for_string('Convert to new format <option value="bed">Genomic Intervals To BED <option value="gff">BED to GFF')
+        self.check_metadata_for_string('Change data type selected value="bed" selected="yes"')
+    def test_customtrack_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing customtrack data type upon upload"""
+        self.upload_file('1.customtrack')
+        self.verify_dataset_correctness('1.customtrack')
+        self.check_history_for_string('1.customtrack format: <span class="customtrack">customtrack</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="1.customtrack" value="\?" Change data type selected value="customtrack" selected="yes"')
+    def test_fasta_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing fasta data type upon upload"""
+        self.upload_file('1.fasta')
+        self.verify_dataset_correctness('1.fasta')
+        self.check_history_for_string('1.fasta format: <span class="fasta">fasta</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="1.fasta" value="\?" Change data type selected value="fasta" selected="yes"')
+    def test_gff_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing gff data type upon upload"""
+        self.upload_file('5.gff')
+        self.verify_dataset_correctness('5.gff')
+        self.check_history_for_string('5.gff format: <span class="gff">gff</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="5.gff" value="\?"')
+        self.check_metadata_for_string('Convert to new format <option value="bed">GFF to BED')
+        self.check_metadata_for_string('Change data type selected value="gff" selected="yes"')
+    def test_gff3_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing gff3 data type upon upload"""
+        self.upload_file('5.gff3')
+        self.verify_dataset_correctness('5.gff3')
+        self.check_history_for_string('5.gff3 format: <span class="gff3">gff3</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="5.gff3" value="\?"')
+        self.check_metadata_for_string('Convert to new format <option value="bed">GFF to BED')
+        self.check_metadata_for_string('Change data type selected value="gff3" selected="yes"')
+    def test_html_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing html data type upon upload"""
+        self.upload_file('html_file.txt')
+        self.check_history_for_string('No data: attempted to upload an empty or inappropriate file')
+    def test_interval_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing interval data type upon upload"""
+        self.upload_file('1.interval')
+        self.verify_dataset_correctness('1.interval')
+        self.check_history_for_string('1.interval format: <span class="interval">interval</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="1.interval" value="\?"')
+        self.check_metadata_for_string('Chrom column: <option value="1" selected> Start column: <option value="2" selected>')
+        self.check_metadata_for_string('End column: <option value="3" selected> Strand column <option value="6" selected>')
+        self.check_metadata_for_string('Convert to new format <option value="bed">Genomic Intervals To BED')
+        self.check_metadata_for_string('Change data type selected value="interval" selected="yes"')
+    def test_lav_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing lav data type upon upload"""
+        self.upload_file('1.lav')
+        self.verify_dataset_correctness('1.lav')
+        self.check_history_for_string('1.lav format: <span class="lav">lav</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="1.lav" value="\?"')
+        self.check_metadata_for_string('Change data type selected value="lav" selected="yes"')
+    def test_maf_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing maf data type upon upload"""
+        self.upload_file('3.maf')
+        self.verify_dataset_correctness('3.maf')
+        self.check_history_for_string('3.maf format: <span class="maf">maf</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="3.maf" value="\?"')
+        self.check_metadata_for_string('Convert to new format <option value="interval">MAF to Genomic Intervals <option value="fasta">MAF to Fasta')
+        self.check_metadata_for_string('Change data type selected value="maf" selected="yes"')
+    def test_tabular_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing tabular data type upon upload"""
+        self.upload_file('1.tabular')
+        self.verify_dataset_correctness('1.tabular')
+        self.check_history_for_string('1.tabular format: <span class="tabular">tabular</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="1.tabular" value="\?"')
+        self.check_metadata_for_string('Change data type selected value="tabular" selected="yes"')
+    def test_wig_datatype( self ):
+        self.new_history()
+        """Testing correctly sniffing wig data type upon upload"""
+        self.upload_file('1.wig')
+        self.verify_dataset_correctness('1.wig')
+        self.check_history_for_string('1.wig format: <span class="wig">wig</span>, database: \? Info: uploaded file')
+        self.check_metadata_for_string('value="1.wig" value="\?"')
+        self.check_metadata_for_string('Change data type selected value="wig" selected="yes"')

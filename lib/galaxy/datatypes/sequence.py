@@ -164,21 +164,20 @@ class Axt( Alignment ):
         headers = get_headers( filename, None )
         if len(headers) < 4:
             return False
-        for line_list in headers:
-            if len(line_list) > 0:
-                line = line_list[0]
-                if line and line.startswith("##matrix=axt"):
+        for hdr in headers:
+            if len(hdr) > 0 and hdr[0].startswith("##matrix=axt"):
+                return True
+            if len(hdr) > 0 and not hdr[0].startswith("#"):
+                if len(hdr) != 9:
+                    return False
+                try:
+                    map ( int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]] )
+                except:
+                    return False
+                if hdr[7] not in data.valid_strand:
+                    return False
+                else:
                     return True
-                if line and not line.startswith("#"):
-                    if len(line) != 9:
-                        return False
-                    try:
-                        map ( int, [line[0], line[2], line[3], line[5], line[6], line[8]] )
-                    except:
-                        return False
-                    if line[7] not in data.valid_strand:
-                        return False
-        return True
 
 class Lav( Alignment ):
     """Class describing a LAV alignment"""

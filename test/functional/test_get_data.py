@@ -14,11 +14,11 @@ class UploadData( TwillTestCase ):
         """test_get_data.test_multi_upload: Testing multiple uploads"""
         self.new_history()
         self.upload_file('1.bed')
-        self.verify_dataset_correctness('1.bed', hid=1)
+        self.verify_dataset_correctness('1.bed')
         self.upload_file('2.bed', dbkey='hg17')
-        self.verify_dataset_correctness('2.bed', hid=2)
+        self.verify_dataset_correctness('2.bed')
         self.upload_file('3.bed', dbkey='hg17', ftype='bed')
-        self.verify_dataset_correctness('3.bed', hid=3)
+        self.verify_dataset_correctness('3.bed')
 
 class GetEncodeData( TwillTestCase ):
     

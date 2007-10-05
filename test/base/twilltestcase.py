@@ -204,7 +204,7 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( data_list )
         if hid is None: # take last hid
             elem = data_list[-1]
-            hid = elem.get('hid')
+            hid = int( elem.get('hid') )
         self.assertTrue( hid )
         self.visit_page( "edit?hid=%d" % hid )
         for subpatt in patt.split():

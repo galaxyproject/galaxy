@@ -1,7 +1,7 @@
-## gff-version 2
-## Date: Thu Mar 23 11:21:17 2006
-## bed2gff.pl $Rev: 601 $
-## Input file: ./database/files/61c6c604e0ef50b280e2fd9f1aa7da61.dat
+##gff-version 2
+##Date: Thu Mar 23 11:21:17 2006
+##bed2gff.pl $Rev: 601 $
+##Input file: ./database/files/61c6c604e0ef50b280e2fd9f1aa7da61.dat
 
 chr1	bed2gff	CCDS1000.1_cds_0_0_chr1_148325916_f	148325916	148325975	.	+	.	score "0";
 chr2	bed2gff	CCDS2120.1_cds_0_0_chr2_118288584_f	118288584	118288668	.	+	.	score "0";

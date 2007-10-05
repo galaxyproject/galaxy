@@ -1,0 +1,3 @@
+track type=wiggle_0 name="tb_knownGene" description="table browser query on knownGene" visibility=3 url=
+chr7	127475281	127491632	NM_000230	0	+	127486022	127488767	0	3	29,172,3225,	0,10713,13126,
+chr7	127486011	127488900	D49487	0	+	127486022	127488767	0	2	155,490,	0,2399,

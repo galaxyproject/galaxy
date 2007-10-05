@@ -16,7 +16,7 @@
       <param name="input1" value="3.maf" ftype="maf" />
       <param name="min_size" value="0"/>
       <param name="max_size" value="0"/>
-      <output name="out_file1" file="3.maf" />
+      <output name="out_file1" file="maf_limit_size1_out.maf" />
     </test>
   </tests>
   <help>
