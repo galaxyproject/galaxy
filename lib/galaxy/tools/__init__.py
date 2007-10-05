@@ -194,7 +194,14 @@ class Tool:
             self.command = command.text.lstrip() # get rid of leading whitespace
             interpreter  = command.get("interpreter")
             if interpreter:
-                self.command = interpreter + " " + os.path.join(self.tool_dir, self.command)
+                #if not using pbs, change command to absolute path
+                if not self.app.config.use_pbs:
+                    executable = self.command.split()[0]
+                    abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
+                    self.command = self.command.replace(executable, abs_executable, 1)
+                    self.command = interpreter + " " + self.command
+                else:
+                    self.command = interpreter + " " + os.path.join(self.tool_dir, self.command)
         else:
             self.command = ''
         # Short description of the tool
@@ -782,14 +789,23 @@ class Tool:
         for name, data in output_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data )
             # Provide access to a path to store additional files
-            param_dict[name].files_path = os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) )
+            if self.app.config.use_pbs:
+                param_dict[name].files_path = os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) )
+            else:
+                param_dict[name].files_path = os.path.abspath(os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) ))
+            
             for child_association in data.children:
                 child = child_association.child
                 key = "_CHILD___%s___%s" % ( name, child.designation ) 
                 param_dict[ key ] = DatasetFilenameWrapper( child )
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
-        param_dict['__new_file_path__'] = self.app.config.new_file_path #More convienent access to this value; we don't need to wrap a string
+        # More convienent access to app.config.new_file_path; we don't need to wrap a string
+        # But this method of generating additional datasets should be considered DEPRECATED
+        if self.app.config.use_pbs:
+            param_dict['__new_file_path__'] = self.app.config.new_file_path
+        else:
+            param_dict['__new_file_path__'] = os.path.abspath(self.app.config.new_file_path)
         # Return the dictionary of parameters
         return param_dict
     

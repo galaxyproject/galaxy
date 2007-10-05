@@ -53,6 +53,7 @@ class LocalJobRunner( object ):
                 log.debug( 'executing: %s' % command_line )
                 proc = subprocess.Popen( args = command_line, 
                                          shell = True, 
+                                         cwd = job_wrapper.working_directory, 
                                          stdout = subprocess.PIPE, 
                                          stderr = subprocess.PIPE )
                 stdout = proc.stdout.read() 
