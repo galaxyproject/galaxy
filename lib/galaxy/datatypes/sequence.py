@@ -164,20 +164,20 @@ class Axt( Alignment ):
         headers = get_headers( filename, None )
         if len(headers) < 4:
             return False
-        try:
-            """Assume the summary line is the first line of the file."""   
-            line = headers[0]
-        except:
-            return False
- 
-        if len(line) != 9:
-            return False
-        try:
-            map ( int, [line[0], line[2], line[3], line[5], line[6], line[8]] )
-        except:
-            return False
-        if line[7] not in data.valid_strand:
-            return False
+        for line_list in headers:
+            if len(line_list) > 0:
+                line = line_list[0]
+                if line and line.startswith("##matrix=axt"):
+                    return True
+                if line and not line.startswith("#"):
+                    if len(line) != 9:
+                        return False
+                    try:
+                        map ( int, [line[0], line[2], line[3], line[5], line[6], line[8]] )
+                    except:
+                        return False
+                    if line[7] not in data.valid_strand:
+                        return False
         return True
 
 class Lav( Alignment ):
