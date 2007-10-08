@@ -195,7 +195,7 @@ class Tool:
             interpreter  = command.get("interpreter")
             if interpreter:
                 #if not using pbs, change command to absolute path
-                if not self.app.config.use_pbs:
+                if not self.app.config.use_pbs or "/tools/data_source" in self.tool_dir:
                     executable = self.command.split()[0]
                     abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
                     self.command = self.command.replace(executable, abs_executable, 1)
@@ -789,7 +789,7 @@ class Tool:
         for name, data in output_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data )
             # Provide access to a path to store additional files
-            if self.app.config.use_pbs:
+            if self.app.config.use_pbs and "/tools/data_source" not in self.tool_dir:
                 param_dict[name].files_path = os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) )
             else:
                 param_dict[name].files_path = os.path.abspath(os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) ))
@@ -802,7 +802,7 @@ class Tool:
         param_dict['__app__'] = RawObjectWrapper( self.app )
         # More convienent access to app.config.new_file_path; we don't need to wrap a string
         # But this method of generating additional datasets should be considered DEPRECATED
-        if self.app.config.use_pbs:
+        if self.app.config.use_pbs and "/tools/data_source" not in self.tool_dir:
             param_dict['__new_file_path__'] = self.app.config.new_file_path
         else:
             param_dict['__new_file_path__'] = os.path.abspath(self.app.config.new_file_path)
