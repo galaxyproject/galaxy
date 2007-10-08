@@ -21,8 +21,9 @@ class ToolParameter( object ):
     moment but in the future should encapsulate more complex parameters (lists
     of valid choices, validation logic, ...)
     """
-    def __init__( self, tool, param ):
+    def __init__( self, tool, param, context=None ):
         self.tool = tool
+        self.refresh_on_change = False
         self.name = param.get("name")
         self.type = param.get("type")
         self.label = util.xml_text(param, "label")
@@ -70,6 +71,12 @@ class ToolParameter( object ):
         """
         return None
         
+    def get_dependencies( self ):
+        """
+        Return the names of any other parameters this parameter depends on
+        """
+        return []
+        
     def filter_value( self, value, trans=None, other_values={} ):
         """
         Parse the value returned by the view into a form usable by the tool OR
@@ -99,6 +106,13 @@ class ToolParameter( object ):
                 return value
         else:
             return self.to_python( value, app )
+            
+    def value_to_display_text( self, value, app ):
+        """
+        Convert a value to a text representation suitable for displaying to
+        the user
+        """
+        return value
         
     def to_param_dict_string( self, value ):
         return str( value )
@@ -108,7 +122,7 @@ class ToolParameter( object ):
             validator.validate( value, history )
 
     @classmethod
-    def build( cls, tool, param):
+    def build( cls, tool, param ):
         """Factory method to create parameter of correct type"""
         param_type = param.get("type")
         if not param_type or param_type not in parameter_types:
@@ -415,7 +429,7 @@ class SelectToolParameter( ToolParameter ):
             return eval( self.dynamic_options, self.tool.code_namespace, other_values )
         else:
             return self.options
-    def get_legal_values( self, other_values ):
+    def get_legal_values( self, trans, other_values ):
         if self.dynamic_options:
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
         else:
@@ -431,19 +445,21 @@ class SelectToolParameter( ToolParameter ):
             field.add_option( text, optval, selected )
         return field
     def from_html( self, value, trans=None, other_values={} ):
-        legal_values = self.get_legal_values( other_values )
+        legal_values = self.get_legal_values( trans, other_values )
         if isinstance( value, list ):
             if not(self.repeat):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
             rval = []
             for v in value: 
                 v = util.restore_text( v )
-                assert v in legal_values 
+                if v not in legal_values:
+                    raise ValueError( "An invalid option was selected, please verify" )
                 rval.append( v )
             return rval
         else:
             value = util.restore_text( value )
-            assert value in legal_values
+            if value not in legal_values:
+                raise ValueError( "An invalid option was selected, please verify" )
             return value    
     def to_param_dict_string( self, value ):
         if value is None:
@@ -509,7 +525,7 @@ class GenomeBuildParameter( SelectToolParameter ):
         last_used_build = trans.history.genome_build
         for dbkey, build_name in util.dbnames:
             yield build_name, dbkey, ( dbkey == last_used_build )
-    def get_legal_values( self, other_values ):
+    def get_legal_values( self, trans, other_values ):
         return set( dbkey for dbkey, _ in util.dbnames )
 
 class ColumnListParameter( SelectToolParameter ):
@@ -535,71 +551,47 @@ class ColumnListParameter( SelectToolParameter ):
     """
     def __init__( self, tool, elem ):
         SelectToolParameter.__init__( self, tool, elem )
-
         self.tool = tool
         self.numerical = str_bool( elem.get( "numerical", False ))
-        self.assoc_dataset = elem.get( "assoc_dataset", None )
-
-    def get_options( self, trans, other_values ):
-        columnList = []
-        dataset_id = 0
-        dataset = None
-        assoc_dataset = self.tool.get_param( self.assoc_dataset )
-
-        assert assoc_dataset is not None, "Tools that include a ColumnListParameter must also include a DataToolParameter"
-
-        if len( self.tool.updated_params ) == 0:
-            """
-            This will execute when the tool page is initially loading and the
-            user has not yet manually selected a dataset.  In this case, ad_val
-            will be a DataToolParameter.
-            """
-            field = assoc_dataset.get_html_field(trans, assoc_dataset, other_values )
-
-            """We need to make sure there is a dataset of the proper format in the history."""
-            some_data = bool( field.options )
-            if not some_data:
-                return columnList
-            elif len( field.options ) == 1 and field.options[0][0] == 'no data has the proper type':
-                return columnList
-
-            if dataset_id == 0:
-                for txt, val, selected in field.options:
-                    if selected: 
-                        dataset_id = val
-                        break
-            if dataset_id == 0:
-                """This should be the latest dataset in the history"""
-                dataset_id = str(field.options[-1][1])
-
-            dataset = assoc_dataset.from_html(dataset_id, trans, other_values )
-
-        else:
-            """
-            This will execute whenever the user selects a dataset from the input data
-            select list.  Doing this results in executing the tool's update_state function,
-            so we can retrieve the selected dataset from the tool.
-            """
-            dataset = self.tool.updated_params[self.assoc_dataset]
-
-        assert dataset is not None, "Error retrieving required dataset for ColumnListParameter"
-            
-        """Just to be safe..."""
+        self.data_ref = elem.get( "data_ref", None )
+        if self.data_ref is None:
+            self.data_ref = elem.get( "assoc_dataset", None )
+    def get_column_list( self, trans, other_values ):
+        """
+        Generate a select list containing the columns of the associated 
+        dataset (if found).
+        """
+        column_list = []
+        # No value indicates a configuration error, the named DataToolParameter
+        # must preceed this parameter in the config
+        assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
+        # Get the value of the associated DataToolParameter (a dataset)
+        dataset = other_values[ self.data_ref ]
+        # Check if a dataset is selected
+        if dataset is None or dataset == '':
+            # NOTE: Both of these values indicate that no dataset is selected.
+            #       However, 'None' indicates that the dataset is optional 
+            #       while '' indicates that it is not. Currently column
+            #       parameters do not work well with optional datasets
+            return column_list
+        # Just to be safe... (FIXME: Is this still neccesary?)
         dataset.set_meta()
- 
+        # Generate options
         if self.numerical:
+            # If numerical was requsted, filter columns based on metadata
             for i, col in enumerate( dataset.metadata.column_types ):
                 if col == 'int' or col == 'float':
-                    self.legal_values.add(str( i+1 ))
-                    option = 'c' + str( i+1 )
-                    columnList.append((option,str( i+1 ),False))
+                    column_list.append( str( i + 1 ) )
         else:
-            for col in range (0, dataset.metadata.columns):
-                self.legal_values.add(str(col+1))
-                option = 'c' + str(col+1)
-                columnList.append((option,str(col+1),False))
-
-        return columnList
+            column_list = [ str( i + 1 ) for i in range(0, dataset.metadata.columns) ]
+        return column_list
+    def get_options( self, trans, other_values ):
+        column_list = self.get_column_list( trans, other_values )
+        return [ ( "c" + col, col, False ) for col in column_list ]
+    def get_legal_values( self, trans, other_values ):
+        return set( self.get_column_list( trans, other_values ) )
+    def get_dependencies( self ):
+        return [ self.data_ref ]
 
 class DataToolParameter( ToolParameter ):
     """
@@ -655,11 +647,11 @@ class DataToolParameter( ToolParameter ):
             if type( value ) != list: value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change )
         if self.dynamic_options:
-            """Dynamic options for a DataToolParameter specify limits on acceptrable build, id, or extension"""
+            # Dynamic options for a DataToolParameter specify limits on acceptrable build, id, or extension
             option_build, option_id, option_extension = \
                 eval( self.dynamic_options, self.tool.code_namespace, other_values )
-        """CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()"""
-        def dataset_collector( datasets, parent_hid ):    
+        # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
+        def dataset_collector( datasets, parent_hid ):
             for i, data in enumerate( datasets ):
                 if parent_hid is not None:
                     hid = "%s.%d" % ( parent_hid, i + 1 )
@@ -678,7 +670,6 @@ class DataToolParameter( ToolParameter ):
                         field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
                 # Also collect children via association object
                 dataset_collector( [ assoc.child for assoc in data.children ], hid )
-                 
         dataset_collector( history.datasets, None )
         some_data = bool( field.options )
         if some_data:
@@ -691,6 +682,41 @@ class DataToolParameter( ToolParameter ):
         if self.optional == True:
             field.add_option( "Selection is Optional", 'None', True )
         return field
+
+    def get_initial_value( self, trans, context ):
+        """
+        NOTE: This is wasteful since dynamic options and dataset collection
+              happens twice (here and when generating HTML). 
+        """
+        assert trans is not None, "DataToolParameter requires a trans"
+        history = trans.history
+        assert history is not None, "DataToolParameter requires a history"
+        if self.dynamic_options:
+            # Dynamic options for a DataToolParameter specify limits on acceptrable build, id, or extension
+            option_build, option_id, option_extension = \
+                eval( self.dynamic_options, self.tool.code_namespace, other_values )
+        most_recent_dataset = [None]
+        def dataset_collector( datasets ):
+            for i, data in enumerate( datasets ):
+                if self.dynamic_options:
+                    if ( isinstance( data.datatype, self.formats )
+                         and (data.dbkey == option_build) and (data.id != option_id) 
+                         and (data.extension in option_extension) 
+                         and not data.deleted ): 
+                        most_recent_dataset[0] = data
+                else:
+                    if isinstance( data.datatype, self.formats) and not data.deleted:
+                        most_recent_dataset[0] = data
+                # Also collect children via association object
+                dataset_collector( [ assoc.child for assoc in data.children ] )
+        dataset_collector( history.datasets )
+        most_recent_dataset = most_recent_dataset.pop()
+        if most_recent_dataset is not None:
+            return most_recent_dataset
+        elif self.optional:
+            return None
+        else:
+            return ''
 
     def from_html( self, value, trans, other_values={} ):
         if not value:
@@ -724,6 +750,9 @@ class DataToolParameter( ToolParameter ):
 
     def to_param_dict_string( self, value ):
         return value.file_name
+        
+    def value_to_display_text( self, value, app ):
+        return "%s: %s" % ( value.hid, value.name )
 
 # class RawToolParameter( ToolParameter ):
 #     """
@@ -781,6 +810,7 @@ parameter_types = dict( text        = TextToolParameter,
                         genomebuild = GenomeBuildParameter,
                         select      = SelectToolParameter,
                         columnlist  = ColumnListParameter,
+                        data_column = ColumnListParameter,
                         hidden      = HiddenToolParameter,
                         baseurl     = BaseURLToolParameter,
                         file        = FileToolParameter,

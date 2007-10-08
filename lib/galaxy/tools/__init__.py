@@ -172,7 +172,6 @@ class Tool:
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
-        self.updated_params = {}
         # Parse XML element containing configuration
         self.parse( root )
         
@@ -408,20 +407,21 @@ class Tool:
             display = None
         return display, inputs
         
-    def parse_input_elem( self, parent_elem, enctypes ):
+    def parse_input_elem( self, parent_elem, enctypes, context=None ):
         """
         Parse a parent element whose children are inputs -- these could be 
         groups (repeat, conditional) or param elements. Groups will be parsed
         recursively.
         """
         rval = odict()
+        context = ExpressionContext( rval, context )
         for elem in parent_elem:
             # Repeat group
             if elem.tag == "repeat":
                 group = Repeat()
                 group.name = elem.get( "name" )
                 group.title = elem.get( "title" ) 
-                group.inputs = self.parse_input_elem( elem, enctypes )  
+                group.inputs = self.parse_input_elem( elem, enctypes, context )  
                 rval[group.name] = group
             elif elem.tag == "conditional":
                 group = Conditional()
@@ -429,20 +429,22 @@ class Tool:
                 # Should have one child "input" which determines the case
                 input_elem = elem.find( "param" )
                 assert input_elem is not None, "<conditional> must have a child <param>"
-                group.test_param = self.parse_param_elem( input_elem, enctypes )
+                group.test_param = self.parse_param_elem( input_elem, enctypes, context )
+                # Must refresh when test_param changes
+                group.test_param.refresh_on_change = True
                 # And a set of possible cases
                 for case_elem in elem.findall( "when" ):
                     case = ConditionalWhen()
                     case.value = case_elem.get( "value" )
-                    case.inputs = self.parse_input_elem( case_elem, enctypes )
+                    case.inputs = self.parse_input_elem( case_elem, enctypes, context )
                     group.cases.append( case )
                 rval[group.name] = group
             elif elem.tag == "param":
-                param = self.parse_param_elem( elem, enctypes )
+                param = self.parse_param_elem( elem, enctypes, context )
                 rval[param.name] = param
         return rval
 
-    def parse_param_elem( self, input_elem, enctypes ):
+    def parse_param_elem( self, input_elem, enctypes, context ):
         """
         Parse a single "<param>" element and return a ToolParameter instance. 
         Also, if the parameter has a 'required_enctype' add it to the set
@@ -452,6 +454,10 @@ class Tool:
         param_enctype = param.get_required_enctype()
         if param_enctype:
             enctypes.add( param_enctype )
+        # If parameter depends on any other paramters, we must refresh the
+        # form when it changes
+        for name in param.get_dependencies():
+            context[ name ].refresh_on_change = True
         return param
 
     def new_state( self, trans ):
@@ -461,7 +467,6 @@ class Tool:
         """
         state = DefaultToolState()
         state.inputs = {}
-        self.updated_params = {}
         self.fill_in_new_state( trans, self.inputs_by_page[ 0 ], state.inputs )
         return state
 
@@ -662,7 +667,6 @@ class Tool:
                 if error:
                     errors[ input.name ] = error
                 state[input.name] = value
-                self.updated_params[input.name] = value
         return errors
             
     def check_param( self, trans, param, incoming_value, param_values ):

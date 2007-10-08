@@ -44,20 +44,15 @@
       #set group_errors = $errors.get( $input.name, {} )
       #set current_case = $group_state['__current_case__']
       #set prefix = $prefix + $input.name + "|"
-      $row_for_param( $prefix, $input.test_param, $group_state, $group_errors, $context, refresh=True )
+      $row_for_param( $prefix, $input.test_param, $group_state, $group_errors, $context )
       $do_inputs( $input.cases[$current_case].inputs, $group_state, $group_errors, $prefix, $context )
     #else
-    #try
-      #set refresh = $input.refresh_on_change
-    #except
-      #set refresh = False
-    #end try
-      $row_for_param( $prefix, $input, $tool_state, $errors, $context, $refresh )
+      $row_for_param( $prefix, $input, $tool_state, $errors, $context )
     #end if
   #end for  
 #end def
 
-#def row_for_param( $prefix, $param, $parent_state, $parent_errors, $context, $refresh=False )
+#def row_for_param( $prefix, $param, $parent_state, $parent_errors, $context )
     #if $parent_errors.has_key( $param.name ):
         #set cls = "form-row form-row-error"
     #else
@@ -69,7 +64,7 @@
         </label>
 
         #set field = $param.get_html_field( $caller, $parent_state[ $param.name ], $context )
-        #set $field.refresh_on_change = $refresh
+        #set $field.refresh_on_change = $param.refresh_on_change
         <div style="float: left; width: 250px; margin-right: 10px;">$field.get_html( $prefix )</div>
         #if $parent_errors.has_key( $param.name ):
         <div style="float: left; color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">

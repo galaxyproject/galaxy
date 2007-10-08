@@ -18,10 +18,10 @@
       <param name="input"
              type="data" format="tabular"
              label="Dataset"/>
-      <param name="xcol" type="integer" 
+      <param name="xcol" type="data_column" data_ref="input" 
              value="1" size="30"
              label="Column for x axis"/>
-      <param name="ycol" type="integer" 
+      <param name="ycol" type="data_column" data_ref="input" 
              value="1" size="30" 
              label="Column for y axis"/>
       <conditional name="series_type">
