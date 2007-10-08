@@ -27,4 +27,6 @@ class ExpressionContext( object, DictMixin ):
         if self.parent is not None and key in self.parent:
             return True
         return False
+    def __str__( self ):
+        return str( self.dict )
         
