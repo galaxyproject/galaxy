@@ -20,11 +20,6 @@ from sqlalchemy import *
 from galaxy.model import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
-from galaxy.util.aliaspickler import AliasPickleModule
-
-MetaPickler = AliasPickleModule( {
-    ("cookbook.patterns","Bunch"):("galaxy.util.bunch","Bunch")
-    } )
 
 metadata = DynamicMetaData( threadlocal=False )
 context = SessionContext( create_session ) 
@@ -68,7 +63,7 @@ Dataset.table = Table( "dataset", metadata,
     Column( "extension", TrimmedString( 64 ) ),
     Column( "dbkey", TrimmedString( 64 ), key="old_dbkey" ), # maps to old_dbkey, see __init__.py
     Column( "state", TrimmedString( 64 ) ),
-    Column( "metadata", MetadataType(pickler=MetaPickler), key="_metadata" ),
+    Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, nullable=True ),
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean ),

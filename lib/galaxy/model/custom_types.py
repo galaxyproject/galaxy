@@ -2,6 +2,7 @@ from sqlalchemy.types import *
 import simplejson
 import pickle
 from galaxy.util.bunch import Bunch
+from galaxy.util.aliaspickler import AliasPickleModule
 
 class JSONType( TypeDecorator ):
     """ 
@@ -41,13 +42,17 @@ class JSONType( TypeDecorator ):
     def is_mutable( self ):
         return self.mutable
 
+MetadataPickler = AliasPickleModule( {
+    ( "cookbook.patterns", "Bunch" ) : ( "galaxy.util.bunch" , "Bunch" )
+} )
+
 class MetadataType( JSONType ):
     """
     Mixture between JSONType and PickleType...can read in either, and
     writes JSON.
     """
 
-    def __init__( self, pickler=None, jsonifyer=None, mutable=True ):
+    def __init__( self, pickler=MetadataPickler, jsonifyer=None, mutable=True ):
         self.jsonifyer =  jsonifyer or simplejson
         self.pickler = pickler or pickle
         self.mutable = mutable
