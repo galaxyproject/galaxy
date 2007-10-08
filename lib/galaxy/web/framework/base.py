@@ -50,6 +50,8 @@ class WebApplication( object ):
         methods which handle web requests. To connect a URL to a controller's
         method use `add_route`.
         """
+        log.debug( "Enabling '%s' controller, class: %s", 
+            controller_name, controller.__class__.__name__ )
         self.controllers[ controller_name ] = controller
     def add_route( self, route, **kwargs ):
         """

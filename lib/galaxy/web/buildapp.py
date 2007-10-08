@@ -3,6 +3,9 @@ Provides factory methods to assemble the Galaxy web application
 """
 
 import logging, atexit
+import os, os.path
+
+from inspect import isclass
 
 from paste.request import parse_formvars
 from paste.util import import_string
@@ -17,9 +20,28 @@ from galaxy import config, jobs, util, tools
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
-from galaxy.web.controllers import root, tool_runner, proxy, async, admin, user, error, dataset
-
 import galaxy.web.framework
+
+def add_controllers( webapp, app ):
+    """
+    Search for controllers in the 'galaxy.web.controllers' module and add 
+    them to the webapp.
+    """
+    from galaxy.web.base.controller import BaseController
+    import galaxy.web.controllers
+    controller_dir = galaxy.web.controllers.__path__[0]
+    for fname in os.listdir( controller_dir ):
+        if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
+            name = fname[:-3]
+            module_name = "galaxy.web.controllers." + name
+            module = __import__( module_name )
+            for comp in module_name.split( "." )[1:]:
+                module = getattr( module, comp )
+            # Look for a controller inside the modules
+            for key in dir( module ):
+                T = getattr( module, key )
+                if isclass( T ) and T is not BaseController and issubclass( T, BaseController ):
+                    webapp.add_controller( name, T( app ) )
 
 def app_factory( global_conf, **kwargs ):
     """
@@ -34,15 +56,7 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = galaxy.web.framework.WebApplication( app )
-    # Add controllers to the web application
-    webapp.add_controller( 'root', root.Universe( app ) )
-    webapp.add_controller( 'tool_runner', tool_runner.ToolRunner( app ) )
-    webapp.add_controller( 'ucsc_proxy', proxy.UCSCProxy( app ) )
-    webapp.add_controller( 'async', async.ASync( app ) )
-    webapp.add_controller( 'admin', admin.Admin( app ) )
-    webapp.add_controller( 'user', user.User( app ) )
-    webapp.add_controller( 'error', error.Error( app ) )
-    webapp.add_controller( 'dataset', dataset.DatasetInterface( app ) )
+    add_controllers( webapp, app )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
