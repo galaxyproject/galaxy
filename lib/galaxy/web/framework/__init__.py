@@ -21,6 +21,9 @@ pkg_resources.require( "Mako" )
 import mako.template
 import mako.lookup
 
+pkg_resources.require( "simplejson" )
+import simplejson
+
 url_for = base.routes.url_for
 
 def expose( func ):
@@ -29,6 +32,15 @@ def expose( func ):
     """
     func.exposed = True
     return func
+    
+def json( func ):
+    def decorator( self, trans, *args, **kwargs ):
+        trans.response.set_content_type( "text/javascript" )
+        return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+    if not hasattr(func, '_orig'):
+        decorator._orig = func
+    decorator.exposed = True
+    return decorator
     
 NOT_SET = object()
     
