@@ -2,9 +2,9 @@ from base.twilltestcase import TwillTestCase
 
 class TestMetadataEdit( TwillTestCase ):
 
-    def test_metadata_edit(self):
-        """test_components.test_metadata_edit: Testing metadata editing"""
-        self.new_history()
+    def test_00_metadata_edit(self):
+        """test_metadata_edit: Testing metadata editing"""
+        self.login()
         self.upload_file('1.bed')
         self.check_history_for_string('\? bed')
         self.check_metadata_for_string('1.bed uploaded file unspecified (\?) chromCol value="1" selected endCol value="3" is_strandCol value="true" checked', hid=1)
@@ -18,3 +18,7 @@ class TestMetadataEdit( TwillTestCase ):
         """test changing data type"""
         self.edit_metadata(hid=1, form=3, datatype='gff3')
         self.check_history_for_string('hg16 Testdata Convert BED to GFF format: gff3')
+        self.delete_history_item( 1 )
+    def test_9999_clean_up( self ):
+        self.delete_history()
+        self.logout()

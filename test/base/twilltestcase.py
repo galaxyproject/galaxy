@@ -30,7 +30,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.set_history()
 
-    #Functions associated with files
+    """Functions associated with files"""
     def files_diff( self, file1, file2 ):
         """Checks the contents of 2 files for differences"""
         if not filecmp.cmp(file1, file2):
@@ -70,7 +70,7 @@ class TwillTestCase( unittest.TestCase ):
             errmsg += str( err )
             raise AssertionError( errmsg )
 
-    #Functions associated with histories
+    """Functions associated with histories"""
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
         self.visit_page( "history" )
@@ -89,25 +89,27 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "clear_history" )
         self.check_history_for_string( 'Your history is empty' )
 
-    def delete_history( self, hid ):
+    def delete_history( self, id=None ):
         """Deletes a history"""
-        data_list = self.get_datasets_in_history()
-        self.assertTrue( data_list )
-        if hid < 0:
-            hid = len(data_list) + hid + 1
-        hid = str(hid)
-        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
-        self.assertEqual(len(elems), 1)
-        self.visit_page( "history_delete?id=%s" % elems[0].get('id') )
+        history_list = self.get_histories()
+        self.assertTrue( history_list )
+        if id is None:
+            history = history_list[-1]
+            id = history.get( 'id' )
+        id = str( id )
+        self.visit_page( "history_delete?id=%s" %(id) )
 
-    def delete_history_item( self, hid ):
-        """Deletes an item from a history"""
-        hid = str(hid)
-        data_list = self.get_datasets_in_history()
-        self.assertTrue( data_list )
-        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
-        self.assertEqual(len(elems), 1)
-        self.visit_page( "delete?id=%s" % elems[0].get('id') )
+    def get_histories( self ):
+        """Returns all histories"""
+        tree = self.histories_as_xml_tree()
+        data_list = [ elem for elem in tree.findall("data") ]
+        return data_list
+
+    def get_history( self ):
+        """Returns a history"""
+        tree = self.history_as_xml_tree()
+        data_list = [ elem for elem in tree.findall("data") ]
+        return data_list
 
     def history_as_xml_tree( self ):
         """Returns a parsed xml object of a history"""
@@ -124,11 +126,33 @@ class TwillTestCase( unittest.TestCase ):
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
+    
+    def history_options( self ):
+        """Mimics user clicking on history options link"""
+        self.visit_page( "history_options" )
 
     def new_history( self ):
         """Creates a new, empty history"""
         self.visit_page( "history_new" )
         self.check_history_for_string('Your history is empty')
+
+    def rename_history( self, id=None, name='NewTestHistory' ):
+        """Rename an existing history"""
+        history_list = self.get_histories()
+        self.assertTrue( history_list )
+        if id is None: # take last id
+            elem = history_list[-1]
+        else:
+            i = history_list.index( id )
+            self.assertTrue( i )
+            elem = history_list[i]
+        id = elem.get( 'id' )
+        self.assertTrue( id )
+        old_name = elem.get( 'name' )
+        self.assertTrue( old_name )
+        id = str( id )
+        self.visit_page( "history_rename?id=%s&name=%s" %(id, name) )
+        return id, old_name, name
 
     def set_history( self ):
         """Sets the history (stores the cookies for this run)"""
@@ -137,9 +161,28 @@ class TwillTestCase( unittest.TestCase ):
         else:
             self.new_history()
 
+    def share_history( self, id=None, email='test2@bx.psu.edu' ):
+        """Share a history with a different user"""
+        self.create( email=email, password='testuser', confirm='testuser' )
+        history_list = self.get_histories()
+        self.assertTrue( history_list )
+        if id is None: # take last id
+            elem = history_list[-1]
+        else:
+            i = history_list.index( id )
+            self.assertTrue( i )
+            elem = history_list[i]
+        id = elem.get( 'id' )
+        self.assertTrue( id )
+        id = str( id )
+        name = elem.get( 'name' )
+        self.assertTrue( name )
+        self.visit_page( "history_share?id=%s&email=%s" %(id, email) )
+        return id, name, email
+
     def switch_history( self, hid=None ):
         """Switches to a history in the current list of histories"""
-        data_list = self.get_datasets_in_histories()
+        data_list = self.get_histories()
         self.assertTrue( data_list )
         if hid is None: # take last hid
             elem = data_list[-1]
@@ -151,16 +194,73 @@ class TwillTestCase( unittest.TestCase ):
         self.assertEqual(len(elems), 1)
         self.visit_page( "history_switch?id=%s" % elems[0].get('id') )
 
-    #unctions associated with datasets (history items) and meta data
+    def view_stored_histories( self ):
+        self.visit_page( "history_available" )
+
+    """Functions associated with datasets (history items) and meta data"""
     def _assert_dataset_state( self, elem, state ):
         assert elem.get( 'state' ) == state, \
             "Expecting dataset state '%s' but is '%s'. Dataset blurb: %s" % ( state, elem.get('state'), elem.text.strip() )
+
+    def check_metadata_for_string( self, patt, hid=None ):
+        """Looks for 'patt' in the edit page when editing a dataset"""
+        data_list = self.get_history()
+        self.assertTrue( data_list )
+        if hid is None: # take last hid
+            elem = data_list[-1]
+            hid = int( elem.get('hid') )
+        self.assertTrue( hid )
+        self.visit_page( "edit?hid=%d" % hid )
+        for subpatt in patt.split():
+            tc.find(subpatt)
+
+    def delete_history_item( self, hid ):
+        """Deletes an item from a history"""
+        hid = str(hid)
+        data_list = self.get_history()
+        self.assertTrue( data_list )
+        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
+        self.assertEqual(len(elems), 1)
+        self.visit_page( "delete?id=%s" % elems[0].get('id') )
+
+    def edit_metadata( self, hid=None, form=1, **kwd ):
+        """Edits the metadata associated with a history item.  There are currently 3 forms on the edit page."""
+        data_list = self.get_history()
+        self.assertTrue( data_list )
+        if hid is None: # take last hid
+            elem = data_list[-1]
+            hid = elem.get('hid')
+        self.assertTrue( hid )
+        self.visit_page( 'edit?hid=%d' % hid )
+        if form == 1: button = "save"           #Edit Attributes form
+        elif form == 2: button = "convert_data" #Convert to new format form
+        elif form == 3: button = "change"       #Change data type form
+        if kwd:
+            self.submit_form(form=form, button=button, **kwd)
+
+    def get_dataset_ids_in_history( self ):
+        """Returns the ids of datasets in a history"""
+        data_list = self.get_history()
+        hids = []
+        for elem in data_list:
+            hid = elem.get('hid')
+            hids.append(hid)
+        return hids
+
+    def get_dataset_ids_in_histories( self ):
+        """Returns the ids of datasets in all histories"""
+        data_list = self.get_histories()
+        hids = []
+        for elem in data_list:
+            hid = elem.get('hid')
+            hids.append(hid)
+        return hids
 
     def verify_dataset_correctness( self, filename, hid=None, wait=True ):
         """Verifies that the attributes and contents of a history item meet expectations"""
         if wait: self.wait() #wait for job to finish
 
-        data_list = self.get_datasets_in_history()
+        data_list = self.get_history()
         self.assertTrue( data_list )
 
         if hid is None: # take last hid
@@ -191,71 +291,34 @@ class TwillTestCase( unittest.TestCase ):
 
     def verify_genome_build( self, dbkey='hg17' ):
         """Verifies that the last used genome_build at history id 'hid' is as expected"""
-        data_list = self.get_datasets_in_history()
+        data_list = self.get_history()
         self.assertTrue( data_list )
         elems = [ elem for elem in data_list ]
         elem = elems[-1]
         genome_build = elem.get('dbkey')
         self.assertTrue( genome_build == dbkey )
 
-    def check_metadata_for_string( self, patt, hid=None ):
-        """Looks for 'patt' in the edit page when editing a dataset"""
-        data_list = self.get_datasets_in_history()
-        self.assertTrue( data_list )
-        if hid is None: # take last hid
-            elem = data_list[-1]
-            hid = int( elem.get('hid') )
-        self.assertTrue( hid )
-        self.visit_page( "edit?hid=%d" % hid )
-        for subpatt in patt.split():
-            tc.find(subpatt)
+    """Functions associated with user accounts"""
+    def create( self, email='test@bx.psu.edu', password='testuser', confirm='testuser' ):
+        self.visit_page( "user/create?email=%s&password=%s&confirm=%s" %(email, password, confirm) )
+        try:
+            self.check_page_for_string( "User with that email already exists" )
+        except:
+            self.check_page_for_string( "Now logged in as %s" %email )
+        self.home() #Reset our URL for future tests
+        
+    def login( self, email='test@bx.psu.edu', password='testuser'):
+        self.create( email=email, password=password, confirm=password )
+        self.visit_page( "user/login?email=%s&password=%s" % (email, password) )
+        self.check_page_for_string( "Now logged in as %s" %email )
+        self.home() #Reset our URL for future tests
 
-    def edit_metadata( self, hid=None, form=1, **kwd ):
-        """Edits the metadata associated with a history item.  There are currently 3 forms on the edit page."""
-        data_list = self.get_datasets_in_history()
-        self.assertTrue( data_list )
-        if hid is None: # take last hid
-            elem = data_list[-1]
-            hid = elem.get('hid')
-        self.assertTrue( hid )
-        self.visit_page( 'edit?hid=%d' % hid )
-        if form == 1: button = "save"           #Edit Attributes form
-        elif form == 2: button = "convert_data" #Convert to new format form
-        elif form == 3: button = "change"       #Change data type form
-        if kwd:
-            self.submit_form(form=form, button=button, **kwd)
+    def logout( self ):
+        self.visit_page( "user/logout" )
+        self.check_page_for_string( "You are no longer logged in" )
+        self.home() #Reset our URL for future tests
 
-    def get_datasets_in_history( self ):
-        """Returns datasets in a history"""
-        tree = self.history_as_xml_tree()
-        data_list = [ elem for elem in tree.findall("data") ]
-        return data_list
-
-    def get_dataset_ids_in_history( self ):
-        """Returns the ids of datasets in a history"""
-        data_list = self.get_datasets_in_history()
-        hids = []
-        for elem in data_list:
-            hid = elem.get('hid')
-            hids.append(hid)
-        return hids
-
-    def get_datasets_in_histories( self ):
-        """Returns all datasets in all histories"""
-        tree = self.histories_as_xml_tree()
-        data_list = [ elem for elem in tree.findall("data") ]
-        return data_list
-
-    def get_dataset_ids_in_histories( self ):
-        """Returns the ids of datasets in all histories"""
-        data_list = self.get_datasets_in_histories()
-        hids = []
-        for elem in data_list:
-            hid = elem.get('hid')
-            hids.append(hid)
-        return hids
-
-    #Functions associated with browsers, cookies, HTML forms and page visits
+    """Functions associated with browsers, cookies, HTML forms and page visits"""
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""
         page = self.last_page()
@@ -356,7 +419,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.go("%s" % url)
         tc.code( 200 )
 
-    #Functions associated with Galaxy tools
+    """Functions associated with Galaxy tools"""
     def run_tool( self, tool_id, **kwd ):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and pass it the key/values from the *kwd"""

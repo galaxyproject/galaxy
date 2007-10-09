@@ -14,7 +14,9 @@ class ToolTestCase( TwillTestCase ):
             else:
                 raise Exception( "Test parse failure" )
         # Start with a new history
-        self.new_history()
+        self.login()
+        if len(self.get_history()) > 0:
+            raise AssertionError("ToolTestCase.do_it failed")
         # Upload any needed files
         for fname, extra in self.testdef.required_files:
             self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ) )
@@ -34,6 +36,9 @@ class ToolTestCase( TwillTestCase ):
         assert len( self.testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."
         for name, file in self.testdef.outputs:
             self.verify_dataset_correctness( file )
+        #Clean up
+        self.delete_history()
+        self.logout()
     def shortDescription( self ):
         return self.name
 
