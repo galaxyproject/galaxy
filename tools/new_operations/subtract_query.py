@@ -15,17 +15,17 @@ from galaxy.datatypes import sniff
 
 def get_lines(fname, begin_col='', end_col=''):
     lines = set([])
+    i = 0
     for i, line in enumerate(file(fname)):
         line = line.rstrip('\r\n')
         if line != '' and not line.startswith('#'):
             if begin_col and end_col:
-                """
-                Both begin_col and end_col must be integers at this point.
-                """
+                """Both begin_col and end_col must be integers at this point."""
                 line = line.split('\t')
                 line = '\t'.join([line[j] for j in range(begin_col-1, end_col)])
             lines.add( line )
-    return (i+1, lines)
+    if i: return (i+1, lines)
+    else: return (i, lines)
 
 def main():
     
@@ -52,9 +52,7 @@ def main():
             end_col = begin_col
         begin_col = int(begin_col)
         end_col = int(end_col)
-        """
-        Make sure that begin_col <= end_col (switch if not)
-        """
+        """Make sure that begin_col <= end_col (switch if not)"""
         if begin_col > end_col:
             tmp_col = end_col
             end_col = begin_col
@@ -78,9 +76,7 @@ def main():
     len2, lines2 = get_lines(inp2_file, begin_col, end_col)
     
     lines1.difference_update(lines2)
-    """
-    lines1 is now the set of unique lines in inp1_file - the set of unique lines in inp2_file
-    """
+    """lines1 is now the set of unique lines in inp1_file - the set of unique lines in inp2_file"""
 
     for line in lines1:
         print >> fo, line

@@ -21,7 +21,7 @@
         <option value="sum">Sum</option>
         <option value="c">Concatenate</option>
       </param>
-      <param name="opcol" label="On numerical column" type="columnlist" assoc_dataset="input1" />
+      <param name="opcol" label="On column" type="columnlist" assoc_dataset="input1" />
   	</repeat>
   </inputs>
   <outputs>

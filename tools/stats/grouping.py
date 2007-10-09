@@ -54,7 +54,11 @@ def main():
             try:
                 float( elems[col] )
             except:
-                stop_err( "Operation '%s' cannot be performed on non-numeric column %d containing value '%s'." %( ops[k], col+1, elems[col] ))
+                try:
+                    msg = "Operation '%s' cannot be performed on non-numeric column %d containing value '%s'." %( ops[k], col+1, elems[col] )
+                except:
+                    msg = "Operation '%s' cannot be performed on non-numeric data." %ops[k]
+                stop_err( msg )
     
     tmpfile = tempfile.NamedTemporaryFile()
     
