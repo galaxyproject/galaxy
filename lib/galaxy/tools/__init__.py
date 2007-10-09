@@ -604,7 +604,7 @@ class Tool:
                 any_group_errors = False
                 # Check any removals before updating state
                 for i in range( len( group_state ) ):                    
-                    if input.name + "_" + str(i) + "_remove" in incoming:
+                    if key + "_" + str(i) + "_remove" in incoming:
                         del group_state[i]
                 # Update state
                 for i in range( len( group_state ) ):
@@ -621,7 +621,7 @@ class Tool:
                     else:
                         group_errors.append( {} )
                 # Check for addition
-                if input.name + "_add" in incoming:
+                if key + "_add" in incoming:
                     new_state = {}
                     self.fill_in_new_state( trans, input.inputs, new_state, context )
                     group_state.append( new_state )
