@@ -7,6 +7,8 @@ class TestHistory( TwillTestCase ):
         self.logout()    #Ensure we are not logged in
         self.history_options()
         self.check_page_for_string( 'logged in</a> to store or switch histories.' )
+        self.login( email='test2@bx.psu.edu' ) #Just to make sure we hav created this account since it is used to share histories
+        self.logout()
     def test_05_new_history_then_delete( self ):
         """Testing creating a new history and then deleting it"""
         self.login()
