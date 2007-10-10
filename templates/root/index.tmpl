@@ -6,7 +6,7 @@
     <link rel="stylesheet" type="text/css" href="$h.url_for('/static/style/reset.css')"></link>
     <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
     <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.dimensions.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.ui-jt.js')"></script>
+    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.ui.js')"></script>
 	<script type="text/javascript">
 	<!--
 	var jq = jQuery.noConflict();
@@ -19,7 +19,7 @@
 	var right_saved_size = null;
 	var hidden_width = 7;
 	
-	var border_tweak = $.browser.msie ? 14 : 9
+	var border_tweak = jq.browser.msie ? 14 : 9
 	
 	var resize_left = function( x ) {
 	    oldx = x;
@@ -109,27 +109,22 @@
         }
     }
 	
-    jq(document).ready( function()
-    {
-        //jq( "#center" ).css( "right", 120 );
+    jq(document).ready( function() {
     	jq('#left-border').hover( 
     	    function() { jq( this ).addClass( "hover" ) },
     	    function() { jq( this ).removeClass( "hover" ) }
     	).draggable( {
-    			axis:	'x',
-    			start: function( el ) { 
-    			  this.before_drag_left = jq(el).position().left;
+    			start: function( _, ui ) { 
     			  jq( '#DD-helper' ).show();
     			},
-    			stop: function( helper, pos ) { 
+    			stop: function( _, ui ) { 
 			      jq( '#DD-helper' ).hide();
 			      return false;
     			},
-    			drag: function( helper, position ) {
-    			    x = position[0]; y = position[1]
+    			drag: function( _, ui ) {
+    			    x = ui.position.left;
     			    // Limit range
-    			    x = Math.max( 100, position[0] );
-    			    x = Math.min( 400, x );
+    			    x = Math.min( 400, Math.max( 100, x ) );
     			    // Resize
     			    if ( left_hidden ) {
     			        jq( "#left" ).css( "left", 0 );
@@ -137,8 +132,9 @@
     			        left_hidden = false;
     			    }
     			    resize_left( x );
-    			    // Return limited position
-    			    return { x: x, y: y}
+    			    // Constrain helper position
+    			    ui.draggable.pos[0] = x;
+    			    ui.draggable.pos[1] = ui.options.co.top;
     			},
     			click: function() {
     			    toggle_left();
@@ -150,37 +146,39 @@
     	    function() { jq( this ).addClass( "hover" ) },
     	    function() { jq( this ).removeClass( "hover" ) }
     	).draggable( {
-    			axis:	'x',
-    			start: function() {
+    			start: function( _, ui ) {
     			  jq( '#DD-helper' ).show();
     			},
-    			stop: function( helper, pos ) {  
-    			  x = pos[0]; y = pos[1]
-    			  // Limit range
-  			      x = Math.min( jq(window).width() - 100, x );
-  			      x = Math.max( jq(window).width() - 400, x );
-  			      // Final resize
-    			  resize_right( jq(document).width() - x - border_tweak );
-			      jq( '#DD-helper' ).hide();
-			      return false;
+    			stop: function( _, ui ) {  
+                    x = ui.position.left;
+                    w = jq(window).width() 
+                    // Limit range
+                    x = Math.min( w - 100, x );
+                    x = Math.max( w - 400, x );
+                    // Final resize
+                    resize_right( w - x - border_tweak );
+                    jq( '#DD-helper' ).hide();
+                    return false;
     			},
     			click: function() {
     			    toggle_right();
     			},
-    			drag: function( helper, position ) {
-    			    x = position[0]; y = position[1]
+    			drag: function( _, ui ) {
+                    x = ui.position.left
+                    w = jq(window).width() 
     			    // Limit range
-    			    x = Math.min( jq(window).width() - 100, x );
-    			    x = Math.max( jq(window).width() - 400, x );
+    			    x = Math.min( w - 100, x );
+    			    x = Math.max( w - 400, x );
     			    // Resize
     			    if ( right_hidden ) {
     			        jq( "#right" ).css( "right", 0 );
     			        jq( "#right-border" ).removeClass( "hidden" );
     			        right_hidden = false;
     			    }
-    			    resize_right( jq(document).width() - x - border_tweak );
-    			    // Return limited position
-    			    return { x: x, y: y }
+    			    resize_right( w - x - border_tweak );
+    			    // Constrain helper position
+    			    ui.draggable.pos[0] = x;
+    			    ui.draggable.pos[1] = ui.options.co.top;
     			}
     		}
     	);

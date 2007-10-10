@@ -151,7 +151,7 @@
         //Apparently IE doesn't do Array.indexOf...
         //stop_states = new Array( "ok", "error" );
         this.interval = setInterval( function() {
-            $.get(this.state_url, function(new_state) {
+            q.get(this.state_url, function(new_state) {
                 //if (stop_states.indexOf(new_state) >= 0) { clearInterval( this.interval ); }
                 if ((new_state == "ok") || (new_state == "error")) {
                     clearInterval( this.interval );
