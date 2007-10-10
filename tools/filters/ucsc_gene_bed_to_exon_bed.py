@@ -47,11 +47,12 @@ def main():
         sys.exit(0)
     
     print "Region:", options.region+";"
-    print "Only overlap with Exons:",
+    """print "Only overlap with Exons:",
     if options.exons:
         print "Yes"
     else:
         print "No"
+    """
     
     # Read table and handle each gene
     for line in in_file:
@@ -100,27 +101,31 @@ def main():
                     i+=1
         #for non-intron regions:
             else:
+                shift = 0
                 for start, end in zip( exon_starts, exon_ends ):
                     start = max( start, region_start )
                     end = min( end, region_end )
                     if start < end:
                         if options.region == 'codon':
-                            c_start = start
+                            start += shift
+                            c_start = start 
                             while c_start+3 <= end:
                                 if strand:
                                     print_tab_sep(out_file, chrom, c_start, c_start+3, name, "0", strand )
                                 else:
                                     print_tab_sep(out_file, chrom, c_start, c_start+3)
                                 c_start += 3
+                            shift = (3 - ((end-start)%3))%3
                         else:
                             if strand:
                                 print_tab_sep(out_file, chrom, start, end, name, "0", strand )
                             else: 
                                 print_tab_sep(out_file, chrom, start, end )
+                    """
                     else:
                         if options.region == 'codon':
-                            c_start = region_start
-                            c_end = region_end
+                            c_start = start
+                            c_end = end
                             if c_start > c_end:
                                 t = c_start
                                 c_start = c_end
@@ -136,6 +141,7 @@ def main():
                                 print_tab_sep(out_file, chrom, region_start, region_end, name, "0", strand )
                             else: 
                                 print_tab_sep(out_file, chrom, region_start, region_end )
+                    """
         except:
             continue
 
