@@ -123,7 +123,7 @@ class PBSJobRunner( object ):
                     if stagein != '':
                         stagein += ','
                     stagein += "%s@%s:%s" % (output_fname, self.app.config.pbs_dataset_server, output_fname)
-            job_attrs = pbs.new_attropl(4)
+            job_attrs = pbs.new_attropl(5)
             job_attrs[0].name = pbs.ATTR_o
             job_attrs[0].value = pbs_ofile
             job_attrs[1].name = pbs.ATTR_e
@@ -132,6 +132,8 @@ class PBSJobRunner( object ):
             job_attrs[2].value = stagein
             job_attrs[3].name = pbs.ATTR_stageout
             job_attrs[3].value = stageout
+            job_attrs[4].name = pbs.ATTR_N
+            job_attrs[4].value = "%s" % job_wrapper.job_id
             exec_dir = self.app.config.pbs_instance_path
             # FIXME: pbs_instance_path is broken until we munge PATH and PYTHONPATH here
         else:
@@ -154,15 +156,16 @@ class PBSJobRunner( object ):
             # FIXME: More information here?
             stderr = stdout = ''
                     
+	galaxy_job_id = job_wrapper.job_id
         log.debug("submitting file %s" % job_file )
         log.debug("command is: %s" % command_line)
         job_id = pbs.pbs_submit(conn, job_attrs, job_file, None, None)
-        log.debug("queued: %s" % job_id)
+        log.debug("queued %s: %s" % (galaxy_job_id, job_id) )
         pbs.pbs_disconnect(conn)
 
         if not job_id:
             stdout = ''
-            stderr = "Job was not queued, PBS error %d: %s" % pbs.error()
+            stderr = "Job (%s) was not queued, PBS error %d: %s" % (galaxy_job_id, pbs.error() )
             log.debug(stderr)
 
         # Get initial job state
@@ -179,15 +182,15 @@ class PBSJobRunner( object ):
         try:
             if (jobs[0].attribs[0].name == "job_state"):
                 old_state = jobs[0].attribs[0].value
-                log.debug("(%s) initial state is %s" % (job_id, old_state) )
+                log.debug("(%s/%s) initial state is %s" % (galaxy_job_id, job_id, old_state) )
         except:
-            log.info("(%s) unable to retrieve initial state" % job_id)
+            log.info("(%s/%s) unable to retrieve initial state" % (galaxy_job_id, job_id) )
 
         # ran immediately
         if old_state == "R":
             job_wrapper.change_state( "running" )
             running = True
-            log.debug("(%s) job is now running" % job_id)
+            log.debug("(%s/%s) job is now running" % (galaxy_job_id, job_id) )
 
         # queued
         else:
@@ -236,33 +239,34 @@ class PBSJobRunner( object ):
         new_watched = []
         for pbs_job_state in self.watched:
             job_id = pbs_job_state.job_id
+	    galaxy_job_id = pbs_job_state.job_wrapper.job_id
             old_state = pbs_job_state.old_state
             running = pbs_job_state.running         
             conn = pbs.pbs_connect( self.pbs_server )
             if conn <= 0:
-                log.debug("(%s) connection to PBS server for state check failed" % job_id)
+                log.debug("(%s/%s) connection to PBS server for state check failed" % (galaxy_job_id, job_id) )
             stat_attrl = pbs.new_attrl(1)
             stat_attrl[0].name = 'job_state'
             jobs = pbs.pbs_statjob(conn, pbs_job_state.job_id, stat_attrl, 'NULL')
             pbs.pbs_disconnect(conn)    
             if len( jobs ) < 1:
-                log.debug("(%s) job has left queue" % job_id)
+                log.debug("(%s/%s) job has left queue" % (galaxy_job_id, job_id) )
                 self.finish_job( pbs_job_state )
             else:    
                 try:
                     if (jobs[0].attribs[0].name == "job_state"):
                         state = jobs[0].attribs[0].value
                         if state != old_state:
-                            log.debug("(%s) job state changed from %s to %s" % ( job_id, old_state, state ) )
+                            log.debug("(%s/%s) job state changed from %s to %s" % ( galaxy_job_id, job_id, old_state, state ) )
                         if state == "R" and not running:
                             running = True
                             pbs_job_state.job_wrapper.change_state( "running" )
-                            log.debug("(%s) job is now running" % job_id)
+                            log.debug("(%s/%s) job is now running" % (galaxy_job_id, job_id) )
                         old_state = state
                     pbs_job_state.old_state = old_state
                     pbs_job_state.running = running
                 except:
-                    log.exception("(%s) unable to check state" % job_id)
+                    log.exception("(%s/%s) unable to check state" % (galaxy_job_id, job_id) )
                 new_watched.append( pbs_job_state )
         # Replace the watch list with the updated version
         self.watched = new_watched
