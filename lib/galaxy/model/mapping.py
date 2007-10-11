@@ -2,6 +2,8 @@
 Details of how the data model objects are mapped onto the relational database
 are encapsulated here. 
 """
+import logging
+log = logging.getLogger( __name__ )
 
 import pkg_resources
 pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
@@ -252,9 +254,24 @@ def init( file_path, url, **kwargs ):
                 table.columns['create_time'].type = TIMESTAMP()
             if table.columns.has_key( "update_time" ):
                 table.columns['update_time'].type = TIMESTAMP()
-                table.columns['update_time'].type = TIMESTAMP()
-    # Connect the metadata the database. 
-    metadata.connect( url, **kwargs )
+    # Connect the metadata to the database. 
+    if url.find( "sqlite" ) < 0 and url.find( '///' ) >= 0:
+        import psycopg
+        try:
+            dbconn = url.split('///')
+            dbtype = dbconn[0]
+            dbname = dbconn[1]
+            def connect():
+                connection = psycopg.connect( 'dbname=%s' %dbname )
+                connection.set_isolation_level(1)
+                return connection
+            engine = create_engine('%s///' %dbtype, creator=connect)
+            metadata.connect( engine )
+        except:
+            log.exception( "error connecting to database using connection: '%s'." % url )
+            metadata.connect( url, **kwargs )
+    else:
+        metadata.connect( url, **kwargs )
     ## metadata.engine.echo = True
     # Create tables if needed
     if create_tables:

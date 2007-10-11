@@ -134,7 +134,7 @@ class JobQueue( object ):
                 job_state = job.check_if_ready_to_run()
                 if job_state == JOB_WAIT: 
                     new_waiting.append( job )
-                    log.debug( "job has been requeued" )
+                    #log.debug( "job has been requeued" )
                 elif job_state == JOB_ERROR:
                     log.info( "job %d ended with an error" %job.job_id )
                 elif job_state == JOB_READY:

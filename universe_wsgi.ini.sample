@@ -80,7 +80,7 @@ mailing_join_addr = galaxy-user-join@bx.psu.edu
 
 # Mail
 smtp_server = coltrane.bx.psu.edu
-error_email_to = james@bx.psu.edu
+error_email_to = galaxy_bugs@bx.psu.edu
 
 # Use the new iframe / javascript based layout
 use_new_layout = true
