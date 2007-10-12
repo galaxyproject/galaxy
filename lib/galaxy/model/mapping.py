@@ -241,9 +241,7 @@ def db_next_hid( self ):
 History._next_hid = db_next_hid
     
 def init( file_path, url, **kwargs ):
-    """
-    Connect mappings to the database
-    """
+    """Connect mappings to the database"""
     create_tables = kwargs.pop( 'create_tables', False )
     # Connect dataset to the file path
     Dataset.file_path = file_path
@@ -255,7 +253,7 @@ def init( file_path, url, **kwargs ):
             if table.columns.has_key( "update_time" ):
                 table.columns['update_time'].type = TIMESTAMP()
     # Connect the metadata to the database. 
-    if url.find( "sqlite" ) < 0 and url.find( '///' ) >= 0:
+    elif url.startswith( "postgresql:///" ):
         import psycopg
         try:
             dbconn = url.split('///')

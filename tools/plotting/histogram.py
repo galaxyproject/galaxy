@@ -36,10 +36,16 @@ def main():
         if line and not line.startswith( '#' ): 
             # Extract values and convert to floats
             row = []
-            fields = line.split( "\t" )
-            val = fields[column]
-            if val.lower() == "na":
-                row.append( float( "nan" ) )
+            try:
+                fields = line.split( "\t" )
+                val = fields[column]
+                if val.lower() == "na":
+                    row.append( float( "nan" ) )
+            except:
+                valid = False
+                skipped_lines += 1
+                if not first_invalid_line:
+                    first_invalid_line = i+1
             else:
                 try:
                     row.append( float( val ) )

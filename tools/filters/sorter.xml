@@ -2,7 +2,7 @@
   <description>data in ascending or descending order</description>
   <command interpreter="python">sorter.py -i $input -o $out_file1 -cols $column -order $order -style $style</command>
   <inputs>
-    <param format="tabular" name="input" type="data" label="Sort Query" refresh_on_change="True" />
+    <param format="tabular" name="input" type="data" label="Sort Query" />
     <param name="column" label="on column" type="columnlist" assoc_dataset="input" />
     <param name="order" type="select" label="in">
       <option value="ASC">Ascending order</option>

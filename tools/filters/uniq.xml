@@ -2,7 +2,7 @@
   <description>occurences of each record</description>
   <command interpreter="python">uniq.py -i $input -o $out_file1 -c "$column" -d $delim</command>
   <inputs>
-    <param name="input" type="data" format="tabular" label="from query" refresh_on_change="True" help="Query missing? See TIP below"/>
+    <param name="input" type="data" format="tabular" label="from query" help="Query missing? See TIP below"/>
     <param name="column" type="columnlist" assoc_dataset="input" multiple="True" numerical="False" label="Count occurencies of values in column(s)" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
     <param name="delim" type="select" label="Delimited by">
       <option value="T">Tab</option>

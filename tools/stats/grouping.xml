@@ -11,7 +11,7 @@
       #end for
   </command>
   <inputs>
-    <param format="tabular" name="input1" type="data" label="Select data" refresh_on_change="True" help="Query missing? See TIP below."/>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
     <param name="groupcol" label="Group by column" type="columnlist" assoc_dataset="input1" />
     <repeat name="operations" title="Operation">
       <param name="optype" type="select" label="Type">
