@@ -22,6 +22,7 @@ class Configuration( object ):
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
+        self.enable_beta_features = kwargs.get( "enable_beta_features", False )
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
