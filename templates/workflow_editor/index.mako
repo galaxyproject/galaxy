@@ -10,7 +10,7 @@
 <script type='text/javascript' src="/static/scripts/jquery.dimensions.js"> </script>
 <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
 <script type='text/javascript' src="/static/scripts/jquery.blockUI.js"> </script>
-<script type='text/javascript' src="/static/scripts/jt.panels.js"> </script>
+<script type='text/javascript' src="/static/scripts/galaxy.panels.js"> </script>
 <script>
 
 $( function() {
