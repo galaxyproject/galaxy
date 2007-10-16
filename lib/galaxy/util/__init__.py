@@ -3,7 +3,7 @@ Utility functions used systemwide.
 
 """
 import logging
-import threading, sets, random, string, md5, re, binascii, pickle, time, datetime, math, re
+import threading, sets, random, string, md5, re, binascii, pickle, time, datetime, math, re, os
 
 import pkg_resources
 
@@ -305,9 +305,10 @@ def read_build_sites(filename):
         print "ERROR: Unable to read builds for site file %s" %filename
     return build_sites
 
-dbnames = read_dbnames("static/ucsc/builds.txt") #this list is used in edit attributes and the upload tool
-ucsc_build_sites = read_build_sites("static/ucsc/ucsc_build_sites.txt") #this list is used in history.tmpl
-gbrowse_build_sites = read_build_sites("static/gbrowse/gbrowse_build_sites.txt") #this list is used in history.tmpl
+galaxy_root_path = os.path.join(__path__[0], "..","..","..")
+dbnames = read_dbnames(os.path.join(galaxy_root_path,"static","ucsc","builds.txt")) #this list is used in edit attributes and the upload tool
+ucsc_build_sites = read_build_sites(os.path.join(galaxy_root_path,"static","ucsc","ucsc_build_sites.txt")) #this list is used in history.tmpl
+gbrowse_build_sites = read_build_sites(os.path.join(galaxy_root_path,"static","gbrowse","gbrowse_build_sites.txt")) #this list is used in history.tmpl
 
 if __name__ == '__main__':
     import doctest, sys
