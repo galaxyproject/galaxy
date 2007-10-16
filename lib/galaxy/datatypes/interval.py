@@ -236,6 +236,7 @@ class Bed( Interval ):
         the format of the file from BED to Interval.
         """
         valid_bed_data = False
+        i = 0
         if dataset.has_data():
             for i, line in enumerate( file(dataset.file_name) ):
                 line = line.rstrip('\r\n')
@@ -389,6 +390,7 @@ class Gff( Tabular ):
         self.add_display_app ('gbrowse', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
     def set_meta( self, dataset ):
+        i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
             if line and not line.startswith( '#' ):
@@ -511,6 +513,7 @@ class Gff3( Gff ):
         Gff.__init__(self, **kwd)
 
     def set_meta( self, dataset ):
+        i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
             if line and not line.startswith( '#' ):
@@ -608,6 +611,7 @@ class Wiggle( Tabular ):
         return Tabular.make_html_table(self, data, skipchar='#')
 
     def set_meta( self, dataset ):
+        i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
             if line and not line.startswith( '#' ):
