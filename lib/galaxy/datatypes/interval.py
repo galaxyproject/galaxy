@@ -235,33 +235,21 @@ class Bed( Interval ):
         files that do not contain a strand column.  This will result in changing
         the format of the file from BED to Interval.
         """
-        valid_bed_data = False
-        i = 0
+        #initialize tablular metadata
+        Tabular.set_meta( self, dataset, 0 )
+        #Use initialized tabular metadata to determine if file fits BED format
+        bed_col_types = [["str","int"], ["int"], ["int"], ["str"], ["int"], ["str"], ["int"], ["int"], ["int"], ["int"], ["list"], ["list"]]
+        if dataset.metadata.columns >= 6:
+            dataset.metadata.strandCol = 6
         if dataset.has_data():
-            for i, line in enumerate( file(dataset.file_name) ):
-                line = line.rstrip('\r\n')
-                if line and not line.startswith('#') and len(line) > 0:
-                    elems = line.split('\t')
-                    if len(elems) > 2:
-                        for str in data.col1_startswith:
-                            if line.lower().startswith(str):
-                                valid_bed_data = True
-                                break
-                    if valid_bed_data:
-                        if len(elems) < 6:
-                            dataset.metadata.is_strandCol = "false"
-                            dataset.metadata.strandCol = 0
-                        else:
-                            dataset.metadata.is_strandCol = "true"
-                            dataset.metadata.strandCol = 6
-                        break
-                if i == 30: break
-        if valid_bed_data:
-            Tabular.set_meta( self, dataset, i )
-        else:
-            dataset.metadata.is_strandCol = "false"
-            dataset.metadata.strandCol = 0
-        
+            for i, col_type in enumerate(dataset.metadata.column_types):
+                #extra columns should be ok
+                if i >= len(bed_col_types): return
+                #invalid column type, this is no longer a bed file
+                if col_type not in bed_col_types[i]:
+                    dataset.change_datatype('interval')
+                    return
+    
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
         for line in open(dataset.file_name):
