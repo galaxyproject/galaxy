@@ -19,7 +19,7 @@ def main():
         inp_file, out_file, column, features = args
         column = int(column)
     except:
-        doc_optparse.exception()
+        doc_optparse.exit()
     
     if features == None:
         print "Column %d has no features to display. Please select another column." %(column+1)

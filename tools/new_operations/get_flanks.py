@@ -28,7 +28,7 @@ def main():
         if strand_col_1 <= 0:
             strand = "+"        #if strand is not defined, default it to +
     except:
-        doc_optparse.exception()
+        doc_optparse.exit()
         
     try:
         fi = open(inp_file,'r')
