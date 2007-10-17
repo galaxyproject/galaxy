@@ -43,29 +43,29 @@ def main():
     #    data.flush()
     
     
-    #Search out tabular datatypes and make sure that number of columns is set.
-    #print "Seeking out tabular based files and setting number of columns."
-    #for row in app.model.Dataset.table.select().execute():
-    #    data = app.model.Dataset.get(row.id)
-    #    if issubclass(type(data.datatype), type(app.datatypes_registry.get_datatype_by_extension('tabular'))):
-    #        print row.id
-    #        #The set_meta() function for tabular subclasses are responsible for determining
-    #        #the number of 'problem' lines to skip in the file.  Problem lines are comment lines
-    #        #that do not begin with a '#' character, etc.  When the number of lines to skip is determined,
-    #        #Tabular().set_meta is called, passing the number of lines to skip.  Nothing besides this is
-    #        #currently done in set_meta() functions of subclasses of Tabular.
-    #        data.set_meta() 
-    #        data.flush()
+    #Search out tabular datatypes (and subclasses) and initialize metadata
+    print "Seeking out tabular based files and initializing metadata"
+    for row in app.model.Dataset.table.select().execute():
+        data = app.model.Dataset.get(row.id)
+        if issubclass(type(data.datatype), type(app.datatypes_registry.get_datatype_by_extension('tabular'))):
+            print row.id, data.extension
+            #Call meta_data for all tabular files
+            #special case interval type where we do not want to overwrite chr, start, end, etc assignments
+            if issubclass(type(data.datatype), type(app.datatypes_registry.get_datatype_by_extension('interval'))):
+                galaxy.datatypes.tabular.Tabular().set_meta(data)
+            else:
+                data.set_meta()
+            data.flush()
             
     #Search out maf datatypes and make sure that available species is set.
-    print "Seeking out maf files and setting available species."
-    for row in app.model.Dataset.table.select(app.model.Dataset.table.c.extension == 'maf').execute():
-        print row.id
-        sys.stdout.flush()
-        data = app.model.Dataset.get(row.id)
-        if data.missing_meta:
-            data.set_meta() #Call maf set metadata method, setting available species
-            data.flush()
+    #print "Seeking out maf files and setting available species."
+    #for row in app.model.Dataset.table.select(app.model.Dataset.table.c.extension == 'maf').execute():
+    #    print row.id
+    #    sys.stdout.flush()
+    #    data = app.model.Dataset.get(row.id)
+    #    if data.missing_meta:
+    #        data.set_meta() #Call maf set metadata method, setting available species
+    #        data.flush()
     
     app.shutdown()
     sys.exit(0)
