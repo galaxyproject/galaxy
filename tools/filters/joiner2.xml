@@ -2,17 +2,12 @@
   <description>two Queries A specific column of which has the same value</description>
   <command>sort -k $col1 $input1 > $input1.tmp; sort -k $col2 $input2 > $input2.tmp; join -1 $col1 -2 $col2 $input1.tmp $input2.tmp | tr " " "\t" > $out_file1; rm -rf $input1.tmp $input2.tmp </command>
   <inputs>
-    <page>
-    <param name="input1" 	label="Combine Query1" 	format = "tabular" type="data" />
-    <param name="input2" 	label="With Query2"	format = "tabular" type="data"/>
-    </page>
-    <page>
-    <param name="col1"	label="Query 1 on column" size="9" type="select" dynamic_options="get_available_columns( input1.file_name )" />
-    <param name="col2"	label="Query 2 on column" size="9" type="select" dynamic_options="get_available_columns( input2.file_name )" />
-    </page>
+    <param name="input1" label="Combine query" format="tabular" type="data" />
+    <param name="col1" label="using column" type="data_column" data_ref="input1" />
+    <param name="input2" label="with query"	format="tabular" type="data"/>
+    <param name="col2" label="and column" type="data_column" data_ref="input2" />
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input1" />
   </outputs>
-  <code file="joiner2.py"/>
 </tool>

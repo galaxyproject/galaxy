@@ -12,7 +12,7 @@
   </command>
   <inputs>
     <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
-    <param name="groupcol" label="Group by column" type="columnlist" assoc_dataset="input1" />
+    <param name="groupcol" label="Group by column" type="data_column" data_ref="input1" />
     <repeat name="operations" title="Operation">
       <param name="optype" type="select" label="Type">
         <option value="mean">Mean</option>
@@ -21,7 +21,7 @@
         <option value="sum">Sum</option>
         <option value="c">Concatenate</option>
       </param>
-      <param name="opcol" label="On column" type="columnlist" assoc_dataset="input1" />
+      <param name="opcol" label="On column" type="data_column" data_ref="input1" />
   	</repeat>
   </inputs>
   <outputs>
