@@ -24,17 +24,19 @@ class WorkflowEditor( BaseController ):
         tool = trans.app.toolbox.tools_by_id[tool_id]
         rval = {}
         rval['name'] = tool.name
+        rval['tool_id'] = tool.id
         data_inputs = []
         for name, input in tool.inputs.iteritems():
-            d = dict( data=False, name=input.name, label=input.label, html=as_html( input, None ) )
             if isinstance( input, DataToolParameter ):
-                d.update( dict( data=True, extensions=input.extensions ) )
-            data_inputs.append( d )
+                data_inputs.append( dict( name=input.name, label=input.label, extensions=input.extensions ) )
         rval['data_inputs'] = data_inputs
         data_outputs = []
         for name, ( format, metadata_source, parent ) in tool.outputs.iteritems():
             data_outputs.append( dict( name=name, extension=format ) )
         rval['data_outputs'] = data_outputs
+        rval['form_html'] = trans.fill_template( "workflow_editor/tool_form.mako", tool=tool, as_html=as_html )
+        rval['state'] = tool.new_state( None ).encode( tool, trans.app )
+        import time; time.sleep( 1 )
         return rval
         
     @web.json

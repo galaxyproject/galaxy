@@ -688,9 +688,11 @@ class DataToolParameter( ToolParameter ):
         NOTE: This is wasteful since dynamic options and dataset collection
               happens twice (here and when generating HTML). 
         """
-        assert trans is not None, "DataToolParameter requires a trans"
-        history = trans.history
-        assert history is not None, "DataToolParameter requires a history"
+        ## assert trans is not None, "DataToolParameter requires a trans"
+        ## history = trans.history
+        ## assert history is not None, "DataToolParameter requires a history"
+        if trans is None or trans.history is None:
+            return None
         if self.dynamic_options:
             # Dynamic options for a DataToolParameter specify limits on acceptrable build, id, or extension
             option_build, option_id, option_extension = \

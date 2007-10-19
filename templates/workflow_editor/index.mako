@@ -14,19 +14,29 @@
 <script>
 
 $( function() {
-    $.blockUI( "<b><img style='vertical-align: middle;' src='${h.url_for( '/static/style/data_running.gif' )}'/> Loading Galaxy Workflow Editor...</b>", 
-               { border: "solid #AAAA66 1px", background: "#FFFFCC", padding: "20px", width: "auto" } );
+    // $.blockUI( "<b><img style='vertical-align: middle;' src='${h.url_for( '/static/style/data_running.gif' )}'/> Loading Galaxy Workflow Editor...</b>", 
+    //           { border: "solid #AAAA66 1px", background: "#FFFFCC", padding: "20px", width: "auto" } );
                
     make_left_panel( $("#tool-area"), $("#canvas-area"), $("#left-border" ) );
+    make_right_panel( $("#right"), $("#canvas-area"), $("#right-border" ) );
     // Insert div that covers everything when dragging the borders
     $("<div id='DD-helper' style='background: white; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 9000;'></div>")
         .css("opacity", "0.01").appendTo("body").hide(); 
-    // Show border visual cues
-    $( "#left-border-inner" ).show();   
 })
 
 function notify() {
-    $.unblockUI();
+    $("#overlay" ).fadeOut();
+}
+
+function show_form_for_tool( text ) {
+    // $("#overlay, #modalwrapper" ).show();
+    //$("#modal iframe").attr( 'src', "${h.url_for( action='tool_form' )}?tool_id=" + tool_id ).load( function () {
+    //    $("#modalloadwrapper").hide();
+    //});
+    // $("#right-content").load( "${h.url_for( action='tool_form' )}", { tool_id: tool_id }, function () {
+    //     
+    // });
+    $("#right-content").html( text );
 }
 
 </script>
@@ -46,7 +56,7 @@ body, html
     ## border-top: solid #999 1px;
     position: absolute;
     top: 0px; left: 0; bottom: 0;
-    width: 300px;
+    width: 220px;
     overflow: scroll;
 }
 div.toolMenu {
@@ -81,13 +91,12 @@ div.toolFormRow {
 #canvas-area {
     ## border-top: solid #999 1px;
     position: absolute;
-    top: 0; left: 305px; bottom: 0; right: 0;
+    top: 0; left: 229px; bottom: 0; right: 229px;
     overflow: none;
 }
-#left-border
+#left-border, #right-border
 {
     position: absolute;
-    top: 0; left: 300px; bottom: 0; right: 0;
     background: #eeeeee;
     border-left: solid #999 1px;
     border-right: solid #999 1px;
@@ -96,16 +105,76 @@ div.toolFormRow {
     width: 5px;
     z-index: 10000;
 }
+#left-border 
+{
+    top: 0; left: 220px; bottom: 0; right: 0;
+}
+#right-border 
+{
+    top: 0; bottom: 0; right: 220px;
+}
+#right 
+{
+    position: absolute;
+    width: 220px;
+    top: 0; bottom: 0; left: auto; right: 0px; 
+    z-index: 200;
+    background: white;
+}
+#right-content {
+    margin: 5px;
+}
+#overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color:#000;
+    filter:alpha(opacity=75);
+    -moz-opacity: 0.75;
+    opacity: 0.75;
+    z-index: 20000;
+}
+#modalwrapper {
+    z-index: 20001;
+    position: fixed;
+    top: 0; bottom: 0; right: 0; left: 0;
+}
+#modal {
+    position: relative;
+    width: 600px;
+    margin-left: auto; margin-right: auto;
+    top: 10%; height: 80%;
+    background: white;
+    z-index: 20100;
+    -moz-opacity: 1;
+    opacity: 1;
+    padding: 10px;
+}
+#modalloadwrapper {
+    z-index: 20002;
+    position: fixed;
+    top: 0; bottom: 0; right: 0; left: 0;
+}
+#modalload {
+    position: relative;
+    width: 600px;
+    margin-left: auto; margin-right: auto;
+    top: 10%; height: 80%;
+    background: white;
+    z-index: 20100;
+    -moz-opacity: 1;
+    opacity: 1;
+}
 </style>
 
 <script>
-function add_node_for_tool( id ) {
-   window.frames.canvas.add_node_for_tool( id );
+function add_node_for_tool( id, title ) {
+   window.frames.canvas.add_node_for_tool( id, title );
 }
 </script>
 
 </head>
     <body scroll="no">
+        <div id="overlay"></div>
         ## <div id="masthead">
         ##      <iframe name="galaxy_masthead" src="${h.url_for( controller='root', action='masthead' )}" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
         ## </div>
@@ -132,9 +201,9 @@ function add_node_for_tool( id ) {
                           %if "[[" in tool.description and "]]" in tool.description:
                             ${tool.description.replace( '[[', '<a href="javascript:add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                           %elif tool.name:
-                            <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}' )">${tool.name}</a> ${tool.description}
+                            <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
                           %else:
-                            <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}' )">${tool.description}</a>
+                            <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
                           %endif
                         </div>
                         %endif
@@ -147,8 +216,12 @@ function add_node_for_tool( id ) {
         </div>
         <div id="left-border"><div id="left-border-inner" style="display: none;"></div></div>
         <div id="canvas-area">
-            <iframe name="canvas" width="100%" height="100%" frameborder="0" src="${h.url_for( action='canvas' )}">
+            <iframe name="canvas" width="100%" height="100%" frameborder="0" src="${h.url_for( action='canvas' )}"></iframe>
         </div>
-                        
+        <div>foo</div>
+        <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
+        <div id="right">
+           <div id="right-content"></div>
+        </div> 
     </body>
 </html>

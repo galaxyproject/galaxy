@@ -193,7 +193,8 @@
 
 			if(this.init == false) {
                 // james@bx.psu.edu
-                if ( o.click ) o.click.apply(); 
+                // if ( o.click ) o.click.apply(); 
+                $(this.element).triggerHandler("click", [e], o.click);
                 this.opos = this.pos = null;
 				return null;
 			}
