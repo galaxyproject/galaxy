@@ -331,6 +331,8 @@ class Dataset( object ):
         des.state = self.state
         des.metadata = self.metadata
         des.hid = self.hid
+        des.deleted = self.deleted
+        des.purged = self.purged
         # Make sure source is using filename table, so purge works properly
         if not self.dataset_file:
             self.set_file_name(self.file_name)
