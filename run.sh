@@ -32,10 +32,14 @@ PATH=$PATH:/depot/apps/$MACHTYPE/bin:/home/universe/$ARCH/EMBOSS/bin:/home/unive
 export PATH NODEPATH
 
 # Create directories
-CREATE_DIRS="files tmp"
+CREATE_DIRS="
+$UNIVERSE_HOME/database/$CREATE_DIR/files
+$UNIVERSE_HOME/database/$CREATE_DIR/tmp
+"
+
 for CREATE_DIR in $CREATE_DIRS; do
-    if [ ! -e $UNIVERSE_HOME/database/$CREATE_DIR ]; then
-        mkdir -p $UNIVERSE_HOME/database/$CREATE_DIR
+    if [ ! -d $CREATE_DIR -o ! -h $CREATE_DIR ]; then
+        mkdir -p $CREATE_DIR
     fi
 done
 
