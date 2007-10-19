@@ -693,6 +693,7 @@ class DataToolParameter( ToolParameter ):
         ## assert history is not None, "DataToolParameter requires a history"
         if trans is None or trans.history is None:
             return None
+        history = trans.history
         if self.dynamic_options:
             # Dynamic options for a DataToolParameter specify limits on acceptrable build, id, or extension
             option_build, option_id, option_extension = \
