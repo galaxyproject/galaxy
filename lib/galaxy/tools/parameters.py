@@ -661,11 +661,12 @@ class DataToolParameter( ToolParameter ):
                     if ( isinstance( data.datatype, self.formats )
                          and (data.dbkey == option_build) and (data.id != option_id) 
                          and (data.extension in option_extension) 
-                         and not data.deleted ): 
+                         and not data.deleted 
+                         and data.state not in [data.states.FAKE, data.states.ERROR] ): 
                         selected = ( value and ( data in value ) )
                         field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
                 else:
-                    if isinstance( data.datatype, self.formats) and not data.deleted:
+                    if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.FAKE, data.states.ERROR]:
                         selected = ( value and ( data in value ) )
                         field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
                 # Also collect children via association object
