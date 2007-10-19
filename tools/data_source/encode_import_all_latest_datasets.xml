@@ -2,11 +2,21 @@
   <command interpreter="python">encode_import.py $hg17,$hg16 $output</command>
   <inputs>
     <display>
-    <p><div class="toolFormTitle">hg1 (most recent datasets in bold)</div>$hg17</p>
-    <p><div class="toolFormTitle">hg16 (most recent datasets in bold)</div>$hg16</p>
+      <p><div class="toolFormTitle">hg1 (most recent datasets in bold)</div>$hg17</p>
+      <p><div class="toolFormTitle">hg16 (most recent datasets in bold)</div>$hg16</p>
     </display>
-    <param name="hg17" type="select" display="checkboxes" multiple="true" dynamic_options="get_available_data( 'ALD','hg17' )"/>
-    <param name="hg16" type="select" display="checkboxes" multiple="true" dynamic_options="get_available_data( 'ALD','hg16' )"/>
+    <param name="hg17" type="select" display="checkboxes" multiple="true">
+      <select_options from_file="/depot/data2/galaxy/encode_datasets.loc" func="get_options_for_encode">
+        <func_param name="encode_group" value="ALD" />
+        <func_param name="build" value="hg17" />
+      </select_options>
+    </param>
+    <param name="hg16" type="select" display="checkboxes" multiple="true">
+      <select_options from_file="/depot/data2/galaxy/encode_datasets.loc" func="get_options_for_encode">
+        <func_param name="encode_group" value="ALD" />
+        <func_param name="build" value="hg16" />
+      </select_options>
+    </param>
   </inputs>
   <outputs>
     <data format="bed" name="output"/>

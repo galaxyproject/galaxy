@@ -1,6 +1,9 @@
 from galaxy.util.bunch import Bunch
 from galaxy.tools.parameters import *
 
+import logging
+log = logging.getLogger( __name__ )
+
 class ToolAction( object ):
     """
     The actions to be taken when a tool is run (after parameters have
@@ -10,9 +13,7 @@ class ToolAction( object ):
         raise TypeError("Abstract method")
     
 class DefaultToolAction( object ):
-    """
-    Default tool action is to run an external command
-    """
+    """Default tool action is to run an external command"""
     
     def collect_input_datasets( self, tool, param_values ):
         """
@@ -102,16 +103,11 @@ class DefaultToolAction( object ):
             # the type should match the input
             if ext == "input":
                 ext = input_ext
-            # FIXME: What does this flush?
-            trans.app.model.flush()
             data = trans.app.model.Dataset(extension=ext)
-            # Commit the dataset immediately so it gets database assigned 
-            # unique id
+            # Commit the dataset immediately so it gets database assigned unique id
             data.flush()
             # Create an empty file immediately
             open( data.file_name, "w" ).close()
-            # FIXME: What does this flush?
-            trans.app.model.flush()
             # This may not be neccesary with the new parent/child associations
             data.designation = name
             # Set the extension / datatype

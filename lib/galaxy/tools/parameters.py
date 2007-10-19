@@ -5,7 +5,7 @@ Classes encapsulating tool parameters
 import logging, string, sys
 from galaxy import config, datatypes, util
 from galaxy.datatypes.tabular import *
-import validation
+import validation, dynamic_options
 from elementtree.ElementTree import XML, Element
 
 # For BaseURLToolParameter
@@ -298,14 +298,7 @@ class HiddenToolParameter( ToolParameter ):
         ToolParameter.__init__( self, tool, elem )
         self.name = elem.get( 'name' )
         self.value = elem.get( 'value' )
-        self.dynamic_options = elem.get( "dynamic_options", None )
     def get_html_field( self, trans=None, value=None, other_values={} ):
-        if self.dynamic_options:
-            # Add GALAXY_TOOL_PARAMS to locals for backward compatibility
-            locals = dict( other_values )
-            locals['GALAXY_TOOL_PARAMS'] = other_values
-            options = eval( self.dynamic_options, self.tool.code_namespace, locals )
-            self.value = options
         return form_builder.HiddenField( self.name, self.value )
     def get_initial_value( self, trans, context ):
         return self.value
@@ -424,13 +417,26 @@ class SelectToolParameter( ToolParameter ):
                 self.legal_values.add( value )
                 selected = ( option.get( "selected", None ) == "true" )
                 self.options.append( ( option.text, value, selected ) )
+        select_options = elem.find( 'select_options' )
+        if select_options is not None:
+            self.select_options = dynamic_options.DynamicOptions( select_options )
+        else:
+            self.select_options = None
     def get_options( self, trans, other_values ):
-        if self.dynamic_options:
+        if self.select_options:
+            func = '''self.select_options.%s( trans, other_values )''' %self.select_options.func
+            legal_values, options = eval( func )
+            for value in legal_values:
+                self.legal_values.add( value )
+            return options
+        elif self.dynamic_options:
             return eval( self.dynamic_options, self.tool.code_namespace, other_values )
         else:
             return self.options
     def get_legal_values( self, trans, other_values ):
-        if self.dynamic_options:
+        if self.select_options:
+            return self.legal_values
+        elif self.dynamic_options:
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
         else:
             return self.legal_values
@@ -480,6 +486,11 @@ class SelectToolParameter( ToolParameter ):
         elif len( value ) == 1:
             value = value[0]
         return value
+    def get_dependencies( self ):
+        try: 
+            if self.select_options.data_ref is None: return []
+            else: return [ self.select_options.data_ref ]
+        except: return []
 
 class GenomeBuildParameter( SelectToolParameter ):
     """
@@ -545,7 +556,7 @@ class ColumnListParameter( SelectToolParameter ):
     >>> dtp =  DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
     >>> print dtp.name
     blah
-    >>> clp = ColumnListParameter ( None, XML( '<param name="numerical_column" type="columnlist" assoc_dataset="blah" numerical="true"/>' ) )
+    >>> clp = ColumnListParameter ( None, XML( '<param name="numerical_column" type="data_column" data_ref="blah" numerical="true"/>' ) )
     >>> print clp.name
     numerical_column
     """
@@ -553,9 +564,8 @@ class ColumnListParameter( SelectToolParameter ):
         SelectToolParameter.__init__( self, tool, elem )
         self.tool = tool
         self.numerical = str_bool( elem.get( "numerical", False ))
+        self.force_select = str_bool( elem.get( "force_select", True ))
         self.data_ref = elem.get( "data_ref", None )
-        if self.data_ref is None:
-            self.data_ref = elem.get( "assoc_dataset", None )
     def get_column_list( self, trans, other_values ):
         """
         Generate a select list containing the columns of the associated 
@@ -577,6 +587,8 @@ class ColumnListParameter( SelectToolParameter ):
         # Just to be safe... (FIXME: Is this still neccesary?)
         dataset.set_meta()
         # Generate options
+        if not dataset.metadata.columns: 
+            return column_list
         if self.numerical:
             # If numerical was requsted, filter columns based on metadata
             for i, col in enumerate( dataset.metadata.column_types ):
@@ -587,9 +599,17 @@ class ColumnListParameter( SelectToolParameter ):
         return column_list
     def get_options( self, trans, other_values ):
         column_list = self.get_column_list( trans, other_values )
-        return [ ( "c" + col, col, False ) for col in column_list ]
+        options = []
+        if len( column_list ) > 0 and not self.force_select:
+            options.append( ('?', 'None', False) )
+        for col in column_list:
+            options.append( ( "c" + col, col, False ) )
+        return options
     def get_legal_values( self, trans, other_values ):
-        return set( self.get_column_list( trans, other_values ) )
+        legal_values = set( self.get_column_list( trans, other_values ) )
+        if not self.force_select:
+            legal_values.add( 'None' )
+        return legal_values
     def get_dependencies( self ):
         return [ self.data_ref ]
 
@@ -636,8 +656,6 @@ class DataToolParameter( ToolParameter ):
         self.formats = tuple( formats )
         self.multiple = str_bool( elem.get( 'multiple', False ) )
         self.optional = str_bool( elem.get( 'optional', False ) )
-        self.refresh_on_change = str_bool( elem.get( "refresh_on_change", False ))
-        self.dynamic_options = elem.get( "dynamic_options", None )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         assert trans is not None, "DataToolParameter requires a trans"
@@ -646,10 +664,6 @@ class DataToolParameter( ToolParameter ):
         if value is not None:
             if type( value ) != list: value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change )
-        if self.dynamic_options:
-            # Dynamic options for a DataToolParameter specify limits on acceptrable build, id, or extension
-            option_build, option_id, option_extension = \
-                eval( self.dynamic_options, self.tool.code_namespace, other_values )
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( datasets, parent_hid ):
             for i, data in enumerate( datasets ):
@@ -657,18 +671,9 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( data.hid )
-                if self.dynamic_options:
-                    if ( isinstance( data.datatype, self.formats )
-                         and (data.dbkey == option_build) and (data.id != option_id) 
-                         and (data.extension in option_extension) 
-                         and not data.deleted 
-                         and data.state not in [data.states.FAKE, data.states.ERROR] ): 
-                        selected = ( value and ( data in value ) )
-                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
-                else:
-                    if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.FAKE, data.states.ERROR]:
-                        selected = ( value and ( data in value ) )
-                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+                if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.FAKE, data.states.ERROR]:
+                    selected = ( value and ( data in value ) )
+                    field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
                 # Also collect children via association object
                 dataset_collector( [ assoc.child for assoc in data.children ], hid )
         dataset_collector( history.datasets, None )
@@ -695,22 +700,11 @@ class DataToolParameter( ToolParameter ):
         if trans is None or trans.history is None:
             return None
         history = trans.history
-        if self.dynamic_options:
-            # Dynamic options for a DataToolParameter specify limits on acceptrable build, id, or extension
-            option_build, option_id, option_extension = \
-                eval( self.dynamic_options, self.tool.code_namespace, other_values )
         most_recent_dataset = [None]
         def dataset_collector( datasets ):
             for i, data in enumerate( datasets ):
-                if self.dynamic_options:
-                    if ( isinstance( data.datatype, self.formats )
-                         and (data.dbkey == option_build) and (data.id != option_id) 
-                         and (data.extension in option_extension) 
-                         and not data.deleted ): 
-                        most_recent_dataset[0] = data
-                else:
-                    if isinstance( data.datatype, self.formats) and not data.deleted:
-                        most_recent_dataset[0] = data
+                if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.FAKE, data.states.ERROR]:
+                    most_recent_dataset[0] = data
                 # Also collect children via association object
                 dataset_collector( [ assoc.child for assoc in data.children ] )
         dataset_collector( history.datasets )
@@ -813,7 +807,6 @@ parameter_types = dict( text        = TextToolParameter,
                         boolean     = BooleanToolParameter,
                         genomebuild = GenomeBuildParameter,
                         select      = SelectToolParameter,
-                        columnlist  = ColumnListParameter,
                         data_column = ColumnListParameter,
                         hidden      = HiddenToolParameter,
                         baseurl     = BaseURLToolParameter,

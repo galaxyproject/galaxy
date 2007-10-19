@@ -2,26 +2,16 @@
   <description>from another query</description>
   <command interpreter="python2.4">subtract_query.py $input1 $input2 $begin_col $end_col $output</command>
   <inputs>
-    <page>
-      <param format="txt" name="input2" type="data" help="Second query">
-        <label>Subtract</label>
-      </param>
-      <param format="txt" name="input1" type="data" help="First query">
-        <label>from</label>
-      </param>
-    </page>
-    <page>
-      <param name="begin_col" label="If both queries are tabular format, restrict subtraction between 'begin column'" type="select" dynamic_options="get_columns( input1, input2 )"/>
-      <param name="end_col" label="and 'end column'" type="select" help="Specifying columns for restricting subtraction is available only for tabular formatted queries" dynamic_options="get_columns( input1, input2 )"/>
-    </page>
+    <param format="txt" name="input2" type="data" label="Subtract" help="Second query" />
+    <param format="txt" name="input1" type="data" label="from" help="First query" />
+    <param name="begin_col" type="data_column" data_ref="input1" force_select="False" label="If both queries are tabular format, restrict subtraction between 'begin column'" />
+    <param name="end_col" type="data_column" data_ref="input1" force_select="False" label="and 'end column'" help="Specifying columns for restricting subtraction is available only for tabular formatted queries" />
   </inputs>
   <outputs>
     <data format="input" name="output" metadata_source="input1" />
   </outputs>
   <tests>
-  	<!--
-  	Subtract 2 non-tabular files with no column restrictions.
-  	-->
+  	<!-- Subtract 2 non-tabular files with no column restrictions. -->
     <test>
       <param name="input1" value="1.txt" />
       <param name="input2" value="2.txt" />
@@ -29,9 +19,7 @@
       <param name="end_col" value="None" />
       <output name="output" file="subtract-query-1.dat" />
     </test>
-  	<!--
-  	Subtract 2 tabular files with no column restrictions.
-  	-->
+  	<!-- Subtract 2 tabular files with no column restrictions. -->
     <test>
       <param name="input1" value="eq-showbeginning.dat" />
       <param name="input2" value="eq-showtail.dat" />
@@ -39,9 +27,7 @@
       <param name="end_col" value="None" />
       <output name="output" file="subtract-query-2.dat" />
     </test>
-  	<!--
-  	Subtract 2 tabular files with column restrictions.
-  	-->
+  	<!-- Subtract 2 tabular files with column restrictions. -->
     <test>
       <param name="input1" value="eq-showbeginning.dat" />
       <param name="input2" value="eq-removebeginning.dat" />
@@ -49,9 +35,7 @@
       <param name="end_col" value="c3" />
       <output name="output" file="subtract-query-3.dat" />
     </test>
-  	<!--
-  	Subtract a non-tabular file from a tabular file with no column restrictions.
-  	-->
+  	<!-- Subtract a non-tabular file from a tabular file with no column restrictions. -->
     <test>
       <param name="input1" value="eq-showbeginning.dat" />
       <param name="input2" value="2.txt" />
@@ -120,6 +104,5 @@ Subtracting the **Second query** from the **First query** (restricting to column
   chr10           7
   chr10           2
 
-</help>
-  <code file="subtract_query_code.py"/>
+  </help>
 </tool>

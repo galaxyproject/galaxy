@@ -1,32 +1,28 @@
 <tool id="aggregate_scores_in_intervals2" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints">
-    <description>Appends the average, min, max of datapoints per interval</description>
-    <command interpreter="python2.4">aggregate_scores_in_intervals.py $datasets $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1 -b</command>
-    <code file="aggregate_binned_scores_in_intervals_code.py"/>
-    <inputs>
-        <page>
-            <param format="interval" name="input1" type="data" label="Interval file"/>
-        </page>
-        <page>
-            <param name="datasets" type="select" label="Available datasets" dynamic_options="get_scores_for_build( input1.dbkey )" display="radio" multiple="false">
-            </param>
-        </page>
-    </inputs>
-    <outputs>
-        <data format="interval" name="out_file1" metadata_source="input1"/>
-    </outputs>
-    <tests>
-      <test>
-        <param name="input1" value="6.bed" dbkey="hg17" ftype="bed"/>
-        <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg17/phastcons_encode_sep2005_tba" />
-        <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
-      </test>
-      <test>
-        <param name="input1" value="9_hg18.bed" dbkey="hg18" ftype="bed"/>
-        <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg18/phastCons17way/ba" />
-        <output name="out_file1" file="aggregate_binned_scores_in_intervals2.out" />
-      </test>
-    </tests>
-    <help>
+  <description>Appends the average, min, max of datapoints per interval</description>
+  <command interpreter="python2.4">aggregate_scores_in_intervals.py $datasets $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1 -b</command>
+  <inputs>
+    <param format="interval" name="input1" type="data" label="Interval file"/>
+    <param name="datasets" type="select" label="Available datasets" display="radio">
+      <select_options from_file="/depot/data2/galaxy/binned_scores.loc" data_ref="input1" func="get_options_for_build" />
+    </param>
+  </inputs>
+  <outputs>
+    <data format="interval" name="out_file1" metadata_source="input1"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="6.bed" dbkey="hg17" ftype="bed"/>
+      <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg17/phastcons_encode_sep2005_tba" />
+      <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
+    </test>
+    <test>
+      <param name="input1" value="9_hg18.bed" dbkey="hg18" ftype="bed"/>
+      <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg18/phastCons17way/ba" />
+      <output name="out_file1" file="aggregate_binned_scores_in_intervals2.out" />
+    </test>
+  </tests>
+  <help>
 
 .. class:: warningmark
 
@@ -81,5 +77,5 @@ where:
 * **min** - minimum phastCons score for each region
 * **max** - maximum phastCons score for each region
 
-    </help>
+  </help>
 </tool>
