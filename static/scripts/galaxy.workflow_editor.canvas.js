@@ -217,6 +217,42 @@ $.extend( Node.prototype, {
     },
     make_inactive : function () {
         $(this.element).removeClass( "toolForm-active" );
+    },
+    update_field_data : function ( data ) {
+        var f = this.element;
+        this.form_html = data.form_html
+        this.tool_state = data.state
+        var node = this;
+        b = f.find( ".toolFormBody" );
+        b.find( "div" ).remove();
+        $.each( data.data_inputs, function( i, input ) {
+            t = $("<div class='terminal input-terminal'></div>")
+            node.enable_input_terminal( t, input.extensions );
+            b.append( $("<div class='form-row dataRow'>" + input.name + "</div></div>" ).prepend( t ) );
+        });
+        if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
+            b.append( $( "<div class='rule'></div>" ) );
+        }
+        $.each( data.data_outputs, function( i, output ) {
+            var t = $( "<div class='terminal output-terminal'></div>" );
+            node.enable_output_terminal( t, output.extension );
+            b.append( $("<div class='form-row dataRow'>" + output.name + "</div>" ).append( t ) );
+        });
+        if ( active_node == this ) {
+            // Reactive with new form_html
+            activate_node( this );
+        }
+    },
+    error : function ( text ) {
+        var b = $(this.element).find( ".toolFormBody" );
+        b.find( "div" ).remove();
+        var tmp = "<div style='color: red; text-style: italic;'>" + text + "</div>";
+        this.form_html = tmp;
+        b.html( tmp );
+        if ( active_node == this ) {
+            // Reactive with new form_html
+            activate_node( this );
+        }
     }
 } );
 
@@ -244,7 +280,7 @@ function clear_active_node() {
 
 function activate_node( node ) {
     clear_active_node();
-    parent.show_form_for_tool( node.form_html );
+    parent.show_form_for_tool( node.form_html, node );
     node.make_active();
     active_node = node;
 }
@@ -278,10 +314,10 @@ function prebuild_node_for_tool( title ) {
     // Make draggable
     $(f).draggable( {
         cursor: 'move',
-        handle: title,
+        // handle: title,
         scroll: true,
-        scrollSensitivity: 20,
-        scrollSpeed: 50,
+        scrollSensitivity: 10,
+        scrollSpeed: 20,
         containment: $("#shim"),
         // grow: true,
         click: function() {
@@ -309,31 +345,6 @@ function prebuild_node_for_tool( title ) {
     });
     return node;
 }
-
-function update_node_for_tool( node, data ) {
-    var f = node.element;
-    node.form_html = data.form_html
-    b = f.find( ".toolFormBody" );
-    b.find( "div" ).remove();
-    $.each( data.data_inputs, function( i, input ) {
-        t = $("<div class='terminal input-terminal'></div>")
-        node.enable_input_terminal( t, input.extensions );
-        b.append( $("<div class='form-row dataRow'>" + input.name + "</div></div>" ).prepend( t ) );
-    });
-    if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
-        b.append( $( "<div class='rule'></div>" ) );
-    }
-    $.each( data.data_outputs, function( i, output ) {
-        var t = $( "<div class='terminal output-terminal'></div>" );
-        node.enable_output_terminal( t, output.extension );
-        b.append( $("<div class='form-row dataRow'>" + output.name + "</div>" ).append( t ) );
-    });
-    if ( active_node == node ) {
-        // Reactive with new form_html
-        activate_node( node );
-    }
-    return node;
-};
 
 
 var ext_to_type = null;

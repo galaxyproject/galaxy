@@ -422,6 +422,7 @@ class SelectToolParameter( ToolParameter ):
             self.select_options = dynamic_options.DynamicOptions( select_options )
         else:
             self.select_options = None
+        self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.select_options is not None ) )
     def get_options( self, trans, other_values ):
         if self.select_options:
             func = '''self.select_options.%s( trans, other_values )''' %self.select_options.func
@@ -441,6 +442,17 @@ class SelectToolParameter( ToolParameter ):
         else:
             return self.legal_values
     def get_html_field( self, trans=None, value=None, other_values={} ):
+        # Dynamic options are not yet supported in workflow, allow 
+        # specifying the value as text for now.
+        if self.is_dynamic and trans.workflow_building_mode:
+            if self.multiple:
+                if value is None:
+                    value = ""
+                else:
+                    value = "\n".join( value )
+                return form_builder.TextArea( self.name, value=value )
+            else:
+                return form_builder.TextField( self.name, value=(value or "") )
         if value is not None:
             if not isinstance( value, list ): value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, self.display )
@@ -451,6 +463,8 @@ class SelectToolParameter( ToolParameter ):
             field.add_option( text, optval, selected )
         return field
     def from_html( self, value, trans=None, other_values={} ):
+        if self.is_dynamic and trans.workflow_building_mode:
+            return value
         legal_values = self.get_legal_values( trans, other_values )
         if isinstance( value, list ):
             if not(self.repeat):
@@ -566,6 +580,7 @@ class ColumnListParameter( SelectToolParameter ):
         self.numerical = str_bool( elem.get( "numerical", False ))
         self.force_select = str_bool( elem.get( "force_select", True ))
         self.data_ref = elem.get( "data_ref", None )
+        self.is_dynamic = True
     def get_column_list( self, trans, other_values ):
         """
         Generate a select list containing the columns of the associated 

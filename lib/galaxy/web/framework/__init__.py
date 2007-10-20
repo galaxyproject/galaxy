@@ -68,6 +68,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         base.DefaultWebTransaction.__init__( self, environ )
         self.app.model.context.current.clear()
         self.debug = asbool( self.app.config.get( 'debug', False ) )
+        # Flag indicating whether we are in workflow building mode (means
+        # that the current history should not be used for parameter values
+        # and such).
+        self.workflow_building_mode = False
         
     def log_event( self, message, tool_id=None, **kwargs ):
         """

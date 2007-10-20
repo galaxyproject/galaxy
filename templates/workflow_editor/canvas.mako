@@ -25,6 +25,7 @@ img { border: 0; }
 <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
 <script type='text/javascript' src="/static/scripts/jquery.dimensions.js"> </script>
 <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
+<script type='text/javascript' src="/static/scripts/jquery.hoverIntent.js"> </script>
 <script type='text/javascript' src="/static/scripts/galaxy.workflow_editor.canvas.js"> </script>
 
 <script type='text/javascript'>
@@ -44,8 +45,11 @@ function add_node_for_tool( id, title ) {
         data: { tool_id: id }, 
         dataType: "json",
         success: function( data ) {
-            node = update_node_for_tool( node, data );
+            node.update_field_data( data );
             workflow.add_node( node );
+        },
+        error: function() {
+            node.error( "error loading field data" );
         }
     });
 }
@@ -54,8 +58,11 @@ $( function() {
     // Start at the middle of the canvas
     $(window).scrollTop( 2500 );
     $(window).scrollLeft( 2500 );
-    // 
-    $("#shim").click( clear_active_node );
+    // Shim (the background of the editor area) causes loss of focus
+    $("#shim").click( clear_active_node ).hoverIntent( {
+        over: function () { $("div.toolForm").fadeTo( "fast", 0.8 ) },
+        out: function () { $("div.toolForm").fadeTo( "fast", 1.0 ) },
+    });
     // Load the datatype info
 	$.getJSON( "${h.url_for( action='get_datatypes' )}", function( data ) {
 	    populate_datatype_info( data );

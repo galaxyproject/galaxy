@@ -9,7 +9,7 @@
 <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
 <script type='text/javascript' src="/static/scripts/jquery.dimensions.js"> </script>
 <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
-<script type='text/javascript' src="/static/scripts/jquery.blockUI.js"> </script>
+<script type='text/javascript' src="/static/scripts/jquery.form.js"> </script>
 <script type='text/javascript' src="/static/scripts/galaxy.panels.js"> </script>
 <script>
 
@@ -25,10 +25,10 @@ $( function() {
 })
 
 function notify() {
-    $("#overlay" ).fadeOut();
+    $("#overlay" ).slideUp( "slow" );
 }
 
-function show_form_for_tool( text ) {
+function show_form_for_tool( text, node ) {
     // $("#overlay, #modalwrapper" ).show();
     //$("#modal iframe").attr( 'src', "${h.url_for( action='tool_form' )}?tool_id=" + tool_id ).load( function () {
     //    $("#modalloadwrapper").hide();
@@ -37,6 +37,15 @@ function show_form_for_tool( text ) {
     //     
     // });
     $("#right-content").html( text );
+    $("#right-content").find( "form" ).ajaxForm( {
+        dataType: 'json',
+        success: function( data ) { 
+            node.tool_state = data.state;
+            node.form_html = data.form_html;
+            show_form_for_tool( data.form_html, node );
+        },
+        beforeSubmit: function( data ) { data.push( { name: 'tool_state', value: node.tool_state } ); }
+    });
 }
 
 </script>
@@ -120,6 +129,7 @@ div.toolFormRow {
     top: 0; bottom: 0; left: auto; right: 0px; 
     z-index: 200;
     background: white;
+    overflow: scroll;
 }
 #right-content {
     margin: 5px;
@@ -132,37 +142,6 @@ div.toolFormRow {
     -moz-opacity: 0.75;
     opacity: 0.75;
     z-index: 20000;
-}
-#modalwrapper {
-    z-index: 20001;
-    position: fixed;
-    top: 0; bottom: 0; right: 0; left: 0;
-}
-#modal {
-    position: relative;
-    width: 600px;
-    margin-left: auto; margin-right: auto;
-    top: 10%; height: 80%;
-    background: white;
-    z-index: 20100;
-    -moz-opacity: 1;
-    opacity: 1;
-    padding: 10px;
-}
-#modalloadwrapper {
-    z-index: 20002;
-    position: fixed;
-    top: 0; bottom: 0; right: 0; left: 0;
-}
-#modalload {
-    position: relative;
-    width: 600px;
-    margin-left: auto; margin-right: auto;
-    top: 10%; height: 80%;
-    background: white;
-    z-index: 20100;
-    -moz-opacity: 1;
-    opacity: 1;
 }
 </style>
 

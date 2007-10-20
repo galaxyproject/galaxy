@@ -1,6 +1,7 @@
 from galaxy.web.base.controller import *
 
 from galaxy.tools.parameters import DataToolParameter
+from galaxy.tools import DefaultToolState
 from galaxy.datatypes.data import Data
 
 class WorkflowEditor( BaseController ):
@@ -14,13 +15,21 @@ class WorkflowEditor( BaseController ):
     def canvas( self, trans ):
         return trans.fill_template( "workflow_editor/canvas.mako" )
         
-    @web.expose
-    def tool_form( self, trans, tool_id ):
+    @web.json
+    def tool_form( self, trans, tool_id=None, **incoming ):
+        trans.workflow_building_mode = True
         tool = trans.app.toolbox.tools_by_id[tool_id]
-        return trans.fill_template( "workflow_editor/tool_form.mako", tool=tool, as_html=as_html )
+        state = DefaultToolState()
+        state.decode( incoming.pop("tool_state"), tool, trans.app )
+        errors = tool.update_state( trans, tool.inputs_by_page[state.page], state.inputs, incoming )
+        rval = {}
+        rval['form_html'] = trans.fill_template( "workflow_editor/tool_form.mako", tool=tool, as_html=as_html, values=state.inputs )
+        rval['state'] = state.encode( tool, trans.app )
+        return rval
         
     @web.json
     def get_tool_info( self, trans, tool_id ):
+        trans.workflow_building_mode = True
         tool = trans.app.toolbox.tools_by_id[tool_id]
         rval = {}
         rval['name'] = tool.name
@@ -34,9 +43,9 @@ class WorkflowEditor( BaseController ):
         for name, ( format, metadata_source, parent ) in tool.outputs.iteritems():
             data_outputs.append( dict( name=name, extension=format ) )
         rval['data_outputs'] = data_outputs
-        rval['form_html'] = trans.fill_template( "workflow_editor/tool_form.mako", tool=tool, as_html=as_html )
-        rval['state'] = tool.new_state( None ).encode( tool, trans.app )
-        import time; time.sleep( 1 )
+        state = tool.new_state( None )
+        rval['form_html'] = trans.fill_template( "workflow_editor/tool_form.mako", tool=tool, as_html=as_html, values=state.inputs )
+        rval['state'] = state.encode( tool, trans.app )
         return rval
         
     @web.json
@@ -60,8 +69,8 @@ class WorkflowEditor( BaseController ):
             class_to_classes[ n ] = dict( ( t, True ) for t in types )
         return dict( ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes )
         
-def as_html( param, trans ):
+def as_html( param, value, trans, prefix ):
     if type( param ) is DataToolParameter:
         return "Data input '" + param.name + "' (" + ( " or ".join( param.extensions ) ) + ")"
     else:
-        return param.get_html( trans )
+        return param.get_html_field( trans, value ).get_html( prefix )
