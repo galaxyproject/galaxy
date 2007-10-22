@@ -230,25 +230,23 @@ class Bed( Interval ):
         Interval.init_meta( self, dataset, copy_from=copy_from )
     
     def set_meta( self, dataset ):
-        """
-        Overrides the default setting for dataset.metadata.strandCol for BED
-        files that do not contain a strand column.  This will result in changing
-        the format of the file from BED to Interval.
-        """
-        #initialize tablular metadata
-        Tabular.set_meta( self, dataset, 0 )
-        #Use initialized tabular metadata to determine if file fits BED format
-        bed_col_types = [["str","int"], ["int"], ["int"], ["str"], ["int"], ["str"], ["int"], ["int"], ["int"], ["int"], ["list"], ["list"]]
-        if dataset.metadata.columns >= 6:
-            dataset.metadata.strandCol = 6
+        """Sets the metadata information for datasets previously determined to be in bed format."""
+        i = 0
         if dataset.has_data():
-            for i, col_type in enumerate(dataset.metadata.column_types):
-                #extra columns should be ok
-                if i >= len(bed_col_types): return
-                #invalid column type, this is no longer a bed file
-                if col_type not in bed_col_types[i]:
-                    dataset.change_datatype('interval')
-                    return
+            for i, line in enumerate( file(dataset.file_name) ):
+                line = line.rstrip('\r\n')
+                if line and not line.startswith('#'):
+                    elems = line.split('\t')
+                    if len(elems) > 2:
+                        for str in data.col1_startswith:
+                            if line.lower().startswith(str):
+                                if len(elems) < 6:
+                                    dataset.metadata.strandCol = 0
+                                else:
+                                    dataset.metadata.strandCol = 6
+                                break
+                if i == 30: break
+            Tabular.set_meta( self, dataset, i )
     
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""

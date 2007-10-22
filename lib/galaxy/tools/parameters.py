@@ -410,33 +410,29 @@ class SelectToolParameter( ToolParameter ):
         self.separator = elem.get( 'separator', ',' )
         self.legal_values = set()
         self.dynamic_options = elem.get( "dynamic_options", None )
-        if self.dynamic_options is None:
+        select_options = elem.find( 'select_options' )
+        if select_options is None:
+            self.select_options = None
+        else:
+            self.select_options = dynamic_options.DynamicOptions( select_options )
+        if self.dynamic_options is None and self.select_options is None:
             self.options = list()
             for index, option in enumerate( elem.findall("option") ):
                 value = option.get( "value" )
                 self.legal_values.add( value )
                 selected = ( option.get( "selected", None ) == "true" )
                 self.options.append( ( option.text, value, selected ) )
-        select_options = elem.find( 'select_options' )
-        if select_options is not None:
-            self.select_options = dynamic_options.DynamicOptions( select_options )
-        else:
-            self.select_options = None
         self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.select_options is not None ) )
     def get_options( self, trans, other_values ):
         if self.select_options:
-            func = '''self.select_options.%s( trans, other_values )''' %self.select_options.func
-            legal_values, options = eval( func )
-            for value in legal_values:
-                self.legal_values.add( value )
-            return options
+            return eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func )[1]
         elif self.dynamic_options:
             return eval( self.dynamic_options, self.tool.code_namespace, other_values )
         else:
             return self.options
     def get_legal_values( self, trans, other_values ):
         if self.select_options:
-            return self.legal_values
+            return eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func )[0]
         elif self.dynamic_options:
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
         else:
@@ -579,6 +575,7 @@ class ColumnListParameter( SelectToolParameter ):
         self.tool = tool
         self.numerical = str_bool( elem.get( "numerical", False ))
         self.force_select = str_bool( elem.get( "force_select", True ))
+        self.accept_default = str_bool( elem.get( "accept_default", False ))
         self.data_ref = elem.get( "data_ref", None )
         self.is_dynamic = True
     def get_column_list( self, trans, other_values ):
@@ -602,29 +599,32 @@ class ColumnListParameter( SelectToolParameter ):
         # Just to be safe... (FIXME: Is this still neccesary?)
         dataset.set_meta()
         # Generate options
-        if not dataset.metadata.columns: 
+        if not dataset.metadata.columns:
+            if self.accept_default:
+                column_list.append( '1' )
             return column_list
+        if not self.force_select:
+            column_list.append( 'None' )
         if self.numerical:
             # If numerical was requsted, filter columns based on metadata
             for i, col in enumerate( dataset.metadata.column_types ):
                 if col == 'int' or col == 'float':
                     column_list.append( str( i + 1 ) )
         else:
-            column_list = [ str( i + 1 ) for i in range(0, dataset.metadata.columns) ]
+            for i in range(0, dataset.metadata.columns):
+                column_list.append( str( i + 1 ) )
         return column_list
     def get_options( self, trans, other_values ):
-        column_list = self.get_column_list( trans, other_values )
         options = []
+        column_list = self.get_column_list( trans, other_values )
         if len( column_list ) > 0 and not self.force_select:
             options.append( ('?', 'None', False) )
         for col in column_list:
-            options.append( ( "c" + col, col, False ) )
+            if col != 'None':
+                options.append( ( 'c' + col, col, False ) )
         return options
     def get_legal_values( self, trans, other_values ):
-        legal_values = set( self.get_column_list( trans, other_values ) )
-        if not self.force_select:
-            legal_values.add( 'None' )
-        return legal_values
+        return set( self.get_column_list( trans, other_values ) )
     def get_dependencies( self ):
         return [ self.data_ref ]
 
