@@ -98,7 +98,7 @@ def is_column_based(fname, sep='\t', skip=0):
     True
     >>> is_column_based(fname, sep=' ')
     False
-    >>> fname = get_test_fname('test_space.bed')
+    >>> fname = get_test_fname('test_space.txt')
     >>> is_column_based(fname)
     False
     >>> is_column_based(fname, sep=' ')
@@ -139,7 +139,7 @@ def guess_ext( fname ):
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname)
     'interval'
-    >>> fname = get_test_fname('interval.bed')
+    >>> fname = get_test_fname('interval1.interval')
     >>> guess_ext(fname)
     'interval'
     >>> fname = get_test_fname('test_tab.bed')

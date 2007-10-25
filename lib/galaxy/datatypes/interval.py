@@ -68,7 +68,7 @@ class Interval( Tabular ):
         ## dataset.peek  = self.make_html_table( dataset.peek )
         dataset.blurb = util.commaify( str( data.get_line_count( dataset.file_name ) ) ) + " regions"
         #i don't think set_meta should not be called here, it should be called separately
-        self.set_meta( dataset )
+        #self.set_meta( dataset )
     
     def set_meta( self, dataset, first_line_is_header=False ):
         Tabular.set_meta( self, dataset, 1 )
@@ -186,7 +186,7 @@ class Interval( Tabular ):
         This format is mostly used by galaxy itself.  Valid interval files should include
         a valid header comment, but this seems to be loosely regulated.
         
-        >>> fname = get_test_fname( 'test_space.bed' )
+        >>> fname = get_test_fname( 'test_space.txt' )
         >>> Interval().sniff( fname )
         False
         >>> fname = get_test_fname( 'interval.interval' )
@@ -245,7 +245,6 @@ class Bed( Interval ):
                                 else:
                                     dataset.metadata.strandCol = 6
                                 break
-                if i == 30: break
             Tabular.set_meta( self, dataset, i )
     
     def as_ucsc_display_file( self, dataset, **kwd ):
@@ -289,14 +288,17 @@ class Bed( Interval ):
         
         BED lines have three required fields and nine additional optional fields. 
         The number of fields per line must be consistent throughout any single set of data in 
-        an annotation track.
+        an annotation track.  The order of the optional fields is binding: lower-numbered 
+        fields must always be populated if higher-numbered fields are used.  The data type of
+        all 12 columns is:
+        1-str, 2-int, 3-int, 4-str, 5-int, 6-str, 7-int, 8-int, 9-int or list, 10-int, 11-list, 12-list
         
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format1
         
         >>> fname = get_test_fname( 'test_tab.bed' )
         >>> Bed().sniff( fname )
         True
-        >>> fname = get_test_fname( 'interval.bed' )
+        >>> fname = get_test_fname( 'interval1.interval' )
         >>> Bed().sniff( fname )
         False
         >>> fname = get_test_fname( 'complete.bed' )
@@ -305,9 +307,10 @@ class Bed( Interval ):
         """
         headers = get_headers( filename, '\t' )
         try:
-            if not headers:
-                return False
+            if not headers: return False
             for hdr in headers:
+                if (hdr[0] == '' or hdr[0].startswith( '#' )):
+                    continue
                 valid_col1 = False
                 if len(hdr) < 3 or len(hdr) > 12:
                     return False
@@ -316,51 +319,49 @@ class Bed( Interval ):
                         valid_col1 = True
                         break
                 if valid_col1:
-                    try:
-                        map( int, [hdr[1], hdr[2]] )
-                    except:
-                        return False
-                    if len(hdr) > 3:
-                        """
-                        Since all 9 of these fields are optional, it is difficult to test
-                        for specific column values...
-                        """
-                        optionals = hdr[3:]
-                        """...we can, however, test complete BED definitions fairly easily."""
-                        if len(optionals) == 9:
-                            try:
-                                map ( int, [optionals[1], optionals[3], optionals[4], optionals[5], optionals[6]] )
-                            except:
-                                return False
-                            score = int(optionals[1])
-                            if score < 0 or score > 1000:
-                                return False
-                            if optionals[2] not in ['+', '-']:
-                                return False
-                            if int(optionals[5]) != 0:
-                                return False
-                            block_count = int(optionals[6])
-                            """Sometimes the blosck_sizes and block_starts lists end in extra commas"""
-                            block_sizes = optionals[7].rstrip(',').split(',')
-                            block_starts = optionals[8].rstrip(',').split(',')
-                            if len(block_sizes) != block_count or len(block_starts) != block_count:
-                                return False
-                        elif len(optionals) > 4 and len(optionals) < 9:
-                            """
-                            Here it gets a bit trickier, but in this case, we can be somewhat confident 
-                            that optionals will include a strand column
-                            """
-                            is_valid_strand = False
-                            for ele in optionals:
-                                if ele in data.valid_strand:
-                                    is_valid_strand = True
-                            if not is_valid_strand:
-                                return False
-                else:
-                    return False
+                    try: map( int, [hdr[1], hdr[2]] )
+                    except: return False
+                    if len( hdr ) > 4:
+                        #hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
+                        #hdr[4] is an int, 'score', a score between 0 and 1000.
+                        try:
+                            if int( hdr[4] ) < 0 or int( hdr[4] ) > 1000: return False
+                        except:
+                            return False
+                    if len( hdr ) > 5:
+                        #hdr[5] is strand
+                        if hdr[5] not in data.valid_strand: return False
+                    if len( hdr ) > 6:
+                        #hdr[6] is thickStart, the starting position at which the feature is drawn thickly.
+                        try: int( hdr[6] )
+                        except: return False
+                    if len( hdr ) > 7:
+                        #hdr[7] is thickEnd, the ending position at which the feature is drawn thickly
+                        try: int( hdr[7] )
+                        except: return False
+                    if len( hdr ) > 8:
+                        #hdr[8] is itemRgb, an RGB value of the form R,G,B (e.g. 255,0,0).  However, this could also be an int (e.g., 0)
+                        try: int( hdr[8] )
+                        except:
+                            try: hdr[8].split(',')
+                            except: return False
+                    if len( hdr ) > 9:
+                        #hdr[9] is blockCount, the number of blocks (exons) in the BED line.
+                        try: block_count = int( hdr[9] )
+                        except: return False
+                    if len( hdr ) > 10:
+                        #hdr[10] is blockSizes - A comma-separated list of the block sizes.
+                        #Sometimes the blosck_sizes and block_starts lists end in extra commas
+                        try: block_sizes = hdr[10].rstrip(',').split(',')
+                        except: return False
+                    if len( hdr ) > 11:
+                        #hdr[11] is blockStarts - A comma-separated list of block starts.
+                        try: block_starts = hdr[11].rstrip(',').split(',')
+                        except: return False
+                        if len(block_sizes) != block_count or len(block_starts) != block_count: return False   
+                else: return False
             return True
-        except:
-            return False
+        except: return False
 
 class Gff( Tabular ):
     """Tab delimited data in Gff format"""
@@ -383,10 +384,9 @@ class Gff( Tabular ):
                 elems = line.split( '\t' )
                 if len(elems) == 9:
                     try:
-                        map( int, [hdr[3], hdr[4]] )
+                        map( int, [elems[3], elems[4]] )
                         break
-                    except:
-                        pass
+                    except: pass
         Tabular.set_meta( self, dataset, i )
 
     def make_html_table(self, data):
@@ -506,20 +506,20 @@ class Gff3( Gff ):
                 elems = line.split( '\t' )
                 valid_start = False
                 valid_end = False
-                if len(elems) == 9:
+                if len( elems ) == 9:
                     try:
-                        start = int(hdr[3])
+                        start = int( elems[3] )
                         valid_start = True                                    
                     except:
-                        if hdr[3] == '.': valid_start = True                                        
+                        if elems[3] == '.': valid_start = True                                        
                     try:
-                        end = int(hdr[4])
+                        end = int( elems[4] )
                         valid_end = True
                     except:
-                        if hdr[4] == '.': valid_end = True
-                    strand = hdr[6]
-                    phase = hdr[7]
-                    if valid_start and valid_end and start<end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
+                        if elems[4] == '.': valid_end = True
+                    strand = elems[6]
+                    phase = elems[7]
+                    if valid_start and valid_end and start < end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
                         break
         Tabular.set_meta( self, dataset, i )
 
@@ -626,7 +626,7 @@ class Wiggle( Tabular ):
         
         For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
         
-        >>> fname = get_test_fname( 'interval.bed' )
+        >>> fname = get_test_fname( 'interval1.interval' )
         >>> Wiggle().sniff( fname )
         False
         >>> fname = get_test_fname( 'wiggle.wig' )
