@@ -298,9 +298,9 @@ class Bed( Interval ):
         >>> fname = get_test_fname( 'test_tab.bed' )
         >>> Bed().sniff( fname )
         True
-        >>> fname = get_test_fname( 'interval1.interval' )
+        >>> fname = get_test_fname( 'interval1.bed' )
         >>> Bed().sniff( fname )
-        False
+        True
         >>> fname = get_test_fname( 'complete.bed' )
         >>> Bed().sniff( fname )
         True
@@ -626,7 +626,7 @@ class Wiggle( Tabular ):
         
         For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
         
-        >>> fname = get_test_fname( 'interval1.interval' )
+        >>> fname = get_test_fname( 'interval1.bed' )
         >>> Wiggle().sniff( fname )
         False
         >>> fname = get_test_fname( 'wiggle.wig' )

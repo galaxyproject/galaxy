@@ -139,9 +139,9 @@ def guess_ext( fname ):
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname)
     'interval'
-    >>> fname = get_test_fname('interval1.interval')
+    >>> fname = get_test_fname('interval1.bed')
     >>> guess_ext(fname)
-    'interval'
+    'bed'
     >>> fname = get_test_fname('test_tab.bed')
     >>> guess_ext(fname)
     'bed'
