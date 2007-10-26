@@ -1,31 +1,28 @@
 <tool id="MAF_To_BED1" name="Maf to BED">
-    <description>Converts a MAF formated file to the BED format</description>
-    <command interpreter="python2.4">maf_to_bed.py $input1 $out_file1 $species $complete_blocks</command>
-    <inputs>
-        <page>
-            <param format="maf" name="input1" type="data" label="MAF file to convert"/>
-        </page>
-        <page>
-            <param name="species" type="select" label="Select species" dynamic_options="map(lambda spec: (spec, spec, False), input1.metadata.species)" display="checkboxes" multiple="true" help="a separate history item will be created for each checked species" />
-            <param name="complete_blocks" type="select">
-              <label>Exclude blocks which have a requested species missing</label>
-              <option value="partial_allowed">include blocks with missing species</option>
-              <option value="partial_disallowed">exclude blocks with missing species</option>
-            </param>
-        </page>
-    </inputs>
-    <outputs>
-        <data format="bed" name="out_file1" />
-    </outputs>
-    <tests>
-      <test>
-        <param name="input1" value="4.maf"/>
-        <param name="species" values="hg17"/>
-        <param name="complete_blocks" value="partial_disallowed"/>
-        <output name="out_file1" file="cf_maf_to_bed.dat"/>
-      </test>
-    </tests>
-    <help>
+  <description>Converts a MAF formated file to the BED format</description>
+  <command interpreter="python2.4">maf_to_bed.py $input1 $out_file1 $species $complete_blocks</command>
+  <inputs>
+    <param format="maf" name="input1" type="data" label="MAF file to convert"/>
+    <param name="species" type="select" label="Select species" display="checkboxes" multiple="true" help="a separate history item will be created for each checked species">
+      <select_options data_ref="input1" func="get_options_for_species" />
+    </param>
+    <param name="complete_blocks" type="select" label="Exclude blocks which have a requested species missing">
+      <option value="partial_allowed">include blocks with missing species</option>
+      <option value="partial_disallowed">exclude blocks with missing species</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="bed" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="4.maf"/>
+      <param name="species" values="hg17"/>
+      <param name="complete_blocks" value="partial_disallowed"/>
+      <output name="out_file1" file="cf_maf_to_bed.dat"/>
+    </test>
+  </tests>
+  <help>
 
 **What it does**
 

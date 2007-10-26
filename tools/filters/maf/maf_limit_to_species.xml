@@ -1,37 +1,33 @@
 <tool id="MAF_Limit_To_Species1" name="Filter MAF blocks">
-    <description>by Species</description>
-    <command interpreter="python2.4">maf_limit_to_species.py $species $input1 $out_file1 $allow_partial $min_species</command>
-    <inputs>
-        <page>
-            <param format="maf" name="input1" type="data" label="MAF file"/>
-            <param name="allow_partial" type="select">
-              <label>Exclude blocks which have missing species</label>
-              <option value="1">No</option>
-              <option value="0">Yes</option>
-            </param>
-            <param name="min_species" type="select">
-              <label>Exclude blocks which have only one species</label>
-              <option value="1">Yes</option>
-              <option value="0">No</option>
-            </param>
-        </page>
-        <page>
-            <param name="species" type="select" label="Species to keep" dynamic_options="map(lambda spec: (spec, spec, False), input1.metadata.species)" display="checkboxes" multiple="true"/>
-        </page>
-    </inputs>
-    <outputs>
-        <data format="maf" name="out_file1" />
-    </outputs>
-    <tests>
-      <test>
-        <param name="input1" value="4.maf"/>
-        <param name="species" values="bosTau2,canFam2,hg17,panTro1,rheMac2,rn3"/>
-        <param name="allow_partial" value="0"/>
-        <param name="min_species" value="0"/>
-        <output name="out_file1" file="cf_maf_limit_to_species.dat"/>
-      </test>
-    </tests>
-    <help>
+  <description>by Species</description>
+  <command interpreter="python2.4">maf_limit_to_species.py $species $input1 $out_file1 $allow_partial $min_species</command>
+  <inputs>
+    <param name="input1" type="data" format="maf" label="MAF file"/>
+    <param name="allow_partial" type="select" label="Exclude blocks which have missing species" >
+      <option value="1">No</option>
+      <option value="0">Yes</option>
+    </param>
+    <param name="min_species" type="select" label="Exclude blocks which have only one species" >
+      <option value="1">Yes</option>
+      <option value="0">No</option>
+    </param>
+    <param name="species" type="select" label="Species to keep" display="checkboxes" multiple="true">
+      <select_options data_ref="input1" func="get_options_for_species" />
+    </param>
+  </inputs>
+  <outputs>
+    <data format="maf" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="4.maf"/>
+      <param name="species" values="bosTau2,canFam2,hg17,panTro1,rheMac2,rn3"/>
+      <param name="allow_partial" value="0"/>
+      <param name="min_species" value="0"/>
+      <output name="out_file1" file="cf_maf_limit_to_species.dat"/>
+    </test>
+  </tests>
+  <help>
 
 **What It Does**
 
@@ -41,7 +37,6 @@ This tool allows the user to remove any undesired species from a MAF file. Colum
 
  * **Exclude blocks with have only one species** - if this option is set to **YES** all single sequence alignment blocks WILL NOT be returned.
 
-    </help>
-    <!--<code file="maf_limit_to_species_code.py"/>-->
+  </help>
 </tool>
 

@@ -1,31 +1,28 @@
 <tool id="MAF_To_Fasta1" name="Maf to FASTA">
-    <description>Converts a MAF formated file to FASTA format</description>
-    <command interpreter="python2.4">maf_to_fasta_multiple_sets.py $input1 $out_file1 $species $complete_blocks</command>
-    <inputs>
-        <page>
-            <param format="maf" name="input1" type="data" label="MAF file to convert"/>
-        </page>
-        <page>
-            <param name="species" type="select" label="Select species" dynamic_options="get_available_species( input1.file_name )" display="checkboxes" multiple="true" help="checked taxa will be included in the output"/>
-            <param name="complete_blocks" type="select">
-              <label>Choose to</label>
-              <option value="partial_allowed">include blocks with missing species</option>
-              <option value="partial_disallowed">exclude blocks with missing species</option>
-            </param>
-        </page>
-    </inputs>
-    <outputs>
-        <data format="fasta" name="out_file1" />
-    </outputs>
-    <tests>
-      <test>
-        <param name="input1" value="4.maf"/>
-        <param name="species" values="bosTau2,canFam2,dasNov1,hg17,mm7,panTro1,rheMac2,rn3"/>
-        <param name="complete_blocks" value="partial_allowed"/>
-        <output name="out_file1" file="cf_maf2fasta.dat"/>
-      </test>
-    </tests>
-    <help>
+  <description>Converts a MAF formated file to FASTA format</description>
+  <command interpreter="python2.4">maf_to_fasta_multiple_sets.py $input1 $out_file1 $species $complete_blocks</command>
+  <inputs>
+    <param format="maf" name="input1" type="data" label="MAF file to convert"/>
+    <param name="species" type="select" label="Select species" display="checkboxes" multiple="true" help="checked taxa will be included in the output">
+      <select_options data_ref="input1" func="get_options_for_species" />
+    </param>
+    <param name="complete_blocks" type="select" label="Choose to">
+      <option value="partial_allowed">include blocks with missing species</option>
+      <option value="partial_disallowed">exclude blocks with missing species</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="fasta" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="4.maf"/>
+      <param name="species" values="bosTau2,canFam2,dasNov1,hg17,mm7,panTro1,rheMac2,rn3"/>
+      <param name="complete_blocks" value="partial_allowed"/>
+      <output name="out_file1" file="cf_maf2fasta.dat"/>
+    </test>
+  </tests>
+  <help>
 
 .. class:: infomark
 
@@ -133,7 +130,6 @@ will be converted to (**note** that the second MAF block, which does not have mm
    - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line; 
    - An "e" line containing information about the size of the gap between the alignments that span the current block.
 
-    </help>
-    <code file="maf_to_fasta_code.py"/>
+  </help>
 </tool>
 

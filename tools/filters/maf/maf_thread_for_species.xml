@@ -1,25 +1,23 @@
 <tool id="MAF_Thread_For_Species1" name="Join MAF blocks">
-    <description>by Species</description>
-    <command interpreter="python2.4">maf_thread_for_species.py $input1 $out_file1 $species</command>
-    <inputs>
-        <page>
-            <param format="maf" name="input1" type="data" label="MAF file"/>
-        </page>
-        <page>
-            <param name="species" type="select" label="Species to keep" dynamic_options="map(lambda spec: (spec, spec, False), input1.metadata.species)" display="checkboxes" multiple="true"/>
-        </page>
-    </inputs>
-    <outputs>
-        <data format="maf" name="out_file1"  metadata_source="input1"/>
-    </outputs>
-    <tests>
-      <test>
-        <param name="input1" value="3.maf" format="maf"/>
-        <param name="species" value="hg17,panTro1"/>
-        <output name="out_file1" file="maf_thread_for_species.dat"/>
-      </test>
-    </tests>
-    <help>
+  <description>by Species</description>
+  <command interpreter="python2.4">maf_thread_for_species.py $input1 $out_file1 $species</command>
+  <inputs>
+    <param format="maf" name="input1" type="data" label="MAF file"/>
+    <param name="species" type="select" label="Species to keep" display="checkboxes" multiple="true">
+      <select_options data_ref="input1" func="get_options_for_species" />
+    </param>
+  </inputs>
+  <outputs>
+    <data format="maf" name="out_file1"  metadata_source="input1"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="3.maf" format="maf"/>
+      <param name="species" value="hg17,panTro1"/>
+      <output name="out_file1" file="maf_thread_for_species.dat"/>
+    </test>
+  </tests>
+  <help>
 
 **What it does**
 

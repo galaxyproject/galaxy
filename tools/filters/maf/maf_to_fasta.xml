@@ -1,52 +1,52 @@
 <tool id="MAF_To_Fasta1" name="Maf to FASTA">
-    <description>Converts a MAF formated file to FASTA format</description>
-    <command interpreter="python2.4">#if $fasta_target_type.fasta_type == "multiple":#maf_to_fasta_multiple_sets.py $input1 $out_file1 $fasta_target_type.species $fasta_target_type.complete_blocks
-#else:#maf_to_fasta_concat.py $fasta_target_type.species $input1 $out_file1
-#end if
-    </command>
-    <inputs>
-      <page>
-          <param format="maf" name="input1" type="data" label="MAF file to convert"/>
-      </page>
-      <page>
-        <conditional name="fasta_target_type">
-            <param name="fasta_type" type="select" label="Type of FASTA Output">
-              <option value="multiple" selected="true">Multiple Blocks</option>
-              <option value="concatenated">One Sequence per Species</option>
-            </param>
-            <when value="multiple">
-	          <param name="species" type="select" label="Select species" dynamic_options="map(lambda spec: (spec, spec, False), input1.metadata.species)" display="checkboxes" multiple="true" help="checked taxa will be included in the output"/>
-	          <param name="complete_blocks" type="select">
-	            <label>Choose to</label>
-	            <option value="partial_allowed">include blocks with missing species</option>
-	            <option value="partial_disallowed">exclude blocks with missing species</option>
-	          </param>
-            </when>
-            <when value="concatenated">
-                <param name="species" type="select" label="Species to extract" dynamic_options="map(lambda spec: (spec, spec, False), input1.metadata.species)" display="checkboxes" multiple="true"/>
-            </when>
-        </conditional>
-      </page>
-    </inputs>
-    <outputs>
-        <data format="fasta" name="out_file1" />
-    </outputs>
-    <tests>
-      <test>
-        <param name="input1" value="3.maf"/>
-        <param name="species" values="canFam1"/>
-        <param name="fasta_type" values="concatenated"/>
-        <output name="out_file1" file="cf_maf2fasta_concat.dat"/>
-      </test>
-      <test>
-        <param name="input1" value="4.maf"/>
-        <param name="species" values="bosTau2,canFam2,dasNov1,hg17,mm7,panTro1,rheMac2,rn3"/>
-        <param name="complete_blocks" value="partial_allowed"/>
-        <param name="fasta_type" values="multiple"/>
-        <output name="out_file1" file="cf_maf2fasta.dat"/>
-      </test>
-    </tests>
-    <help>
+  <description>Converts a MAF formated file to FASTA format</description>
+  <command interpreter="python2.4">
+    #if $fasta_target_type.fasta_type == "multiple":#maf_to_fasta_multiple_sets.py $input1 $out_file1 $fasta_target_type.species $fasta_target_type.complete_blocks
+    #else:#maf_to_fasta_concat.py $fasta_target_type.species $input1 $out_file1
+    #end if
+  </command>
+  <inputs>
+    <param format="maf" name="input1" type="data" label="MAF file to convert"/>
+    <conditional name="fasta_target_type">
+      <param name="fasta_type" type="select" label="Type of FASTA Output">
+        <option value="multiple" selected="true">Multiple Blocks</option>
+        <option value="concatenated">One Sequence per Species</option>
+      </param>
+      <when value="multiple">
+        <param name="species" type="select" label="Select species" display="checkboxes" multiple="true" help="checked taxa will be included in the output">
+          <select_options data_ref="input1" func="get_options_for_species" />
+        </param>
+	    <param name="complete_blocks" type="select" label="Choose to">
+	      <option value="partial_allowed">include blocks with missing species</option>
+	      <option value="partial_disallowed">exclude blocks with missing species</option>
+	    </param>
+      </when>
+      <when value="concatenated">
+        <param name="species" type="select" label="Species to extract" display="checkboxes" multiple="true">
+          <select_options data_ref="input1" func="get_options_for_species" />
+        </param>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="fasta" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="3.maf"/>
+      <param name="species" values="canFam1"/>
+      <param name="fasta_type" values="concatenated"/>
+      <output name="out_file1" file="cf_maf2fasta_concat.dat"/>
+    </test>
+    <test>
+      <param name="input1" value="4.maf"/>
+      <param name="species" values="bosTau2,canFam2,dasNov1,hg17,mm7,panTro1,rheMac2,rn3"/>
+      <param name="complete_blocks" value="partial_allowed"/>
+      <param name="fasta_type" values="multiple"/>
+      <output name="out_file1" file="cf_maf2fasta.dat"/>
+    </test>
+  </tests>
+  <help>
 
 **Types of MAF to FASTA conversion**
 
@@ -185,6 +185,5 @@ will be converted to (**note** that the second MAF block, which does not have mm
    - An "e" line containing information about the size of the gap between the alignments that span the current block.
 
 
-    </help>
-    <!--<code file="maf_to_fasta_code.py"/>-->
+  </help>
 </tool>

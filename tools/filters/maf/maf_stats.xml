@@ -1,36 +1,34 @@
 <tool id="maf_stats1" name="MAF Coverage Stats">
   <description>Alignment coverage information</description>
   <command interpreter="python2.4">
-maf_stats.py
-#if $maf_source_type.maf_source == "user":
-$maf_source_type.maf_source $input2 $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary
-#else:
-$maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary
-#end if
+    maf_stats.py
+    #if $maf_source_type.maf_source == "user":
+      $maf_source_type.maf_source $input2 $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary
+    #else:
+      $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary
+    #end if
   </command>
   <inputs>
-    <page>
-        <param format="interval" name="input1" label="Interval File" type="data"/>
-    </page>
-    <page>
-        <conditional name="maf_source_type">
-            <param name="maf_source" type="select" label="MAF Source">
-              <option value="cached" selected="true">Locally Cached Alignments</option>
-              <option value="user">Alignments in Your History</option>
-            </param>
-            <when value="user">
-                <param format="maf" name="input2" label="MAF File" type="data"/>
-            </when>
-            <when value="cached">
-                <param name="mafType" label="MAF Type" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
-            </when>
-        </conditional>
-        <param name="summary" type="select" label="Type of Output">
-          <option value="false" selected="true">Coverage by Region</option>
-          <option value="true">Summarize Coverage</option>
+    <param format="interval" name="input1" label="Interval File" type="data"/>
+    <conditional name="maf_source_type">
+      <param name="maf_source" type="select" label="MAF Source">
+        <option value="cached" selected="true">Locally Cached Alignments</option>
+        <option value="user">Alignments in Your History</option>
+      </param>
+      <when value="user">
+        <param format="maf" name="input2" label="MAF File" type="data"/>
+      </when>
+      <when value="cached">
+        <param name="mafType" label="MAF Type" type="select">
+          <select_options from_file="/depot/data2/galaxy/maf_index.loc" data_ref="input1" func="get_options_for_maf" />
         </param>
-    </page>
-   </inputs>
+      </when>
+    </conditional>
+    <param name="summary" type="select" label="Type of Output">
+      <option value="false" selected="true">Coverage by Region</option>
+      <option value="true">Summarize Coverage</option>
+    </param>
+  </inputs>
   <outputs>
     <data format="interval" name="out_file1" metadata_source="input1"/>
   </outputs>
