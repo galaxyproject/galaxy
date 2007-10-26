@@ -755,8 +755,12 @@ class DataToolParameter( ToolParameter ):
         return value.id
 
     def value_from_basic( self, value, app, ignore_errors=False ):
-        if value is None:
-            return None
+        """
+        Both of these values indicate that no dataset is selected.  However, 'None' 
+        indicates that the dataset is optional, while '' indicates that it is not.
+        """
+        if value is None or value =='':
+            return value
         try:
             return app.model.Dataset.get( int( value ) )
         except:
