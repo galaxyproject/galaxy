@@ -1,56 +1,70 @@
 <tool id="Extract_features1" name="Extract features">
   <description> from GFF file</description>
-  <command interpreter="python2.4">
-  	extract_GFF_Features.py $input1 $out_file1 ${column_choice.col} ${column_choice.feature}
-  </command>
+  <command interpreter="python2.4">extract_GFF_Features.py $input1 $out_file1 ${column_choice.col} ${column_choice.feature}</command>
   <inputs>
-    <page>
-        <param format="gff" name="input1" type="data" label="Select GFF data"/>
-    </page>
-    <page>
-    	<conditional name="column_choice">
-    		<param name="col" type="select" label="Select field">
-          		<option value="0" selected="true">Column 1 / Sequence name</option>
-          		<option value="1">Column 2 / Source</option>
-          		<option value="2">Column 3 / Feature</option>
-          		<option value="6">Column 7 / Strand</option>
-          		<option value="7">Column 8 / Frame</option>
-        	</param>
-        	<when value="0">
-        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 0 )"/>        	
-        	</when>
-        	<when value="1">
-        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 1 )"/>        	
-        	</when>
-        	<when value="2">
-        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 2 )"/>        	
-        	</when>
-        	<when value="6">
-        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 6 )"/>        	
-        	</when>
-        	<when value="7">
-        		<param name="feature" label="Select features" type="select" multiple="true" dynamic_options="get_features( input1, 7 )"/>        	
-        	</when>
-    	</conditional>
-    	<!--
-    	<param name="out_format" type="select" label="Output format">
-      		<option value="GFF" selected="true">GFF</option>
-      		<option value="BED">BED</option>
-      	</param>
-    	-->
-    </page>
-   </inputs>
-   <outputs>
-   		<data format="gff" name="out_file1" />
-   </outputs>
-   <!--
-   <tests>
-	    <test>
-	      <param name="input1" value="5.gff"/>
-	      <param name="column_choice" value="0 chr5" />
-	      <param name="column_choice|feature" value="chr5,chr6,chr7,chr8" />
-	      <output name="out_file1" file="gff_features.gff"/>
-	    </test>
+    <param format="gff" name="input1" type="data" label="Select GFF data"/>
+    <conditional name="column_choice">
+      <param name="col" type="select" label="Select field">
+        <option value="0" selected="true">Column 1 / Sequence name</option>
+        <option value="1">Column 2 / Source</option>
+        <option value="2">Column 3 / Feature</option>
+        <option value="6">Column 7 / Strand</option>
+        <option value="7">Column 8 / Frame</option>
+      </param>
+      <when value="0">
+        <param name="feature" label="Select features" type="select" multiple="true">
+          <select_options data_ref="input1" func="get_options_for_features">
+            <func_param name="index" value="0" />
+          </select_options>
+        </param>       	
+      </when>
+      <when value="1">
+        <param name="feature" label="Select features" type="select" multiple="true">
+          <select_options data_ref="input1" func="get_options_for_features">
+            <func_param name="index" value="1" />
+          </select_options>
+        </param>          	
+      </when>
+      <when value="2">
+        <param name="feature" label="Select features" type="select" multiple="true">
+          <select_options data_ref="input1" func="get_options_for_features">
+            <func_param name="index" value="2" />
+          </select_options>
+        </param>         	
+      </when>
+      <when value="6">
+        <param name="feature" label="Select features" type="select" multiple="true">
+          <select_options data_ref="input1" func="get_options_for_features">
+            <func_param name="index" value="6" />
+          </select_options>
+        </param>          	
+      </when>
+      <when value="7">
+	    <param name="feature" label="Select features" type="select" multiple="true">
+	      <select_options data_ref="input1" func="get_options_for_features">
+	        <func_param name="index" value="7" />
+	      </select_options>
+        </param>            	
+      </when>
+    </conditional>
+    <!--
+    <param name="out_format" type="select" label="Output format">
+      <option value="GFF" selected="true">GFF</option>
+      <option value="BED">BED</option>
+    </param>
+    -->
+  </inputs>
+  <outputs>
+    <data format="gff" name="out_file1" />
+  </outputs>
+  <!--
+  <tests>
+    <test>
+      <param name="input1" value="5.gff"/>
+      <param name="column_choice" value="0 chr5" />
+      <param name="column_choice|feature" value="chr5,chr6,chr7,chr8" />
+      <output name="out_file1" file="gff_features.gff"/>
+    </test>
   </tests>
   -->
   <help>
@@ -107,5 +121,4 @@ will produce the following output::
 
 
   </help>
-  <code file="extract_GFF_Features_code.py"/>
 </tool>
