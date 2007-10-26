@@ -208,7 +208,11 @@ class DynamicOptions( object ):
         if maf_source == 'cached':
             d = self.load_from_file_for_maf()
             maf_uid = self.get_param_ref( trans, other_values )
-            log.debug("In get_options_for_species_for_maf, maf_uid: %s" %str(maf_uid))
+            assert maf_uid, "Value for maf_uid not found"
+            if maf_uid == 'None':
+                options.append( ( '<b>build not set, click pencil icon in your history item to associate a build</b>', 'None', True ) )
+                legal_values.add( 'None' )
+                return legal_values, options
             for key in d[maf_uid]['builds']:
                 options.append( (key, key, False) )
                 legal_values.add( key )
