@@ -19,7 +19,7 @@
     <test>
       <param name="input1" value="9_hg18.bed" dbkey="hg18" ftype="bed"/>
       <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg18/phastCons17way/ba" />
-      <output name="out_file1" file="aggregate_binned_scores_in_intervals2.out" />
+      <output name="out_file1" file="aggregate_binned_scores_in_intervals2.interval" />
     </test>
   </tests>
   <help>

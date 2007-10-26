@@ -5,12 +5,12 @@
     <param format="wig" name="input" type="data" label="Convert"/>
   </inputs>
   <outputs>
-    <data format="bed" name="out_file1" />
+    <data format="interval" name="out_file1" />
   </outputs>
   <tests>
     <test>
-      <param name="input" value="4.bed" ftype="wig" />
-      <output name="out_file1" file="ggs_wiggle2simple.dat"/>
+      <param name="input" value="2.wig" />
+      <output name="out_file1" file="2.interval"/>
     </test>
   </tests>
   <help>
