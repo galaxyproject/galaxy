@@ -23,12 +23,18 @@ def main():
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols )
         inp_file, out_file, size, direction, region = args
-        offset = int(options.off)
-        size = int(size)
         if strand_col_1 <= 0:
             strand = "+"        #if strand is not defined, default it to +
     except:
-        doc_optparse.exit()
+        print >> sys.stderr, "Data issue: Please check the metadata attributes of the chosen input by clicking on the pencil icon next to it."
+        sys.exit()
+        
+    try:
+        offset = int(options.off)
+        size = int(size)
+    except:    
+        print >> sys.stderr, "Invalid Offset or Length entered. Try again by entering valid integer values."
+        sys.exit()
         
     try:
         fi = open(inp_file,'r')
