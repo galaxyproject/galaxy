@@ -83,6 +83,7 @@
     <tool file="filters/maf/maf_limit_size.xml"/>
     <tool file="filters/maf/maf_by_block_number.xml"/>
     <tool file="filters/maf/maf_reverse_complement.xml"/>
+    <tool file="filters/maf/maf_filter.xml"/>
   </section>
   <section name="Get Genomic Scores" id="scores">
     <tool file="stats/wiggle_to_simple.xml" />
