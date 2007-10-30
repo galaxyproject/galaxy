@@ -714,23 +714,16 @@ class CustomTrack ( Tabular ):
         for hdr in headers:
             if first_line:
                 try:
-                    if hdr[0].startswith('track'):
-                        first_line = False
-                    else:
-                        return False
-                except:
-                    return False
+                    if hdr[0].startswith('track') and hdr[0].find('color') > -1 and hdr[0].find('visibility') > -1: first_line = False
+                    else: return False
+                except: return False
             else:     
                 try:
-                    if not (hdr[0] == '' or hdr[0].startswith( '#' )):
-                        if len(hdr) < 3:
-                            return False
-                        try:
-                            map( int, [hdr[1], hdr[2]] )
-                        except:
-                            return False
-                except:
-                    return False
+                    if hdr[0] and not hdr[0].startswith( '#' ):
+                        if len( hdr ) < 3: return False
+                        try: map( int, [hdr[1], hdr[2]] )
+                        except: return False
+                except: return False
         return True
 
 class GBrowseTrack ( Tabular ):

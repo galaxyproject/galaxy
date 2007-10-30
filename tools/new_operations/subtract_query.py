@@ -18,12 +18,16 @@ def get_lines(fname, begin_col='', end_col=''):
     i = 0
     for i, line in enumerate(file(fname)):
         line = line.rstrip('\r\n')
-        if line != '' and not line.startswith('#'):
+        if line and not line.startswith('#'):
             if begin_col and end_col:
                 """Both begin_col and end_col must be integers at this point."""
-                line = line.split('\t')
-                line = '\t'.join([line[j] for j in range(begin_col-1, end_col)])
-            lines.add( line )
+                try:
+                    line = line.split('\t')
+                    line = '\t'.join([line[j] for j in range(begin_col-1, end_col)])
+                    lines.add( line )
+                except: pass
+            else:
+                lines.add( line )
     if i: return (i+1, lines)
     else: return (i, lines)
 
@@ -89,7 +93,7 @@ def main():
         info_msg += 'Restricted to columns c' + str(begin_col) + ' thru c' + str(end_col) + '. '
 
     if diff1 > 0:
-        info_msg += 'Eliminated %d duplicate/blank/comment lines from first query.' %diff1
+        info_msg += 'Eliminated %d duplicate/blank/comment/invalid lines from first query.' %diff1
     
     print info_msg
 
