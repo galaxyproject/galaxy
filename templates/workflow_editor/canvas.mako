@@ -13,11 +13,11 @@
 canvas { position: absolute; z-index: 10; } 
 canvas.dragging { position: absolute; z-index: 1000; }
 .node {  position: absolute; width: 100px; background: green; }
-.input-terminal { width: 10px; height: 10px; background: red; position: absolute; bottom: 0; left: -17px; }
-.output-terminal { width: 10px; height: 10px; background: blue; position: absolute; bottom: 0; right: -17px; }
+.input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; bottom: 0; left: -16px; }
+.output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')});; position: absolute; bottom: 0; right: -16px; }
 .drag-terminal {  position: absolute; z-index: 1500; width: 10px; height: 10px; display: none; }
-.input-terminal-active { background: yellow; }
-.input-terminal-hover { background: yellow; border: solid black 1px; }
+.input-terminal-active { background: url(${h.url_for('/static/style/workflow_circle_green.png')}); }
+## .input-terminal-hover { background: yellow; border: solid black 1px; }
 .unselectable { -moz-user-select: none; -khtml-user-select: none; user-select: none; }
 img { border: 0; }
 </style>
@@ -30,43 +30,50 @@ img { border: 0; }
 
 <script type='text/javascript'>
 
-// Global state for the whole workflow
-var workflow = new Workflow();
+var workflow = null;
 
-// Currently selected node
-var active_node = null;
+// Global state for the whole workflow
+function reset() {
+    if ( workflow ) {
+        workflow.remove_all();
+    }
+    parent.workflow = workflow = new Workflow();
+    // Start at the middle of the canvas
+    $(window).scrollTop( 2500 );
+    $(window).scrollLeft( 2500 );
+}
 
 // Add a new step to the workflow by tool id
 function add_node_for_tool( id, title ) {
-    node = prebuild_node_for_tool( title );
-    activate_node( node );
+    node = prebuild_node_for_tool( id, title );
+    workflow.add_node( node );
+    workflow.activate_node( node );
     $.ajax( {
         url: "${h.url_for( action='get_tool_info' )}", 
         data: { tool_id: id }, 
         dataType: "json",
         success: function( data ) {
-            node.update_field_data( data );
-            workflow.add_node( node );
+            node.init_field_data( data );
         },
         error: function() {
             node.error( "error loading field data" );
         }
     });
-}
+};
 
 $( function() {
-    // Start at the middle of the canvas
-    $(window).scrollTop( 2500 );
-    $(window).scrollLeft( 2500 );
+    // Initialize workflow state
+    reset();
     // Shim (the background of the editor area) causes loss of focus
-    $("#shim").click( clear_active_node ).hoverIntent( {
-        over: function () { $("div.toolForm").fadeTo( "fast", 0.8 ) },
+    $("#shim").click( workflow.clear_active_node ).hoverIntent( {
+        over: function () { $("div.toolForm").fadeTo( "fast", 0.7 ) },
         out: function () { $("div.toolForm").fadeTo( "fast", 1.0 ) },
+        interval: 300
     });
     // Load the datatype info
 	$.getJSON( "${h.url_for( action='get_datatypes' )}", function( data ) {
 	    populate_datatype_info( data );
-        parent.notify();
+        if ( parent ) { parent.notify(); }
     });
 });
 </script>
@@ -99,16 +106,24 @@ div.form-row {
   margin-bottom: 0.5em;
 }
 div.toolForm {
-    margin: 9px;
+    margin: 6px;
 }
 
 div.toolForm-active {
-    border: solid #8080FF 5px;
-    margin: 5px;
+    border: solid #8080FF 4px;
+    margin: 3px;
 }
 
 div.tool-node {
     position: absolute;
+}
+
+div.tool-node-error div.toolFormTitle {
+    background: #FFCCCC;
+    border-color: #AA6666;
+}
+div.tool-node-error {
+    border-color: #AA6666;
 }
 
 #canvas-area {

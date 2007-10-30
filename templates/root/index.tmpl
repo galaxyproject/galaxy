@@ -3,195 +3,39 @@
 <html lang="en">
 <head>
     <title>Galaxy</title>
+
     <link rel="stylesheet" type="text/css" href="$h.url_for('/static/style/reset.css')"></link>
+    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout.css')}"></link>
+    <!--[if IE]>
+    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout.css')}"></link>
+    <![endif]-->
+
     <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
     <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.dimensions.js')"></script>
     <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.ui.js')"></script>
     <script type="text/javascript" src="$h.url_for('/static/scripts/galaxy.panels.js')"></script>
-	<script type="text/javascript">
-	<!--
-	var jq = jQuery.noConflict();
-	var q = jq;
+    <script type="text/javascript">
+    <!--
+    var q = jQuery.noConflict();
 		
-    jq(document).ready( function() {
-
-        make_left_panel( jq("#left"), jq("#center"), jq("#left-border" ) );
-        make_right_panel( jq("#right"), jq("#center"), jq("#right-border" ) );
-
+    q(document).ready( function() {
+	// Make panels
+        make_left_panel( q("#left"), q("#center"), q("#left-border" ) );
+        make_right_panel( q("#right"), q("#center"), q("#right-border" ) );
         // Insert div that covers everything when dragging the borders
-    	jq("<div id='DD-helper' style='background: white; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 9000;'></div>")
-    	  .css("opacity", "0.01").appendTo("body").hide(); 
-    	// Show border visual cues
-    	jq( "#left-border-inner, #right-border-inner" ).show();   
+    	q("<div id='DD-helper' style='background: white; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 9000;'></div>")
+	    .css("opacity", "0.01").appendTo("body").hide();
     });
     // -->
-	</script>
-    <style type="text/css">
-    body, html
-    {
-        overflow: hidden;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-		height: 100%;
-    }
-    body
-    {
-    	font-family: Verdana;
-        background: #eee;
-		font-size: 77%;
-    }
-    #masthead 
-    {
-        position:absolute; 
-        top:0; 
-        left:0; 
-        width:100%; 
-        height:32px;
-        background: url("$h.url_for('/static/style/masthead_bg.png')"); 
-        overflow: hidden; 
-        color:#fff;
-        font-weight: bold;
-        border-bottom: solid #444 1px;
-    }
-    
-    #masthead div.title
-    {
-        margin: 3px;
-        margin-right: 10px;
-        font-size: 182%;
-        font-weight: bold;
-    }
+    </script>
 
-    #left, #left-border, #center, #right-border, #right
-    {
-        position:absolute; 
-        top:39px;
-        bottom:0px;
-        /*height: 500px;*/
-        overflow: hidden; 
-        background:#fff;
-    }
-    #left, #center, #right
-    {
-        border-top: solid #999 1px;
-    }
-    #left-border, #right-border
-    {
-        background: #eeeeee;
-        border-left: solid #999 1px;
-        border-right: solid #999 1px;
-        padding-right: 1px;
-        padding-left: 1px;
-        width: 5px;
-        z-index: 10000;
-    }
-    #left-border div, #right-border div
-    {
-        width: 100%;
-        height: 100%;
-        background-repeat: no-repeat; 
-        background-position: center center;
-        position: absolute;
-        width: 5px;
-        height: 100%;
-    }
-    #left-border div, #right-border.hidden div
-    {
-        background-image: url("$h.url_for('/static/style/tiny_arrow_left.png')");
-        cursor: w-resize;
-    }
-    #left-border.hidden div, #right-border div
-    {
-        background-image: url("$h.url_for('/static/style/tiny_arrow_right.png')");
-        cursor: e-resize;
-    }
-    #left-border.hover div, #right-border.hover div
-    {
-        background-color: #AAAAEE;
-    }
-    #left 
-    {
-        left: 0px;
-        width: 250px;
-        z-index: 200;
-    }
-    #left-border 
-    {
-        left: 250px;
-    }
-    #left-show, #right-show
-    {
-        position: absolute; 
-        display: none; 
-        width: 21px; 
-        z-index: 150;
-        background: #ddd;
-    }
-    #center 
-    {
-        left:259px;
-        right: 259px;
-        overflow: hidden;
-        z-index: 1;
-    }
-    #right-border 
-    {
-        right: 250px;
-    }
-    #right 
-    {
-        width: 250px;
-        right: 0px; 
-        z-index: 200;
-    }
-    td.panel-header
-    {
-        background: #ddd;
-        background-image: url("$h.url_for('/static/style/panel_header_bg.png')");
-        background-position: center center;
-        padding: 0;
-        border-bottom: solid #999 1px;
-    }
-    div.panel-header
-    {
-        margin: 0;
-        padding: 4px;
-        padding-right: 10px;
-        padding-left: 10px;
-        color: #333;
-        font-weight: bold;
-    }
-    table.column-layout
-    {
-        position: absolute; 
-        width: 100%; 
-        height: 100%;
-    }
-  </style>
-  <!--[if IE]>
-  <style>
-	  #left, #left-border, #center, #right-border, #right
-      {
-           height: 600px;
-           height: expression(document.body.clientHeight - 39 + "px");
-      }
-      #left-border, #right-border
-      {
-          width: 9px;
-      }
-      table.column-layout
-      {
-          position: static;
-      }
-  </style>
-  <![endif]-->
 </head>
+
 <body scroll="no">
-  <div id="masthead">
+    <div id="masthead">
        <iframe name="galaxy_masthead" src="$h.url_for( 'masthead' )" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
-  </div>
-  <div id="left">
+    </div>
+    <div id="left">
       <table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
       <tr class="panel-header">
       <td class="panel-header">
@@ -203,27 +47,28 @@
       <td height="100%" class="panel-body">
            <iframe name="galaxy_tools" src="$h.url_for( 'tool_menu' )" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;"> </iframe>
       </td></tr></table>
-  </div>
-  <div id="left-border"><div id="left-border-inner" style="display: none;"></div></div>
-  <div id="center">
-      <table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
-      <tr height="100%" style="height: 100%"><td height="100%" style="height: 100%;">
-       	  <iframe name="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( '/static/welcome.html' )}"> </iframe>
-	  </td></tr></table>
-  </div>
-  <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
-  <div id="right">
-      <table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
-      <tr class="panel-header">
-      <td class="panel-header">
-      <div class="panel-header" unselectable="on">
-          <div class="panel-title">History (<a href="$h.url_for( action='history_options' )" target="galaxy_main">options</a>)</div>
-      </div>
-      </td>
-      </tr><tr height="100%">
-      <td height="100%" style="height: 100%;" class="panel-body">
-          <iframe name="galaxy_history" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;" src="$h.url_for( action='history' )">
-     </td></tr></table>
-  </div>
+    </div>
+    <div id="left-border"><div id="left-border-inner" style="display: none;"></div></div>
+    <div id="center">
+	<table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
+	    <tr height="100%" style="height: 100%"><td height="100%" style="height: 100%;">
+		<iframe name="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( '/static/welcome.html' )}"> </iframe>
+	    </td></tr>
+	</table>
+    </div>
+    <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
+    <div id="right">
+	<table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
+	<tr class="panel-header">
+	<td class="panel-header">
+	<div class="panel-header" unselectable="on">
+	    <div class="panel-title">History (<a href="$h.url_for( action='history_options' )" target="galaxy_main">options</a>)</div>
+	</div>
+	</td>
+	</tr><tr height="100%">
+	<td height="100%" style="height: 100%;" class="panel-body">
+	    <iframe name="galaxy_history" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;" src="$h.url_for( action='history' )">
+	</td></tr></table>
+    </div>
 </body>
 </html>

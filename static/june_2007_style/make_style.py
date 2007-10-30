@@ -10,6 +10,8 @@ def run( cmd ):
     return Popen( cmd, stdout=PIPE).communicate()[0]
 
 templates = [ ( "base.css.tmpl", "base.css" ),
+              ( "panel_layout.css.tmpl", "panel_layout.css" ),
+              ( "panel_layout_ie.css.tmpl", "panel_layout_ie.css" ),
               ( "masthead.css.tmpl", "masthead.css"),
               ( "history.css.tmpl", "history.css" ),
               ( "tool_menu.css.tmpl", "tool_menu.css" ),
@@ -27,7 +29,9 @@ images = [
            ( "./gradient.py 9 200 $history_ok_bg - FFFFFF 0 0.5 FFFFFF 0.5 1", "ok_bg.png" ),
            ( "./gradient.py 9 200 $history_error_bg - FFFFFF 0 0.5 FFFFFF 0.5 1", "error_bg.png" ),
            ( "./gradient.py 9 200 $history_running_bg - FFFFFF 0 0.5 FFFFFF 0.5 1", "warn_bg.png" ),
-           ( "./gradient.py 9 200 $history_queued_bg - FFFFFF 0 0.5 FFFFFF 0.5 1", "gray_bg.png" ) ]
+           ( "./gradient.py 9 200 $history_queued_bg - FFFFFF 0 0.5 FFFFFF 0.5 1", "gray_bg.png" ),
+           ( "./callout_top.py 20 10 $panel_header_bg_top $layout_border", "popupmenu_callout_top.png" ),
+           ]
 
 shared_images = [ 
     # Dialog boxes

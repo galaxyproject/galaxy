@@ -451,7 +451,7 @@ class SelectToolParameter( ToolParameter ):
                 return form_builder.TextField( self.name, value=(value or "") )
         if value is not None:
             if not isinstance( value, list ): value = [ value ]
-        field = form_builder.SelectField( self.name, self.multiple, self.display )
+        field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change )
         options = self.get_options( trans, other_values )
         for text, optval, selected in options:
             if value: 
@@ -489,10 +489,20 @@ class SelectToolParameter( ToolParameter ):
     def value_to_basic( self, value, app ):
         return value
     def get_initial_value( self, trans, context ):
+        # More working around dynamic options for workflow
+        if self.is_dynamic and trans.workflow_building_mode:
+            # Really the best we can do?
+            return None
         options = self.get_options( trans, context )
         value = [ optval for _, optval, selected in options if selected ]
         if len( value ) == 0:
-            value = None
+            if not self.multiple:
+                # Nothing selected, but not a multiple select, so we have to
+                # default to something (the HTML form will anyway)
+                # TODO: deal with optional parameters in a better way
+                value = options[0][1]
+            else:
+                value = None
         elif len( value ) == 1:
             value = value[0]
         return value
@@ -713,11 +723,12 @@ class DataToolParameter( ToolParameter ):
         NOTE: This is wasteful since dynamic options and dataset collection
               happens twice (here and when generating HTML). 
         """
-        ## assert trans is not None, "DataToolParameter requires a trans"
-        ## history = trans.history
-        ## assert history is not None, "DataToolParameter requires a history"
-        if trans is None or trans.history is None:
+        # Can't look at history in workflow mode
+        if trans.workflow_building_mode:
             return None
+        assert trans is not None, "DataToolParameter requires a trans"
+        history = trans.history
+        assert history is not None, "DataToolParameter requires a history"
         history = trans.history
         most_recent_dataset = [None]
         def dataset_collector( datasets ):
@@ -736,6 +747,9 @@ class DataToolParameter( ToolParameter ):
             return ''
 
     def from_html( self, value, trans, other_values={} ):
+        # Can't look at history in workflow mode, skip validation and such
+        if trans.workflow_building_mode:
+            return None
         if not value:
             raise ValueError( "A data of the appropriate type is required" ) 
         if value in [None, "None"]:

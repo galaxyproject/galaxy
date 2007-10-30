@@ -411,3 +411,12 @@ class GalaxySessionToHistoryAssociation( object ):
     def __init__( self, galaxy_session, history ):
         self.galaxy_session = galaxy_session
         self.history = history
+        
+class StoredWorkflow( object ):
+    """
+    A saved workflow, stored as a jsonified string in `encoded_value`. 
+    """
+    def __init__( self ):
+        self.user = None
+        self.name = None
+        self.encoded_value = None

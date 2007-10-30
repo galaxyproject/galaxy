@@ -32,7 +32,7 @@ User.table = Table( "galaxy_user", metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, PassiveDefault( now ) ),
     Column( "update_time", DateTime, PassiveDefault( now ), onupdate=now ),
- 	Column( "email", TrimmedString( 255 ), nullable=False ),
+    Column( "email", TrimmedString( 255 ), nullable=False ),
     Column( "password", TrimmedString( 40 ), nullable=False ) )
 
 History.table = Table( "history", metadata,
@@ -153,6 +153,15 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ) ),
     Column( "history_id", Integer, ForeignKey( "history.id" ) ) )
 
+StoredWorkflow.table = Table( "stored_workflow", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, PassiveDefault( now ) ),
+    Column( "update_time", DateTime, PassiveDefault( now ), onupdate=now ),
+    Column( "name", String ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=False ),
+    Column( "encoded_value", String )
+    )
+
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
@@ -219,6 +228,9 @@ assign_mapper( context, GalaxySession, GalaxySession.table,
 assign_mapper( context, GalaxySessionToHistoryAssociation, GalaxySessionToHistoryAssociation.table,
     properties=dict( galaxy_session=relation( GalaxySession ), 
                      history=relation( History ) ) )
+
+assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
+    properties=dict( user=relation( User.mapper ) ) )
                      
 Dataset.mapper.add_property( "creating_job_associations", relation( JobToOutputDatasetAssociation ) )
     

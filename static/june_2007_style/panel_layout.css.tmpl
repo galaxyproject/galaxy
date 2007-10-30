@@ -1,0 +1,255 @@
+body, html
+{
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+body
+{
+    font-family: Verdana;
+    background: ${layout_bg};
+    font-size: 77%;
+}
+#masthead 
+{
+    position:absolute; 
+    top:0; 
+    left:0; 
+    width:100%; 
+    height:32px;
+    background: url(masthead_bg.png); 
+    overflow: hidden; 
+    color:#fff;
+    font-weight: bold;
+    border-bottom: solid ${layout_masthead_border} 1px;
+}
+
+#masthead div.title
+{
+    margin: 3px;
+    margin-right: 10px;
+    font-size: 182%;
+    font-weight: bold;
+}
+
+#left, #left-border, #center, #right-border, #right
+{
+    position: absolute; 
+    top: 39px;
+    bottom: 0px;
+    overflow: hidden; 
+    background: #fff;
+}
+#left, #center, #right
+{
+    border-top: solid ${layout_border} 1px;
+}
+#left-border, #right-border
+{
+    background: #eeeeee;
+    border-left: solid ${layout_border} 1px;
+    border-right: solid ${layout_border} 1px;
+    padding-right: 1px;
+    padding-left: 1px;
+    width: 5px;
+    z-index: 10000;
+}
+#left-border div, #right-border div
+{
+    width: 100%;
+    height: 100%;
+    background-repeat: no-repeat; 
+    background-position: center center;
+    position: absolute;
+    width: 5px;
+    height: 100%;
+}
+#left-border div, #right-border.hidden div
+{
+    background-image: url(tiny_arrow_left.png);
+    cursor: w-resize;
+}
+#left-border.hidden div, #right-border div
+{
+    background-image: url(tiny_arrow_right.png);
+    cursor: e-resize;
+}
+#left-border.hover div, #right-border.hover div
+{
+    background-color: ${layout_hover};
+}
+#left 
+{
+    left: 0px;
+    width: 250px;
+    z-index: 200;
+}
+#left-border 
+{
+    left: 250px;
+}
+#center 
+{
+    left:259px;
+    right: 259px;
+    overflow: hidden;
+    z-index: 1;
+}
+#right-border 
+{
+    right: 250px;
+}
+#right 
+{
+    width: 250px;
+    right: 0px; 
+    z-index: 200;
+}
+td.panel-header
+{
+    background: ${panel_header_bg_bottom};
+    background-image: url(panel_header_bg.png);
+    background-position: top center;
+    background-repeat: repeat-x;
+    padding: 0;
+    border-bottom: solid ${layout_border} 1px;
+}
+div.panel-header
+{
+    margin: 0;
+    padding: 4px;
+    padding-right: 10px;
+    padding-left: 10px;
+    color: #333;
+    font-weight: bold;
+}
+
+table.column-layout
+{
+    position: absolute; 
+    width: 100%; 
+    height: 100%;
+}
+
+div.unified-panel-header {
+    height: 2em;
+    z-index: 1000;
+    background: ${panel_header_bg_bottom};
+    background-image: url(panel_header_bg.png);
+    background-position: top center;
+    background-repeat: repeat-x;
+    border-bottom: solid ${layout_border} 1px;
+    margin: 0;
+    padding: 0;
+    padding-right: 10px;
+    padding-left: 10px;
+    color: #333;
+    font-weight: bold;
+}
+    
+div.unified-panel-body {
+    position: absolute;
+    top: 2em;
+    bottom: 0;
+    width: 100%;
+    margin-top: 1px;
+}
+
+.dialog-wrapper {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 30000;
+}
+.dialog-box {
+    top: 80px;
+    position: fixed;
+    border: solid ${layout_border} 1px;
+    background: white;
+    min-width: 230px;
+    z-index: 80000;
+}
+.dialog-box .title, .dialog-box .body, .dialog-box .buttons {
+    padding: 5px;
+}
+.dialog-box .title {
+    height: 2em;
+    z-index: 1000;
+    background: ${panel_header_bg_bottom};
+    background-image: url(panel_header_bg.png);
+    background-position: top center;
+    background-repeat: repeat-x;
+    border-bottom: solid ${layout_border} 1px;
+    margin: 0;
+    padding: 0;
+    padding-right: 10px;
+    padding-left: 10px;
+    font-weight: bold;
+}
+
+.center-block-outer {
+    display: table;
+    height: 100%;
+}
+
+.center-block-inner {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+div.button {
+    cursor: pointer;
+}
+
+div.popupmenu {
+    display: none;
+    background: #eee;
+    position: fixed;
+    z-index: 20000;
+    background: ${panel_header_bg_bottom};
+    background-image: url(panel_header_bg.png);
+    background-position: top center;
+    background-repeat: repeat-x;
+    border: solid ${layout_border} 1px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+div.popupmenu-top {
+    padding-bottom: 3px;
+}
+div.popupmenu-top-inner {
+    height: 10px;
+    width: 20px;
+    margin-top: -13px;
+    margin-left: auto;
+    margin-right: 20px;
+    background: url(popupmenu_callout_top.png);
+}
+
+div.popupmenu-item {
+    padding: 3px;
+    padding-left: 10px;
+    padding-right: 10px;
+    cursor: pointer;
+}
+
+div.popupmenu-item:hover {
+    background: ${layout_hover};
+}
+
+#overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 20000;
+}
+#overlay-inner
+{
+    width: 100%; height: 100%;
+    background-color:#FFF;
+    filter:alpha(opacity=75);
+    -moz-opacity: 0.75;
+    opacity: 0.75;
+    z-index: 20000;
+}

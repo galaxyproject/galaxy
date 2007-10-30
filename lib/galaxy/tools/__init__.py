@@ -460,14 +460,18 @@ class Tool:
             context[ name ].refresh_on_change = True
         return param
 
-    def new_state( self, trans ):
+    def new_state( self, trans, all_pages=False ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
         based on `self.inputs` with appropriate default values.
         """
         state = DefaultToolState()
         state.inputs = {}
-        self.fill_in_new_state( trans, self.inputs_by_page[ 0 ], state.inputs )
+        if all_pages:
+            inputs = self.inputs
+        else:
+            inputs = self.inputs_by_page[ 0 ]
+        self.fill_in_new_state( trans, inputs, state.inputs )
         return state
 
     def fill_in_new_state( self, trans, inputs, state, context=None ):

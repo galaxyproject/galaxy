@@ -136,14 +136,17 @@ $.extend( Connector.prototype, {
 
 function Node( element ) {
     this.element = element;
-    this.input_terminals = [];
-    this.output_terminals = [];
+    this.input_terminals = {};
+    this.output_terminals = {};
+    this.has_errors = false;
 }
 $.extend( Node.prototype, {
-    enable_input_terminal : function( elements, types ) {
+    enable_input_terminal : function( elements, name, types ) {
         node = this;
         $(elements).each( function() {
             var terminal = this.terminal = new InputTerminal( this, types );
+			terminal.node = node;
+			terminal.name = name
             $(this).droppable( {
                 tolerance: 'intersect',
                 accept: function( draggable ) {
@@ -152,7 +155,7 @@ $.extend( Node.prototype, {
                 activeClass: 'input-terminal-active',
                 // hoverClass: 'input-terminal-active',
                 over: function( e, ui ) {
-                    ui.helper.terminal.connectors[0].inner_color = "#A8C6AF";
+                    ui.helper.terminal.connectors[0].inner_color = "#BBFFBB";
                 },
                 out: function( e, ui ) {
                     ui.helper.terminal.connectors[0].inner_color = "#EEEEEE";
@@ -165,13 +168,15 @@ $.extend( Node.prototype, {
                     c.redraw();
                 }
             }); 
-            node.input_terminals.push( terminal );
+            node.input_terminals[name] = terminal;
         })
     },
-    enable_output_terminal : function( elements, type ) {
+    enable_output_terminal : function( elements, name, type ) {
         node = this;
         $(elements).each( function() {
            var terminal = this.terminal = new OutputTerminal( this, type ); 
+		   terminal.node = node;
+		   terminal.name = name;
            $(this).draggable( { 
                scroll: true,
                // containment: 'document',
@@ -198,19 +203,20 @@ $.extend( Node.prototype, {
                    // options.helper.remove();
                }
            });
-           node.output_terminals.push( terminal );
+           node.output_terminals[name] = terminal;
        });
     },
     destroy : function () {
-        $.each( this.input_terminals, function( i, t ) {
+        $.each( this.input_terminals, function( k, t ) {
             t.destroy();
             $(t.element).droppableDestroy();
         });
-        $.each( this.output_terminals, function( i, t ) {
+        $.each( this.output_terminals, function( k, t ) {
             t.destroy();
             $(t.element).draggableDestroy();
         });
         $(this.element).draggableDestroy().remove();
+	workflow.remove_node( this );
     },
     make_active : function () {
         $(this.element).addClass( "toolForm-active" );
@@ -218,16 +224,16 @@ $.extend( Node.prototype, {
     make_inactive : function () {
         $(this.element).removeClass( "toolForm-active" );
     },
-    update_field_data : function ( data ) {
+    init_field_data : function ( data ) {
         var f = this.element;
-        this.form_html = data.form_html
-        this.tool_state = data.state
+        this.form_html = data.form_html;
+        this.tool_state = data.tool_state;
         var node = this;
         b = f.find( ".toolFormBody" );
         b.find( "div" ).remove();
         $.each( data.data_inputs, function( i, input ) {
             t = $("<div class='terminal input-terminal'></div>")
-            node.enable_input_terminal( t, input.extensions );
+            node.enable_input_terminal( t, input.name, input.extensions );
             b.append( $("<div class='form-row dataRow'>" + input.name + "</div></div>" ).prepend( t ) );
         });
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
@@ -235,67 +241,148 @@ $.extend( Node.prototype, {
         }
         $.each( data.data_outputs, function( i, output ) {
             var t = $( "<div class='terminal output-terminal'></div>" );
-            node.enable_output_terminal( t, output.extension );
+            node.enable_output_terminal( t, output.name, output.extension );
             b.append( $("<div class='form-row dataRow'>" + output.name + "</div>" ).append( t ) );
         });
-        if ( active_node == this ) {
+        workflow.node_changed( this );
+    },
+    update_field_data : function( data ) {
+        this.tool_state = data.state;
+        this.form_html = data.form_html;
+	this.has_errors = data.has_errors;
+        if ( this.has_errors ) {
+                $(this.element).addClass( "tool-node-error" );
+        } else {
+                $(this.element).removeClass( "tool-node-error" );
+        }
+        if ( workflow.active_node == this ) {
             // Reactive with new form_html
-            activate_node( this );
+           workflow.activate_node( this );
         }
     },
     error : function ( text ) {
         var b = $(this.element).find( ".toolFormBody" );
         b.find( "div" ).remove();
         var tmp = "<div style='color: red; text-style: italic;'>" + text + "</div>";
-        this.form_html = tmp;
+        this.form_html = $(tmp);
         b.html( tmp );
-        if ( active_node == this ) {
-            // Reactive with new form_html
-            activate_node( this );
-        }
+        workflow.node_changed( this );
     }
 } );
 
 function Workflow() {
     this.id_counter = 0;
     this.nodes = {}
+    this.name = null;
+    this.has_changes = false;
 }
 $.extend( Workflow.prototype, {
     add_node : function( node ) {
-        node.id = this.id_counter;
+        node.id = String( this.id_counter );
         this.id_counter++;
         this.nodes[ node.id ] = node;
+        this.has_changes = true;
     },
     remove_node : function( node ) {
-        this.node[ node.id ] = undefined;
+        if ( this.active_node == node ) {
+            this.clear_active_node();
+        }
+        delete this.nodes[ node.id ] ;
+        this.has_changes = true;
+    },
+    remove_all : function() {
+        wf = this;
+        $.each( this.nodes, function ( k, v ) {
+            v.destroy();
+            wf.remove_node( v );
+        });
+    },
+    to_simple : function () {
+        var nodes = {}
+        $.each( this.nodes, function ( i, node ) {
+            var input_connections = {}
+            $.each( node.input_terminals, function ( k, t ) {
+                input_connections[ t.name ] = null;
+                // There should only be 0 or 1 connectors, so this is
+                // really a sneaky if statement
+                $.each( t.connectors, function ( i, c ) {
+                    input_connections[ t.name ] = { node_id: c.handle1.node.id, output_name: c.handle1.name };
+                });
+            });
+            var node_data = {
+                id : node.id,
+                tool_id : node.tool_id,
+                tool_state : node.tool_state,
+                has_errors : node.has_errors,
+                input_connections : input_connections,
+                position : $(node.element).position()
+            }
+            nodes[ node.id ] = node_data;
+        })
+        return { nodes: nodes }
+    },
+    from_simple : function ( data ) {
+        wf = this;
+        var max_id = 0;
+        wf.name = data.name;
+        // First pass, nodes
+        $.each( data.steps, function( id, step ) {
+            var node = prebuild_node_for_tool( step.tool_id, step.name );
+            node.init_field_data( step );
+            if ( step.position ) {
+                node.element.css( { top: step.position.top, left: step.position.left } );
+            }
+            node.id = id;
+            wf.nodes[ node.id ] = node;
+            max_id = Math.max( max_id, parseInt( id ) )
+        });
+        wf.id_counter = max_id + 1;
+        // Second pass, connections
+        $.each( data.steps, function( id, step ) {
+            var node = wf.nodes[id];
+            $.each( step.input_connections, function( k, v ) {
+                if ( v ) {
+                    var other_node = wf.nodes[ v.node_id ];
+                    var c = new Connector();
+                    c.connect( other_node.output_terminals[ v.output_name ],
+                               node.input_terminals[ k ] );
+                    c.redraw();
+                }
+            })
+        });
+    },
+    clear_active_node : function() {
+        if ( this.active_node ) {
+            this.active_node.make_inactive();
+        }
+        parent.show_form_for_tool( "<div>No node selected</div>" );
+    },
+    activate_node : function( node ) {
+        this.clear_active_node();
+        parent.show_form_for_tool( node.form_html, node );
+        node.make_active();
+        this.active_node = node;
+    },
+    node_changed : function ( node ) {
+        if ( this.active_node == node ) {
+            // Reactive with new form_html
+            this.activate_node( node );
+        }
     }
 });
 
-function clear_active_node() {
-    if ( active_node ) {
-        active_node.make_inactive();
-    }
-    parent.show_form_for_tool( "<div>No node selected</div>" );
-}
-
-function activate_node( node ) {
-    clear_active_node();
-    parent.show_form_for_tool( node.form_html, node );
-    node.make_active();
-    active_node = node;
-}
-
-function prebuild_node_for_tool( title ) {
+function prebuild_node_for_tool( id, title_text ) {
     var f = $("<div class='toolForm' style='position: absolute; min-width: 130px'></div>");
     var node = new Node( f );
-    var title = $("<div class='toolFormTitle unselectable'>" + title + "</div>" )
+	node.tool_id = id;
+    var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" )
     f.append( title );
     f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );
     
     var b = $("<div class='toolFormBody'></div>")
     var tmp = "<div><img height='16' align='middle' src='../images/loading_small_white_bg.gif'/> loading tool info...</div>";
     b.append( tmp );
-    node.form_html = tmp;
+    node.form_html = $(tmp);
     f.append( b )
     // Fix width to computed width
     // Now add floats
@@ -323,10 +410,10 @@ function prebuild_node_for_tool( title ) {
         click: function() {
             document.body.removeChild( this );
             document.body.appendChild( this );
-            activate_node( node );
+            workflow.activate_node( node );
         },
         start: function() {
-            activate_node( node );
+            workflow.activate_node( node );
             $(this).css( 'z-index', '1000' );
         },
         drag: function() { 

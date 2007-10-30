@@ -184,7 +184,7 @@ class SelectField(BaseField):
         if self.multiple: multiple = " multiple"
         else: multiple = ""
         if self.refresh_on_change:
-            rval = [ '<select name="%s%s"%s onchange="document.forms[0].submit();">' % ( prefix, self.name, multiple ) ]
+            rval = [ '<select name="%s%s"%s refresh_on_change="true">' % ( prefix, self.name, multiple ) ]
         else:
             rval = [ '<select name="%s%s"%s>' % ( prefix, self.name, multiple ) ]
         for text, value, selected in self.options:
