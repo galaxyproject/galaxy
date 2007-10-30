@@ -713,8 +713,16 @@ class CustomTrack ( Tabular ):
         first_line = True
         for hdr in headers:
             if first_line:
+                first_line = False
                 try:
-                    if hdr[0].startswith('track') and hdr[0].find('color') > -1 and hdr[0].find('visibility') > -1: first_line = False
+                    if hdr[0].startswith('track'):
+                        color_found = False
+                        visibility_found = False
+                        for elem in hdr[1:]:
+                            if elem.startswith('color'): color_found = True
+                            if elem.startswith('visibility'): visibility_found = True
+                            if color_found and visibility_found: break
+                        if not color_found or not visibility_found: return False
                     else: return False
                 except: return False
             else:     
