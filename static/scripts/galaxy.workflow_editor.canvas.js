@@ -8,7 +8,7 @@ $.extend( OutputTerminal.prototype, {
         this.connectors.push( connector );
     },
     disconnect: function ( connector ) {
-        this.connectors.splice( this.connectors.indexOf( connector ), 1 );
+        this.connectors.splice( $.inArray( connector, this.connectors ), 1 );
     },
     redraw: function () {
         $.each( this.connectors, function( _, c ) {
@@ -33,7 +33,7 @@ $.extend( InputTerminal.prototype, {
         this.connectors.push( connector );
     },
     disconnect: function ( connector ) {
-        this.connectors.splice( this.connectors.indexOf( connector ), 1 );
+        this.connectors.splice( $.inArray( connector, this.connectors ), 1 );
     },
     can_accept: function ( other ) {
         if ( this.connectors.length < this.max_connections ) {
@@ -85,7 +85,6 @@ $.extend( Connector.prototype, {
             this.canvas = document.createElement( "canvas" );
             $("body").append( this.canvas );
             if ( this.dragging ) { this.canvas.style.zIndex = "300" }
-            this.ctx = this.canvas.getContext("2d");
         }
         // Find the position of each handle
         var o = $(this.handle1.element).offset();
@@ -110,13 +109,18 @@ $.extend( Connector.prototype, {
         this.canvas.style.top = canvas_top + "px";
         this.canvas.setAttribute( "width", canvas_width );
         this.canvas.setAttribute( "height", canvas_height );
+        // HACK: Calling this again makes drawing work in Safari and I have 
+        //       no idea why. Need to figure out what this refreshes (some
+        //       sort of side effect)
+        var o = $(this.handle1.element).offset()
+        var o = $(this.handle2.element).offset() 
         // Adjust points to be relative to the canvas
         start_x -= canvas_left;
         start_y -= canvas_top;
         end_x -= canvas_left;
         end_y -= canvas_top;
         // Draw the line
-        var c = this.ctx
+        var c = this.canvas.getContext("2d");
         c.lineCap = "round";
         c.strokeStyle = "#999";
         c.lineWidth = 7;

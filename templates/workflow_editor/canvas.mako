@@ -12,7 +12,6 @@
 * { z-index: 100;}
 canvas { position: absolute; z-index: 10; } 
 canvas.dragging { position: absolute; z-index: 1000; }
-.node {  position: absolute; width: 100px; background: green; }
 .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; bottom: 0; left: -16px; }
 .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')});; position: absolute; bottom: 0; right: -16px; }
 .drag-terminal {  position: absolute; z-index: 1500; width: 10px; height: 10px; display: none; }
@@ -25,7 +24,7 @@ img { border: 0; }
 <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
 <script type='text/javascript' src="/static/scripts/jquery.dimensions.js"> </script>
 <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
-<script type='text/javascript' src="/static/scripts/jquery.hoverIntent.js"> </script>
+<!-- <script type='text/javascript' src="/static/scripts/jquery.hoverIntent.js"> </script> -->
 <script type='text/javascript' src="/static/scripts/galaxy.workflow_editor.canvas.js"> </script>
 
 <script type='text/javascript'>
@@ -55,8 +54,12 @@ function add_node_for_tool( id, title ) {
         success: function( data ) {
             node.init_field_data( data );
         },
-        error: function() {
-            node.error( "error loading field data" );
+        error: function( x, e ) {
+            var m = "error loading field data"
+            if ( x.status == 0 ) {
+                m += ", server unavailable"
+            }
+            node.error( m );
         }
     });
 };
@@ -65,11 +68,11 @@ $( function() {
     // Initialize workflow state
     reset();
     // Shim (the background of the editor area) causes loss of focus
-    $("#shim").click( workflow.clear_active_node ).hoverIntent( {
-        over: function () { $("div.toolForm").fadeTo( "fast", 0.7 ) },
-        out: function () { $("div.toolForm").fadeTo( "fast", 1.0 ) },
-        interval: 300
-    });
+    // $("#shim").click( workflow.clear_active_node ).hoverIntent( {
+    //     over: function () { $("div.toolForm").fadeTo( "fast", 0.7 ) },
+    //     out: function () { $("div.toolForm").fadeTo( "fast", 1.0 ) },
+    //     interval: 300
+    // });
     // Load the datatype info
 	$.getJSON( "${h.url_for( action='get_datatypes' )}", function( data ) {
 	    populate_datatype_info( data );

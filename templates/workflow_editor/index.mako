@@ -22,6 +22,7 @@
 <script type='text/javascript' src="/static/scripts/jquery.json.js"> </script>
 <script type='text/javascript' src="/static/scripts/jquery.center.js"> </script>
 <script type='text/javascript' src="/static/scripts/galaxy.panels.js"> </script>
+<script type='text/javascript' src="/static/firebug/firebug.js"> </script>
 
 <script type='text/javascript'>
 /* Dialog and menu handling tools to be moved to galaxy.layout.js */
@@ -98,6 +99,7 @@ $( function() {
     $(".dialog-box" ).center( "horizontal" );
     
     $(document).ajaxError( function ( e, x ) {
+        // console.error( "AJAX:", e, ", ", x );
         $("#error-display").html( x.responseText ).show();
         return false;
     });
@@ -110,7 +112,7 @@ $( function() {
     
     // Unload handler
     window.onbeforeunload = function() {
-        if ( workflow && workflow.has_changes ) {
+        if ( defined( workflow ) && workflow.has_changes ) {
             return "There are unsaved changes to your workflow which will be lost.";
         }
     }
@@ -130,6 +132,7 @@ function show_form_for_tool( text, node ) {
     // });
     $("#right-content").html( text );
     $("#right-content").find( "form" ).ajaxForm( {
+        method: 'POST',
         dataType: 'json',
         success: function( data ) { 
             node.update_field_data( data );
@@ -365,7 +368,7 @@ div.titleRow {
                 </div>
             </div>
             <div class="unified-panel-body" style="">
-                <iframe name="canvas" width="100%" height="100%" frameborder="0" src="${h.url_for( action='canvas' )}"></iframe>
+                <iframe name="canvas" width="100%" height="100%" frameborder="0" style="position: absolute;" src="${h.url_for( action='canvas' )}"></iframe>
             </div>
         </div>
         <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
