@@ -43,15 +43,13 @@
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
       <output name="out_file1" file="gene_bed_maf_to_fasta_out.fasta" />
     </test>
-    <!--  
     <test>
       <param name="input1" value="8.bed"/>
-      <param name="input2" value="gene_bed_maf_to_fasta_user_maf_in.dat"/>
+      <param name="input2" value="4.maf"/>
       <param name="maf_source" value="user"/>
-      <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
-      <output name="out_file1" file="gene_bed_maf_to_fasta_out.dat" />
+      <param name="species" value="hg17"/>
+      <output name="out_file1" file="gene_bed_maf_to_fasta_user_out.fasta" />
     </test>
-    -->
   </tests> 
   <help>
 
