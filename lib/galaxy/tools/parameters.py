@@ -493,7 +493,7 @@ class SelectToolParameter( ToolParameter ):
         if self.is_dynamic and trans.workflow_building_mode:
             # Really the best we can do?
             return None
-        options = self.get_options( trans, context )
+        options = list( self.get_options( trans, context ) )
         value = [ optval for _, optval, selected in options if selected ]
         if len( value ) == 0:
             if not self.multiple and options:

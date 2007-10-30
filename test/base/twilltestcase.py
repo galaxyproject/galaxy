@@ -360,7 +360,7 @@ class TwillTestCase( unittest.TestCase ):
         #Check for onchange attribute, submit a change if required
         for i, control in enumerate(tc.showforms()[form-1].controls):
             try:
-                if 'onchange' in control.attrs.keys():
+                if 'refresh_on_change' in control.attrs.keys():
                     changed = False
                     for elem in kwd[control.name]:
                         """
@@ -370,7 +370,7 @@ class TwillTestCase( unittest.TestCase ):
                         param_text = ''
                         for param in tc.show().split('<select') : 
                             param = ('<select' + param.split('select>')[0] + 'select>').replace('selected', 'selected="yes"')
-                            if param.find('onchang') != -1 and param.find('name="%s"' % control.name) != -1: 
+                            if param.find('on_chang') != -1 and param.find('name="%s"' % control.name) != -1: 
                                 tree = ElementTree.fromstring(param)
                                 for option in tree.findall('option') : 
                                     if option.get('value') in control.value:
