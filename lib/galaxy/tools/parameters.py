@@ -496,9 +496,9 @@ class SelectToolParameter( ToolParameter ):
         options = self.get_options( trans, context )
         value = [ optval for _, optval, selected in options if selected ]
         if len( value ) == 0:
-            if not self.multiple:
-                # Nothing selected, but not a multiple select, so we have to
-                # default to something (the HTML form will anyway)
+            if not self.multiple and options:
+                # Nothing selected, but not a multiple select, with some values,
+                # so we have to default to something (the HTML form will anyway)
                 # TODO: deal with optional parameters in a better way
                 value = options[0][1]
             else:
