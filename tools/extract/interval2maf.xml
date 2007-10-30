@@ -5,10 +5,7 @@
 #end if
   </command>
   <inputs>
-    <page>
         <param format="interval" name="input1" type="data" label="Choose intervals"/>
-    </page>
-    <page>
         <conditional name="maf_source_type">
             <param name="maf_source" type="select" label="MAF Source">
               <option value="cached" selected="true">Locally Cached Alignments</option>
@@ -18,10 +15,11 @@
                 <param format="maf" name="mafFile" label="Choose alignments" type="data"/>
             </when>
             <when value="cached">
-                <param name="mafType" label="Choose alignments" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
+                <param name="mafType" label="Choose alignments" type="select"> <!--dynamic_options="get_available_data( input1.dbkey )"-->
+		<select_options from_file="/depot/data2/galaxy/maf_index.loc" data_ref="input1" func="get_options_for_maf"/>
+		</param>
             </when>
         </conditional>
-    </page>
    </inputs>
   <outputs>
     <data format="maf" name="out_file1"/>
@@ -54,5 +52,4 @@ Here a single interval is superimposed on three MAF blocks. Blocks 1 and 3 are t
 .. image:: ../static/images/maf_icons/interval2maf.png
 
   </help>
-  <code file="interval2maf_code.py"/>
 </tool>
