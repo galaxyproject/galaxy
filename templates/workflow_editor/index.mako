@@ -134,9 +134,7 @@ function notify() {
        success: function( data ) {
             window.frames.canvas.reset();
             workflow.from_simple( data );
-            show_modal( "Workflow loaded", "Workflow loaded.", {
-                "Ok" : function () { hide_modal(); }
-            });
+            hide_modal();
         },
         beforeSubmit: function( data ) {
             show_modal( "Loading workflow", "progress" );

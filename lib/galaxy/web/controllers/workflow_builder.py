@@ -10,7 +10,7 @@ from galaxy.util.odict import odict
 
 import simplejson
 
-class HistoryController( BaseController ):
+class WorkflowBuilder( BaseController ):
     
     def __get_job_dict( self, trans ):
         """
@@ -84,7 +84,7 @@ class HistoryController( BaseController ):
         jobs, warnings = self.__get_job_dict( trans )
         # Render
         return trans.fill_template(
-                    "history/workflow_from_current_history.mako", 
+                    "workflow_builder/workflow_from_current_history.mako", 
                     jobs=jobs,
                     warnings=warnings )
     
