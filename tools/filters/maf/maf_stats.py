@@ -13,15 +13,18 @@ import bx.interval_index_file
 import psyco_full
 
 def __main__():
-
     maf_source_type = sys.argv.pop(1)
     input_maf_filename = sys.argv[1].strip()
     input_interval_filename = sys.argv[2].strip()
     output_filename = sys.argv[3].strip()
     dbkey = sys.argv[4].strip()
-    chr_col  = int(sys.argv[5].strip())-1
-    start_col = int(sys.argv[6].strip())-1
-    end_col = int(sys.argv[7].strip())-1
+    try:
+        chr_col  = int(sys.argv[5].strip())-1
+        start_col = int(sys.argv[6].strip())-1
+        end_col = int(sys.argv[7].strip())-1
+    except:
+        print >>sys.stderr, "You appear to be missing metadata. You can specify your metadata by clicking on the pencil icon associated with your interval file."
+        sys.exit()
     summary = sys.argv[8].strip()
     if summary.lower() == "true": summary = True
     else: summary = False

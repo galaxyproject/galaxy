@@ -75,11 +75,14 @@ def __main__():
     mafFile = sys.argv.pop(1)
     interval_file = sys.argv.pop(1)
     output_file = sys.argv.pop(1)
-    chr_col  = int(sys.argv.pop(1).strip())-1
-    start_col = int(sys.argv.pop(1).strip())-1
-    end_col = int(sys.argv.pop(1).strip())-1
-    strand_col = int(sys.argv.pop(1).strip())-1
-
+    try:
+        chr_col  = int(sys.argv.pop(1).strip())-1
+        start_col = int(sys.argv.pop(1).strip())-1
+        end_col = int(sys.argv.pop(1).strip())-1
+        strand_col = int(sys.argv.pop(1).strip())-1
+    except:
+        print >>sys.stderr, "You appear to be missing metadata. You can specify your metadata by clicking on the pencil icon associated with your interval file."
+        sys.exit()
     
     #Allow users to specify gap char for missing data: ? or -
     try:

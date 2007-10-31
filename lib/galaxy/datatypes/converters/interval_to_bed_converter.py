@@ -8,10 +8,14 @@ import bx.intervals.io
 def __main__():
     output_name = sys.argv.pop(1)
     input_name = sys.argv.pop(1)
-    chromCol = int(sys.argv.pop(1))-1
-    startCol = int(sys.argv.pop(1))-1
-    endCol = int(sys.argv.pop(1))-1
-    strandCol = int(sys.argv.pop(1))-1
+    try:
+        chromCol = int(sys.argv.pop(1))-1
+        startCol = int(sys.argv.pop(1))-1
+        endCol = int(sys.argv.pop(1))-1
+        strandCol = int(sys.argv.pop(1))-1
+    except:
+        print >>sys.stderr, "You appear to be missing metadata. You can specify your metadata by clicking on the pencil icon associated with your interval file."
+        sys.exit()
     out = open(output_name,'w')
     count = 0
     for region in bx.intervals.io.NiceReaderWrapper( open(input_name, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False):
