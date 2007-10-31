@@ -45,11 +45,10 @@ class DynamicOptions( object ):
         phastOdds_for_intervals - associated data file: /depot/data2/galaxy/phastOdds.loc
         aggregate_scores_in_intervals2 - associated data file: /depot/data2/galaxy/binned_scores.loc        
         """
-        legal_values = set()
         options = []
         dataset = self.get_dataset( trans, other_values )
         if dataset is None:
-            return legal_values, options
+            return options
         def load_from_file_for_build():
             d = {}
             for line in open( self.from_file ):
@@ -67,8 +66,7 @@ class DynamicOptions( object ):
         if dataset.dbkey in d:
             for (key, val) in d[ dataset.dbkey ]:
                 options.append( (key, val, False) )
-                legal_values.add( val )
-        return legal_values, options
+        return options
 
     def get_options_for_build_2( self, trans, other_values ):
         """
@@ -78,7 +76,6 @@ class DynamicOptions( object ):
         axt_to_lav_1 - - associated data file: static/ucsc/builds.txt
         """
         def load_from_file_for_build_2():
-            legal_values = set()
             options = []
             for line in open( self.from_file ):
                 line = line.rstrip( '\r\n' )
@@ -86,12 +83,10 @@ class DynamicOptions( object ):
                     try:
                         fields = line.split( '\t' )
                         options.append( (fields[1], fields[0], False) )
-                        legal_values.add( fields[0] )
                     except: continue
             if len( options ) < 1:
-                options.append( ('unspecified', '?', True ) )
-                legal_values.add( '?' )
-            return legal_values, options
+                return [('unspecified', '?', True )]
+            return options
         return load_from_file_for_build_2()
 
     def get_options_for_build_3( self, trans, other_values ):
@@ -101,11 +96,10 @@ class DynamicOptions( object ):
         Used by the following tools:
         Extract blastz alignments1 - associated data file: /depot/data2/galaxy/alignseq.loc
         """
-        legal_values = set()
         options = []
         dataset = self.get_dataset( trans, other_values )
         if dataset is None:
-            return legal_values, options
+            return options
         def load_from_file_for_build_3():
             d = {}
             for line in open( self.from_file ):
@@ -123,8 +117,7 @@ class DynamicOptions( object ):
         if build in d:
             for val in d[ build ]:
                 options.append( ( val, val, False ) )
-                legal_values.add( val )
-        return legal_values, options        
+        return options     
 
     def load_from_file_for_maf( self ):
         d = {}
@@ -154,21 +147,20 @@ class DynamicOptions( object ):
         maf_stats1 - associated data file: /depot/data2/galaxy/maf_index.loc
         GeneBed_Maf_Fasta1 - associated data file: /depot/data2/galaxy/maf_index.loc
         """
-        legal_values = set()
         options = []
         dataset = self.get_dataset( trans, other_values )
         if dataset is None:
-            return legal_values, options
+            return options
+        if dataset.dbkey == '?':
+            return [( 'Build not set', 'None', True )]
         d = self.load_from_file_for_maf()
         for i, key in enumerate( d ):
             if dataset.dbkey in d[key]['builds']:
                 if i == 0: options.append( ( d[key]['description'], key, True ) )
                 else: options.append( ( d[key]['description'], key, False ) )
-                legal_values.add( key )
         if len( options ) < 1:
-            options.append( self.no_data_option )
-            legal_values.add( 'None' )
-        return legal_values, options
+            return [self.no_data_option]
+        return options
 
     def get_options_for_species( self, trans, other_values ):
         """
@@ -183,52 +175,44 @@ class DynamicOptions( object ):
         MAF_To_Fasta1 (maf_to_fasta.xml) - no associated data file  
         GeneBed_Maf_Fasta_User1 - no associated data file 
         """
-        legal_values = set()
         options = []
         dataset = self.get_dataset( trans, other_values )
         if dataset is None:
-            return legal_values, options
+            return options
         for species in dataset.metadata.species:
             options.append( ( species, species, False ) )
-            legal_values.add( species )
-        return legal_values, options
+        return options
 
     def get_options_for_species_for_maf( self, trans, other_values ):
         """
         Used by the following tools:
         GeneBed_Maf_Fasta1 - associated data file: /depot/data2/galaxy/maf_index.loc
         """
-        legal_values = set()
         options = []
         assert len( self.func_params ) == 1, "Value for 'maf_source' not found"
         for func_param in self.func_params:
             if func_param.get( 'name' ).strip() == 'maf_source':
                 maf_source = func_param.get( 'value' ).strip()
-        assert maf_source, "Value for 'maf_source' not properly set"
         if maf_source == 'cached':
             d = self.load_from_file_for_maf()
             maf_uid = self.get_param_ref( trans, other_values )
-            assert maf_uid, "Value for maf_uid not found"
+            if maf_uid is None:
+                return [self.no_data_option]
             if maf_uid == 'None':
-                options.append( ( '<b>build not set, click pencil icon in your history item to associate a build</b>', 'None', True ) )
-                legal_values.add( 'None' )
-                return legal_values, options
-            for key in d[maf_uid]['builds']:
-                options.append( (key, key, False) )
-                legal_values.add( key )
+                return [( '<b>Build not set, click pencil icon in your history item to associate a build</b>', 'None', True )]
+            for i, key in enumerate( d[maf_uid]['builds'] ):
+                if i == 0: options.append( (key, key, True) )
+                else: options.append( (key, key, False) )
             if len( options ) < 1:
-                options.append( ( 'No data available for this configuration', 'None', True ) )
-                legal_values.add( 'None' )
+                return [self.no_data_option]
         else: # maf_source == 'user'
             dataset = self.get_dataset( trans, other_values )
             if dataset is None:
-                options.append( ("<B>You must wait for the MAF file to be created before you can use this tool.</B>", 'None', True) )
-                legal_values.add( 'None' )
-                return legal_values, options
-            for species in dataset.metadata.species:
-                options.append( ( species, species, False ) )
-                legal_values.add( species )
-        return legal_values, options
+                return [( "<B>You must wait for the MAF file to be created before you can use this tool.</B>", 'None', True )]
+            for i, species in enumerate( dataset.metadata.species ):
+                if i == 0: options.append( ( species, species, True ) )
+                else: options.append( ( species, species, False ) )
+        return options
 
     def get_options_for_features( self, trans, other_values ):
         """
@@ -244,19 +228,16 @@ class DynamicOptions( object ):
             if func_param.get( 'name' ).strip() == 'index':
                 index = func_param.get( 'value' ).strip()
         assert index is not None, "Value for 'index' not properly set"
-        legal_values = set()
         options = []
         elem_list = []
         dataset = self.get_dataset( trans, other_values )
         if dataset is None:
-            return legal_values, options
+            return options
         datafile = dataset.get_file_name()
         try:
             in_file = open( datafile, "r" )
         except:
-            options.append( ( "Input datafile doesn't exist", "None", True ) )
-            legal_values.add( 'None' )
-            return legal_values, options
+            return [self.no_data_option]
         try:
             for line in in_file:
                 line = line.rstrip( "\r\n" )
@@ -267,13 +248,11 @@ class DynamicOptions( object ):
         in_file.close()
         if not( elem_list ):
             options.append( ( 'No elements to display, please choose another column', 'None', True ) )
-            legal_values.add( 'None' )
-            return legal_values, options
+            return options
         elem_list = get_unique_elems( elem_list )
         for elem in elem_list:
             options.append( ( elem, elem, False ) )
-            legal_values.add( elem )
-        return legal_values, options
+        return options
 
     def get_options_for_encode( self, trans, other_values ):
         """
@@ -292,11 +271,9 @@ class DynamicOptions( object ):
             elif func_param.get( 'name' ).strip() == 'encode_group':
                 encode_group = func_param.get( 'value' ).strip()
         assert build and encode_group, "Values for 'build' and 'encode group' not properly set"
-        legal_values = set()
         options = []
         def load_from_file_for_encode():
             encode_sets = {}
-            legal_values = set()
             for line in open( self.from_file ):
                 line = line.rstrip( '\r\n' )
                 if line and not line.startswith( '#' ):
@@ -318,11 +295,9 @@ class DynamicOptions( object ):
                     except: encode_sets[encode_group] = {}
                     try:
                         encode_sets[encode_group][build].append((description, uid, False))
-                        legal_values.add( uid )
                     except:
                         encode_sets[encode_group][build]=[]
                         encode_sets[encode_group][build].append((description, uid, False))
-                        legal_values.add( uid )
             #Order by description and date, highest date on top and bold
             for group in encode_sets:
                 for build in encode_sets[ group ]:
@@ -363,15 +338,13 @@ class DynamicOptions( object ):
                             last_desc = item['description']
                         last_partitioned = item['partitioned']
                         encode_sets[group][build][i] = (description, uid, selected)        
-            return legal_values, encode_sets
-        legal_values, d = load_from_file_for_encode()
+            return encode_sets
+        d = load_from_file_for_encode()
         if len( d ) < 1:
-            options.append( self.no_data_option )
-            legal_values.add( 'None' )
+            return [self.no_data_option]
         else:
             try: 
                 options = d[encode_group][build][0:]
             except:
                 options.append( self.no_data_option )
-                legal_values.add( 'None' )
-        return legal_values, options
+        return options

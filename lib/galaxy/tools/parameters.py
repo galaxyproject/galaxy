@@ -425,14 +425,14 @@ class SelectToolParameter( ToolParameter ):
         self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.select_options is not None ) )
     def get_options( self, trans, other_values ):
         if self.select_options:
-            return eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func )[1]
+            return eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func )
         elif self.dynamic_options:
             return eval( self.dynamic_options, self.tool.code_namespace, other_values )
         else:
             return self.options
     def get_legal_values( self, trans, other_values ):
         if self.select_options:
-            return eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func )[0]
+            return set( v for _, v, _ in eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func ) )
         elif self.dynamic_options:
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
         else:
