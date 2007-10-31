@@ -158,5 +158,6 @@ function make_right_panel( panel_el, center_el, border_el ) {
                 ui.draggable.pos[1] = ui.options.co.top;
             }
         }
-    ).find( "div" ).show();;
+    ).find( "div" ).show();
+    return { handle_minwidth_hint: handle_minwidth_hint };
 };
