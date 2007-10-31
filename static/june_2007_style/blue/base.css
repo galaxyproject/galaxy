@@ -76,15 +76,6 @@ div.toolFormBody div.toolFormTitle
 	margin-bottom: 5px;
 }
 
-div.toolFormDisabled div.toolFormTitle {
-    background: #eee;
-    border-color: #999;
-}
-
-div.toolFormDisabled {
-    border-color: #999;
-}
-
 div.toolHelp
 { 
 }
@@ -93,13 +84,6 @@ div.toolHelpBody
 { 
 	width: 100%;
 	overflow: auto;
-}
-
-div.titleRow {
-    font-weight: bold;
-    border-bottom: dotted gray 1px;
-    margin-bottom: 0.5em;
-    padding-bottom: 0.25em;
 }
 
 /* Forms */
@@ -145,7 +129,7 @@ select, textarea, input[type="text"], input[type="file"]
 
 /* Messages */
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .welcomemessage
+.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed
 {
     padding: 10px;
     padding-left: 52px;
@@ -178,10 +162,17 @@ select, textarea, input[type="text"], input[type="file"]
     background-color: #CCCCFF;
 }
 
-.welcomemessage {
+.welcomeBlue {
     padding-left: 10px;
     border-color: #6666AA;
     background-color: #CCCCFF;
+    background-image: none;
+}
+
+.welcomeRed {
+    padding-left: 10px;
+    border-color: #AA6666;
+    background-color: #FFCCCC;
     background-image: none;
 }
 

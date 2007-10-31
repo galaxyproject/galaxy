@@ -145,7 +145,7 @@ select, textarea, input[type="text"], input[type="file"]
 
 /* Messages */
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .welcomemessage
+.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed
 {
     padding: 10px;
     padding-left: 52px;
@@ -178,10 +178,19 @@ select, textarea, input[type="text"], input[type="file"]
     background-color: $info_message_bg;
 }
 
-.welcomemessage {
+.welcomeBlue 
+{
     padding-left: 10px;
-    border-color: #6666AA;
-    background-color: #CCCCFF;
+    border-color: $info_message_border;
+    background-color: $info_message_border;
+    background-image: none;
+}
+
+.welcomeRed 
+{
+    padding-left: 10px;
+    border-color: $warn_message_border;
+    background-color: $warn_message_bg;
     background-image: none;
 }
 
