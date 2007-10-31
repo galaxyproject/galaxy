@@ -33,9 +33,12 @@ q( "a[@confirm]" ).click( function() {
     #if $len( $history.active_datasets ) > 0 and $history.user not in [ None , "" ]:
         <li><a href="$h.url_for('/history_new')">Create</a> a new empty history</li>
     #end if
+    #if $app.config.enable_beta_features
+    <li><a href="${h.url_for( controller='history', action='workflow_from_current_history' )}">Construct workflow</a> from the current history</li>
+    #end if
 #end if
-    <li><a href="$h.url_for('/history_share')" target="galaxy_main">share</a> current history</div>
-    <li><a href="$h.url_for('/history_delete', id=$history.id )" confirm="Are you sure you want to delete the current history?">delete</a> current history</div>
+    <li><a href="$h.url_for('/history_share')" target="galaxy_main">Share</a> current history</div>
+    <li><a href="$h.url_for('/history_delete', id=$history.id )" confirm="Are you sure you want to delete the current history?">Delete</a> current history</div>
 </ul>
 
 </body>

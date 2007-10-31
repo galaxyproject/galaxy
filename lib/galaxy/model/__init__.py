@@ -67,6 +67,15 @@ class Job( object ):
         # For historical reasons state propogates down to datasets
         for da in self.output_datasets:
             da.dataset.state = state
+    def get_param_values( self, app ):
+        """
+        Read encoded parameter values from the database and turn back into a
+        dict of tool parameter values.
+        """
+        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
+        tool = app.toolbox.tools_by_id[self.tool_id]
+        param_dict = tool.params_from_strings( param_dict, app )
+        return param_dict
                 
 class JobParameter( object ):
     def __init__( self, name, value ):

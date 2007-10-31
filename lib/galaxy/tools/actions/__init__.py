@@ -44,7 +44,8 @@ class DefaultToolAction( object ):
         
         # FIXME: does this need to modify 'incoming' or should this be 
         #        moved into 'build_param_dict'? Is this just about getting the
-        #        metadata into the command line? 
+        #        metadata into the command line?
+        # NEED TO FIX THIS SOON.
         input_names = []
         input_ext = 'data'
         input_dbkey = incoming.get( "dbkey", "?" )

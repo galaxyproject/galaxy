@@ -19,6 +19,11 @@ if ( parent.frames && parent.frames.galaxy_history ) {
     parent.frames.galaxy_history.location.href="$h.url_for('/history')";
 }
 #end if
+
+if ( parent.handle_minwidth_hint )
+{
+    parent.handle_minwidth_hint( -1 );
+}
 </script>
 
 <body>

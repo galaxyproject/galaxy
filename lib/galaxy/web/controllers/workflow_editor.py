@@ -11,11 +11,12 @@ class WorkflowEditor( BaseController ):
     beta = True
     
     @web.expose
-    def index( self, trans ):
+    def index( self, trans, workflow_name=None ):
         user = trans.get_user()
         if not user:
             return trans.show_error_message( "Must be logged in to create or modify workflows" )
-        return trans.fill_template( "workflow_editor/index.mako" )
+        return trans.fill_template( "workflow_editor/index.mako",
+                                    workflow_name=workflow_name )
     
     @web.expose
     def canvas( self, trans ):
@@ -67,6 +68,7 @@ class WorkflowEditor( BaseController ):
             decode_state( node, trans.app )
         # Create workflow from json data
         workflow = Workflow.from_simple( data )
+        workflow.order_nodes()
         # Store it
         stored = model.StoredWorkflow.get_by( user = user, name = workflow_name )
         if stored is None:

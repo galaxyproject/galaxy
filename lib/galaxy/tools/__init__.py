@@ -280,6 +280,9 @@ class Tool:
                 log.exception( "Failed to parse tool tests" )
         else:
             self.tests = None
+        # Determine if this tool can be used in workflows
+        self.is_workflow_compatible = self.check_workflow_compatible()
+        
             
     def parse_inputs( self, root ):
         """
@@ -459,6 +462,19 @@ class Tool:
         for name in param.get_dependencies():
             context[ name ].refresh_on_change = True
         return param
+    
+    def check_workflow_compatible( self ):
+        # This is probably the best bet for detecting external web tools
+        # right now
+        if self.action != "/tool_runner/index":
+            return False
+        # HACK: upload is (as always) a special case becuase file parameters
+        #       can't be persisted.
+        if self.id == "upload1":
+            return False
+        # TODO: Anyway to capture tools that dynamically change their own
+        #       outputs?
+        return True
 
     def new_state( self, trans, all_pages=False ):
         """

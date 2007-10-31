@@ -11,6 +11,13 @@
 #center       { right: 309px; }
 #right-border { right: 300px; }
 #right        { width: 300px; }
+## /* Relative masthead size */
+## #masthead { height: 2.5em; }
+## #masthead div.title { font-size: 1.8em; }
+## #left, #left-border, #center, #right-border, #right {
+##     top: 2.5em;
+##     margin-top: 7px;
+## }
 </style>
 
 <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
@@ -119,7 +126,25 @@ $( function() {
 });
 
 function notify() {
+    %if workflow_name:
+    $.ajax( {
+       url: "${h.url_for( action='load_workflow' )}",
+       data: { workflow_name: "${workflow_name}" },
+       dataType: 'json',
+       success: function( data ) {
+            window.frames.canvas.reset();
+            workflow.from_simple( data );
+            show_modal( "Workflow loaded", "Workflow loaded.", {
+                "Ok" : function () { hide_modal(); }
+            });
+        },
+        beforeSubmit: function( data ) {
+            show_modal( "Loading workflow", "progress" );
+        }
+    });
+    %else:
     hide_modal();
+    %endif
 };
 
 function show_form_for_tool( text, node ) {
@@ -149,6 +174,10 @@ function show_form_for_tool( text, node ) {
 
 var save_current_workflow = function () {
     var body = $("#save-dialog-form").clone();
+    if ( workflow.name ) {
+        body.find( "input[name='workflow_name']" ).get(0).value = workflow.name;
+    }
+    body.find( "input[name='workflow_name']" ).get(0).focus();
     var form = body.find( "form" ).ajaxForm( {
         dataType: 'json',
         success: function( data ) { 
@@ -261,6 +290,16 @@ div.toolTitle {
     display: list-item;
     list-style: square outside;
 }
+div.toolTitleDisabled {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: 16px;
+    margin-right: 10px;
+    display: list-item;
+    list-style: square outside;
+    font-style: italic;
+    color: gray;
+}
 div.toolFormRow {
     position: relative;
 }
@@ -277,13 +316,6 @@ div.toolFormRow {
     border: solid red 10px;
     background: #FFDDDD;
     z-index: 50000;
-}
-
-div.titleRow {
-    font-weight: bold;
-    border-bottom: dotted gray 1px;
-    margin-bottom: 0.5em;
-    padding-bottom: 0.25em;
 }
 
 </style>
@@ -334,22 +366,29 @@ div.titleRow {
                           <div class="toolSectionBg">
                              %for tool in section.tools:
                                 %if not tool.hidden:
-                                <div class="toolTitle">
-                                  ## #if $tool.input_required
-                                  ##    #set $link = $h.url_for( 'tool_runner', tool_id=$tool.id )
-                                  ## #else
-                                  ##    #set $link = $h.url_for( $tool.action, ** $tool.get_static_param_values( $t ) )
-                                  ## #end if
-                                  %if "[[" in tool.description and "]]" in tool.description:
-                                    ${tool.description.replace( '[[', '<a href="javascript:add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
-                                  %elif tool.name:
-                                    <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
-                                  %else:
-                                    <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
-                                  %endif
-                                </div>
+                                    %if tool.is_workflow_compatible:
+                                        <div class="toolTitle ">
+                                            %if "[[" in tool.description and "]]" in tool.description:
+                                                ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="javascript:add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
+                                            %elif tool.name:
+                                                <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
+                                            %else:
+                                                <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                                            %endif
+                                        </div>
+                                    %else:
+                                        <div class="toolTitleDisabled">
+                                            %if "[[" in tool.description and "]]" in tool.description:
+                                                ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}
+                                            %elif tool.name:
+                                                ${tool.name} ${tool.description}
+                                            %else:
+                                                ${tool.description}
+                                            %endif
+                                        </div>
+                                    %endif
                                 %endif
-                             %endfor
+                            %endfor
                           </div>
                        </div>
                     %endfor
@@ -378,7 +417,7 @@ div.titleRow {
                     <div class="center-block-inner">Details</div>
                 </div>
             </div>
-            <div class="unified-panel-body">
+            <div class="unified-panel-body" style="overflow: scroll;">
                 <div id="right-content"></div>
             </div>
         </div>

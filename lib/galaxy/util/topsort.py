@@ -162,3 +162,48 @@ def topsort(pairlist):
                 assert numpreds[x] > 0
         raise CycleError(answer, numpreds, successors)
     return answer
+
+def topsort_levels(pairlist):
+    numpreds = {}   # elt -> # of predecessors
+    successors = {} # elt -> list of successors
+    for first, second in pairlist:
+        # make sure every elt is a key in numpreds
+        if not numpreds.has_key(first):
+            numpreds[first] = 0
+        if not numpreds.has_key(second):
+            numpreds[second] = 0
+
+        # if they're the same, there's no real dependence
+        if first == second:
+            continue
+
+        # since first < second, second gains a pred ...
+        numpreds[second] = numpreds[second] + 1
+
+        # ... and first gains a succ
+        if successors.has_key(first):
+            successors[first].append(second)
+        else:
+            successors[first] = [second]
+
+    answer = []
+    
+    while 1:
+        # Suck up everything without a predecessor.
+        levparents = [x for x in numpreds.keys() if numpreds[x] == 0]
+        if not levparents:
+            break
+        answer.append( levparents )
+        for levparent in levparents:
+            del numpreds[levparent]
+            if successors.has_key(levparent):
+                for levparentsucc in successors[levparent]:
+                    numpreds[levparentsucc] -= 1
+                del successors[levparent]
+        
+    if numpreds: 
+        # Everything in num_parents has at least one child -> 
+        # there's a cycle.
+        raise CycleError( answer, numpreds, successors )
+        
+    return answer

@@ -1,5 +1,5 @@
 from galaxy.tools import DefaultToolState
-from galaxy.util.topsort import topsort, CycleError
+from galaxy.util.topsort import topsort, topsort_levels, CycleError
 
 class Workflow( object ):
  
@@ -21,7 +21,6 @@ class Workflow( object ):
             if step.has_errors:
                 workflow.has_errors = True
             workflow.steps[ id ] = step
-        workflow.node_order = workflow.order_nodes()
         return workflow
     
     def to_simple( self ):
@@ -35,27 +34,40 @@ class Workflow( object ):
                      has_cycles=self.has_cycles,
                      has_errors=self.has_errors )
 
+    def edge_list( self ):
+        edges = []
+        all_ids = set( self.steps.keys() )
+        for step in self.steps.values():
+            edges.append( ( step.id, step.id ) )
+            for name, conn in step.input_connections.iteritems():
+                if conn is not None:
+                    other_node_id, _ = conn
+                    edges.append( ( other_node_id, step.id ) )
+        return edges
+
     def order_nodes( self ):
         """
         Perform topological sort of the steps, return an ordered list of ids
         """
         self.has_cycles = False
-        edges = []
-        all_ids = set( self.steps.keys() )
-        for step in self.steps.values():
-            for name, conn in step.input_connections.iteritems():
-                if conn is not None:
-                    other_node_id, _ = conn
-                    edges.append( ( other_node_id, step.id ) )
+        edges = self.edge_list()
         try:
             node_order = topsort( edges )
-            node_order_set = set( node_order )
-            node_order.extend( [ id for id in all_ids if id not in node_order ] )
+            #node_order_set = set( node_order )
+            #node_order.extend( [ id for id in all_ids if id not in node_order ] )
             self.node_order = node_order
+            return self.node_order
         except CycleError:
             self.has_cycles = True
             self.node_order = None
-        return self.node_order
+            return None
+        
+    def order_nodes_levels( self ):
+        edges = self.edge_list()
+        try:
+            return topsort_levels( edges )
+        except CycleError:
+            return None
         
 class WorkflowStep( object ):
 
