@@ -22,8 +22,8 @@ class TestHistory( TwillTestCase ):
         self.history_options()
         self.check_page_for_string( 'Rename</a> current history')
         self.check_page_for_string( 'View</a> previously stored histories')
-        self.check_page_for_string( 'share</a> current history')
-        self.check_page_for_string( 'delete</a> current history')
+        self.check_page_for_string( 'Share</a> current history')
+        self.check_page_for_string( 'Delete</a> current history')
     def test_10_history_rename( self ):
         """Testing renaming a history"""
         id, old_name, new_name = self.rename_history()
