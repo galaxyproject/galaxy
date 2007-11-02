@@ -25,7 +25,7 @@ class DynamicOptions( object ):
             """
             return None
         # TODO: this can be eliminated after Dan's script is run.
-        dataset.set_meta()
+        #dataset.set_meta()
         return dataset
     def get_param_ref( self, trans, other_values ):
         if self.param_ref is None: return None
