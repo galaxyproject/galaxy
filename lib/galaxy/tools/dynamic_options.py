@@ -154,10 +154,9 @@ class DynamicOptions( object ):
         if dataset.dbkey == '?':
             return [( 'Build not set', 'None', True )]
         d = self.load_from_file_for_maf()
-        for i, key in enumerate( d ):
+        for key in d:
             if dataset.dbkey in d[key]['builds']:
-                if i == 0: options.append( ( d[key]['description'], key, True ) )
-                else: options.append( ( d[key]['description'], key, False ) )
+                options.append( ( d[key]['description'], key, False ) )
         if len( options ) < 1:
             return [self.no_data_option]
         return options
@@ -200,18 +199,16 @@ class DynamicOptions( object ):
                 return [self.no_data_option]
             if maf_uid == 'None':
                 return [( '<b>Build not set, click pencil icon in your history item to associate a build</b>', 'None', True )]
-            for i, key in enumerate( d[maf_uid]['builds'] ):
-                if i == 0: options.append( (key, key, True) )
-                else: options.append( (key, key, False) )
+            for key in d[maf_uid]['builds']:
+                options.append( (key, key, False) )
             if len( options ) < 1:
                 return [self.no_data_option]
         else: # maf_source == 'user'
             dataset = self.get_dataset( trans, other_values )
             if dataset is None:
                 return [( "<B>You must wait for the MAF file to be created before you can use this tool.</B>", 'None', True )]
-            for i, species in enumerate( dataset.metadata.species ):
-                if i == 0: options.append( ( species, species, True ) )
-                else: options.append( ( species, species, False ) )
+            for species in dataset.metadata.species:
+                options.append( ( species, species, False ) )
         return options
 
     def get_options_for_features( self, trans, other_values ):
