@@ -27,6 +27,7 @@ alias_spec = {
     'startCol'  : [ 'start' , 'START', 'chromStart', 'txStart', 'Start Position (bp)' ],
     'endCol'    : [ 'end'   , 'END'  , 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'  ], 
     'strandCol' : [ 'strand', 'STRAND', 'Strand' ],
+    'nameCol'   : [ 'name', 'NAME', 'Name', 'name2', 'NAME2', 'Name2', 'Ensembl Gene ID', 'Ensembl Transcript ID', 'Ensembl Peptide ID' ]
 }
 
 # a little faster lookup
@@ -44,6 +45,7 @@ class Interval( Tabular ):
     MetadataElement( name="startCol", desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
+    MetadataElement( name="nameCol", desc="Name/Identifier column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
 
     def __init__(self, **kwd):
@@ -54,7 +56,7 @@ class Interval( Tabular ):
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
-            if key in ['strandCol']: continue #we skip check for strand column here, since it is considered optional
+            if key in ['strandCol', 'nameCol']: continue #we skip check for strand column here, since it is considered optional
             if not value:
                 return True
         return False
@@ -234,17 +236,22 @@ class Bed( Interval ):
         i = 0
         if dataset.has_data():
             for i, line in enumerate( file(dataset.file_name) ):
+                found_strand = False
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
                     if len(elems) > 2:
                         for str in data.col1_startswith:
                             if line.lower().startswith(str):
+                                if len( elems ) > 3:
+                                    dataset.metadata.nameCol = 4
                                 if len(elems) < 6:
                                     dataset.metadata.strandCol = 0
                                 else:
                                     dataset.metadata.strandCol = 6
+                                    found_strand = True
                                 break
+                if found_strand: break
             Tabular.set_meta( self, dataset, i )
     
     def as_ucsc_display_file( self, dataset, **kwd ):
