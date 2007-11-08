@@ -1,29 +1,36 @@
-<tool id="Interval_Maf_Merged_Fasta1" name="Stitch MAF blocks">
+<tool id="Interval_Maf_Merged_Fasta2" name="Stitch MAF blocks">
   <description>given a set of genomic intervals</description>
-  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#interval_maf_to_merged_fasta_user.py $dbkey $species $maf_source_type.input2 $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol -
-#else:#interval_maf_to_merged_fasta.py $dbkey $species $maf_source_type.maf_uid $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol -
+  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#interval_maf_to_merged_fasta.py $dbkey $maf_source_type.species $maf_source_type.maf_file $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol $maf_source_type.maf_source
+#else:#interval_maf_to_merged_fasta.py $dbkey $maf_source_type.species $maf_source_type.maf_identifier $input1 $out_file1 $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol $maf_source_type.maf_source
 #end if
-</command>
+  </command>
   <inputs>
     <page>
         <param format="interval" name="input1" type="data" label="Choose intervals"/>
-    </page>
-    <page>
         <conditional name="maf_source_type">
             <param name="maf_source" type="select" label="MAF Source">
               <option value="cached" selected="true">Locally Cached Alignments</option>
               <option value="user">Alignments in Your History</option>
             </param>
             <when value="user">
-                <param format="maf" name="input2" type="data" label="Choose alignments"/>
+              <param name="maf_file" type="data" format="maf" label="MAF File" />
+                <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
+                  <select_options data_ref="maf_file" func="get_options_for_species_for_maf">
+                    <func_param name="maf_source" value="user" />
+                  </select_options>
+                </param>
             </when>
             <when value="cached">
-                <param name="maf_uid" label="Choose alignments" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
+                <param name="maf_identifier" type="select" label="MAF Type" >
+                  <select_options from_file="/depot/data2/galaxy/maf_index.loc" data_ref="input1" func="get_options_for_maf" />
+                </param>
+                <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
+                  <select_options param_ref="maf_identifier" from_file="/depot/data2/galaxy/maf_index.loc" func="get_options_for_species_for_maf">
+                    <func_param name="maf_source" value="cached" />
+                  </select_options>
+                </param>
             </when>
         </conditional>
-    </page>
-    <page>
-        <param name="species" label="Choose species" type="select" display="checkboxes" multiple="True" dynamic_options="get_available_species( maf_source_type )" help="select species to be included in the final alignment" />
     </page>
    </inputs>
   <outputs>
@@ -33,14 +40,14 @@
     <test>
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
       <param name="maf_source" value="cached"/>
-      <param name="maf_uid" value="8_WAY_MULTIZ_hg17"/>
+      <param name="maf_identifier" value="8_WAY_MULTIZ_hg17"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
       <output name="out_file1" file="interval_maf_to_merged_fasta_out.dat" />
     </test>
     <test>
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
       <param name="maf_source" value="user"/>
-      <param name="input2" value="5.maf"/>
+      <param name="maf_file" value="5.maf"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
       <output name="out_file1" file="interval_maf_to_merged_fasta_user_out.dat" />
     </test>
@@ -64,5 +71,4 @@ Here three MAF blocks overlapping a single interval are stitched together. Space
 .. image:: ../static/images/maf_icons/stitchMaf.png
 
   </help>
-  <code file="interval_maf_to_merged_fasta_code.py"/>
 </tool>

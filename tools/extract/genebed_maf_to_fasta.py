@@ -6,13 +6,14 @@ the aligned gene sequences, based upon the provided coordinates
 
 Alignment blocks are layered ontop of each other based upon score.
 
-usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract comma_separated_list_of_indexed_maf_files input_gene_bed_file output_fasta_file
+usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract comma_separated_list_of_indexed_maf_files input_gene_bed_file output_fasta_file cached|user
 """
 
 #Dan Blankenberg
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 import bx.intervals.io
+import bx.interval_index_file
 import sys, os, tempfile, string
 
 MAF_LOCATION_FILE = "/depot/data2/galaxy/maf_index.loc"
@@ -86,6 +87,26 @@ def maf_index_by_uid( maf_uid ):
             pass
     return None
 
+#builds and returns (index, index_filename) for specified maf_file
+def build_maf_index( maf_file ):
+    indexes = bx.interval_index_file.Indexes()
+    try:
+        maf_reader = bx.align.maf.Reader( open( maf_file ) )
+        # Need to be a bit tricky in our iteration here to get the 'tells' right
+        while True:
+            pos = maf_reader.file.tell()
+            block = maf_reader.next()
+            if block is None: break
+            for c in block.components:
+                indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
+        fd, index_filename = tempfile.mkstemp()
+        out = os.fdopen( fd, 'w' )
+        indexes.write( out )
+        out.close()
+        return ( bx.align.maf.Indexed( maf_file, index_filename = index_filename, keep_open = True, parse_e_rows = True ), index_filename )
+    except:
+        return ( None, None )
+
 def __main__():
     #Parse Command Line
     primary_species = sys.argv.pop( 1 )
@@ -93,19 +114,32 @@ def __main__():
     include_primary = True
     try: secondary_species.remove( primary_species )
     except: include_primary = False
-    maf_uid = sys.argv.pop( 1 )
+    maf_identifier = sys.argv.pop( 1 )
     interval_file = sys.argv.pop( 1 )
     output_file = sys.argv.pop( 1 )
+    maf_source_type = sys.argv.pop( 1 )
     
     #ensure primary_species is set
     if primary_species == "?": 
         print >> sys.stderr, "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
         sys.exit()
     
-    #get index for mafs by specified uid
-    index = maf_index_by_uid( maf_uid )
-    if index is None:
-        print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( maf_uid )
+    #get index for mafs based on type 
+    index = index_filename = None
+    #using specified uid for locally cached
+    if maf_source_type.lower() in ["cached"]:
+        index = maf_index_by_uid( maf_identifier )
+        if index is None:
+            print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( maf_uid )
+            sys.exit()
+    elif maf_source_type.lower() in ["user"]:
+        #index maf for use here, need to remove index_file when finished
+        index, index_filename = build_maf_index( maf_identifier )
+        if index is None:
+            print >> sys.stderr, "Your MAF file appears to be malformed."
+            sys.exit()
+    else:
+        print >> sys.stderr, "Invalid MAF source type specified."
         sys.exit()
     
     #open output file
@@ -113,6 +147,7 @@ def __main__():
     
     #Step through gene bed
     genes_extracted = 0
+    line_count = 0
     for line_count, line in enumerate( open( interval_file, "r" ).readlines() ):
         try:
             if line[0:1]=="#":
@@ -124,6 +159,9 @@ def __main__():
             #load gene bed fields
             try:
                 fields = line.split()
+                #Requires atleast 12 BED columns
+                if len(fields) < 12:
+                    continue
                 chrom     = fields[0]
                 tx_start  = int( fields[1] )
                 tx_end    = int( fields[2] )
@@ -251,7 +289,19 @@ def __main__():
             print "Unexpected error from input line %i: %s" % ( line_count, e )
             continue
     
+    #close output file
     output.close()
-    print "%i genes were extracted successfully." % ( genes_extracted )
+    
+    #remove index file if created during run
+    if index_filename is not None:
+        os.unlink( index_filename )
+    
+    #Print message about success for user
+    if genes_extracted > 0:
+        print "%i genes were extracted successfully." % ( genes_extracted )
+    else:
+        print "No genes were extracted."
+        if line_count > 0:
+            print "This tool requires your input file to conform to the 12 column BED standard."
 
 if __name__ == "__main__": __main__()
