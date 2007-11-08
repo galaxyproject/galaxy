@@ -39,8 +39,8 @@
                 </when>
                 <when value="attribute_chr">
                   <param name="species2_is_isnot" type="select" label="Conditional">
-                    <option value="==">Is</option>
-                    <option value="!=">Is Not</option>
+                    <option value="in">Is</option>
+                    <option value="not in">Is Not</option>
                   </param>
                   <param name="species2_attribute" type="text" label="Chromosome" value="chr1"/>
                 </when>
@@ -49,8 +49,8 @@
           </when>
           <when value="attribute_chr">
             <param name="species1_is_isnot" type="select" label="Conditional">
-              <option value="==">Is</option>
-              <option value="!=">Is Not</option>
+              <option value="in">Is</option>
+              <option value="not in">Is Not</option>
             </param>
             <param name="species1_attribute" type="text" label="Chromosome" value="chr1"/>
             <repeat name="filter_condition" title="Filter Condition">
@@ -72,8 +72,8 @@
                 </when>
                 <when value="attribute_chr">
                   <param name="species2_is_isnot" type="select" label="Conditional">
-                    <option value="==">Is</option>
-                    <option value="!=">Is Not</option>
+                    <option value="in">Is</option>
+                    <option value="not in">Is Not</option>
                   </param>
                   <param name="species2_attribute" type="text" label="Chromosome" value="chr1"/>
                 </when>
@@ -86,41 +86,41 @@
   </inputs>
   <configfiles>
     <configfile name="maf_filter_file">
-#set $is_isnot_valid = {"==":"==", "!=":"!="}
-def maf_block_pass_filter(maf_block):
+#set $is_isnot_valid = {"==":"==", "!=":"!=", "in":"in", "not in":"not in"}
+def maf_block_pass_filter( maf_block ):
 #for $maf_filter in $maf_filters:
-#if $len($maf_filter['species1_attributes']['filter_condition']) == 0:
+#if $len( $maf_filter['species1_attributes']['filter_condition'] ) == 0:
 #continue
 #end if
-    primary_component = maf_block.get_component_by_src_start("""$maf_filter['species1'].encode('string_escape')""".decode('string_escape'))
+    primary_component = maf_block.get_component_by_src_start( """$maf_filter['species1'].encode( 'string_escape' )""".decode( 'string_escape' ) )
     if primary_component is not None:
 #if $maf_filter['species1_attributes']['species1_attribute_type'] == 'attribute_chr':
-        if primary_component.src.split(".")[-1] $is_isnot_valid.get($maf_filter['species1_attributes']['species1_is_isnot'].strip(), '==') """$maf_filter['species1_attributes']['species1_attribute'].encode('string_escape')""".decode('string_escape'):
+        if primary_component.src.split( "." )[-1] $is_isnot_valid.get( $maf_filter['species1_attributes']['species1_is_isnot'].strip(), 'is in' ) """$maf_filter['species1_attributes']['species1_attribute'].encode( 'string_escape' )""".decode( 'string_escape' ).split( "," ):
 #else
-        if primary_component.strand $is_isnot_valid.get($maf_filter['species1_attributes']['species1_is_isnot'].strip(), '==') """$maf_filter['species1_attributes']['species1_attribute'].encode('string_escape')""".decode('string_escape'):
+        if primary_component.strand $is_isnot_valid.get( $maf_filter['species1_attributes']['species1_is_isnot'].strip(), '==' ) """$maf_filter['species1_attributes']['species1_attribute'].encode( 'string_escape' )""".decode( 'string_escape' ):
 #end if
 #for $filter_condition in $maf_filter['species1_attributes']['filter_condition']:
-            secondary_component = maf_block.get_component_by_src_start("""$filter_condition['species2'].encode('string_escape')""".decode('string_escape'))
+            secondary_component = maf_block.get_component_by_src_start( """$filter_condition['species2'].encode( 'string_escape' )""".decode( 'string_escape' ) )
 #if $filter_condition['species2_attributes']['species2_attribute_type'] == 'attribute_chr':
             if secondary_component is not None:
-                if not (secondary_component.src.split(".")[-1] $is_isnot_valid.get($filter_condition['species2_attributes']['species2_is_isnot'].strip(), '==') """$filter_condition['species2_attributes']['species2_attribute'].encode('string_escape')""".decode('string_escape')):
+                if not ( secondary_component.src.split( "." )[-1] $is_isnot_valid.get( $filter_condition['species2_attributes']['species2_is_isnot'].strip(), 'is in' ) """$filter_condition['species2_attributes']['species2_attribute'].encode( 'string_escape' )""".decode( 'string_escape' ).split( "," ) ):
                     return False
 #else:
             if secondary_component is not None:
-                if not (secondary_component.strand $is_isnot_valid.get($filter_condition['species2_attributes']['species2_is_isnot'].strip(), '==') """$filter_condition['species2_attributes']['species2_attribute'].encode('string_escape')""".decode('string_escape')):
+                if not ( secondary_component.strand $is_isnot_valid.get( $filter_condition['species2_attributes']['species2_is_isnot'].strip(), '==' ) """$filter_condition['species2_attributes']['species2_attribute'].encode( 'string_escape' )""".decode( 'string_escape' ) ):
                     return False
 #end if
 #end for
 #end for
     return True
-ret_val = maf_block_pass_filter(maf_block)
+ret_val = maf_block_pass_filter( maf_block )
 </configfile>
   </configfiles>
   <outputs>
     <data format="maf" name="out_file1" />
   </outputs>
 <help>
-This tool allows you to build complex filters to be applied to each alignment block of a MAF file. You can define restraints on species based upon chromosome and strand.
+This tool allows you to build complex filters to be applied to each alignment block of a MAF file. You can define restraints on species based upon chromosome and strand. You can specify comma separated lists of chromosomes where appropriate.
 
 .. class:: infomark
 
