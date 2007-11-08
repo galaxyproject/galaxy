@@ -99,8 +99,8 @@ class Interval( Tabular ):
         """Return a chrom, start, stop tuple for viewing a file."""
         if dataset.has_data() and dataset.state == dataset.states.OK:
             try:
-                c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
-                c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
+                c, s, e = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol
+                c, s, e = int(c)-1, int(s)-1, int(e)-1
                 
                 peek = []
                 for idx, line in enumerate(file(dataset.file_name)):
@@ -125,13 +125,21 @@ class Interval( Tabular ):
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data"""
         fd, temp_name = tempfile.mkstemp()
-        c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
-        c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
+        c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
+        c, s, e, t, n  = int(c)-1, int(s)-1, int(e)-1, int(t)-1, int(n)-1
         if t >= 0: # strand column (should) exists
-            for elems in util.file_iter(dataset.file_name):
+            for i, elems in enumerate( util.file_iter(dataset.file_name) ):
                 strand = "+"
+                name = "region_%i" % i
+                if n >= 0 and n < len( elems ): name = elems[n]
                 if t<len(elems): strand = elems[t]
-                tmp = [ elems[c], elems[s], elems[e], '1', '2', strand ]
+                tmp = [ elems[c], elems[s], elems[e], name, '0', strand ]
+                os.write(fd, '%s\n' % '\t'.join(tmp) )
+        elif n >= 0: # name column (should) exists
+            for i, elems in enumerate( util.file_iter(dataset.file_name) ):
+                name = "region_%i" % i
+                if n >= 0 and n < len( elems ): name = elems[n]
+                tmp = [ elems[c], elems[s], elems[e], name ]
                 os.write(fd, '%s\n' % '\t'.join(tmp) )
         else:
             for elems in util.file_iter(dataset.file_name):
