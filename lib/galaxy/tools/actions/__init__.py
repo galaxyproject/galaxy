@@ -53,7 +53,7 @@ class DefaultToolAction( object ):
         for name, data in inp_data.items():
             # Hack for fake incoming data
             if data == None:
-                data = trans.app.model.Dataset()
+                data = trans.app.model.Dataset( extension = 'data' )
                 data.state = data.states.FAKE
             input_names.append( 'data %s' % data.hid )
             input_ext = data.ext

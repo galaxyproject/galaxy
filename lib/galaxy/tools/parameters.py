@@ -753,7 +753,7 @@ class DataToolParameter( ToolParameter ):
         if not value:
             raise ValueError( "A data of the appropriate type is required" ) 
         if value in [None, "None"]:
-            temp_data = trans.app.model.Dataset()
+            temp_data = trans.app.model.Dataset( extension = 'data' )
             temp_data.state = temp_data.states.FAKE
             return temp_data
         if isinstance( value, list ):
