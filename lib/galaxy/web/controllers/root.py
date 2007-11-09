@@ -561,7 +561,8 @@ class Universe( BaseController ):
 
     @web.expose
     def masthead( self, trans ):
-        return trans.fill_template( "masthead.tmpl" )
+        brand = trans.app.config.get( "brand", None )
+        return trans.fill_template( "masthead.tmpl", brand=brand )
 
     @web.expose
     def dataset_errors( self, trans, id=None, **kwd ):

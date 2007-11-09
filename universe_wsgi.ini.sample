@@ -98,6 +98,9 @@ static_favicon_dir = %(here)s/static/favicon.ico
 static_scripts_dir = %(here)s/static/scripts/
 static_style_dir = %(here)s/static/june_2007_style/blue
 
+# Brand: appends "/[brand]" to the "Galaxy" text in the masthead
+#brand = Foo
+
 # ---- Datatypes ------------------------------------------------------------
 
 [galaxy:datatypes]
