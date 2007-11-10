@@ -3,7 +3,7 @@
   <command interpreter="python">sorter.py -i $input -o $out_file1 -cols $column -order $order -style $style</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Sort Query" />
-    <param name="column" label="on column" type="data_column" data_ref="input" />
+    <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true" />
     <param name="order" type="select" label="in">
       <option value="ASC">Ascending order</option>
       <option value="DESC">Descending order</option>
