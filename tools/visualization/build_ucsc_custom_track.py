@@ -37,7 +37,7 @@ while args:
     else:
         # Assume type is interval (don't pass this script anything else!)
         try:
-            c, s, e, st = map( int, colspec.split( "," ) )
+            c, s, e, st = [ int( x ) - 1 for x in colspec.split( "," ) ]
         except:
             print "Columns in interval file invalid for UCSC custom track."
             sys.exit()
