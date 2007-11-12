@@ -234,7 +234,7 @@ class Bed( Interval ):
     
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
-        return Tabular.missing_meta(self, dataset)
+        return Interval.missing_meta(self, dataset)
     
     def init_meta( self, dataset, copy_from=None ):
         Interval.init_meta( self, dataset, copy_from=copy_from )

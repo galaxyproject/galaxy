@@ -610,8 +610,6 @@ class ColumnListParameter( SelectToolParameter ):
             #       while '' indicates that it is not. Currently column
             #       parameters do not work well with optional datasets
             return column_list
-        # Just to be safe... (FIXME: Is this still neccesary?)
-        #dataset.set_meta()
         # Generate options
         if not dataset.metadata.columns:
             if self.accept_default:

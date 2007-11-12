@@ -162,6 +162,7 @@ class Universe( BaseController ):
     @web.expose
     def edit(self, trans, id=None, hid=None, **kwd):
         """Returns data directly into the browser. Sets the mime-type according to the extension"""
+
         if hid is not None:
             history = trans.get_history()
             # TODO: hid handling
@@ -176,7 +177,7 @@ class Universe( BaseController ):
         p = util.Params(kwd, safe=False)
         
         if p.change:
-            """Ths user clicked the Save button on the 'Change data type' form"""
+            """The user clicked the Save button on the 'Change data type' form"""
             trans.app.datatypes_registry.change_datatype( data, p.datatype )
             trans.app.model.flush()
         elif p.save:
@@ -197,7 +198,17 @@ class Universe( BaseController ):
 
             data.datatype.after_edit( data )
             trans.app.model.flush()
-            
+            return trans.fill_template( "edit_complete.tmpl" )
+        elif p.detect:
+            """The user clicked the Auto-detect button on the 'Edit Attributes' form"""
+            for name, spec in data.datatype.metadata_spec.items():
+                # We need to be careful about the attributes we are resetting
+                if name != 'name' and name != 'info' and name != 'dbkey':
+                    if spec.get( 'default' ):
+                        setattr( data.metadata,name,spec.unwrap( spec.get( 'default' ), spec ))
+            data.datatype.set_meta( data )
+            data.datatype.after_edit( data )
+            trans.app.model.flush()
             return trans.fill_template( "edit_complete.tmpl" )
         elif p.convert_data:
             """The user clicked the Convert button on the 'Convert to new format' form"""

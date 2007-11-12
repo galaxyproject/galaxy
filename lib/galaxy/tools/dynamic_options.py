@@ -24,8 +24,6 @@ class DynamicOptions( object ):
             while '' indicates that it is not. Currently dynamically generated select lists do not work well with optional datasets.
             """
             return None
-        # TODO: this can be eliminated after Dan's script is run.
-        #dataset.set_meta()
         return dataset
     def get_param_ref( self, trans, other_values ):
         if self.param_ref is None: return None

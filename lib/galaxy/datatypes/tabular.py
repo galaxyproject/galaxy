@@ -134,8 +134,3 @@ class Tabular( data.Text ):
         m_peek = self.make_html_table( dataset.peek )
         return m_peek
 
-    def before_edit( self, dataset ):
-        data.Text.before_edit( self, dataset )
-        if self.missing_meta( dataset ):
-            self.set_meta( dataset )
-
