@@ -13,7 +13,7 @@ usage: %prog dbkey_of_interval_file comma_separated_list_of_additional_dbkeys_to
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 import bx.intervals.io
-import bx.intervals.io
+import bx.interval_index_file
 import sys, os, tempfile, string
 
 MAF_LOCATION_FILE = "/depot/data2/galaxy/maf_index.loc"
@@ -88,7 +88,7 @@ def maf_index_by_uid( maf_uid ):
     return None
 
 #builds and returns (index, index_filename) for specified maf_file
-def build_maf_index( maf_file ):
+def build_maf_index( maf_file, species = None ):
     indexes = bx.interval_index_file.Indexes()
     try:
         maf_reader = bx.align.maf.Reader( open( maf_file ) )
@@ -98,6 +98,8 @@ def build_maf_index( maf_file ):
             block = maf_reader.next()
             if block is None: break
             for c in block.components:
+                if species is not None and c.src.split( "." )[0] not in species:
+                    continue
                 indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
         fd, index_filename = tempfile.mkstemp()
         out = os.fdopen( fd, 'w' )
@@ -142,7 +144,7 @@ def __main__():
             sys.exit()
     elif maf_source_type.lower() in ["user"]:
         #index maf for use here, need to remove index_file when finished
-        index, index_filename = build_maf_index( maf_identifier )
+        index, index_filename = build_maf_index( maf_identifier, species = [primary_species] )
         if index is None:
             print >> sys.stderr, "Your MAF file appears to be malformed."
             sys.exit()
