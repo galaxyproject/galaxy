@@ -1,6 +1,6 @@
 <tool id="Interval2Maf1" name="Extract MAF blocks">
   <description>given a set of genomic intervals</description>
-  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#user_interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafFile=$maf_source_type.mafFile --interval_file=$input1 --output_file=$out_file1
+  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafFile=$maf_source_type.mafFile --interval_file=$input1 --output_file=$out_file1
 #else:#interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafType=$maf_source_type.mafType --interval_file=$input1 --output_file=$out_file1
 #end if
   </command>
@@ -15,7 +15,7 @@
                 <param format="maf" name="mafFile" label="Choose alignments" type="data"/>
             </when>
             <when value="cached">
-                <param name="mafType" label="Choose alignments" type="select"> <!--dynamic_options="get_available_data( input1.dbkey )"-->
+                <param name="mafType" label="Choose alignments" type="select">
 		<select_options from_file="/depot/data2/galaxy/maf_index.loc" data_ref="input1" func="get_options_for_maf"/>
 		</param>
             </when>

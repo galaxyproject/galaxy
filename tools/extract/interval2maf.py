@@ -4,83 +4,87 @@
 Reads a list of intervals and a maf. Produces a new maf containing the
 blocks or parts of blocks in the original that overlapped the intervals.
 
-If index_file is not provided maf_file.index is used.
+If a MAF file, not UID, is provided the MAF file is indexed before being processed.
 
-NOTE: If two intervals overlap the same block it will be written twice. With
-      non-overlapping intervals and --chop this is never a problem. - Chop has been made always on.
+NOTE: If two intervals overlap the same block it will be written twice.
 
-usage: %prog maf_file index_file [options] < interval_file
+usage: %prog maf_file [options]
    -d, --dbkey=d: Database key, ie hg17
    -c, --chromCol=c: Column of Chr
    -s, --startCol=s: Column of Start
    -e, --endCol=e: Column of End
    -S, --strandCol=S: Column of Strand
    -t, --mafType=t: Type of MAF source to use
+   -m, --mafFile=m: Path of source MAF file, if not using cached version
    -i, --interval_file=i:       Input interval file
    -o, --output_file=o:      Output MAF file
+   -p, --species=p: Species to include in output
 """
 
-#import psyco_full
-
+#Dan Blankenberg
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
-
 import bx.align.maf
-from bx import interval_index_file
 import bx.intervals.io
-from bx import misc
-import os
-import sys
+import bx.interval_index_file
+import sys, os
 
-def __main__():
+MAF_LOCATION_FILE = "/depot/data2/galaxy/maf_index.loc"
 
-    # Parse Command Line
-
-    options, args = doc_optparse.parse( __doc__ )
-    
-    
-    #dictionary of available maf files
-    maf_sets = {}
-    try:
-        for line in open( "/depot/data2/galaxy/maf_index.loc" ):
+def maf_index_by_uid( maf_uid ):
+    for line in open( MAF_LOCATION_FILE ):
+        try:
+            #read each line, if not enough fields, go to next line
             if line[0:1] == "#" : continue
             fields = line.split('\t')
-            #read each line, if not enough fields, go to next line
-            try:
-                maf_desc = fields[0]
-                maf_uid = fields[1]
-                builds = fields[2]
-                build_to_common_list = {}
-                common_to_build_list = {}
-                split_builds = builds.split(",")
-                for build in split_builds:
-                    this_build = build.split("=")[0]
-                    try:
-                        this_common = build.split("=")[1]
-                    except:
-                        this_common = this_build
-                    build_to_common_list[this_build]=this_common
-                    common_to_build_list[this_common]=this_build
-                    
-                paths = fields[3].replace("\n","").replace("\r","")
-                maf_sets[maf_uid]={}
-                maf_sets[maf_uid]['description']=maf_desc
-                maf_sets[maf_uid]['builds']=build_to_common_list
-                maf_sets[maf_uid]['common']=common_to_build_list
-                maf_sets[maf_uid]['paths']=paths.split(",")
-            except:
-                continue
+            if maf_uid == fields[1]:
+                try:
+                    maf_files = fields[3].replace( "\n", "" ).replace( "\r", "" ).split( "," )
+                    return bx.align.maf.MultiIndexed( maf_files, keep_open = True, parse_e_rows = True )
+                except Exception, e:
+                    raise 'MAF UID (%s) found, but configuration appears to be malformed: %s' % ( maf_uid, e )
+        except:
+            pass
+    return None
 
-    except Exception, exc:
-        print >>sys.stdout, 'interval2maf.py initialization error -> %s' % exc 
+#builds and returns (index, index_filename) for specified maf_file
+def build_maf_index( maf_file, species = None ):
+    indexes = bx.interval_index_file.Indexes()
+    try:
+        maf_reader = bx.align.maf.Reader( open( maf_file ) )
+        # Need to be a bit tricky in our iteration here to get the 'tells' right
+        while True:
+            pos = maf_reader.file.tell()
+            block = maf_reader.next()
+            if block is None: break
+            for c in block.components:
+                if species is not None and c.src.split( "." )[0] not in species:
+                    continue
+                indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
+        fd, index_filename = tempfile.mkstemp()
+        out = os.fdopen( fd, 'w' )
+        indexes.write( out )
+        out.close()
+        return ( bx.align.maf.Indexed( maf_file, index_filename = index_filename, keep_open = True, parse_e_rows = True ), index_filename )
+    except:
+        return ( None, None )
+
+def __main__():
+    # Parse Command Line
+    options, args = doc_optparse.parse( __doc__ )
     
+    index = index_filename = None
+    mincols = 0
     
     try:
-        mincols=0
-        
         if options.dbkey: dbkey = options.dbkey
-        else: dbkey="?"
+        else: dbkey = None
+        if dbkey in [None, "?"]:
+            print >>sys.stderr, "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
+            sys.exit()
         
+        if options.species: species = options.species.split( ',' )
+        else: species = None
         
         if options.chromCol: chromCol= int(options.chromCol) - 1
         else: 
@@ -101,12 +105,7 @@ def __main__():
         else: 
             print >>sys.stderr, "Strand column has not been specified."
             sys.exit()
-        
-        if options.mafType: mafType= options.mafType
-        else: 
-            print >>sys.stderr, "Desired source MAF type has not been specified."
-            sys.exit()
-        
+                
         if options.interval_file: interval_file= options.interval_file
         else: 
             print >>sys.stderr, "Input interval file has not been specified."
@@ -117,53 +116,34 @@ def __main__():
             print >>sys.stderr, "Output file has not been specified."
             sys.exit()
         
-    except:
-        sys.exit()
-        
-    if dbkey == "?": 
-        print >>sys.stderr, "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
-        sys.exit()
-    
-    
-    #Open MAF Files, with indexes
-    try:
-        maf_files = maf_sets[mafType]['paths']
-    except:
-        print >>sys.stderr, "The MAF source specified appears to be invalid."
-        sys.exit()
-    
-    try:
-        # Open indexed access to mafs
-        index = bx.align.maf.MultiIndexed( maf_files, keep_open=True, parse_e_rows=True )
-    except:
-        print >>sys.stderr, "The MAF source specified [", mafType ,"] appears to be missing."
-        sys.exit()
-    
-    #convert dbkey to name in maf file, if no db->name entry, use build
-    try:
-        dbkey = maf_sets[mafType]['builds'][dbkey]
-    except:
-        print >>sys.stderr, "This MAF set is not available for this build."
-        sys.exit()
+        #Open indexed access to MAFs
+        if options.mafType:
+            index = maf_index_by_uid( options.mafType )
+            if index is None:
+                print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( options.mafType )
+                sys.exit()
+        elif options.mafFile:
+            index, index_filename = build_maf_index( options.mafFile, species = [dbkey] )
+            if index is None:
+                print >> sys.stderr, "Your MAF file appears to be malformed."
+                sys.exit()
+        else: 
+            print >>sys.stderr, "Desired source MAF type has not been specified."
+            sys.exit()
+    except Exception, exc:
+        print >>sys.stdout, 'interval2maf.py initialization error -> %s' % exc
     
     out = bx.align.maf.Writer( open(output_file, "w") )
     
-    # Iterate over input ranges 
-    num_blocks=0
+    # Iterate over input regions 
+    num_blocks = 0
     num_lines = 0
-    for region in bx.intervals.io.NiceReaderWrapper( open(interval_file, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False):
+    for num_lines, region in enumerate( bx.intervals.io.NiceReaderWrapper( open(interval_file, 'r' ), chrom_col = chromCol, start_col = startCol, end_col = endCol, strand_col = strandCol, fix_strand = True, return_header = False, return_comments = False ) ):
         try:
-            num_lines += 1
-            src = "%s.%s" % (dbkey,region.chrom)
-            start = region.start
-            end = region.end
-            strand = region.strand
-
-            #do a fix on src, chromosome for mlagan alignments (they lack chr)
-            if mafType == "ENCODE_MLAGAN":
-                src = src.replace(".chr",".")
+            src = "%s.%s" % ( dbkey, region.chrom )
             
-            blocks = index.get( src, start, end )
+            blocks = index.get( src, region.start, region.end )
+            
             for block in blocks: 
                 ref = block.get_component_by_src( src )
                 #We want our block coordinates to be from positive strand
@@ -173,34 +153,35 @@ def __main__():
                 
                 #save old score here for later use
                 old_score =  block.score
-                slice_start = max( start, ref.start )
-                slice_end = min( end, ref.end )
+                slice_start = max( region.start, ref.start )
+                slice_end = min( region.end, ref.end )
                 
                 #when interval is out-of-range (not in maf index), fail silently: else could create tons of scroll
                 try:
-                    sliced = block.slice_by_component( ref, slice_start, slice_end ) 
+                    block = block.slice_by_component( ref, slice_start, slice_end ) 
                 except:
                     continue
                     
                 if sliced.text_size > mincols:
-                    if strand != ref.strand: sliced = sliced.reverse_complement()
+                    if region.strand != ref.strand: block = block.reverse_complement()
                     # restore old score, may not be accurate, but it is better than 0 for everything
-                    sliced.score = old_score
-                    for c in sliced.components:
-                        spec,chrom = bx.align.src_split( c.src )
-                        if not spec or not chrom:
-                            spec = chrom = c.src
-                            c.src = bx.align.src_merge(spec,chrom)
-                        if spec in maf_sets[mafType]['common']:
-                            c.src = bx.align.src_merge(maf_sets[mafType]['common'][spec],chrom)
-                    out.write( sliced )
-                    num_blocks+=1
+                    block.score = old_score
+                    if species is not None:
+                        block = block.limit_to_species( species )
+                        block.remove_all_gap_columns()
+                    out.write( block )
+                    num_blocks += 1
         except Exception, e:
-            print "Error found on input line:",num_lines
-            print e
+            print "Error found on input line %s: %s." % ( num_lines, e )
             continue
     
     # Close output MAF
     out.close()
-    print num_blocks, "MAF blocks extracted."
+    
+    #remove index file if created during run
+    if index_filename is not None:
+        os.unlink( index_filename )
+    
+    print "%s MAF blocks extracted." % num_blocks
+    
 if __name__ == "__main__": __main__()
