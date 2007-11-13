@@ -11,26 +11,25 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 import sys
 
-
 def __main__():
 
     #Parse Command Line
-    input_file = sys.argv.pop(1)
-    output_file = sys.argv.pop(1)
+    input_file = sys.argv.pop( 1 )
+    output_file = sys.argv.pop( 1 )
     
     try:
-        maf_writer = bx.align.maf.Writer( open(output_file, 'w') )
+        maf_writer = bx.align.maf.Writer( open( output_file, 'w' ) )
     except:
         print sys.stderr, "Unable to open output file"
         sys.exit()
     try:
         count = 0
-        for maf in bx.align.maf.Reader( open( input_file ) ):
-            maf_writer.write(maf.reverse_complement())
-            count += 1
+        for count, maf in enumerate( bx.align.maf.Reader( open( input_file ) ) ):
+            maf_writer.write( maf.reverse_complement() )
     except:
         print >>sys.stderr, "Your MAF file appears to be malformed."
         sys.exit()
     print "%i regions were reverse complemented." % count
     maf_writer.close()
+
 if __name__ == "__main__": __main__()

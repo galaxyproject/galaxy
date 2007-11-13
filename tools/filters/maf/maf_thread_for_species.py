@@ -8,7 +8,7 @@ which are adjacent after the unwanted species have been dropped.
 
 usage: %prog input_maf output_maf species1,species2
 """
-
+#Dan Blankenberg
 import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
@@ -17,18 +17,17 @@ from bx.align.tools.thread import *
 from bx.align.tools.fuse import *
 
 def main():
-
-    input_file = sys.argv.pop(1)
-    output_file = sys.argv.pop(1)
-    species = sys.argv.pop(1).split(',')
+    input_file = sys.argv.pop( 1 )
+    output_file = sys.argv.pop( 1 )
+    species = sys.argv.pop( 1 ).split( ',' )
     
     try:
-        maf_reader = bx.align.maf.Reader( open(input_file) )
+        maf_reader = bx.align.maf.Reader( open( input_file ) )
     except:
         print >> sys.stderr, "Unable to open source MAF file"
         sys.exit()
     try:
-        maf_writer = FusingAlignmentWriter( bx.align.maf.Writer( open(output_file, 'w') ) )
+        maf_writer = FusingAlignmentWriter( bx.align.maf.Writer( open( output_file, 'w' ) ) )
     except:
         print >> sys.stderr, "Unable to open output file"
         sys.exit()

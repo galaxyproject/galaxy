@@ -7,41 +7,41 @@ import bx.align.maf
 def main():
     #Read command line arguments
     try:
-        script_file = sys.argv.pop(1)
-        maf_file = sys.argv.pop(1)
-        out_file = sys.argv.pop(1)
-        additional_files_path = sys.argv.pop(1)
+        script_file = sys.argv.pop( 1 )
+        maf_file = sys.argv.pop( 1 )
+        out_file = sys.argv.pop( 1 )
+        additional_files_path = sys.argv.pop( 1 )
     except:
         print >>sys.stderr, "One or more arguments is missing.\nUsage: maf_filter.py maf_filter_file input_maf output_maf path_to_save_debug"
         sys.exit()
     
     #Open input and output MAF files
     try:
-        maf_reader = bx.align.maf.Reader( open(maf_file,'r') )
-        maf_writer = bx.align.maf.Writer( open(out_file,'w') )
+        maf_reader = bx.align.maf.Reader( open( maf_file,'r' ) )
+        maf_writer = bx.align.maf.Writer( open( out_file,'w' ) )
     except:
         print >>sys.stderr, "Your MAF file appears to be malformed."
         sys.exit()
     
     #Save script file for debuging/verification info later
-    os.mkdir(additional_files_path)
-    shutil.copy(script_file, os.path.join(additional_files_path,'debug.txt'))
+    os.mkdir( additional_files_path )
+    shutil.copy( script_file, os.path.join( additional_files_path, 'debug.txt' ) )
     
     #Loop through blocks, running filter on each
     #'maf_block' and 'ret_val' are used/shared in the provided code file
     #'ret_val' should be set to True if the block is to be kept
     i = 0
     blocks_kept = 0
-    for i, maf_block in enumerate(maf_reader):
+    for i, maf_block in enumerate( maf_reader ):
         local = {'maf_block':maf_block, 'ret_val':False}
-        execfile(script_file, {}, local)
+        execfile( script_file, {}, local )
         if local['ret_val']:
-            maf_writer.write(maf_block)
+            maf_writer.write( maf_block )
             blocks_kept += 1
     maf_writer.close()
     maf_reader.close()
     if i == 0: print "Your file contains no valid maf_blocks."
-    else: print 'Kept %s of %s blocks (%.2f%%).' % (blocks_kept, i+1, float(blocks_kept) / float(i+1) * 100.0)
+    else: print 'Kept %s of %s blocks (%.2f%%).' % ( blocks_kept, i + 1, float( blocks_kept ) / float( i + 1 ) * 100.0 )
 
 if __name__ == "__main__":
     main()
