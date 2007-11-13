@@ -162,7 +162,7 @@ def __main__():
                 except:
                     continue
                     
-                if sliced.text_size > mincols:
+                if block.text_size > mincols:
                     if region.strand != ref.strand: block = block.reverse_complement()
                     # restore old score, may not be accurate, but it is better than 0 for everything
                     block.score = old_score
