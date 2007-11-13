@@ -62,6 +62,12 @@
                   <div style="clear: both"></div>
                 </div>
             #end for
+            <div class="form-row">
+                <input type="submit" name="save" value="Save">
+            </div>
+        </form>
+        <form name="auto_detect" action="$h.url_for( action='edit' )" method="post">
+            <input type="hidden" name="id" value="$data.id">
             <div style="float: left; width: 250px; margin-right: 10px;">
                 <input type="submit" name="detect" value="Auto-detect">
             </div>
@@ -69,14 +75,10 @@
                 This will inspect the dataset and attempt to correct the above column values
                 if they are not accurate.
             </div>
-            <br/>
-            <div class="form-row">
-                <input type="submit" name="save" value="Save">
-            </div>
         </form>
     </div>
     </div>
-    
+
     <p />
     
     #set $converters = $data.get_converter_types()

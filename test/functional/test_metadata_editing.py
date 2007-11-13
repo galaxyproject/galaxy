@@ -9,14 +9,17 @@ class TestMetadataEdit( TwillTestCase ):
         self.check_history_for_string('\? bed')
         self.check_metadata_for_string('1.bed uploaded file unspecified (\?) chromCol value="1" selected endCol value="3" is_strandCol value="true" checked', hid=1)
         """test editing attributes"""
-        self.edit_metadata(hid=1, form=1,  name='Testdata', info="Uploaded my file", dbkey='hg16')
-        self.check_metadata_for_string('Testdata bed Uploaded my file hg16 "bed" selected="yes"', hid=1)
+        self.edit_metadata(hid=1, form=1,  name='Testdata', info="Uploaded my file", dbkey='hg16', startCol='6')
+        self.check_metadata_for_string('Testdata bed Uploaded my file hg16 "bed" selected="yes" "startCol" value="6" selected', hid=1)
+        """test Auto-detecting attributes"""
+        self.edit_metadata(hid=1, form=2)
+        self.check_metadata_for_string('Testdata bed Uploaded my file hg16 "bed" selected="yes" "startCol" value="2" selected', hid=1)
         """test converting formats"""
-        self.edit_metadata(hid=1, form=2, target_type='gff')
+        self.edit_metadata(hid=1, form=3, target_type='gff')
         self.check_history_for_string('hg16 Testdata Convert BED to GFF')
         self.check_metadata_for_string('"gff" selected="yes"', hid=1)
         """test changing data type"""
-        self.edit_metadata(hid=1, form=3, datatype='gff3')
+        self.edit_metadata(hid=1, form=4, datatype='gff3')
         self.check_history_for_string('hg16 Testdata Convert BED to GFF format: gff3')
         self.delete_history_item( 1 )
     def test_9999_clean_up( self ):

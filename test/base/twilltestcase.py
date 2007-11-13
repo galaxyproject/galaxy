@@ -233,8 +233,9 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( hid )
         self.visit_page( 'edit?hid=%d' % hid )
         if form == 1: button = "save"           #Edit Attributes form
-        elif form == 2: button = "convert_data" #Convert to new format form
-        elif form == 3: button = "change"       #Change data type form
+        elif form == 2: button = "detect"       #Auto-detect Metadata Attributes
+        elif form == 3: button = "convert_data" #Convert to new format form
+        elif form == 4: button = "change"       #Change data type form
         if kwd:
             self.submit_form(form=form, button=button, **kwd)
 
