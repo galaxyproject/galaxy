@@ -6,11 +6,11 @@ Reads a list of intervals and a maf. Outputs a new set of intervals with statist
 
 import sys, tempfile, os
 import pkg_resources; pkg_resources.require( "bx-python" )
-import bx.align
 import bx.align.maf
 import bx.intervals.io
 import bx.interval_index_file
 import psyco_full
+from numpy import zeros
 
 MAF_LOCATION_FILE = "/depot/data2/galaxy/maf_index.loc"
 
@@ -23,7 +23,7 @@ def maf_index_by_uid( maf_uid ):
             if maf_uid == fields[1]:
                 try:
                     maf_files = fields[3].replace( "\n", "" ).replace( "\r", "" ).split( "," )
-                    return bx.align.maf.MultiIndexed( maf_files, keep_open = True, parse_e_rows = True )
+                    return bx.align.maf.MultiIndexed( maf_files, keep_open = True, parse_e_rows = False )
                 except Exception, e:
                     raise 'MAF UID (%s) found, but configuration appears to be malformed: %s' % ( maf_uid, e )
         except:
@@ -48,7 +48,7 @@ def build_maf_index( maf_file, species = None ):
         out = os.fdopen( fd, 'w' )
         indexes.write( out )
         out.close()
-        return ( bx.align.maf.Indexed( maf_file, index_filename = index_filename, keep_open = True, parse_e_rows = True ), index_filename )
+        return ( bx.align.maf.Indexed( maf_file, index_filename = index_filename, keep_open = True, parse_e_rows = False ), index_filename )
     except:
         return ( None, None )
 
@@ -93,74 +93,62 @@ def __main__():
     species_summary = {}
     total_length = 0
     #loop through interval file
-    for region in bx.intervals.io.NiceReaderWrapper( open( input_interval_filename, 'r' ), chrom_col = chr_col, start_col = start_col, end_col = end_col, fix_strand = True, return_header = False, return_comments = False ):
-        sequences = {dbkey: [ False for i in range( region.end - region.start ) ]}
+    for num_region, region in enumerate( bx.intervals.io.NiceReaderWrapper( open( input_interval_filename, 'r' ), chrom_col = chr_col, start_col = start_col, end_col = end_col, fix_strand = True, return_header = False, return_comments = False ) ):
+        src = "%s.%s" % ( dbkey, region.chrom )
+        total_length += ( region.end - region.start )
+        coverage = { dbkey: zeros( region.end - region.start, dtype = bool ) }
         
-        src = dbkey + "." + region.chrom
-        start = region.start
-        end = region.end
-        
-        total_length += (end - start)
-        
-        blocks = index.get( src, start, end )
+        blocks = index.get( src, region.start, region.end )
         for maf in blocks:
             #make sure all species are known
             for c in maf.components:
                 spec = c.src.split( '.' )[0]
-                if spec not in sequences: sequences[spec] = [ False for i in range( region.end - region.start ) ]
-            
-            #save old score here for later use, since slice results score==0
-            old_score =  maf.score
-            
+                if spec not in coverage: coverage[spec] = zeros( region.end - region.start, dtype = bool )
             #slice maf by start and end
-            ref = maf.get_component_by_src( bx.align.src_merge( dbkey, region.chrom ) )
+            ref = maf.get_component_by_src( src )
             # If the reference component is on the '-' strand we should complement the interval
             if ref.strand == '-':
-                slice_start = max( ref.src_size - end, ref.start )
-                slice_end = max( ref.src_size - start, ref.end )
-            else:
-                slice_start = max( start, ref.start )
-                slice_end = min( end, ref.end )
+                maf = maf.reverse_complement()
+                ref = maf.get_component_by_src( src )
+            slice_start = max( region.start, ref.start )
+            slice_end = min( region.end, ref.end )
             try:
-                sliced = maf.slice_by_component( ref, slice_start, slice_end )
+                maf = maf.slice_by_component( ref, slice_start, slice_end )
             except:
-                #print "slicing failed!"
                 continue
-            ref = sliced.get_component_by_src( ref.src )
-            #look for gaps (indels) in primary sequence, we do not include these columns in our stats
-            gaps = []
-            for i in range( len( ref.text ) ):
-                if ref.text[i] in ['-']:
-                    gaps.append( i )
+            ref = maf.get_component_by_src( ref.src )
             
-            #Set nucleotide containing columns
-            for c in sliced.components:
-                spec = c.src.split( '.' )[0]
-                gap_offset = 0
-                for i in range( len( c.text ) ):
-                    if i in gaps: gap_offset += 1
-                    elif c.text[i] not in ['-']: sequences[spec][i - gap_offset + slice_start - start] = True
-            
+            #skip gap locations due to insertions in secondary species relative to primary species
+            start_offset = slice_start - region.start
+            num_gaps = 0
+            for i in range( len( ref.text.rstrip().rstrip( "-" ) ) ):
+                if ref.text[i] in ["-"]:
+                    num_gaps += 1
+                    continue
+                #Toggle base if covered
+                for comp in maf.components:
+                    spec = comp.src.split( '.' )[0]
+                    if comp.text and comp.text[i] not in ['-']:
+                        coverage[spec][start_offset + i - num_gaps] = True
         if summary:
             #record summary
-            for key in sequences.keys():
+            for key in coverage.keys():
                 if key not in species_summary: species_summary[key] = 0
-                species_summary[key] = species_summary[key] + sequences[key].count( True )
+                species_summary[key] = species_summary[key] + sum( coverage[key] )
         else:
-            #print sequences
-            out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), dbkey, sequences[dbkey].count( True ), sequences[dbkey].count( False ) ) )
-            keys = sequences.keys()
+            #print coverage for interval
+            out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), dbkey, sum( coverage[dbkey] ), len(coverage[dbkey]) - sum( coverage[dbkey] ) ) )
+            keys = coverage.keys()
             keys.remove( dbkey )
             keys.sort()
             for key in keys:
-                out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), key, sequences[key].count( True ), sequences[key].count( False ) ) )
-        num_region += 1
+                out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), key, sum( coverage[key] ), len(coverage[key]) - sum( coverage[key] ) ) )
     if summary:
         out.write( "#species\tnucleotides\tcoverage\n" )
         for spec in species_summary:
             out.write( "%s\t%s\t%.4f\n" % ( spec, species_summary[spec], float( species_summary[spec] ) / total_length ) )
-    print "%i regions were processed with a total length of %i." % ( num_region, total_length )
     out.close()
+    print "%i regions were processed with a total length of %i." % ( num_region, total_length )
     if index_filename is not None:
         os.unlink( index_filename )
 if __name__ == "__main__": __main__()

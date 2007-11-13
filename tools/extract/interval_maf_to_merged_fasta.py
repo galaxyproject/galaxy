@@ -202,7 +202,7 @@ def __main__():
             #skip gap locations due to insertions in secondary species relative to primary species
             start_offset = slice_start - region.start
             num_gaps = 0
-            for i in range( len( ref.text.rstrip().rstrip("-") ) ):
+            for i in range( len( ref.text.rstrip().rstrip( "-" ) ) ):
                 if ref.text[i] in ["-"]:
                     num_gaps += 1
                     continue

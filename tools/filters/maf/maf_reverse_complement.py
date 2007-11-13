@@ -12,7 +12,6 @@ import bx.align.maf
 import sys
 
 def __main__():
-
     #Parse Command Line
     input_file = sys.argv.pop( 1 )
     output_file = sys.argv.pop( 1 )
