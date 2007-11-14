@@ -669,6 +669,8 @@ class DataToolParameter( ToolParameter ):
 
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
+        # Add metadata validator
+        self.validators.append( validation.MetadataValidator() )
         # Build tuple of classes for supported data formats
         formats = []
         self.extensions = elem.get( 'format', 'data' ).split( "," )

@@ -13,7 +13,7 @@ class Validator( object ):
     def from_element( cls, elem ):
         type = elem.get( 'type' )
         return validator_types[type].from_element( elem )
-    def validate( value, history=None ):
+    def validate( self, value, history=None ):
         raise TypeError( "Abstract Method" )
         
 class RegexValidator( Validator ):
@@ -139,11 +139,20 @@ class LengthValidator( Validator ):
             raise ValueError( self.message or ( "Must have length of at least %d" % self.min ) )
         if self.max is not None and len( value ) > self.max:
             raise ValueError( self.message or ( "Must have length no more than %d" % self.max ) )
-        
+
+class MetadataValidator( Validator ):
+    """
+    Validator that checks for missing metadata
+    """
+    def validate( self, value, history=None ):
+        if value.missing_meta():
+            raise ValueError( "you are missing required metadata" )
+
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,
                         in_range=InRangeValidator,
-                        length=LengthValidator )
+                        length=LengthValidator,
+                        metadata=MetadataValidator )
                         
 def get_suite():
     """Get unittest suite for this module"""

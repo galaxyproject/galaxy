@@ -138,7 +138,7 @@ class Maf( Alignment ):
         except:
             return False
 
-class Axt( Alignment ):
+class Axt( Sequence ):
     """Class describing an axt alignment"""
     file_ext = "axt"
 
@@ -179,7 +179,7 @@ class Axt( Alignment ):
                 else:
                     return True
 
-class Lav( Alignment ):
+class Lav( Sequence ):
     """Class describing a LAV alignment"""
     file_ext = "lav"
 

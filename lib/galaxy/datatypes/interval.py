@@ -53,14 +53,6 @@ class Interval( Tabular ):
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
     
-    def missing_meta( self, dataset ):
-        """Checks for empty meta values"""
-        for key, value in dataset.metadata.items():
-            if key in ['strandCol', 'nameCol']: continue #we skip check for strand column here, since it is considered optional
-            if not value:
-                return True
-        return False
-    
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
     
@@ -231,13 +223,6 @@ class Bed( Interval ):
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
-    
-    def missing_meta( self, dataset ):
-        """Checks for empty meta values"""
-        return Interval.missing_meta(self, dataset)
-    
-    def init_meta( self, dataset, copy_from=None ):
-        Interval.init_meta( self, dataset, copy_from=copy_from )
     
     def set_meta( self, dataset ):
         """Sets the metadata information for datasets previously determined to be in bed format."""

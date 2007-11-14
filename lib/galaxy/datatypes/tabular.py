@@ -24,13 +24,6 @@ class Tabular( data.Text ):
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
-        
-    def missing_meta( self, dataset ):
-        """Checks for empty meta values"""
-        for key, value in dataset.metadata.items():
-            if not value:
-                return True
-        return False
 
     def set_meta( self, dataset, skip=1 ):
         """
