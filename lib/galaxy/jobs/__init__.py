@@ -329,12 +329,11 @@ class JobWrapper( object ):
                 if dataset.missing_meta: dataset.set_meta()
                 dataset.set_peek()
             else:
-                if stderr: 
-                    dataset.state = model.Dataset.states.ERROR
-                    dataset.blurb = "error"
-                    job.state = "error"
-                else:
-                    dataset.blurb = "empty"
+                dataset.blurb = "empty"
+            if stderr: 
+                dataset.state = model.Dataset.states.ERROR
+                dataset.blurb = "error"
+                job.state = "error"
         # Save stdout and stderr    
         if len( stdout ) > 32768:
             log.error( "stdout for job %d is greater than 32K, only first part will be logged to database" %job.id )
