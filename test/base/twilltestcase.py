@@ -34,16 +34,20 @@ class TwillTestCase( unittest.TestCase ):
     def files_diff( self, file1, file2 ):
         """Checks the contents of 2 files for differences"""
         if not filecmp.cmp(file1, file2):
-            for line1, line2 in zip(file(file1), file(file2)):
-                line1 = line1.rstrip('\r\n')
-                line2 = line2.rstrip('\r\n')
-                if line1 != line2:
-                    # nicer message
-                    fromlines = open( file1, 'U').readlines()
-                    tolines = open( file2, 'U').readlines()
-                    diff = difflib.unified_diff( fromlines, tolines, "local_file", "history_data" )
-                    diff_slice = list( islice( diff, 40 ) )
-                    raise AssertionError( "".join( diff_slice ) )
+            files_differ = False
+            local_file = open( file1, 'U' ).readlines()
+            history_data = open( file2, 'U' ).readlines()
+            if len( local_file ) == len( history_data ):
+                for i in range( len( history_data ) ):
+                    if local_file[i].rstrip( '\r\n' ) != history_data[i].rstrip( '\r\n' ):
+                        files_differ = True
+                        break
+            else:
+                files_differ = True
+            if files_differ:
+                diff = difflib.unified_diff( local_file, history_data, "local_file", "history_data" )
+                diff_slice = list( islice( diff, 40 ) )
+                raise AssertionError( "".join( diff_slice ) )
         return True
 
     def get_filename( self, filename ):
