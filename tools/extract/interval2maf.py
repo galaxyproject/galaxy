@@ -27,7 +27,7 @@ from bx.cookbook import doc_optparse
 import bx.align.maf
 import bx.intervals.io
 import bx.interval_index_file
-import sys, os
+import sys, os, tempfile
 
 MAF_LOCATION_FILE = "/depot/data2/galaxy/maf_index.loc"
 
