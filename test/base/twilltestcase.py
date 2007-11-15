@@ -33,7 +33,7 @@ class TwillTestCase( unittest.TestCase ):
     """Functions associated with files"""
     def files_diff( self, file1, file2 ):
         """Checks the contents of 2 files for differences"""
-        if not filecmp.cmp(file1, file2):
+        if not filecmp.cmp( file1, file2 ):
             files_differ = False
             local_file = open( file1, 'U' ).readlines()
             history_data = open( file2, 'U' ).readlines()
@@ -289,7 +289,7 @@ class TwillTestCase( unittest.TestCase ):
         try:
             self.files_diff( local_name, temp_name )
         except AssertionError, err:
-            errmsg = 'History item %s different than expected, difference:' % hid
+            errmsg = 'History item %s different than expected, difference:\n' % hid
             errmsg += str( err )
             raise AssertionError( errmsg )
         os.remove(temp_name)
