@@ -145,13 +145,17 @@ class SelectField(BaseField):
             raise Exception, "Unknown display type: %s" % display
         self.display = display
         self.refresh_on_change = refresh_on_change
+        if self.refresh_on_change: 
+            self.refresh_on_change_text = ' refresh_on_change="true"'
+        else:
+            self.refresh_on_change_text = ''
     def add_option( self, text, value, selected = False ):
         self.options.append( ( text, value, selected ) )
     def get_html( self, prefix="" ):
         if self.display == "checkboxes":
             return self.get_html_checkboxes( prefix )
         elif self.display == "radio":
-            return self.get_html_radio( prefix)
+            return self.get_html_radio( prefix )
         else:
             return self.get_html_default( prefix )
     def get_html_checkboxes( self, prefix="" ):
@@ -174,19 +178,15 @@ class SelectField(BaseField):
             style = ""
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
-            if selected:
-                rval.append( '<div%s><input type="radio" name="%s%s" value="%s" checked>%s</div>' % ( style, prefix, self.name, value, text) )
-            else:
-                rval.append( '<div%s><input type="radio" name="%s%s" value="%s">%s</div>' % ( style, prefix, self.name, value, text) )
+            if selected: selected_text = " checked"
+            else: selected_text = ""
+            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s"%s>%s</div>' % ( style, prefix, self.name, self.refresh_on_change_text, value, selected_text, text ) )
             ctr += 1
         return "\n".join( rval )    
     def get_html_default( self, prefix="" ):
         if self.multiple: multiple = " multiple"
         else: multiple = ""
-        if self.refresh_on_change:
-            rval = [ '<select name="%s%s"%s refresh_on_change="true">' % ( prefix, self.name, multiple ) ]
-        else:
-            rval = [ '<select name="%s%s"%s>' % ( prefix, self.name, multiple ) ]
+        rval = [ '<select name="%s%s"%s%s>' % ( prefix, self.name, multiple, self.refresh_on_change_text ) ]
         for text, value, selected in self.options:
             if selected: selected_text = " selected"
             else: selected_text = ""
