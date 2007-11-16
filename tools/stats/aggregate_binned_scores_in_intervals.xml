@@ -4,8 +4,10 @@
   <inputs>
     <param format="interval" name="input1" type="data" label="Interval file"/>
     <param name="datasets" type="select" label="Available datasets" display="radio">
-      <select_options from_file="/depot/data2/galaxy/binned_scores.loc" data_ref="input1" func="get_options_for_build" />
-    </param>
+      <options from_file="/depot/data2/galaxy/binned_scores.loc" name_col="1" value_col="2" >
+        <filter type="data_meta" data_ref="input1" key="build" value="dbkey" col="0" />
+      </options>
+    </param> 
   </inputs>
   <outputs>
     <data format="interval" name="out_file1" metadata_source="input1"/>

@@ -4,8 +4,10 @@
   <inputs>
     <param format="interval" name="input" type="data" label="Between regions of Query"/>
     <param name="species" type="select" label="and one of these genomes">
-      <select_options data_ref="input" from_file="/depot/data2/galaxy/alignseq.loc" func="get_options_for_build_3" />
-    </param>
+      <options from_file="/depot/data2/galaxy/alignseq.loc" name_col="1" value_col="2" >
+        <filter type="data_meta" data_ref="input" key="build" value="dbkey" col="0" />
+      </options>
+    </param> 
   </inputs>
   <outputs>
     <data format="axt" name="out_file1" />

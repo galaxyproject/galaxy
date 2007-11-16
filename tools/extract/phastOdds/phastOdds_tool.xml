@@ -4,13 +4,23 @@
   <inputs>
     <param format="interval" name="input" type="data" label="Interval file"/>
     <param name="score_file" type="select" label="Available datasets">
-      <select_options from_file="/depot/data2/galaxy/phastOdds.loc" data_ref="input" func="get_options_for_build" />
-    </param>
+      <options from_file="/depot/data2/galaxy/phastOdds.loc" name_col="1" value_col="2" >
+        <filter type="data_meta" data_ref="input" key="build" value="dbkey" col="0" />
+      </options>
+    </param> 
 	<param name="per_col" type="boolean" label="Standardize" help="Standardizes the score to be per alignment column" checked="yes" truevalue="-p" falsevalue=""/>
   </inputs>
   <outputs>
     <data format="interval" name="output" metadata_source="input"/>
   </outputs>
+  <tests>
+    <test>
+      <param name="input" value="4.bed" dbkey="hg17" ftype="bed"/>
+      <param name="score_file" value="/depot/data2/galaxy/phastOdds_precomputed/encode_SEP-2005_tba.v2_phastOdds" />
+      <param name="per_col" value="true" />
+      <output name="output" file="phastOdds_tool_out.interval" />
+    </test>
+  </tests>
   <help>
     
 .. class:: warningmark

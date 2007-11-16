@@ -6,13 +6,31 @@ log = logging.getLogger(__name__)
 class DynamicOptions( object ):
     """Handles dynamically generated SelectToolParameter options"""
     def __init__( self, elem  ):
-        self.data_ref = elem.get( 'data_ref', None)
-        self.param_ref = elem.get( 'param_ref', None)
-        self.from_file = elem.get( 'from_file', None )
-        self.func = elem.get( 'func', None )
-        assert self.func is not None, "Value for option generator function not found"
-        self.func_params = elem.findall( 'func_param' )
+        # FIXME: Pushing these things in as options ends up being pretty ugly. 
+        # We should find a way to make this work through the validation mechanism.
         self.no_data_option = ( 'No data available for this build', 'None', True )
+        self.from_file = elem.get( 'from_file', None )
+        if elem.tag == 'select_options':
+            self.data_ref = elem.get( 'data_ref', None )
+            self.param_ref = elem.get( 'param_ref', None )
+            self.func = elem.get( 'func', None )
+            assert self.func is not None, "Value for option generator function not found"
+            self.func_params = elem.findall( 'func_param' )
+        else: #elem.tag =='options'
+            self.name_col = int( elem.get( 'name_col', None ) )
+            assert self.name_col is not None, "Value for option generator name_col not found"
+            self.value_col = int( elem.get( 'value_col', None ) )
+            assert self.value_col is not None, "Value for option generator value_col not found"
+            self.filters = elem.findall( 'filter' )
+            for filter in self.filters:
+                filter_type = filter.get( 'type', None )
+                assert filter_type is not None, "type attribute missing from filter"
+                filter_type = filter_type.strip()
+                if filter_type == 'data_meta':
+                    # We're using metadata information from self.data_ref
+                    self.data_ref = filter.get( 'data_ref', None )
+        #FIXME: this attr is used only by microbial import, so shouldn't be at this level
+        self.microbe_info = None
     def get_dataset( self, trans, other_values ):
         # No value indicates a configuration error, the named DataToolParameter must preceed this parameter in the tool config
         assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
@@ -25,98 +43,100 @@ class DynamicOptions( object ):
             """
             return None
         return dataset
-    def get_param_ref( self, trans, other_values ):
+    def get_param_value( self, trans, other_values ):
         if self.param_ref is None: return None
-        else:
-            assert self.param_ref in other_values, "Value for associated parameter not found"
-            return other_values[ self.param_ref ]
+        assert self.param_ref in other_values, "Value for associated parameter %s not found" %self.param_ref.name
+        return other_values[ self.param_ref ]
+    def load_from_file( self, key=None, value=None, col=None, sep='\t' ):
+        """key: build, value: dbkey, col: 0"""
+        options = []
+        d = {}
+        tool_type = None
+                        
+        for line in open( self.from_file ):
+            line = line.rstrip( '\r\n' )
+            if line and not line.startswith( '#' ):
+                try:
+                    fields = line.split( sep )
+                    if key == 'build':
+                        if col is not None:
+                            if fields[ col ].strip() == 'align': # tool is: Extract blastz alignments1
+                                tool_type = 'blastz'
+                                try: d[ fields[ self.name_col ] ].append( fields[ self.value_col ] )
+                                except: d[ fields[ self.name_col ] ] = [ fields[ self.value_col ] ]
+                            else: # tool is one of: aggregate_scores_in_intervals2, phastOdds_for_intervals, random_intervals1
+                                tool_type = 'intervals'
+                                if not fields[ col ] in d: 
+                                    d[ fields[ col ] ] = []
+                                d[ fields[ col ] ].append( (fields[ self.name_col ], fields[ self.value_col ]) )
+                        else:
+                            options.append( (fields[ self.name_col ], fields[ self.value_col ], False) )
+                    elif key == 'some future key':
+                        pass
+                    else: # tool is one of: axt_to_concat_fasta, axt_to_fasta, axt_to_lav_1
+                        options.append( (fields[ self.name_col ], fields[ self.value_col ], False) )
+                except: continue
+        if tool_type == 'blastz':
+            # FIXME: We need a database of descriptive names corresponding to dbkeys.
+            #        We need to resolve the musMusX <--> mmX confusion
+            if value[ 0:2 ] == "mm": value = value.replace( 'mm', 'musMus' )
+            if value[ 0:2 ] == "rn": value = value.replace( 'rn', 'ratNor' )
+            if value in d:
+                for val in d[ value ]:
+                    options.append( ( val, val, False ) )
+        elif tool_type == 'intervals':
+            if value in d:
+                for (key, val) in d[ value ]:
+                    options.append( (key, val, False) )
+        else: # tool_type is some future tool type
+            pass
+        if key == 'build' and not options: return [ ('unspecified', '?', True ) ]
+        return options
+    def get_options( self, trans, other_values ):
+        """
+        Used by the following tools so far...
+        random_intervals1 - associated data file: /depot/data2/galaxy/regions.loc
+        phastOdds_for_intervals - associated data file: /depot/data2/galaxy/phastOdds.loc
+        aggregate_scores_in_intervals2 - associated data file: /depot/data2/galaxy/binned_scores.loc  
+        axt_to_concat_fasta - associated data file: static/ucsc/builds.txt
+        axt_to_fasta - associated data file: static/ucsc/builds.txt
+        axt_to_lav_1 - - associated data file: static/ucsc/builds.txt
+        Extract blastz alignments1 - associated data file: /depot/data2/galaxy/alignseq.loc   
+        """
+        # Check for filters first and process any that we find
+        for filter in self.filters:
+            filter_type = filter.get( 'type', None )
+            assert filter_type is not None, "type attribute missing from filter"
+            filter_type = filter_type.strip()
+            if filter_type == 'data_meta':
+                # We're using metadata information from self.data_ref
+                dataset = self.get_dataset( trans, other_values )
+                if dataset is None: 
+                    return options
+                key = filter.get( 'key', None )
+                assert key is not None, "key attribute missing from data_meta filter"
+                key = key.strip()
+                value = filter.get( 'value', None )
+                assert value is not None, "value attribute missing from data_meta filter"
+                value = value.strip()
+                col = filter.get( 'col', None )
+                assert col is not None, "col attribute missing from data_meta filter"
+                col = int( col.strip() )
+                if key == 'build': # value must be 'dbkey'
+                    value = eval( '''dataset.%s''' %value )
+                elif key == 'some other future key': 
+                    pass
+                return self.load_from_file( key=key, value=value, col=col, sep='\t' )
+            elif filter_type == 'some other future type':
+                pass
+        # We must not have found a filter, so we'll generate the list generically
+        return self.load_from_file()
 
     """
     TODO: the following functions should be generalized so that they are not specific to
     certain tools (e.g., encode).  We may need to standardize data file formats to be able to do this.
     Comments in the functions show the tools that use them along with associated data files, if any
-    """
-    def get_options_for_build( self, trans, other_values ):
-        """
-        Used by the following tools:
-        random_intervals1 - associated data file: /depot/data2/galaxy/regions.loc
-        phastOdds_for_intervals - associated data file: /depot/data2/galaxy/phastOdds.loc
-        aggregate_scores_in_intervals2 - associated data file: /depot/data2/galaxy/binned_scores.loc        
-        """
-        options = []
-        dataset = self.get_dataset( trans, other_values )
-        if dataset is None:
-            return options
-        def load_from_file_for_build():
-            d = {}
-            for line in open( self.from_file ):
-                line = line.rstrip( '\r\n' )
-                if line and not line.startswith( '#' ):
-                    try:
-                        fields = line.split( "\t" )
-                        if not fields[0] in d: 
-                            d[ fields[0] ] = []
-                        d[ fields[0] ].append( (fields[1], fields[2]) )
-                    except:
-                        continue
-            return d
-        d = load_from_file_for_build()
-        if dataset.dbkey in d:
-            for (key, val) in d[ dataset.dbkey ]:
-                options.append( (key, val, False) )
-        return options
-
-    def get_options_for_build_2( self, trans, other_values ):
-        """
-        Used by the following tools:
-        axt_to_concat_fasta - associated data file: static/ucsc/builds.txt
-        axt_to_fasta - associated data file: static/ucsc/builds.txt
-        axt_to_lav_1 - - associated data file: static/ucsc/builds.txt
-        """
-        def load_from_file_for_build_2():
-            options = []
-            for line in open( self.from_file ):
-                line = line.rstrip( '\r\n' )
-                if line and not line.startswith( '#' ):
-                    try:
-                        fields = line.split( '\t' )
-                        options.append( (fields[1], fields[0], False) )
-                    except: continue
-            if len( options ) < 1:
-                return [('unspecified', '?', True )]
-            return options
-        return load_from_file_for_build_2()
-
-    def get_options_for_build_3( self, trans, other_values ):
-        # FIXME: We need a database of descriptive names corresponding to dbkeys.
-        #        We need to resolve the musMusX <--> mmX confusion
-        """
-        Used by the following tools:
-        Extract blastz alignments1 - associated data file: /depot/data2/galaxy/alignseq.loc
-        """
-        options = []
-        dataset = self.get_dataset( trans, other_values )
-        if dataset is None:
-            return options
-        def load_from_file_for_build_3():
-            d = {}
-            for line in open( self.from_file ):
-                line = line.rstrip( '\r\n' )
-                if line and not line.startswith( '#' ):
-                    fields = line.split()
-                    if fields[0].strip() == "align":
-                        try: d[ fields[1] ].append( fields[2] )
-                        except: d[ fields[1] ] = [ fields[2] ]
-            return d
-        d = load_from_file_for_build_3()
-        build = dataset.dbkey
-        if build[ 0:2 ] == "mm": build = build.replace( 'mm', 'musMus' )
-        if build[ 0:2 ] == "rn": build = build.replace( 'rn', 'ratNor' )
-        if build in d:
-            for val in d[ build ]:
-                options.append( ( val, val, False ) )
-        return options     
-
+    """    
     def load_from_file_for_maf( self ):
         d = {}
         for line in open( self.from_file ):
@@ -138,7 +158,6 @@ class DynamicOptions( object ):
                     d[maf_uid]['builds'] = build_list
                 except: continue
         return d
-
     def get_options_for_maf( self, trans, other_values ):
         """
         Used by the following tools:
@@ -158,7 +177,6 @@ class DynamicOptions( object ):
         if len( options ) < 1:
             return [self.no_data_option]
         return options
-
     def get_options_for_species( self, trans, other_values ):
         """
         Used by the following tools:
@@ -179,7 +197,6 @@ class DynamicOptions( object ):
         for species in dataset.metadata.species:
             options.append( ( species, species, False ) )
         return options
-
     def get_options_for_species_for_maf( self, trans, other_values ):
         """
         Used by the following tools:
@@ -192,7 +209,7 @@ class DynamicOptions( object ):
                 maf_source = func_param.get( 'value' ).strip()
         if maf_source == 'cached':
             d = self.load_from_file_for_maf()
-            maf_uid = self.get_param_ref( trans, other_values )
+            maf_uid = self.get_param_value( trans, other_values )
             if maf_uid is None:
                 return [self.no_data_option]
             if maf_uid == 'None':
@@ -208,7 +225,6 @@ class DynamicOptions( object ):
             for species in dataset.metadata.species:
                 options.append( ( species, species, False ) )
         return options
-
     def get_options_for_features( self, trans, other_values ):
         """
         Used by the following tools: 
@@ -248,7 +264,6 @@ class DynamicOptions( object ):
         for elem in elem_list:
             options.append( ( elem, elem, False ) )
         return options
-
     def get_options_for_encode( self, trans, other_values ):
         """
         Used by the following tools:
@@ -343,3 +358,129 @@ class DynamicOptions( object ):
             except:
                 options.append( self.no_data_option )
         return options
+    def load_from_file_for_microbial( self ):
+        self.from_file = "/depot/data2/galaxy/microbes/microbial_data.loc"
+        microbe_info= {}
+        orgs = {}
+        for line in open( self.from_file ):
+            line = line.rstrip( '\r\n' )
+            if line and not line.startswith( '#' ):
+                fields = line.split( '\t' )
+                #read each line, if not enough fields, go to next line
+                try:
+                    info_type = fields.pop(0)
+                    if info_type.upper() == "ORG":
+                        #ORG     12521   Clostridium perfringens SM101   bacteria        Firmicutes      CP000312,CP000313,CP000314,CP000315     http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=genomeprj&cmd=Retrieve&dopt=Overview&list_uids=12521
+                        org_num = fields.pop(0)
+                        name = fields.pop(0)
+                        kingdom = fields.pop(0)
+                        group = fields.pop(0)
+                        chromosomes = fields.pop(0)
+                        info_url = fields.pop(0)
+                        link_site = fields.pop(0)
+                        if org_num not in orgs:
+                            orgs[org_num] = {}
+                            orgs[org_num]['chrs'] = {}
+                        orgs[org_num]['name'] = name
+                        orgs[org_num]['kingdom'] = kingdom
+                        orgs[org_num]['group'] = group
+                        orgs[org_num]['chromosomes'] = chromosomes
+                        orgs[org_num]['info_url'] = info_url
+                        orgs[org_num]['link_site'] = link_site
+                    elif info_type.upper() == "CHR":
+                        #CHR     12521   CP000315        Clostridium perfringens phage phiSM101, complete genome 38092   110684521       CP000315.1
+                        org_num = fields.pop(0)
+                        chr_acc = fields.pop(0)
+                        name = fields.pop(0)
+                        length = fields.pop(0)
+                        gi = fields.pop(0)
+                        gb = fields.pop(0)
+                        info_url = fields.pop(0)
+                        chr = {}
+                        chr['name'] = name
+                        chr['length'] = length
+                        chr['gi'] = gi
+                        chr['gb'] = gb
+                        chr['info_url'] = info_url
+                        if org_num not in orgs:
+                            orgs[org_num] = {}
+                            orgs[org_num]['chrs'] = {}
+                        orgs[org_num]['chrs'][chr_acc] = chr
+                    elif info_type.upper() == "DATA":
+                        #DATA    12521_12521_CDS 12521   CP000315        CDS     bed     /home/djb396/alignments/playground/bacteria/12521/CP000315.CDS.bed
+                        uid = fields.pop(0)
+                        org_num = fields.pop(0)
+                        chr_acc = fields.pop(0)
+                        feature = fields.pop(0)
+                        filetype = fields.pop(0)
+                        path = fields.pop(0)
+                        data = {}
+                        data['filetype'] = filetype
+                        data['path'] = path
+                        data['feature'] = feature
+    
+                        if org_num not in orgs:
+                            orgs[org_num] = {}
+                            orgs[org_num]['chrs'] = {}
+                        if 'data' not in orgs[org_num]['chrs'][chr_acc]:
+                            orgs[org_num]['chrs'][chr_acc]['data'] = {}
+                        orgs[org_num]['chrs'][chr_acc]['data'][uid] = data
+                    else: continue
+                except: continue
+        for org_num in orgs:
+            org = orgs[org_num]
+            if org['kingdom'] not in microbe_info:
+                microbe_info[org['kingdom']] = {}
+            if org_num not in microbe_info[org['kingdom']]:
+                microbe_info[org['kingdom']][org_num] = org
+        self.microbe_info = microbe_info
+    def get_options_for_kingdoms( self, trans, other_values ):
+        if self.microbe_info == None: self.load_from_file_for_microbial()
+        options = []
+        kingdoms = self.microbe_info.keys()
+        kingdoms.sort()
+        for kingdom in kingdoms:
+            options.append( (kingdom, kingdom, False) )
+        return options
+    def get_options_for_orgs_by_kingdom( self, trans, other_values ):
+        if self.microbe_info == None: self.load_from_file_for_microbial()
+        options = []
+        kingdom = self.get_param_value( trans, other_values )
+        orgs = self.microbe_info[kingdom].keys()
+        #need to sort by name
+        swap_test = False
+        for i in range( 0, len(orgs) - 1 ):
+            for j in range( 0, len(orgs) - i - 1 ):
+                if self.microbe_info[kingdom][orgs[j]]['name'] > self.microbe_info[kingdom][orgs[j + 1]]['name']:
+                    orgs[j], orgs[j + 1] = orgs[j + 1], orgs[j]
+                swap_test = True
+            if swap_test == False: break
+        for org in orgs:
+             if self.microbe_info[kingdom][org]['link_site'] == "UCSC":
+                options.append( ( "<b>" + self.microbe_info[kingdom][org]['name'] + "</b> <a href=\"" + self.microbe_info[kingdom][org]['info_url'] + "\" target=\"_blank\">(about)</a>", org, False ) )
+             else:
+                options.append( ( self.microbe_info[kingdom][org]['name'] + " <a href=\"" + self.microbe_info[kingdom][org]['info_url'] + "\" target=\"_blank\">(about)</a>", org, False ) )
+        """
+        if options:
+            options[0] = ( options[0][0], options[0][1], True)
+        """
+        return options 
+    def get_options_for_kingdom_org_feature( self, trans, other_values ):
+        if self.microbe_info == None: self.load_from_file_for_microbial()
+        options = []
+        for func_param in self.func_params:
+            if func_param.get( 'name' ) == 'kingdom':
+                kingdom = other_values[ func_param.get( 'value' ) ]
+            elif func_param.get( 'name' )  == 'org':
+                org = other_values[ func_param.get( 'value' ) ]
+            elif func_param.get( 'name' )  == 'feature':
+                feature = func_param.get( 'value' )
+        log.debug("kingdom: %s, org: %s, feature: %s" %(kingdom, org, feature))
+        chroms = self.microbe_info[kingdom][org]['chrs'].keys()
+        chroms.sort()
+        for chr in chroms:
+             for data in self.microbe_info[kingdom][org]['chrs'][chr]['data']:
+                 if self.microbe_info[kingdom][org]['chrs'][chr]['data'][data]['feature'] == feature:
+                     options.append( ( self.microbe_info[kingdom][org]['chrs'][chr]['name'] + " <a href=\"" + self.microbe_info[kingdom][org]['chrs'][chr]['info_url'] + "\" target=\"_blank\">(about)</a>", data, False ) )
+        return options
+

@@ -329,9 +329,6 @@ class SelectToolParameter( ToolParameter ):
     """
     Parameter that takes on one (or many) or a specific set of values.
     
-    TODO: There should be an alternate display that allows single selects to be 
-          displayed as radio buttons and multiple selects as a set of checkboxes
-    
     >>> p = SelectToolParameter( None, XML( 
     ... '''
     ... <param name="blah" type="select">
@@ -415,23 +412,32 @@ class SelectToolParameter( ToolParameter ):
             self.select_options = None
         else:
             self.select_options = dynamic_options.DynamicOptions( select_options )
-        if self.dynamic_options is None and self.select_options is None:
-            self.options = list()
-            for index, option in enumerate( elem.findall("option") ):
+        options = elem.find( 'options' )
+        if options is None:
+            self.options = None
+        else:
+            self.options = dynamic_options.DynamicOptions( options )
+        if self.dynamic_options is None and self.select_options is None and self.options is None:
+            self.static_options = list()
+            for index, option in enumerate( elem.findall( "option" ) ):
                 value = option.get( "value" )
                 self.legal_values.add( value )
                 selected = ( option.get( "selected", None ) == "true" )
-                self.options.append( ( option.text, value, selected ) )
-        self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.select_options is not None ) )
+                self.static_options.append( ( option.text, value, selected ) )
+        self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.select_options is not None ) or ( self.options is not None ) ) 
     def get_options( self, trans, other_values ):
-        if self.select_options:
+        if self.options:
+            return self.options.get_options( trans, other_values )
+        elif self.select_options:
             return eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func )
         elif self.dynamic_options:
             return eval( self.dynamic_options, self.tool.code_namespace, other_values )
         else:
-            return self.options
+            return self.static_options
     def get_legal_values( self, trans, other_values ):
-        if self.select_options:
+        if self.options:
+            return set( v for _, v, _ in self.options.get_options( trans, other_values ) )
+        elif self.select_options:
             return set( v for _, v, _ in eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func ) )
         elif self.dynamic_options:
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
@@ -507,14 +513,21 @@ class SelectToolParameter( ToolParameter ):
             value = value[0]
         return value
     def get_dependencies( self ):
-        try:
-            data_ref = self.select_options.data_ref
-            param_ref = self.select_options.param_ref
-            if data_ref is None and param_ref is None: return []
-            elif data_ref is None: return [ param_ref ]
-            elif param_ref is None: return [ data_ref ]
-            else: return [ data_ref, param_ref ]
-        except: return []
+        data_ref = param_ref = None
+        if self.options:
+            try: data_ref = self.options.data_ref
+            except: pass
+            try: param_ref = self.options.param_ref
+            except: pass
+        elif self.select_options:
+            try: data_ref = self.select_options.data_ref
+            except: pass
+            try: param_ref = self.select_options.param_ref
+            except: pass
+        if data_ref is None and param_ref is None: return []
+        elif data_ref is None: return [ param_ref ]
+        elif param_ref is None: return [ data_ref ]
+        else: return [ data_ref, param_ref ]
 
 class GenomeBuildParameter( SelectToolParameter ):
     """

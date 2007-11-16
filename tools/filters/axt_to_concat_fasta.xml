@@ -4,11 +4,11 @@
   <inputs>
     <param format="axt" name="axt_input" type="data" label="AXT file"/>
     <param name="dbkey_1" type="select" label="Genome">
-      <select_options from_file="static/ucsc/builds.txt" func="get_options_for_build_2" />
-    </param>
+      <options from_file="static/ucsc/builds.txt" name_col="1" value_col="0" />
+    </param> 
     <param name="dbkey_2" type="select" label="Genome">
-      <select_options from_file="static/ucsc/builds.txt" func="get_options_for_build_2" />
-    </param>
+      <options from_file="static/ucsc/builds.txt" name_col="1" value_col="0" />
+    </param> 
   </inputs>
   <outputs>
     <data format="fasta" name="out_file1" />

@@ -1,44 +1,52 @@
 <tool id="random_intervals1" name="Random Intervals">
 <description>create a random set of intervals</description>
   <command interpreter="python2.4">random_intervals_no_bits.py $regions $input2 $input1 $out_file1 $input2_chromCol $input2_startCol $input2_endCol $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol $use_mask $strand_overlaps</command>
-    <inputs>
-      <page>
-        <param name="input1" type="data" format="interval" label="File to Mimick"/>
-        <param name="input2" type="data" format="interval" label="Intervals to Mask"/>
-        <param name="use_mask" type="select">
-          <label>Use Mask</label>
-          <option value="no_mask">No</option>
-          <option value="use_mask">Yes</option>
-        </param>
-         <param name="strand_overlaps" type="select">
-          <label>Allow overlaps</label>
-          <option value="all">Any</option>
-          <option value="strand">Across Strands</option>
-          <option value="none">None</option>
-        </param>
-      </page>
-      <page>
-        <param name="regions" label="Regions to use" type="select" dynamic_options="get_available_data( input1.dbkey )"/>
-      </page>
-     </inputs>
-     <outputs>
-        <data name="out_file1" format="bed"/>
-     </outputs>
-<help>
-This tool will attempt to create a random set of intervals that mimic those found within your source file.  You may also specify a set of intervals to mask.
+  <inputs>
+    <param name="input1" type="data" format="interval" label="File to Mimick"/>
+    <param name="input2" type="data" format="interval" label="Intervals to Mask"/>
+    <param name="use_mask" type="select" label="Use mask">
+      <option value="no_mask">No</option>
+      <option value="use_mask">Yes</option>
+    </param>
+    <param name="strand_overlaps" type="select" label="Allow overlaps">
+      <option value="all">Any</option>
+      <option value="strand">Across Strands</option>
+      <option value="none">None</option>
+    </param>
+    <param name="regions" type="select" label="Regions to use">
+      <options from_file="/depot/data2/galaxy/regions.loc" name_col="1" value_col="2" >
+        <filter type="data_meta" data_ref="input1" key="build" value="dbkey" col="0" />
+      </options>
+    </param> 
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="input"/>
+  </outputs>
+  <help>
 
-There are several overlap options:
-  * Across Strands: Random regions are allowed to overlap only if they are on different strands.
-  * Any: All overlaps are allowed.
-  * None: No overlapping regions are allowed.
+.. class:: warningmark
 
-The second step will let you select a bounding region of interest.
+This tool currently only works with data from genome builds hg16 or hg17.
+
+-----
 
 .. class:: infomark
 
 **Note:** If you do not wish to mask a set of intervals, change the Use Mask option to No, this option will override any Mask files selected.
 
+-----
+
+**Syntax**
+
+This tool will attempt to create a random set of intervals that mimic those found within your source file.  You may also specify a set of intervals to mask.
+
+**Allow overlaps** options
+  * **Across Strands** Random regions are allowed to overlap only if they are on different strands.
+  * **Any** All overlaps are allowed.
+  * **None** No overlapping regions are allowed.
+
+**Regions to use** options
+  * Bounding region of interest based on the dataset build.
 
   </help>
-  <code file="random_intervals_code.py"/>
 </tool>

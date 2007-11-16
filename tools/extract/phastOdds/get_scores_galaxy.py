@@ -17,6 +17,10 @@ from bx.cookbook import doc_optparse
 
 from bx import intervals
 
+def stop_err( msg ):
+    sys.stderr.write(msg)
+    sys.exit()
+
 def main():
     # Parse command line
     options, args = doc_optparse.parse( __doc__ )
@@ -31,8 +35,7 @@ def main():
         doc_optparse.exception()
         
     if h5_fname == 'None.h5':
-        print 'Invalid genome build - this tool currently only works with data from genome build hg17.  Click "edit attributes" (the pencil icon) in your history item to correct the genome build if appropriate.'
-        sys.exit()
+        stop_err( 'Invalid genome build, this tool currently only works with data from build hg17.  Click the pencil icon in your history item to correct the build if appropriate.' )
         
     # Open the h5 file
     h5 = openFile( h5_fname, mode = "r" )
@@ -47,30 +50,34 @@ def main():
     out_file = open( out_fname, "w" )
     # Find the subregion containing each input interval 
     for index, line in enumerate( in_file ):
+        line = line.rstrip( '\r\n' )
         if line.startswith( "#" ):
             if index == 0:
-                print >> out_file, line.rstrip() + "\tscore"
+                print >> out_file, line + "\tscore"
             else:
                 print >> out_file, line,
-        fields = line.rstrip().split( "\t" )
-        chr = fields[ chrom_col ]
-        start = int( fields[ start_col ] )
-        end = int( fields[ end_col ] )
+        fields = line.split( "\t" )
+        try:
+            chr = fields[ chrom_col ]
+            start = int( fields[ start_col ] )
+            end = int( fields[ end_col ] )
+        except:
+            stop_err( "Invalid chrom, start and end column settings. Click the pencil icon in your history item to correct the settings." )
         # Find matching interval
-        matches = intersecters[ chr ].find( start, end )
+        try:
+            matches = intersecters[ chr ].find( start, end )
+        except:
+            stop_err( "'%s' is not a valid chrom value for the region" %chr )
         if not len( matches ) == 1:
-            print "Interval must match exactly one target region"
-            break
+            stop_err( "Interval must match exactly one target region" )
         region = matches[0]
-        if not (start >= region.start and end <= region.end):
-            print "Interval must fall entirely within region"
-            break
+        if not ( start >= region.start and end <= region.end ):
+            stop_err( "Interval must fall entirely within region" )
         region_name = region.value
         rel_start = start - region.start
         rel_end = end - region.start
         if not rel_start < rel_end:
-            print "Region %s is empty - relative start:%d, relative end:%d" % ( region_name, rel_start, rel_end )
-            break
+            stop_err( "Region %s is empty - relative start:%d, relative end:%d" % ( region_name, rel_start, rel_end ) )
         s = h5.getNode( h5.root, "scores_" + region_name )
         c = h5.getNode( h5.root, "counts_" + region_name )
         score = s[rel_end-1]
