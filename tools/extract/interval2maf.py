@@ -70,75 +70,74 @@ def build_maf_index( maf_file, species = None ):
         return ( None, None )
 
 def __main__():
-    # Parse Command Line
-    options, args = doc_optparse.parse( __doc__ )
-    
     index = index_filename = None
     mincols = 0
     
-    try:
-        if options.dbkey: dbkey = options.dbkey
-        else: dbkey = None
-        if dbkey in [None, "?"]:
-            print >>sys.stderr, "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
+    # Parse Command Line
+    options, args = doc_optparse.parse( __doc__ )
+    
+    if options.dbkey: dbkey = options.dbkey
+    else: dbkey = None
+    if dbkey in [None, "?"]:
+        print >>sys.stderr, "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
+        sys.exit()
+    
+    species = None
+    if options.species:
+        species = options.species.split( ',' )
+        if "None" in species: species = None
+    
+    if options.chromCol: chromCol = int( options.chromCol ) - 1
+    else: 
+        print >>sys.stderr, "Chromosome column has not been specified."
+        sys.exit()
+    
+    if options.startCol: startCol = int( options.startCol ) - 1
+    else: 
+        print >>sys.stderr, "Start column has not been specified."
+        sys.exit()
+    
+    if options.endCol: endCol = int( options.endCol ) - 1
+    else: 
+        print >>sys.stderr, "End column has not been specified."
+        sys.exit()
+    
+    if options.strandCol: strandCol = int( options.strandCol ) - 1
+    else: 
+        print >>sys.stderr, "Strand column has not been specified."
+        sys.exit()
+    
+    if options.interval_file: interval_file = options.interval_file
+    else: 
+        print >>sys.stderr, "Input interval file has not been specified."
+        sys.exit()
+    
+    if options.output_file: output_file = options.output_file
+    else: 
+        print >>sys.stderr, "Output file has not been specified."
+        sys.exit()
+    
+    #Open indexed access to MAFs
+    if options.mafType:
+        index = maf_index_by_uid( options.mafType )
+        if index is None:
+            print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( options.mafType )
             sys.exit()
-        
-        if options.species: species = options.species.split( ',' )
-        else: species = None
-        
-        if options.chromCol: chromCol= int(options.chromCol) - 1
-        else: 
-            print >>sys.stderr, "Chromosome column has not been specified."
+    elif options.mafFile:
+        index, index_filename = build_maf_index( options.mafFile, species = [dbkey] )
+        if index is None:
+            print >> sys.stderr, "Your MAF file appears to be malformed."
             sys.exit()
-        
-        if options.startCol: startCol= int(options.startCol) - 1
-        else: 
-            print >>sys.stderr, "Start column has not been specified."
-            sys.exit()
-        
-        if options.endCol: endCol= int(options.endCol) - 1
-        else: 
-            print >>sys.stderr, "End column has not been specified."
-            sys.exit()
-        
-        if options.strandCol: strandCol= int(options.strandCol) - 1
-        else: 
-            print >>sys.stderr, "Strand column has not been specified."
-            sys.exit()
-                
-        if options.interval_file: interval_file= options.interval_file
-        else: 
-            print >>sys.stderr, "Input interval file has not been specified."
-            sys.exit()
-        
-        if options.output_file: output_file= options.output_file
-        else: 
-            print >>sys.stderr, "Output file has not been specified."
-            sys.exit()
-        
-        #Open indexed access to MAFs
-        if options.mafType:
-            index = maf_index_by_uid( options.mafType )
-            if index is None:
-                print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( options.mafType )
-                sys.exit()
-        elif options.mafFile:
-            index, index_filename = build_maf_index( options.mafFile, species = [dbkey] )
-            if index is None:
-                print >> sys.stderr, "Your MAF file appears to be malformed."
-                sys.exit()
-        else: 
-            print >>sys.stderr, "Desired source MAF type has not been specified."
-            sys.exit()
-    except Exception, exc:
-        print >>sys.stdout, 'interval2maf.py initialization error -> %s' % exc
+    else:
+        print >>sys.stderr, "Desired source MAF type has not been specified."
+        sys.exit()
     
     out = bx.align.maf.Writer( open(output_file, "w") )
     
     # Iterate over input regions 
     num_blocks = 0
     num_lines = 0
-    for num_lines, region in enumerate( bx.intervals.io.NiceReaderWrapper( open(interval_file, 'r' ), chrom_col = chromCol, start_col = startCol, end_col = endCol, strand_col = strandCol, fix_strand = True, return_header = False, return_comments = False ) ):
+    for num_lines, region in enumerate( bx.intervals.io.NiceReaderWrapper( open( interval_file, 'r' ), chrom_col = chromCol, start_col = startCol, end_col = endCol, strand_col = strandCol, fix_strand = True, return_header = False, return_comments = False ) ):
         try:
             src = "%s.%s" % ( dbkey, region.chrom )
             
