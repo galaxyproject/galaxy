@@ -1,0 +1,62 @@
+<tool id="cpgFilter" name="Mask CpG sites">
+  <description> from MAF file</description>
+  <command interpreter="python2.4">
+  	maf_cpg_filter.py 
+  	$input 
+  	$out_file1 
+  	$definition
+  	-m $mask_char
+  </command>
+  <inputs>
+    <page>
+    	<param format="maf" name="input" type="data" label="Select data"/>
+   		<param name="mask_char" size="5" type="select" label="Mask character">
+    		<option value="0" selected="true">#</option>
+          	<option value="1">$</option>
+          	<option value="2">^</option>
+          	<option value="3">*</option>
+          	<option value="4">?</option>
+        </param>
+        <param name="definition" size="5" type="select" label="Definition">
+    		<option value="0" selected="true">Inclusive</option>
+          	<option value="1">Restricted</option>
+         </param>
+    </page>
+  </inputs>
+  <outputs>
+    <data format="maf" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="6.maf"/>
+      <param name="mask_char" value="0"/>
+      <param name="definition" value="0" />
+      <output name="out_file1" file="6_mask_cpg.maf"/>
+    </test>
+  </tests>
+ <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool takes a MAF file as input and masks CpG sites in every alignment block of the MAF file. 
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+*Inclusive definition* defines CpG sites as those sites that are CG in at least one of the species.
+
+*Restricted definition* considers sites to be CpG if they are CG in at least one of the species, however, sites that are part of overlapping CpGs are excluded.
+
+For more information on CpG site definitions, please refer this article_.
+
+.. _article: http://mbe.oxfordjournals.org/cgi/content/full/23/3/565
+
+  </help>  
+
+
+</tool>

@@ -1,0 +1,18 @@
+<tool id="qv2bqv" name="qv2bqv">
+  <description></description>
+  <command interpreter="python2.4">qv_to_bqv.py "$input1" $output</command>
+  <inputs>
+    <param name="input1" type="data" format="interval" help="Directory" />
+   </inputs>
+  <outputs>
+    <data format="text" name="output" metadata_source="input1" />
+  </outputs>
+  <!--<code file="operation_filter.py"/> -->
+  <tests>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <output name="output" file="gops-coverage.dat" />
+    </test>
+  </tests>
+</tool>

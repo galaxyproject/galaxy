@@ -1,0 +1,104 @@
+<tool id="winSplitter" name="Make windows">
+  <description></description>
+  <command interpreter="python2.4">windowSplitter.py $input $size $out_file1 ${wintype.choice} ${wintype.offset} -l $input_chromCol,$input_startCol,$input_endCol,$input_strandCol</command>
+  <inputs>
+    <!--<param label="Genome" name="dbkey" type="genomebuild" dynamic_options=""/>-->
+    <param format="interval" name="input" type="data" label="Select data"/>
+    <param name="size" size="10" type="integer" value="500" label="Window size"/>
+    <conditional name="wintype">
+	    <param name="choice" type="select" label="Make sliding windows?">
+	    	<option value="0" selected="true">No</option>
+	    	<option value="1">Yes</option>
+		</param>
+		<when value="0">
+    		<param name="offset" type="hidden" value="0" />
+    	</when>
+    	<when value="1">
+    		<param name="offset" size="10" type="integer" value="10" label="Offset size"/>
+    	</when>
+	</conditional>
+  </inputs>
+  <outputs>
+    <data format="interval" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="4.bed"/>
+      <param name="size" value="5000"/>
+      <param name="choice" value="1"/>
+      <param name="offset" value="4000"/>
+      <output name="out_file1" file="4_windows.bed"/>
+    </test>
+  </tests>
+ <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool splits the intervals in the input file into smaller intervals based on the specified window-size and window type.
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+The positions at the end of the input interval which do not fit into the last window or a new window of required size, will be omitted from the output.
+
+-----
+
+.. class:: infomark
+
+**About formats**
+
+**BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser. It has three required fields and several additional optional ones:
+
+The first three BED fields (required) are::
+
+    1. chrom - The name of the chromosome (e.g. chr1, chrY_random).
+    2. chromStart - The starting position in the chromosome. (The first base in a chromosome is numbered 0.)
+    3. chromEnd - The ending position in the chromosome, plus 1 (i.e., a half-open interval).
+
+The additional BED fields (optional) are::
+
+    4. name - The name of the BED line.
+    5. score - A score between 0 and 1000.
+    6. strand - Defines the strand - either '+' or '-'.
+    7. thickStart - The starting position where the feature is drawn thickly at the Genome Browser.
+    8. thickEnd - The ending position where the feature is drawn thickly at the Genome Browser.
+    9. reserved - This should always be set to zero.
+   10. blockCount - The number of blocks (exons) in the BED line.
+   11. blockSizes - A comma-separated list of the block sizes. The number of items in this list should correspond to blockCount.
+   12. blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount.
+   13. expCount - The number of experiments.
+   14. expIds - A comma-separated list of experiment ids. The number of items in this list should correspond to expCount.
+   15. expScores - A comma-separated list of experiment scores. All of the expScores should be relative to expIds. The number of items in this list should correspond to expCount.
+
+-----
+
+**Example**
+
+- For the following query::
+
+   chr22  1000  4700  NM_174568 0 +
+
+- running this tool with **Window size as 1000**,  will return::
+
+   chr22  1000  2000  NM_174568 0 +
+   chr22  2000	3000  NM_174568	0 +
+   chr22  3000  4000  NM_174568 0 +
+   
+- running this tool to make **Sliding windows** of **size 1000** and **offset 500**,  will return::
+
+   chr22  1000  2000  NM_174568 0 +
+   chr22  1500	2500  NM_174568	0 +
+   chr22  2000  3000  NM_174568 0 +
+   chr22  2500	3500  NM_174568	0 +
+   chr22  3000  4000  NM_174568 0 +
+   chr22  3500	4500  NM_174568	0 +
+  
+  </help>  
+
+
+</tool>
