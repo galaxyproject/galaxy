@@ -4,7 +4,9 @@
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file"/>
     <param name="species" type="select" label="Species to keep" display="checkboxes" multiple="true">
-      <select_options data_ref="input1" func="get_options_for_species" />
+      <options>
+        <filter type="data_meta" data_ref="input1" key="species" />
+      </options>
     </param>
   </inputs>
   <outputs>

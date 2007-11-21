@@ -6,17 +6,17 @@
       <p><div class="toolFormTitle">hg16 (most recent datasets in bold)</div>$hg16</p>
     </display>
     <param name="hg17" type="select" display="checkboxes" multiple="true">
-      <select_options from_file="/depot/data2/galaxy/encode_datasets.loc" func="get_options_for_encode">
-        <func_param name="encode_group" value="TR" />
-        <func_param name="build" value="hg17" />
-      </select_options>
-    </param>
+      <options from_file="/depot/data2/galaxy/encode_datasets.loc">
+        <filter type="param" name="encode_group" value="TR" />
+        <filter type="param" name="build" value="hg17" />
+      </options>
+    </param> 
     <param name="hg16" type="select" display="checkboxes" multiple="true">
-      <select_options from_file="/depot/data2/galaxy/encode_datasets.loc" func="get_options_for_encode">
-        <func_param name="encode_group" value="TR" />
-        <func_param name="build" value="hg16" />
-      </select_options>
-    </param>
+      <options from_file="/depot/data2/galaxy/encode_datasets.loc">
+        <filter type="param" name="encode_group" value="TR" />
+        <filter type="param" name="build" value="hg16" />
+      </options>
+    </param> 
   </inputs>
   <outputs>
     <data format="bed" name="output"/>

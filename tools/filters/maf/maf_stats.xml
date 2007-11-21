@@ -19,9 +19,14 @@
         <param format="maf" name="input2" label="MAF File" type="data"/>
       </when>
       <when value="cached">
-        <param name="mafType" label="MAF Type" type="select">
-          <select_options from_file="/depot/data2/galaxy/maf_index.loc" data_ref="input1" func="get_options_for_maf" />
-        </param>
+        <param name="mafType" type="select" label="MAF Type">
+          <options from_file="/depot/data2/galaxy/maf_index.loc" >
+            <filter type="data_meta" data_ref="input1" key="build" />
+            <filter type="column" name="build_col" value="2" />
+            <filter type="column" name="name_col" value="0" />
+            <filter type="column" name="value_col" value="1" />
+          </options>
+        </param> 
       </when>
     </conditional>
     <param name="summary" type="select" label="Type of Output">

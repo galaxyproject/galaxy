@@ -7,7 +7,9 @@
     <page>
     	<param format="maf" name="input1" type="data" label="Select data"/>
     	<param name="outgroup" type="select" label="Select outgroup species">
-      	<select_options data_ref="input1" func="get_options_for_species" />   
+          <options>
+            <filter type="data_meta" data_ref="input1" key="species" />
+          </options>  
       	</param>
     </page>
   </inputs>

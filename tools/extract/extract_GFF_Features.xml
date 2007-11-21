@@ -12,39 +12,44 @@
         <option value="7">Column 8 / Frame</option>
       </param>
       <when value="0">
-        <param name="feature" label="Select features" type="select" multiple="true">
-          <select_options data_ref="input1" func="get_options_for_features">
-            <func_param name="index" value="0" />
-          </select_options>
-        </param>       	
+        <param name="feature" type="select" multiple="true" label="Select features" >
+          <options>
+            <filter type="data_meta" data_ref="input1" key="file_name" />
+            <filter type="column" name="value_col" value="0" />
+          </options>
+        </param> 
       </when>
       <when value="1">
-        <param name="feature" label="Select features" type="select" multiple="true">
-          <select_options data_ref="input1" func="get_options_for_features">
-            <func_param name="index" value="1" />
-          </select_options>
-        </param>          	
-      </when>
-      <when value="2">
-        <param name="feature" label="Select features" type="select" multiple="true">
-          <select_options data_ref="input1" func="get_options_for_features">
-            <func_param name="index" value="2" />
-          </select_options>
+        <param name="feature" type="select" multiple="true" label="Select features" >
+          <options>
+            <filter type="data_meta" data_ref="input1" key="file_name" />
+            <filter type="column" name="value_col" value="1" />
+          </options>
         </param>         	
       </when>
-      <when value="6">
-        <param name="feature" label="Select features" type="select" multiple="true">
-          <select_options data_ref="input1" func="get_options_for_features">
-            <func_param name="index" value="6" />
-          </select_options>
+      <when value="2">
+        <param name="feature" type="select" multiple="true" label="Select features" >
+          <options>
+            <filter type="data_meta" data_ref="input1" key="file_name" />
+            <filter type="column" name="value_col" value="2" />
+          </options>
         </param>          	
       </when>
+      <when value="6">
+        <param name="feature" type="select" multiple="true" label="Select features" >
+          <options>
+            <filter type="data_meta" data_ref="input1" key="file_name" />
+            <filter type="column" name="value_col" value="6" />
+          </options>
+        </param>           	
+      </when>
       <when value="7">
-	    <param name="feature" label="Select features" type="select" multiple="true">
-	      <select_options data_ref="input1" func="get_options_for_features">
-	        <func_param name="index" value="7" />
-	      </select_options>
-        </param>            	
+        <param name="feature" type="select" multiple="true" label="Select features" >
+          <options>
+            <filter type="data_meta" data_ref="input1" key="file_name" />
+            <filter type="column" name="value_col" value="7" />
+          </options>
+        </param>              	
       </when>
     </conditional>
     <!--
@@ -57,16 +62,14 @@
   <outputs>
     <data format="gff" name="out_file1" />
   </outputs>
-  <!--
   <tests>
     <test>
       <param name="input1" value="5.gff"/>
-      <param name="column_choice" value="0 chr5" />
-      <param name="column_choice|feature" value="chr5,chr6,chr7,chr8" />
-      <output name="out_file1" file="gff_features.gff"/>
+      <param name="col" value="0" />
+      <param name="feature" value="chr5,chr6,chr7,chr8" />
+      <output name="out_file1" file="Extract_features1_out.gff"/>
     </test>
   </tests>
-  -->
   <help>
 
 **What it does**

@@ -14,19 +14,26 @@
       <when value="user">
         <param name="maf_file" type="data" format="maf" label="MAF File" />
         <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
-          <select_options data_ref="maf_file" func="get_options_for_species_for_maf">
-            <func_param name="maf_source" value="user" />
-          </select_options>
+          <options>
+            <filter type="data_meta" data_ref="maf_file" key="maf" />
+            <filter type="param" name="maf_source" value="user" />
+          </options>
         </param>
       </when>
       <when value="cached">
         <param name="maf_identifier" type="select" label="MAF Type" >
-          <select_options from_file="/depot/data2/galaxy/maf_index.loc" data_ref="input1" func="get_options_for_maf" />
-        </param>
+          <options from_file="/depot/data2/galaxy/maf_index.loc" >
+            <filter type="data_meta" data_ref="input1" key="build" />
+            <filter type="column" name="build_col" value="2" />
+            <filter type="column" name="name_col" value="0" />
+            <filter type="column" name="value_col" value="1" />
+          </options>
+        </param> 
         <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
-          <select_options param_ref="maf_identifier" from_file="/depot/data2/galaxy/maf_index.loc" func="get_options_for_species_for_maf">
-            <func_param name="maf_source" value="cached" />
-          </select_options>
+          <options from_file="/depot/data2/galaxy/maf_index.loc">
+            <filter type="param_meta" param_ref="maf_identifier" key="maf" />
+            <filter type="param" name="maf_source" value="cached" />
+          </options>
         </param>
       </when>
     </conditional>

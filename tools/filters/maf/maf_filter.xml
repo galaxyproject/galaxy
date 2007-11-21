@@ -5,7 +5,11 @@
     <page>
       <param name="input1" type="data" format="maf" label="MAF File"/>
       <repeat name="maf_filters" title="Filter">
-        <param name="species1" type="select" label="When Species" multiple="false"><select_options data_ref="input1" func="get_options_for_species"/></param>
+        <param name="species1" type="select" label="When Species" multiple="false">
+          <options>
+            <filter type="data_meta" data_ref="input1" key="species" />
+          </options>
+        </param>
         <conditional name="species1_attributes">
           <param name="species1_attribute_type" type="select" label="Species Attribute">
             <option value="attribute_strand">Strand</option>
@@ -21,7 +25,11 @@
               <option value="-">-</option>
             </param>
             <repeat name="filter_condition" title="Filter Condition">
-              <param name="species2" type="select" label="Species" multiple="false"><select_options data_ref="input1" func="get_options_for_species"/></param>
+              <param name="species2" type="select" label="Species" multiple="false">
+                <options>
+                  <filter type="data_meta" data_ref="input1" key="species" />
+                </options>
+              </param>
               <conditional name="species2_attributes">
                 <param name="species2_attribute_type" type="select" label="Species Attribute">
                   <option value="attribute_strand" selected="true">Strand</option>
@@ -54,7 +62,11 @@
             </param>
             <param name="species1_attribute" type="text" label="Chromosome" value="chr1"/>
             <repeat name="filter_condition" title="Filter Condition">
-              <param name="species2" type="select" label="Species" multiple="false"><select_options data_ref="input1" func="get_options_for_species"/></param>
+              <param name="species2" type="select" label="Species" multiple="false">
+                <options>
+                  <filter type="data_meta" data_ref="input1" key="species" />
+                </options>
+              </param>
               <conditional name="species2_attributes">
                 <param name="species2_attribute_type" type="select" label="Species Attribute">
                   <option value="attribute_strand">Strand</option>

@@ -19,10 +19,14 @@
   <inputs>
     <param format="maf" name="input" type="data" label="Select data"/>
     <param name="primary_species" type="select" label="Use quality scores of" display="checkboxes" multiple="true">
-    	<select_options data_ref="input" func="get_options_for_species" />
+      <options>
+        <filter type="data_meta" data_ref="input1" key="species" />
+      </options>  
     </param>
 	<param name="mask_species" type="select" label="Mask Species" display="checkboxes" multiple="true">
-		<select_options data_ref="input" func="get_options_for_species" />
+      <options>
+        <filter type="data_meta" data_ref="input1" key="species" />
+      </options>  
 	</param>
 	<param name="score" size="10" type="integer" value="20" label="Quality score cut-off" help="Cut-off value of 20 means mask all nucleotides having quality score less than or equal to 20"/>
 	<param name="mask_char" size="5" type="select" label="Mask character">

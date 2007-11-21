@@ -1,44 +1,50 @@
 <tool id="Interval2Maf1" name="Extract MAF blocks">
   <description>given a set of genomic intervals</description>
-  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafFile=$maf_source_type.mafFile --interval_file=$input1 --output_file=$out_file1
-#else:#interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafType=$maf_source_type.mafType --interval_file=$input1 --output_file=$out_file1
-#end if
+  <command interpreter="python2.4">
+    #if $maf_source_type.maf_source == "user":#interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafFile=$maf_source_type.mafFile --interval_file=$input1 --output_file=$out_file1
+    #else:#interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafType=$maf_source_type.mafType --interval_file=$input1 --output_file=$out_file1
+    #end if
   </command>
   <inputs>
-        <param format="interval" name="input1" type="data" label="Choose intervals"/>
-        <conditional name="maf_source_type">
-            <param name="maf_source" type="select" label="MAF Source">
-              <option value="cached" selected="true">Locally Cached Alignments</option>
-              <option value="user">Alignments in Your History</option>
-            </param>
-            <when value="user">
-                <param format="maf" name="mafFile" label="Choose alignments" type="data"/>
-            </when>
-            <when value="cached">
-                <param name="mafType" label="Choose alignments" type="select">
-		<select_options from_file="/depot/data2/galaxy/maf_index.loc" data_ref="input1" func="get_options_for_maf"/>
-		</param>
-            </when>
-        </conditional>
+    <param format="interval" name="input1" type="data" label="Choose intervals"/>
+    <conditional name="maf_source_type">
+      <param name="maf_source" type="select" label="MAF Source">
+        <option value="cached" selected="true">Locally Cached Alignments</option>
+        <option value="user">Alignments in Your History</option>
+      </param>
+      <when value="user">
+        <param format="maf" name="mafFile" label="Choose alignments" type="data"/>
+      </when>
+      <when value="cached">
+        <param name="mafType" type="select" label="Choose alignments">
+          <options from_file="/depot/data2/galaxy/maf_index.loc" >
+            <filter type="data_meta" data_ref="input1" key="build" />
+            <filter type="column" name="build_col" value="2" />
+            <filter type="column" name="name_col" value="0" />
+            <filter type="column" name="value_col" value="1" />
+          </options>
+        </param> 
+      </when>
+    </conditional>
    </inputs>
-  <outputs>
-    <data format="maf" name="out_file1"/>
-  </outputs>
-  <tests>
-    <test>
-      <param name="input1" value="1.bed"/>
-      <param name="maf_source" value="cached"/>
-      <param name="mafType" value="ENCODE_TBA_hg17"/>
-      <output name="out_file1" file="fsa_interval2maf.dat" />
-    </test>
-    <test>
-      <param name="input1" value="1.bed"/>
-      <param name="maf_source" value="user"/>
-      <param name="mafFile" value="fsa_interval2maf.dat"/>
-      <output name="out_file1" file="fsa_interval2maf.dat" />
-    </test>
-  </tests>
-  <help>
+   <outputs>
+     <data format="maf" name="out_file1"/>
+   </outputs>
+   <tests>
+     <test>
+       <param name="input1" value="1.bed"/>
+       <param name="maf_source" value="cached"/>
+       <param name="mafType" value="ENCODE_TBA_hg17"/>
+       <output name="out_file1" file="fsa_interval2maf.dat" />
+     </test>
+     <test>
+       <param name="input1" value="1.bed"/>
+       <param name="maf_source" value="user"/>
+       <param name="mafFile" value="fsa_interval2maf.dat"/>
+       <output name="out_file1" file="fsa_interval2maf.dat" />
+     </test>
+   </tests>
+   <help>
 **What it does**
 
 This tool takes genomic coordinates, superimposes them on multiple alignments (in MAF format) stored on the Galaxy site or from your history, and excises alignment blocks corresponding to each set of coordinates. Alignment blocks that extend past START and/or END positions of an interval are trimmed. Note that a single genomic interval may correspond to two or more alignment blocks. 
