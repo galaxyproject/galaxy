@@ -1,4 +1,4 @@
-<tool id="featureCounter" name="Feature coverage">
+<tool id="featureCoverage" name="Feature coverage">
   <description></description>
   <command interpreter="python2.4">featureCounter.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
   <inputs>
@@ -12,12 +12,12 @@
   <outputs>
     <data format="interval" name="output" metadata_source="input1" />
   </outputs>
-  <!--<code file="operation_filter.py"/> -->
+  
   <tests>
     <test>
       <param name="input1" value="1.bed" />
       <param name="input2" value="2.bed" />
-      <output name="output" file="gops-coverage.dat" />
+      <output name="output" file="6_feature_coverage.bed" />
     </test>
   </tests>
   <help>
