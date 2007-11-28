@@ -54,7 +54,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Tool: ${tool.name}</div>
     <div class="toolFormBody">
-        <form method="get" action="${h.url_for( action='tool_form' )}">
+        <form method="get" action="${h.url_for( action='editor_tool_form' )}">
             <input type="hidden" name="tool_id" value="${tool.id}" />
             %for i, inputs in enumerate( tool.inputs_by_page ):
                 %if tool.has_multiple_pages:

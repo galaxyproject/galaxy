@@ -323,7 +323,7 @@ $.extend( Workflow.prototype, {
             }
             nodes[ node.id ] = node_data;
         })
-        return { nodes: nodes }
+        return { steps: nodes }
     },
     from_simple : function ( data ) {
         wf = this;

@@ -98,9 +98,9 @@ $( function() {
 
     // Insert helper divs for panels and popups
     $("<div id='DD-helper' style='background: white; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 9000;'></div>")
-        .css("opacity", "0.01").appendTo("body").hide();
+        .css("background", "transparent").appendTo("body").hide();
     $("<div id='popup-helper' style='background: white; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 15000;'></div>")
-        .css("opacity", "0.01").appendTo("body").hide();
+        .css("background", "transparent").appendTo("body").hide();
       
     // Center the loading indicator
     $(".dialog-box" ).center( "horizontal" );
@@ -314,6 +314,7 @@ div.toolFormRow {
     border: solid red 10px;
     background: #FFDDDD;
     z-index: 50000;
+    overflow: auto;
 }
 
 </style>
@@ -405,7 +406,7 @@ div.toolFormRow {
                 </div>
             </div>
             <div class="unified-panel-body" style="">
-                <iframe name="canvas" width="100%" height="100%" frameborder="0" style="position: absolute;" src="${h.url_for( action='canvas' )}"></iframe>
+                <iframe name="canvas" width="100%" height="100%" frameborder="0" style="position: absolute;" src="${h.url_for( action='editor_canvas' )}"></iframe>
             </div>
         </div>
         <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
@@ -415,7 +416,7 @@ div.toolFormRow {
                     <div class="center-block-inner">Details</div>
                 </div>
             </div>
-            <div class="unified-panel-body" style="overflow: scroll;">
+            <div class="unified-panel-body" style="overflow: auto;">
                 <div id="right-content"></div>
             </div>
         </div>

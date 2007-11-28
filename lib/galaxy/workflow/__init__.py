@@ -16,7 +16,7 @@ class Workflow( object ):
         """
         workflow = Workflow()
         workflow.has_errors = False
-        for id, step_data in data['nodes'].iteritems():
+        for id, step_data in data['steps'].iteritems():
             step = WorkflowStep.from_simple( step_data )
             if step.has_errors:
                 workflow.has_errors = True
