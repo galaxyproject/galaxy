@@ -436,7 +436,7 @@ class SelectToolParameter( ToolParameter ):
             return self.static_options
     def get_legal_values( self, trans, other_values ):
         if self.options:
-            return set( v for _, v, _ in self.options.get_options( trans, other_values ) )
+            return set( v for _, v, _ in self.options.get_options( trans, other_values, must_be_valid = True ) )
         elif self.select_options:
             return set( v for _, v, _ in eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func ) )
         elif self.dynamic_options:
