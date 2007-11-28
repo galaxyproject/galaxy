@@ -1,7 +1,7 @@
 <tool id="getIndels_3way" name="Get Indel rates">
   <description> for 3-way alignments</description>
   <command interpreter="perl">
-  	parseMAF_smallIndels.pl $input1 $out_file1 $out_file2 $outgroup
+  	parseMAF_smallIndels.pl $input1 $out_file1 $outgroup
   </command>
   <inputs>
     <page>
@@ -15,24 +15,13 @@
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" metadata_source="input1"/>
-    <data format="tabular" name="out_file2" metadata_source="input1"/>
+    <!--<data format="tabular" name="out_file2" metadata_source="input1"/>-->
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="flanks_inp.bed"/>
-      <param name="offset" value="-500"/>
-      <param name="size" value="1000"/>
-      <param name="direction" value="Both"/>
-      <param name="region" value="whole"/>
-      <output name="out_file1" file="flanks_out1.bed"/>
-    </test>
-    <test>
-      <param name="input1" value="flanks_inp.bed"/>
-      <param name="offset" value="200"/>
-      <param name="size" value="1000"/>
-      <param name="direction" value="Downstream"/>
-      <param name="region" value="start" />
-      <output name="out_file1" file="flanks_out2.bed"/>
+      <param name="input1" value="3way.maf"/>
+      <param name="outgroup" value="canFam2"/>
+      <output name="out_file1" file="indels_3way.tabular"/>
     </test>
   </tests>
  <help> 
@@ -41,7 +30,15 @@
 
 **What it does**
 
-This tool estimates the indel type and rate for each of the 3-way alignments in the input MAF file.
+This tool estimates the indel type and length for each of the 3-way alignments in the input MAF file.
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+Any block/s not containing exactly 3 sequences will be omitted. 
 
   </help>  
 

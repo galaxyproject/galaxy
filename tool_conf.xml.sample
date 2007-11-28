@@ -121,6 +121,7 @@
 	<tool file="regVariation/quality_filter.xml" />
     <tool file="regVariation/maf_cpg_filter.xml" />
 	<tool file="regVariation/getIndels_2way.xml" />
+	<tool file="regVariation/getIndels_3way.xml" />
   </section>
   
  <section name="Evolution: HyPhy" id="hyphy">
