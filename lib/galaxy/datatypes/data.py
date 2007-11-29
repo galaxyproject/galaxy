@@ -281,18 +281,27 @@ def nice_size(size):
             return out
     return '??? bytes'
 
-def get_file_peek(file_name, WIDTH=256, LINE_COUNT=5 ):
+def get_file_peek( file_name, WIDTH=256, LINE_COUNT=5 ):
     """Returns the first LINE_COUNT lines wrapped to WIDTH"""
-    
     lines = []
     count = 0
     for line in file(file_name):
         line = line.strip()[:WIDTH]
-        lines.append(line)
-        if count==LINE_COUNT:
+        is_binary = False
+        # Make sure we do not have a gzip file
+        try:
+            for char in line:
+                if ord(char) > 128:
+                    is_binary = True
+                    break
+        except:
+            is_binary = True
             break
+        lines.append(line)
+        if count == LINE_COUNT: break
         count += 1
-    text  = '\n'.join(lines)
+    if is_binary: text = 'binary file'
+    else: text  = '\n'.join(lines)
     return text
 
 def get_line_count(file_name):
