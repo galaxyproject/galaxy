@@ -27,18 +27,17 @@ def main():
     
     maf_blocks_kept = 0
     for m in maf_reader:
-        m = m.limit_to_species( species )
+        if species != ['None']:
+            m = m.limit_to_species( species )
         m.remove_all_gap_columns()
-        output_block = False
-        if allow_partial: output_block = True
-        elif len( m.components ) == len( species ): output_block = True
-        if output_block and len( m.components ) > min_species_per_block:
+        if ( species == ['None'] or allow_partial or len( m.components ) == len( species ) ) and len( m.components ) > min_species_per_block:
             maf_writer.write( m )
             maf_blocks_kept += 1
     
     maf_reader.close()
     maf_writer.close()
     
+    print "Restricted to species: %s." % ", ".join( species )
     print "%i MAF blocks have been kept." % maf_blocks_kept
 
 if __name__ == "__main__": 

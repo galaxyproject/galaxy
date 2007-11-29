@@ -33,7 +33,9 @@ def main():
         sys.exit()
     try:
         for m in maf_reader:            
-            new_components = get_components_for_species( m, species )
+            new_components = m.components
+            if species != ['None']:
+                new_components = get_components_for_species( m, species )
             if new_components: 
                 remove_all_gap_columns( new_components )
                 m.components = new_components
@@ -44,5 +46,7 @@ def main():
         sys.exit()
     maf_reader.close()
     maf_writer.close()
+    
+    print "Restricted to species: %s." % ", ".join( species )
     
 if __name__ == "__main__": main()

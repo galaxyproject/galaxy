@@ -23,7 +23,7 @@ class RegionAlignment( object ):
     
     DNA_COMPLEMENT = string.maketrans( "ACGTacgt", "TGCAtgca" )
     
-    def __init__( self, size, species ):
+    def __init__( self, size, species = [] ):
         self.size = size
         self.sequences = {}
         if not isinstance( species, list ):
@@ -50,7 +50,7 @@ class RegionAlignment( object ):
     #returns the sequence for a species
     def get_sequence( self, species ):
         self.sequences[species]['file'].seek( 0 )
-        return( self.sequences[species]['file'].read() )
+        return self.sequences[species]['file'].read()
     
     #returns the reverse complement of the sequence for a species
     def get_sequence_reverse_complement( self, species ):

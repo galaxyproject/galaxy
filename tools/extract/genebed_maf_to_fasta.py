@@ -23,7 +23,7 @@ class RegionAlignment( object ):
     
     DNA_COMPLEMENT = string.maketrans( "ACGTacgt", "TGCAtgca" )
     
-    def __init__( self, size, species ):
+    def __init__( self, size, species = [] ):
         self.size = size
         self.sequences = {}
         if not isinstance( species, list ):
@@ -37,6 +37,15 @@ class RegionAlignment( object ):
         fd, file_path = tempfile.mkstemp()
         self.sequences[species] = { 'file':os.fdopen( fd, 'w+' ), 'path':file_path }
         self.sequences[species]['file'].write( "-" * self.size )
+    
+    #returns the names for species found in alignment, skipping names as requested
+    def get_species_names( self, skip = [] ):
+        if not isinstance( skip, list ): skip = [skip]
+        names = self.sequences.keys()
+        for name in skip:
+            try: names.remove( name )
+            except: pass
+        return names
     
     #returns the sequence for a species
     def get_sequence( self, species ):
@@ -53,6 +62,7 @@ class RegionAlignment( object ):
     def set_position( self, index, species, base ):
         if index >= self.size or index < 0: raise "Your index (%i) is out of range (0 - %i)." % ( index, self.size - 1 )
         if len(base) != 1: raise "A genomic position can only have a length of 1."
+        if species not in self.sequences.keys(): self.add_species( species )
         self.sequences[species]['file'].seek( index )
         self.sequences[species]['file'].write( base )
         
@@ -70,6 +80,63 @@ class RegionAlignment( object ):
         for species, sequence in self.sequences.items():
             sequence['file'].close()
             os.unlink( sequence['path'] )
+
+
+class GenomicRegionAlignment( RegionAlignment ):
+    
+    def __init__( self, start, end, species = [] ):
+        RegionAlignment.__init__( self, end - start, species )
+        self.start = start
+        self.end = end
+
+class SplicedAlignment( object ):
+    
+    DNA_COMPLEMENT = string.maketrans( "ACGTacgt", "TGCAtgca" )
+    
+    def __init__( self, exon_starts, exon_ends, species = [] ):
+        if not isinstance( exon_starts, list ):
+            exon_starts = [exon_starts]
+        if not isinstance( exon_ends, list ):
+            exon_ends = [exon_ends]
+        assert len( exon_starts ) == len( exon_ends ), "The number of starts does not match the number of sizes."
+        self.exons = []
+        for i in range( len( exon_starts ) ):
+            self.exons.append( GenomicRegionAlignment( exon_starts[i], exon_ends[i], species ) )
+    
+    #returns the names for species found in alignment, skipping names as requested
+    def get_species_names( self, skip = [] ):
+        if not isinstance( skip, list ): skip = [skip]
+        names = []
+        for exon in self.exons:
+            for name in exon.get_species_names( skip = skip ):
+                if name not in names:
+                    names.append( name )
+        return names
+    
+    #returns the sequence for a species
+    def get_sequence( self, species ):
+        sequence = tempfile.TemporaryFile()
+        for exon in self.exons:
+            if species in exon.get_species_names():
+                sequence.write( exon.get_sequence( species ) )
+            else:
+                sequence.write( "-" * exon.size )
+        sequence.seek( 0 )
+        return sequence.read()
+    
+    #returns the reverse complement of the sequence for a species
+    def get_sequence_reverse_complement( self, species ):
+        complement = [base for base in self.get_sequence( species ).translate( self.DNA_COMPLEMENT )]
+        complement.reverse()
+        return "".join( complement )
+    
+    #Start and end of coding region
+    @property
+    def start( self ):
+        return self.exons[0].start
+    @property
+    def end( self ):
+        return self.exons[-1].end
 
 def maf_index_by_uid( maf_uid ):
     for line in open( MAF_LOCATION_FILE ):
@@ -114,8 +181,11 @@ def __main__():
     primary_species = sys.argv.pop( 1 )
     secondary_species = sys.argv.pop( 1 ).split( "," )
     include_primary = True
-    try: secondary_species.remove( primary_species )
-    except: include_primary = False
+    if secondary_species == ["None"]:
+        secondary_species = None
+    else:
+        try: secondary_species.remove( primary_species )
+        except: include_primary = False
     maf_identifier = sys.argv.pop( 1 )
     interval_file = sys.argv.pop( 1 )
     output_file = sys.argv.pop( 1 )
@@ -155,11 +225,12 @@ def __main__():
             if line[0:1]=="#":
                 continue
             
-            #Storage for exons of this gene
-            exons = []
-            
             #load gene bed fields
             try:
+                #Starts and ends for exons
+                starts = []
+                ends = []
+                
                 fields = line.split()
                 #Requires atleast 12 BED columns
                 if len(fields) < 12:
@@ -183,18 +254,20 @@ def __main__():
                     start = max( start, region_start )
                     end = min( end, region_end )
                     if start < end:
-                        alignment = RegionAlignment( end - start, [primary_species] + secondary_species )
-                        exons.append( {'ref_start':start, 'ref_end':end, 'alignment':alignment} )
+                        starts.append( start )
+                        ends.append( end )
+                #create spliced alignment object
+                if secondary_species is not None: alignment = SplicedAlignment( starts, ends, [primary_species] + secondary_species )
+                else: alignment = SplicedAlignment( starts, ends, [primary_species] )
             except Exception, e:
                 print "Error loading exon positions from input line %i: %s" % ( line_count, e )
                 continue
             
-            for exon in exons:
+            for exon in alignment.exons:
                 try:
                     primary_src = "%s.%s" % ( primary_species, chrom )
-                    start = exon['ref_start']
-                    end = exon['ref_end']
-                    alignment = exon['alignment']
+                    start = exon.start
+                    end = exon.end
                     
                     #Get blocks overlaping this position
                     blocks = index.get( primary_src, start, end )
@@ -213,7 +286,8 @@ def __main__():
                         #Get maf block
                         maf = blocks[block_index]
                         #Limit maf block to desired species
-                        maf = maf.limit_to_species( [primary_species] + secondary_species )
+                        if secondary_species is not None:
+                            maf = maf.limit_to_species( [primary_species] + secondary_species )
                         #Colapse extraneous gap columns
                         maf.remove_all_gap_columns()
                         #Positions and strand are in reference to ref
@@ -239,48 +313,36 @@ def __main__():
                             if ref.text[i] in ["-"]:
                                 num_gaps += 1
                                 continue
-                            #Set base for primary species
-                            alignment.set_position( start_offset + i - num_gaps, primary_species, ref.text[i] )
-                            #Set base for secondary species
-                            for spec in secondary_species:
+                            #Set base for all species
+                            for spec in [ c.src.split( '.' )[0] for c in maf.components ]:
                                 try:
                                     #NB: If a gap appears in higher scoring secondary species block,
                                     #it will overwrite any bases that have been set by lower scoring blocks
                                     #this seems more proper than allowing, e.g. a single base from lower scoring alignment to exist outside of its genomic context
-                                    alignment.set_position( start_offset + i - num_gaps, spec, maf.get_component_by_src_start( spec ).text[i] )
+                                    exon.set_position( start_offset + i - num_gaps, spec, maf.get_component_by_src_start( spec ).text[i] )
                                 except:
                                     #species/sequence for species does not exist
                                     pass
                 except Exception, e:
                     print "Error filling exons with MAFs from input line %i: %s" % ( line_count, e )
                     continue
-                    
-            
-            #exons loaded, now output them stitched together in proper orientation
-            step_list = range(len(exons))
-            if strand == "-": step_list.reverse()
             
             #Write alignment to output file
             #Output primary species first, if requested
             if include_primary:
                 output.write( ">%s.%s\n" %( primary_species, name ) )
-                for i in step_list:
-                    alignment = exons[i]['alignment']
-                    if strand == "-":
-                        output.write( alignment.get_sequence_reverse_complement( primary_species ) )
-                    else:
-                        output.write( alignment.get_sequence( primary_species ) )
+                if strand == "-":
+                    output.write( alignment.get_sequence_reverse_complement( primary_species ) )
+                else:
+                    output.write( alignment.get_sequence( primary_species ) )
                 output.write( "\n" )
-            
             #Output all remainging species
-            for spec in secondary_species:
+            for spec in secondary_species or alignment.get_species_names( skip = primary_species ):
                 output.write( ">%s.%s\n" % ( spec, name ) )
-                for i in step_list:
-                    alignment = exons[i]['alignment']
-                    if strand == "-":
-                        output.write( alignment.get_sequence_reverse_complement( spec ) )
-                    else:
-                        output.write( alignment.get_sequence( spec ) )
+                if strand == "-":
+                    output.write( alignment.get_sequence_reverse_complement( spec ) )
+                else:
+                    output.write( alignment.get_sequence( spec ) )
                 output.write( "\n" )
             
             output.write( "\n" )
