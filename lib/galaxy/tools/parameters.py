@@ -407,29 +407,22 @@ class SelectToolParameter( ToolParameter ):
         self.separator = elem.get( 'separator', ',' )
         self.legal_values = set()
         self.dynamic_options = elem.get( "dynamic_options", None )
-        select_options = elem.find( 'select_options' )
-        if select_options is None:
-            self.select_options = None
-        else:
-            self.select_options = dynamic_options.DynamicOptions( select_options )
         options = elem.find( 'options' )
         if options is None:
             self.options = None
         else:
             self.options = dynamic_options.DynamicOptions( options )
-        if self.dynamic_options is None and self.select_options is None and self.options is None:
+        if self.dynamic_options is None and self.options is None:
             self.static_options = list()
             for index, option in enumerate( elem.findall( "option" ) ):
                 value = option.get( "value" )
                 self.legal_values.add( value )
                 selected = ( option.get( "selected", None ) == "true" )
                 self.static_options.append( ( option.text, value, selected ) )
-        self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.select_options is not None ) or ( self.options is not None ) ) 
+        self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.options is not None ) ) 
     def get_options( self, trans, other_values ):
         if self.options:
             return self.options.get_options( trans, other_values )
-        elif self.select_options:
-            return eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func )
         elif self.dynamic_options:
             return eval( self.dynamic_options, self.tool.code_namespace, other_values )
         else:
@@ -437,8 +430,6 @@ class SelectToolParameter( ToolParameter ):
     def get_legal_values( self, trans, other_values ):
         if self.options:
             return set( v for _, v, _ in self.options.get_options( trans, other_values, must_be_valid = True ) )
-        elif self.select_options:
-            return set( v for _, v, _ in eval( '''self.select_options.%s( trans, other_values )''' %self.select_options.func ) )
         elif self.dynamic_options:
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
         else:
@@ -518,11 +509,6 @@ class SelectToolParameter( ToolParameter ):
             try: data_ref = self.options.data_ref
             except: pass
             try: param_ref = self.options.param_ref
-            except: pass
-        elif self.select_options:
-            try: data_ref = self.select_options.data_ref
-            except: pass
-            try: param_ref = self.select_options.param_ref
             except: pass
         if data_ref is None and param_ref is None: return []
         elif data_ref is None: return [ param_ref ]

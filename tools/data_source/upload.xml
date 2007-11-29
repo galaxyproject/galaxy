@@ -11,8 +11,10 @@
     <param name="space_to_tab" type="select" display="checkboxes" multiple="True" label="Convert spaces to tabs" help="Use this option if you are entering intervals by hand."> 
       <option value="Yes">Yes</option>
     </param>
-    <param type="select" name="file_type" label="File Format" dynamic_options="get_formats()" help="Which format? See help below" />
-    <param label="Genome" name="dbkey" type="genomebuild" dynamic_options=""/>
+    <param name="file_type" type="select" label="File Format" help="Which format? See help below">
+      <options tool_type="upload" />
+    </param>
+    <param name="dbkey" type="genomebuild" label="Genome" />
   </inputs>
   <help>
 **Auto-detect**
@@ -128,5 +130,4 @@ Any data in tab delimited format (tabular)
 Any text file
 
   </help>
-  <code file="upload_code.py"/>
 </tool>

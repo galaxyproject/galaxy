@@ -6,6 +6,7 @@ log = logging.getLogger(__name__)
 class DynamicOptions( object ):
     """Handles dynamically generated SelectToolParameter options"""
     def __init__( self, elem  ):
+        self.from_file_data = None
         # FIXME: Pushing these things in as options ends up being pretty ugly. 
         # We should find a way to make this work through the validation mechanism.
         self.no_data_option = [ ( 'No data available for this build', 'None', True ) ]
@@ -23,28 +24,20 @@ class DynamicOptions( object ):
             except:
                 self.data_file = self.from_file
         else: self.data_file = None
-        if elem.tag == 'select_options':
-            self.data_ref = elem.get( 'data_ref', None )
-            self.param_ref = elem.get( 'param_ref', None )
-            self.func = elem.get( 'func', None )
-            assert self.func is not None, "Value for option generator function not found"
-            self.func_params = elem.findall( 'func_param' )
-        else: #elem.tag =='options'
-            self.filters = elem.findall( 'filter' )
-            self.data_ref = None
-            for filter in self.filters:
-                filter_type = filter.get( 'type', None )
-                assert filter_type is not None, "Required 'type' attribute missing from filter"
-                if filter_type.strip() == 'data_meta':
-                    self.data_ref = filter.get( 'data_ref', None )
-                    assert self.data_ref is not None, "Required 'data_ref' attribute missing from 'data_meta' filter"
-                    self.data_ref = self.data_ref.strip()
-                elif filter_type.strip() == 'param_meta':
-                    self.param_ref = filter.get( 'param_ref', None )
-                    assert self.param_ref is not None, "Required 'param_ref' attribute missing from 'param_meta' filter"
-                    self.param_ref = self.param_ref.strip()
-        #FIXME: this attr is used only by microbial import, so shouldn't be at this level
-        self.microbe_info = None
+        self.tool_type = elem.get( 'tool_type', None )
+        self.filters = elem.findall( 'filter' )
+        self.data_ref = None
+        for filter in self.filters:
+            filter_type = filter.get( 'type', None )
+            assert filter_type is not None, "Required 'type' attribute missing from filter"
+            if filter_type.strip() == 'data_meta':
+                self.data_ref = filter.get( 'data_ref', None )
+                assert self.data_ref is not None, "Required 'data_ref' attribute missing from 'data_meta' filter"
+                self.data_ref = self.data_ref.strip()
+            elif filter_type.strip() == 'param_meta':
+                self.param_ref = filter.get( 'param_ref', None )
+                assert self.param_ref is not None, "Required 'param_ref' attribute missing from 'param_meta' filter"
+                self.param_ref = self.param_ref.strip()
     def get_dataset( self, trans, other_values ):
         # No value indicates a configuration error, the named DataToolParameter must preceed this parameter in the tool config
         assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
@@ -56,14 +49,18 @@ class DynamicOptions( object ):
             # Currently dynamically generated select lists do not work well with optional datasets.
             return None
         return dataset
-    def get_param_value( self, trans, other_values ):
+    def get_param_value( self, param, trans, other_values ):
+        if param is None: return None
+        assert param in other_values, "Value for associated param_value %s not found" %param
+        return other_values[ param ]
+    def get_param_ref_value( self, trans, other_values ):
         if self.param_ref is None: return None
-        assert self.param_ref in other_values, "Value for associated parameter %s not found" %self.param_ref.name
+        assert self.param_ref in other_values, "Value for associated param_ref %s not found" %self.param_ref.name
         return other_values[ self.param_ref ]
     def get_unique_elems( self, elems ): 
         seen = set()
         return [ x for x in elems if x not in seen and not seen.add( x ) ]
-    def get_options( self, trans, other_values, must_be_valid = False ):
+    def get_options( self, trans, other_values, must_be_valid=False ):
         filters = {}
         key = None
         # Check for filters and build a dictionary from them
@@ -84,7 +81,6 @@ class DynamicOptions( object ):
                     if key == 'build': value = dataset.get_dbkey()
                     elif key == 'file_name': value = dataset.get_file_name()
                     elif key == 'species': value = dataset.metadata.species
-                    elif key == 'maf': pass # value does not need to be set, maf tools require special handling - see below
                 filters[ 'data_meta' ][ 'value' ] = value
                 if self.data_file == 'maf_index.loc' and key == 'build' and value == '?':
                     if must_be_valid: return []
@@ -94,8 +90,20 @@ class DynamicOptions( object ):
                 key = filter.get( 'key', None )
                 assert key is not None, "key attribute missing from param_meta filter"
                 filters[ 'param_meta' ][ 'key' ] = key.strip()
-                value = self.get_param_value( trans, other_values )
+                value = self.get_param_ref_value( trans, other_values )
                 filters[ 'param_meta' ][ 'value' ] = value
+            elif filter_type == 'param_value':
+                n = filter.get( 'name', None )
+                assert n is not None, "param_value filters require a 'name' attribute"
+                n = n.strip()
+                v = self.get_param_value( n, trans, other_values )
+                assert v is not None, "param_value filters require a 'value' attribute"
+                v = v.strip()
+                try:
+                    filters[ 'param_values' ][ n ] = v
+                except:
+                    filters[ 'param_values' ] = {}
+                    filters[ 'param_values' ][ n ] = v
             elif filter_type == 'column':
                 n = filter.get( 'name', None )
                 assert n is not None, "column filters require a 'name' attribute"
@@ -109,7 +117,6 @@ class DynamicOptions( object ):
                     filters[ 'columns' ] = {}
                     filters[ 'columns' ][ n ] = v
             elif filter_type == 'param':
-                # TODO: I'm not sure I like the way 'param' filters are implemented, I may be rethinking this approach...
                 n = filter.get( 'name', None )
                 assert n is not None, "param filters require a 'name' attribute"
                 n = n.strip()
@@ -121,14 +128,15 @@ class DynamicOptions( object ):
                 except:
                     filters[ 'params' ] = {}
                     filters[ 'params' ][ n ] = v
-        # Now that we've parsed our filters, we need to see if the tool is a maf tool which requires special handling
+        # Now that we've parsed our filters, we need to see if the tool is a maf tool 
+        # which requires special handling
         try: key = filters[ 'data_meta' ][ 'key' ]
-        except: key == None
+        except: key = None
         if key == 'maf':
             maf_source = filters[ 'params' ][ 'maf_source' ]
             if maf_source == 'cached':
                 maf_uid = filters[ 'param_meta' ][ 'value' ]
-                if maf_uid in [None, 'None']:
+                if maf_uid in [ None, 'None' ]:
                     if must_be_valid: return []
                     if maf_uid is None: return self.no_data_option
                     if maf_uid == 'None': return self.build_not_set_option
@@ -137,45 +145,62 @@ class DynamicOptions( object ):
                 if dataset is None: return self.wait_for_maf_option
                 filters[ 'data_meta' ][ 'key' ] = 'species'
                 filters[ 'data_meta' ][ 'value' ] = dataset.metadata.species
-        return self.generate_options( filters, must_be_valid = must_be_valid )
-    def generate_options( self, filters={}, sep='\t', must_be_valid = False ):
-        # Extract the info from the tool's options filters, if any
-        try: key = filters[ 'data_meta' ][ 'key' ]
-        except: key = None
-        try: value = filters[ 'data_meta' ][ 'value' ]
-        except: value = None
-        if key is None and value is None:
-            # Look for param_meta filter
-            try: key = filters[ 'param_meta' ][ 'key' ]
-            except: key = None
-            try: value = filters[ 'param_meta' ][ 'value' ]
-            except: value = None
-        try: name_col = int( filters[ 'columns' ][ 'name_col' ] )
-        except: name_col = None
-        try: value_col = int( filters[ 'columns' ][ 'value_col' ] )
-        except: value_col = None
-        try: encode_group = filters[ 'params' ][ 'encode_group' ]
-        except: encode_group = None
-        try: build = filters[ 'params' ][ 'build' ]
-        except: build = None
-        try: maf_source = filters[ 'params' ][ 'maf_source' ]
-        except: maf_source = None
-
-        # Order of the following conditionals is critical
-        if encode_group is not None and build is not None:
-            return self.generate_from_file_for_encode( encode_group, build, must_be_valid = must_be_valid )
-        elif key == 'species':
-            return self.generate_from_dataset_for_species( value )
-        elif key == 'maf':
-            return self.generate_from_file_for_maf( maf_source, value, must_be_valid = must_be_valid )
-        elif key == 'file_name':
-            return self.generate_from_dataset( value, value_col )
-        elif key == 'build':
-            build_col = int( filters[ 'columns' ][ 'build_col' ].strip() )
-            return self.generate_from_file_for_build( value, build_col, name_col, value_col, must_be_valid = must_be_valid )
-        elif key is None:
-            return self.generate_from_file( name_col, value_col )
-    def generate_from_file_for_encode( self, encode_group, build, sep='\t', must_be_valid = False ):
+        return self.generate_options( filters, must_be_valid=must_be_valid )
+    def generate_options( self, filters={}, sep='\t', must_be_valid=False ):
+        if self.tool_type == 'upload':
+            return self.generate_from_datatypes_registry()
+        elif self.tool_type == 'encode':
+            encode_group = filters[ 'params' ][ 'encode_group' ]
+            build = filters[ 'params' ][ 'build' ]
+            return self.generate_from_file_for_encode( encode_group, build, must_be_valid=must_be_valid )
+        elif self.tool_type == 'microbial':
+            if self.from_file_data is None: self.load_microbial_data()
+            try: kingdom = filters[ 'param_values' ][ 'kingdom' ]
+            except: kingdom = None
+            try: org = filters[ 'param_values' ][ 'org' ]
+            except: org = None
+            try: feature = filters[ 'params' ][ 'feature' ]
+            except: feature = None
+            return self.generate_from_file_for_microbial( kingdom, org, feature, must_be_valid=must_be_valid )
+        else: # self.tool_type is None
+            try: key = filters[ 'data_meta' ][ 'key' ]
+            except:
+                try: key = filters[ 'param_meta' ][ 'key' ]
+                except: key = None
+            if key == 'species':
+                value = filters[ 'data_meta' ][ 'value' ]
+                return self.generate_from_dataset_for_species( value )
+            elif key == 'maf':
+                maf_source = filters[ 'params' ][ 'maf_source' ]
+                try: value = filters[ 'data_meta' ][ 'value' ]
+                except: value = filters[ 'param_meta' ][ 'value' ]
+                return self.generate_from_file_for_maf( maf_source, value, must_be_valid=must_be_valid )
+            elif key == 'file_name':
+                value = filters[ 'data_meta' ][ 'value' ]
+                value_col = int( filters[ 'columns' ][ 'value_col' ] )
+                return self.generate_from_dataset( value, value_col )
+            elif key == 'build':
+                value = filters[ 'data_meta' ][ 'value' ]
+                build_col = int( filters[ 'columns' ][ 'build_col' ].strip() )
+                name_col = int( filters[ 'columns' ][ 'name_col' ] )
+                value_col = int( filters[ 'columns' ][ 'value_col' ] )
+                return self.generate_from_file_for_build( value, build_col, name_col, value_col, must_be_valid=must_be_valid )
+            else: # key is None
+                name_col = int( filters[ 'columns' ][ 'name_col' ] )
+                value_col = int( filters[ 'columns' ][ 'value_col' ] )
+                return self.generate_from_file( name_col, value_col )
+    def generate_from_datatypes_registry( self ):
+        from galaxy.datatypes import registry
+        datatypes_registry = registry.Registry()
+        options = []
+        formats = datatypes_registry.datatypes_by_extension.keys()
+        formats.sort()
+        options.append( ( 'Auto-detect', 'auto', True ) )
+        for format in formats:
+            label = format.capitalize()
+            options.append( ( label, format, False ) )
+        return options
+    def generate_from_file_for_encode( self, encode_group, build, sep='\t', must_be_valid=False ):
         options = []
         def generate():
             encode_sets = {}
@@ -253,12 +278,121 @@ class DynamicOptions( object ):
                 if must_be_valid: return []
                 return self.no_data_option_not_selected
         return options
+    def generate_from_file_for_microbial( self, kingdom=None, org=None, feature=None, must_be_valid=False ):
+        options = []
+        if not kingdom and not org and not feature:
+            kingdoms = self.from_file_data.keys()
+            kingdoms.sort()
+            for kingdom in kingdoms:
+                options.append( ( kingdom, kingdom, False ) )
+            if options:
+                options[0] = ( options[0][0], options[0][1], True )
+        elif kingdom and not org and not feature:
+            orgs = self.from_file_data[ kingdom ].keys()
+            #need to sort by name
+            swap_test = False
+            for i in range( 0, len( orgs ) - 1 ):
+                for j in range( 0, len( orgs ) - i - 1 ):
+                    if self.from_file_data[ kingdom ][ orgs[ j ] ][ 'name' ] > self.from_file_data[ kingdom ][ orgs[ j + 1 ] ][ 'name' ]:
+                        orgs[ j ], orgs[ j + 1 ] = orgs[ j + 1 ], orgs[ j ]
+                    swap_test = True
+                if swap_test == False: break
+            for org in orgs:
+                 if self.from_file_data[ kingdom ][ org ][ 'link_site' ] == "UCSC":
+                    options.append( ( "<b>" + self.from_file_data[ kingdom ][ org ][ 'name' ] + "</b> <a href=\"" + self.from_file_data[ kingdom ][ org ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", org, False ) )
+                 else:
+                    options.append( ( self.from_file_data[ kingdom ][ org ][ 'name' ] + " <a href=\"" + self.from_file_data[ kingdom ][ org ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", org, False ) )
+            if options:
+                options[0] = ( options[0][0], options[0][1], True)
+        else:
+            chroms = self.from_file_data[ kingdom ][ org ][ 'chrs' ].keys()
+            chroms.sort()
+            for chr in chroms:
+                 for data in self.from_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'data' ]:
+                     if self.from_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'data' ][ data ][ 'feature' ] == feature:
+                         options.append( ( self.from_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'name' ] + " <a href=\"" + self.from_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", data, False ) )
+        return options
+    def load_microbial_data( self, sep='\t' ):
+        microbe_info= {}
+        orgs = {}
+        for line in open( self.from_file ):
+            line = line.rstrip( '\r\n' )
+            if line and not line.startswith( '#' ):
+                fields = line.split( sep )
+                #read each line, if not enough fields, go to next line
+                try:
+                    info_type = fields.pop(0)
+                    if info_type.upper() == "ORG":
+                        #ORG     12521   Clostridium perfringens SM101   bacteria        Firmicutes      CP000312,CP000313,CP000314,CP000315     http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=genomeprj&cmd=Retrieve&dopt=Overview&list_uids=12521
+                        org_num = fields.pop(0)
+                        name = fields.pop(0)
+                        kingdom = fields.pop(0)
+                        group = fields.pop(0)
+                        chromosomes = fields.pop(0)
+                        info_url = fields.pop(0)
+                        link_site = fields.pop(0)
+                        if org_num not in orgs:
+                            orgs[ org_num ] = {}
+                            orgs[ org_num ][ 'chrs' ] = {}
+                        orgs[ org_num ][ 'name' ] = name
+                        orgs[ org_num ][ 'kingdom' ] = kingdom
+                        orgs[ org_num ][ 'group' ] = group
+                        orgs[ org_num ][ 'chromosomes' ] = chromosomes
+                        orgs[ org_num ][ 'info_url' ] = info_url
+                        orgs[ org_num ][ 'link_site' ] = link_site
+                    elif info_type.upper() == "CHR":
+                        #CHR     12521   CP000315        Clostridium perfringens phage phiSM101, complete genome 38092   110684521       CP000315.1
+                        org_num = fields.pop(0)
+                        chr_acc = fields.pop(0)
+                        name = fields.pop(0)
+                        length = fields.pop(0)
+                        gi = fields.pop(0)
+                        gb = fields.pop(0)
+                        info_url = fields.pop(0)
+                        chr = {}
+                        chr[ 'name' ] = name
+                        chr[ 'length' ] = length
+                        chr[ 'gi' ] = gi
+                        chr[ 'gb' ] = gb
+                        chr[ 'info_url' ] = info_url
+                        if org_num not in orgs:
+                            orgs[ org_num ] = {}
+                            orgs[ org_num ][ 'chrs' ] = {}
+                        orgs[ org_num ][ 'chrs' ][ chr_acc ] = chr
+                    elif info_type.upper() == "DATA":
+                        #DATA    12521_12521_CDS 12521   CP000315        CDS     bed     /home/djb396/alignments/playground/bacteria/12521/CP000315.CDS.bed
+                        uid = fields.pop(0)
+                        org_num = fields.pop(0)
+                        chr_acc = fields.pop(0)
+                        feature = fields.pop(0)
+                        filetype = fields.pop(0)
+                        path = fields.pop(0)
+                        data = {}
+                        data[ 'filetype' ] = filetype
+                        data[ 'path' ] = path
+                        data[ 'feature' ] = feature
+    
+                        if org_num not in orgs:
+                            orgs[ org_num ] = {}
+                            orgs[ org_num ][ 'chrs' ] = {}
+                        if 'data' not in orgs[ org_num ][ 'chrs' ][ chr_acc ]:
+                            orgs[ org_num ][ 'chrs' ][ chr_acc ][ 'data' ] = {}
+                        orgs[ org_num ][ 'chrs' ][ chr_acc ][ 'data' ][ uid ] = data
+                    else: continue
+                except: continue
+        for org_num in orgs:
+            org = orgs[ org_num ]
+            if org[ 'kingdom' ] not in microbe_info:
+                microbe_info[ org[ 'kingdom' ] ] = {}
+            if org_num not in microbe_info[ org[ 'kingdom' ] ]:
+                microbe_info[ org[ 'kingdom' ] ][org_num] = org
+        self.from_file_data = microbe_info
     def generate_from_dataset_for_species( self, value ):
         options = []
         for species in value:
             options.append( ( species, species, False ) )
         return options
-    def generate_from_file_for_maf( self, maf_source, maf_uid, sep='\t', must_be_valid = False ):
+    def generate_from_file_for_maf( self, maf_source, maf_uid, sep='\t', must_be_valid=False ):
         options = []
         d = {}
         # We will only reach here if the maf-source param value is 'cached'
@@ -285,7 +419,7 @@ class DynamicOptions( object ):
             if must_be_valid: return []
             return self.no_data_option
         return options
-    def generate_from_dataset( self, value, value_col, sep='\t', must_be_valid = False ):
+    def generate_from_dataset( self, value, value_col, sep='\t', must_be_valid=False ):
         options = []
         elem_list = []
         try: in_file = open( value, "r" )
@@ -307,7 +441,7 @@ class DynamicOptions( object ):
         for elem in elem_list:
             options.append( ( elem, elem, False ) )
         return options
-    def generate_from_file_for_build( self, value, build_col, name_col, value_col, sep='\t', must_be_valid = False ):
+    def generate_from_file_for_build( self, value, build_col, name_col, value_col, sep='\t', must_be_valid=False ):
         options = []
         d = {}
         for line in open( self.from_file ):
@@ -330,7 +464,7 @@ class DynamicOptions( object ):
                     if not fields[ build_col ] in d: 
                         d[ fields[ build_col ] ] = []
                     d[ fields[ build_col ] ].append( (fields[ name_col ], fields[ value_col ]) )
-                elif self.data_file == 'maf_index.loc':
+                elif self.data_file == 'maf_index.loc' or self.data_file == 'maf_pairwise.loc':
                     try:
                         maf_desc = fields[ name_col ] # ENCODE TBA (hg17)
                         maf_uid = fields[ value_col ] # ENCODE_TBA_hg17
@@ -359,7 +493,7 @@ class DynamicOptions( object ):
             if value in d:
                 for (key, val) in d[ value ]:
                     options.append( ( key, val, False ) )
-        elif self.data_file == 'maf_index.loc':
+        elif self.data_file == 'maf_index.loc' or self.data_file == 'maf_pairwise.loc':
             for key in d:
                 if value in d[ key ][ 'builds' ]:
                     options.append( ( d[ key ][ 'description' ], key, False ) )
@@ -379,131 +513,3 @@ class DynamicOptions( object ):
                 # TODO: this option list should be sorted
                 options.append( ( fields[ name_col ], fields[ value_col ], False ) )
         return options
-    def load_from_file_for_microbial( self ):
-        self.from_file = "/depot/data2/galaxy/microbes/microbial_data.loc"
-        microbe_info= {}
-        orgs = {}
-        for line in open( self.from_file ):
-            line = line.rstrip( '\r\n' )
-            if line and not line.startswith( '#' ):
-                fields = line.split( '\t' )
-                #read each line, if not enough fields, go to next line
-                try:
-                    info_type = fields.pop(0)
-                    if info_type.upper() == "ORG":
-                        #ORG     12521   Clostridium perfringens SM101   bacteria        Firmicutes      CP000312,CP000313,CP000314,CP000315     http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=genomeprj&cmd=Retrieve&dopt=Overview&list_uids=12521
-                        org_num = fields.pop(0)
-                        name = fields.pop(0)
-                        kingdom = fields.pop(0)
-                        group = fields.pop(0)
-                        chromosomes = fields.pop(0)
-                        info_url = fields.pop(0)
-                        link_site = fields.pop(0)
-                        if org_num not in orgs:
-                            orgs[org_num] = {}
-                            orgs[org_num]['chrs'] = {}
-                        orgs[org_num]['name'] = name
-                        orgs[org_num]['kingdom'] = kingdom
-                        orgs[org_num]['group'] = group
-                        orgs[org_num]['chromosomes'] = chromosomes
-                        orgs[org_num]['info_url'] = info_url
-                        orgs[org_num]['link_site'] = link_site
-                    elif info_type.upper() == "CHR":
-                        #CHR     12521   CP000315        Clostridium perfringens phage phiSM101, complete genome 38092   110684521       CP000315.1
-                        org_num = fields.pop(0)
-                        chr_acc = fields.pop(0)
-                        name = fields.pop(0)
-                        length = fields.pop(0)
-                        gi = fields.pop(0)
-                        gb = fields.pop(0)
-                        info_url = fields.pop(0)
-                        chr = {}
-                        chr['name'] = name
-                        chr['length'] = length
-                        chr['gi'] = gi
-                        chr['gb'] = gb
-                        chr['info_url'] = info_url
-                        if org_num not in orgs:
-                            orgs[org_num] = {}
-                            orgs[org_num]['chrs'] = {}
-                        orgs[org_num]['chrs'][chr_acc] = chr
-                    elif info_type.upper() == "DATA":
-                        #DATA    12521_12521_CDS 12521   CP000315        CDS     bed     /home/djb396/alignments/playground/bacteria/12521/CP000315.CDS.bed
-                        uid = fields.pop(0)
-                        org_num = fields.pop(0)
-                        chr_acc = fields.pop(0)
-                        feature = fields.pop(0)
-                        filetype = fields.pop(0)
-                        path = fields.pop(0)
-                        data = {}
-                        data['filetype'] = filetype
-                        data['path'] = path
-                        data['feature'] = feature
-    
-                        if org_num not in orgs:
-                            orgs[org_num] = {}
-                            orgs[org_num]['chrs'] = {}
-                        if 'data' not in orgs[org_num]['chrs'][chr_acc]:
-                            orgs[org_num]['chrs'][chr_acc]['data'] = {}
-                        orgs[org_num]['chrs'][chr_acc]['data'][uid] = data
-                    else: continue
-                except: continue
-        for org_num in orgs:
-            org = orgs[org_num]
-            if org['kingdom'] not in microbe_info:
-                microbe_info[org['kingdom']] = {}
-            if org_num not in microbe_info[org['kingdom']]:
-                microbe_info[org['kingdom']][org_num] = org
-        self.microbe_info = microbe_info
-    def get_options_for_kingdoms( self, trans, other_values ):
-        if self.microbe_info == None: self.load_from_file_for_microbial()
-        options = []
-        kingdoms = self.microbe_info.keys()
-        kingdoms.sort()
-        for kingdom in kingdoms:
-            options.append( (kingdom, kingdom, False) )
-        if options:
-            options[0] = ( options[0][0], options[0][1], True)
-        return options
-    def get_options_for_orgs_by_kingdom( self, trans, other_values ):
-        if self.microbe_info == None: self.load_from_file_for_microbial()
-        options = []
-        for func_param in self.func_params:
-            if func_param.get( 'name' ) == 'kingdom':
-                kingdom = other_values[ func_param.get( 'value' ) ]
-        orgs = self.microbe_info[kingdom].keys()
-        #need to sort by name
-        swap_test = False
-        for i in range( 0, len(orgs) - 1 ):
-            for j in range( 0, len(orgs) - i - 1 ):
-                if self.microbe_info[kingdom][orgs[j]]['name'] > self.microbe_info[kingdom][orgs[j + 1]]['name']:
-                    orgs[j], orgs[j + 1] = orgs[j + 1], orgs[j]
-                swap_test = True
-            if swap_test == False: break
-        for org in orgs:
-             if self.microbe_info[kingdom][org]['link_site'] == "UCSC":
-                options.append( ( "<b>" + self.microbe_info[kingdom][org]['name'] + "</b> <a href=\"" + self.microbe_info[kingdom][org]['info_url'] + "\" target=\"_blank\">(about)</a>", org, False ) )
-             else:
-                options.append( ( self.microbe_info[kingdom][org]['name'] + " <a href=\"" + self.microbe_info[kingdom][org]['info_url'] + "\" target=\"_blank\">(about)</a>", org, False ) )
-        if options:
-            options[0] = ( options[0][0], options[0][1], True)
-        return options 
-    def get_options_for_kingdom_org_feature( self, trans, other_values ):
-        if self.microbe_info == None: self.load_from_file_for_microbial()
-        options = []
-        for func_param in self.func_params:
-            if func_param.get( 'name' ) == 'kingdom':
-                kingdom = other_values[ func_param.get( 'value' ) ]
-            elif func_param.get( 'name' )  == 'org':
-                org = other_values[ func_param.get( 'value' ) ]
-            elif func_param.get( 'name' )  == 'feature':
-                feature = func_param.get( 'value' )
-        log.debug("kingdom: %s, org: %s, feature: %s" %(kingdom, org, feature))
-        chroms = self.microbe_info[kingdom][org]['chrs'].keys()
-        chroms.sort()
-        for chr in chroms:
-             for data in self.microbe_info[kingdom][org]['chrs'][chr]['data']:
-                 if self.microbe_info[kingdom][org]['chrs'][chr]['data'][data]['feature'] == feature:
-                     options.append( ( self.microbe_info[kingdom][org]['chrs'][chr]['name'] + " <a href=\"" + self.microbe_info[kingdom][org]['chrs'][chr]['info_url'] + "\" target=\"_blank\">(about)</a>", data, False ) )
-        return options
-

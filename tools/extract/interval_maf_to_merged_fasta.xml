@@ -23,7 +23,7 @@
             </when>
             <when value="cached">
               <param name="maf_identifier" type="select" label="MAF Type">
-                <options from_file="/depot/data2/galaxy/maf_index.loc" >
+                <options from_file="/depot/data2/galaxy/maf_index.loc">
                   <filter type="data_meta" data_ref="input1" key="build" />
                   <filter type="column" name="build_col" value="2" />
                   <filter type="column" name="name_col" value="0" />
