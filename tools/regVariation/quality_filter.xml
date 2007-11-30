@@ -30,42 +30,39 @@
 	</param>
 	<param name="score" size="10" type="integer" value="20" label="Quality score cut-off" help="Cut-off value of 20 means mask all nucleotides having quality score less than or equal to 20"/>
 	<param name="mask_char" size="5" type="select" label="Mask character">
-		<option value="0" selected="true">#</option>
-      	<option value="1">$</option>
-      	<option value="2">^</option>
-      	<option value="3">*</option>
-      	<option value="4">?</option>
+      <option value="0" selected="true">#</option>
+      <option value="1">$</option>
+      <option value="2">^</option>
+      <option value="3">*</option>
+      <option value="4">?</option>
     </param>
-	
 	<conditional name="mask_region">
-    	<param name="region" type="select" label="Mask region">
-          <option value="0" selected="true">Only the corresponding nucleotide </option>
-          <option value="1">Corresponding column + right-side neighbors</option>
-          <option value="2">Corresponding column + left-side neighbors</option>
-          <option value="3">Corresponding column + neighbors on both sides</option>
+      <param name="region" type="select" label="Mask region">
+        <option value="0" selected="true">Only the corresponding nucleotide </option>
+        <option value="1">Corresponding column + right-side neighbors</option>
+        <option value="2">Corresponding column + left-side neighbors</option>
+        <option value="3">Corresponding column + neighbors on both sides</option>
+      </param>
+      <when value="0">
+        <param name="length" type="select" value="1">
+          <option value="1" selected="true">1</option>
         </param>
-        <when value="0">
-    		<param name="length" type="select" value="1">
-    			<option value="1" selected="true">1</option>
-    		</param>
-    	</when>
-    	<when value="1">
-    		<param name="length" size="10" type="integer" value="2" label="Number of right-side neighbors"/>
-    	</when>
-    	<when value="2">
-    		<param name="length" size="10" type="integer" value="2" label="Number of left-side neighbors"/>
-    	</when>
-    	<when value="3">
-    		<param name="lengthr" size="10" type="integer" value="2" label="Number of neighbors on right-side" />
-    		<param name="lengthl" size="10" type="integer" value="2" label="Number of neighbors on left-side" />
-    	</when>
+      </when>
+      <when value="1">
+        <param name="length" size="10" type="integer" value="2" label="Number of right-side neighbors"/>
+      </when>
+      <when value="2">
+        <param name="length" size="10" type="integer" value="2" label="Number of left-side neighbors"/>
+      </when>
+      <when value="3">
+        <param name="lengthr" size="10" type="integer" value="2" label="Number of neighbors on right-side" />
+        <param name="lengthl" size="10" type="integer" value="2" label="Number of neighbors on left-side" />
+      </when>
     </conditional>
-    
   </inputs>
   <outputs>
     <data format="maf" name="out_file1" metadata_source="input"/>
   </outputs>
-  <!--
   <tests>
     <test>
       <param name="input" value="6.maf"/>
@@ -78,7 +75,6 @@
       <output name="out_file1" file="6_quality_filter.maf"/>
     </test>
   </tests>
-  -->
  <help> 
 
 .. class:: infomark
@@ -114,6 +110,4 @@ Also, any primary species whose quality scores are not available in galaxy, will
    
    where, the positions containing # represent panTro2 nucleotides having quality scores less than 20.
   </help>  
-
-
 </tool>
