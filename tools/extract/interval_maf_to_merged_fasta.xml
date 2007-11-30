@@ -16,7 +16,7 @@
               <param name="maf_file" type="data" format="maf" label="MAF File" />
                 <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
                   <options>
-                    <filter type="data_meta" data_ref="maf_file" key="maf" />
+                    <filter type="data_meta" data_ref="maf_file" />
                     <filter type="param" name="maf_source" value="user" />
                   </options>
                 </param>
@@ -32,7 +32,7 @@
               </param> 
               <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
                 <options from_file="/depot/data2/galaxy/maf_index.loc">
-                  <filter type="param_meta" param_ref="maf_identifier" key="maf" />
+                  <filter type="param_meta" param_ref="maf_identifier" />
                   <filter type="param" name="maf_source" value="cached" />
                 </options>
               </param>

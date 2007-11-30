@@ -6,7 +6,7 @@
         <p><div class="toolFormTitle">Select the Desired Kingdom</div>$kingdom</p>
       </display>
       <param name="kingdom" type="select" display="radio">
-        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" tool_type="microbial" />
+        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" />
       </param>
     </page>
     <page>
@@ -14,7 +14,7 @@
         <p><div class="toolFormTitle">Select the Desired Organism</div>$org</p>
       </display>
       <param name="org" type="select" display="radio">
-        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" tool_type="microbial">
+        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc">
           <filter type="param_value" name="kingdom" value="kingdom" />
         </options>
       </param>
@@ -30,49 +30,49 @@
         <p><div class="toolFormTitle">Select Desired Glimmer3 Annotations</div>$Glimmer3</p>
       </display>
       <param name="CDS" type="select" display="checkboxes" multiple="True">
-        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" tool_type="microbial">
+        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc">
           <filter type="param_value" name="kingdom" value="kingdom" />
           <filter type="param_value" name="org" value="org" />
           <filter type="param" name="feature" value="CDS" />
         </options>
       </param>
       <param name="tRNA" type="select" display="checkboxes" multiple="True">
-        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" tool_type="microbial">
+        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc">
           <filter type="param_value" name="kingdom" value="kingdom" />
           <filter type="param_value" name="org" value="org" />
           <filter type="param" name="feature" value="tRNA" />
         </options>
       </param>
       <param name="rRNA" type="select" display="checkboxes" multiple="True">
-        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" tool_type="microbial">
+        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc">
           <filter type="param_value" name="kingdom" value="kingdom" />
           <filter type="param_value" name="org" value="org" />
           <filter type="param" name="feature" value="rRNA" />
         </options>
       </param>
       <param name="sequence" type="select" display="checkboxes" multiple="True">
-        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" tool_type="microbial">
+        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc">
           <filter type="param_value" name="kingdom" value="kingdom" />
           <filter type="param_value" name="org" value="org" />
           <filter type="param" name="feature" value="sequence" />
         </options>
       </param>
       <param name="GeneMark" type="select" display="checkboxes" multiple="True">
-        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" tool_type="microbial">
+        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc">
           <filter type="param_value" name="kingdom" value="kingdom" />
           <filter type="param_value" name="org" value="org" />
           <filter type="param" name="feature" value="GeneMark" />
         </options>
       </param>
       <param name="GeneMarkHMM" type="select" display="checkboxes" multiple="True">
-        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" tool_type="microbial">
+        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc">
           <filter type="param_value" name="kingdom" value="kingdom" />
           <filter type="param_value" name="org" value="org" />
           <filter type="param" name="feature" value="GeneMarkHMM" />
         </options>
       </param>
       <param name="Glimmer3" type="select" display="checkboxes" multiple="True">
-        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc" tool_type="microbial">
+        <options from_file="/depot/data2/galaxy/microbes/microbial_data.loc">
           <filter type="param_value" name="kingdom" value="kingdom" />
           <filter type="param_value" name="org" value="org" />
           <filter type="param" name="feature" value="Glimmer3" />

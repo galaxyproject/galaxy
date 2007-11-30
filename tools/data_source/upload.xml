@@ -12,7 +12,7 @@
       <option value="Yes">Yes</option>
     </param>
     <param name="file_type" type="select" label="File Format" help="Which format? See help below">
-      <options tool_type="upload" />
+      <options from_file="datatypes_registry" />
     </param>
     <param name="dbkey" type="genomebuild" label="Genome" />
   </inputs>

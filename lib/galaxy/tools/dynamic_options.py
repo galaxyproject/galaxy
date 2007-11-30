@@ -23,8 +23,8 @@ class DynamicOptions( object ):
                 self.data_file = self.from_file[ i+1: ]
             except:
                 self.data_file = self.from_file
-        else: self.data_file = None
-        self.tool_type = elem.get( 'tool_type', None )
+        else: 
+            self.data_file = None
         self.filters = elem.findall( 'filter' )
         self.data_ref = None
         for filter in self.filters:
@@ -38,7 +38,7 @@ class DynamicOptions( object ):
                 self.param_ref = filter.get( 'param_ref', None )
                 assert self.param_ref is not None, "Required 'param_ref' attribute missing from 'param_meta' filter"
                 self.param_ref = self.param_ref.strip()
-    def get_dataset( self, trans, other_values ):
+    def get_data_ref_value( self, trans, other_values ):
         # No value indicates a configuration error, the named DataToolParameter must preceed this parameter in the tool config
         assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
         # Get the value of the associated DataToolParameter (a dataset)
@@ -50,11 +50,13 @@ class DynamicOptions( object ):
             return None
         return dataset
     def get_param_value( self, param, trans, other_values ):
-        if param is None: return None
+        if param is None: 
+            return None
         assert param in other_values, "Value for associated param_value %s not found" %param
         return other_values[ param ]
     def get_param_ref_value( self, trans, other_values ):
-        if self.param_ref is None: return None
+        if self.param_ref is None: 
+            return None
         assert self.param_ref in other_values, "Value for associated param_ref %s not found" %self.param_ref.name
         return other_values[ self.param_ref ]
     def get_unique_elems( self, elems ): 
@@ -70,26 +72,29 @@ class DynamicOptions( object ):
             filter_type = filter_type.strip()
             if filter_type == 'data_meta':
                 filters[ 'data_meta' ] = {}
-                dataset = self.get_dataset( trans, other_values )
-                if dataset is None: return []
+                dataset = self.get_data_ref_value( trans, other_values )
+                if dataset is None: 
+                    return []
                 key = filter.get( 'key', None )
-                assert key is not None, "key attribute missing from data_meta filter"
-                filters[ 'data_meta' ][ 'key' ] = key.strip()
+                if key is not None:
+                    filters[ 'data_meta' ][ 'key' ] = key.strip()
                 value = filter.get( 'value', None )
-                if value is not None: value = value.strip()
+                if value is not None: 
+                    value = value.strip()
                 else:
-                    if key == 'build': value = dataset.get_dbkey()
-                    elif key == 'file_name': value = dataset.get_file_name()
-                    elif key == 'species': value = dataset.metadata.species
+                    if key == 'build': 
+                        value = dataset.get_dbkey()
+                    elif key == 'file_name': 
+                        value = dataset.get_file_name()
+                    elif key == 'species': 
+                        value = dataset.metadata.species
                 filters[ 'data_meta' ][ 'value' ] = value
                 if self.data_file == 'maf_index.loc' and key == 'build' and value == '?':
-                    if must_be_valid: return []
+                    if must_be_valid: 
+                        return []
                     return self.build_not_set_option
             elif filter_type == 'param_meta':
                 filters[ 'param_meta' ] = {}
-                key = filter.get( 'key', None )
-                assert key is not None, "key attribute missing from param_meta filter"
-                filters[ 'param_meta' ][ 'key' ] = key.strip()
                 value = self.get_param_ref_value( trans, other_values )
                 filters[ 'param_meta' ][ 'value' ] = value
             elif filter_type == 'param_value':
@@ -130,65 +135,75 @@ class DynamicOptions( object ):
                     filters[ 'params' ][ n ] = v
         # Now that we've parsed our filters, we need to see if the tool is a maf tool 
         # which requires special handling
-        try: key = filters[ 'data_meta' ][ 'key' ]
-        except: key = None
-        if key == 'maf':
+        try:
             maf_source = filters[ 'params' ][ 'maf_source' ]
             if maf_source == 'cached':
                 maf_uid = filters[ 'param_meta' ][ 'value' ]
                 if maf_uid in [ None, 'None' ]:
-                    if must_be_valid: return []
-                    if maf_uid is None: return self.no_data_option
-                    if maf_uid == 'None': return self.build_not_set_option
+                    if must_be_valid: 
+                        return []
+                    if maf_uid is None: 
+                        return self.no_data_option
+                    if maf_uid == 'None': 
+                        return self.build_not_set_option
+                return self.generate_for_maf( maf_uid, '\t', must_be_valid=must_be_valid )
             elif maf_source == 'user':
-                dataset = self.get_dataset( trans, other_values )
-                if dataset is None: return self.wait_for_maf_option
+                dataset = self.get_data_ref_value( trans, other_values )
+                if dataset is None: 
+                    return self.wait_for_maf_option
                 filters[ 'data_meta' ][ 'key' ] = 'species'
                 filters[ 'data_meta' ][ 'value' ] = dataset.metadata.species
+        except:
+            pass
         return self.generate_options( filters, must_be_valid=must_be_valid )
     def generate_options( self, filters={}, sep='\t', must_be_valid=False ):
-        if self.tool_type == 'upload':
-            return self.generate_from_datatypes_registry()
-        elif self.tool_type == 'encode':
-            encode_group = filters[ 'params' ][ 'encode_group' ]
-            build = filters[ 'params' ][ 'build' ]
-            return self.generate_from_file_for_encode( encode_group, build, must_be_valid=must_be_valid )
-        elif self.tool_type == 'microbial':
-            if self.from_file_data is None: self.load_microbial_data()
-            try: kingdom = filters[ 'param_values' ][ 'kingdom' ]
-            except: kingdom = None
-            try: org = filters[ 'param_values' ][ 'org' ]
-            except: org = None
-            try: feature = filters[ 'params' ][ 'feature' ]
-            except: feature = None
-            return self.generate_from_file_for_microbial( kingdom, org, feature, must_be_valid=must_be_valid )
-        else: # self.tool_type is None
-            try: key = filters[ 'data_meta' ][ 'key' ]
-            except:
-                try: key = filters[ 'param_meta' ][ 'key' ]
-                except: key = None
-            if key == 'species':
-                value = filters[ 'data_meta' ][ 'value' ]
-                return self.generate_from_dataset_for_species( value )
-            elif key == 'maf':
-                maf_source = filters[ 'params' ][ 'maf_source' ]
-                try: value = filters[ 'data_meta' ][ 'value' ]
-                except: value = filters[ 'param_meta' ][ 'value' ]
-                return self.generate_from_file_for_maf( maf_source, value, must_be_valid=must_be_valid )
-            elif key == 'file_name':
-                value = filters[ 'data_meta' ][ 'value' ]
-                value_col = int( filters[ 'columns' ][ 'value_col' ] )
-                return self.generate_from_dataset( value, value_col )
-            elif key == 'build':
-                value = filters[ 'data_meta' ][ 'value' ]
-                build_col = int( filters[ 'columns' ][ 'build_col' ].strip() )
+        try: 
+            key = filters[ 'data_meta' ][ 'key' ]
+        except:
+            try: 
+                key = filters[ 'param_meta' ][ 'key' ]
+            except: 
+                key = None
+        if key == 'species':
+            species = filters[ 'data_meta' ][ 'value' ]
+            return self.generate_for_species( species )
+        elif key == 'file_name':
+            file_name = filters[ 'data_meta' ][ 'value' ]
+            value_col = int( filters[ 'columns' ][ 'value_col' ] )
+            return self.generate_from_dataset( file_name, value_col, sep )
+        elif key == 'build':
+            build = filters[ 'data_meta' ][ 'value' ]
+            build_col = int( filters[ 'columns' ][ 'build_col' ].strip() )
+            name_col = int( filters[ 'columns' ][ 'name_col' ] )
+            value_col = int( filters[ 'columns' ][ 'value_col' ] )
+            return self.generate_for_build( build, build_col, name_col, value_col, sep, must_be_valid=must_be_valid )
+        else: # key is None
+            if self.data_file == 'datatypes_registry':
+                return self.generate_from_datatypes_registry()
+            elif self.data_file == 'encode_datasets.loc':
+                encode_group = filters[ 'params' ][ 'encode_group' ]
+                build = filters[ 'params' ][ 'build' ]
+                return self.generate_for_encode( encode_group, build, sep, must_be_valid=must_be_valid )
+            elif self.data_file == 'microbial_data.loc':
+                if self.from_file_data is None: 
+                    self.load_microbial_data()
+                try: 
+                    kingdom = filters[ 'param_values' ][ 'kingdom' ]
+                except: 
+                    kingdom = None
+                try: 
+                    org = filters[ 'param_values' ][ 'org' ]
+                except: 
+                    org = None
+                try: 
+                    feature = filters[ 'params' ][ 'feature' ]
+                except: 
+                    feature = None
+                return self.generate_for_microbial( kingdom, org, feature, must_be_valid=must_be_valid )
+            else:
                 name_col = int( filters[ 'columns' ][ 'name_col' ] )
                 value_col = int( filters[ 'columns' ][ 'value_col' ] )
-                return self.generate_from_file_for_build( value, build_col, name_col, value_col, must_be_valid=must_be_valid )
-            else: # key is None
-                name_col = int( filters[ 'columns' ][ 'name_col' ] )
-                value_col = int( filters[ 'columns' ][ 'value_col' ] )
-                return self.generate_from_file( name_col, value_col )
+                return self.generate( name_col, value_col, sep )
     def generate_from_datatypes_registry( self ):
         from galaxy.datatypes import registry
         datatypes_registry = registry.Registry()
@@ -200,7 +215,7 @@ class DynamicOptions( object ):
             label = format.capitalize()
             options.append( ( label, format, False ) )
         return options
-    def generate_from_file_for_encode( self, encode_group, build, sep='\t', must_be_valid=False ):
+    def generate_for_encode( self, encode_group, build, sep, must_be_valid=False ):
         options = []
         def generate():
             encode_sets = {}
@@ -214,14 +229,21 @@ class DynamicOptions( object ):
                         description = fields[ 2 ]
                         uid = fields[ 3 ]
                         path = fields[ 4 ]
-                        try: file_type = fields[ 5 ]
-                        except: file_type = "bed"
+                        try: 
+                            file_type = fields[ 5 ]
+                        except: 
+                            file_type = "bed"
                         #TODO: will remove this later, when galaxy can handle gff files
-                        if file_type != "bed": continue
-                        if not os.path.isfile( path ): continue
-                    except: continue
-                    try: temp = encode_sets[ encode_group ]
-                    except: encode_sets[ encode_group ] = {}
+                        if file_type != "bed": 
+                            continue
+                        if not os.path.isfile( path ): 
+                            continue
+                    except: 
+                        continue
+                    try: 
+                        temp = encode_sets[ encode_group ]
+                    except: 
+                        encode_sets[ encode_group ] = {}
                     try:
                         encode_sets[ encode_group ][ build ].append( ( description, uid, False ) )
                     except:
@@ -255,7 +277,8 @@ class DynamicOptions( object ):
                                 if int( item[ 'date' ] ) > int( ordered_item[ 'date' ] ):
                                     ordered_build.insert( i, ( description, uid, selected, item ) )
                                     break
-                        else: ordered_build.append( ( description, uid, selected, item ) )
+                        else: 
+                            ordered_build.append( ( description, uid, selected, item ) )
                     last_desc = None
                     last_partitioned = None
                     for i in range( len( ordered_build ) ) :
@@ -270,15 +293,18 @@ class DynamicOptions( object ):
             return encode_sets
         d = generate()
         if len( d ) < 1:
-            if must_be_valid: return []
+            if must_be_valid: 
+                return []
             return self.no_data_option_not_selected
         else:
-            try: options = d[ encode_group ][ build ][ 0: ]
+            try: 
+                options = d[ encode_group ][ build ][ 0: ]
             except:
-                if must_be_valid: return []
+                if must_be_valid: 
+                    return []
                 return self.no_data_option_not_selected
         return options
-    def generate_from_file_for_microbial( self, kingdom=None, org=None, feature=None, must_be_valid=False ):
+    def generate_for_microbial( self, kingdom=None, org=None, feature=None, must_be_valid=False ):
         options = []
         if not kingdom and not org and not feature:
             kingdoms = self.from_file_data.keys()
@@ -296,14 +322,15 @@ class DynamicOptions( object ):
                     if self.from_file_data[ kingdom ][ orgs[ j ] ][ 'name' ] > self.from_file_data[ kingdom ][ orgs[ j + 1 ] ][ 'name' ]:
                         orgs[ j ], orgs[ j + 1 ] = orgs[ j + 1 ], orgs[ j ]
                     swap_test = True
-                if swap_test == False: break
+                if swap_test == False: 
+                    break
             for org in orgs:
                  if self.from_file_data[ kingdom ][ org ][ 'link_site' ] == "UCSC":
                     options.append( ( "<b>" + self.from_file_data[ kingdom ][ org ][ 'name' ] + "</b> <a href=\"" + self.from_file_data[ kingdom ][ org ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", org, False ) )
                  else:
                     options.append( ( self.from_file_data[ kingdom ][ org ][ 'name' ] + " <a href=\"" + self.from_file_data[ kingdom ][ org ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", org, False ) )
             if options:
-                options[0] = ( options[0][0], options[0][1], True)
+                options[0] = ( options[0][0], options[0][1], True )
         else:
             chroms = self.from_file_data[ kingdom ][ org ][ 'chrs' ].keys()
             chroms.sort()
@@ -378,8 +405,10 @@ class DynamicOptions( object ):
                         if 'data' not in orgs[ org_num ][ 'chrs' ][ chr_acc ]:
                             orgs[ org_num ][ 'chrs' ][ chr_acc ][ 'data' ] = {}
                         orgs[ org_num ][ 'chrs' ][ chr_acc ][ 'data' ][ uid ] = data
-                    else: continue
-                except: continue
+                    else: 
+                        continue
+                except: 
+                    continue
         for org_num in orgs:
             org = orgs[ org_num ]
             if org[ 'kingdom' ] not in microbe_info:
@@ -387,15 +416,14 @@ class DynamicOptions( object ):
             if org_num not in microbe_info[ org[ 'kingdom' ] ]:
                 microbe_info[ org[ 'kingdom' ] ][org_num] = org
         self.from_file_data = microbe_info
-    def generate_from_dataset_for_species( self, value ):
+    def generate_for_species( self, species ):
         options = []
-        for species in value:
-            options.append( ( species, species, False ) )
+        for s in species:
+            options.append( ( s, s, False ) )
         return options
-    def generate_from_file_for_maf( self, maf_source, maf_uid, sep='\t', must_be_valid=False ):
+    def generate_for_maf( self, maf_uid, sep, must_be_valid=False ):
         options = []
         d = {}
-        # We will only reach here if the maf-source param value is 'cached'
         for line in open( self.from_file ):
             line = line.rstrip( '\r\n' )
             if line and not line.startswith( '#' ):
@@ -412,19 +440,23 @@ class DynamicOptions( object ):
                     d[ value_col_data ] = {}
                     d[ value_col_data ][ 'description' ] = name_col_data
                     d[ value_col_data ][ 'builds' ] = build_list
-                except: continue
+                except: 
+                    continue
         for key in d[ maf_uid ][ 'builds' ]:
             options.append( ( key, key, False ) )
         if not options:
-            if must_be_valid: return []
+            if must_be_valid: 
+                return []
             return self.no_data_option
         return options
-    def generate_from_dataset( self, value, value_col, sep='\t', must_be_valid=False ):
+    def generate_from_dataset( self, file_name, value_col, sep, must_be_valid=False ):
         options = []
         elem_list = []
-        try: in_file = open( value, "r" )
+        try: 
+            in_file = open( file_name, "r" )
         except:
-            if must_be_valid: return []
+            if must_be_valid: 
+                return []
             return self.no_data_option
         try:
             for line in in_file:
@@ -432,16 +464,18 @@ class DynamicOptions( object ):
                 if line and not line.startswith( '#' ):
                     elems = line.split( sep )
                     elem_list.append( elems[ value_col ] )
-        except: pass
+        except: 
+            pass
         in_file.close()
         if not( elem_list ):
-            if must_be_valid: return []
+            if must_be_valid: 
+                return []
             return self.no_elems_option
         elem_list = self.get_unique_elems( elem_list )
         for elem in elem_list:
             options.append( ( elem, elem, False ) )
         return options
-    def generate_from_file_for_build( self, value, build_col, name_col, value_col, sep='\t', must_be_valid=False ):
+    def generate_for_build( self, build, build_col, name_col, value_col, sep, must_be_valid=False ):
         options = []
         d = {}
         for line in open( self.from_file ):
@@ -458,8 +492,10 @@ class DynamicOptions( object ):
                 # tool, which seems to be deprecated.  Can we eliminate it altogether?
                 if self.data_file == 'alignseq.loc':
                     if fields[ build_col ].strip() == 'align':
-                        try: d[ fields[ name_col ] ].append( fields[ value_col ] )
-                        except: d[ fields[ name_col ] ] = [ fields[ value_col ] ]
+                        try: 
+                            d[ fields[ name_col ] ].append( fields[ value_col ] )
+                        except: 
+                            d[ fields[ name_col ] ] = [ fields[ value_col ] ]
                 elif self.data_file == 'regions.loc' or self.data_file == 'phastOdds.loc' or self.data_file == 'binned_scores.loc':
                     if not fields[ build_col ] in d: 
                         d[ fields[ build_col ] ] = []
@@ -471,40 +507,45 @@ class DynamicOptions( object ):
                         builds = fields[ build_col ] # armadillo=armadillo,baboon=baboon,galGal2=chicken,...
                         build_list = []
                         split_builds = builds.split( ',' )
-                        for build in split_builds:
-                            this_build = build.split( '=' )[0]
+                        for b in split_builds:
+                            this_build = b.split( '=' )[0]
                             build_list.append( this_build )
                         d[ maf_uid ] = {}
                         d[ maf_uid ][ 'description' ] = maf_desc
                         d[ maf_uid ][ 'builds' ] = build_list
-                    except: continue
+                    except: 
+                        continue
 
         # TODO: the alignseq.loc file is currently ony used by the "Extract blastz alignments1"
         # tool, which seems to be deprecated.  Can we eliminate it altogether?
         if self.data_file == 'alignseq.loc':
             # FIXME: We need a database of descriptive names corresponding to dbkeys.
             #        We need to resolve the musMusX <--> mmX confusion
-            if value[ 0:2 ] == "mm": value = value.replace( 'mm', 'musMus' )
-            if value[ 0:2 ] == "rn": value = value.replace( 'rn', 'ratNor' )
-            if value in d:
-                for val in d[ value ]:
+            if build[ 0:2 ] == "mm": 
+                build = build.replace( 'mm', 'musMus' )
+            if build[ 0:2 ] == "rn": 
+                build = build.replace( 'rn', 'ratNor' )
+            if build in d:
+                for val in d[ build ]:
                     options.append( ( val, val, False ) )
         elif self.data_file == 'regions.loc' or self.data_file == 'phastOdds.loc' or self.data_file == 'binned_scores.loc':
-            if value in d:
-                for (key, val) in d[ value ]:
+            if build in d:
+                for (key, val) in d[ build ]:
                     options.append( ( key, val, False ) )
         elif self.data_file == 'maf_index.loc' or self.data_file == 'maf_pairwise.loc':
             for key in d:
-                if value in d[ key ][ 'builds' ]:
+                if build in d[ key ][ 'builds' ]:
                     options.append( ( d[ key ][ 'description' ], key, False ) )
             if not options:
-                if must_be_valid: return []
+                if must_be_valid: 
+                    return []
                 return self.no_data_option
         if not options: 
-            if must_be_valid: return []
+            if must_be_valid: 
+                return []
             return self.unspecified_build_option
         return options
-    def generate_from_file( self, name_col, value_col, sep='\t' ):
+    def generate( self, name_col, value_col, sep ):
         options = []
         for line in open( self.from_file ):
             line = line.rstrip( '\r\n' )
