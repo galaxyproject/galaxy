@@ -2,8 +2,10 @@
 Classes related to parameter validation.
 """
 
-import re
+import re, logging
 from elementtree.ElementTree import XML
+
+log = logging.getLogger( __name__ )
 
 class Validator( object ):
     """
@@ -146,7 +148,7 @@ class MetadataValidator( Validator ):
     """
     def validate( self, value, history=None ):
         if value.missing_meta():
-            raise ValueError( "you are missing required metadata" )
+            raise ValueError( "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes" )
 
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,

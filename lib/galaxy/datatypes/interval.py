@@ -41,9 +41,9 @@ class Interval( Tabular ):
     file_ext = "interval"
 
     """Add metadata elements"""
-    MetadataElement( name="chromCol", desc="Chrom column", param=metadata.ColumnParameter )
-    MetadataElement( name="startCol", desc="Start column", param=metadata.ColumnParameter )
-    MetadataElement( name="endCol", desc="End column", param=metadata.ColumnParameter )
+    MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
+    MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
+    MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="nameCol", desc="Name/Identifier column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
@@ -59,33 +59,62 @@ class Interval( Tabular ):
     def set_peek( self, dataset ):
         """Set the peek and blurb text"""
         dataset.peek  = data.get_file_peek( dataset.file_name )
-        ## dataset.peek  = self.make_html_table( dataset.peek )
         dataset.blurb = util.commaify( str( data.get_line_count( dataset.file_name ) ) ) + " regions"
-        #i don't think set_meta should not be called here, it should be called separately
-        #self.set_meta( dataset )
     
     def set_meta( self, dataset, first_line_is_header=False ):
-        Tabular.set_meta( self, dataset, 1 )
+        Tabular.set_meta( self, dataset, skip=0 )
         
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         if dataset.has_data():
-            for i, line in enumerate( file(dataset.file_name) ):
-                line = line.rstrip('\r\n')
-                if len(line)>0:
-                    if (first_line_is_header or line[0] == '#'):
-                        self.init_meta(dataset)
-                        line  = line.strip("#")
-                        elems = line.split("\t")
-                        valid = dict(alias_helper) # shrinks
-                        for index, col_name in enumerate(elems):
+            for i, line in enumerate( file( dataset.file_name ) ):
+                line = line.rstrip( '\r\n' )
+                if line:
+                    if ( first_line_is_header or line[0] == '#' ):
+                        self.init_meta( dataset )
+                        line = line.strip( '#' )
+                        elems = line.split( '\t' )
+                        valid = dict( alias_helper ) # shrinks
+                        for index, col_name in enumerate( elems ):
                             if col_name in valid:
                                 meta_name = valid[col_name]
-                                setattr(dataset.metadata, meta_name, index+1)
-                                values = alias_spec[meta_name]
-                                start  = values.index(col_name)
-                                for lower in values[start:]:
-                                    del valid[lower]  # removes lower priority keys 
+                                setattr( dataset.metadata, meta_name, index+1 )
+                                values = alias_spec[ meta_name ]
+                                start = values.index( col_name )
+                                for lower in values[ start: ]:
+                                    del valid[ lower ]  # removes lower priority keys 
                         break  # Our metadata is set, so break out of the outer loop
+                    else: 
+                        # Header lines in Interval files are optional. For example, BED is Interval but has no header.
+                        # We'll make a best guess at the location of the metadata columns.
+                        metadata_is_set = False
+                        elems = line.split( '\t' )
+                        if len( elems ) > 2:
+                            for str in data.col1_startswith:
+                                if line.lower().startswith( str ):
+                                    dataset.metadata.chromCol = 1
+                                    try:
+                                        int( elems[1] )
+                                        dataset.metadata.startCol = 2
+                                    except:
+                                        pass # Metadata default will be used
+                                    try:
+                                        int( elems[2] )
+                                        dataset.metadata.endCol = 3
+                                    except:
+                                        pass # Metadata default will be used
+                                    if len( elems ) > 3:
+                                        try:
+                                            int( elems[3] )
+                                        except:
+                                            dataset.metadata.nameCol = 4 
+                                    if len( elems ) < 6:
+                                        dataset.metadata.strandCol = 0
+                                    else:
+                                        dataset.metadata.strandCol = 6
+                                    metadata_is_set = True
+                                    break
+                        if metadata_is_set:
+                            break # Our metadata is set, so break out of the outer loop
     
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
@@ -202,7 +231,7 @@ class Interval( Tabular ):
             so we'll just look for some valid data.
             """
             for hdr in headers:
-                if not (hdr[0] == '' or hdr[0].startswith( '#' )):
+                if hdr and not hdr[0].startswith( '#' ):
                     if len(hdr) < 3:
                         return False
                     try:
