@@ -436,40 +436,34 @@ class Gff( Tabular ):
                 seqid_col = 0
                 start_col = 3
                 stop_col = 4
-                
                 peek = []
-                for idx, line in enumerate(file(dataset.file_name)):
+                for idx, line in enumerate( file( dataset.file_name ) ):
                     if line[0] != '#':
                         peek.append( line.split() )
                         if idx > 10:
                             break
-
                 seqid, start, stop = peek[0][seqid_col], int( peek[0][start_col] ), int( peek[0][stop_col] )
-                
                 for p in peek[1:]:
                     if p[0] == seqid:
                         start = min( start, int( p[start_col] ) )
-                        stop  = max( stop, int( p[stop_col] ) )
+                        stop = max( stop, int( p[stop_col] ) )
             except Exception, exc:
-                #log.error( 'Viewport generation error -> %s ' % str(exc) )
-                seqid, start, stop = ('', '', '') 
-            return (seqid, str( start ), str( stop ))
+                seqid, start, stop = ( '', '', '' ) 
+            return ( seqid, str( start ), str( stop ) )
         else:
-            return ('', '', '')
+            return ( '', '', '' )
 
     def gbrowse_links( self, dataset, type, app, base_url ):
         ret_val = []
         if dataset.has_data:
-            viewport_tuple = self.get_estimated_display_viewport(dataset)
+            viewport_tuple = self.get_estimated_display_viewport( dataset )
             if viewport_tuple:
-                chrom = viewport_tuple[0]
                 start = viewport_tuple[1]
                 stop = viewport_tuple[2]
-                for site_name, site_url in util.get_gbrowse_sites_by_build(dataset.dbkey):
+                for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
                     if site_name in app.config.gbrowse_display_sites:
-                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
-                        link = "%sname=%s&ref=%s:%s..%s&eurl=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )                        
-                        ret_val.append( (site_name, link) )
+                        link = "%sstart=%s;stop=%s;ref=%s" % ( site_url, start, stop, dataset.dbkey )
+                        ret_val.append( ( site_name, link ) )
         return ret_val
 
     def sniff( self, filename ):

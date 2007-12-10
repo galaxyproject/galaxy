@@ -246,19 +246,27 @@ class Universe( BaseController ):
                 dataset_ids = [ id ]
             history = trans.get_history()
             for id in dataset_ids:
-               data = self.app.model.Dataset.get( id )
-               if data:
-                   assert data in history.datasets, "Data does not belong to current history"
-                   # assert data.parent == None, "You must delete the primary dataset first."
-                   # history.datasets.remove( data )
-                   data.deleted = True
-                   trans.log_event( "Dataset id %s marked as deleted" % str(id) )
+                try:
+                    int( id )
+                except:
+                    continue
+                data = self.app.model.Dataset.get( id )
+                if data:
+                    assert data in history.datasets, "Data does not belong to current history"
+                    # assert data.parent == None, "You must delete the primary dataset first."
+                    # history.datasets.remove( data )
+                    data.deleted = True
+                    trans.log_event( "Dataset id %s marked as deleted" % str(id) )
             self.app.model.flush()
         return self.history( trans )
         
     @web.expose
     def delete_async( self, trans, id = None, **kwd):
         if id:
+            try:
+                int( id )
+            except:
+                return "Dataset id '%s' is invalid" %str( id )
             history = trans.get_history()
             data = self.app.model.Dataset.get( id )
             if data:
@@ -424,7 +432,7 @@ class Universe( BaseController ):
             try: 
                 data = self.app.model.Dataset.get( id )
             except: 
-                return trans.show_error_message( "Unable to check dataset $id.")
+                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
             trans.response.headers['X-Dataset-State'] = data.state
             trans.response.headers['Pragma'] = 'no-cache'
             trans.response.headers['Expires'] = '0'
@@ -438,7 +446,7 @@ class Universe( BaseController ):
             try: 
                 data = self.app.model.Dataset.get( id )
             except: 
-                return trans.show_error_message( "Unable to check dataset $id.")
+                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
             trans.response.headers['Pragma'] = 'no-cache'
             trans.response.headers['Expires'] = '0'
             return trans.fill_template("dataset_code.tmpl", data=data, hid=hid)

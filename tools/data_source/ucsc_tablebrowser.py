@@ -2,6 +2,7 @@
 #Retreives data from UCSC and stores in a file. UCSC parameters are provided in the input/output file.
 import urllib, sys
 import StringIO, gzip
+from galaxy.datatypes import data
 
 def __main__():
     filename = sys.argv[1]
@@ -42,8 +43,7 @@ def __main__():
             break
         if first_chunk:
             first_chunk = False
-            # The magic number of a gzipped file is comprised of the first 2 characters of the file
-            if chunk[0:2] == '\037\213':
+            if chunk[0:2] == data.gzip_magic:
                 gzipped = True
         if gzipped:
             compressed_stream = StringIO.StringIO( chunk )   

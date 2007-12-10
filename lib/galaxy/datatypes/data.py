@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 # Valid first column and strand column values vor bed, other formats
 col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
 valid_strand = ['+', '-', '.']
+gzip_magic = '\037\213'
 
 # Constants for data states
 DATA_NEW, DATA_OK, DATA_FAKE = 'new', 'ok', 'fake'
@@ -259,6 +260,12 @@ class Binary( Data ):
         dataset.peek  = 'binary data'
         dataset.blurb = 'data'
 
+def get_test_fname( fname ):
+    """Returns test data filename"""
+    path, name = os.path.split(__file__)
+    full_path = os.path.join( path, 'test', fname )
+    return full_path
+
 def nice_size(size):
     """
     Returns a readably formatted string with the size
@@ -282,17 +289,22 @@ def nice_size(size):
     return '??? bytes'
 
 def get_file_peek( file_name, WIDTH=256, LINE_COUNT=5 ):
-    """Returns the first LINE_COUNT lines wrapped to WIDTH"""
+    """
+    Returns the first LINE_COUNT lines wrapped to WIDTH
+    
+    >>> fname = get_test_fname('4.bed')
+    >>> get_file_peek(fname)
+    'chr22    30128507    31828507    uc003bnx.1_cds_2_0_chr22_29227_f    0    +\n'
+    """
     lines = []
     count = 0
     file_type = ''
-    first_line = True
+    data_checked = False
     for line in file( file_name ):
-        line = line.strip()[ :WIDTH ]
-        if first_line:
-            first_line = False
-            # The magic number of a gzipped file is comprised of the first 2 characters of the file
-            if line[0:2] == '\037\213':
+        line = line[ :WIDTH ]
+        if not data_checked and line:
+            data_checked = True
+            if line[0:2] == gzip_magic:
                 file_type = 'gzipped'
                 break
             else:

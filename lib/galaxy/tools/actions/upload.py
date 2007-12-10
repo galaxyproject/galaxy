@@ -77,11 +77,11 @@ class UploadToolAction( object ):
         temp_name = sniff.stream_to_file(file_obj)
 
         try:
-            # Check against html:
-            if self.check_html( temp_name ):
+            # Check against undesireable file data:
+            if self.check_html( temp_name ) or self.check_binary( temp_name ):
                 self.empty = True
         except:
-            #User is attempting to upload a non-text file
+            #User is attempting to upload a non-text file, but for some reason check_binary didn't work...
             self.empty = True
         
         if self.empty:
@@ -144,6 +144,22 @@ class UploadToolAction( object ):
                 return True
             if lineno > 100:
                 # We should be able to detmine an HTML file within 100 lines.
+                break
+        temp.close()
+        return False
+
+    def check_binary( self, temp_name ):
+        temp = open( temp_name, "U" )
+        lineno = 0
+        for line in temp:
+            lineno += 1
+            line = line.strip()
+            if line:
+                for char in line:
+                    if ord( char ) > 128:
+                        temp.close()
+                        return True
+            if lineno > 100:
                 break
         temp.close()
         return False
