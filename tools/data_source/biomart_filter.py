@@ -20,10 +20,9 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
     """Verifies the data after the run"""
 
     URL = param_dict.get( 'URL', None )
-    URL = URL + '&_export=1&GALAXY_URL=0'
     if not URL:
         raise Exception('Datasource has not sent back a URL parameter')
-
+    URL = URL + '&_export=1&GALAXY_URL=0'
     CHUNK_SIZE = 2**20 # 1Mb 
     MAX_SIZE   = CHUNK_SIZE * 100
     

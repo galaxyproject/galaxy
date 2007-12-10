@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.4
 #Retreives data from UCSC and stores in a file. UCSC parameters are provided in the input/output file.
 import urllib, sys
+import StringIO, gzip
 
 def __main__():
     filename = sys.argv[1]
@@ -31,14 +32,24 @@ def __main__():
         #print >> sys.stderr, 'Problems connecting to %s (%s)' % (URL, exc)
         print >> sys.stderr, 'It appears that the UCSC Table Browser is currently offline. You may try again later.'
         sys.exit(0)
+
+    gzipped = False
+    first_chunk = True
     
     while 1:
-        chunk = page.read(CHUNK_SIZE)
+        chunk = page.read( CHUNK_SIZE )
         if not chunk:
             break
-        out.write(chunk)
-    
+        if first_chunk:
+            first_chunk = False
+            # The magic number of a gzipped file is comprised of the first 2 characters of the file
+            if chunk[0:2] == '\037\213':
+                gzipped = True
+        if gzipped:
+            compressed_stream = StringIO.StringIO( chunk )   
+            gzipper = gzip.GzipFile( fileobj=compressed_stream )      
+            chunk = gzipper.read()   
+        out.write( chunk )
     out.close()
-    
     
 if __name__ == "__main__": __main__()

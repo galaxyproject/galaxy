@@ -19,9 +19,12 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
         data.name  = "%s on %s: %s (%s)" % (data.name, organism, table, description)
         data.dbkey = param_dict.get('db', '?')
         ext = outputType
-        try: ext = outputType_to_ext[outputType]
-        except: pass
-        if ext not in app.datatypes_registry.datatypes_by_extension: ext = 'interval'
+        try: 
+            ext = outputType_to_ext[outputType]
+        except: 
+            pass
+        if ext not in app.datatypes_registry.datatypes_by_extension: 
+            ext = 'interval'
         data = app.datatypes_registry.change_datatype(data, ext)
         
         #store ucsc parameters temporarily in output file
@@ -34,11 +37,14 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
 
 def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
     """Verifies the datatype after the run"""
+    
     name, data = out_data.items()[0]
-    if data.state == data.states.OK: data.info = data.name
+    if data.state == data.states.OK:
+        data.info = data.name
     
     if not isinstance(data.datatype, datatypes.interval.Bed) and isinstance(data.datatype, datatypes.interval.Interval):
         data.set_meta()
-        if data.missing_meta(): data = app.datatypes_registry.change_datatype(data, 'tabular')
+        if data.missing_meta(): 
+            data = app.datatypes_registry.change_datatype(data, 'tabular')
     data.set_peek()
     data.flush()

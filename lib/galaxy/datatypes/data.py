@@ -285,23 +285,29 @@ def get_file_peek( file_name, WIDTH=256, LINE_COUNT=5 ):
     """Returns the first LINE_COUNT lines wrapped to WIDTH"""
     lines = []
     count = 0
-    for line in file(file_name):
-        line = line.strip()[:WIDTH]
-        is_binary = False
-        # Make sure we do not have a gzip file
-        try:
-            for char in line:
-                if ord(char) > 128:
-                    is_binary = True
-                    break
-        except:
-            is_binary = True
+    file_type = ''
+    first_line = True
+    for line in file( file_name ):
+        line = line.strip()[ :WIDTH ]
+        if first_line:
+            first_line = False
+            # The magic number of a gzipped file is comprised of the first 2 characters of the file
+            if line[0:2] == '\037\213':
+                file_type = 'gzipped'
+                break
+            else:
+                for char in line:
+                    if ord( char ) > 128:
+                        file_type = 'binary'
+                        break
+        lines.append( line )
+        if count == LINE_COUNT: 
             break
-        lines.append(line)
-        if count == LINE_COUNT: break
         count += 1
-    if is_binary: text = 'binary file'
-    else: text  = '\n'.join(lines)
+    if file_type: 
+        text = "%s file" %file_type 
+    else: 
+        text  = '\n'.join( lines )
     return text
 
 def get_line_count(file_name):
