@@ -651,7 +651,7 @@ class DataToolParameter( ToolParameter ):
     >>> from galaxy.util.bunch import Bunch
     >>> hist = History()
     >>> hist.flush()
-    >>> hist.add_dataset( Dataset( id=1, extension='text' ) )
+    >>> hist.add_dataset( Dataset( id=1, extension='txt' ) )
     >>> hist.add_dataset( Dataset( id=2, extension='bed' ) )
     >>> hist.add_dataset( Dataset( id=3, extension='fasta' ) )
     >>> hist.add_dataset( Dataset( id=4, extension='png' ) )

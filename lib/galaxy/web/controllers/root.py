@@ -537,7 +537,7 @@ class Universe( BaseController ):
         return trans.show_message( "<p><h2>Rename history</h2>%s" % change_msg, refresh_frames=['history'] ) 
 
     @web.expose
-    def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="text",dbkey="?",**kwd ):
+    def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="txt",dbkey="?",**kwd ):
         """Adds a POSTed file to a History"""
         try:
             history = trans.app.model.History.get( history_id )
