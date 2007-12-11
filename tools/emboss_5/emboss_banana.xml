@@ -1,0 +1,23 @@
+<tool id="EMBOSS_banana3" name="banana">
+  <description>Bending and curvature plot in B-DNA</description>
+  <command>banana -sequence $input1 -outfile $out_file1 -graph none -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>On query</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <output name="out_file1" file="emboss_banana_out.txt"/>
+    </test>
+  </tests>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/banana.html
+  </help>
+</tool>
