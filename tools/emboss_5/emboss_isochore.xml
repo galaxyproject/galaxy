@@ -1,0 +1,81 @@
+<tool id="EMBOSS_isochore47" name="isochore">
+  <description>Plots isochores in large DNA sequences</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl isochore -sequence $input1 -outfile $ofile2 -goutfile $ofile1 -graph png -window $window -shift $shift -auto</command>
+  <!--  <command interpreter="perl">emboss_single_outputfile_wrapper.pl isochore -sequence $input1 -goutfile $ofile1 -graph png -window $window -shift $shift -auto</command>-->
+  <inputs>
+    <param format="fasta" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="window" size="4" type="text" value="1000">
+      <label>Window size</label>
+    </param>
+    <param name="shift" size="4" type="text" value="100">
+      <label>Shift increment</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="ofile1" />
+    <data format="isochore" name="ofile2" />
+  </outputs>
+  <!-- <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="window" value="1000"/>
+      <param name="shift" value="100"/>
+      <output name="ofile1" file="emboss_isochore_out.isochore"/> 
+      <output name="ofile2" file="emboss_isochore_out.isochore"/>
+    </test>
+         <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="window" value="1000"/>
+      <param name="shift" value="100"/>
+      <output name="ofile2" file="emboss_isochore_out.isochore"/>
+    </test> 
+  </tests>-->
+  <help>
+
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
+**Syntax**
+
+This application plots GC content over a sequence. It is intended for large sequences such as complete chromosomes or large genomic contigs, although interesting results can also be obtained from shorter sequences. You can view the original documentation here_.    
+
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/isochore.html
+
+- Both **Window size** and **Shift increment** are intergers.
+
+-----
+
+**Example**
+
+- Input sequences::
+
+    >hg18_dna range=chrX:151073054-151073376 5'pad=0 3'pad=0 revComp=FALSE strand=? repeatMasking=none
+    TTTATGTCTATAATCCTTACCAAAAGTTACCTTGGAATAAGAAGAAGTCA
+    GTAAAAAGAAGGCTGTTGTTCCGTGAAATACTGTCTTTATGCCTCAGATT
+    TGGAGTGCTCAGAGCCTCTGCAGCAAAGATTTGGCATGTGTCCTAGGCCT
+    GCTCAGAGCAGCAAATCCCACCCTCTTGGAGAATGAGACTCATAGAGGGA
+    CAGCTCCCTCCTCAGAGGCTTCTCTAATGGGACTCCAAAGAGCAAACACT
+    CAGCCCCATGAGGACTGGCCAGGCCAAGTGGTGTGTGGGAACAGGGAGCA
+    GCGGTTTCCAAGAGGATACAGTA
+
+- Output data file::
+
+    Position	Percent G+C 1 .. 323
+    80	0.422
+    112	0.460
+    144	0.509
+    176	0.534
+    208	0.553
+    240	0.553
+
+- Output graphics file:
+
+.. image:: ../static/emboss_icons/isochore.png
+
+  </help>
+</tool>
