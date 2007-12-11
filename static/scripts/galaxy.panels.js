@@ -1,8 +1,22 @@
 var hidden_width = 7;
 var border_tweak = jQuery.browser.msie ? 14 : 9;
 
+var jq = jQuery;
+
+function ensure_dd_helper() {
+    // Insert div that covers everything when dragging the borders
+    if ( jq( "#DD-helper" ).length == 0 ) {
+        var e = jq("<div id='DD-helper' style='background: white; opacity: 0.00; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 9000;'></div>");
+        if ( jq.browser.ie ) {
+            // Element will not capture drags in ie without nonzero opacity,
+            // but causes flashing in firefox with nonzero opacity
+            e.css( "opacity", "0.01" );
+        }
+        e.appendTo("body").hide();
+    }
+}
+
 function make_left_panel( panel_el, center_el, border_el ) {
-    var jq = jQuery;
     var hidden = false;
     var saved_size = null;
     // Functions for managing panel
@@ -70,7 +84,6 @@ function make_left_panel( panel_el, center_el, border_el ) {
 };
 
 function make_right_panel( panel_el, center_el, border_el ) {
-    var jq = jQuery;
     var hidden = false;
     var hidden_by_tool = false;
     var saved_size = null;    
@@ -105,7 +118,7 @@ function make_right_panel( panel_el, center_el, border_el ) {
         hidden_by_tool = false;
     };
     var handle_minwidth_hint = function( x ) {
-        var space = q( center_el ).width() - ( hidden ? saved_size : 0 );
+        var space = jq( center_el ).width() - ( hidden ? saved_size : 0 );
         if ( space < x )
         {
             if ( ! hidden ) {

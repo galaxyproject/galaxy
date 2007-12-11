@@ -3,36 +3,19 @@
 <html lang="en">
 <head>
     <title>Galaxy</title>
-
+    ## Stylesheets must get loaded early so iframes are in the right place 
+    ## when the load (rendering stops until these are loaded)
     <link rel="stylesheet" type="text/css" href="$h.url_for('/static/style/reset.css')"></link>
     <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout.css')}"></link>
     <!--[if IE]>
     <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout_ie.css')}"></link>
     <![endif]-->
-
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.dimensions.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.ui.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/galaxy.panels.js')"></script>
-    <script type="text/javascript">
-    <!--
-    var q = jQuery.noConflict();
-		
-    q(document).ready( function() {
-	// Make panels
-        var lp = make_left_panel( q("#left"), q("#center"), q("#left-border" ) );
-        var rp = make_right_panel( q("#right"), q("#center"), q("#right-border" ) );
-        handle_minwidth_hint = rp.handle_minwidth_hint;
-        // Insert div that covers everything when dragging the borders
-    	q("<div id='DD-helper' style='background: white; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 9000;'></div>")
-	    .css("opacity", "0.01").appendTo("body").hide();
-    });
-    // -->
-    </script>
-
 </head>
 
 <body scroll="no">
+    ## Background displays first
+    <div id="background"></div>
+    ## Layer iframes over backgrounds
     <div id="masthead">
        <iframe name="galaxy_masthead" src="$h.url_for( 'masthead' )" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
     </div>
@@ -45,7 +28,7 @@
       </div>
       </td>
       </tr><tr>
-      <td height="100%" class="panel-body">
+      <td height="100%" class="panel-body menu-bg">
            <iframe name="galaxy_tools" src="$h.url_for( 'tool_menu' )" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;"> </iframe>
       </td></tr></table>
     </div>
@@ -53,7 +36,7 @@
     <div id="center">
 	<table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
 	    <tr height="100%" style="height: 100%"><td height="100%" style="height: 100%;">
-		<iframe name="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( '/static/welcome.html' )}"> </iframe>
+		<iframe name="galaxy_main" id="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( '/static/welcome.html' )}"> </iframe>
 	    </td></tr>
 	</table>
     </div>
@@ -67,9 +50,21 @@
 	</div>
 	</td>
 	</tr><tr height="100%">
-	<td height="100%" style="height: 100%;" class="panel-body">
-	    <iframe name="galaxy_history" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;" src="$h.url_for( action='history' )">
+	<td height="100%" style="height: 100%;" class="panel-body menu-bg">
+	    <iframe name="galaxy_history" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;" src="$h.url_for( action='history' )"></iframe>
 	</td></tr></table>
     </div>
+    ## Scripts can be loaded later since they progressively add features to
+    ## the panels, but do not change layout
+    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
+    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.dimensions.js')"></script>
+    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.ui.js')"></script>
+    <script type="text/javascript" src="$h.url_for('/static/scripts/galaxy.panels.js')"></script>
+    <script type="text/javascript">
+        ensure_dd_helper();
+        var lp = make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
+        var rp = make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
+        handle_minwidth_hint = rp.handle_minwidth_hint;
+    </script>
 </body>
 </html>
