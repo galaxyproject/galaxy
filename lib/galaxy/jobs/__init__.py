@@ -326,7 +326,8 @@ class JobWrapper( object ):
             dataset.info  = stdout + stderr
             if dataset.has_data():
                 # Call set_meta on each output dataset if metadata is missing
-                if dataset.missing_meta: dataset.set_meta()
+                if dataset.missing_meta():
+                    dataset.set_meta()
                 dataset.set_peek()
             else:
                 dataset.blurb = "empty"
