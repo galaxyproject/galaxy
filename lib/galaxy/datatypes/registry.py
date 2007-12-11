@@ -151,8 +151,8 @@ class Registry( object ):
         # call init_meta and copy metadata from itself.  The datatype
         # being converted *to* will handle any metadata copying and
         # initialization.
-        data.init_meta( copy_from=data )
         if data.has_data():
+            data.init_meta( copy_from=data )
             data.set_peek()
         return data
 
