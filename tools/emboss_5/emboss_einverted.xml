@@ -1,0 +1,49 @@
+<tool id="EMBOSS_einverted28" name="einverted">
+  <description>Finds DNA inverted repeats</description>
+  <command>einverted -sequence $input1 -outfile $out_file1 -gap $gap -threshold $threshold -match $match -mismatch $mismatch -maxrepeat $maxrepeat -auto</command>
+  <inputs>
+    <param format="fasta" name="input1" type="data">
+      <label>On query</label>
+    </param>
+    <param name="gap" size="4" type="text" value="12">
+      <label>Gap penalty</label>
+    </param>
+    <param name="threshold" size="4" type="text" value="50">
+      <label>Minimum score threshold</label>
+    </param>
+    <param name="match" size="4" type="text" value="3">
+      <label>Match score</label>
+    </param>
+    <param name="mismatch" size="4" type="text" value="-4">
+      <label>Mismatch score</label>
+    </param>
+    <param name="maxrepeat" size="4" type="text" value="2000">
+      <label>Maximum separation between the start of repeat and the end of the inverted repeat</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="einverted" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="1.fasta"/>
+      <param name="gap" value="12"/>
+      <param name="threshold" value="50"/>
+      <param name="match" value="3"/>
+      <param name="mismatch" value="-4"/>
+      <param name="maxrepeat" value="2000"/>
+      <output name="out_file1" file="emboss_einverted_out.einverted"/>
+    </test>
+  </tests>
+  <help>
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/einverted.html
+  </help>
+</tool>
