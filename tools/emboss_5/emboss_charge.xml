@@ -1,0 +1,34 @@
+<tool id="EMBOSS_charge8" name="charge">
+  <description>Protein charge plot</description>
+  <command>charge -seqall $input1 -outfile $out_file1 -window $window -auto</command>
+  <inputs>
+    <param format="fasta" name="input1" type="data">
+      <label>On query</label>
+    </param>
+    <param name="window" size="4" type="text" value="5">
+      <label>Window Size</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="charge" name="out_file1" />
+  </outputs>
+ <!--   <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="window" value="5"/>
+      <output name="out_file1" file="emboss_charge_out.charge"/>
+    </test>
+  </tests>--> 
+  <help>
+
+.. class:: warningmark 
+
+The input dataset needs to be sequences. 
+
+----- 
+
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/charge.html
+  </help>
+</tool>
