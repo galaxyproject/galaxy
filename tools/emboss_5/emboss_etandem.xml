@@ -1,0 +1,77 @@
+<tool id="EMBOSS_etandem33" name="etandem">
+  <description>Looks for tandem repeats in a nucleotide sequence</description>
+  <command>etandem -sequence $input1 -outfile $out_file1 -origfile $ofile2 -minrepeat $minrepeat -maxrepeat $maxrepeat -threshold $threshold -mismatch $mismatch -uniform $uniform -rformat2 $out_format1 -auto</command>
+  <inputs>
+    <param format="fasta" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="minrepeat" size="4" type="text" value="10">
+      <label>Minimum repeat size</label>
+    </param>
+    <param name="maxrepeat" size="4" type="text" value="10">
+      <label>Maximum repeat size</label>
+    </param>
+    <param name="threshold" size="4" type="text" value="20">
+      <label>Threshold score</label>
+    </param>
+    <param name="mismatch" type="select">
+      <label>Allow N as a mismatch</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="uniform" type="select">
+      <label>Allow uniform consensus</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="out_format1" type="select">
+      <label>Output Report File Format</label>
+      <option value="table">Table</option>
+      <option value="embl">EMBL</option>
+      <option value="genbank">GENBANK</option>
+      <option value="gff">GFF</option>
+      <option value="pir">PIR</option>
+      <option value="swiss">SwissProt</option>
+      <option value="dbmotif">DbMotif</option>
+      <option value="diffseq">Diffseq</option>
+      <option value="excel">Excel (tab delimited)</option>
+      <option value="feattable">FeatTable</option>
+      <option value="motif">Motif</option>
+      <option value="regions">Regions</option>
+      <option value="seqtable">SeqTable</option>
+      <option value="simple">SRS Simple</option>
+      <option value="srs">SRS</option>
+      <option value="tagseq">TagSeq</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="etandem" name="out_file1" />
+    <data format="table" name="ofile2" />    
+  </outputs>
+    <tests>
+    <test>
+      <param name="input1" value="1.fasta"/>
+      <param name="minrepeat" value="10"/>
+      <param name="maxrepeat" value="10"/>
+      <param name="threshold" value="20"/>
+      <param name="mismatch" value="no"/>
+       <param name="uniform" value="no"/>
+      <param name="out_format1" value="table"/>
+      <output name="ofile2" file="emboss_etandem_out.table"/>
+    </test>
+  </tests>
+  <code file="emboss_format_corrector.py" />
+  <help>
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/etandem.html
+  </help>
+</tool>
+
+
