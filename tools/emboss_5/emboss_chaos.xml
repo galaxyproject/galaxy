@@ -1,0 +1,22 @@
+<tool id="EMBOSS_chaos7" name="chaos">
+  <description>Create a chaos game representation plot for a sequence</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl chaos -sequence $input1 -graph png -goutfile $out_file1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>On query</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="out_file1" />
+  </outputs>
+<!--    <tests>
+    <test>
+         puts name of file into the png
+    </test>
+  </tests> -->
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/chaos.html
+  </help>
+</tool>
