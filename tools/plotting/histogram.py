@@ -16,7 +16,7 @@ def main():
     try:
         column = int( sys.argv[3] ) - 1
     except:
-        stop_err( "..Column not specified, your query does not contain a column of numerical data." )
+        stop_err( "Column not specified, your query does not contain a column of numerical data." )
     title = sys.argv[4]
     xlab = sys.argv[5]
     breaks = int( sys.argv[6] )
@@ -65,7 +65,6 @@ def main():
             matrix.append( row )
 
     if skipped_lines < i:
-        print "..on columnn %s" %sys.argv[3]
         try:
             a = array( matrix )
             r.pdf( out_fname, 8, 8 )
@@ -73,13 +72,14 @@ def main():
             if density:
                 r.lines( r.density( a ) )
             r.dev_off()
-        except exc:
-            stop_err("Building histogram resulted in error: %s." %str( exc ))
+        except Exception, exc:
+            stop_err( "%s" %str( exc ) )
+        print "..on columnn %s" %sys.argv[3]
     else:
         print "..all values in column %s are non-numeric." %sys.argv[3]
 
     if skipped_lines > 0:
-        print "..skipped %d invalid lines starting with line #%d.  Value '%s' is not numeric." % ( skipped_lines, first_invalid_line, invalid_value )
+        print "..skipped %d invalid lines starting with line #%d containing value '%s'." % ( skipped_lines, first_invalid_line, invalid_value )
 
     r.quit( save="no" )
     
