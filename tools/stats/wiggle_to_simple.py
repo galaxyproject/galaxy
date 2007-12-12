@@ -8,6 +8,7 @@ and fixedStep wiggle lines.
 import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.wiggle
+from galaxy.tools.exception_handling import *
 
 def stop_err( msg ):
     sys.stderr.write( msg )
@@ -25,15 +26,11 @@ def main():
         out_file = sys.stdout
     
     try:
-        for fields in bx.wiggle.IntervalReader( in_file ):
+        for fields in bx.wiggle.IntervalReader( UCSCOutWrapper( in_file ) ):
             print >>out_file, "\t".join( map( str, fields ) )
-    except Exception, exc:
-        if str( exc ).startswith( 'invalid literal for int(): ----------' ):
-            print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
-        else:
-            in_file.close()
-            out_file.close()
-            stop_err( str( exc ) )
+    except UCSCLimitException:
+        # Wiggle data was truncated, at the very least need to warn the user.
+        print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
 
     in_file.close()
     out_file.close()

@@ -13,7 +13,7 @@ class UCSCOutWrapper( object ):
         self.lookahead = None
     def __iter__( self ):
         return self
-    def __next__( self ):
+    def next( self ):
         if self.lookahead is None:
             line = self.other.next()
         else:
@@ -27,4 +27,4 @@ class UCSCOutWrapper( object ):
                 self.lookahead = next_line
         return line 
     def readline(self):
-        return self.__next__()
+        return self.next()
