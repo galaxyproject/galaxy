@@ -10,9 +10,7 @@ import sys, sets, re, os.path
 from galaxy.tools import validation
 
 def get_wrap_func(value, round):
-    """
-    Determine the data type of each column in the input file
-    """
+    # Determine the data type of each column in the input file
     try:
         if round == 'no':
             check = float(value)
@@ -51,15 +49,12 @@ mapped_str = {
 for key, value in mapped_str.items():
     cond_text = cond_text.replace(key, value)
 
-"""
-Attempt to ensure the expression is valid Python
-"""
+# Attempt to ensure the expression is valid Python
 validator_msg = 'Invalid syntax in "%s". See tool tips and warnings for examples of proper expression syntax.' %cond_text
 try:
     validator = validation.ExpressionValidator(validator_msg, cond_text)
 except:
-    print validator_msg
-    sys.exit()
+    stop_err( validator_msg )
 
 # safety measures
 safe_words = sets.Set( "c chr str float int split map lambda and or len type".split() )
@@ -72,9 +67,7 @@ try:
 except Exception, e:
     stop_err("Cannot recognize the word %s in condition %s" % (e, cond_text) )
 
-"""
-Determine the number of columns in the input file and the data type for each
-"""
+# Determine the number of columns in the input file and the data type for each
 elems = []
 if os.path.exists( inp_file ):
     for line in open( inp_file ):
@@ -92,9 +85,7 @@ if len(elems) == 1:
     if len(line.split()) != 1:
         stop_err('This tool can only be run on tab delimited files')
 
-"""
-Prepare the column variable names and wrappers for column data types
-"""
+# Prepare the column variable names and wrappers for column data types
 cols, funcs = [], []
 for ind, elem in enumerate(elems):
     name = 'c%d' % ( ind + 1 )
@@ -152,4 +143,3 @@ print 'Creating column %d with expression %s' % (len(elems)+1, cond_text)
 if skipped_lines > 0:
     print ', kept %d of %d original lines.  ' % ( keep, total )
     print 'Skipped %d invalid lines in file starting with line # %d, data: %s' % ( skipped_lines, first_invalid_line, invalid_line )
-    

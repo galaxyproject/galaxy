@@ -100,20 +100,17 @@ def main():
         doc_optparse.exit()
 
     if score_fname == 'None':
-        print 'This tool works with data from genome builds hg16, hg17 or hg18.  Click the pencil icon in your history item to set the genome build if appropriate.'
-        sys.exit()
+        stop_err( 'This tool works with data from genome builds hg16, hg17 or hg18.  Click the pencil icon in your history item to set the genome build if appropriate.' )
     
     try:
         chrom_col = int(chrom_col) - 1
         start_col = int(start_col) - 1
         stop_col = int(stop_col) - 1
     except:
-        print 'Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.'
-        sys.exit()
+        stop_err( 'Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.' )
 
     if chrom_col < 0 or start_col < 0 or stop_col < 0:
-        print 'Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.'
-        sys.exit()
+        stop_err( 'Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.' )
         
     if binned:
         scores_by_chrom = load_scores_ba_dir( score_fname )

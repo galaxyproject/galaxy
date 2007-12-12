@@ -9,10 +9,6 @@ def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
 
-def stop_out(msg):
-    sys.stdout.write(msg)
-    sys.exit()
-
 def mode_func(c):
     try:
         check = float(c)
@@ -23,7 +19,8 @@ def mode_func(c):
 def order_for_display(l):
     if l[0].startswith("chr"):
         l.sort(byChr)
-    else: l.sort() # alphanumerically
+    else:
+        l.sort() # alphanumerically
     return l
 
 def byChr(a,b):
@@ -92,7 +89,8 @@ def S3_METHODS(all="key"):
     Group_Ops = [ "+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">"]
     Group_Summary = [ "all", "any", "sum", "prod", "min", "max", "range" ]
 
-    if all is "key": return { 'Math' : Group_Math, 'Ops' : Group_Ops, 'Summary' : Group_Summary }
+    if all is "key":
+        return { 'Math' : Group_Math, 'Ops' : Group_Ops, 'Summary' : Group_Summary }
 
 def read_table(datafile, cols):
     table = {}
@@ -112,9 +110,7 @@ def read_table(datafile, cols):
                         first_invalid_line = i+1
                     break
                 if valid:
-                    """
-                    Make sure the column value is numeric
-                    """
+                    # Make sure the column value is numeric
                     try:
                         check = float(f[col-1])
                     except:
@@ -125,9 +121,7 @@ def read_table(datafile, cols):
                         break
             if valid:
                 for col_i, val in enumerate(f):
-                    """
-                    Create column names c1..cn
-                    """
+                    # Create column names c1..cn
                     colname = "c" + str(col_i + 1)
                     if not table.has_key( colname ): 
                         table[colname] = []
@@ -135,9 +129,7 @@ def read_table(datafile, cols):
                 if not width:
                     width = len(f)
     if len(table) > 0:
-        """
-        terms will look like this: c7 = r.as_numeric(table["c7"]), c8 = r.as_numeric(table["c8"]), ...
-        """
+        # terms will look like this: c7 = r.as_numeric(table["c7"]), c8 = r.as_numeric(table["c8"]), ...
         terms = ["%s = %s(table[\"%s\"])" % (x, mode_func(table[x][0]), x) for x in ["c" + str(col_i + 1) for col_i in range(0, width)]]
         code = "d = r.data_frame(%s)" % ",".join(terms)
         try:
@@ -149,7 +141,6 @@ def read_table(datafile, cols):
         return (skipped_lines, first_invalid_line, None)
 
 def main():
-
     if len(sys.argv) >= 4:
         datafile = sys.argv[1]
         outfile = sys.argv[2]
@@ -172,9 +163,7 @@ def main():
         elif sys.argv[4] is 'none': 
             pass
 
-    """
-    summary function and return labels
-    """
+    # summary function and return labels
     f = r("function(x) { c(sum=sum(x,na.rm=T),mean=mean(x,na.rm=T),stdev=sd(x,na.rm=T),quantile(x,na.rm=TRUE))}")
     returns = ['sum', 'mean','stdev','0%', '25%', '50%', '75%', '100%']
 
@@ -197,7 +186,7 @@ def main():
     for word in re.compile('[a-zA-Z]+').findall(expression):
         if word and not word in lhs_allowed: 
             of.close()
-            stop_out("Invalid expression '%s': term '%s' is not recognized or allowed" % (expression, word))
+            stop_err( "Invalid expression '%s': term '%s' is not recognized or allowed" %( expression, word ) )
 
     """
     Users sometimes want statistics for more than 1 column, so they enter a comma-separated
@@ -209,12 +198,12 @@ def main():
     for symbol in re.compile('[^a-z0-9\s]+').findall(expression):
         if symbol and not symbol in ops_allowed:
             of.close()
-            stop_out("Invalid expression '%s': operator '%s' is not recognized or allowed" % (expression, symbol))
+            stop_err( "Invalid expression '%s': operator '%s' is not recognized or allowed" %(expression, symbol ) )
         else:
             symbols.add(symbol)
     if len(symbols) == 1 and ',' in symbols:
         of.close()
-        stop_out( "Invalid columns '%s': this tool requires a single column or expression" %expression )
+        stop_err( "Invalid columns '%s': this tool requires a single column or expression" %expression )
 
     cols = []
     if lhs:
@@ -251,9 +240,7 @@ def main():
             print >>of,"#%s" % "\t".join(returns)
             print >>of,"\t".join([ "%.3f" % (summary[k]) for k in returns])
         else:
-            """
-            Prepare R structures
-            """
+            # Prepare R structures
             r.library("nlme",warn_conflicts=r.FALSE)
             r.library("lattice",warn_conflicts=r.FALSE)
             set_default_mode(NO_CONVERSION)
@@ -264,9 +251,7 @@ def main():
             except RException, s:
                 stop-err("Computation attempted on invalid data in column on the left hand side of expression.  Exception:\n\t%s" % s)
 
-            """
-            Try some plotting stuff
-            """
+            # Try some plotting stuff
             if (0):
                 outfile = "plots.pdf"
                 #   r.pdf(file=outfile,width=6,height=6)
@@ -274,9 +259,7 @@ def main():
                 r.plot_default(df_g)
                 r.dev_off()
 
-            """
-            Apply summary function and returns
-            """
+            # Apply summary function and returns
             summary_obj = r.gsummary(df_r,FUN=f)
             summary_response = r["$"](summary_obj,"response").as_py(BASIC_CONVERSION).tolist()
             summary_labels = r.rownames(summary_obj).as_py(BASIC_CONVERSION)
@@ -289,6 +272,6 @@ def main():
         if skipped_lines > 0:
             print "..Skipped %d lines in query beginning with line #%d due to data issues.  See tool tips for data requirements." % (skipped_lines, first_invalid_line)
     else:
-        print "..Entire data column consisting of %d lines invalid for computation.  See tool tips for data requirements." %skipped_lines
+        stop_err( "Entire data column consisting of %d lines invalid for computation.  See tool tips for data requirements." %skipped_lines )
 
 if __name__ == "__main__": main()

@@ -36,8 +36,7 @@ def main():
             break # Hopefully we'll never get here...
     
     if len( elems )<1:
-        print >> sys.stderr, "The data in your input dataset is either missing or not formatted properly."
-        sys.exit()
+        stop_err( "The data in your input dataset is either missing or not formatted properly." )
     
     try:
         group_col = int( sys.argv[3] )-1
@@ -47,10 +46,8 @@ def main():
     for k,col in enumerate(cols):
         col = int(col)-1
         if ops[k] != 'c':
-            """
-            We'll get here only if the user didn't choose 'Concatenate', which is the
-            only aggregation function that can be used on columns containing strings.
-            """
+            # We'll get here only if the user didn't choose 'Concatenate', which is the
+            # only aggregation function that can be used on columns containing strings.
             try:
                 float( elems[col] )
             except:
@@ -94,20 +91,14 @@ def main():
                 fields = line.split("\t")
                 item = fields[group_col]
                 if prev_item != "":
-                    """
-                    At this level, we're grouping on values (item and prev_item) in group_col
-                    """
+                    # At this level, we're grouping on values (item and prev_item) in group_col
                     if item == prev_item:
-                        """
-                        Keep iterating and storing values until a new value is encountered.
-                        """
+                        # Keep iterating and storing values until a new value is encountered.
                         for i, col in enumerate(cols):
                             col = int(col)-1
                             valid = True
-                            """
-                            Before appending the current value, make sure it is numeric if the
-                            operation for the column requires it.
-                            """
+                            # Before appending the current value, make sure it is numeric if the
+                            # operation for the column requires it.
                             if ops[i] != 'c':
                                 try:
                                     float( fields[col].strip())
@@ -149,9 +140,7 @@ def main():
                             val_list.append(fields[col].strip())
                             prev_vals.append(val_list)
                 else:
-                    """
-                    This only occurs once, right at the start of the iteration.
-                    """
+                    # This only occurs once, right at the start of the iteration.
                     prev_item = item
                     for col in cols:
                         col = int(col)-1
@@ -166,9 +155,7 @@ def main():
             if not first_invalid_line:
                 first_invalid_line = ii+1
     
-    """
-    Handle the last grouped value
-    """
+    # Handle the last grouped value
     out_str = prev_item
     
     for i, op in enumerate(ops):
@@ -184,9 +171,7 @@ def main():
     
     print >>fout, out_str
     
-    """
-    Generate a useful info message.
-    """
+    # Generate a useful info message.
     msg = "--Group by c%d: " %(group_col+1)
     for i,op in enumerate(ops):
         if op == 'c':

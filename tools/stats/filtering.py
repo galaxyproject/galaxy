@@ -10,10 +10,8 @@ import sys, sets, re, os.path
 from galaxy.tools import validation
 
 def get_wrap_func(value):
-    """
-    Determine the data type of each column in the input file
-    (valid data types for columns are either string or float)
-    """
+    # Determine the data type of each column in the input file
+    # (valid data types for columns are either string or float)
     try:
         check = float(value)
         return 'float(%s)'
@@ -37,17 +35,13 @@ def stop_err(msg):
 if len(sys.argv) != 4:
     print sys.argv
     stop_err('Usage: python filtering.py input_file ouput_file condition')
-#debug 
-#cond_text = "(c2-c3) < 115487120 and c1=='chr7' "
-#sys.argv.extend( [ 'a.txt', 'b.txt', cond_text ])
 
 inp_file  = sys.argv[1]
 out_file  = sys.argv[2]
 cond_text = sys.argv[3]
 
 if cond_text == '' or cond_text == None:
-    print 'Empty filtering condition.'
-    sys.exit()
+    stop_err( 'Empty filtering condition.' )
 
 # replace if input has been escaped
 mapped_str = {
@@ -63,19 +57,14 @@ mapped_str = {
 for key, value in mapped_str.items():
     cond_text = cond_text.replace(key, value)
 
-"""
-Attempt to ensure the expression is valid Python
-"""
+# Attempt to ensure the expression is valid Python
 validator_msg = 'Invalid syntax in "%s". See tool tips, warnings and syntax for examples of proper expression syntax.' %cond_text
 try:
     validator = validation.ExpressionValidator(validator_msg, cond_text)
 except:
-    print validator_msg
-    sys.exit()
+    stop_err( validator_msg )
     
-"""
-Attempt to determine if the condition includes executable stuff and, if so, exit
-"""
+# Attempt to determine if the condition includes executable stuff and, if so, exit
 secured = dir()
 operands = get_operands(cond_text)
 
@@ -86,9 +75,7 @@ for operand in operands:
         if operand in secured:
             stop_err("Illegal value %s in condition %s" % (operand, cond_text) )
 
-"""
-Determine the number of columns in the input file and the data type for each
-"""
+# Determine the number of columns in the input file and the data type for each
 elems = []
 if os.path.exists( inp_file ):
     for line in open( inp_file ):
@@ -97,21 +84,16 @@ if os.path.exists( inp_file ):
             elems = line.split( '\t' )
             break
 else:
-    print 'The data file you selected for filtering does not exist.'
-    sys.exit()
+    stop_err( 'The data file you selected for filtering does not exist.' )
 
 if not elems:
-    print 'No non-blank or non-comment lines in the data you selected for filtering.'
-    sys.exit()
+    stop_err( 'No non-blank or non-comment lines in the data you selected for filtering.' )
 
 if len(elems) == 1:
     if len(line.split()) != 1:
-        print 'This tool can only be run on tab delimited data.'
-        sys.exit()
+        stop_err( 'This tool can only be run on tab delimited data.' )
 
-"""
-Prepare the column variable names and wrappers for column data types
-"""
+# Prepare the column variable names and wrappers for column data types
 cols, funcs = [], []
 for ind, elem in enumerate(elems):
     name = 'c%d' % ( ind + 1 )
@@ -172,6 +154,6 @@ if all_is_well:
     if skipped_lines > 0:
         print 'Condition/data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
 else:
-    print 'Invalid syntax in "%s". See tool syntax for proper logical operator expression syntax.' %cond_text
+    stop_err( 'Invalid syntax in "%s". See tool syntax for proper logical operator expression syntax.' %cond_text )
     
     

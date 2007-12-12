@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 #Greg Von Kuster
-
 """
 Calculate correlations between numeric columns in a tab delim file.
-
 usage: %prog infile output.txt columns method
 """
 
@@ -15,7 +13,6 @@ def stop_err(msg):
     sys.exit()
     
 def main():
-
     method = sys.argv[4]
     assert method in ( "pearson", "kendall", "spearman" )
 
@@ -66,24 +63,19 @@ def main():
             matrix.append( row )
 
     if skipped_lines < i:
-
         try:
             out = open( sys.argv[2], "w" )
         except:
-            print >> sys.stderr, "Unable to open output file"
-            sys.exit()
+            stop_err( "Unable to open output file" )
 
         # Run correlation
         try:
             value = r.cor( array( matrix ), use="pairwise.complete.obs", method=method )
-        except ValueError, exc:
-            stop_err("Computing correlation resulted in error: %s." %str( exc ))
-        except IndexError, exc:
-            stop_err("Computing correlation resulted in error: %s." %str( exc ))
-
+        except Exception, exc:
+            out.close()
+            stop_err("%s" %str( exc ))
         for row in value:
             print >> out, "\t".join( map( str, row ) )
-
         out.close()
 
     if skipped_lines > 0:
