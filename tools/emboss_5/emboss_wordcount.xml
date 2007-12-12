@@ -1,0 +1,34 @@
+<tool id="EMBOSS_wordcount109" name="wordcount">
+  <description>Counts words of a specified size in a DNA sequence</description>
+  <command>wordcount -sequence $input1 -outfile $out_file1 -wordsize "$wordsize" -auto</command>
+  <inputs>
+    <param format="fasta" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="wordsize" size="5" type="text" value="4">
+      <label>Word size</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="wordcount" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="wordsize" value="4"/>
+      <output name="out_file1" file="emboss_wordcount_out.wordcount"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark 
+
+The input dataset needs to be sequences. 
+
+----- 
+
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/wordcount.html
+  </help>
+</tool>

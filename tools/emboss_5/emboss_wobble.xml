@@ -1,0 +1,39 @@
+<tool id="EMBOSS_wobble108" name="wobble">
+  <description>Wobble base plot</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl wobble -sequence $input1 -graph png -goutfile $ofile1 -outfile $ofile2 -window "$window" -bases "$bases" -auto</command>
+  <inputs>
+    <param format="fasta" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="window" size="5" type="text" value="30">
+      <label>Window size, in codons</label>
+    </param>
+    <param name="bases" size="6" type="text" value="GC">
+      <label>Bases used</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="ofile1" />
+    <data format="wobble" name="ofile2" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="window" value="30"/>
+      <param name="bases" value="GC"/>
+      <output name="ofile2" file="emboss_wobble_out.wobble"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark 
+
+The input dataset needs to be sequences. 
+
+----- 
+
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/wobble.html
+  </help>
+</tool>

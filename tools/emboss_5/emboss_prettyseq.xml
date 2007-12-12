@@ -1,0 +1,52 @@
+<tool id="EMBOSS_prettyseq80" name="prettyseq">
+  <description>Output sequence with translated ranges</description>
+  <command>prettyseq -sequence $input1 -outfile $out_file1 -ruler $ruler -plabel $plabel -nlabel $nlabel -width $width -auto</command>
+  <inputs>
+    <param format="fasta" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="ruler" type="select">
+      <label>Add a ruler</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="plabel" type="select">
+      <label>Number translations</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="nlabel" type="select">
+      <label>Number DNA sequence</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+    <param name="width" size="4" type="text" value="60">
+      <label>Width of screen</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="prettyseq" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="ruler" value="yes"/>
+      <param name="plabel" value="yes"/>
+      <param name="nlabel" value="yes"/>
+      <param name="width" value="60"/>
+      <output name="out_file1" file="emboss_prettyseq_out.prettyseq"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/prettyseq.html
+  </help>
+</tool>
