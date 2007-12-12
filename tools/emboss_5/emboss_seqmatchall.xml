@@ -1,0 +1,53 @@
+<tool id="EMBOSS_seqmatchall83" name="seqmatchall">
+  <description>All-against-all comparison of a set of sequences</description>
+  <command>seqmatchall -sequence $input1 -outfile $out_file1 -wordsize $wordsize -aformat2 $out_format1 -auto</command>
+  <inputs>
+    <param format="fasta" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="wordsize" size="4" type="text" value="4">
+      <label>Word size</label>
+    </param>
+    <param name="out_format1" type="select">
+      <label>Output Alignment File Format</label>
+      <option value="match">Match (m)</option>
+      <option value="simple">Simple (m)</option>
+      <option value="fasta">FASTA (m)</option>
+      <option value="msf">MSF (m)</option>
+      <option value="srs">SRS (m)</option>
+      <option value="pair">Pair (p)</option>
+      <option value="markx0">Markx0 (p)</option>
+      <option value="markx1">Markx1 (p)</option>
+      <option value="markx2">Markx2 (p)</option>
+      <option value="markx3">Markx3 (p)</option>
+      <option value="markx10">Markx10 (p)</option>
+      <option value="srspair">SRS pair (p)</option>
+      <option value="score">Score (p)</option>
+      <option value="seqmatchall">Seqmatchall Output File</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="seqmatchall" name="out_file1" />.
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="wordsize" value="2"/>
+      <param name="out_format1" value="fasta"/>
+      <output name="out_file1" file="emboss_seqmatchall_out.fasta"/>
+    </test>
+  </tests>
+  <code file="emboss_format_corrector.py" />
+  <help>
+
+.. class:: warningmark
+
+The input dataset needs to be sequences.
+
+-----
+
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/seqmatchall.html
+  </help>
+</tool>
