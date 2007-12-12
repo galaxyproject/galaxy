@@ -5,22 +5,37 @@ Read a wiggle track and print out a series of lines containing
 "chrom position score". Ignores track lines, handles bed, variableStep
 and fixedStep wiggle lines.
 """
-
-# import psyco_full
-
 import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.wiggle
 
-if len( sys.argv ) > 1: in_file = open( sys.argv[1] )
-else: in_file = sys.stdin
+def stop_err( msg ):
+    sys.stderr.write( msg )
+    sys.exit()
 
-if len( sys.argv ) > 2: out_file = open( sys.argv[2], "w" )
-else: out_file = sys.stdout
+def main():
+    if len( sys.argv ) > 1: 
+        in_file = open( sys.argv[1] )
+    else: 
+        in_file = open( sys.stdin )
+    
+    if len( sys.argv ) > 2:
+        out_file = open( sys.argv[2], "w" )
+    else:
+        out_file = sys.stdout
+    
+    try:
+        for fields in bx.wiggle.IntervalReader( in_file ):
+            print >>out_file, "\t".join( map( str, fields ) )
+    except Exception, exc:
+        if str( exc ).startswith( 'invalid literal for int(): ----------' ):
+            print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
+        else:
+            in_file.close()
+            out_file.close()
+            stop_err( str( exc ) )
 
-#for fields in bx.wiggle.Reader( in_file ):
-for fields in bx.wiggle.IntervalReader( in_file ):
-    print >>out_file, "\t".join( map( str, fields ) )
+    in_file.close()
+    out_file.close()
 
-in_file.close()
-out_file.close()
+if __name__ == "__main__": main()
