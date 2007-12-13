@@ -4,6 +4,10 @@ import urllib, sys
 import StringIO, gzip
 from galaxy.datatypes import data
 
+def stop_err( msg ):
+    sys.stderr.write( msg )
+    sys.exit()
+
 def __main__():
     filename = sys.argv[1]
     params = {}
@@ -20,19 +24,15 @@ def __main__():
     if not URL:
         open(filename, 'w').write("")
         #raise Exception('Datasource has not sent back a URL parameter')
-        print >> sys.stderr, 'Datasource has not sent back a URL parameter'
-        sys.exit(0)
+        stop_err( 'Datasource has not sent back a URL parameter.' )
     
     out = open(filename, 'w')
     
     CHUNK_SIZE = 2**20 # 1Mb 
     try:
         page = urllib.urlopen(URL, urllib.urlencode(params))
-    except Exception, exc:
-        #raise Exception('Problems connecting to %s (%s)' % (URL, exc) )
-        #print >> sys.stderr, 'Problems connecting to %s (%s)' % (URL, exc)
-        print >> sys.stderr, 'It appears that the UCSC Table Browser is currently offline. You may try again later.'
-        sys.exit(0)
+    except:
+        stop_err( 'It appears that the UCSC Table Browser is currently offline. Please try again later.' )
 
     gzipped = False
     first_chunk = True
@@ -47,8 +47,12 @@ def __main__():
                 gzipped = True
         if gzipped:
             compressed_stream = StringIO.StringIO( chunk )   
-            gzipper = gzip.GzipFile( fileobj=compressed_stream )      
-            chunk = gzipper.read()   
+            gzipper = gzip.GzipFile( fileobj=compressed_stream ) 
+            try:     
+                chunk = gzipper.read()
+            except IOError:
+                out.close()
+                stop_err( 'Error reading compressed data.  Please try retrieving the data uncompressed.' )
         out.write( chunk )
     out.close()
     
