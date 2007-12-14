@@ -153,7 +153,7 @@
         this.interval = setInterval( function() {
             q.get(this.state_url, function(new_state) {
                 //if (stop_states.indexOf(new_state) >= 0) { clearInterval( this.interval ); }
-                if ((new_state == "ok") || (new_state == "error")) {
+                if ((new_state == "ok") || (new_state == "error") || (new_state == "empty")) {
                     clearInterval( this.interval );
                 }
                 if (this.old_state != new_state) {
@@ -368,7 +368,7 @@ div#footer {
     #end for
     <script type="text/javascript">
     #for $data in reversed( $history.active_datasets )
-        #if $data.visible and $data.state not in [ "error", "ok" ]:
+        #if $data.visible and $data.state not in [ "empty", "error", "ok" ]:
             #set $state_url = $h.url_for( action='dataset_state', id=$data.id )
             #set $code_url = $h.url_for( action='dataset_code', id=$data.id, hid=$data.hid )
             var updater_${data.id} = new updater( $data.id, '$state_url', '$code_url', '$data.state' );
