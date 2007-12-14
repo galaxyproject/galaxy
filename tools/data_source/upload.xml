@@ -17,9 +17,30 @@
     <param name="dbkey" type="genomebuild" label="Genome" />
   </inputs>
   <help>
+  
 **Auto-detect**
 
-The system will attempt to detect AXT, FASTA, Gff, HTML, LAV, Maf, Wiggle, BED and Interval (BED with headers) formats. Other formats will be set to generic text files. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be (please send us a note if you see a case when a valid format is not detected).
+The system will attempt to detect AXT, FASTA, Gff, HTML, LAV, Maf, Tabular, Wiggle, BED and Interval (BED with headers) formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be (please send us a note if you see a case when a valid format is not detected).  You can also upload valid files that are compressed (gzipped), which will automatically be decompressed upon upload. 
+
+-----
+
+**Ab1**
+
+A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file.
+
+-----
+
+**AXT**
+
+blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields.
+
+-----
+
+**Binseq.zip**
+
+A zipped archive consisting of binary sequence files in either 'ab1' or 'scf' format.  All files in this archive must have the same file extension which is one of '.ab1' or '.scf'.  You must manually select this 'File Format' when uploading the file.
+
+-----
 
 **BED**
 
@@ -50,32 +71,6 @@ The system will attempt to detect AXT, FASTA, Gff, HTML, LAV, Maf, Wiggle, BED a
 
 -----
 
-**Genomic Intervals**
-
-- Tab delimited format (tabular)
-- File must start with definition line in the following format (columns may be in any order).::
-
-    #CHROM START END STRAND
-
-- CHROM - The name of the chromosome (e.g. chr3, chrY, chr2_random) or contig (e.g. ctgY1).
-- START - The starting position of the feature in the chromosome or contig. The first base in a chromosome is numbered 0.
-- END - The ending position of the feature in the chromosome or contig. The chromEnd base is not included in the display of the feature. For example, the first 100 bases of a chromosome are defined as chromStart=0, chromEnd=100, and span the bases numbered 0-99.
-- STRAND - Defines the strand - either '+' or '-'.
-
-- Example::
-
-    #CHROM START END   STRAND NAME COMMENT
-    chr1   10    100   +      exon myExon
-    chrX   1000  10050 -      gene myGene
-
------
-
-**AXT**
-
-blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields.
-
------
-
 **FASTA**
 
 A sequence in FASTA format consists of a single-line description, followed by lines of sequence data.  The first character of the description line is a greater-than (">") symbol in the first column.  All lines should be shorter than 80 charcters::
@@ -101,6 +96,26 @@ The GFF3 format addresses the most common extensions to GFF, while preserving ba
 
 -----
 
+**Interval (Genomic Intervals)**
+
+- Tab delimited format (tabular)
+- File must start with definition line in the following format (columns may be in any order).::
+
+    #CHROM START END STRAND
+
+- CHROM - The name of the chromosome (e.g. chr3, chrY, chr2_random) or contig (e.g. ctgY1).
+- START - The starting position of the feature in the chromosome or contig. The first base in a chromosome is numbered 0.
+- END - The ending position of the feature in the chromosome or contig. The chromEnd base is not included in the display of the feature. For example, the first 100 bases of a chromosome are defined as chromStart=0, chromEnd=100, and span the bases numbered 0-99.
+- STRAND - Defines the strand - either '+' or '-'.
+
+- Example::
+
+    #CHROM START END   STRAND NAME COMMENT
+    chr1   10    100   +      exon myExon
+    chrX   1000  10050 -      gene myGene
+
+-----
+
 **Lav**
 
 Lav is the primary output format for BLASTZ.  The first line of a .lav file begins with #:lav..
@@ -113,15 +128,27 @@ TBA and multiz multiple alignment format.  The first line of a .maf file begins 
 
 -----
 
-**Wiggle**
+**Scf**
 
-The .wig format is line-oriented.  Wiggle data is preceeded by a track definition line, which adds a number of options for controlling the default display of this track.
+A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file.
 
 -----
 
-**Tab delimited**
+**Tabular (tab delimited)**
 
 Any data in tab delimited format (tabular)
+
+-----
+
+**Txtseq.zip**
+
+A zipped archive consisting of flat text sequence files.  All files in this archive must have the same file extension of '.txt'.  You must manually select this 'File Format' when uploading the file.
+
+-----
+
+**Wig**
+
+The wiggle format is line-oriented.  Wiggle data is preceeded by a track definition line, which adds a number of options for controlling the default display of this track.
 
 -----
 

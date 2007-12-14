@@ -10,6 +10,66 @@ import zipfile
 
 log = logging.getLogger(__name__)
 
+class Ab1( data.Data ):
+    """Class describing an ab1 binary sequence file"""
+    file_ext = "ab1"
+    def set_peek( self, dataset ):
+        export_url = "/history_add_to?"+urlencode({'history_id':dataset.history_id,'ext':'ab1','name':'ab1 sequence','info':'Sequence file','dbkey':dataset.dbkey})
+        dataset.peek  = "Binary ab1 sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
+        dataset.blurb = "Binary ab1 sequence file"
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Binary ab1 sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+class Scf( data.Data ):
+    """Class describing an scf binary sequence file"""
+    file_ext = "scf"
+    def set_peek( self, dataset ):
+        export_url = "/history_add_to?"+urlencode({'history_id':dataset.history_id,'ext':'scf','name':'scf sequence','info':'Sequence file','dbkey':dataset.dbkey})
+        dataset.peek  = "Binary scf sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
+        dataset.blurb = "Binary scf sequence file"
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Binary scf sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+class Binseq( data.Data ):
+    """Class describing a zip archive of binary sequence files"""
+    file_ext = "binseq.zip"
+    def set_peek( self, dataset ):
+        zip_file = zipfile.ZipFile( dataset.file_name, "r" )
+        num_files = len( zip_file.namelist() )
+        dataset.peek  = "Binary sequence file archive (%s)" % ( data.nice_size( dataset.get_size() ) )
+        dataset.blurb = 'Zip archive of %s binary sequence files' % ( str( num_files ) )
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Binary sequence file archive (%s)" % ( data.nice_size( dataset.get_size() ) )
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/zip'
+
+class Txtseq( data.Data ):
+    """Class describing a zip archive of text sequence files"""
+    file_ext = "txtseq.zip"
+    def set_peek( self, dataset ):
+        zip_file = zipfile.ZipFile( dataset.file_name, "r" )
+        num_files = len( zip_file.namelist() )
+        dataset.peek  = "Text sequence file archive (%s)" % ( data.nice_size( dataset.get_size() ) )
+        dataset.blurb = 'Zip archive of %s text sequence files' % ( str( num_files ) )
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Text sequence file archive (%s)" % ( data.nice_size( dataset.get_size() ) )
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/zip'
+
 class Image( data.Data ):
     """Class describing an image"""
     def set_peek( self, dataset ):
@@ -19,11 +79,9 @@ class Image( data.Data ):
 class Gmaj( data.Data ):
     """Class describing a GMAJ Applet"""
     file_ext = "gmaj.zip"
-
     def set_peek( self, dataset ):
         dataset.peek  = "<p align=\"center\"><applet code=\"edu.psu.bx.gmaj.MajApplet.class\" archive=\"/static/gmaj/gmaj.jar\" width=\"200\" height=\"30\" align=\"middle\"> <param name=bundle value=\"display?id="+str(dataset.id)+"&tofile=yes&toext=.zip\"> <param name=buttonlabel value=\"Launch GMAJ\"><param name=nobutton value=\"false\"><param name=urlpause value=\"100\"><param name=debug value=\"false\"><i>Your browser is not responding to the &lt;applet&gt; tag.</i></applet></p>"
         dataset.blurb = 'GMAJ Multiple Alignment Viewer'
-        
     def display_peek(self, dataset):
         try:
             return dataset.peek
@@ -54,15 +112,12 @@ class Gmaj( data.Data ):
 class Html( data.Text ):
     """Class describing an html file"""
     file_ext = "html"
-
     def set_peek( self, dataset ):
         dataset.peek  = "HTML file (%s)" % ( data.nice_size( dataset.get_size() ) )
         dataset.blurb = data.nice_size( dataset.get_size() )
-        
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'text/html'
-
     def sniff( self, filename ):
         """
         Determines wether the file is in html format
@@ -86,7 +141,6 @@ class Html( data.Text ):
 class Laj( data.Text ):
     """Class describing a LAJ Applet"""
     file_ext = "laj"
-
     def set_peek( self, dataset ):
         export_url = "/history_add_to?"+urlencode({'history_id':dataset.history_id,'ext':'lav','name':'LAJ Output','info':'Added by LAJ','dbkey':dataset.dbkey})
         dataset.peek  = "<p align=\"center\"><applet code=\"edu.psu.cse.bio.laj.LajApplet.class\" archive=\"static/laj/laj.jar\" width=\"200\" height=\"30\"><param name=buttonlabel value=\"Launch LAJ\"><param name=title value=\"LAJ in Galaxy\"><param name=posturl value=\""+export_url+"\"><param name=alignfile1 value=\"display?id="+str(dataset.id)+"\"><param name=noseq value=\"true\"></applet></p>"
@@ -96,4 +150,3 @@ class Laj( data.Text ):
             return dataset.peek
         except:
             return "peek unavailable"
-

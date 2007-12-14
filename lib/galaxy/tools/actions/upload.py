@@ -1,4 +1,4 @@
-import os, shutil, urllib, StringIO, re
+import os, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile
 from galaxy import datatypes, jobs
 from galaxy.datatypes import sniff
 from galaxy import model, util
@@ -9,10 +9,9 @@ import logging
 log = logging.getLogger( __name__ )
 
 class UploadToolAction( object ):
-    """
-    Action for uploading files
-    """
-    empty = False
+    # Action for uploading files
+    def __init__( self ):
+        self.empty = False
     
     def execute( self, tool, trans, incoming={} ):
         data_file = incoming['file_data']
@@ -21,44 +20,36 @@ class UploadToolAction( object ):
         url_paste = incoming['url_paste']
         space_to_tab = False 
         if 'space_to_tab' in incoming:
-            if incoming['space_to_tab']  not in ["None", None]:
+            if incoming['space_to_tab'] not in ["None", None]:
                 space_to_tab = True
-        info = "uploaded file"
         temp_name = ""
         data_list = []
-        self.empty = False
-        if 'filename' in dir(data_file):
+
+        if 'filename' in dir( data_file ):
             try:
                 file_name = data_file.filename
-                file_name = file_name.split('\\')[-1]
-                file_name = file_name.split('/')[-1]
-                data_list.append( self.add_file(trans, data_file.file, file_name, file_type, dbkey, "uploaded file",space_to_tab=space_to_tab) )
-            except BadFileException:
-                return self.upload_empty( trans, "Error", "attempted to upload an empty or inappropriate file")
-            except:
-                pass
-        
+                file_name = file_name.split( '\\' )[-1]
+                file_name = file_name.split( '/' )[-1]
+                data_list.append( self.add_file( trans, data_file.file, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
+            except BadFileException, e:
+                return self.upload_empty( trans, "Error:", str( e ) )
         if url_paste not in [None, ""]:
-            if url_paste[0:7].lower() == "http://" or url_paste[0:6].lower() == "ftp://" :
-                url_paste = url_paste.replace("\r","").split("\n")
+            if url_paste[0:7].lower() == "http://" or url_paste[0:6].lower() == "ftp://":
+                url_paste = url_paste.replace( "\r","" ).split("\n")
                 for line in url_paste:
                     try:
-                        data_list.append( self.add_file(trans, urllib.urlopen(line), line, file_type, dbkey, "uploaded url",space_to_tab=space_to_tab) )
-                    except BadFileException:
-                        return self.upload_empty( trans, "Error", "attempted to upload an empty or inappropriate file")
-                    except:
-                        pass
+                        data_list.append( self.add_file( trans, urllib.urlopen( line ), line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
+                    except BadFileException, e:
+                        return self.upload_empty( trans, "Error:", str( e ) )
             else:
                 try:
-                    data_list.append( self.add_file(trans, StringIO.StringIO(url_paste), 'Pasted Entry', file_type, dbkey, "pasted entry",space_to_tab=space_to_tab) )
-                except BadFileException:
-                    return self.upload_empty( trans, "Error", "attempted to upload an empty or inappropriate file" )
-                except:
-                    pass
+                    data_list.append( self.add_file( trans, StringIO.StringIO( url_paste ), 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
+                except BadFileException, e:
+                    return self.upload_empty( trans, "Error:", str( e ) )
         if self.empty:
-            return self.upload_empty(trans, "Empty file error:", "attempted to upload an empty file")
-        elif len(data_list)<1:
-            return self.upload_empty(trans, "No data error:","either you pasted no data, the url you specified is invalid, or you have not specified a file")
+            return self.upload_empty( trans, "Empty file error:", "you attempted to upload an empty file." )
+        elif len( data_list ) < 1:
+            return self.upload_empty( trans, "No data error:","either you pasted no data, the url you specified is invalid, or you have not specified a file." )
         return dict( output=data_list[0] )
 
     def upload_empty(self, trans, err_code, err_msg):
@@ -73,33 +64,84 @@ class UploadToolAction( object ):
         trans.app.model.flush()
         return dict( output=data )
 
-    def add_file(self, trans, file_obj, file_name, file_type, dbkey, info, space_to_tab = False ):
-        temp_name = sniff.stream_to_file(file_obj)
+    def add_file( self, trans, file_obj, file_name, file_type, dbkey, info=None, space_to_tab=False ):
+        data_type = None
+        temp_name = sniff.stream_to_file( file_obj )
+        
+        # See if we have an empty file
+        if not os.path.getsize( temp_name ) > 0:
+            raise BadFileException( "you attempted to upload an empty file." )
+        
+        # See if we have a gzipped file, which, if it passes our restrictions, we'll decompress on the fly.
+        is_gzipped, is_valid = self.check_gzip( temp_name )
+        if is_gzipped and not is_valid:
+            raise BadFileException( "you attempted to upload an inappropriate file." )
+        elif is_gzipped and is_valid:
+            #We need to decompress the temp_name file
+            CHUNK_SIZE = 2**20 # 1Mb   
+            fd, uncompressed = tempfile.mkstemp()   
+            gzipped_file = gzip.GzipFile( temp_name )
+            while 1:
+                try:
+                    chunk = gzipped_file.read( CHUNK_SIZE )
+                except IOError:
+                    uncompressed.close()
+                    raise BadFileException( 'problem decompressing gzipped data.' )
+                if not chunk:
+                    break
+                os.write( fd, chunk )
+            os.close( fd )
+            gzipped_file.close()
+            # Replace the gzipped file with the decompressed file
+            shutil.move( uncompressed, temp_name )
+            file_name = file_name.rstrip( '.gz' )
+            data_type = 'gzip'
 
-        try:
-            # Check against undesireable file data:
-            if self.check_html( temp_name ) or self.check_binary( temp_name ):
-                self.empty = True
-        except:
-            #User is attempting to upload a non-text file, but for some reason check_binary didn't work...
-            self.empty = True
+        if not data_type:
+            # See if we have a zip archive
+            is_zipped, is_valid, test_ext = self.check_zip( temp_name )
+            if is_zipped and not is_valid:
+                raise BadFileException( "you attempted to upload an inappropriate file." )
+            elif is_zipped and is_valid:
+                # Currently, we force specific tools to handle this case.  We also require the user
+                # to manually set the incoming file_type
+                if ( test_ext == 'ab1' or test_ext == 'scf' ) and file_type != 'binseq.zip':
+                    raise BadFileException( "Invalid 'File Format' for archive consisting of binary files - use 'Binseq.zip'." )
+                elif test_ext == 'txt' and file_type != 'txtseq.zip':
+                    raise BadFileException( "Invalid 'File Format' for archive consisting of text files - use 'Txtseq.zip'." )
+                if not ( file_type == 'binseq.zip' or file_type == 'txtseq.zip' ):
+                    raise BadFileException( "you must manually set the 'File Format' to either 'Binseq.zip' or 'Txtseq.zip' when uploading zip files." )
+                data_type = 'zip'
+                ext = file_type
+
+        if not data_type:
+            if self.check_binary( temp_name ):
+                ext = file_name.split( "." )[1].strip().lower()
+                if not( ext == 'ab1' or ext == 'scf' ):
+                    raise BadFileException( "you attempted to upload an inappropriate file." )
+                if ext == 'ab1' and file_type != 'ab1':
+                    raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
+                elif ext == 'scf' and file_type != 'scf':
+                    raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
+                data_type = 'binary'
         
-        if self.empty:
-            raise BadFileException( "attempted to upload an empty or inappropriate file" )
-        
-        """
-        NOTE: the following will keep binary and zip files (e.g., gmaj.zip) from being correctly sniffed, but
-        the files can be uploaded (they'll be sniffed as 'txt').  This should restrict some unwanted behavior.
-        """
-        sniff.convert_newlines(temp_name)
-        
-        if space_to_tab:
-            sniff.sep2tabs(temp_name)
-        
-        if file_type == 'auto':
-            ext = sniff.guess_ext(temp_name)    
-        else:
-            ext = file_type
+        if not data_type:
+            # We must have a text file
+            if self.check_html( temp_name ):
+                raise BadFileException( "you attempted to upload an inappropriate file." )
+
+        if data_type != 'binary' and data_type != 'zip':
+            sniff.convert_newlines( temp_name )
+            if space_to_tab:
+                sniff.sep2tabs( temp_name )
+            if file_type == 'auto':
+                ext = sniff.guess_ext( temp_name )    
+            else:
+                ext = file_type
+            data_type = ext
+
+        if info is None:
+            info = 'uploaded %s file' %data_type
 
         data = trans.app.model.Dataset()
         data.name = file_name
@@ -119,37 +161,72 @@ class UploadToolAction( object ):
             data.add_validation_error( 
                 model.ValidationError( message=str( error ), err_type=error.__class__.__name__, attributes=util.object_to_string( error.__dict__ ) ) )
         """
-        if data.has_data():
-            if data.missing_meta():
-                data.datatype.set_meta(data)
-            dbkey_to_store = dbkey
-            if type(dbkey_to_store) == type([]):
-                dbkey_to_store = dbkey[0]
-            trans.history.add_dataset( data, genome_build=dbkey_to_store )
-            trans.app.model.flush()
-            trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id), tool_id="upload")
-        else:
-            self.empty = True
+        if data.missing_meta():
+            data.datatype.set_meta( data )
+        dbkey_to_store = dbkey
+        if type( dbkey_to_store ) == type( [] ):
+            dbkey_to_store = dbkey[0]
+        trans.history.add_dataset( data, genome_build=dbkey_to_store )
+        trans.app.model.flush()
+        trans.log_event( "Added dataset %d to history %d" %( data.id, trans.history.id ), tool_id="upload" )
         return data
 
-    def check_html( self, temp_name ):
-        temp = open(temp_name, "U")
+    def check_gzip( self, temp_name ):
+        temp = open( temp_name, "U" )
+        magic_check = temp.read( 2 )
+        temp.close()
+        if magic_check != datatypes.data.gzip_magic:
+            return ( False, False )
+        CHUNK_SIZE = 2**15 # 32Kb
+        gzipped_file = gzip.GzipFile( temp_name )
+        chunk = gzipped_file.read( CHUNK_SIZE )
+        gzipped_file.close()
+        if self.check_html( temp_name, chunk=chunk ) or self.check_binary( temp_name, chunk=chunk ):
+            return( True, False )
+        return ( True, True )
+
+    def check_zip( self, temp_name ):
+        if not zipfile.is_zipfile( temp_name ):
+            return ( False, False, None )
+        zip_file = zipfile.ZipFile( temp_name, "r" )
+        # Make sure the archive consists of valid files.  The current rules are:
+        # 1. Archives can only include .ab1, .scf or .txt files
+        # 2. All file extensions within an archive must be the same
+        name = zip_file.namelist()[0]
+        test_ext = name.split( "." )[1].strip().lower()
+        if not ( test_ext == 'scf' or test_ext == 'ab1' or test_ext == 'txt' ):
+            return ( True, False, test_ext )
+        for name in zip_file.namelist():
+            ext = name.split( "." )[1].strip().lower()
+            if ext != test_ext:
+                return ( True, False, test_ext )
+        return ( True, True, test_ext )
+
+    def check_html( self, temp_name, chunk=None ):
+        if chunk is None:
+            temp = open(temp_name, "U")
+        else:
+            temp = chunk
         regexp = re.compile( "<([A-Z][A-Z0-9]*)[^>]*>", re.I )
         lineno = 0
         for line in temp:
             lineno += 1
             matches = regexp.search( line )
             if matches:
-                temp.close()
+                if chunk is None:
+                    temp.close()
                 return True
             if lineno > 100:
-                # We should be able to detmine an HTML file within 100 lines.
                 break
-        temp.close()
+        if chunk is None:
+            temp.close()
         return False
 
-    def check_binary( self, temp_name ):
-        temp = open( temp_name, "U" )
+    def check_binary( self, temp_name, chunk=None ):
+        if chunk is None:
+            temp = open( temp_name, "U" )
+        else:
+            temp = chunk
         lineno = 0
         for line in temp:
             lineno += 1
@@ -157,11 +234,13 @@ class UploadToolAction( object ):
             if line:
                 for char in line:
                     if ord( char ) > 128:
-                        temp.close()
+                        if chunk is None:
+                            temp.close()
                         return True
             if lineno > 100:
                 break
-        temp.close()
+        if chunk is None:
+            temp.close()
         return False
 
 class BadFileException( Exception ):
