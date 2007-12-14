@@ -182,15 +182,15 @@ select, textarea, input[type="text"], input[type="file"]
 {
     padding-left: 10px;
     border-color: #6666AA;
-    background-color: #6666AA;
+    background-color: #CCCCFF;
     background-image: none;
 }
 
 .welcomeRed 
 {
     padding-left: 10px;
-    border-color: #AAAA66;
-    background-color: #FFFFCC;
+    border-color: #AA6666;
+    background-color: #FFCCCC;
     background-image: none;
 }
 
