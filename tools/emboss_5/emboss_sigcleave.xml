@@ -1,0 +1,54 @@
+<tool id="EMBOSS_sigcleave88" name="sigcleave">
+  <description>Reports protein signal cleavage sites</description>
+  <command>sigcleave -sequence $input1 -outfile $out_file1 -minweight "$minweight" -prokaryote $prokaryote -rformat2 $out_format1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="minweight" size="4" type="text" value="3.5">
+      <label>Minimum scoring weight value for the predicted cleavage site</label>
+    </param>
+    <param name="prokaryote" type="select">
+      <label>Specifies the sequence is prokaryotic and changes the default scoring data file</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="out_format1" type="select">
+      <label>Output Report File Format</label>
+      <option value="motif">Motif</option>
+      <option value="embl">EMBL</option>
+      <option value="genbank">GENBANK</option>
+      <option value="gff">GFF</option>
+      <option value="pir">PIR</option>
+      <option value="swiss">SwissProt</option>
+      <option value="dbmotif">DbMotif</option>
+      <option value="diffseq">Diffseq</option>
+      <option value="excel">Excel (tab delimited)</option>
+      <option value="feattable">FeatTable</option>
+      <option value="regions">Regions</option>
+      <option value="seqtable">SeqTable</option>
+      <option value="simple">SRS Simple</option>
+      <option value="srs">SRS</option>
+      <option value="table">Table</option>
+      <option value="tagseq">TagSeq</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="motif" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="minweight" value="3.5"/>
+      <param name="prokaryote" value="no"/>
+      <param name="out_format1" value="excel"/>
+      <output name="out_file1" file="emboss_sigcleave_out.tabular"/>
+    </test>
+  </tests>
+  <code file="emboss_format_corrector.py" />
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/sigcleave.html
+  </help>
+</tool>
