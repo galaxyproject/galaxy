@@ -1,0 +1,29 @@
+<tool id="EMBOSS_pepstats71" name="pepstats">
+  <description>Protein statistics</description>
+  <command>pepstats -sequence $input1 -outfile $out_file1 -termini $termini -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="termini" type="select">
+      <label>Include charge at N and C terminus</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="pepstats" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="termini" value="yes"/>
+      <output name="out_file1" file="emboss_pepstats_out.pepstats"/>
+    </test>
+  </tests>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/pepstats.html
+  </help>
+</tool>

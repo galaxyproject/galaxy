@@ -1,0 +1,21 @@
+<tool id="EMBOSS_plotcon75" name="plotcon">
+  <!-- produces png file -->
+  <description>Plot quality of conservation of a sequence alignment</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl plotcon -sequences $input1 -graph png -goutfile $out_file1 -winsize $winsize -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="winsize" size="10" type="text" value="4">
+      <label>Number of columns to average alignment quality over</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="out_file1" />
+  </outputs>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/plotcon.html
+  </help>
+</tool>
