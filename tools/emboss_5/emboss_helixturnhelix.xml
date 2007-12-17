@@ -1,0 +1,62 @@
+<tool id="EMBOSS_helixturnhelix43" name="helixturnhelix">
+  <description>Report nucleic acid binding motifs</description>
+  <command>helixturnhelix -sequence $input1 -outfile $out_file1 -mean $mean -sd $sd -minsd $minsd -eightyseven $eightyseven -rformat2 $out_format1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="mean" size="10" type="text" value="238.71">
+      <label>Mean value</label>
+    </param>
+    <param name="sd" size="10" type="text" value="293.61">
+      <label>Standard Deviation value</label>
+    </param>
+    <param name="minsd" size="10" type="text" value="2.5">
+      <label>Minimum SD</label>
+    </param>
+    <param name="eightyseven" type="select">
+      <label>Use the old (1987) weight data</label>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </param>
+    <param name="out_format1" type="select">
+      <label>Output Report File Format</label>
+      <option value="motif">Motif</option>
+      <option value="embl">EMBL</option>
+      <option value="genbank">GENBANK</option>
+      <option value="gff">GFF</option>
+      <option value="pir">PIR</option>
+      <option value="swiss">SwissProt</option>
+      <option value="dbmotif">DbMotif</option>
+      <option value="diffseq">Diffseq</option>
+      <option value="excel">Excel (tab delimited)</option>
+      <option value="feattable">FeatTable</option>
+      <option value="regions">Regions</option>
+      <option value="seqtable">SeqTable</option>
+      <option value="simple">SRS Simple</option>
+      <option value="srs">SRS</option>
+      <option value="table">Table</option>
+      <option value="tagseq">TagSeq</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="motif" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="mean" value="238.71"/>
+      <param name="sd" value="293.61"/>
+      <param name="minsd" value="2.5"/>
+      <param name="eightyseven" value="no"/>
+      <param name="out_format1" value="excel"/>
+      <output name="out_file1" file="emboss_helixturnhelix_out.tabular"/>
+    </test>
+  </tests>
+  <code file="emboss_format_corrector.py" />
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/helixturnhelix.html
+  </help>
+</tool>

@@ -1,0 +1,31 @@
+<tool id="EMBOSS_hmoment44" name="hmoment">
+  <description>Hydrophobic moment calculation</description>
+  <command>hmoment -seqall $input1 -outfile $out_file1 -window $window -aangle $aangle -graph png -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="window" size="5" type="text" value="10">
+      <label>Window</label>
+    </param>
+    <param name="aangle" size="5" type="text" value="100">
+      <label>Alpha helix angle (degrees)</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="hmoment" name="out_file1" />
+  </outputs>
+    <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="window" value="10"/>
+      <param name="aangle" value="100"/>
+      <output name="out_file1" file="emboss_hmoment_out.hmoment"/>
+    </test>
+  </tests>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/hmoment.html
+  </help>
+</tool>

@@ -1,0 +1,37 @@
+<tool id="EMBOSS_iep45" name="iep">
+  <description>Calculates the isoelectric point of a protein</description>
+  <command>iep -sequence $input1 -outfile $out_file1 -step $step -amino $amino -graph png -termini $termini -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequences</label>
+    </param>
+    <param name="step" size="5" type="text" value=".5">
+      <label>Step value for pH</label>
+    </param>
+    <param name="amino" size="5" type="text" value="1">
+      <label>Number of N-termini</label>
+    </param>
+    <param name="termini" type="select">
+      <label>Include charge at N and C terminus</label>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="iep" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="step" value="0.5"/>
+      <param name="amino" value="1"/>
+      <param name="termini" value="yes"/>
+      <output name="out_file1" file="emboss_iep_out.iep"/>
+    </test>
+  </tests>
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/iep.html
+  </help>
+</tool>
