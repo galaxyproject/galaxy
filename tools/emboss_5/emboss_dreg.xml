@@ -1,0 +1,21 @@
+<tool id="EMBOSS_dreg27" name="dreg">
+  <description>Regular expression search of a nucleotide sequence</description>
+  <command>dreg -sequence $input1 -outfile $out_file1 -pattern "$pattern" -raccshow3 "no" -rusashow3 "no" -rdesshow3 "no" -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence 1</label>
+    </param>
+    <param name="pattern" size="50" type="text" value="(AUG)">
+      <label>Regular expression pattern</label>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="dreg" name="out_file1" />
+  </outputs>
+  <!-- tests not possible since dreg timestamps output file -->  
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/dreg.html
+  </help>
+</tool>
