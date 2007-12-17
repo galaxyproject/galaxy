@@ -1,0 +1,38 @@
+<tool id="EMBOSS_tmap99" name="tmap">
+  <description>Displays membrane spanning regions</description>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl tmap -sequences $input1 -outfile $out_file1 -goutfile $out_file2 -graph png -rformat $out_format1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>Sequence</label>
+    </param>
+    <param name="out_format1" type="select">
+      <label>Output Report File Format</label>
+      <option value="seqtable ">SeqTable</option>
+      <option value="embl">EMBL</option>
+      <option value="genbank">GENBANK</option>
+      <option value="gff">GFF</option>
+      <option value="pir">PIR</option>
+      <option value="swiss">SwissProt</option>
+      <option value="dbmotif">DbMotif</option>
+      <option value="diffseq">Diffseq</option>
+      <option value="excel">Excel (tab delimited)</option>
+      <option value="feattable">FeatTable</option>
+      <option value="motif">Motif</option>
+      <option value="regions">Regions</option>
+      <option value="simple">SRS Simple</option>
+      <option value="srs">SRS</option>
+      <option value="table">Table</option>
+      <option value="tagseq">TagSeq</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="seqtable" name="out_file1" />
+    <data format="png" name="out_file2" />
+  </outputs>
+  <code file="emboss_format_corrector.py" />
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/tmap.html
+  </help>
+</tool>
