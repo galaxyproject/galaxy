@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #Greg Von Kuster
 """
-This tool takes a tab-delimited textfile as input and creates filters on columns based on certain properties.
+This tool takes a tab-delimited text file as input and creates filters on columns based on certain properties.
 The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
 Invalid lines are those that do not follow the standard defined when the get_wrap_func function (immediately below)
 is applied to the first uncommented line in the input file.
@@ -40,7 +40,7 @@ inp_file  = sys.argv[1]
 out_file  = sys.argv[2]
 cond_text = sys.argv[3]
 
-if cond_text == '' or cond_text == None:
+if not cond_text:
     stop_err( 'Empty filtering condition.' )
 
 # replace if input has been escaped
@@ -70,28 +70,31 @@ operands = get_operands(cond_text)
 
 for operand in operands:
     try:
-        map(int, operand)
+        int( operand )
     except:
         if operand in secured:
-            stop_err("Illegal value %s in condition %s" % (operand, cond_text) )
+            stop_err("Illegal value '%s' in condition '%s'" % (operand, cond_text) )
 
 # Determine the number of columns in the input file and the data type for each
 elems = []
 if os.path.exists( inp_file ):
-    for line in open( inp_file ):
-        line = line.strip()
+    for i, line in enumerate( open( inp_file ) ):
+        line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
             elems = line.split( '\t' )
+            if len( elems ) == 1:
+                # Make sure we are not looking at an improper comment line
+                if len( line.split() ) > 1:
+                    continue
+            if i == 100:
+                inp_file.close()
+                stop_err( 'This tool can only be run on tab delimited data.' )
             break
 else:
     stop_err( 'The data file you selected for filtering does not exist.' )
 
 if not elems:
     stop_err( 'No non-blank or non-comment lines in the data you selected for filtering.' )
-
-if len(elems) == 1:
-    if len(line.split()) != 1:
-        stop_err( 'This tool can only be run on tab delimited data.' )
 
 # Prepare the column variable names and wrappers for column data types
 cols, funcs = [], []

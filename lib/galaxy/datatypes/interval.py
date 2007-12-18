@@ -235,7 +235,8 @@ class Interval( Tabular ):
                     if len(hdr) < 3:
                         return False
                     try:
-                        map( int, [hdr[1], hdr[2]] )
+                        int( hdr[1] )
+                        int( hdr[2] )
                     except:
                         return False
             return True
@@ -348,8 +349,11 @@ class Bed( Interval ):
                         valid_col1 = True
                         break
                 if valid_col1:
-                    try: map( int, [hdr[1], hdr[2]] )
-                    except: return False
+                    try:
+                        int( hdr[1] )
+                        int( hdr[2] )
+                    except: 
+                        return False
                     if len( hdr ) > 4:
                         #hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
                         #hdr[4] is an int, 'score', a score between 0 and 1000.
@@ -413,9 +417,11 @@ class Gff( Tabular ):
                 elems = line.split( '\t' )
                 if len(elems) == 9:
                     try:
-                        map( int, [elems[3], elems[4]] )
+                        int( elems[3] )
+                        int( elems[4] )
                         break
-                    except: pass
+                    except:
+                        pass
         Tabular.set_meta( self, dataset, i )
 
     def make_html_table(self, data):
@@ -492,7 +498,8 @@ class Gff( Tabular ):
                     if len(hdr) != 9:
                         return False
                     try:
-                        map( int, [hdr[3], hdr[4]] )
+                        int( hdr[3] )
+                        int( hdr[4] )
                     except:
                         return False
                     if hdr[5] != '.':
@@ -534,12 +541,14 @@ class Gff3( Gff ):
                         start = int( elems[3] )
                         valid_start = True                                    
                     except:
-                        if elems[3] == '.': valid_start = True                                        
+                        if elems[3] == '.':
+                            valid_start = True                                        
                     try:
                         end = int( elems[4] )
                         valid_end = True
                     except:
-                        if elems[4] == '.': valid_end = True
+                        if elems[4] == '.':
+                            valid_end = True
                     strand = elems[6]
                     phase = elems[7]
                     if valid_start and valid_end and start < end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
@@ -586,12 +595,12 @@ class Gff3( Gff ):
                     if len(hdr) != 9: 
                         return False
                     try:
-                        map( int, [hdr[3]] )
+                        int( hdr[3] )
                     except:
                         if hdr[3] != '.':
                             return False
                     try:
-                        map( int, [hdr[4]] )
+                        int( hdr[4] )
                     except:
                         if hdr[4] != '.':
                             return False
@@ -751,10 +760,15 @@ class CustomTrack ( Tabular ):
             else:     
                 try:
                     if hdr[0] and not hdr[0].startswith( '#' ):
-                        if len( hdr ) < 3: return False
-                        try: map( int, [hdr[1], hdr[2]] )
-                        except: return False
-                except: return False
+                        if len( hdr ) < 3: 
+                            return False
+                        try:
+                            int( hdr[1] )
+                            int( hdr[2] )
+                        except: 
+                            return False
+                except: 
+                    return False
         return True
 
 class GBrowseTrack ( Tabular ):
