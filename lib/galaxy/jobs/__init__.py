@@ -330,7 +330,6 @@ class JobWrapper( object ):
                     dataset.set_meta()
                 dataset.set_peek()
             else:
-                dataset.state= model.Dataset.states.EMPTY
                 dataset.blurb = "empty"
             if stderr: 
                 dataset.state = model.Dataset.states.ERROR
