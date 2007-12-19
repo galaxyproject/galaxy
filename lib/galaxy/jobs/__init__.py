@@ -103,6 +103,15 @@ class JobQueue( object ):
             self.sleeper.sleep( 1 )
             
     def monitor_step( self ):
+        """
+        Called repeatedly by `monitor` to process waiting jobs. Gets any new
+        jobs (either from the database or from its own queue), then iterates
+        over all new and waiting jobs to check the state of the jobs each
+        depends on. If the job has dependencies that have not finished, it
+        it goes to the waiting queue. If the job has dependencies with errors,
+        it is marked as having errors and removed from the queue. Otherwise,
+        the job is dispatched.
+        """
         # Pull all new jobs from the queue at once
         new_jobs = []
         if self.track_jobs_in_database:
@@ -123,49 +132,46 @@ class JobQueue( object ):
                     # Append to watch queue
                     new_jobs.append( job )
             except Empty:
-                pass
+                pass  
         # Iterate over new and waiting jobs and look for any that are 
         # ready to run
         new_waiting = []
-       
         for job in ( new_jobs + self.waiting ):
             try:
-                # Run the job, requeue if not complete                    
+                # Check the job's dependencies, requeue if they're not done                    
                 job_state = job.check_if_ready_to_run()
                 if job_state == JOB_WAIT: 
                     new_waiting.append( job )
-                    #log.debug( "job has been requeued" )
                 elif job_state == JOB_ERROR:
-                    log.info( "job %d ended with an error" %job.job_id )
+                    log.info( "job %d ended with an error" % job.job_id )
                 elif job_state == JOB_READY:
                     # If special queuing is enabled, put the ready jobs in the special queue
                     if self.use_policy :
                         self.squeue.put( job ) 
-                        log.debug( "job %d put in policy queue" %job.job_id )
+                        log.debug( "job %d put in policy queue" % job.job_id )
                     else : # or dispatch the job directly
                         self.dispatcher.put( job )
-                        log.debug( "job %d dispatched" %job.job_id)
+                        log.debug( "job %d dispatched" % job.job_id)
                 else:
-                    log.error( "unknown job state '%s' for job %d" %( job_state, job.job_id ))
+                    log.error( "unknown job state '%s' for job %d" % ( job_state, job.job_id ))
             except:
-                log.exception( "failure running job %d" %job.job_id )
-        
+                log.exception( "failure running job %d" % job.job_id )
         # Update the waiting list
         self.waiting = new_waiting
-        
-        # If special (eg. fair) scheduling is enabled, dispatch all jobs
+        # If special (e.g. fair) scheduling is enabled, dispatch all jobs
         # currently in the special queue    
         if self.use_policy :
-            while 1 :
-                try :
+            while 1:
+                try:
                     sjob = self.squeue.get()
                     self.dispatcher.put( sjob )
-                    log.debug( "job %d dispatched" %sjob.job_id )
-                except Empty : # squeue is empty, so stop dispatching
+                    log.debug( "job %d dispatched" % sjob.job_id )
+                except Empty: 
+                    # squeue is empty, so stop dispatching
                     break
                 except: # if something else breaks while dispatching
                     job.fail( "failure dispatching job" )
-                    log.exception( "failure running job %d" %sjob.job_id )
+                    log.exception( "failure running job %d" % sjob.job_id )
             
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""
@@ -296,6 +302,14 @@ class JobWrapper( object ):
         job.flush()
         
     def check_if_ready_to_run( self ):
+        """
+        Check if a job is ready to run by verifying that each of its input 
+        datasets is ready (specifically in the OK state). If any input dataset
+        has an error, fail the job and return JOB_ERROR. If all input datasets
+        are either in OK or FAKE state, return JOB_READY indicating that the
+        job can be dispatched. Otherwise, return JOB_WAIT indicating that 
+        input datasets are still being prepared.
+        """
         job = model.Job.get( self.job_id )
         job.refresh()
         for dataset_assoc in job.input_datasets:
@@ -313,6 +327,11 @@ class JobWrapper( object ):
         return JOB_READY
         
     def finish( self, stdout, stderr ):
+        """
+        Called to indicate that the associated command has been run. Updates 
+        the output datasets based on stderr and stdout from the command, and
+        the contents of the output files. 
+        """
         # default post job setup
         mapping.context.current.clear()
         job = model.Job.get( self.job_id )
@@ -337,10 +356,10 @@ class JobWrapper( object ):
                 job.state = "error"
         # Save stdout and stderr    
         if len( stdout ) > 32768:
-            log.error( "stdout for job %d is greater than 32K, only first part will be logged to database" %job.id )
+            log.error( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
         job.stdout = stdout[:32768]
         if len( stderr ) > 32768:
-            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" %job.id )
+            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
         job.stderr = stderr[:32768]  
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
@@ -370,7 +389,7 @@ class JobWrapper( object ):
         # validate output datasets
         job.command_line = self.command_line
         mapping.context.current.flush()
-        log.debug('job %d ended' %self.job_id )
+        log.debug( 'job %d ended' % self.job_id )
         self.cleanup()
         
     def cleanup( self ):
