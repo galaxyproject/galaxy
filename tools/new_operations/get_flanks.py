@@ -10,43 +10,44 @@ usage: %prog input out_file size direction region
 """
 
 import sys, sets, re, os
-
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
-
 from galaxyops import *
 
-def main():   
+def stop_err( msg ):
+    sys.stderr.write( msg )
+    sys.exit()
+
+def main(): 
+    try:
+        if int( sys.argv[3] ) < 0:
+            raise Exception
+    except:
+        stop_err( "Length of flanking region(s) must be a non-negative integer." )
+
     # Parsing Command Line here
     options, args = doc_optparse.parse( __doc__ )
-    
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols )
         inp_file, out_file, size, direction, region = args
         if strand_col_1 <= 0:
             strand = "+"        #if strand is not defined, default it to +
     except:
-        print >> sys.stderr, "Data issue: Please check the metadata attributes of the chosen input by clicking on the pencil icon next to it."
-        sys.exit()
-        
+        stop_err( "Metadata issue, correct the metadata attributes by clicking on the pencil icon in the history item." )
     try:
         offset = int(options.off)
         size = int(size)
     except:    
-        print >> sys.stderr, "Invalid Offset or Length entered. Try again by entering valid integer values."
-        sys.exit()
-        
+        stop_err( "Invalid offset or length entered. Try again by entering valid integer values." )
     try:
         fi = open(inp_file,'r')
     except:
-        print >> sys.stderr, "Unable to open input file"
-        sys.exit()
+        stop_err( "Unable to open input file" )
     try:
         fo = open(out_file,'w')
     except:
-        print >> sys.stderr, "Unable to open output file"
-        sys.exit()
-        
+        stop_err( "Unable to open output file" )
+    
     skipped_lines = 0
     first_invalid_line = 0
     invalid_line = None

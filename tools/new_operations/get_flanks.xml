@@ -14,7 +14,7 @@
       <option value="Both">Both</option>
     </param>
     <param name="offset" size="10" type="integer" value="0" label="Offset" help="Use positive values to offset co-ordinates in the direction of transcription and negative values to offset in the opposite direction."/>
-    <param name="size" size="10" type="integer" value="50" label="Length of the flanking region/s"/>
+    <param name="size" size="10" type="integer" value="50" label="Length of the flanking region(s)" help="Use non-negative value for length"/>
     
     
   </inputs>
