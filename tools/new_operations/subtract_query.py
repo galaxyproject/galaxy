@@ -11,8 +11,6 @@ import sys, sets, re
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 
-from galaxy.datatypes import sniff
-
 def get_lines(fname, begin_col='', end_col=''):
     lines = set([])
     i = 0

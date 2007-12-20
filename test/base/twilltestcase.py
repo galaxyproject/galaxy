@@ -2,7 +2,7 @@ import pkg_resources
 pkg_resources.require('twill')
 
 import StringIO
-import os, sys, random, filecmp, time, unittest, urllib, logging, difflib
+import os, sys, random, filecmp, time, unittest, urllib, logging, difflib, zipfile
 from itertools import *
 
 import twill
@@ -280,19 +280,49 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( hid )
         self._assert_dataset_state( elem, 'ok' )
 
-        local_name = self.get_filename( filename )
-        temp_name = self.get_filename( 'temp_%s' % filename )
-        self.visit_page( "display?hid=" + hid )
-        data = self.last_page()
-        file( temp_name, 'wb' ).write(data)
+        if self.is_zipped( filename ):
+            errmsg = 'History item %s is a zip archive which includes invalid files:\n' % hid
+            zip_file = zipfile.ZipFile( filename, "r" )
+            name = zip_file.namelist()[0]
+            test_ext = name.split( "." )[1].strip().lower()
+            if not ( test_ext == 'scf' or test_ext == 'ab1' or test_ext == 'txt' ):
+                raise AssertionError( errmsg )
+            for name in zip_file.namelist():
+                ext = name.split( "." )[1].strip().lower()
+                if ext != test_ext:
+                    raise AssertionError( errmsg )
+        else:
+            local_name = self.get_filename( filename )
+            temp_name = self.get_filename( 'temp_%s' % filename )
+            self.visit_page( "display?hid=" + hid )
+            data = self.last_page()
+            file( temp_name, 'wb' ).write(data)
+            try:
+                self.files_diff( local_name, temp_name )
+            except AssertionError, err:
+                errmsg = 'History item %s different than expected, difference:\n' % hid
+                errmsg += str( err )
+                raise AssertionError( errmsg )
+            os.remove(temp_name)
 
-        try:
-            self.files_diff( local_name, temp_name )
-        except AssertionError, err:
-            errmsg = 'History item %s different than expected, difference:\n' % hid
-            errmsg += str( err )
-            raise AssertionError( errmsg )
-        os.remove(temp_name)
+    def is_zipped( self, filename ):
+        if not zipfile.is_zipfile( filename ):
+            return False
+        return True
+
+    def is_binary( self, filename ):
+        temp = open( temp_name, "U" )
+        lineno = 0
+        for line in temp:
+            lineno += 1
+            line = line.strip()
+            if line:
+                for char in line:
+                    if ord( char ) > 128:
+                        return True
+            if lineno > 10:
+                break
+        return False
 
     def verify_genome_build( self, dbkey='hg17' ):
         """Verifies that the last used genome_build at history id 'hid' is as expected"""

@@ -46,18 +46,21 @@ def __main__():
         out.write( chunk )
     out.close()
     if check_gzip( filename ):
-        
-        gzipped_file = gzip.GzipFile( filename )
-        try:
-            content = gzipped_file.read()
-        except IOError:
-            gzipped_file.close()
-            stop_err( 'Problem decompressing gzipped data.' )
-        gzipped_file.close()
-        
         fd, uncompressed = tempfile.mkstemp()
-        os.write( fd, content ) 
+        gzipped_file = gzip.GzipFile( filename )
+        while 1:
+            try:
+                chunk = gzipped_file.read( CHUNK_SIZE )
+            except IOError:
+                os.close( fd )
+                os.remove( uncompressed )
+                gzipped_file.close()
+                stop_err( 'Problem decompressing gzipped data, please try retrieving the data uncompressed.' )
+            if not chunk:
+                break
+            os.write( fd, chunk )
         os.close( fd )
+        gzipped_file.close()
         # Replace the gzipped file with the decompressed file
         shutil.move( uncompressed, filename )        
     

@@ -85,7 +85,8 @@ class UploadToolAction( object ):
                 try:
                     chunk = gzipped_file.read( CHUNK_SIZE )
                 except IOError:
-                    uncompressed.close()
+                    os.close( fd )
+                    os.remove( uncompressed )
                     raise BadFileException( 'problem decompressing gzipped data.' )
                 if not chunk:
                     break
@@ -237,7 +238,7 @@ class UploadToolAction( object ):
                         if chunk is None:
                             temp.close()
                         return True
-            if lineno > 100:
+            if lineno > 10:
                 break
         if chunk is None:
             temp.close()
