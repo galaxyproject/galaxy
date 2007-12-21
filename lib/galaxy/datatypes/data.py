@@ -12,9 +12,6 @@ col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vc
 valid_strand = ['+', '-', '.']
 gzip_magic = '\037\213'
 
-# Constants for data states
-DATA_NEW, DATA_OK, DATA_FAKE = 'new', 'ok', 'fake'
-
 class DataMeta( type ):
     """
     Metaclass for Data class.  Sets up metadata spec.

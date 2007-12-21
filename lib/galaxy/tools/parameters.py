@@ -699,7 +699,7 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( data.hid )
-                if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.FAKE, data.states.ERROR]:
+                if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.ERROR]:
                     selected = ( value and ( data in value ) )
                     field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
                 # Also collect children via association object
@@ -732,7 +732,7 @@ class DataToolParameter( ToolParameter ):
         most_recent_dataset = [None]
         def dataset_collector( datasets ):
             for i, data in enumerate( datasets ):
-                if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.FAKE, data.states.ERROR]:
+                if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.ERROR]:
                     most_recent_dataset[0] = data
                 # Also collect children via association object
                 dataset_collector( [ assoc.child for assoc in data.children ] )
@@ -753,7 +753,7 @@ class DataToolParameter( ToolParameter ):
             raise ValueError( "A data of the appropriate type is required" ) 
         if value in [None, "None"]:
             temp_data = trans.app.model.Dataset( extension = 'data' )
-            temp_data.state = temp_data.states.FAKE
+            temp_data.state = temp_data.states.OK
             return temp_data
         if isinstance( value, list ):
             return [ trans.app.model.Dataset.get( v ) for v in value ]

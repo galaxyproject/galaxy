@@ -51,10 +51,10 @@ class DefaultToolAction( object ):
         input_dbkey = incoming.get( "dbkey", "?" )
         input_meta = Bunch()
         for name, data in inp_data.items():
-            # Hack for fake incoming data
+            # Hack for tools whose DataToolParameter params are optional
             if data == None:
                 data = trans.app.model.Dataset( extension = 'data' )
-                data.state = data.states.FAKE
+                data.state = data.states.OK
             input_names.append( 'data %s' % data.hid )
             input_ext = data.ext
             if data.dbkey not in [None, '?']:

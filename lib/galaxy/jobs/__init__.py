@@ -306,9 +306,9 @@ class JobWrapper( object ):
         Check if a job is ready to run by verifying that each of its input 
         datasets is ready (specifically in the OK state). If any input dataset
         has an error, fail the job and return JOB_ERROR. If all input datasets
-        are either in OK or FAKE state, return JOB_READY indicating that the
-        job can be dispatched. Otherwise, return JOB_WAIT indicating that 
-        input datasets are still being prepared.
+        are in OK state, return JOB_READY indicating that the job can be 
+        dispatched. Otherwise, return JOB_WAIT indicating that input datasets
+        are still being prepared.
         """
         job = model.Job.get( self.job_id )
         job.refresh()
@@ -319,8 +319,6 @@ class JobWrapper( object ):
             if idata.state == idata.states.ERROR:
                 self.fail( "error in input data %d" % idata.hid )
                 return JOB_ERROR
-            elif idata.state == idata.states.FAKE:
-                continue
             elif idata.state != idata.states.OK:
                 # need to requeue
                 return JOB_WAIT
@@ -380,11 +378,6 @@ class JobWrapper( object ):
         self.tool.call_hook( 'exec_after_process_plus', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, param_dict=self.param_dict, 
                              tool=self.tool, stdout=stdout, stderr=stderr )
-        # remove 'fake' datasets 
-        for dataset_assoc in job.input_datasets:
-            data = dataset_assoc.dataset
-            if data.state == data.states.FAKE:
-                data.deleted = True
         # TODO
         # validate output datasets
         job.command_line = self.command_line
