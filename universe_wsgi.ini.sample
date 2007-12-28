@@ -98,8 +98,16 @@ static_favicon_dir = %(here)s/static/favicon.ico
 static_scripts_dir = %(here)s/static/scripts/
 static_style_dir = %(here)s/static/june_2007_style/blue
 
-# Brand: appends "/[brand]" to the "Galaxy" text in the masthead
-#brand = Foo
+## Leave these commented out for the defaults at the main galaxy site
+## Uncomment and adjust these to change locally configurable items in the masthead
+## for a local mirror where you are doing private software development
+##
+## Brand: appends "/[brand]" to the "Galaxy" text in the masthead
+## wiki_url: replaces the default galaxy main wiki
+## bugs_email: replaces the default galaxy bugs email list
+#brand = Private local mirror
+#wiki_url=/path/to/my/local/wiki
+#bugs_email=mailto:bugmaster@this.site.com
 
 # ---- Datatypes ------------------------------------------------------------
 

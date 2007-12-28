@@ -231,11 +231,12 @@ class Universe( BaseController ):
         for name, spec in data.datatype.metadata_spec.items():
             if spec.visible:
                 metadata.append( spec.wrap( data.metadata.get(name), data ) )
-
-        datatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
+        # let's not overwrite the imported datatypes module with the variable datatypes?
+        ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
+        ldatatypes.sort()
         trans.log_event( "Opened edit view on dataset %s" % str(id) )
         return trans.fill_template( "edit_data.tmpl", data=data, metadata=metadata,
-                                    datatypes=datatypes, err=None )
+                                    datatypes=ldatatypes, err=None )
 
     @web.expose
     def delete( self, trans, id = None, **kwd):
@@ -581,7 +582,12 @@ class Universe( BaseController ):
     @web.expose
     def masthead( self, trans ):
         brand = trans.app.config.get( "brand", None )
-        return trans.fill_template( "masthead.tmpl", brand=brand )
+        wiki_url = trans.app.config.get( "wiki_url", None )
+        bugs_email = trans.app.config.get( "bugs_email", None )
+        blog_url = trans.app.config.get( "blog_url", None )
+        screencasts_url = trans.app.config.get( "screencasts_url", None )
+        return trans.fill_template( "masthead.tmpl", brand=brand, wiki_url=wiki_url, 
+          blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url )
 
     @web.expose
     def dataset_errors( self, trans, id=None, **kwd ):

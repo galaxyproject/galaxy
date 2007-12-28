@@ -52,6 +52,10 @@ class Configuration( object ):
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,flybase" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
+        self.wiki_url = kwargs.get( 'wiki_url', None )
+        self.bugs_email = kwargs.get( 'bugs_email', None )
+        self.blog_url = kwargs.get( 'blog_url', None )
+        self.screencasts_url = kwargs.get( 'screencasts_url', None )
         #Parse global_conf
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()

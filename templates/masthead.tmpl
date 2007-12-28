@@ -4,6 +4,23 @@
     #set $brand = "<span class='brand'>/%s</span>" % $brand
 #end if
 
+#if $wiki_url is None:    
+    #set $wiki_url = "http://g2.trac.bx.psu.edu/"  
+#end if
+
+#if $bugs_email is None:    
+    #set $bugs_email = "mailto:galaxy-bugs@bx.psu.edu"  
+#end if
+
+#if $blog_url is None:    
+    #set $blog_url = "http://g2.trac.bx.psu.edu/blog"  
+#end if
+
+#if $screencasts_url is None:    
+    #set $screencasts_url = "http://g2.trac.bx.psu.edu/wiki/ScreenCasts"  
+#end if
+
+
 <html>
 
 <head>
@@ -15,21 +32,21 @@
 
 <body class="mastheadPage">
 <table width="100%" cellspacing="0" border="0">
-<tr valign="middle">
-<td width="26px"><a target="_blank" href="http://www.bx.psu.edu/cgi-bin/trac.cgi"><img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}"></a></td>
+<tr valign="middle"><td width="26px"><a target="_blank" href="$wiki_url">
+<img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}"></a></td>
 <td align="left" valign="middle"><div class="pageTitle">Galaxy$brand</div></td>
 <td align="right" valign="middle">
-     
-    Info: <a href="mailto:galaxy-bugs@bx.psu.edu">report bugs</a>
-    | <a target="_blank" href="http://g2.trac.bx.psu.edu/">wiki</a>
-    | <a target="_blank" href="http://g2.trac.bx.psu.edu/wiki/ScreenCasts">screencasts</a>
-    | <a target="_blank" href="http://g2.trac.bx.psu.edu/blog">blog</a>
+
+    Info: <a href="$bugs_email">report bugs</a>
+    | <a target="_blank" href="$wiki_url">wiki</a>                  
+    | <a target="_blank" href="$screencasts_url">screencasts</a>
+    | <a target="_blank" href="$blog_url">blog</a>
     <!-- | <a target="mainframe" href="/static/index_frame_tools.html">tools</a>
     | <a target="mainframe" href="/static/index_frame_history.html">history</a> -->
     &nbsp;&nbsp;&nbsp;
     #if $caller.user
         Logged in as $caller.user.email: <a target="galaxy_main" href="$h.url_for( controller='user', action='index' )">manage</a>
-        | <a target="galaxy_main" href="$h.url_for( controller='user', action='logout' )">logout</a> 
+        | <a target="galaxy_main" href="$h.url_for( controller='user', action='logout' )">logout</a>
     #else
         Account: <a target="galaxy_main" href="$h.url_for( controller='user', action='create' )">create</a>
         | <a target="galaxy_main" href="$h.url_for( controller='user', action='login' )">login</a>
