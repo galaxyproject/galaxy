@@ -273,8 +273,9 @@ def init( file_path, url, **kwargs ):
                 table.columns['create_time'].type = TIMESTAMP()
             if table.columns.has_key( "update_time" ):
                 table.columns['update_time'].type = TIMESTAMP()
+        metadata.connect( url, **kwargs )
     # Connect the metadata to the database. 
-    elif url.startswith( "postgresql:///" ):
+    elif url.startswith( "postgresql:///" ): 
         import psycopg
         try:
             dbconn = url.split('///')
@@ -290,6 +291,7 @@ def init( file_path, url, **kwargs ):
             log.exception( "error connecting to database using connection: '%s'." % url )
             metadata.connect( url, **kwargs )
     else:
+        print '### connecting non-postgresql/mysql url=',url
         metadata.connect( url, **kwargs )
     ## metadata.engine.echo = True
     # Create tables if needed
