@@ -291,7 +291,6 @@ def init( file_path, url, **kwargs ):
             log.exception( "error connecting to database using connection: '%s'." % url )
             metadata.connect( url, **kwargs )
     else:
-        print '### connecting non-postgresql/mysql url=',url
         metadata.connect( url, **kwargs )
     ## metadata.engine.echo = True
     # Create tables if needed
