@@ -17,8 +17,8 @@
       <options from_file="/depot/data2/galaxy/regions.loc" >
         <filter type="data_meta" data_ref="input1" key="build" />
         <filter type="column" name="build_col" value="0" />
-        <filter type="column" name="name_col" value="1" />
-        <filter type="column" name="value_col" value="2" />
+        <filter type="column" name="name_col" value="2" />
+        <filter type="column" name="value_col" value="1" />
       </options>
     </param> 
   </inputs>
@@ -44,9 +44,9 @@ This tool currently only works with data from genome builds hg16 or hg17.
 This tool will attempt to create a random set of intervals that mimic those found within your source file.  You may also specify a set of intervals to mask.
 
 **Allow overlaps** options
-  * **Across Strands** Random regions are allowed to overlap only if they are on different strands.
-  * **Any** All overlaps are allowed.
-  * **None** No overlapping regions are allowed.
+  * **Across Strands** - random regions are allowed to overlap only if they are on different strands.
+  * **Any** - all overlaps are allowed.
+  * **None** - no overlapping regions are allowed.
 
 **Regions to use** options
   * Bounding region of interest based on the dataset build.

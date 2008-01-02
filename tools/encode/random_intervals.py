@@ -11,6 +11,10 @@ import sys, random
 import bisect
 from bx.bitset import *
 
+def stop_err( msg ):
+    sys.stderr.write( msg )
+    sys.exit()
+
 def throw_random_2( lengths, mask ):
     """
     Version of throw using gap lists (like Hiram's randomPlacement). This 
@@ -116,54 +120,66 @@ def main():
     mask_fname = sys.argv[2]
     intervals_fname = sys.argv[3]
     out_fname = sys.argv[4]
-    mask_chr = int(sys.argv[5])-1
-    mask_start = int(sys.argv[6])-1
-    mask_end = int(sys.argv[7])-1
-    interval_chr = int(sys.argv[8])-1
-    interval_start = int(sys.argv[9])-1
-    interval_end = int(sys.argv[10])-1
+    try:
+        mask_chr = int( sys.argv[5] ) - 1
+    except:
+        stop_err( "'%s' is an invalid chrom column for 'Intervals to Mask' dataset, click the pencil icon in the history item to edit column settings." % str( sys.argv[5] ) )
+    try:
+        mask_start = int( sys.argv[6] ) - 1
+    except:
+        stop_err( "'%s' is an invalid start column for 'Intervals to Mask' dataset, click the pencil icon in the history item to edit column settings." % str( sys.argv[6] ) )
+    try:
+        mask_end = int( sys.argv[7] ) - 1
+    except:
+        stop_err( "'%s' is an invalid end column for 'Intervals to Mask' dataset, click the pencil icon in the history item to edit column settings." % str( sys.argv[7] ) )
+    try:
+        interval_chr = int( sys.argv[8] ) - 1
+    except:
+        stop_err( "'%s' is an invalid chrom column for 'File to Mimick' dataset, click the pencil icon in the history item to edit column settings." % str( sys.argv[8] ) )
+    try:
+        interval_start = int( sys.argv[9] ) - 1
+    except:
+        stop_err( "'%s' is an invalid start column for 'File to Mimick' dataset, click the pencil icon in the history item to edit column settings." % str( sys.argv[9] ) )
+    try:
+        interval_end = int( sys.argv[10] ) - 1
+    except:
+        stop_err( "'%s' is an invalid end column for 'File to Mimick' dataset, click the pencil icon in the history item to edit column settings." % str( sys.argv[10] ) )
     use_mask = sys.argv[11]
-    
     available_regions = {}
-
     loc_file = "/depot/data2/galaxy/regions.loc"
 
-
-    try:
-        for line in open( loc_file ):
-            if line[0:1] == "#" : continue
-        
-            fields = line.split('\t')
+    for i, line in enumerate( open( loc_file ) ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( '#' ):
+            fields = line.split( '\t' )
             #read each line, if not enough fields, go to next line
             try:
                 build = fields[0]
                 uid = fields[1]
                 description = fields[2]
-                filepath =fields[3].replace("\n","").replace("\r","")
-                available_regions[uid]=filepath
+                filepath = fields[3]
+                available_regions[uid] = filepath
             except:
                 continue
 
-    except Exception, exc:
-        print >>sys.stdout, 'random_intervals.py initialization error -> %s' % exc 
-
     if region_uid not in available_regions:
-        print >>stderr, "Invalid region selected"
-        sys.exit(0)
-    region_fname = available_regions[region_uid]
+        stop_err( "Invalid region '%s' selected." % region_uid )
 
-    
-    out_file = open (out_fname, "w") or die ("Can not open output file")
+    region_fname = available_regions[region_uid]
     try:
-        line_count = 0
-        for line in open( region_fname ):
+        out_file = open ( out_fname, "w" )
+    except:
+        stop_err( "Error opening output file '%s'." % out_fname )
+
+    skipped_lines = 0
+    first_invalid_line = 0
+    invalid_line = ''
+
+    for line_count, line in enumerate( file( region_fname ) ):
+        if line and not line.startswith( '#' ):
             try:
-                line_count += 1
                 # Load lengths for all intervals overlapping region
-                if line[0:1] == "#":
-                    continue
                 fields = line.split()
-                #print >>sys.stderr, "Processing region:", fields[3]
                 r_chr, r_start, r_stop = fields[0], int( fields[1] ), int( fields[2] )
                 r_length = r_stop - r_start
                 # Load the mask
@@ -172,14 +188,16 @@ def main():
                 else:
                     mask = overlapping_in_bed( mask_fname, r_chr, r_start, r_stop, mask_chr, mask_start, mask_end )
                 bits_mask = as_bits( r_start, r_length, mask )
-                bits_not_masked = bit_clone( bits_mask ); bits_not_masked.invert()
+                bits_not_masked = bit_clone( bits_mask )
+                bits_not_masked.invert()
                 # Load the first set
                 intervals1 = overlapping_in_bed( intervals_fname, r_chr, r_start, r_stop, interval_chr, interval_start, interval_end )
                 bits1 = as_bits( r_start, r_length, intervals1 )
                 # Intersect it with the mask 
                 bits1.iand( bits_not_masked )
                 # Sanity checks
-                assert count_overlap( bits1, bits_mask ) == 0
+                if count_overlap( bits1, bits_mask ) != 0:
+                    stop_err( "Overlap problem, bits: %s, mask: %s" %( str( bits1 ), str( bits_mask ) ) )
                 chrom = r_chr
                 # For each data set
                 lengths1 = list( interval_lengths( bits1 ) )
@@ -187,13 +205,18 @@ def main():
                 end =0
                 while 1:
                     start = random1.next_set( end )
-                    if start == random1.size: break
+                    if start == random1.size:
+                        break
                     end = random1.next_clear( start )
                     print >>out_file, "%s\t%d\t%d" % ( chrom, start, end )
             except:
-                print >>stderr, "Error on line:", line_count
+                skipped_lines += 1
+                if not first_invalid_line:
+                    first_invalid_line = line_count
+                    invalid_line = line
                 continue
-    except:
-        print >>stderr, "The Region file appears to be missing"
+    out_file.close()
+    if skipped_lines:
+        print "Skipped %d invalid lines starting at line # %d: %s" % ( skipped_lines, first_invalid_line, invalid_line )
 
 if __name__ == "__main__": main()
