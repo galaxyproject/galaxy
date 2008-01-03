@@ -474,7 +474,7 @@ class Universe( BaseController ):
     def history_new( self, trans ):
         trans.new_history()
         trans.log_event( "Created new History, id: %s." % str(trans.get_history().id) )
-        return self.history( trans )
+        return trans.show_message( "New history created", refresh_frames = ['history'] )
         
     @web.expose
     def history_store( self, trans, name=None ):
