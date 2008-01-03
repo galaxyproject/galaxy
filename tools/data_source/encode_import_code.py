@@ -35,9 +35,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata = app.model.Dataset()
             newdata.extension = file_type
             newdata.name = basic_name + " (" + description + ")"
-            newdata.flush()
             history.add_dataset( newdata )
-            newdata.flush()
             app.model.flush()
             try:
                 copyfile(filepath,newdata.file_name)
@@ -47,7 +45,6 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
                 newdata.info = "The requested file is missing from the system."
                 newdata.state = jobs.JOB_ERROR
             newdata.dbkey = dbkey
-            newdata.init_meta()
+            newdata.set_meta()
             newdata.set_peek()
-            #
             app.model.flush()
