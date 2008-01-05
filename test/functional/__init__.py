@@ -10,7 +10,7 @@ pkg_resources.require( "Cheetah" )
 import twill, unittest, time
 import os, os.path, subprocess, sys, threading
 import httplib
-from galaxy.web.framework.servers import threadpool_server
+from paste import httpserver
 import galaxy.app
 from galaxy.app import UniverseApplication
 from galaxy.web import buildapp
@@ -67,7 +67,7 @@ def setup():
         log.info( "Embedded Universe application started" )
 
         webapp = buildapp.app_factory( dict(), use_translogger = False, app=app )
-        server = threadpool_server.serve( webapp, dict(), host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
+        server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
 
         atexit.register( teardown )
         t = threading.Thread( target=server.serve_forever )
@@ -93,7 +93,7 @@ def setup():
 def teardown():
     global server, app
     if server:
-        server.shutdown()
+        server.server_close()
         server = None
         log.info( "Embedded web server stopped" )
     if app:
