@@ -72,14 +72,21 @@ class Universe( BaseController ):
             return -1
 
     @web.expose
-    def history( self, trans, id=None, template='history.tmpl' ):
-        # history = trans.get_history(id=id)
+    def history( self, trans, as_xml=False ):
+        """
+        Display the current history, creating a new history if neccesary.
+        
+        NOTE: No longer accepts "id" or "template" options for security reasons.
+        """
         try:
             history = trans.get_history()
         except:
             return self.history_new(trans)
-        if template.endswith('.xml'):
-            trans.response.set_content_type('text/xml')        
+        if as_xml:
+            trans.response.set_content_type('text/xml')
+            template = "history.xml"
+        else:
+            template = "root/history.mako"
         mode = trans.get_cookie(name=self.pref_cookie_name)
         return trans.fill_template(template, history=history, mode=mode )
 
@@ -450,7 +457,7 @@ class Universe( BaseController ):
                 return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
             trans.response.headers['Pragma'] = 'no-cache'
             trans.response.headers['Expires'] = '0'
-            return trans.fill_template("dataset_code.tmpl", data=data, hid=hid)
+            return trans.fill_template("root/history_item.mako", data=data, hid=hid)
         else:
             return trans.show_error_message( "Must specify a dataset id.")
 
