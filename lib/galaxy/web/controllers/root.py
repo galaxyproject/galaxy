@@ -395,7 +395,13 @@ class Universe( BaseController ):
         return trans.fill_template("history_share.tmpl", histories=histories, user=user, email=email, send_to_err=send_to_err)
 
     @web.expose
-    def history_available( self, trans, id=None, **kwd ):
+    def history_available( self, trans, id=None, as_xml=False, **kwd ):
+        """
+        List all available histories
+        """
+        if as_xml:
+            trans.response.set_content_type('text/xml')
+            return trans.fill_template( "history_ids.xml" )
         if not isinstance( id, list ):
             id = [ id ]
         trans.log_event( "History id %s available" % str( id ) )

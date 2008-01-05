@@ -126,7 +126,7 @@ class TwillTestCase( unittest.TestCase ):
     def histories_as_xml_tree( self ):
         """Returns a parsed xml object of all histories"""
         self.home()
-        self.visit_page( 'history?template=history_ids.xml' )
+        self.visit_page( 'history_available?as_xml=True' )
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
