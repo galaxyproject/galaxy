@@ -122,25 +122,23 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             import profile
             app = profile.ProfileMiddleware( app, conf )
             log.debug( "Enabling 'profile' middleware" )
-        # Interactive exception debugging, scary dangerous if publicly
-        # accessible, if not enabled we'll use the regular error printing
-        # middleware.
-        if asbool( conf.get( 'use_interactive', False ) ):
-            from paste import evalexception
-            app = evalexception.EvalException( app, conf )
-            log.debug( "Enabling 'eval exceptions' middleware" )
-        else:
-            from paste.exceptions import errormiddleware
-            app = errormiddleware.ErrorMiddleware( app, conf )
-            log.debug( "Enabling 'error' middleware" )
         # Middleware that intercepts print statements and shows them on the
         # returned page
         if asbool( conf.get( 'use_printdebug', True ) ):
             from paste.debug import prints
             app = prints.PrintDebugMiddleware( app, conf )
             log.debug( "Enabling 'print debug' middleware" )
+    if debug and asbool( conf.get( 'use_interactive', False ) ):
+        # Interactive exception debugging, scary dangerous if publicly
+        # accessible, if not enabled we'll use the regular error printing
+        # middleware.
+        pkg_resources.require( "WebError" )
+        from weberror import evalexception
+        app = evalexception.EvalException( app, conf,
+                                           templating_formatters=build_template_error_formatters() )
+        log.debug( "Enabling 'eval exceptions' middleware" )
     else:
-        # Not in debug mode, just use the regular error middleware
+        # Not in interactive debug mode, just use the regular error middleware
         from paste.exceptions import errormiddleware
         app = errormiddleware.ErrorMiddleware( app, conf )
         log.debug( "Enabling 'error' middleware" )
@@ -182,4 +180,19 @@ def wrap_in_static( app, global_conf, **local_conf ):
     # URL mapper becomes the root webapp
     return urlmap
     
-    
+def build_template_error_formatters():
+    """
+    Build a list of template error formatters for WebError. When an error
+    occurs, WebError pass the exception to each function in this list until
+    one returns a value, which will be displayed on the error page.
+    """
+    formatters = []
+    # Formatter for mako
+    import mako.exceptions
+    def mako_html_data( exc_value ):
+        if isinstance( exc_value, ( mako.exceptions.CompileException, mako.exceptions.SyntaxException ) ):
+            return mako.exceptions.html_error_template().render( full=False, css=False )
+        if isinstance( exc_value, AttributeError ) and exc_value.args[0].startswith( "'Undefined' object has no attribute" ):
+            return mako.exceptions.html_error_template().render( full=False, css=False )
+    formatters.append( mako_html_data )
+    return formatters

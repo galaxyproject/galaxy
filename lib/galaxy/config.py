@@ -98,6 +98,9 @@ def configure_logging( config ):
     root = logging.getLogger()
     # Set level
     root.setLevel( level )
+    # Turn down paste httpserver logging
+    if level <= logging.DEBUG:
+        logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
     # Remove old handlers
     for h in root.handlers[:]: 
         root.removeHandler(h)
