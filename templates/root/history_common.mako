@@ -46,12 +46,12 @@
             %elif data_state == "ok":
                 <div>
                     ${data.blurb},
-                    format: <span>${data.ext}</span>, 
+                    format: <span class="${data.ext}">${data.ext}</span>, 
                     database:
                     %if data.dbkey == '?':
                         <a href="${h.url_for( action='edit', id=data.id )}" target="galaxy_main">${data.dbkey}</a>
                     %else:
-                        <span>${data.dbkey}</span>
+                        <span class="${data.dbkey}">${data.dbkey}</span>
                     %endif
                 </div>
                 <div class="info">Info: ${data.display_info()} </div>
