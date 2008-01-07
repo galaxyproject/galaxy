@@ -70,8 +70,7 @@ def main():
             print "#File1\t" + file1_desc + "\t" + file1_build + "\t" + file1_type
             file1_copied = True
         except:
-            #print "The file '%s' is missing." %str( file1_path )
-            continue
+            stop_err( "The file '%s' is missing." %str( file1_path ) )
         
     #Tell post-process filter where remaining files reside
     for extra_output in desired_files:

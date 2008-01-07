@@ -98,7 +98,7 @@ def main():
         interval_strand = int( sys.argv[11] ) - 1
         includes_strand = True
     except:
-        interval_strand = None
+        interval_strand = -1
     if includes_strand:
         use_mask = sys.argv[12]
         overlaps = sys.argv[13]
@@ -133,7 +133,7 @@ def main():
     #set up length and number of regions to mimic
     regions = [ [] for i in range( len( bounds ) ) ]
 
-    for region in bx.intervals.io.NiceReaderWrapper( open(intervals_fname, 'r' ), chrom_col=interval_chr, start_col=interval_start, end_col=interval_end, strand_col=interval_strand, fix_strand=True, return_header=False, return_comments=False ):
+    for region in bx.intervals.io.NiceReaderWrapper( open( intervals_fname, 'r' ), chrom_col=interval_chr, start_col=interval_start, end_col=interval_end, strand_col=interval_strand, fix_strand=True, return_header=False, return_comments=False ):
         #loop through bounds, find first proper bounds then add
         #if an interval crosses bounds, it will be added to the first bound
         for i in range( len( bounds ) ):
