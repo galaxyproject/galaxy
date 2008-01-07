@@ -466,6 +466,25 @@ class Universe( BaseController ):
             return trans.fill_template("root/history_item.mako", data=data, hid=hid)
         else:
             return trans.show_error_message( "Must specify a dataset id.")
+        
+    @web.json
+    def history_item_updates( self, trans, ids=None, states=None ):
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        # Create new HTML for any that have changed
+        rval = {}
+        if ids is not None and states is not None:
+            ids = map( int, ids.split( "," ) )
+            states = states.split( "," )
+            for id, state in zip( ids, states ):
+                data = self.app.model.Dataset.get( id )
+                if data.state != state:
+                    rval[id] = {
+                        "state": data.state,
+                        "html": trans.fill_template( "root/history_item.mako", data=data, hid=data.hid )
+                    }
+        return rval
 
     @web.expose
     def history_switch( self, trans, id=None ):
