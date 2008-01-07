@@ -92,9 +92,9 @@
                     state.add( id ); state.save();
                     delete state;
                 }
-            })
-	    // Delete link
-	    q(this).find( "a.historyItemDelete" ).each( function() {
+            });
+            // Delete link
+            q(this).find( "a.historyItemDelete" ).each( function() {
 		var data_id = this.id.split( "-" )[1];
 		q(this).click( function() {
 		    q( '#progress-' + data_id ).show();
@@ -114,55 +114,61 @@
 		});
 	    });
         });
-    }
-    // lifted from prototype.js
-    function array_from(iterable) {
-        if (!iterable) return [];
-        if (iterable.toArray) {
-            return iterable.toArray();
+    };
+    // Looks for changes in dataset state using an async request. Keeps
+    // calling itself (via setTimeout) until all datasets are in a terminal
+    // state.
+    var updater = function ( tracked_datasets ) {
+        // Check if there are any items left to track
+        var empty = true;
+        for ( item in tracked_datasets ) {
+            empty = false;
+            break;
+        }
+        if ( ! empty ) {
+            // console.log( "Updater running in 3 seconds" );
+            setTimeout( function() { updater_callback( tracked_datasets ) }, 3000 );
         } else {
-            var results = [];
-            for (var i = 0, length = iterable.length; i < length; i++)
-                results.push(iterable[i]);
-            return results;
+            // console.log( "Updater finished" );
         }
-    }
-    Function.prototype.bind = function() {
-        var __method = this, args = array_from(arguments), object = args.shift();
-        return function() {
-            return __method.apply(object, args.concat(array_from(arguments)));
-        }
-    }
-    function updater( id, state_url, code_url, orig_state ) {
-        this.id = id;
-        this.state_url = state_url;
-        this.code_url = code_url;
-        this.old_state = orig_state;
-    }
-    updater.prototype.go = function() {
-        //Apparently IE doesn't do Array.indexOf...
-        //stop_states = new Array( "ok", "error" );
-        this.interval = setInterval( function() {
-            q.get(this.state_url, function(new_state) {
-                //if (stop_states.indexOf(new_state) >= 0) { clearInterval( this.interval ); }
-                if ((new_state == "ok") || (new_state == "error") || (new_state == "empty")) {
-                    clearInterval( this.interval );
-                }
-                if (this.old_state != new_state) {
-		    var id = 'div#historyItemContainer-' + this.id;
-                    q( id ).load(this.code_url, {}, function() {
-			setupHistoryItem( q( id ).children( ".historyItemWrapper" ) );
-			// FIXME: Inefficient
-			initShowHide();
-		    });
-                }
-                this.old_state = new_state;
-            }.bind(this) );
-        }.bind(this), 3000 );
-    }
-    updater.prototype.stop = function() {
-        clearInterval( this.interval );
-    }
+    };
+    var updater_callback = function ( tracked_datasets ) {
+        // Build request data
+        var ids = []
+        var states = []
+        q.each( tracked_datasets, function ( id, state ) {
+            ids.push( id );
+            states.push( state );
+        });
+        // Make ajax call
+        q.ajax( {
+            type: "POST",
+            url: "${h.url_for( controller='root', action='history_item_updates' )}",
+            dataType: "json",
+            data: { ids: ids.join( "," ), states: states.join( "," ) },
+            success : function ( data ) {
+                q.each( data, function( id, val ) {
+                    // Replace HTML
+                    var container = q("#historyItemContainer-" + id);
+                    container.html( val.html );
+                    setupHistoryItem( container.children( ".historyItemWrapper" ) );
+                    initShowHide();
+                    // If new state was terminal, stop tracking
+                    if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty")) {
+                        delete tracked_datasets[ parseInt(id) ];
+                    } else {
+                        tracked_datasets[ parseInt(id) ] = val.state;
+                    }
+                });
+                // Keep going (if there are still any items to track)
+                updater( tracked_datasets );
+            },
+            error: function() {
+                // Just retry, like the old method, should try to be smarter
+                updater( tracked_datasets );
+            }
+        });
+    };
 </script>
 
 <![if gte IE 7]>
@@ -186,11 +192,11 @@
 
 <style type="text/css">
 #footer {
-    /* Netscape 4, IE 4.x-5.0/Win and other lesser browsers will use this */
+    ## Netscape 4, IE 4.x-5.0/Win and other lesser browsers will use this
     position: absolute; left: 0px; bottom: 0px;
 }
 body > div#footer {
-    /* used by Opera 5+, Netscape6+/Mozilla, Konqueror, Safari, OmniWeb 4.5+, iCab, ICEbrowser */
+    ## used by Opera 5+, Netscape6+/Mozilla, Konqueror, Safari, OmniWeb 4.5+, iCab, ICEbrowser
     position: fixed;
 }
 </style>
@@ -238,15 +244,13 @@ div#footer {
         %endif
     %endfor
     <script type="text/javascript">
+    var tracked_datasets = {};
     %for data in reversed( history.active_datasets ):
         %if data.visible and data.state not in [ "empty", "error", "ok" ]:
-            var updater_${data.id} = new updater( ${data.id},
-		'${h.url_for( action='dataset_state', id=data.id )}',
-		'${h.url_for( action='dataset_code', id=data.id, hid=data.hid )}',
-		'data.state' );
-            updater_${data.id}.go();
+            tracked_datasets[ ${data.id} ] = "${data.state}";
         %endif
     %endfor
+    updater( tracked_datasets );
     </script>
     <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
 %endif
