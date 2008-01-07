@@ -27,25 +27,25 @@
   </code>
   <tests>
     <test>
-      <param name="input1" value="1.bed" />
+      <param name="input1" value="5.bed" />
       <param name="distance" value="1" />
       <param name="minregions" value="2" />
       <param name="returntype" value="1" />
-      <output name="output" file="gops-cluster-1.dat" />     
+      <output name="output" file="gops-cluster-1.bed" />     
     </test>    
     <test>
-      <param name="input1" value="1.bed" />
+      <param name="input1" value="5.bed" />
       <param name="distance" value="1" />
       <param name="minregions" value="2" />
       <param name="returntype" value="2" />
-      <output name="output" file="gops-cluster-2.dat" />     
+      <output name="output" file="gops-cluster-2.bed" />     
     </test>    
     <test>
-      <param name="input1" value="1.bed" />
+      <param name="input1" value="5.bed" />
       <param name="distance" value="1" />
       <param name="minregions" value="2" />
       <param name="returntype" value="3" />
-      <output name="output" file="gops-cluster-3.dat" />     
+      <output name="output" file="gops-cluster-3.bed" />     
     </test>
   </tests>
   <help>
