@@ -62,7 +62,8 @@ def setup():
                                    tool_path = "tools",
                                    test_conf = "test.conf",
                                    log_destination = "stdout",
-                                   use_heartbeat=False )
+                                   use_heartbeat=False,
+                                   global_conf= { "__file__": "universe_wsgi.ini.sample" } )
                                    
         log.info( "Embedded Universe application started" )
 
@@ -79,7 +80,9 @@ def setup():
         # TODO: provisions for loading toolbox from file when using external server
         test_toolbox.toolbox = app.toolbox
     else:
-        test_toolbox.toolbox = tools.ToolBox( 'tool_conf.xml', 'tools' )
+        # FIXME: This doesn't work at all now that toolbox requires an 'app' instance
+        #        (to get at datatypes, might just pass a datatype registry directly)
+        test_toolbox.toolbox = tools.ToolBox( 'tool_conf.xml.test', 'tools' )
         
     # Test if the server is up
     conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port )
