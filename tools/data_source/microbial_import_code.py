@@ -113,6 +113,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             data = app.datatypes_registry.change_datatype( data, file_type )
             data.init_meta()
             data.set_peek()
+            data.set_size()
             app.model.flush()
         elif fields[0] == "#NewFile":
             description = fields[1]
@@ -125,7 +126,6 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.name = basic_name + " (" + microbe_info[kingdom][org]['chrs'][chr]['data'][description]['feature'] +" for "+microbe_info[kingdom][org]['name']+":"+chr + ")"
             newdata.flush()
             history.add_dataset( newdata )
-            newdata.flush()
             app.model.flush()
             try:
                 copyfile(filepath,newdata.file_name)
@@ -137,5 +137,5 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.dbkey = dbkey
             newdata.init_meta()
             newdata.set_peek()
-            #
+            newdata.set_size()
             app.model.flush()

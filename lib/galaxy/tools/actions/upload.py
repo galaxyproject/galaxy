@@ -58,6 +58,7 @@ class UploadToolAction( object ):
         data.extension = "txt"
         data.dbkey = "?"
         data.info = err_msg
+        data.file_size = 0
         data.flush()
         data.state = data.states.EMPTY
         trans.history.add_dataset( data )
@@ -154,6 +155,7 @@ class UploadToolAction( object ):
         data.state = data.states.OK
         data.init_meta()
         data.set_peek()
+        data.set_size()
 
         # validate incomming data
         """

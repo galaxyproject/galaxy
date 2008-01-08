@@ -26,6 +26,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             data = app.datatypes_registry.change_datatype( data, file_type )
             data.init_meta()
             data.set_peek()
+            data.set_size()
             app.model.flush()
         elif fields[0] == "#NewFile":
             description = fields[1]
@@ -47,4 +48,5 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.dbkey = dbkey
             newdata.set_meta()
             newdata.set_peek()
+            new_data.set_size()
             app.model.flush()

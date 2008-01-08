@@ -280,6 +280,7 @@ class JobWrapper( object ):
             dataset.state = dataset.states.ERROR
             dataset.blurb = 'tool error'
             dataset.info = message
+            dataset.set_size()
             dataset.flush()
         job.state = model.Job.states.ERROR
         job.command_line = self.command_line
@@ -341,6 +342,7 @@ class JobWrapper( object ):
             dataset.blurb = 'done'
             dataset.peek  = 'no peek'
             dataset.info  = stdout + stderr
+            dataset.set_size()
             if dataset.has_data():
                 # Call set_meta on each output dataset if metadata is missing
                 if dataset.missing_meta():

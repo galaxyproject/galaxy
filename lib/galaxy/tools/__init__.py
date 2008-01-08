@@ -950,6 +950,7 @@ class Tool:
                 child_data.state = child_data.states.OK
                 child_data.init_meta()
                 child_data.set_peek()
+                child_data.set_size()
                 child_data.flush()
                 # Add to child accociation table
                 assoc = self.app.model.DatasetChildAssociation()
@@ -986,6 +987,7 @@ class Tool:
                 primary_data.state = primary_data.states.OK
                 primary_data.init_meta(copy_from=outdata)
                 primary_data.set_peek()
+                primary_data.set_size()
                 primary_data.flush()
                 # Add dataset to return dict 
                 primary_datasets[name][designation] = primary_data

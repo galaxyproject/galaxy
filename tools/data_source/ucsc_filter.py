@@ -39,7 +39,6 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
         data = app.datatypes_registry.change_datatype(data, ext)
         out_data[name] = data
         
-
 def exec_after_process( app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
     """Verifies the data after the run"""
     items = out_data.items()
@@ -61,10 +60,9 @@ def exec_after_process( app, inp_data, out_data, param_dict, tool=None, stdout=N
             if isinstance(data.datatype, datatypes.interval.Interval) and data.missing_meta():
                 data = app.datatypes_registry.change_datatype(data, 'tabular')
                 out_data[name] = data
-                
             if err_flag:
                 raise Exception(err_msg)
-
         except Exception, exc:
             data.info  = data.info + "\n" + str(exc)
             data.blurb = "error"
+        data.set_size()

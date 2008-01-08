@@ -166,13 +166,12 @@ class Dataset( object ):
                     RUNNING = 'running',
                     OK = 'ok',
                     EMPTY = 'empty',
-                    ERROR = 'error',
-                    FAKE = 'fake' )
+                    ERROR = 'error')
     file_path = "/tmp/"
     engine = None
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, state=None, metadata=None, history=None, parent_id=None, designation=None,
-                  validation_errors=None, visible=True, filename_id = None ):
+                  validation_errors=None, visible=True, filename_id = None, file_size=None ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.hid = hid
@@ -189,6 +188,7 @@ class Dataset( object ):
         self.purged = False
         self.visible = visible
         self.filename_id = filename_id
+        self.file_size = file_size
         # Relationships
         self.history = history
         self.validation_errors = validation_errors
@@ -234,7 +234,8 @@ class Dataset( object ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
 
     def get_metadata( self ):
-        if not self._metadata: self._metadata = dict()
+        if not self._metadata:
+            self._metadata = dict()
         return MetadataCollection( self, self.datatype.metadata_spec )
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
@@ -253,22 +254,33 @@ class Dataset( object ):
         return dbkey[0]
     def set_dbkey( self, value ):
         if "dbkey" in self.datatype.metadata_spec:
-            if not isinstance(value, list): self.metadata.dbkey = [value]
-            else: self.metadata.dbkey = value
-        if isinstance(value, list): self.old_dbkey = value[0]
-        else: self.old_dbkey = value
+            if not isinstance(value, list): 
+                self.metadata.dbkey = [value]
+            else: 
+                self.metadata.dbkey = value
+        if isinstance(value, list): 
+            self.old_dbkey = value[0]
+        else:
+            self.old_dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
 
     def change_datatype( self, new_ext ):
         datatypes_registry.change_datatype( self, new_ext )
     def get_size( self ):
-        """
-        Returns the size of the data on disk
-        """
+        """Returns the size of the data on disk"""
+        if self.file_size:
+            return self.file_size
+        else:
+            try:
+                return os.path.getsize( self.file_name )
+            except OSError:
+                return 0
+    def set_size( self ):
+        """Returns the size of the data on disk"""
         try:
-            return os.path.getsize( self.file_name )
-        except OSError, e:
-            return 0
+            self.file_size = os.path.getsize( self.file_name )
+        except OSError:
+            self.file_size = 0
     def has_data( self ):
         """Detects whether there is any data"""
         return self.get_size() > 0        

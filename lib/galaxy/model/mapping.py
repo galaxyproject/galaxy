@@ -81,6 +81,7 @@ Dataset.table = Table( "dataset", metadata,
     Column( "purged", Boolean ),
     Column( "visible", Boolean ),
     Column( "filename_id", Integer, ForeignKey( "dataset_filename.id" ), nullable=True ),
+    Column( 'file_size', Numeric( 15, 0 ) ),
     ForeignKeyConstraint(['parent_id'],['dataset.id'], ondelete="CASCADE") )
 
 DatasetFileName.table = Table( "dataset_filename", metadata,

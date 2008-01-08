@@ -590,6 +590,7 @@ class Universe( BaseController ):
             history.add_dataset( data)
             history.flush()
             data.set_peek()
+            data.set_size()
             data.flush()
             trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id))
             return trans.show_ok_message("Dataset "+str(data.hid)+" added to history "+str(history_id)+".")

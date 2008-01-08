@@ -20,4 +20,5 @@ def exec_after_process( app, inp_data, out_data, param_dict, **kwd):
     if data:
         data.state = data.states.OK
         data.set_peek()
+        data.set_size()
         data.flush()

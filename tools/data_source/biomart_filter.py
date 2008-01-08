@@ -107,4 +107,5 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
         if data.missing_meta():
             data.set_meta()
     data.set_peek()
+    data.set_size()
     data.flush()
