@@ -326,16 +326,22 @@ class Dataset( object ):
         """Removes the file contents from disk """
         self.deleted = True
         self.purged = True
+        self.file_size = 0
         if self.dataset_file is None or not self.dataset_file.readonly:
             #Check to see if another dataset is using this file
             if self.dataset_file:
-                for data in self.select_by(purged=False, filename_id=self.dataset_file.id):
-                    if data.id != self.id: return
+                for data in self.select_by( purged=False, filename_id=self.dataset_file.id ):
+                    if data.id != self.id:
+                        return
             #Delete files
-            try: os.unlink(self.file_name)
-            except: pass
-            try: os.unlink(self.extra_files_path)
-            except: pass
+            try:
+                os.unlink( self.file_name )
+            except:
+                pass
+            try:
+                os.unlink( self.extra_files_path )
+            except:
+                pass
             
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
