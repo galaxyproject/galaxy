@@ -156,7 +156,7 @@ class PBSJobRunner( object ):
             # FIXME: More information here?
             stderr = stdout = ''
                     
-	galaxy_job_id = job_wrapper.job_id
+        galaxy_job_id = job_wrapper.job_id
         log.debug("submitting file %s" % job_file )
         log.debug("command is: %s" % command_line)
         job_id = pbs.pbs_submit(conn, job_attrs, job_file, None, None)
