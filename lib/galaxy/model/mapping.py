@@ -262,7 +262,7 @@ def db_next_hid( self ):
 
 History._next_hid = db_next_hid
     
-def init( file_path, url, engine_options, create_tables=False ):
+def init( file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
