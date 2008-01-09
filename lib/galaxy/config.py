@@ -6,6 +6,7 @@ import sys, os
 import logging, logging.config
 from optparse import OptionParser
 import ConfigParser
+from galaxy.util import string_as_bool
 
 log = logging.getLogger( __name__ )
 
@@ -23,8 +24,11 @@ class Configuration( object ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
         self.enable_beta_features = kwargs.get( "enable_beta_features", False )
+        # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )
+        self.database_engine_options = get_database_engine_options( kwargs )                        
+        # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
@@ -84,6 +88,32 @@ class Configuration( object ):
         for path in self.tool_config, self.datatype_converters_config:
             if not os.path.isfile(path):
                 raise ConfigurationError("File not found: %s" % path )
+
+def get_database_engine_options( kwargs ):
+    """
+    Allow options for the SQLAlchemy database engine to be passed by using
+    the prefix "database_engine_option_".
+    """
+    conversions =  {
+        'convert_unicode': string_as_bool,
+        'pool_timeout': int,
+        'echo': string_as_bool,
+        'echo_pool': string_as_bool,
+        'pool_recycle': int,
+        'pool_size': int,
+        'max_overflow': int,
+        'pool_threadlocal': string_as_bool
+    }
+    prefix = "database_engine_option_"
+    prefix_len = len( prefix )
+    rval = {}
+    for key, value in kwargs.iteritems():
+        if key.startswith( prefix ):
+            key = key[prefix_len:]
+            if key in conversions:
+                value = conversions[key](value)
+            rval[ key  ] = value
+    return rval
 
 def configure_logging( config ):
     """

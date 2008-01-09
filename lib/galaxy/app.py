@@ -16,15 +16,16 @@ class UniverseApplication( object ):
         #Set up datatypes registry
         self.datatypes_registry = galaxy.datatypes.registry.Registry(datatypes=self.config.datatypes, sniff_order=self.config.sniff_order)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
-        # Connect up the object model
+        # Determine the database url
         if self.config.database_connection:
-            self.model = galaxy.model.mapping.init( self.config.file_path,
-                                                    self.config.database_connection,
-                                                    create_tables = True )
+            db_url = self.config.database_connection
         else:
-            self.model = galaxy.model.mapping.init( self.config.file_path,
-                                                    "sqlite://%s?isolation_level=IMMEDIATE" % self.config.database,
-                                                    create_tables = True )
+            db_url = "sqlite://%s?isolation_level=IMMEDIATE" % self.config.database
+        # Setup the database engine and ORM
+        self.model = galaxy.model.mapping.init( self.config.file_path,
+                                                db_url,
+                                                self.config.database_engine_options,
+                                                create_tables = True )
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         #Load datatype converters

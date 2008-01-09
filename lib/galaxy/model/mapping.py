@@ -262,9 +262,8 @@ def db_next_hid( self ):
 
 History._next_hid = db_next_hid
     
-def init( file_path, url, **kwargs ):
+def init( file_path, url, engine_options, create_tables=False ):
     """Connect mappings to the database"""
-    create_tables = kwargs.pop( 'create_tables', False )
     # Connect dataset to the file path
     Dataset.file_path = file_path
     # MySQL hacking, doesn't support passive defaults for anything but TIMESTAMP
@@ -274,7 +273,7 @@ def init( file_path, url, **kwargs ):
                 table.columns['create_time'].type = TIMESTAMP()
             if table.columns.has_key( "update_time" ):
                 table.columns['update_time'].type = TIMESTAMP()
-        metadata.connect( url, **kwargs )
+        metadata.connect( url, **engine_options )
     # Connect the metadata to the database. 
     elif url.startswith( "postgresql:///" ): 
         import psycopg
@@ -290,9 +289,10 @@ def init( file_path, url, **kwargs ):
             metadata.connect( engine )
         except:
             log.exception( "error connecting to database using connection: '%s'." % url )
-            metadata.connect( url, **kwargs )
+            metadata.connect( url, **engine_options )
     else:
-        metadata.connect( url, **kwargs )
+        engine = create_engine( url, **engine_options )
+        metadata.connect( engine )
     ## metadata.engine.echo = True
     # Create tables if needed
     if create_tables:
