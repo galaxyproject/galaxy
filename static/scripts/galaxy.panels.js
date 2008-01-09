@@ -14,6 +14,16 @@ function ensure_dd_helper() {
         }
         e.appendTo("body").hide();
     }
+    // And the helper below the popup menus
+    if ( jq( "#popup-helper" ).length == 0 ) {
+        var e = jq("<div id='popup-helper' style='background: white; opacity: 0.00; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 15000;'></div>");
+        if ( jq.browser.ie ) {
+            // Element will not capture drags in ie without nonzero opacity,
+            // but causes flashing in firefox with nonzero opacity
+            e.css( "opacity", "0.01" );
+        }
+        e.appendTo("body").hide();
+    }
 }
 
 function make_left_panel( panel_el, center_el, border_el ) {
@@ -173,4 +183,24 @@ function make_right_panel( panel_el, center_el, border_el ) {
         }
     ).find( "div" ).show();
     return { handle_minwidth_hint: handle_minwidth_hint };
+};
+
+function make_popupmenu( button_element, options ) {
+    var menu_element = $( "<div class='popupmenu'><div class='popupmenu-top'><div class='popupmenu-top-inner'/></div></div>" ).appendTo( "body" );
+    $.each( options, function( k, v ) {
+        $( "<div class='popupmenu-item' />" ).html( k ).click( v ).appendTo( menu_element );
+    });
+    var clean = function() {
+        $(menu_element).unbind().hide();
+        $("#popup-helper").unbind().hide();
+    };
+    var click = function() {
+        var o = $(button_element).offset();
+        $("#popup-helper").mousedown( clean ).show();
+        $( menu_element ).click( clean ).css( { top: -1000 } ).show().css( {
+            top: o.top + $(button_element).height() + 9,
+            left: o.left + $(button_element).width() - $(menu_element).width()
+        } );
+    };
+    $( button_element ).click( click );
 };
