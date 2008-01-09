@@ -1,0 +1,72 @@
+<tool name="trim reads" id="trim_short_reads">
+<description>based on quality scores</description>
+
+<command interpreter="python">#if $sequencing_method_choice.sequencer=="454":#short_reads_trim_seq.py 454 $trim $length $output1 $input1 $input2
+#else:#short_reads_trim_seq.py solexa $trim $length $output1 $input1 $input2 
+#end if
+</command>
+
+<inputs>
+<page>
+	<conditional name="sequencing_method_choice">
+		<param name="sequencer" type="select" label="short read sequencing method">
+			<option value="454">fasta</option>
+			<option value="Solexa">tabular</option>
+		</param>
+		<when value="454">
+		    <param name="input1" type="data" format="fasta,txtseq.zip" label="Sequence file" />
+    		<param name="input2" type="data" format="fasta,txtseq.zip" label="Score file" />
+		</when>
+		<when value="Solexa">
+    		<param name="input1" type="data" format="tabular,txtseq.zip" label="Sequence file" />
+    		<param name="input2" type="data" format="tabular,txtseq.zip" label="Score file" />
+		</when>	
+	</conditional>
+	<param name="trim" type="integer" size="5" value="20" label="Minimal quality score" />
+    <param name="length" type="integer" size="5" value="0" label="Minimal length of trimmed reads to report" help="To output the read if its length is longer than this threshold. Use 0 to return the longest substring" />
+</page>
+</inputs>
+
+<outputs>
+    <data name="output1" format="fasta" />
+</outputs>
+
+<tests>
+	<test>
+		<param name="sequencer" value="Solexa" />
+		<param name="input1" value="solexa.fna" />
+		<param name="input2" value="solexa.qual" />
+		<param name="trim" value="20" />
+		<param name="length" value="0" />
+		<output name="output1" file="solexaTest.fa" />
+	</test>
+	<test>
+		<param name="sequencer" value="454" />
+		<param name="input1" value="454.fna" />
+		<param name="input2" value="454.qual" />
+		<param name="trim" value="20" />
+		<param name="length" value="0" />
+		<output name="output1" file="454Test.fa" />
+	</test>
+</tests>
+
+<help>
+
+.. class:: infomark	
+
+For **Sanger**, **454 or Solexa** sequencing technology only.
+Either trace file or both of the read file and quality score file must be provided.
+
+-----
+
+**What it does**
+
+This tool takes raw data from sequencing facility and outputs a multi-fasta file:
+
+- trimmed sequences in fasta format; 
+
+If *minimal trimmed length to report* is set to a number larger than zero, the tool ouputs any substrings that are longer than this threshold. 
+If there are more than one substring, the tool outputs all of them in separated fasta format.
+
+ </help>
+</tool>

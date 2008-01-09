@@ -1,0 +1,27 @@
+<tool name="run phred on trace file" id="run_phred_on_trace_file">
+  <description>return sequence and score files</description>
+  <command interpreter="python">short_reads_run_phred.py $input1 $output1 $output2 </command>  
+  <inputs>
+    <param name="input1" type="data" format="ab1,binseq.zip,scf" label="Trace file" />
+  </inputs>
+  <outputs>
+    <data name="output1" format="fasta" />
+    <data name="output2" format="fasta" />
+  </outputs>
+  <help>
+.. class:: infomark	
+
+For **trace (abi and scf) file** only.
+
+-----
+
+**What it does**
+
+This tool takes raw data from sequencing facility and outputs two files:
+
+- sequences in fasta format; 
+
+- quality score.
+
+ </help>
+</tool>

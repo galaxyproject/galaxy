@@ -1,0 +1,42 @@
+<tool name="quality score distribution" id="score_boxplot_short_reads">
+<description>on a boxplot</description>
+
+<command interpreter="python">short_reads_figure_score.py $input1 $output1 </command>
+
+<inputs>
+<page>
+    <param name="input1" type="data" format="fasta,tabular,txtseq.zip" label="Quality score file" />
+</page>
+</inputs>
+
+<outputs>
+  	<data name="output1" format="pdf" />
+</outputs>
+<!--
+<tests>
+	<test>
+		<param name="input1" value="solexa.qual" />
+  		<output name="output1" file="solexaScore.pdf" />
+	</test>
+	<test>
+		<param name="input1" value="454.qual" />
+		<output name="output1" file="454Score.pdf" />
+	</test>
+</tests>
+-->
+<help>
+
+.. class:: infomark	
+
+For **Sanger**, **454 or Solexa** sequencing technology only.
+
+-----
+
+**What it does**
+
+This tool takes quality score files and outputs one file:
+
+- figures in pdf file showing score distribution.
+
+ </help>
+</tool>

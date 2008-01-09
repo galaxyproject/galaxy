@@ -1,0 +1,44 @@
+<tool name="reads length array" id="length_array_short_reads">
+<description>on sequence file</description>
+
+<command interpreter="python">short_reads_figure_length.py $input1 $output1</command>
+
+<inputs>
+<page>
+    <param name="input1" type="data" format="fasta,tabular,txtseq.zip" label="Sequence file" />
+</page>
+</inputs>
+
+<outputs>
+  	<data name="output1" format="text" />
+</outputs>
+
+<tests>
+	<test>
+		<param name="input1" value="solexa.fna" />
+  		<output name="output1" file="solexaLength.txt" />
+	</test>
+	<test>
+		<param name="input1" value="454.fna" />
+		<output name="output1" file="454Length.txt" />
+	</test>
+</tests>
+
+<help>
+
+.. class:: infomark	
+
+For **Sanger**, **454 or Solexa** sequencing technology only.
+
+-----
+
+**What it does**
+
+This tool takes a multi-fasta sequence file and outputs a text file:
+
+- an array of the lengths in the file
+
+To see the distribution, please use the Histogram tool in Graph/Display data.
+
+ </help>
+</tool>
