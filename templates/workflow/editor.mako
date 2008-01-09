@@ -6,6 +6,10 @@
 
 <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout.css')}"></link>
+<!--[if IE]>
+<link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout_ie.css')}"></link>
+<![endif]-->
+
 <style type="text/css">
 /* Wider right panel */
 #center       { right: 309px; }
@@ -61,26 +65,6 @@ function show_modal( title, body, buttons ) {
         $(".dialog-box").center( "horizontal" );
     }
 };
-
-function make_popupmenu( button_element, options ) {
-    var menu_element = $( "<div class='popupmenu'><div class='popupmenu-top'><div class='popupmenu-top-inner'/></div></div>" ).appendTo( "body" );
-    $.each( options, function( k, v ) {
-        $( "<div class='popupmenu-item' />" ).html( k ).click( v ).appendTo( menu_element );
-    });
-    var clean = function() {
-        $(menu_element).unbind().hide();
-        $("#popup-helper").unbind().hide();
-    };
-    var click = function() {
-        var o = $(button_element).offset();
-        $("#popup-helper").click( clean ).show();
-        $( menu_element ).click( clean ).css( { top: -1000 } ).show().css( {
-            top: o.top + $(button_element).height() + 9,
-            left: o.left + $(button_element).width() - $(menu_element).width()
-        } );
-    };
-    $( button_element ).click( click );
-};
 </script>
 
 <script type='text/javascript'>
@@ -119,7 +103,7 @@ $( function() {
     
     // Unload handler
     window.onbeforeunload = function() {
-        if ( defined( workflow ) && workflow.has_changes ) {
+        if ( workflow && workflow.has_changes ) {
             return "There are unsaved changes to your workflow which will be lost.";
         }
     }
@@ -167,7 +151,6 @@ function show_form_for_tool( text, node ) {
             $(form).submit();
         });
     });
-    
 }
 
 var save_current_workflow = function () {
@@ -336,6 +319,7 @@ div.toolFormRow {
                 </div>
                 <div class="body"><img src="${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}" /></div>
                 <div class="buttons" style="display: none;"></div>
+                <div class="underlay"></div>
             </div>
         </div>
 

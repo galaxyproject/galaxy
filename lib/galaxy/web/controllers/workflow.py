@@ -65,7 +65,7 @@ class WorkflowController( BaseController ):
         user = trans.get_user()
         trans.workflow_building_mode = True
         data = simplejson.loads( workflow_data )
-        nodes = data['nodes']
+        nodes = data['steps']
         for key, node in nodes.iteritems():
             decode_state( node, trans.app )
         # Create workflow from json data
@@ -192,13 +192,13 @@ class WorkflowController( BaseController ):
                 step.tool_id = job.tool_id
                 step.tool_inputs = param_values
                 for other_hid, input_name in associations:
-                    other_job_id, other_name = hid_to_output_pair[ other_hid ]
-                    # Only create association if the associated output dataset
-                    # is being included in this workflow
-                    if other_job_id in job_id_to_step_id:
-                        step.input_connections[input_name] = ( job_id_to_step_id[ other_job_id ], other_name )
-                    else:
-                        step.input_connections[input_name] = None
+                    step.input_connections[input_name] = None
+                    if other_hid in hid_to_output_pair:
+                        other_job_id, other_name = hid_to_output_pair[ other_hid ]
+                        # Only create association if the associated output dataset
+                        # is being included in this workflow
+                        if other_job_id in job_id_to_step_id:
+                            step.input_connections[input_name] = ( job_id_to_step_id[ other_job_id ], other_name )                        
                 workflow.steps[ step_id ] = step
             # Try to order the nodes
             workflow.order_nodes()
@@ -234,14 +234,23 @@ class WorkflowController( BaseController ):
                 "Workflow cannot be run because it contains cycles" )
         if workflow.has_errors:
             return trans.show_error_message(
-                "Workflow cannot be run because of validation errors is some steps" )
-        rval = ""
+                "Workflow cannot be run because of validation errors in some steps" )
+        inputs = []
+        # Ensure node_order is set
+        workflow.order_nodes()
+        # Prepare steps for template
+        steps = []
         for step_id in workflow.node_order:
-            step = workflow.steps[step]
-            for input_name, assoc in step.input_associations.iteritems():
-                if assoc is None:
-                    rval += str( step.tool_id + " " + input_name + "\n" )
-        return rval
+            step = workflow.steps[ step_id ]
+            steps.append( step )
+            # Build a tool state for the step
+            state = DefaultToolState()
+            state.inputs = step.tool_inputs
+            # Store state with the step
+            step.state = state
+        return trans.fill_template(
+                    "workflow/run.mako", 
+                    steps=steps )
             
         
 ## ---- Utility methods -------------------------------------------------------

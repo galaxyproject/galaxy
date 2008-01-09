@@ -268,7 +268,7 @@ $.extend( Node.prototype, {
         var b = $(this.element).find( ".toolFormBody" );
         b.find( "div" ).remove();
         var tmp = "<div style='color: red; text-style: italic;'>" + text + "</div>";
-        this.form_html = $(tmp);
+        this.form_html = tmp;
         b.html( tmp );
         workflow.node_changed( this );
     }
@@ -386,7 +386,7 @@ function prebuild_node_for_tool( id, title_text ) {
     var b = $("<div class='toolFormBody'></div>")
     var tmp = "<div><img height='16' align='middle' src='../images/loading_small_white_bg.gif'/> loading tool info...</div>";
     b.append( tmp );
-    node.form_html = $(tmp);
+    node.form_html = tmp;
     f.append( b )
     // Fix width to computed width
     // Now add floats

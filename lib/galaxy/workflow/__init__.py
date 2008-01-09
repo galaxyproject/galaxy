@@ -20,7 +20,7 @@ class Workflow( object ):
             step = WorkflowStep.from_simple( step_data )
             if step.has_errors:
                 workflow.has_errors = True
-            workflow.steps[ id ] = step
+            workflow.steps[ int(id) ] = step
         return workflow
     
     def to_simple( self ):
@@ -91,7 +91,6 @@ class WorkflowStep( object ):
         step.position = data.get( 'position', None )
         # Connections
         for input_name, conn in data['input_connections'].iteritems():
-            print "!!!", input_name, conn
             if conn is None:
                 step.input_connections[ input_name ] = None
             else:
