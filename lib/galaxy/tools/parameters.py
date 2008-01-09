@@ -503,6 +503,21 @@ class SelectToolParameter( ToolParameter ):
         elif len( value ) == 1:
             value = value[0]
         return value
+    def value_to_display_text( self, value, app ):
+        if not isinstance( value, list ):
+            value = [ value ]
+        # FIXME: Currently only translating values back to labels if they
+        #        are not dynamic
+        if self.is_dynamic:
+            rval = value
+        else:
+            options = list( self.static_options )
+            rval = []
+            for t, v, s in options:
+                if v in value:
+                    rval.append( t )
+        return "\n".join( rval )
+    
     def get_dependencies( self ):
         data_ref = param_ref = None
         if self.options:
@@ -786,7 +801,10 @@ class DataToolParameter( ToolParameter ):
         return value.file_name
         
     def value_to_display_text( self, value, app ):
-        return "%s: %s" % ( value.hid, value.name )
+        if value:
+            return "%s: %s" % ( value.hid, value.name )
+        else:
+            return "No dataset"
 
 # class RawToolParameter( ToolParameter ):
 #     """
