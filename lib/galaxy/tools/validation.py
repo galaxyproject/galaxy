@@ -147,7 +147,7 @@ class MetadataValidator( Validator ):
     Validator that checks for missing metadata
     """
     def validate( self, value, history=None ):
-        if value.missing_meta():
+        if value and value.missing_meta():
             raise ValueError( "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes" )
 
 validator_types = dict( expression=ExpressionValidator,
