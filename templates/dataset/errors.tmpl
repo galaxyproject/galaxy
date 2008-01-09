@@ -5,7 +5,6 @@
 <title>Dataset generation errors</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <link href="/static/style/base.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="/static/universe.js">var dummy1=0;</script>
 <style>
 pre
 {
@@ -18,9 +17,7 @@ pre
 </style>
 </head>
 
-<body onLoad="frame_dw();">
-
-<div class="toolForm">
+<body>
   
   <h2>Dataset generation errors</h2>
 
@@ -64,22 +61,19 @@ pre
   address, we will be better able to investigate your problem and get back
   to you.</p>
   
-  <div style="margin: 5px">
   <div class="toolForm">
     <div class="toolFormTitle">Error Report</div>
     <div class="toolFormBody">
     <form name="report_error" action="${h.url_for( action='report_error')}" method="post" >
-      <input type="hidden" name="id" value="$dataset.id">
+      <input type="hidden" name="id" value="$dataset.id" />
       <table> 
-        <tr valign="top"><td>Your Email:</td><td><input type="text" name="email" size="40"></td></tr>
-        <tr valign="top"><td>Message:</td><td><textarea name="message", rows="10" cols="40"></textarea></td></tr>
+        <tr valign="top"><td>Your Email:</td><td><input type="text" name="email" size="40" /></td></tr>
+        <tr valign="top"><td>Message:</td><td><textarea name="message", rows="10" cols="40" /></textarea></td></tr>
   			<tr><td></td><td><input type="submit" value="Report">
       </table>
     </form>
     </div>
   </div>
-  </div>
   
-</div>
 </body>
 </html>
