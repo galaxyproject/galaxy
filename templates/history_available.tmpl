@@ -3,7 +3,8 @@
 <head>
 <title> Available Histories </title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css">
+<link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css">
+<script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
 <style>
 tr.history_row_deleted td
 {
@@ -13,10 +14,10 @@ tr.history_row_deleted td
 </head>
 <body>
 <script type="text/javascript">
-q(document).ready( function() {
+jQuery(document).ready( function() {
     // Links with confirmation
-    q( "a[@confirm]" ).click( function() {
-        return confirm( q(this).attr( "confirm"  ) )
+    jQuery( "a[@confirm]" ).click( function() {
+        return confirm( jQuery(this).attr( "confirm"  ) )
     })
 })
 
