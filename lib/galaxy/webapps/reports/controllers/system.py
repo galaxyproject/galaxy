@@ -17,15 +17,23 @@ class System( BaseController ):
     def get_disk_usage( self, file_path ):
         df_cmd = 'df -h ' + file_path
         df_file = os.popen( df_cmd )
+        is_sym_link = os.path.islink( file_path )
 
         while True:
-            df_list = df_file.readline()
+            df_list = df_file.readline().strip()
             if not df_list:
                 break #EOF
             dflistlower = df_list.lower()
-            if 'filesystem' in dflistlower or 'proc' in dflistlower or 'cluster' in dflistlower:
+            if 'filesystem' in dflistlower or 'proc' in dflistlower:
                 continue
-            file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_list.split()
+            if is_sym_link:
+                if '/' in dflistlower:
+                    mount = dflistlower.strip()
+                    continue
+                else:
+                    file_system, disk_size, disk_used, disk_avail, disk_cap_pct = df_list.split()
+            else:
+                file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_list.split()
             break
 
         df_file.close()
