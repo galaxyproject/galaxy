@@ -23,7 +23,7 @@ class System( BaseController ):
             if not df_list:
                 break #EOF
             dflistlower = df_list.lower()
-            if 'filesystem' in dflistlower or 'proc' in dflistlower:
+            if 'filesystem' in dflistlower or 'proc' in dflistlower or 'cluster' in dflistlower:
                 continue
             file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_list.split()
             break
