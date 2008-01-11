@@ -1,0 +1,56 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+  <head>
+    <title>Galaxy Administration</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+    <link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h3 align="center">System -> Disk Usage</h3>
+    <table align="center" width="60%" class="colored">
+      <tr><td colspan="5"><div class="reportTitle">Disk Usage for $file_path</div></td></tr>
+      <tr class="header">
+        <td>File System</td>
+        <td>Disk Size</td>
+        <td>Used</td>
+        <td>Available</td>
+        <td>Percent Used</td>
+      </tr>
+      <tr class="tr">
+        <td>$disk_usage[0]</td>
+        <td>$disk_usage[1]</td>
+        <td>$disk_usage[2]</td>
+        <td>$disk_usage[3]</td>
+        <td>$disk_usage[4]</td>
+      </tr>
+      #set $dlen = len( $datasets )
+      #if $dlen == 0:
+        <tr class="header"><td colspan="5">There are no datasets larger than $file_size_str</td></tr>
+      #else:
+        <tr><td colspan="5"><div class="reportTitle">$dlen largest datasets over $file_size_str</div></td></tr>
+        <tr class="header">
+          <td>File</td>
+          <td>Created</td>
+          <td>History ID</td>
+          <td>Deleted</td>
+          <td>Size on Disk</td>
+        </tr>
+        #set ctr =  0
+        #for $dataset in $datasets
+          #if $dlen > 2 and ctr % 2 == 1:
+            <tr class="odd_row">
+          #else:
+            <tr class="tr"
+          #end if
+            <td>dataset_$dataset[0] dat</td>
+            <td>$dataset[1]</td>
+            <td>$dataset[2]</td>
+            <td>$dataset[3]</td>
+            <td>$dataset[4]</td>
+          </tr>
+          #set ctr+=1
+        #end for
+      #end if
+    </table>
+  </body>
+</html>

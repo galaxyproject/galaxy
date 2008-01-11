@@ -1,0 +1,277 @@
+@import url( "reset.css" );
+
+body 
+{
+    font: 75% verdana, "Bitstream Vera Sans", geneva, arial, helvetica, helve, sans-serif; 
+    background: $base_bg_bottom;
+    color: $base_text;
+    background-image: url(base_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    margin: 10px;
+}
+
+a:link, a:visited, a:active
+{
+    color: $link_text;
+}
+
+h1, h2, h3, h4 
+{
+    color: $header_text;
+    /*text-shadow: #bbb 2px 2px 1px;*/
+}
+
+hr
+{
+    border: none;
+    border-bottom: dotted $base_text 1px;
+}
+
+div.report
+{
+  border: solid $report_border 1px;
+}
+
+div.reportTitle
+{ 
+  font-weight: bold;
+  padding: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  background: $report_title_bg_bottom;
+  background-image: url(report_title_bg.png);
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid $report_border 1px;
+}
+
+div.reportParamHelp
+{
+  color: #666;
+}
+
+div.reportParamHelp a
+{
+  color: #666;
+}
+
+div.reportBody
+{ 
+  background: $report_body_bg_bottom;
+  background-image: url(report_body_bg.png);
+  background-repeat: repeat-x;
+  background-position: top;
+  padding: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+div.reportBody div.reportTitle
+{
+    background: transparent;
+	border: none;
+	font-weight: bold;
+	border-bottom: solid $report_border 1px;
+	margin-bottom: 5px;
+}
+
+div.reportDisabled div.reportTitle {
+    background: ${layout_bg};
+    border-color: ${layout_border};
+}
+
+div.reportDisabled {
+    border-color: ${layout_border};
+}
+
+div.reportHelp
+{ 
+}
+
+div.reportHelpBody
+{ 
+	width: 100%;
+	overflow: auto;
+}
+
+div.titleRow {
+    font-weight: bold;
+    border-bottom: dotted gray 1px;
+    margin-bottom: 0.5em;
+    padding-bottom: 0.25em;
+}
+
+div.report-row 
+{
+    margin-bottom: 1em;
+}
+
+div.report-title-row
+{
+    margin-bottom: 0.5em;
+}
+
+div.report-row-error
+{
+    background: $error_message_bg;
+    padding: 5px;
+}
+
+div.report-row label
+{
+    font-weight: bold;
+    display: block;
+    margin-bottom: .2em;
+}
+
+/* Messages */
+
+.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed
+{
+    padding: 10px;
+    padding-left: 52px;
+    min-height: 32px;
+    border: 1px solid $error_message_border;
+    background-color: $error_message_bg;
+    background-image: url(error_message_icon.png);
+    background-repeat: no-repeat;
+    background-position: 10px 10px;
+}
+
+.warningmessage 
+{
+    background-image: url(warn_message_icon.png);
+    border-color: $warn_message_border;
+    background-color: $warn_message_bg;
+}
+
+.donemessage 
+{
+    background-image: url(done_message_icon.png);
+    border-color: $done_message_border;
+    background-color: $done_message_bg;
+}
+
+.infomessage 
+{
+    background-image: url(info_message_icon.png);
+    border-color: $info_message_border;
+    background-color: $info_message_bg;
+}
+
+.welcomeBlue 
+{
+    padding-left: 10px;
+    border-color: $info_message_border;
+    background-color: $info_message_bg;
+    background-image: none;
+}
+
+.welcomeRed 
+{
+    padding-left: 10px;
+    border-color: $error_message_border;
+    background-color: $error_message_bg;
+    background-image: none;
+}
+
+.errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall 
+{
+    padding: 5px;
+    padding-left: 25px;
+    min-height: 25px;
+    border: 1px solid $error_message_border;
+    background-color: $error_message_bg;
+    background-image: url(error_small.png);
+    background-repeat: no-repeat;
+    background-position: 5px 5px;
+}
+
+.warningmessagesmall
+{
+    background-image: url(warn_small.png);
+    border-color: $warn_message_border;
+    background-color: $warn_message_bg;
+}
+
+.donemessagesmall
+{
+    background-image: url(ok_small.png);
+    border-color: $done_message_border;
+    background-color: $done_message_bg;
+}
+
+.infomessagesmall
+{
+    background-image: url(info_small.png);
+    border-color: $info_message_border;
+    background-color: $info_message_bg;
+}
+
+.errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr
+{
+    padding-left: 20px;
+    min-height: 15px;
+    background: url(error_small.png) no-repeat;
+}
+
+.warningmark 
+{
+    background-image: url(warn_small.png);
+}
+
+.donemark 
+{
+    background-image: url(ok_small.png);
+}
+
+.infomark, .ok_bgr
+{
+  background-image: url(info_small.png);
+}
+
+table.colored
+{
+  border-top: solid $table_border 1px;
+  border-bottom: solid $table_border 1px;
+}
+
+table.colored td
+{
+    padding: 5px;
+}
+
+table.colored tr.header
+{ 
+  background: $table_header_bg;
+  background-image: url(report_title_bg.png);
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid $table_border 1px;
+  font-weight: bold;
+}
+
+table.colored tr
+{ 
+  background: $table_row_bg;
+}
+
+table.colored tr.odd_row
+{ 
+  background: $odd_row_bg;
+}
+
+div.debug
+{
+    margin: 10px;
+    padding: 5px;
+    background: #FFFF99;
+    border: solid #FFFF33 1px;
+    color: black;
+}
+    
+#footer {
+  display: none;
+}
+

@@ -20,10 +20,9 @@ def main():
     #Step through Datasets, determining size on disk for each.
     print "Determining the size of each dataset..."
     for row in app.model.Dataset.table.select().execute():
-        deleted = app.model.Dataset.get( row.id ).deleted
         purged = app.model.Dataset.get( row.id ).purged
         file_size = app.model.Dataset.get( row.id ).file_size
-        if file_size is None and not deleted and not purged:
+        if file_size is None and not purged:
             size_on_disk = app.model.Dataset.get( row.id ).get_size()
             print "Updating Dataset.%d with file_size: %d" %( row.id, size_on_disk )
             app.model.Dataset.table.update( app.model.Dataset.table.c.id == row.id ).execute( file_size=size_on_disk )
