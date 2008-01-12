@@ -16,28 +16,43 @@ class System( BaseController ):
 
     def get_disk_usage( self, file_path ):
         df_cmd = 'df -h ' + file_path
-        df_file = os.popen( df_cmd )
         is_sym_link = os.path.islink( file_path )
+        file_system = disk_size = disk_used = disk_avail = disk_cap_pct = mount = None
+        df_file = os.popen( df_cmd )
 
         while True:
-            df_list = df_file.readline().strip()
-            if not df_list:
-                break #EOF
-            dflistlower = df_list.lower()
-            if 'filesystem' in dflistlower or 'proc' in dflistlower:
-                continue
-            if is_sym_link:
-                if '/' in dflistlower:
-                    mount = dflistlower.strip()
+            df_line = df_file.readline()
+            df_line = df_line.strip()
+            #log.debug("df_line: '%s'" %df_line)
+            if df_line:
+                df_line = df_line.lower()
+                if 'filesystem' in df_line or 'proc' in df_line:
                     continue
+                elif is_sym_link:
+                    #log.debug("We have a symlink...")
+                    if ':' in df_line and '/' in df_line:
+                        mount = df_line
+                        #log.debug("mount: '%s'" %mount)
+                    else:
+                        try:
+                            disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split()
+                            break
+                        except:
+                            #log.debug("In symlink try, df_line: '%s'" %df_line)
+                            pass
                 else:
-                    file_system, disk_size, disk_used, disk_avail, disk_cap_pct = df_list.split()
+                    try:
+                        file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split()
+                        break
+                    except:
+                        #log.debug("In 2nd try, df_line: '%s'" %df_line)
+                        pass
             else:
-                file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_list.split()
-            break
+                break # EOF
 
         df_file.close()
         return ( file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount  )
+
 
     @web.expose
     def disk_usage( self, trans, **kwd ):
