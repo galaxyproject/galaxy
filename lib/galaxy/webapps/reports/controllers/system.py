@@ -58,8 +58,8 @@ class System( BaseController ):
     def disk_usage( self, trans, **kwd ):
         file_path = trans.app.config.file_path
         disk_usage = self.get_disk_usage( file_path )
-        min_file_size = 2**40 # 1 GB
-        file_size_str = '1 GB'
+        min_file_size = 2**30 # 100 MB
+        file_size_str = '100 MB'
         datasets = []
         dt = trans.model.Dataset.table
 
