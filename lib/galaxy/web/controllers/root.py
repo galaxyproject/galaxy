@@ -169,17 +169,16 @@ class Universe( BaseController ):
     @web.expose
     def edit(self, trans, id=None, hid=None, **kwd):
         """Returns data directly into the browser. Sets the mime-type according to the extension"""
-
         if hid is not None:
             history = trans.get_history()
             # TODO: hid handling
             data = history.datasets[ int( hid ) - 1 ]
+        elif id is None: 
+            return trans.show_error_message( "Problem loading dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
         else:
             data = self.app.model.Dataset.get( id )
-
         if data is None:
-            self.err_msg = 'No such data exists!' # a user should never get this!
-            return self.index( trans )
+            return trans.show_error_message( "Problem retrieving dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
 
         p = util.Params(kwd, safe=False)
         
