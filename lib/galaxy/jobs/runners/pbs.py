@@ -245,6 +245,8 @@ class PBSJobRunner( object ):
             conn = pbs.pbs_connect( self.pbs_server )
             if conn <= 0:
                 log.debug("(%s/%s) connection to PBS server for state check failed" % (galaxy_job_id, job_id) )
+                new_watched.append( pbs_job_state )
+                continue
             stat_attrl = pbs.new_attrl(1)
             stat_attrl[0].name = 'job_state'
             jobs = pbs.pbs_statjob(conn, pbs_job_state.job_id, stat_attrl, 'NULL')
