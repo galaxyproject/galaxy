@@ -23,6 +23,13 @@
   </outputs>
   <code file="encode_import_code.py"/>
   <help>
+  
+.. class:: warningmark
+
+The data in this section is intended as a supplement for this manuscript_.  Use the **Get Data->UCSC Main** tool for current ENCODE data.
+
+.. _manuscript: http://www.genome.org/cgi/content/full/17/6/960
+
 For detailed information about data deposition and partitioning, click here_.
 
 .. _here: http://genome.imim.es/gencode/wiki/index.php/Collecting_Feature_Sets_from_All_Analysis_Groups
