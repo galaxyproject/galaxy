@@ -438,6 +438,8 @@ class SelectToolParameter( ToolParameter ):
         # Dynamic options are not yet supported in workflow, allow 
         # specifying the value as text for now.
         if self.is_dynamic and trans.workflow_building_mode:
+            assert isinstance( value, UnvalidatedValue )
+            value = value.value
             if self.multiple:
                 if value is None:
                     value = ""
@@ -457,7 +459,7 @@ class SelectToolParameter( ToolParameter ):
         return field
     def from_html( self, value, trans=None, other_values={} ):
         if self.is_dynamic and trans.workflow_building_mode:
-            return value
+            return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, other_values )
         if isinstance( value, list ):
             if not(self.repeat):
@@ -484,12 +486,19 @@ class SelectToolParameter( ToolParameter ):
         else:
             return value
     def value_to_basic( self, value, app ):
+        if isinstance( value, UnvalidatedValue ):
+            return { "__class__": "UnvalidatedValue", "value": value.value }
+        return value
+    def value_from_basic( self, value, app, ignore_errors=False ):
+        if isinstance( value, dict ):
+            assert value["__class__"] == "UnvalidatedValue"
+            return UnvalidatedValue( value["value"] )
         return value
     def get_initial_value( self, trans, context ):
         # More working around dynamic options for workflow
         if self.is_dynamic and trans.workflow_building_mode:
             # Really the best we can do?
-            return None
+            return UnvalidatedValue( None )
         options = list( self.get_options( trans, context ) )
         value = [ optval for _, optval, selected in options if selected ]
         if len( value ) == 0:
@@ -504,6 +513,11 @@ class SelectToolParameter( ToolParameter ):
             value = value[0]
         return value
     def value_to_display_text( self, value, app ):
+        if isinstance( value, UnvalidatedValue ):
+            suffix = "\n(value not yet validated)"
+            value = value.value
+        else:
+            suffix = ""
         if not isinstance( value, list ):
             value = [ value ]
         # FIXME: Currently only translating values back to labels if they
@@ -516,7 +530,7 @@ class SelectToolParameter( ToolParameter ):
             for t, v, s in options:
                 if v in value:
                     rval.append( t )
-        return "\n".join( rval )
+        return "\n".join( rval ) + suffix
     
     def get_dependencies( self ):
         data_ref = param_ref = None
@@ -867,6 +881,12 @@ parameter_types = dict( text        = TextToolParameter,
                         file        = FileToolParameter,
                         data        = DataToolParameter )
 
+class UnvalidatedValue( object ):
+    """
+    Wrapper to mark a value that has not been validated
+    """
+    def __init__( self, value ):
+        self.value = value
 
 def str_bool(in_str):
     """

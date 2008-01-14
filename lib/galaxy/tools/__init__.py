@@ -464,6 +464,10 @@ class Tool:
         return param
     
     def check_workflow_compatible( self ):
+        """
+        Determine if a tool can be used in workflows. External tools and the
+        upload tool are currently not supported by workflows.
+        """
         # This is probably the best bet for detecting external web tools
         # right now
         if self.action != "/tool_runner/index":
@@ -479,7 +483,10 @@ class Tool:
     def new_state( self, trans, all_pages=False ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
-        based on `self.inputs` with appropriate default values.
+        with default values for inputs. 
+        
+        Only inputs on the first page will be initialized unless `all_pages` is
+        True, in which case all inputs regardless of page are initialized.
         """
         state = DefaultToolState()
         state.inputs = {}
@@ -492,31 +499,39 @@ class Tool:
 
     def fill_in_new_state( self, trans, inputs, state, context=None ):
         """
-        Fill in a state dictionary with default values taken from input.
-        Grouping elements are filled in recursively. 
+        Fill in a tool state dictionary with default values for all parameters
+        in the dictionary `inputs`. Grouping elements are filled in recursively. 
         """
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
-            if isinstance( input, Repeat ):  
+            if isinstance( input, Repeat ):
+                # Repeat elements are always initialized to have 0 units.
                 state[ input.name ] = []
             elif isinstance( input, Conditional ):
+                # State for a conditional is a plain dictionary. 
                 s = state[ input.name ] = {}
+                # Get the default value for the 'test element' and use it
+                # to determine the current case
                 test_value = input.test_param.get_initial_value( trans, context )
                 current_case = input.get_current_case( test_value, trans )
+                # Recursively fill in state for selected case
                 self.fill_in_new_state( trans, input.cases[current_case].inputs, s, context )
                 # Store the current case in a special value
                 s['__current_case__'] = current_case
                 # Store the value of the test element
                 s[ input.test_param.name ] = test_value
             else:
-                value = input.get_initial_value( trans, context )
-                state[ input.name ] = value
+                # `input` is just a plain parameter, get its default value
+                state[ input.name ] = input.get_initial_value( trans, context )
 
     def get_param_html_map( self, trans, page=0, other_values={} ):
         """
         Return a dictionary containing the HTML representation of each 
         parameter. This is used for rendering display elements. It is 
         currently not compatible with grouping constructs.
+        
+        NOTE: This should be considered deprecated, it is only used for tools
+              with `display` elements. These should be eliminated.
         """
         rval = dict()
         for key, param in self.inputs_by_page[page].iteritems():
@@ -546,6 +561,13 @@ class Tool:
         return None
         
     def visit_inputs( self, value, callback ):
+        """
+        Call the function `callback` on each parameter of this tool. Visits
+        grouping parameters recursively and constructs unique prefixes for
+        each nested set of parameters. The callback method is then called as:
+        
+        `callback( level_prefix, parameter, parameter_value )`
+        """
         # HACK: Yet another hack around check_values
         if not self.check_values:
             return
@@ -569,21 +591,31 @@ class Tool:
             state.decode( encoded_state, self, trans.app )
         else:
             state = self.new_state( trans )
-            # This feels a bit like a hack
+            # This feels a bit like a hack. It allows forcing full processing
+            # of inputs even when there is no state in the incoming dictionary
+            # by providing either 'runtool_btn' (the name of the submit button
+            # on the standard run form) or "URL" (a parameter provided by
+            # external data source tools). 
             if "runtool_btn" not in incoming and "URL" not in incoming:
                 return "tool_form.tmpl", dict( errors={}, tool_state=state, param_values={}, incoming={} )
-        # Fill in everything we can in the state and keep track of errors
-        # Now process new parameters for the current page
-        if self.check_values:
+        # Process incoming data
+        if not( self.check_values ):
+            # If `self.check_values` is false we don't do any checking or
+            # processing on inut parameters. This is used to pass raw values
+            # through to/from external sites. FIXME: This should be handled
+            # more cleanly, there is no reason why external sites need to
+            # post back to the same URL that the tool interface uses.
+            errors = {}
+            params = incoming
+        else:
+            # Update state for all inputs on the current page taking new
+            # values from `incoming`.
             errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming )
-            # Any tool specific validation
+            # If the tool provides a `validate_input` hook, call it. 
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
                 validate_input( trans, errors, state.inputs, self.inputs_by_page[state.page] )
             params = state.inputs
-        else:
-            errors = {}
-            params = incoming
         # Did the user actually click next / execute or is this just
         # a refresh?
         if 'runtool_btn' in incoming or 'URL' in incoming:
@@ -603,14 +635,20 @@ class Tool:
                 self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
                 return 'tool_form.tmpl', dict( errors=errors, tool_state=state )
         else:
+            # Just a refresh, render the form with updated state and errors.
             return 'tool_form.tmpl', dict( errors=errors, tool_state=state )
       
-    def update_state( self, trans, inputs, state, incoming, prefix = "", context=None ):
+    def update_state( self, trans, inputs, state, incoming,
+                      prefix = "", context=None, update_only=False, old_errors={} ):
         """
         Update the tool state in `state` using the user input in `incoming`. 
         This is designed to be called recursively: `inputs` contains the
         set of inputs being processed, and `prefix` specifies a prefix to
         add to the name of each input to extract it's value from `incoming`.
+        
+        If `update_only` is True, values that are not in `incoming` will
+        not be modified. In this case `old_errors` can be provided, and any
+        errors for parameters which were *not* updated will be preserved.
         """
         errors = dict()       
         # Push this level onto the context stack
@@ -621,6 +659,7 @@ class Tool:
             if isinstance( input, Repeat ):
                 group_state = state[input.name]
                 group_errors = []
+                group_old_errors = old_errors.get( input.name, None )
                 any_group_errors = False
                 # Check any removals before updating state
                 for i in range( len( group_state ) ):                    
@@ -629,12 +668,18 @@ class Tool:
                 # Update state
                 for i in range( len( group_state ) ):
                     prefix = "%s_%d|" % ( key, i )
+                    if group_old_errors:
+                        rep_old_errors = group_old_errors[i]
+                    else:
+                        rep_old_errors = {}
                     rep_errors = self.update_state( trans,
                                                     input.inputs, 
                                                     group_state[i], 
                                                     incoming, 
-                                                    prefix,
-                                                    context )
+                                                    prefix=prefix,
+                                                    context=context,
+                                                    update_only=update_only,
+                                                    old_errors=rep_old_errors )
                     if rep_errors:
                         any_group_errors = True
                         group_errors.append( rep_errors )
@@ -652,27 +697,41 @@ class Tool:
                     errors[input.name] = group_errors
             elif isinstance( input, Conditional ):
                 group_state = state[input.name]
+                group_old_errors = old_errors.get( input.name, {} )
                 old_current_case = group_state['__current_case__']
                 prefix = "%s|" % ( key )
                 # Deal with the 'test' element and see if it's value changed
-                test_incoming = incoming.get( prefix + input.test_param.name, None )
-                value, test_param_error = \
-                    self.check_param( trans, input.test_param, test_incoming, context )
-                current_case = input.get_current_case( value, trans )
+                test_param_key = prefix + input.test_param.name
+                if test_param_key not in incoming and update_only:
+                    # Update only, keep previous value and state, but still
+                    # recurse in case there are nested changes
+                    value = group_state[ input.test_param.name ]
+                    current_case = old_current_case
+                    if input.test_param.name in old_errors:
+                        errors[ input.test_param.name ] = old_errors[ input.test_param.name ]
+                else:
+                    # Get value of test param and determine current case
+                    test_incoming = incoming.get( prefix + input.test_param.name, None )
+                    value, test_param_error = \
+                        self.check_param( trans, input.test_param, test_incoming, context )
+                    current_case = input.get_current_case( value, trans )
                 if current_case != old_current_case:
                     # Current case has changed, throw away old state
                     group_state = state[input.name] = {}
                     # TODO: we should try to preserve values if we can
                     self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context )
                     group_errors = dict()
+                    group_old_errors = dict()
                 else:
                     # Current case has not changed, update children
                     group_errors = self.update_state( trans, 
                                                       input.cases[current_case].inputs, 
                                                       group_state,
                                                       incoming, 
-                                                      prefix,
-                                                      context )
+                                                      prefix=prefix,
+                                                      context=context,
+                                                      update_only=update_only,
+                                                      old_errors=group_old_errors )
                 if test_param_error:
                     group_errors[ input.test_param.name ] = test_param_error
                 if group_errors:
@@ -682,20 +741,27 @@ class Tool:
                 # Store the value of the test element
                 group_state[ input.test_param.name ] = value
             else:
-                incoming_value = incoming.get( key, None )
-                if incoming_value == 'None' and isinstance( input, SelectToolParameter ) and input.is_dynamic:
-                    # FIXME: This is a HACK, but is necessary because the values in incoming are not
-                    # yet set by the user when the select list is dynamically generated.
-                    legal_values = input.get_legal_values( trans, context )
-                    if len( legal_values ) > 0 and incoming_value not in legal_values:
-                        values = []
-                        for v in legal_values: values.append( v )
-                        values.sort()
-                        incoming_value = values[0]
-                value, error = self.check_param( trans, input, incoming_value, context )
-                if error:
-                    errors[ input.name ] = error
-                state[ input.name ] = value
+                if key not in incoming and update_only:
+                    # The value is already in the state, but preserve the old
+                    # error if it exists
+                    if input.name in old_errors:
+                        errors[ input.name ] = old_errors[ input.name ]
+                else:
+                    incoming_value = incoming.get( key, None )
+                    if incoming_value == 'None' and isinstance( input, SelectToolParameter ) and input.is_dynamic:
+                        # FIXME: This is a HACK, but is necessary because the
+                        # values in incoming are not yet set by the user when
+                        # the select list is dynamically generated.
+                        legal_values = input.get_legal_values( trans, context )
+                        if len( legal_values ) > 0 and incoming_value not in legal_values:
+                            values = []
+                            for v in legal_values: values.append( v )
+                            values.sort()
+                            incoming_value = values[0]
+                    value, error = self.check_param( trans, input, incoming_value, context )
+                    if error:
+                        errors[ input.name ] = error
+                    state[ input.name ] = value
         return errors
             
     def check_param( self, trans, param, incoming_value, param_values ):
