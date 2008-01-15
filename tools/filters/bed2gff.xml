@@ -1,6 +1,6 @@
 <tool id="bed2gff1" name="BED-to-GFF">
   <description>converter</description>
-  <command interpreter="perl">bed2gff.pl $input > $out_file1</command>
+  <command interpreter="python2.4">bed_to_gff_converter.py $input $out_file1</command>
   <inputs>
     <param format="bed" name="input" type="data" label="Convert this query"/>
   </inputs>
@@ -10,7 +10,7 @@
   <tests>
     <test>
       <param name="input" value="1.bed"/>
-      <output name="out_file1" file="cf-bed2gff.dat"/>
+      <output name="out_file1" file="bed2gff_out.gff"/>
     </test>
   </tests>
   <help>

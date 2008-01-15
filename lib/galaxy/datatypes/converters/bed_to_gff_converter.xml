@@ -1,15 +1,13 @@
 <tool id="CONVERTER_bed_to_gff_0" name="Convert BED to GFF">
-<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="perl">bed2gff.pl $input1 > $output1</command>
+  <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <!-- Used on the metadata edit page. -->
+  <command interpreter="python2.4">bed_to_gff_converter.py $input1 $output1</command>
   <inputs>
-    <page>
-        <param format="bed" name="input1" type="data" label="Choose BED file"/>
-    </page>
-   </inputs>
+    <param format="bed" name="input1" type="data" label="Choose BED file"/>
+  </inputs>
   <outputs>
     <data format="gff" name="output1"/>
   </outputs>
   <help>
   </help>
-<!--  <code file="bed_to_gff_converter_code.py"/>-->
 </tool>
