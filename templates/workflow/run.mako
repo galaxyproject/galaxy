@@ -31,10 +31,10 @@ from galaxy.tools.parameters import DataToolParameter
             <div class="repeat-group-item">
             <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
             ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(i) + "|", step )}
-            <div class="form-row"><input type="submit" name="${prefix}${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}" /></div>
+            <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}" /></div>
             </div>
           %endfor
-          <div class="form-row"><input type="submit" name="${prefix}${input.name}_add" value="Add new ${input.title}" /></div>
+          <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_add" value="Add new ${input.title}" /></div>
       </div>
     %elif input.type == "conditional":
       <% group_values = values[input.name] %>
@@ -60,7 +60,7 @@ from galaxy.tools.parameters import DataToolParameter
         <div>
             %if isinstance( param, DataToolParameter ):
                 %if step.input_connections[ prefix + param.name ] is None:
-                    ${param.get_html_field( t, dict(), dict() ).get_html( prefix )}
+                    ${param.get_html_field( t, dict(), dict() ).get_html( str(step.id) + "|" + prefix )}
                 %else:
                     <% id, name = step.input_connections[ prefix + param.name ] %>
                     Output dataset '${name}' from step ${int(id)+1}
@@ -79,14 +79,20 @@ from galaxy.tools.parameters import DataToolParameter
 </%def>
 
 <body>
-    %for step in steps:
+    <h2>Running workflow "${workflow.name}"</h2>
+    <form method="POST">
+    ## <input type="hidden" name="workflow_name" value="${workflow.name | h}" />
+    <input type="submit" value="Run workflow" />
+    %for i, step in enumerate( steps ):
         <% tool = app.toolbox.tools_by_id[step.tool_id] %>
+        <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
         <div class="toolForm">
-            <div class="toolFormTitle">${int(step.id) + 1}: ${tool.name}</div>
+            <div class="toolFormTitle">Step ${i+1}: ${tool.name}</div>
             <div class="toolFormBody">
-                ${do_inputs( tool.inputs, step.state.inputs, dict(), "", step )}
+                ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
             </div>
         </div>
         
     %endfor
+    </form>
 </body>

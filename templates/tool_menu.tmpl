@@ -100,6 +100,26 @@ div#footer {
       </div>
    </div>
 #end for
+
+## Link to workflow management. The location of this may change, but eventually
+## at least some workflows will appear here (the user should be able to
+## configure which of their stored workflows appear in the tools menu). 
+
+#if $app.config.enable_beta_features
+    <div class="toolSectionPad"></div>
+    <div class="toolSectionPad"></div>
+    <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+      <span>Workflow <i>(beta)</i></span>
+    </div>
+    <div id="XXinternalXXworkflow" class="toolSectionBody">
+      <div class="toolSectionBg">
+            <div class="toolTitle">
+                <a href="${h.url_for( controller='workflow', action='index' )}" target="galaxy_main">Manage</a> workflows
+            </div>
+      </div>
+    </div>
+#end if
+
 </div>
 
 </div>

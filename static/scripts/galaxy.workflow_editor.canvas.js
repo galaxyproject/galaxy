@@ -282,7 +282,7 @@ function Workflow() {
 }
 $.extend( Workflow.prototype, {
     add_node : function( node ) {
-        node.id = String( this.id_counter );
+        node.id = this.id_counter;
         this.id_counter++;
         this.nodes[ node.id ] = node;
         this.has_changes = true;
@@ -336,7 +336,7 @@ $.extend( Workflow.prototype, {
             if ( step.position ) {
                 node.element.css( { top: step.position.top, left: step.position.left } );
             }
-            node.id = id;
+            node.id = step.id;
             wf.nodes[ node.id ] = node;
             max_id = Math.max( max_id, parseInt( id ) )
         });

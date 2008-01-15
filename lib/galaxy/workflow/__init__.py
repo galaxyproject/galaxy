@@ -10,29 +10,40 @@ class Workflow( object ):
         self.node_order = None
         
     @staticmethod
-    def from_simple( data ):
+    def from_simple( data, app, decode_inputs=True ):
         """
         Create from simple (list/dict only) representation
+        
+        FIXME: This understands data both as it is passed from the web
+               interface and as it is encoded in the database, messy?
         """
         workflow = Workflow()
         workflow.has_errors = False
         for id, step_data in data['steps'].iteritems():
-            step = WorkflowStep.from_simple( step_data )
+            step = WorkflowStep.from_simple( step_data, app, decode_inputs )
             if step.has_errors:
                 workflow.has_errors = True
             workflow.steps[ int(id) ] = step
+        # If reading from the database, we will also have these fields
+        if 'has_errors' in data:
+            assert workflow.has_errors == data['has_errors']
+        if 'has_cycles' in data:
+            workflow.has_cycles = data['has_cycles']
+        if 'node_order' in data:
+            workflow.node_order = data['node_order']
         return workflow
     
-    def to_simple( self ):
+    def to_simple( self, app ):
         """
         Convert to simple (list/dict only) representation
         """
         steps = {}
         for id, step in self.steps.iteritems():
-            steps[ id ] = step.to_simple()
+            steps[ id ] = step.to_simple( app )
         return dict( steps=steps,
                      has_cycles=self.has_cycles,
-                     has_errors=self.has_errors )
+                     has_errors=self.has_errors,
+                     node_order=self.node_order )
 
     def edge_list( self ):
         edges = []
@@ -53,8 +64,6 @@ class Workflow( object ):
         edges = self.edge_list()
         try:
             node_order = topsort( edges )
-            #node_order_set = set( node_order )
-            #node_order.extend( [ id for id in all_ids if id not in node_order ] )
             self.node_order = node_order
             return self.node_order
         except CycleError:
@@ -81,12 +90,15 @@ class WorkflowStep( object ):
         self.position = None
 
     @staticmethod
-    def from_simple( data ):
+    def from_simple( data, app, decode_inputs=True ):
         step = WorkflowStep()
-        step.id = data['id']
+        step.id = int( data['id'] )
         step.tool_id = data['tool_id']
         step.has_errors = data['has_errors']
         step.tool_inputs = data['tool_inputs']
+        # Decode inputs *if* neccesary (HACK)
+        if decode_inputs:
+            step.tool_inputs = app.toolbox.tools_by_id[ step.tool_id ].params_from_strings( step.tool_inputs, app )
         # Position
         step.position = data.get( 'position', None )
         # Connections
@@ -97,16 +109,18 @@ class WorkflowStep( object ):
                 step.input_connections[ input_name ] = ( conn['node_id'], conn['output_name' ] )
         return step
     
-    def to_simple( self ):
+    def to_simple( self, app ):
         input_connections = {}
         for name, conn in self.input_connections.iteritems():
             if conn is None:
                 input_connections[ name ] = None
             else:
                 input_connections[ name ] = dict( node_id = conn[0], output_name = conn[1] )
+        # Convert input values to simple representation
+        tool_inputs = app.toolbox.tools_by_id[ self.tool_id ].params_to_strings( self.tool_inputs, app )
         return dict( id = self.id,
                      tool_id = self.tool_id,
                      has_errors = self.has_errors,
-                     tool_inputs = self.tool_inputs,
+                     tool_inputs = tool_inputs,
                      position = self.position,
                      input_connections = input_connections )

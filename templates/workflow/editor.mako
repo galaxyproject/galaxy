@@ -91,7 +91,10 @@ $( function() {
     
     $(document).ajaxError( function ( e, x ) {
         // console.error( "AJAX:", e, ", ", x );
-        $("#error-display").html( x.responseText ).show();
+        $("#error-display").empty()
+            .append( $("<div/>").html( x.responseText ) )
+            .append( $("<div><a>close</a></div>" ).click( function() { $("#error-display").hide(); } ) )
+            .show();
         return false;
     });
     

@@ -72,6 +72,15 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
+    
+    @property
+    def sa_session( self ):
+        """
+        Returns a SQLAlchemy session -- currently just gets the current
+        session from the threadlocal session context, but this is provided
+        to allow migration toward a more SQLAlchemy 0.4 style of use.
+        """
+        return self.app.model.context.current
         
     def log_event( self, message, tool_id=None, **kwargs ):
         """

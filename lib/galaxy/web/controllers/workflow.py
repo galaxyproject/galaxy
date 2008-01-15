@@ -13,6 +13,15 @@ class WorkflowController( BaseController ):
     beta = True
     
     @web.expose
+    def index( self, trans ):
+        user = trans.get_user()
+        if not user:
+            return trans.show_error_message( "You must be logged in to use <b>Galaxy</b> workflows." )
+        workflows = trans.sa_session.query( model.StoredWorkflow ).filter_by( user = user )
+        return trans.fill_template( "workflow/index.mako",
+                                    workflows = workflows )
+    
+    @web.expose
     def editor( self, trans, workflow_name=None ):
         user = trans.get_user()
         if not user:
@@ -69,7 +78,7 @@ class WorkflowController( BaseController ):
         for key, node in nodes.iteritems():
             decode_state( node, trans.app )
         # Create workflow from json data
-        workflow = Workflow.from_simple( data )
+        workflow = Workflow.from_simple( data, trans.app, decode_inputs=False )
         workflow.order_nodes()
         # Store it
         stored = model.StoredWorkflow.get_by( user = user, name = workflow_name )
@@ -77,7 +86,7 @@ class WorkflowController( BaseController ):
             stored = model.StoredWorkflow()
             stored.user = user
             stored.name = workflow_name
-        stored.encoded_value = simplejson.dumps( workflow.to_simple() )
+        stored.encoded_value = simplejson.dumps( workflow.to_simple( trans.app ) )
         stored.flush()
         # Return something informative
         errors = []
@@ -99,15 +108,20 @@ class WorkflowController( BaseController ):
         trans.workflow_building_mode = True
         # Load encoded workflow from database
         stored = model.StoredWorkflow.get_by( user = user, name = workflow_name )
-        data = simplejson.loads( stored.encoded_value )
+        # FIXME: This is a mess (encode/decoded states and inputs are all over
+        #        the place). Fix with more structured database representation.
+        workflow = Workflow.from_simple( simplejson.loads( stored.encoded_value ), trans.app )
+        data = workflow.to_simple( trans.app )
         # For each step, rebuild the form and encode the state
         for step in data['steps'].values():
+            step_id = step['id']
+            # Load tool
             tool_id = step['tool_id']
             tool = trans.app.toolbox.tools_by_id[tool_id]
-            # Build a state from the tool_inputs dict
-            inputs = step['tool_inputs']
+            # Build a state from the tool_inputs dict (need to get this from
+            # the unsimplified Workflow instance since state expects unencoded)
             state = DefaultToolState()
-            state.inputs = inputs
+            state.inputs = workflow.steps[ step_id ].tool_inputs
             # Replace state in dict with encoded version
             step['tool_state'] = state.encode( tool, trans.app )
             del step['tool_inputs']
@@ -202,7 +216,8 @@ class WorkflowController( BaseController ):
                 workflow.steps[ step_id ] = step
             # Try to order the nodes
             workflow.order_nodes()
-            # And let's try to set up some reasonable locations
+            # And let's try to set up some reasonable locations on canvas
+            # (these are pretty arbitrary values)
             levorder = workflow.order_nodes_levels()
             base_pos = 2510
             for i, steps_at_level in enumerate( levorder ):
@@ -216,42 +231,86 @@ class WorkflowController( BaseController ):
                 stored = model.StoredWorkflow()
                 stored.user = user
                 stored.name = workflow_name
-            stored.encoded_value = simplejson.dumps( workflow.to_simple() )
+            stored.encoded_value = simplejson.dumps( workflow.to_simple( trans.app ) )
             stored.flush()
             # 
             return trans.show_ok_message( "Workflow '%s' created.<br/><a target='_top' href='%s'>Click to load in workflow editor</a>"
                 % ( workflow_name, web.url_for( action='editor', workflow_name=workflow_name ) ) )       
         
     @web.expose
-    def run( self, trans, workflow_name ):
+    def run( self, trans, workflow_name, **kwargs ):
         user = trans.get_user()
-        trans.workflow_building_mode = True
+        ## trans.workflow_building_mode = True
         # Load encoded workflow from database
-        stored = model.StoredWorkflow.get_by( user = user, name = workflow_name )
-        workflow = Workflow.from_simple( simplejson.loads( stored.encoded_value ) )
+        stored = trans.sa_session.query( model.StoredWorkflow ).get_by( user = user, name = workflow_name )
+        if not stored:
+            return trans.show_error_message( "No workflow named '%s'" % workflow_name )
+        workflow = Workflow.from_simple( simplejson.loads( stored.encoded_value ), trans.app )
         if workflow.has_cycles:
             return trans.show_error_message(
                 "Workflow cannot be run because it contains cycles" )
         if workflow.has_errors:
             return trans.show_error_message(
                 "Workflow cannot be run because of validation errors in some steps" )
-        inputs = []
-        # Ensure node_order is set
-        workflow.order_nodes()
-        # Prepare steps for template
+        # Construct the list of steps
         steps = []
         for step_id in workflow.node_order:
             step = workflow.steps[ step_id ]
             steps.append( step )
-            # Build a tool state for the step
-            state = DefaultToolState()
-            state.inputs = step.tool_inputs
-            # Store state with the step
-            step.state = state
+        # Build the state for each step
+        if kwargs:
+            # If kwargs were provided, the states for each step should have
+            # been POSTed
+            errors = {}
+            for step in steps:
+                # Extract just the arguments for this step by prefix
+                p = "%s|" % step.id
+                l = len(p)
+                step_args = dict( ( k[l:], v ) for ( k, v ) in kwargs.iteritems() if k.startswith( p ) )
+                # Get the tool
+                tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
+                # Get the state
+                state = DefaultToolState()
+                state.decode( step_args.pop("tool_state"), tool, trans.app )
+                step.state = state
+                # Get old errors
+                old_errors = state.inputs.pop( "__errors__", {} )
+                # Update the state
+                step_errors = tool.update_state( trans, tool.inputs, step.state.inputs, step_args,
+                                                 update_only=True, old_errors=old_errors )
+                if step_errors:
+                    errors[step.id] = state.inputs["__errors__"] = step_errors
+            if not errors:
+                # Run each step, connecting outputs to inputs
+                outputs = {}
+                for step in steps:
+                    tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
+                    inputs = step.state.inputs
+                    # Connect up 
+                    for name, conn in step.input_connections.iteritems():
+                        if conn:
+                            other_id, other_name = conn
+                            inputs[name] = outputs[other_id][other_name]                    
+                    outputs[ step.id ] = tool.execute( trans, step.state.inputs )
+                return trans.fill_template( "workflow/run_complete.mako",
+                                            workflow=stored,
+                                            outputs=outputs )
+        else:
+            for step in steps:
+                # Build a new tool state for the step
+                state = DefaultToolState()
+                state.inputs = step.tool_inputs
+                # Store state with the step
+                step.state = state
+            # Don't show any errors on the first load -- we can assume this
+            # at the moment since we don't allow running workflows with errors
+            errors = {}
+        # Render the form
         return trans.fill_template(
                     "workflow/run.mako", 
-                    steps=steps )
-            
+                    steps=steps,
+                    workflow=stored,
+                    errors=errors )
         
 ## ---- Utility methods -------------------------------------------------------
         
@@ -271,15 +330,15 @@ def decode_state( data, app ):
     data['tool_inputs'] = state.inputs
     del data['tool_state']
     
-def encode_state( data, app ):
-    """
-    tool_state --> tool_inputs
-    """
-    tool = app.toolbox.tools_by_id[ data['tool_id'] ]
-    state = DefaultToolState()
-    state.inputs = data['tool_inputs']
-    data['tool_state'] = state.encode( tool, app )
-    del data['tool_inputs']
+#def encode_state( data, app ):
+#    """
+#    tool_state --> tool_inputs
+#    """
+#    tool = app.toolbox.tools_by_id[ data['tool_id'] ]
+#    state = DefaultToolState()
+#    state.inputs = data['tool_inputs']
+#    data['tool_state'] = state.encode( tool, app )
+#    del data['tool_inputs']
     
 def get_job_dict( trans ):
     """
