@@ -266,33 +266,10 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
-    # MySQL hacking, doesn't support passive defaults for anything but TIMESTAMP
-    if url.startswith( "mysql" ):
-        for table in metadata.tables.values():
-            if table.columns.has_key( "create_time" ):
-                table.columns['create_time'].type = TIMESTAMP()
-            if table.columns.has_key( "update_time" ):
-                table.columns['update_time'].type = TIMESTAMP()
-        metadata.connect( url, **engine_options )
-    # Connect the metadata to the database. 
-    elif url.startswith( "postgresql:///" ): 
-        import psycopg
-        try:
-            dbconn = url.split('///')
-            dbtype = dbconn[0]
-            dbname = dbconn[1]
-            def connect():
-                connection = psycopg.connect( 'dbname=%s' %dbname )
-                connection.set_isolation_level(1)
-                return connection
-            engine = create_engine('%s///' %dbtype, creator=connect)
-            metadata.connect( engine )
-        except:
-            log.exception( "error connecting to database using connection: '%s'." % url )
-            metadata.connect( url, **engine_options )
-    else:
-        engine = create_engine( url, **engine_options )
-        metadata.connect( engine )
+    # Create the database engine
+    engine = create_engine( url, **engine_options )
+    # Connect the metadata to the database.
+    metadata.connect( engine )
     ## metadata.engine.echo = True
     # Create tables if needed
     if create_tables:
