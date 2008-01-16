@@ -52,6 +52,7 @@ class Configuration( object ):
         self.pbs_application_server = kwargs.get('pbs_application_server', "" )
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "" )
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "" )
+        self.pbs_stage_path = kwargs.get('pbs_stage_path', "" )
         self.use_heartbeat = kwargs.get( 'use_heartbeat', False )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,flybase" ).lower().split(",")

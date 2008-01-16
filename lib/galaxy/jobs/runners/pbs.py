@@ -25,6 +25,20 @@ cd %s
 %s
 """
 
+pbs_symlink_template = """#!/bin/sh
+export LC_ALL='%s'
+export PATH='%s'
+export PYTHONPATH='%s'
+for dataset in %s; do
+    dir=`dirname $dataset`
+    file=`basename $dataset`
+    [ ! -d $dir ] && mkdir -p $dir
+    [ ! -e $dataset ] && ln -s %s/$file $dataset
+done
+cd %s
+%s
+"""
+
 class PBSJobState( object ):
     def __init__( self ):
         """
@@ -107,22 +121,8 @@ class PBSJobRunner( object ):
             # separate vars because we need un-munged ofile/efile for collection/cleanup
             pbs_ofile = self.app.config.pbs_application_server + ':' + ofile
             pbs_efile = self.app.config.pbs_application_server + ':' + efile
-            stagein = stageout = ''
-            for input_fname in job_wrapper.get_input_fnames():
-                if os.access(input_fname, os.R_OK):
-                    if stagein != '':
-                        stagein += ','
-                    # pathnames are now absolute
-                    stagein += "%s@%s:%s" % (input_fname, self.app.config.pbs_dataset_server, input_fname)
-            for output_fname in job_wrapper.get_output_fnames():
-                if os.access(output_fname, os.R_OK):
-                    if stageout != '':
-                        stageout += ','
-                    stageout += "%s@%s:%s" % (output_fname, self.app.config.pbs_dataset_server, output_fname)
-                    # also stage in the empty output dataset files so the stageout doesn't fail when the tool outputs nothing
-                    if stagein != '':
-                        stagein += ','
-                    stagein += "%s@%s:%s" % (output_fname, self.app.config.pbs_dataset_server, output_fname)
+            stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames() )
+            stageout = self.get_stage_in_out( job_wrapper.get_output_fnames() )
             job_attrs = pbs.new_attropl(5)
             job_attrs[0].name = pbs.ATTR_o
             job_attrs[0].value = pbs_ofile
@@ -145,7 +145,10 @@ class PBSJobRunner( object ):
             exec_dir = os.getcwd()
 
         # write the job script
-        script = pbs_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], exec_dir, command_line)
+        if self.app.config.pbs_stage_path != '':
+            script = pbs_symlink_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], " ".join(job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames()), self.app.config.pbs_stage_path, exec_dir, command_line)
+        else:
+            script = pbs_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], exec_dir, command_line)
         job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job_name)
         fh = file(job_file, "w")
         fh.write(script)
@@ -314,3 +317,18 @@ class PBSJobRunner( object ):
         log.info( "sending stop signal to worker threads" )
         self.queue.put( self.STOP_SIGNAL )
         log.info( "pbs job runner stopped" )
+
+    def get_stage_in_out( self, fnames ):
+        """Convenience function to create a stagein/stageout list"""
+        stage = ''
+        for fname in fnames:
+            if os.access(fname, os.R_OK):
+                if stage != '':
+                    stage += ','
+                # pathnames are now absolute
+                if self.app.config.pbs_stage_path != '':
+                    stage_name = os.path.join(self.app.config.pbs_stage_path, os.path.split(fname)[1])
+                else:
+                    stage_name = fname
+                stage += "%s@%s:%s" % (stage_name, self.app.config.pbs_dataset_server, fname)
+        return stage
