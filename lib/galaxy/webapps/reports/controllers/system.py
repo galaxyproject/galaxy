@@ -1,15 +1,8 @@
-import sys, sets, string, shutil
-import re, socket
-
-from galaxy import web
-
-from cgi import escape, FieldStorage
-import urllib
 
 import operator, os
 from galaxy.webapps.reports.base.controller import *
 
-import logging, sets, time
+import logging
 log = logging.getLogger( __name__ )
 
 class System( BaseController ):
@@ -23,29 +16,24 @@ class System( BaseController ):
         while True:
             df_line = df_file.readline()
             df_line = df_line.strip()
-            #log.debug("df_line: '%s'" %df_line)
             if df_line:
                 df_line = df_line.lower()
                 if 'filesystem' in df_line or 'proc' in df_line:
                     continue
                 elif is_sym_link:
-                    #log.debug("We have a symlink...")
                     if ':' in df_line and '/' in df_line:
                         mount = df_line
-                        #log.debug("mount: '%s'" %mount)
                     else:
                         try:
                             disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split()
                             break
                         except:
-                            #log.debug("In symlink try, df_line: '%s'" %df_line)
                             pass
                 else:
                     try:
                         file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split()
                         break
                     except:
-                        #log.debug("In 2nd try, df_line: '%s'" %df_line)
                         pass
             else:
                 break # EOF

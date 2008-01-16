@@ -1,61 +1,56 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-
-<head>
-<title>Galaxy Administration</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<link href="$h.url_for('/static/universe.css')" rel="stylesheet" type="text/css" />
-</head>
-
-<body>
-
-<table align="center" width="60%" class="border" cellpadding="5" cellspacing="5">
-   <tr><td>
-      <h3 align="center">Galaxy Administration</h3>
-      #if $msg:
-         <p class="ok_bgr">$msg</p>
-      #end if
-      <p>
-      #set $ulen = len($users)
-      #set $dlen = len($data)
-      <ul>
-         <li>$ulen users</li>
-         <li>$dlen data entries</li>
-         <li>$qsize jobs in the queue</li>
-      </ul>
-      </p>
-   </td></tr>
-   <tr><td>
-      <form method="post" action="admin">
-         <p>Admin password: <input type="password" name="passwd" size="8"> </p>
-         <p>
-         Purge deleted datasets older than <input type="textfield" value="30" size="3" name="purge_days"> days.
-         <button name="action" value="purge">Purge</button>
-         </p>
-#*
-         <p>
-         Delete objects older than <input type="textfield" value="120" size="3" name="days"> days.
-         <button name="action" value="delete">Delete</button>
-         </p>
-*#
-         <p>
-         Delete abandoned histories older than <input type="textfield" value="14" size="3" name="abandon_days"> days.
-         <button name="action" value="abandon">Abandon</button>
-         </p>
-         <p>
-         Reload tool: <select name="tool_id">
-                        #for $i, $section in enumerate( $toolbox.sections )
-                            <optgroup label="$section.name">
-                            #for $t in $section.tools
-                                <option value="$t.id">$t.name</option>
-                            #end for
-                        #end for
-                     </select>
-         <button name="action" value="tool_reload">Reload</button>
-         </p>
-      </form>
-   </td></tr>
-</table>
-
-</body>
+  <head>
+    <title>Galaxy Administration</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+    <link href="$h.url_for('/static/universe.css')" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <table align="center" width="60%" class="border" cellpadding="5" cellspacing="5">
+      <tr>
+        <td>
+          <h3 align="center">Galaxy Administration</h3>
+          #if $msg:
+            <p class="ok_bgr">$msg</p>
+          #end if
+          <p>
+            #set $ulen = len($users)
+            #set $dlen = len($data)
+            <ul>
+              <li>$ulen users</li>
+              <li>$dlen data entries</li>
+              <li>$qsize jobs in the queue</li>
+            </ul>
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <form method="post" action="admin">
+            <p>Admin password: <input type="password" name="passwd" size="8"></p>
+            <p>
+              Purge deleted datasets older than <input type="textfield" value="30" size="3" name="purge_days"> days.
+              <button name="action" value="purge">Purge</button>
+            </p>
+            <p>
+              Delete abandoned histories older than <input type="textfield" value="30" size="3" name="abandon_days"> days.
+              <button name="action" value="abandon">Abandon</button>
+            </p>
+            <p>
+              Reload tool: 
+              <select name="tool_id">
+                #for $i, $section in enumerate( $toolbox.sections )
+                  <optgroup label="$section.name">
+                  #for $t in $section.tools
+                    <option value="$t.id">$t.name</option>
+                  #end for
+                #end for
+              </select>
+              <button name="action" value="tool_reload">Reload</button>
+            </p>
+          </form>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>

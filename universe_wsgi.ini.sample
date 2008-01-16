@@ -35,6 +35,10 @@ job_queue_cleanup_interval = 30
 database_file = database/universe.sqlite
 # You may use a SQLAlchemy connection string to specify an external database instead
 ## database_connection = postgres:///galaxy_test
+## database_engine_option_echo = true
+## database_engine_option_echo_pool = true
+## database_engine_option_pool_size = 10
+## database_engine_option_max_overflow = 20
 
 # Where dataset files are saved
 file_path = database/files
