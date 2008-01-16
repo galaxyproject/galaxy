@@ -41,8 +41,8 @@ def main():
                 m.components = new_components
                 m.score = 0.0 
                 maf_writer.write( m )
-    except:
-        print >> sys.stderr, "Error steping through MAF File"
+    except Exception, e:
+        print >> sys.stderr, "Error steping through MAF File: %s" % e
         sys.exit()
     maf_reader.close()
     maf_writer.close()

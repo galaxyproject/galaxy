@@ -4,16 +4,13 @@
 Read a maf and print the text as a fasta file.
 """
 #Dan Blankenberg
-from __future__ import division
-
-import textwrap
 import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
 
 def __main__():
     print "Restricted to species:", sys.argv[3]
-        
+    
     input_filename = sys.argv[1]
     output_filename = sys.argv[2]
     species = sys.argv[3].split( ',' )
@@ -26,20 +23,16 @@ def __main__():
         
         file_out = open( output_filename, 'w' )
         
-        block_num = -1
-        
-        for i, m in enumerate( maf_reader ):
-            block_num += 1
+        for block_num, block in enumerate( maf_reader ):
             if "None" not in species:
-                m = m.limit_to_species( species )
-            l = m.components
-            if len(l) < num_species and partial == "partial_disallowed": continue
-            for c in l:
-                spec, chrom = maf.src_split( c.src )
+                block = block.limit_to_species( species )
+            if len( block.components ) < num_species and partial == "partial_disallowed": continue
+            for component in block.components:
+                spec, chrom = maf.src_split( component.src )
                 if not spec or not chrom:
-                        spec = chrom = c.src
-                file_out.write( ">" + c.src + "(" + c.strand + "):" + str( c.start ) + "-" + str( c.end ) + "|" + spec + "_" + str( block_num ) + "\n" )
-                file_out.write( c.text + "\n" )
+                        spec = chrom = component.src
+                file_out.write( ">" + component.src + "(" + component.strand + "):" + str( component.start ) + "-" + str( component.end ) + "|" + spec + "_" + str( block_num ) + "\n" )
+                file_out.write( component.text + "\n" )
             file_out.write( "\n" )
         file_in.close()
     except:

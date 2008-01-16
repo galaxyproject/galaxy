@@ -1,7 +1,7 @@
 <tool id="GeneBed_Maf_Fasta2" name="Stitch Gene blocks">
   <description>given a set of coding exon intervals</description>
-  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#genebed_maf_to_fasta.py $dbkey $maf_source_type.species $maf_source_type.maf_file $input1 $out_file1 $maf_source_type.maf_source
-#else:#genebed_maf_to_fasta.py $dbkey $maf_source_type.species $maf_source_type.maf_identifier $input1 $out_file1 $maf_source_type.maf_source
+  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#interval_maf_to_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_file --interval_file=$input1 --output_file=$out_file1 --mafSourceType=$maf_source_type.maf_source --geneBED
+#else:#interval_maf_to_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_identifier --interval_file=$input1 --output_file=$out_file1 --mafSourceType=$maf_source_type.maf_source  --geneBED
 #end if
   </command>
   <inputs>

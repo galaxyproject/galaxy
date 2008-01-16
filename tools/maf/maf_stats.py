@@ -4,54 +4,11 @@
 Reads a list of intervals and a maf. Outputs a new set of intervals with statistics appended.
 """
 
-import sys, tempfile, os
+import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
-import bx.align.maf
 import bx.intervals.io
-import bx.interval_index_file
-import psyco_full
 from numpy import zeros
-
-MAF_LOCATION_FILE = "/depot/data2/galaxy/maf_index.loc"
-
-def maf_index_by_uid( maf_uid ):
-    for line in open( MAF_LOCATION_FILE ):
-        try:
-            #read each line, if not enough fields, go to next line
-            if line[0:1] == "#" : continue
-            fields = line.split('\t')
-            if maf_uid == fields[1]:
-                try:
-                    maf_files = fields[3].replace( "\n", "" ).replace( "\r", "" ).split( "," )
-                    return bx.align.maf.MultiIndexed( maf_files, keep_open = True, parse_e_rows = False )
-                except Exception, e:
-                    raise 'MAF UID (%s) found, but configuration appears to be malformed: %s' % ( maf_uid, e )
-        except:
-            pass
-    return None
-
-#builds and returns (index, index_filename) for specified maf_file
-def build_maf_index( maf_file, species = None ):
-    indexes = bx.interval_index_file.Indexes()
-    try:
-        maf_reader = bx.align.maf.Reader( open( maf_file ) )
-        # Need to be a bit tricky in our iteration here to get the 'tells' right
-        while True:
-            pos = maf_reader.file.tell()
-            block = maf_reader.next()
-            if block is None: break
-            for c in block.components:
-                if species is not None and c.src.split( "." )[0] not in species:
-                    continue
-                indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
-        fd, index_filename = tempfile.mkstemp()
-        out = os.fdopen( fd, 'w' )
-        indexes.write( out )
-        out.close()
-        return ( bx.align.maf.Indexed( maf_file, index_filename = index_filename, keep_open = True, parse_e_rows = False ), index_filename )
-    except:
-        return ( None, None )
-
+import maf_utilities
 
 def __main__():
     maf_source_type = sys.argv.pop( 1 )
@@ -73,13 +30,13 @@ def __main__():
     index = index_filename = None
     if maf_source_type == "user":
         #index maf for use here
-        index, index_filename = build_maf_index( input_maf_filename, species = [dbkey] )
+        index, index_filename = maf_utilities.build_maf_index( input_maf_filename, species = [dbkey] )
         if index is None:
             print >>sys.stderr, "Your MAF file appears to be malformed."
             sys.exit()
     elif maf_source_type == "cached":
         #access existing indexes
-        index = maf_index_by_uid( input_maf_filename )
+        index = maf_utilities.maf_index_by_uid( input_maf_filename )
         if index is None:
             print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( input_maf_filename )
             sys.exit()
@@ -98,35 +55,21 @@ def __main__():
         total_length += ( region.end - region.start )
         coverage = { dbkey: zeros( region.end - region.start, dtype = bool ) }
         
-        blocks = index.get( src, region.start, region.end )
-        for maf in blocks:
+        for block in maf_utilities.get_chopped_blocks_for_region( index, src, region, force_strand='+' ):
             #make sure all species are known
-            for c in maf.components:
+            for c in block.components:
                 spec = c.src.split( '.' )[0]
                 if spec not in coverage: coverage[spec] = zeros( region.end - region.start, dtype = bool )
-            #slice maf by start and end
-            ref = maf.get_component_by_src( src )
-            # If the reference component is on the '-' strand we should complement the interval
-            if ref.strand == '-':
-                maf = maf.reverse_complement()
-                ref = maf.get_component_by_src( src )
-            slice_start = max( region.start, ref.start )
-            slice_end = min( region.end, ref.end )
-            try:
-                maf = maf.slice_by_component( ref, slice_start, slice_end )
-            except:
-                continue
-            ref = maf.get_component_by_src( ref.src )
-            
+            ref = block.get_component_by_src( src )
             #skip gap locations due to insertions in secondary species relative to primary species
-            start_offset = slice_start - region.start
+            start_offset = ref.start - region.start
             num_gaps = 0
             for i in range( len( ref.text.rstrip().rstrip( "-" ) ) ):
                 if ref.text[i] in ["-"]:
                     num_gaps += 1
                     continue
                 #Toggle base if covered
-                for comp in maf.components:
+                for comp in block.components:
                     spec = comp.src.split( '.' )[0]
                     if comp.text and comp.text[i] not in ['-']:
                         coverage[spec][start_offset + i - num_gaps] = True
@@ -149,6 +92,6 @@ def __main__():
             out.write( "%s\t%s\t%.4f\n" % ( spec, species_summary[spec], float( species_summary[spec] ) / total_length ) )
     out.close()
     print "%i regions were processed with a total length of %i." % ( num_region, total_length )
-    if index_filename is not None:
-        os.unlink( index_filename )
+    maf_utilities.remove_temp_index_file( index_filename )
+
 if __name__ == "__main__": __main__()

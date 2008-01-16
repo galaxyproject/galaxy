@@ -29,9 +29,9 @@ def __main__():
             failed_lines.append( str( ctr ) )
             continue
         try:
-            for count, m in enumerate( bx.align.maf.Reader( open( input_maf_filename, 'r' ) ) ):
+            for count, block in enumerate( bx.align.maf.Reader( open( input_maf_filename, 'r' ) ) ):
                 if count == block_wanted:
-                    maf_writer.write( m )
+                    maf_writer.write( block )
                     break
         except:
             print >>sys.stderr, "Your MAF file appears to be malformed."

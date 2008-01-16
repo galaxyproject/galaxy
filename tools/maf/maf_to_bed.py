@@ -3,11 +3,7 @@
 """
 Read a maf and output intervals for specified list of species.
 """
-
-from __future__ import division
-
-import textwrap
-import sys, tempfile, os
+import sys, os
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
 
