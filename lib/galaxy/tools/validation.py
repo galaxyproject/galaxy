@@ -150,13 +150,45 @@ class MetadataValidator( Validator ):
         if value and value.missing_meta():
             raise ValueError( "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes" )
 
+class MetadataInFileColumnValidator( Validator ):
+    """
+    Validator that checks if the value for a dataset's metadata item exists in a file.
+    """
+    @classmethod
+    def from_element( cls, elem ):
+        filename = elem.get( "filename", None )
+        metadata_name = elem.get( "metadata_name", None )
+        metadata_column = int( elem.get( "metadata_column", 0 ) )
+        message = elem.get( "message", "Value for metadata %s was not found in %s." % ( metadata_name, filename ) )
+        split = elem.get( "split", None )
+        line_startswith = elem.get( "line_startswith", None  )
+        return cls( filename, metadata_name, metadata_column, message, split, line_startswith )
+    def __init__( self, filename, metadata_name, metadata_column, message = "Value for metadata not found." , split = None, line_startswith = None ):
+        self.metadata_name = metadata_name
+        self.message = message
+        self.valid_values = []
+        for line in open( filename ):
+            if line_startswith is None or line.startswith( line_startswith ):
+                fields = line.split( split )
+                if metadata_column < len( fields ):
+                    self.valid_values.append( fields[metadata_column] )
+    def validate( self, value, history = None ):
+        if not value: return
+        if hasattr( value, "metadata" ):
+            if str( getattr( value.datatype.metadata_spec, self.metadata_name ).wrap( value.metadata.get( self.metadata_name ), value ) ) in self.valid_values:
+                return
+        raise ValueError( self.message )
+
+
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,
                         in_range=InRangeValidator,
                         length=LengthValidator,
-                        metadata=MetadataValidator )
+                        metadata=MetadataValidator,
+                        dataset_metadata_in_file=MetadataInFileColumnValidator )
                         
 def get_suite():
     """Get unittest suite for this module"""
     import doctest, sys
     return doctest.DocTestSuite( sys.modules[__name__] )
+

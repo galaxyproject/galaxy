@@ -2,7 +2,7 @@
   <description>using coordinates from UNassembled genomes</description>
   <command interpreter="python">twoBitToFa_wrapper.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey "/depot/data2/galaxy/twobit.loc"</command>
   <inputs>
-    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"/>
+    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"><validator type="dataset_metadata_in_file" filename="/depot/data2/galaxy/twobit.loc" metadata_name="dbkey" metadata_column="0" message="Sorry, sequences are not currently available for the specified genome. You may want to try the 'Extract genomic DNA using coordinates from assembled genomes' tool." /></param>
   </inputs>
   <outputs>
     <data format="fasta" name="out_file1" />

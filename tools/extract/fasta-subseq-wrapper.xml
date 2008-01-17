@@ -2,7 +2,7 @@
   <description>using coordinates from assembled genomes</description>
   <command interpreter="perl">fasta-subseq-wrapper.pl -i $input -o $out_file1 -p $input_chromCol $input_startCol $input_endCol $input_strandCol -g $dbkey -f $out_format</command>
   <inputs>
-    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"/>
+    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"><validator type="dataset_metadata_in_file" filename="/depot/data2/galaxy/alignseq.loc" metadata_name="dbkey" metadata_column="1" message="Sorry, sequences are not currently available for the specified genome. You may request them via email." split=" " line_startswith = "seq" /></param>
 	<param name="out_format" type="select" label="Output Type">
 	<option value="0">FASTA</option>
 	<option value="1">Interval</option>
