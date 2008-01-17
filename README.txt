@@ -46,25 +46,9 @@ Optimized  Namemapper: True|False
 
 will tell you whether the optimized Cheetah template was loaded (or not).
 
-The log message:
-
-database type: dbhash|....
-
-will tell you what kind of underlying database is the server using. Dbhash 
-stands for the BerkleyDB. The server should work fine with other libraries 
-as well but BerkleyDB is provides the most reliable and efficient storage.
-
 TOOL DEVELOPMENT
 ================
 
 See the wiki pages for more details:
 
 http://g2.bx.psu.edu
-
-
-CREATING A RELEASE
-==================
-
-type:
-
-python setup.py sdist 
