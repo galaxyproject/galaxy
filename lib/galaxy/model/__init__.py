@@ -5,7 +5,7 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import os.path
+import os.path, os, errno
 import sha
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
@@ -200,7 +200,21 @@ class Dataset( object ):
     def get_file_name( self ):
         if self.filename_id is None:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
+            # First try filename directly under file_path
             filename = os.path.join( self.file_path, "dataset_%d.dat" % self.id )
+            # Only use that filename if it already exists (backward compatibility),
+            # otherwise construct hashed path
+            if not os.path.exists( filename ):
+                dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
+                # Create directory if it does not exist
+                try:
+                    os.makedirs( dir )
+                except OSError, e:
+                    # File Exists is okay, otherwise reraise
+                    if e.errno != errno.EEXIST:
+                        raise
+                # Return filename inside hashed directory
+                return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
         else:
             filename = self.dataset_file.filename
         # Make filename absolute
@@ -447,3 +461,18 @@ class StoredWorkflow( object ):
         self.user = None
         self.name = None
         self.encoded_value = None
+
+## ---- Utility methods -------------------------------------------------------
+
+def directory_hash_id( id ):
+    s = str( id )
+    l = len( s )
+    # Shortcut -- ids 0-999 go under ../000/
+    if l < 4:
+        return [ "000" ]
+    # Pad with zeros until a multiple of three
+    padded = ( ( 3 - len( s ) % 3 ) * "0" ) + s
+    # Drop the last three digits -- 1000 files per directory
+    padded = padded[:-3]
+    # Break into chunks of three
+    return [ padded[i*3:(i+1)*3] for i in range( len( padded ) // 3 ) ]
