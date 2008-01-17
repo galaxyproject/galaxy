@@ -170,24 +170,30 @@ class IntegerToolParameter( TextToolParameter ):
     >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
-    ValueError: The settings for this field require a 'value' setting which contains an integer.
+    ValueError: An integer is required
     """
+    def __init__( self, tool, elem ):
+        TextToolParameter.__init__( self, tool, elem )
+        if self.value:
+            try:
+                int( self.value )
+            except:
+                raise ValueError( "An integer is required" )
+        elif self.value is None:
+            raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be an integer" )
     def from_html( self, value, trans=None, other_values={} ):
         try: 
             return int( value )
         except: 
-            raise ValueError( "The settings for this field require a 'value' setting which contains an integer." )
+            raise ValueError( "An integer is required" )
     def to_python( self, value, app ):
-        try:
-            return int( value )
-        except:
-            raise ValueError( "The settings for this field require a 'value' setting which contains an integer." )
+        return int( value )
     def get_initial_value( self, trans, context ):
-        try:
+        if self.value:
             return int( self.value )
-        except:
-            raise ValueError( "The settings for this field require a 'value' setting which contains an integer." )
-
+        else:
+            return 0
+            
 class FloatToolParameter( TextToolParameter ):
     """
     Parameter that takes a real number value.
@@ -202,23 +208,29 @@ class FloatToolParameter( TextToolParameter ):
     >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
-    ValueError: The settings for this field require a 'value' setting which contains a real number.
+    ValueError: A real number is required
     """
+    def __init__( self, tool, elem ):
+        TextToolParameter.__init__( self, tool, elem )
+        if self.value:
+            try:
+                float( self.value )
+            except:
+                raise ValueError( "A real number is required" )
+        elif self.value is None:
+            raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be a real number" )
     def from_html( self, value, trans=None, other_values={} ):
         try: 
             return float( value )
         except: 
-            raise ValueError( "The settings for this field require a 'value' setting which contains a real number." )
+            raise ValueError( "A real number is required" )
     def to_python( self, value, app ):
-        try:
-            return float( value )
-        except:
-            raise ValueError( "The settings for this field require a 'value' setting which contains a real number." )
+        return float( value )
     def get_initial_value( self, trans, context ):
         try:
             return float( self.value )
         except:
-            raise ValueError( "The settings for this field require a 'value' setting which contains a real number." )
+            return float( 0 )
 
 class BooleanToolParameter( ToolParameter ):
     """
