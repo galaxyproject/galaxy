@@ -24,6 +24,9 @@ import mako.lookup
 pkg_resources.require( "simplejson" )
 import simplejson
 
+import logging
+log = logging.getLogger( __name__ )
+
 url_for = base.routes.url_for
 
 def expose( func ):
@@ -193,9 +196,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
     user = property( get_user, set_user )
     
     def get_galaxy_session( self, create=False ):
-        """
-        Return the current user's galaxy_session.
-        """
+        # Return the current user's galaxy_session.
         if self.__galaxy_session is NOT_SET:
             id = self.get_cookie( name='universe_session' )
             if not id:
@@ -207,9 +208,20 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         return self.__galaxy_session
     
     def new_galaxy_session( self ):
+        # Create a new galaxy_session, retrieving the user's most recently updated history
         galaxy_session = self.app.model.GalaxySession()
         if self.user is not None:
             galaxy_session.user_id = self.user.id
+            if self.user.histories:
+                history_id = None
+                update_time = None
+                for history in self.user.histories:
+                    if history_id is None or history.update_time > update_time:
+                        history_id = history.id
+                        update_time = history.update_time
+                history = self.app.model.History.get( history_id )
+                if history is not None:
+                    self.history = history
         galaxy_session.remote_host = self.request.remote_host
         galaxy_session.remote_addr = self.request.remote_addr
         try:
@@ -222,11 +234,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.set_cookie( name='universe_session', value=galaxy_session.id )
         self.__galaxy_session = galaxy_session
         return self.__galaxy_session
-    
+
     def set_galaxy_session( self, galaxy_session ):
-        """
-        Set the current galaxy_session by setting the universe_session cookie.
-        """
+        # Set the current galaxy_session by setting the universe_session cookie.
         if galaxy_session is None:
             #TODO we may want to raise an exception here instead of creating a new galaxy_session
             galaxy_session = self.new_galaxy_session()
@@ -240,8 +250,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
     def galaxy_session_is_valid( self ):
         # TODO do we want better validation here?
         valid = False
-        a_galaxy_session = self.get_galaxy_session()
-        if a_galaxy_session is not None and a_galaxy_session.id is not None:
+        galaxy_session = self.get_galaxy_session()
+        if galaxy_session is not None and galaxy_session.id is not None:
             valid = True
         return valid
 
@@ -250,9 +260,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             self.new_galaxy_session()
 
     def end_galaxy_session( self ):
-        """
-        End the current galaxy_session by expiring the universe_session cookie.
-        """
+        # End the current galaxy_session by expiring the universe_session cookie.
         if self.galaxy_session_is_valid():
             self.set_cookie( name='universe_session', value=self.galaxy_session.id, age=0 )
             self.__galaxy_session = None

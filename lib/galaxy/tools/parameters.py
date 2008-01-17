@@ -170,7 +170,7 @@ class IntegerToolParameter( TextToolParameter ):
     >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
-    ValueError: An integer is required
+    ValueError: The settings for this field require a 'value' setting which contains an integer.
     """
     def from_html( self, value, trans=None, other_values={} ):
         try: 
@@ -202,7 +202,7 @@ class FloatToolParameter( TextToolParameter ):
     >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
-    ValueError: A real number is required
+    ValueError: The settings for this field require a 'value' setting which contains a real number.
     """
     def from_html( self, value, trans=None, other_values={} ):
         try: 

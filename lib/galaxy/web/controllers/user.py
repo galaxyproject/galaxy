@@ -90,13 +90,10 @@ class User( BaseController ):
             else:
                 trans.set_user( user )
                 trans.ensure_valid_galaxy_session()
-                """
-                Associate user with galaxy_session and history
-                """
+                # Associate user with galaxy_session and history
                 trans.make_associations()
                 trans.log_event( "User logged in" )
-                return trans.show_ok_message( "Now logged in as " + user.email, \
-                    refresh_frames=['masthead', 'history'] )
+                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
         return trans.show_form( 
             web.FormBuilder( "/user/login", "Login", submit_text="Login" )
                 .add_text( "email", "Email address", value=email, error=email_error )
@@ -111,8 +108,7 @@ class User( BaseController ):
             trans.set_history( None )
         trans.set_user( None )
         trans.end_galaxy_session()
-        return trans.show_ok_message( "You are no longer logged in", \
-            refresh_frames=['masthead', 'history'] )
+        return trans.show_ok_message( "You are no longer logged in", refresh_frames=['masthead', 'history'] )
             
     @web.expose
     def create( self, trans, email='', password='', confirm='',subscribe=False ):
