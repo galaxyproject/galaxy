@@ -59,6 +59,7 @@ def setup():
                                    database_connection = database_connection,
                                    file_path = file_path,
                                    tool_config_file = "tool_conf.xml.sample",
+                                   datatype_converters_config_file = "datatype_converters_conf.xml",
                                    tool_path = "tools",
                                    test_conf = "test.conf",
                                    log_destination = "stdout",
