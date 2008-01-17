@@ -27,6 +27,9 @@
     <tool file="encode/gencode_partition.xml" />
     <tool file="encode/random_intervals.xml" />
   </section>
+  <section name="LiftOver" id="liftOver">
+    <tool file="extract/liftOver_wrapper.xml" />
+  </section>
   <section name="Text Manipulation" id="textutil">
     <tool file="filters/fixedValueColumn.xml" />
     <tool file="stats/column_maker.xml" />

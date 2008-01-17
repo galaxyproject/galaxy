@@ -1,0 +1,52 @@
+<tool id="liftOver1" name="Convert genome coordinates">
+  <description> between assemblies and genomes</description>
+  <command interpreter="python">liftOver_wrapper.py $input "$out_file1" "$out_file2" $dbkey $to_dbkey</command>
+  <inputs>
+    <param format="bed" name="input" type="data" label="Convert coordinates of"/>
+    <param name="to_dbkey" type="genomebuild" label="To" />
+  </inputs>
+  <outputs>
+    <data format="bed" name="out_file1" />
+    <data format="bed" name="out_file2" />
+  </outputs>
+  <!--
+  <tests>
+    <test>
+      <param name="input" value="5.bed" dbkey="hg18" ftype="bed" />
+      <param name="to_dbkey" value="panTro2" />
+      <output name="out_file1" file="5_liftover_mapped.bed"/>
+      <output name="out_file2" file="5_liftover_unmapped.bed"/>
+    </test>
+  </tests>
+  -->
+  <help>
+
+.. class:: warningmark
+
+Make sure that the genome build is specified for the input dataset (click the pencil icon if it is not specified).
+
+-----
+
+**What it does**
+
+This tool converts genome coordinates and annotation files between assemblies and genomes. It outputs 2 files, one containing all the mapped coordinates and one containing the unmapped coordinates (if any). 
+
+-----
+
+**Example**
+
+Running this tool to convert the following hg16 intervals into hg18 intervals::
+
+    chrX  85170   112199  AK002185  0  +
+    chrX  110458  112199  AK097346  0  +
+    chrX  112203  121212  AK074528  0  -
+
+will return the following hg18 intervals::
+
+    chrX  132991  160020  AK002185  0  +
+    chrX  158279  160020  AK097346  0  +
+    chrX  160024  169033  AK074528  0  -
+
+</help>
+<code file="liftOver_wrapper_code.py"/>
+</tool>
