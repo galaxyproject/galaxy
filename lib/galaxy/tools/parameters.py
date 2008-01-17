@@ -173,13 +173,21 @@ class IntegerToolParameter( TextToolParameter ):
     ValueError: An integer is required
     """
     def from_html( self, value, trans=None, other_values={} ):
-        try: return int( value )
-        except: raise ValueError( "An integer is required" )
+        try: 
+            return int( value )
+        except: 
+            raise ValueError( "The settings for this field require a 'value' setting which contains an integer." )
     def to_python( self, value, app ):
-        return int( value )
+        try:
+            return int( value )
+        except:
+            raise ValueError( "The settings for this field require a 'value' setting which contains an integer." )
     def get_initial_value( self, trans, context ):
-        return int( self.value )
-            
+        try:
+            return int( self.value )
+        except:
+            raise ValueError( "The settings for this field require a 'value' setting which contains an integer." )
+
 class FloatToolParameter( TextToolParameter ):
     """
     Parameter that takes a real number value.
@@ -197,12 +205,20 @@ class FloatToolParameter( TextToolParameter ):
     ValueError: A real number is required
     """
     def from_html( self, value, trans=None, other_values={} ):
-        try: return float( value )
-        except: raise ValueError( "A real number is required" )
+        try: 
+            return float( value )
+        except: 
+            raise ValueError( "The settings for this field require a 'value' setting which contains a real number." )
     def to_python( self, value, app ):
-        return float( value )
+        try:
+            return float( value )
+        except:
+            raise ValueError( "The settings for this field require a 'value' setting which contains a real number." )
     def get_initial_value( self, trans, context ):
-        return float( self.value )
+        try:
+            return float( self.value )
+        except:
+            raise ValueError( "The settings for this field require a 'value' setting which contains a real number." )
 
 class BooleanToolParameter( ToolParameter ):
     """
