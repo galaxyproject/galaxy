@@ -1,4 +1,4 @@
-<tool name="reads length array" id="length_array_short_reads">
+<tool id="array_of_reads_length" name="Array of Reads Length">
 <description>on sequence file</description>
 
 <command interpreter="python">short_reads_figure_length.py $input1 $output1</command>
@@ -10,7 +10,7 @@
 </inputs>
 
 <outputs>
-  	<data name="output1" format="text" />
+  	<data name="output1" format="tabular" />
 </outputs>
 
 <tests>
@@ -26,19 +26,43 @@
 
 <help>
 
-.. class:: infomark	
+**What it does**
 
-For **Sanger**, **454 or Solexa** sequencing technology only.
+This tool outputs an array of lengths of reads.
+
+Currently, the tool accepts two file formats: 
+
+- fasta: for **454** data
+- tabular: for **Solexa** data. Only take the maximal value from each 4 quality scores.
+
+You can also upload your files in a zip file format and use this tool. 
+To see the distribution, please use the Histogram tool in Graph/Display data.
 
 -----
 
-**What it does**
+**Example**
 
-This tool takes a multi-fasta sequence file and outputs a text file:
+454 data::
 
-- an array of the lengths in the file
+	&gt;EYKX4VC01B65GS length=54 xy=0784_1754 region=1 run=R_2007_11_07_16_15_57_
+	CCGGTATCCGGGTGCCGTGATGAGCGCCACCGGAACGAATTCGACTATGCCGAA
+	&gt;EYKX4VC01BNCSP length=187 xy=0558_3831 region=1 run=R_2007_11_07_16_15_57_
+	CTTACCGGTCACCACCGTGCCTTCAGGATTGATCGCCAGATCGGTCGGTGCGTCAGGCGG
+	GGTGACATCGCCCACCACGGTACTCACTGGCTGGCTCTGGTTCCCGGCGGCATCGGAGGC
+	CACCACGTTGAGGGTATTCCCCTCGGTTTGTGGCTCGGTGAGAACCACGTTGTAGTCGCC
+	ATTGGTC
+	
+Solexa data::
 
-To see the distribution, please use the Histogram tool in Graph/Display data.
+	5	300	902	419	GACTCATGATTTCTTACCTATTAGTGGTTGAACATC
+	5	300	880	431	GTGATATGTATGTTGACGGCCATAAGGCTGCTTCTT
+	5	300	896	461	GTTGTCGATAGAACTTCATGTGCCTGTAAAACAAGT
+	5	300	890	751	ACCAACCAGAACGTGAAAAAGCGTCCTGCGTGTAGC
+	5	300	897	443	GTTTATGTTGGTTTCATGGTTTTGTCTAACTTTATC
+	5	300	906	879	GCTTTACCGTCTTTCCAGAAATTGTTCCAAGTATCG
 
- </help>
+An array of lengths of the reads::
+
+	Please see Graph/Display Data --> Histogram.
+</help>
 </tool>

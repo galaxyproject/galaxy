@@ -1,4 +1,4 @@
-<tool name="trim reads" id="trim_short_reads">
+<tool id="trim_reads" name="Trim Reads">
 <description>based on quality scores</description>
 
 <command interpreter="python">#if $sequencing_method_choice.sequencer=="454":#short_reads_trim_seq.py 454 $trim $length $output1 $input1 $input2
@@ -10,8 +10,8 @@
 <page>
 	<conditional name="sequencing_method_choice">
 		<param name="sequencer" type="select" label="short read sequencing method">
-			<option value="454">fasta</option>
-			<option value="Solexa">tabular</option>
+			<option value="454">454</option>
+			<option value="Solexa">Solexa</option>
 		</param>
 		<when value="454">
 		    <param name="input1" type="data" format="fasta,txtseq.zip" label="Sequence file" />
@@ -52,21 +52,90 @@
 
 <help>
 
-.. class:: infomark	
+.. class:: warningmark 
 
-For **Sanger**, **454 or Solexa** sequencing technology only.
-Either trace file or both of the read file and quality score file must be provided.
-
+ Please select correct sequencing method.
+ 
 -----
 
 **What it does**
 
-This tool takes raw data from sequencing facility and outputs a multi-fasta file:
+This tool takes raw data from sequencing facility and outputs a multi-fasta file.
 
-- trimmed sequences in fasta format; 
+Accept the following two file formats:
+
+- fasta: for **454** data
+- tabular: for **Solexa** data. Only take the maximal value from each 4 quality scores.
 
 If *minimal trimmed length to report* is set to a number larger than zero, the tool ouputs any substrings that are longer than this threshold. 
 If there are more than one substring, the tool outputs all of them in separated fasta format.
 
- </help>
+-----
+
+
+454 data::
+
+	&gt;EYKX4VC01B65GS length=54 xy=0784_1754 region=1 run=R_2007_11_07_16_15_57_
+	CCGGTATCCGGGTGCCGTGATGAGCGCCACCGGAACGAATTCGACTATGCCGAA
+	&gt;EYKX4VC01BNCSP length=187 xy=0558_3831 region=1 run=R_2007_11_07_16_15_57_
+	CTTACCGGTCACCACCGTGCCTTCAGGATTGATCGCCAGATCGGTCGGTGCGTCAGGCGG
+	GGTGACATCGCCCACCACGGTACTCACTGGCTGGCTCTGGTTCCCGGCGGCATCGGAGGC
+	CACCACGTTGAGGGTATTCCCCTCGGTTTGTGGCTCGGTGAGAACCACGTTGTAGTCGCC
+	ATTGGTC
+	
+454 quality score::
+
+	&gt;EYKX4VC01B65GS length=54 xy=0784_1754 region=1 run=R_2007_11_07_16_15_57_
+	33 23 34 25 28 28 28 32 23 34 27 4 28 28 31 21 28 27 27 28 28 28 28 28 28 28 33 23 28 33 
+	24 36 27 31 21 28 28 33 26 33 24 27 28 28 28 28 28 28 28 32 23 28 34 25
+	&gt;EYKX4VC01BNCSP length=187 xy=0558_3831 region=1 run=R_2007_11_07_16_15_57_
+	27 35 26 25 37 28 37 28 25 28 27 36 27 28 36 27 28 28 27 36 27 30 19 27 28 36 28 23 36 27 
+	27 28 27 27 28 37 29 27 26 27 24 24 36 27 26 28 36 28 24 25 21 28 24 28 26 34 25 26 43 36
+	22 9 23 19 28 28 28 28 26 28 39 32 12 27 36 28 28 26 37 28 28 26 28 28 28 27 28 26 36 27 
+	27 27 36 28 27 27 28 28 36 27 36 28 39 32 12 35 28 26 37 29 28 28 28 28 37 29 28 36 28 35
+	26 27 37 29 28 26 28 36 28 26 24 38 32 11 28 26 32 24 36 32 18 2 27 25 33 26 32 28 6 18 
+	22 26 17 15 14 28 20 8 22 21 14 22 26 16 26 16 28 20 22 27 18 27 18 27 28 27 20 25 34 27
+	27 33 25 34 28 8 26
+
+Solexa data::
+
+	5	300	902	419	GACTCATGATTTCTTACCTATTAGTGGTTGAACATC
+	5	300	880	431	GTGATATGTATGTTGACGGCCATAAGGCTGCTTCTT
+
+Solexa quality score::
+
+ 	-40  -40   40  -40	  40  -40  -40  -40	 -40   40  -40  -40	 -40  -40  -40   40	 -40   40  -40  -40	  
+ 	40  -40  -40  -40	 -40  -40  -40   40	 -40  -40   40  -40	  40  -40  -40  -40	 -40  -40  -40   40	 
+ 	-40  -40  -40   40	 -40  -40  -40   40	 -40   40  -40  -40	 -40  -40  -40   40	 -40  -40  -40   40	  
+ 	40  -40  -40  -40	 -40   40  -40  -40	 -40   40  -40  -40	 -40  -40  -40   40	  40  -40  -40  -40	 
+ 	-40  -40  -40   40	 -40  -40  -40   40	  40  -40  -40  -40	 -40  -40   40  -40	 -40  -40  -40   40	 
+ 	-40  -40   40  -40	 -40  -40   40  -40	 -40  -40  -40   40	 -40  -40  -40   40	 -40  -40   40  -40	  
+ 	40  -40  -40  -40	  40  -40  -40  -40	 -40   40  -40  -40	  40  -40  -40  -40	 -40  -40  -15   15	 
+ 	-40   40  -40  -40
+ 	-40  -40   40  -40	 -40  -40  -40   40	 -40  -40   40  -40	  40  -40  -40  -40	 -40  -40  -40   40	  
+ 	40  -40  -40  -40	 -40  -40  -40   40	 -40  -40   40  -40	 -40  -40  -40   40	  40  -40  -40  -40	 
+ 	-40  -40  -40   40	 -40  -40   40  -40	 -40  -40  -40   40	 -40  -40  -40   40	 -40  -40   40  -40	  
+ 	40  -40  -40  -40	  -5    5  -40  -40	 -40  -40   40  -40	 -40  -40   40  -40	 -40   21  -40  -21	 
+ 	-40   40  -40  -40	  40  -40  -40  -40	 -40  -40  -40   40	  40  -40  -40  -40	  12  -40  -40  -12	 
+ 	-36  -40   36  -40	 -40  -40   40  -40	  -4    4  -40  -40	 -40  -40  -40   40	 -40  -40   14  -14	 
+ 	-40   40  -40  -40	 -40  -40  -40   40	 -40  -40  -40   40	 -40   40  -40  -40	 -40  -40  -40   40	 
+ 	-40  -40  -25   25
+
+454 Output::
+
+	&gt;EYKX4VC01BV9R8 length=54 xy=0660_2038 region=1 run=R_2007_11_07_16_15_57_
+	CTATTCAGCAGCACTGCGTT
+	&gt;EYKX4VC01BO0UO length=222 xy=0577_3838 region=1 run=R_2007_11_07_16_15_57_
+	CTGCAGTACCGCTTCTGGCTGCACTATGCCGAAGGCTCGCTGATGCCGCTGCTGTTAATGAAGCTGGTGTTCGCCAGCCTGG
+	
+Solexa Output::
+
+	&gt;15774
+	CTTATCAGAAACGGCAGAAGTGCCAGCCTGCAACGT
+	&gt;15775
+	ATTTGTCTAGGAAATAACCGTCAGGATTGACAC	
+	
+The fasta title will be replaced by a unique number in Solexa output.
+
+</help>
 </tool>

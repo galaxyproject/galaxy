@@ -1,15 +1,10 @@
 #! /usr/bin/python
 """
 Galaxy
-to commit
-4.2 for i, line in enumerate(file(filename)):
-4.4 stop passing read_seqfile and read_scorefile around
-4.5 use --> if __name__ == "__main__": __main__()
-5. use galaxy extention
 Input:
     sequence file(s): zip or text file --> for 454 and Solexa 
 Output:
-    pdf files from R, length histogram --> before and after trim
+    an array of lengths of the reads
 ----
 Wen-Yu Chung
 """
@@ -153,10 +148,12 @@ def generate_hist_figure():
     # write the length only!
     outfile = open(outfile_R_name,'w')
     title_keys = seq_hash.keys()
+    i = 0
     for read_title in title_keys:
+        i += 1
         tmp_seq = seq_hash[(read_title)]
         length_before_trim.append(len(tmp_seq))
-        print >> outfile, len(tmp_seq)
+        print >> outfile,"%d\t%d" %(i, len(tmp_seq))
     outfile.close()
         
     max_length_before_trim = max(length_before_trim)
