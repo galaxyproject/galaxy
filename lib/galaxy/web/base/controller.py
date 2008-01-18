@@ -6,6 +6,7 @@ import os, time, logging
 
 # Pieces of Galaxy to make global in every controller
 from galaxy import config, tools, web, model, util
+from galaxy.web import error
 
 from Cheetah.Template import Template
 
