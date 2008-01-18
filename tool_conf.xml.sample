@@ -298,9 +298,7 @@
     <tool file="emboss_5/emboss_wordmatch.xml" /> 
   </section> -->
   <section name="Metagenomics" id="metagenomics">
-    <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/short_reads_trim_seq.xml" />
-    <tool file="metag_tools/short_reads_figure_score.xml" />
     <tool file="metag_tools/short_reads_figure_length.xml" />
   </section>
 </toolbox>
