@@ -11,16 +11,44 @@
         not be compatible with future updates to <b>Galaxy</b>.
     </div>
     
+    %if message:
+    <%
+        try:
+            messagetype
+        except:
+            messagetype = "done"
+    %>
+    <p/>
+    <div class="${messagetype}message">
+        ${message}
+    </div>
+    %endif
+    
     <h2>Workflow home</h2>
     
-    <p>
-        <a href="${h.url_for( action='editor')}" target="_parent">Create new workflow</a> using
-        the <b>Galaxy</b> workflow editor
-    </p>
-    
+    <div class="toolForm">
+        <div class="toolFormTitle">Create new workflow</div>
+            <div class="toolFormBody">
+                <form action="${h.url_for( action='create' )}" method="POST">
+                    <div class="form-row">
+                        <label>
+                            Name for new workflow
+                        </label>
+                        <div style="float: left; width: 250px; margin-right: 10px;">
+                            <input type="text" name="workflow_name" value="Unnamed workflow" size="40">
+                        </div>
+                        <div style="clear: both"></div>
+                    </div>
+                    <div class="form-row">
+                        <input type="submit" value="Create"></input>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     
     <h2>Stored workflows</h2>
-    
+
     %if workflows:
         <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
             <tr class="header"><td>Name</td><td>Last Updated</td><td>Actions</td></tr>
@@ -29,9 +57,9 @@
                     <td>${workflow.name}</td>
                     <td>${str(workflow.update_time)[:19]}</td>
                     <td>
-                        <a href="${h.url_for( action='run', workflow_name=workflow.name )}">run</a>
-                        | <a href="${h.url_for( action='editor', workflow_name=workflow.name )}" target="_parent">edit</a>
-                        | <a href="${h.url_for( action='delete', workflow_name=workflow.name )}">delete</a>
+                        <a href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">run</a>
+                        | <a href="${h.url_for( action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">edit</a>
+                        | <a href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">delete</a>
                 </tr>    
             %endfor
         </table>

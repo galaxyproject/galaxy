@@ -39,7 +39,7 @@
 /* Dialog and menu handling tools to be moved to galaxy.layout.js */
 
 function hide_modal() {
-    $("#overlay, .dialog-box" ).hide( { method: 'drop', direction: 'up' } );
+    $("#overlay, .dialog-box" ).hide();
 };
 
 function show_modal( title, body, buttons ) {
@@ -60,7 +60,7 @@ function show_modal( title, body, buttons ) {
     $( ".dialog-box" ).find( ".body" ).html( body );
     // $( "#overlay").show();
     if ( ! $(".dialog-box").is( ":visible" ) ) {
-        $("#overlay, .dialog-box").show( {method: 'drop', direction: 'up' } );
+        $("#overlay, .dialog-box").show();
     } else {
         $(".dialog-box").center( "horizontal" );
     }
@@ -98,11 +98,13 @@ $( function() {
         return false;
     });
     
-    make_popupmenu( "#optionsbutton", {
-        "Create <b>new</b> workflow" : create_new_workflow_dialog,
-        "<b>Save</b> current workflow" : save_current_workflow,
-        "<b>Load</b> a stored workflow" : load_workflow
-    });
+    ## make_popupmenu( "#optionsbutton", {
+    ##     "Create <b>new</b> workflow" : create_new_workflow_dialog,
+    ##     "<b>Save</b> current workflow" : save_current_workflow,
+    ##     "<b>Load</b> a stored workflow" : load_workflow
+    ## });
+    
+    $("#savebutton").click( save_current_workflow );
     
     // Unload handler
     window.onbeforeunload = function() {
@@ -113,10 +115,9 @@ $( function() {
 });
 
 function notify() {
-    %if workflow_name:
     $.ajax( {
        url: "${h.url_for( action='load_workflow' )}",
-       data: { workflow_name: "${workflow_name}" },
+       data: { id: "${trans.security.encode_id( workflow_id )}" },
        dataType: 'json',
        success: function( data ) {
             window.frames.canvas.reset();
@@ -127,9 +128,6 @@ function notify() {
             show_modal( "Loading workflow", "progress" );
         }
     });
-    %else:
-    hide_modal();
-    %endif
 };
 
 function show_form_for_tool( text, node ) {
@@ -157,12 +155,14 @@ function show_form_for_tool( text, node ) {
 }
 
 var save_current_workflow = function () {
-    var body = $("#save-dialog-form").clone();
-    if ( workflow.name ) {
-        body.find( "input[name='workflow_name']" ).get(0).value = workflow.name;
-    }
-    body.find( "input[name='workflow_name']" ).get(0).focus();
-    var form = body.find( "form" ).ajaxForm( {
+    show_modal( "Saving workflow", "progress" );
+    $.ajax( {
+        url: "${h.url_for( action='save_workflow' )}",
+        type: "POST",
+        data: {
+            id: "${trans.security.encode_id( workflow_id )}",
+            workflow_data: $.toJSON( workflow.to_simple() )
+        },
         dataType: 'json',
         success: function( data ) { 
             var body = $("<div></div>").text( data.message );
@@ -183,15 +183,8 @@ var save_current_workflow = function () {
                 "Ok" : function () { hide_modal(); }
             });
         },
-        beforeSubmit: function( data ) {
-            data.push( { name: 'workflow_data', value: $.toJSON( workflow.to_simple() ) } );
-            show_modal( "Saving workflow", "progress" );
-        }
+
     });
-    show_modal( "Save workflow", body, {
-        "Cancel" : hide_modal,
-        "Save": function() { form.submit() }
-    } );
 }
 
 var load_workflow = function () {
@@ -327,6 +320,7 @@ div.toolFormRow {
         </div>
 
         <div id="masthead">
+            <div style="float: right; color: black; padding: 3px;"><div class="warningmessagesmall" style="min-height: 15px;">Workflow support is currently in <b><i>beta</i></b></div></div>
             <div class="title"><b>Galaxy workflow editor</div>
             ## <iframe name="galaxy_masthead" src="${h.url_for( controller='root', action='masthead' )}" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
         </div>
@@ -386,7 +380,7 @@ div.toolFormRow {
         <div id="center">
             <div class="unified-panel-header" unselectable="on">
                 <div class="center-block-outer" style="float: right">
-                    <div class="center-block-inner"><div id="optionsbutton" class="button">Options &#9662;</div></div>
+                    <div class="center-block-inner"><div id="savebutton" class="button">Save</div></div>
                 </div>
                 <div class="center-block-outer">
                     <div class="center-block-inner">Workflow canvas</div>

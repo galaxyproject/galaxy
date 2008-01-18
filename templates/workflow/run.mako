@@ -59,11 +59,13 @@ from galaxy.tools.parameters import DataToolParameter
         <label>${param.get_label()}</label>
         <div>
             %if isinstance( param, DataToolParameter ):
-                %if step.input_connections[ prefix + param.name ] is None:
-                    ${param.get_html_field( t, dict(), dict() ).get_html( str(step.id) + "|" + prefix )}
+                %if ( prefix + param.name ) in step.input_connections_by_name:
+                    <%
+                        conn = step.input_connections_by_name[ prefix + param.name ]
+                    %>
+                    Output dataset '${conn.output_name}' from step ${int(conn.output_step.order_index)+1}
                 %else:
-                    <% id, name = step.input_connections[ prefix + param.name ] %>
-                    Output dataset '${name}' from step ${int(id)+1}
+                    ${param.get_html_field( t, dict(), dict() ).get_html( str(step.id) + "|" + prefix )}
                 %endif
             %else:
                 ${param.value_to_display_text( value, app )}
@@ -87,7 +89,7 @@ from galaxy.tools.parameters import DataToolParameter
         <% tool = app.toolbox.tools_by_id[step.tool_id] %>
         <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
         <div class="toolForm">
-            <div class="toolFormTitle">Step ${i+1}: ${tool.name}</div>
+            <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
             <div class="toolFormBody">
                 ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
             </div>

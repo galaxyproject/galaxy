@@ -71,7 +71,7 @@ into a workflow will be shown in gray.</p>
 <form method="post" action="${h.url_for()}">
 <div class='form-row'>
     <label>Workflow name</label>
-    <input name="workflow_name" type="text" value="Unnamed workflow" />
+    <input name="workflow_name" type="text" value="Workflow constructed from history '${history.name}'" size="60"/>
 </div>
 <p><input type="submit" value="Create Workflow" /></p>
 

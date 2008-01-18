@@ -167,9 +167,44 @@ StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", String ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=False ),
-    Column( "encoded_value", String )
+    Column( "latest_workflow_id", Integer,
+            ForeignKey( "workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk' ) ),
+    Column( "name", String ),
+    Column( "deleted", Boolean, default=False ),
+    )
+
+Workflow.table = Table( "workflow", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), nullable=False ),
+    Column( "name", String ),
+    Column( "has_cycles", Boolean ),
+    Column( "has_errors", Boolean )
+    )
+
+WorkflowStep.table = Table( "workflow_step", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), nullable=False ),
+    Column( "external_identifier", Integer ),
+    Column( "tool_id", String ),
+    Column( "tool_version", String ), # Reserved for future
+    Column( "tool_inputs", JSONType ),
+    Column( "tool_errors", JSONType ),
+    Column( "position", JSONType ),
+    Column( "order_index", Integer ),
+    ## Column( "input_connections", JSONType )
+    )
+
+WorkflowStepConnection.table = Table( "workflow_step_connection", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "output_step_id", Integer, ForeignKey( "workflow_step.id" ) ),
+    Column( "input_step_id", Integer, ForeignKey( "workflow_step.id" ) ),
+    Column( "output_name", String ),
+    Column( "input_name", String)
     )
 
 # With the tables defined we can define the mappers and setup the 
@@ -239,11 +274,29 @@ assign_mapper( context, GalaxySessionToHistoryAssociation, GalaxySessionToHistor
     properties=dict( galaxy_session=relation( GalaxySession ), 
                      history=relation( History ) ) )
 
-assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
-    properties=dict( user=relation( User.mapper ) ) )
-                     
 Dataset.mapper.add_property( "creating_job_associations", relation( JobToOutputDatasetAssociation ) )
+
+assign_mapper( context, Workflow, Workflow.table,
+    properties=dict( steps=relation( WorkflowStep, backref='workflow', order_by=asc(WorkflowStep.table.c.order_index), cascade="all, delete-orphan" ) ) )
+
     
+assign_mapper( context, WorkflowStep, WorkflowStep.table )
+
+assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
+    properties=dict( input_step=relation( WorkflowStep, backref="input_connections", cascade="all",
+                                          primaryjoin=( WorkflowStepConnection.table.c.input_step_id == WorkflowStep.table.c.id ) ),
+                     output_step=relation( WorkflowStep, backref="output_connections", cascade="all",
+                                           primaryjoin=( WorkflowStepConnection.table.c.output_step_id == WorkflowStep.table.c.id ) ) ) )
+
+assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
+    properties=dict( user=relation( User ),
+                     workflows=relation( Workflow, backref='stored_workflow',
+                                         cascade="all, delete-orphan",
+                                         primaryjoin=( StoredWorkflow.table.c.id == Workflow.table.c.stored_workflow_id ) ),
+                     latest_workflow=relation( Workflow, post_update=True,
+                                               primaryjoin=( StoredWorkflow.table.c.latest_workflow_id == Workflow.table.c.id ) )
+                   ) )
+
 def db_next_hid( self ):
     """
     Override __next_hid to generate from the database in a concurrency

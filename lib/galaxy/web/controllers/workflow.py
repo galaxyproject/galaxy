@@ -6,35 +6,95 @@ from galaxy.tools.parameters import DataToolParameter
 from galaxy.tools import DefaultToolState
 from galaxy.tools.grouping import Repeat, Conditional
 from galaxy.datatypes.data import Data
-from galaxy.workflow import Workflow, WorkflowStep
 from galaxy.util.odict import odict
+from galaxy.util.topsort import topsort, topsort_levels, CycleError
 
 class WorkflowController( BaseController ):
     beta = True
     
     @web.expose
     def index( self, trans ):
+        """
+        Render workflow main page (management of existing workflows)
+        """
         user = trans.get_user()
         if not user:
-            return trans.show_error_message( "You must be logged in to use <b>Galaxy</b> workflows." )
-        workflows = trans.sa_session.query( model.StoredWorkflow ).filter_by( user = user )
+            return error( "You must be logged in to use <b>Galaxy</b> workflows." )
+        workflows = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, deleted=False ).all()
         return trans.fill_template( "workflow/index.mako",
                                     workflows = workflows )
     
     @web.expose
-    def editor( self, trans, workflow_name=None ):
+    def create( self, trans, workflow_name=None ):
+        """
+        Create a new stored workflow with name `workflow_name`.
+        """
+        user = trans.get_user()
+        if not user:
+            return error( "Must be logged in to create or modify workflows" )
+        if not workflow_name:
+            return error( "Must provide a name for the new workflow" )
+        # Create the new stored workflow
+        stored_workflow = model.StoredWorkflow()
+        stored_workflow.name = workflow_name
+        stored_workflow.user = user
+        # And the first (empty) workflow revision
+        workflow = model.Workflow()
+        workflow.name = workflow_name
+        workflow.stored_workflow = stored_workflow
+        stored_workflow.latest_workflow = workflow
+        # Persist
+        session = trans.sa_session
+        session.save( stored_workflow )
+        session.flush()
+        # Display the management page
+        return self.index( trans )
+    
+    @web.expose
+    def delete( self, trans, id=None ):
+        """
+        Mark a workflow as deleted
+        """        
+        # Load workflow from database
+        stored = get_stored_workflow( trans, id )
+        # Marke as deleted and save
+        stored.deleted = True
+        stored.flush()
+        # Display the management page
+        return self.index( trans )
+        
+        
+    @web.expose
+    def editor( self, trans, id=None ):
+        """
+        Render the main workflow editor interface. The canvas is embedded as
+        an iframe (neccesary for scrolling to work properly), which is
+        rendered by `editor_canvas`.
+        """
+        if not id:
+            return trans.show_error_message( "Invalid workflow id" )
+        id = trans.security.decode_id( id )
         user = trans.get_user()
         if not user:
             return trans.show_error_message( "Must be logged in to create or modify workflows" )
         return trans.fill_template( "workflow/editor.mako",
-                                    workflow_name=workflow_name )
+                                    workflow_id=id )
     
     @web.expose
     def editor_canvas( self, trans ):
+        """
+        Render the workflow editor canvas.
+        """
         return trans.fill_template( "workflow/editor_canvas.mako" )
         
     @web.json
     def editor_tool_form( self, trans, tool_id=None, **incoming ):
+        """
+        Accepts a tool state and incoming values, and generates a new tool
+        form and some additional information, packed into a json dictionary.
+        This is used for the form shown in the right pane when a node
+        is selected.
+        """
         trans.workflow_building_mode = True
         tool = trans.app.toolbox.tools_by_id[tool_id]
         state = DefaultToolState()
@@ -43,12 +103,21 @@ class WorkflowController( BaseController ):
         rval = {}
         rval['form_html'] = trans.fill_template( "workflow/editor_tool_form.mako", 
             tool=tool, as_html=as_html, values=state.inputs, errors=errors )
-        rval['has_errors'] = bool( errors )
+        if errors:
+            rval['tool_errors'] = errors
+        else:
+            rval['tool_errors'] = None
         rval['state'] = state.encode( tool, trans.app )
         return rval
         
     @web.json
     def get_tool_info( self, trans, tool_id ):
+        """
+        Generate a json dictionary containing info about the tool specified by
+        `tool_id`. Info includes data inputs and outputs, html representation
+        of the initial form, and the initial tool state (with default values).
+        This is called asynchronously whenever a new node is added.
+        """
         trans.workflow_building_mode = True
         tool = trans.app.toolbox.tools_by_id[tool_id]
         rval = {}
@@ -68,26 +137,117 @@ class WorkflowController( BaseController ):
             tool=tool, as_html=as_html, values=state.inputs, errors={} )
         rval['tool_state'] = state.encode( tool, trans.app )
         return rval
-        
+                
     @web.json
-    def save_workflow( self, trans, workflow_data, workflow_name ):
+    def load_workflow( self, trans, id ):
         user = trans.get_user()
+        id = trans.security.decode_id( id )
         trans.workflow_building_mode = True
+        # Load encoded workflow from database
+        stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
+        assert stored.user == user
+        workflow = stored.latest_workflow
+        # Pack workflow data into a dictionary and return
+        data = {}
+        data['name'] = workflow.name
+        data['steps'] = {}
+        # For each step, rebuild the form and encode the state
+        for step in workflow.steps:
+            step_dict = {}
+            step_dict['id'] = step_id = step.external_identifier
+            step_dict['tool_id'] = tool_id = step.tool_id
+            # Load tool
+            tool = trans.app.toolbox.tools_by_id[tool_id]
+            # Build a state from the tool_inputs dict
+            state = DefaultToolState()
+            state.inputs = tool.params_from_strings( step.tool_inputs, trans.app )
+            step_dict['tool_state'] = state.encode( tool, trans.app )
+            # Connections
+            input_conn_dict = {}
+            for conn in step.input_connections:
+                input_conn_dict[ conn.input_name ] = dict( id=conn.output_step.external_identifier,
+                                                           output_name=conn.output_name )
+            step_dict['input_connections'] = input_conn_dict
+            # Position
+            step_dict['position'] = step.position
+            # Input and output specs
+            data_inputs = []
+            for name, input in tool.inputs.iteritems():
+                if isinstance( input, DataToolParameter ):
+                    data_inputs.append( dict( name=input.name, label=input.label, extensions=input.extensions ) )
+            step_dict['data_inputs'] = data_inputs
+            data_outputs = []
+            for name, ( format, metadata_source, parent ) in tool.outputs.iteritems():
+                data_outputs.append( dict( name=name, extension=format ) )
+            step_dict['data_outputs'] = data_outputs
+            # Build the tool form html
+            errors = step.tool_errors
+            step_dict['form_html'] = trans.fill_template( "workflow/editor_tool_form.mako", 
+                tool=tool, as_html=as_html, values=state.inputs, errors={} )
+            step_dict['name'] = tool.name
+            data['steps'][step.external_identifier] = step_dict
+        return data
+
+    @web.json
+    def save_workflow( self, trans, id, workflow_data ):
+        """
+        Save the workflow described by `workflow_data` with id `id`.
+        """
+        # Get the stored workflow
+        stored = get_stored_workflow( trans, id )
+        # Put parameters in workflow mode
+        trans.workflow_building_mode = True
+        # Convert incoming workflow data from json
         data = simplejson.loads( workflow_data )
-        nodes = data['steps']
-        for key, node in nodes.iteritems():
-            decode_state( node, trans.app )
-        # Create workflow from json data
-        workflow = Workflow.from_simple( data, trans.app, decode_inputs=False )
-        workflow.order_nodes()
-        # Store it
-        stored = model.StoredWorkflow.get_by( user = user, name = workflow_name )
-        if stored is None:
-            stored = model.StoredWorkflow()
-            stored.user = user
-            stored.name = workflow_name
-        stored.encoded_value = simplejson.dumps( workflow.to_simple( trans.app ) )
-        stored.flush()
+        # Create new workflow from incoming data
+        workflow = model.Workflow()
+        # Just keep the last name (user can rename later)
+        workflow.name = stored.name
+        # Assume no errors until we find a step that has some
+        workflow.has_errors = False
+        # Create each step
+        steps = []
+        steps_by_external_id = {}
+        # First pass to build step objects and populate basic values
+        for key, step_dict in data['steps'].iteritems():
+            # Decode the tool state from the step dict
+            tool = trans.app.toolbox.tools_by_id[ step_dict['tool_id'] ]
+            state = DefaultToolState()
+            state.decode( step_dict['tool_state'], tool, trans.app )
+            # Convert back to strings for database
+            tool_inputs = tool.params_to_strings( state.inputs, trans.app )
+            # Create the model class for the step
+            step = model.WorkflowStep()
+            steps.append( step )
+            step.external_identifier = step_dict['id']
+            steps_by_external_id[ step.external_identifier ] = step
+            step.tool_id = step_dict['tool_id']
+            step.tool_inputs = tool_inputs
+            step.tool_errors = step_dict['tool_errors']
+            if step.tool_errors:
+                workflow.has_errors = True
+            step.position = step_dict['position']
+            # Stick this in the step temporarily
+            step.temp_input_connections = step_dict['input_connections']
+        # Second pass to deal with connections between steps
+        for step in steps:
+            # Input connections
+            for input_name, conn_dict in step.temp_input_connections.iteritems():
+                if conn_dict:
+                    conn = model.WorkflowStepConnection()
+                    conn.input_step = step
+                    conn.input_name = input_name
+                    conn.output_name = conn_dict['output_name']
+                    conn.output_step = steps_by_external_id[ conn_dict['id'] ]
+            del step.temp_input_connections
+        # Order the steps if possible
+        attach_ordered_steps( workflow, steps )
+        # Connect up
+        workflow.stored_workflow = stored
+        stored.latest_workflow = workflow
+        # Persist
+        trans.sa_session.save( stored )
+        trans.sa_session.flush()
         # Return something informative
         errors = []
         if workflow.has_errors:
@@ -99,50 +259,9 @@ class WorkflowController( BaseController ):
                          errors=errors )
         else:
             rval = dict( message="Workflow saved" )
-        rval['name'] = workflow_name
+        rval['name'] = workflow.name
         return rval
-        
-    @web.json
-    def load_workflow( self, trans, workflow_name ):
-        user = trans.get_user()
-        trans.workflow_building_mode = True
-        # Load encoded workflow from database
-        stored = model.StoredWorkflow.get_by( user = user, name = workflow_name )
-        # FIXME: This is a mess (encode/decoded states and inputs are all over
-        #        the place). Fix with more structured database representation.
-        workflow = Workflow.from_simple( simplejson.loads( stored.encoded_value ), trans.app )
-        data = workflow.to_simple( trans.app )
-        # For each step, rebuild the form and encode the state
-        for step in data['steps'].values():
-            step_id = step['id']
-            # Load tool
-            tool_id = step['tool_id']
-            tool = trans.app.toolbox.tools_by_id[tool_id]
-            # Build a state from the tool_inputs dict (need to get this from
-            # the unsimplified Workflow instance since state expects unencoded)
-            state = DefaultToolState()
-            state.inputs = workflow.steps[ step_id ].tool_inputs
-            # Replace state in dict with encoded version
-            step['tool_state'] = state.encode( tool, trans.app )
-            del step['tool_inputs']
-            # Input and output specs
-            data_inputs = []
-            for name, input in tool.inputs.iteritems():
-                if isinstance( input, DataToolParameter ):
-                    data_inputs.append( dict( name=input.name, label=input.label, extensions=input.extensions ) )
-            step['data_inputs'] = data_inputs
-            data_outputs = []
-            for name, ( format, metadata_source, parent ) in tool.outputs.iteritems():
-                data_outputs.append( dict( name=name, extension=format ) )
-            step['data_outputs'] = data_outputs
-            # Build the tool form html
-            errors = step.get( 'errors', {} )
-            step['form_html'] = trans.fill_template( "workflow/editor_tool_form.mako", 
-                tool=tool, as_html=as_html, values=state.inputs, errors={} )
-            step['name'] = tool.name
-        data['name'] = stored.name
-        return data
-        
+
     @web.json
     def get_datatypes( self, trans ):
         ext_to_class_name = dict()
@@ -167,6 +286,7 @@ class WorkflowController( BaseController ):
     @web.expose
     def build_from_current_history( self, trans, job_ids=None, workflow_name=None ):
         user = trans.get_user()
+        history = trans.get_history()
         if not user:
             return trans.show_error_message( "Must be logged in to create workflows" )
         if job_ids is None or workflow_name is None:
@@ -175,7 +295,8 @@ class WorkflowController( BaseController ):
             return trans.fill_template(
                         "workflow/build_from_current_history.mako", 
                         jobs=jobs,
-                        warnings=warnings )
+                        warnings=warnings,
+                        history=history )
         else:
             # Ensure job_ids is a list
             if type( job_ids ) == str:
@@ -191,78 +312,87 @@ class WorkflowController( BaseController ):
                     hid_to_output_pair[ data.hid ] = ( job.id, assoc_name )
             # Mapping from job ids to workflow step ids (0, 1, 2, ...)
             job_id_to_step_id = dict( ( job_id, i ) for ( i, job_id ) in enumerate( job_ids ) )
-            # Workflow to populate
-            workflow = Workflow()
             # Back-translate each job
             jobs_by_id = dict( ( job.id, job ) for job in jobs.keys() )
+            steps = []
+            steps_by_external_id = {}
             for step_id, job_id in enumerate( job_ids ):
                 assert job_id in jobs_by_id, "Attempt to create workflow with job not connected to current history"
                 job = jobs_by_id[ job_id ]
                 tool = trans.app.toolbox.tools_by_id[ job.tool_id ]
                 param_values = job.get_param_values( trans.app )
                 associations = cleanup_param_values( tool.inputs, param_values )
-                step = WorkflowStep()
-                step.id = step_id
+                step = model.WorkflowStep()
+                step.external_identifier = step_id
+                steps_by_external_id[ step.external_identifier ] = step
                 step.tool_id = job.tool_id
-                step.tool_inputs = param_values
+                step.tool_inputs = tool.params_to_strings( param_values, trans.app )
+                # NOTE: We shouldn't need to do two passes here since only
+                #       an earlier job can be used as an input to a later
+                #       job.
                 for other_hid, input_name in associations:
-                    step.input_connections[input_name] = None
                     if other_hid in hid_to_output_pair:
                         other_job_id, other_name = hid_to_output_pair[ other_hid ]
                         # Only create association if the associated output dataset
                         # is being included in this workflow
                         if other_job_id in job_id_to_step_id:
-                            step.input_connections[input_name] = ( job_id_to_step_id[ other_job_id ], other_name )                        
-                workflow.steps[ step_id ] = step
-            # Try to order the nodes
-            workflow.order_nodes()
-            # And let's try to set up some reasonable locations on canvas
+                            conn = model.WorkflowStepConnection()
+                            conn.input_step = step
+                            conn.input_name = input_name
+                            conn.output_step = steps_by_external_id[ job_id_to_step_id[ other_job_id ] ]
+                            conn.output_name = other_name                   
+                steps.append( step )
+            # Workflow to populate
+            workflow = model.Workflow()
+            workflow.name = workflow_name
+            # Order the steps if possible
+            attach_ordered_steps( workflow, steps )
+            # And let's try to set up some reasonable locations on the canvas
             # (these are pretty arbitrary values)
-            levorder = workflow.order_nodes_levels()
+            steps_by_external_id = dict( ( step.external_identifier, step ) for step in steps )
+            levorder = order_workflow_steps_with_levels( steps )
             base_pos = 2510
             for i, steps_at_level in enumerate( levorder ):
-                for j, step_id in enumerate( steps_at_level ):
-                    step = workflow.steps[step_id]
+                for j, external_id in enumerate( steps_at_level ):
+                    step = steps_by_external_id[ external_id]
                     step.position = dict( top = ( base_pos + 120 * j ),
                                           left = ( base_pos + 220 * i ) )
             # Store it
-            stored = model.StoredWorkflow.get_by( user = user, name = workflow_name )
-            if stored is None:
-                stored = model.StoredWorkflow()
-                stored.user = user
-                stored.name = workflow_name
-            stored.encoded_value = simplejson.dumps( workflow.to_simple( trans.app ) )
-            stored.flush()
-            # 
-            return trans.show_ok_message( "Workflow '%s' created.<br/><a target='_top' href='%s'>Click to load in workflow editor</a>"
-                % ( workflow_name, web.url_for( action='editor', workflow_name=workflow_name ) ) )       
+            stored = model.StoredWorkflow()
+            stored.user = user
+            stored.name = workflow_name
+            workflow.stored_workflow = stored
+            stored.latest_workflow = workflow
+            trans.sa_session.save( stored )
+            trans.sa_session.flush()
+            # Index page with message
+            trans.template_context['message'] = "Workflow '%s' created" % workflow_name
+            return self.index( trans )
+            ## return trans.show_ok_message( "<p>Workflow '%s' created.</p><p><a target='_top' href='%s'>Click to load in workflow editor</a></p>"
+            ##     % ( workflow_name, web.url_for( action='editor', id=trans.security.encode_id(stored.id) ) ) )       
         
     @web.expose
-    def run( self, trans, workflow_name, **kwargs ):
-        user = trans.get_user()
-        ## trans.workflow_building_mode = True
-        # Load encoded workflow from database
-        stored = trans.sa_session.query( model.StoredWorkflow ).get_by( user = user, name = workflow_name )
-        if not stored:
-            return trans.show_error_message( "No workflow named '%s'" % workflow_name )
-        workflow = Workflow.from_simple( simplejson.loads( stored.encoded_value ), trans.app )
+    def run( self, trans, id, **kwargs ):
+        stored = get_stored_workflow( trans, id )
+        # Get the latest revision
+        workflow = stored.latest_workflow
+        # It is possible for a workflow to have 0 steps
+        if len( workflow.steps ) == 0:
+            return trans.show_error_message(
+                "Workflow cannot be run because it does not have any steps" )
+        #workflow = Workflow.from_simple( simplejson.loads( stored.encoded_value ), trans.app )
         if workflow.has_cycles:
             return trans.show_error_message(
                 "Workflow cannot be run because it contains cycles" )
         if workflow.has_errors:
             return trans.show_error_message(
                 "Workflow cannot be run because of validation errors in some steps" )
-        # Construct the list of steps
-        steps = []
-        for step_id in workflow.node_order:
-            step = workflow.steps[ step_id ]
-            steps.append( step )
         # Build the state for each step
+        errors = {}
         if kwargs:
             # If kwargs were provided, the states for each step should have
             # been POSTed
-            errors = {}
-            for step in steps:
+            for step in workflow.steps:
                 # Extract just the arguments for this step by prefix
                 p = "%s|" % step.id
                 l = len(p)
@@ -273,6 +403,8 @@ class WorkflowController( BaseController ):
                 state = DefaultToolState()
                 state.decode( step_args.pop("tool_state"), tool, trans.app )
                 step.state = state
+                # Connections by input name
+                step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
                 # Get old errors
                 old_errors = state.inputs.pop( "__errors__", {} )
                 # Update the state
@@ -283,62 +415,103 @@ class WorkflowController( BaseController ):
             if not errors:
                 # Run each step, connecting outputs to inputs
                 outputs = {}
-                for step in steps:
+                for step in workflow.steps:
                     tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
                     inputs = step.state.inputs
                     # Connect up 
-                    for name, conn in step.input_connections.iteritems():
-                        if conn:
-                            other_id, other_name = conn
-                            inputs[name] = outputs[other_id][other_name]                    
+                    for conn in step.input_connections:
+                        inputs[ conn.input_name ] = outputs[ conn.output_step.id ][ conn.output_name ]                    
                     outputs[ step.id ] = tool.execute( trans, step.state.inputs )
                 return trans.fill_template( "workflow/run_complete.mako",
                                             workflow=stored,
                                             outputs=outputs )
         else:
-            for step in steps:
+            for step in workflow.steps:
                 # Build a new tool state for the step
+                tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
                 state = DefaultToolState()
-                state.inputs = step.tool_inputs
+                state.inputs = tool.params_from_strings( step.tool_inputs, trans.app )
                 # Store state with the step
                 step.state = state
-            # Don't show any errors on the first load -- we can assume this
-            # at the moment since we don't allow running workflows with errors
-            errors = {}
+                # Connections by input name
+                step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+                # This should never actually happen since we don't allow
+                # running workflows with errors (yet?)
+                if step.tool_errors:
+                    errors[step.id] = step.tool_errors
         # Render the form
         return trans.fill_template(
                     "workflow/run.mako", 
-                    steps=steps,
+                    steps=workflow.steps,
                     workflow=stored,
                     errors=errors )
         
 ## ---- Utility methods -------------------------------------------------------
+        
+def get_stored_workflow( trans, id ):
+    """
+    Get a StoredWorkflow from the database by id, verifying ownership. 
+    """
+    # Load workflow from database
+    id = trans.security.decode_id( id )
+    stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
+    if not stored:
+        error( "Workflow not found" )
+    # Verify ownership
+    user = trans.get_user()
+    if not user:
+        error( "Must be logged in to use workflows" )
+    if not( stored.user == user ):
+        error( "Workflow is not owned by current user" )
+    # Looks good
+    return stored
         
 def as_html( param, value, trans, prefix ):
     if type( param ) is DataToolParameter:
         return "Data input '" + param.name + "' (" + ( " or ".join( param.extensions ) ) + ")"
     else:
         return param.get_html_field( trans, value ).get_html( prefix )
-    
-def decode_state( data, app ):
+
+def attach_ordered_steps( workflow, steps ):
+    ordered_steps = order_workflow_steps( steps )
+    if ordered_steps:
+        workflow.has_cycles = False
+        for i, step in enumerate( ordered_steps ):
+            step.order_index = i
+            workflow.steps.append( step )
+    else:
+        workflow.has_cycles = True
+        workflow.steps = steps
+
+def edgelist_for_workflow_steps( steps ):
     """
-    tool_inputs --> tool_state
+    Create a list of tuples representing edges between `WorkflowSteps` based
+    on associated `WorkflowStepConnection`s
     """
-    tool = app.toolbox.tools_by_id[ data['tool_id'] ]
-    state = DefaultToolState()
-    state.decode( data['tool_state'], tool, app )
-    data['tool_inputs'] = state.inputs
-    del data['tool_state']
+    edges = []
+    for step in steps:
+        edges.append( ( step.external_identifier, step.external_identifier ) )
+        for conn in step.input_connections:
+            edges.append( ( conn.output_step.external_identifier, conn.input_step.external_identifier ) )
+    return edges
+
+def order_workflow_steps( steps ):
+    """
+    Perform topological sort of the steps, return ordered or None
+    """
+    try:
+        edges = edgelist_for_workflow_steps( steps )
+        node_order = topsort( edges )
+        steps_by_alt_id = dict( ( step.external_identifier, step ) for step in steps )
+        return [ steps_by_alt_id[ id ] for id in node_order ]
+    except CycleError:
+        return None
     
-#def encode_state( data, app ):
-#    """
-#    tool_state --> tool_inputs
-#    """
-#    tool = app.toolbox.tools_by_id[ data['tool_id'] ]
-#    state = DefaultToolState()
-#    state.inputs = data['tool_inputs']
-#    data['tool_state'] = state.encode( tool, app )
-#    del data['tool_inputs']
+def order_workflow_steps_with_levels( steps ):
+    try:
+        return topsort_levels( edgelist_for_workflow_steps( steps ) )
+    except CycleError:
+        return None
     
 def get_job_dict( trans ):
     """

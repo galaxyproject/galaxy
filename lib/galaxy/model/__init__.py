@@ -454,13 +454,37 @@ class GalaxySessionToHistoryAssociation( object ):
         self.history = history
         
 class StoredWorkflow( object ):
-    """
-    A saved workflow, stored as a jsonified string in `encoded_value`. 
-    """
+    def __init__( self ):
+        self.id = None
+        self.user = None
+        self.name = None
+        self.latest_workflow_id = None
+        self.workflows = []
+
+class Workflow( object ):
     def __init__( self ):
         self.user = None
         self.name = None
-        self.encoded_value = None
+        self.has_cycles = None
+        self.has_errors = None
+        self.steps = []
+        
+class WorkflowStep( object ):
+    def __init__( self ):
+        self.id = None
+        self.external_identifier = None
+        self.tool_id = None
+        self.tool_inputs = None
+        self.tool_errors = None
+        self.position = None
+        self.input_connections = None
+        
+class WorkflowStepConnection( object ):
+    def __init__( self ):
+        self.output_step_id = None
+        self.output_name = None
+        self.input_step_id = None
+        self.input_name = None
 
 ## ---- Utility methods -------------------------------------------------------
 

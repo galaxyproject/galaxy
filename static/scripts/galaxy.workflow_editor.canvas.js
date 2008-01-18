@@ -142,7 +142,7 @@ function Node( element ) {
     this.element = element;
     this.input_terminals = {};
     this.output_terminals = {};
-    this.has_errors = false;
+    this.tool_errors = {};
 }
 $.extend( Node.prototype, {
     enable_input_terminal : function( elements, name, types ) {
@@ -253,8 +253,8 @@ $.extend( Node.prototype, {
     update_field_data : function( data ) {
         this.tool_state = data.state;
         this.form_html = data.form_html;
-	this.has_errors = data.has_errors;
-        if ( this.has_errors ) {
+	this.tool_errors = data.tool_errors;
+        if ( this.tool_errors ) {
                 $(this.element).addClass( "tool-node-error" );
         } else {
                 $(this.element).removeClass( "tool-node-error" );
@@ -310,14 +310,14 @@ $.extend( Workflow.prototype, {
                 // There should only be 0 or 1 connectors, so this is
                 // really a sneaky if statement
                 $.each( t.connectors, function ( i, c ) {
-                    input_connections[ t.name ] = { node_id: c.handle1.node.id, output_name: c.handle1.name };
+                    input_connections[ t.name ] = { id: c.handle1.node.id, output_name: c.handle1.name };
                 });
             });
             var node_data = {
                 id : node.id,
                 tool_id : node.tool_id,
                 tool_state : node.tool_state,
-                has_errors : node.has_errors,
+                tool_errors : node.tool_errors,
                 input_connections : input_connections,
                 position : $(node.element).position()
             }
@@ -346,7 +346,7 @@ $.extend( Workflow.prototype, {
             var node = wf.nodes[id];
             $.each( step.input_connections, function( k, v ) {
                 if ( v ) {
-                    var other_node = wf.nodes[ v.node_id ];
+                    var other_node = wf.nodes[ v.id ];
                     var c = new Connector();
                     c.connect( other_node.output_terminals[ v.output_name ],
                                node.input_terminals[ k ] );
