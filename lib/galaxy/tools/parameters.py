@@ -466,7 +466,7 @@ class SelectToolParameter( ToolParameter ):
         # Dynamic options are not yet supported in workflow, allow 
         # specifying the value as text for now.
         if self.is_dynamic and trans.workflow_building_mode \
-           and ( self.options is None or self.options.data_ref is None ):
+           and ( self.options is None or self.options.data_ref is not None ):
             assert isinstance( value, UnvalidatedValue )
             value = value.value
             if self.multiple:
@@ -488,7 +488,7 @@ class SelectToolParameter( ToolParameter ):
         return field
     def from_html( self, value, trans=None, other_values={} ):
         if self.is_dynamic and trans.workflow_building_mode \
-           and ( self.options is None or self.options.data_ref is None ):
+           and ( self.options is None or self.options.data_ref is not None ):
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, other_values )
         if isinstance( value, list ):
@@ -527,7 +527,7 @@ class SelectToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context ):
         # More working around dynamic options for workflow
         if self.is_dynamic and trans.workflow_building_mode \
-           and ( self.options is None or self.options.data_ref is None ):
+           and ( self.options is None or self.options.data_ref is not None ):
             # Really the best we can do?
             return UnvalidatedValue( None )
         options = list( self.get_options( trans, context ) )
