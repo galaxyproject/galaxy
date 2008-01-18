@@ -46,6 +46,17 @@ def json( func ):
     return decorator
     
 NOT_SET = object()
+
+class MessageException( Exception ):
+    """
+    Exception to make throwing errors from deep in controllers easier
+    """
+    def __init__( self, message, type="info" ):
+        self.message = message
+        self.type = type
+        
+def error( message ):
+    raise MessageException( message, type='error' )
     
 class WebApplication( base.WebApplication ):
     def __init__( self, galaxy_app ):
@@ -56,6 +67,12 @@ class WebApplication( base.WebApplication ):
             directories = [ galaxy_app.config.template_path ] ,
             module_directory = galaxy_app.config.template_cache,
             collection_size = 500 )
+        # Security helper
+        from galaxy.web import security
+        self.security = security.SecurityHelper( id_secret = galaxy_app.config.id_secret )
+    def handle_controller_exception( self, e, trans, **kwargs ):
+        if isinstance( e, MessageException ):
+            return trans.show_message( e.message, e.type )
     
 class UniverseWebTransaction( base.DefaultWebTransaction ):
     """
@@ -65,6 +82,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
     def __init__( self, environ, app, webapp ):
         self.app = app
         self.webapp = webapp
+        self.security = webapp.security
         self.__user = NOT_SET
         self.__history = NOT_SET
         self.__galaxy_session = NOT_SET
@@ -340,7 +358,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             return str( template )
     def fill_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
-        data = dict( caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app )
+        data = dict( caller=self, t=self, trans=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )

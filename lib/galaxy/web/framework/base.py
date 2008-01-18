@@ -119,7 +119,12 @@ class WebApplication( object ):
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update( map )
-        body = method( trans, **kwargs )
+        try:
+            body = method( trans, **kwargs )
+        except Exception, e:
+            body = self.handle_controller_exception( e, trans, **kwargs )
+            if not body:
+                raise
         # Now figure out what we got back and try to get it to the browser in
         # a smart way
         if callable( body ):
@@ -142,6 +147,12 @@ class WebApplication( object ):
                 return []
         # Worst case scenario
         return [ str( body ) ]
+
+    def handle_controller_exception( self, e, trans, **kwargs ):
+        """
+        Allow handling of exceptions raised in controller methods.
+        """
+        return False
         
 class WSGIEnvironmentProperty( object ):
     """
