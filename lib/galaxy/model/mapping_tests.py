@@ -1,5 +1,7 @@
 import unittest
 import galaxy.model.mapping as mapping
+from galaxy.model import directory_hash_id
+import os.path
 
 class MappingTests( unittest.TestCase ):
     def test_basic( self ):
@@ -32,7 +34,8 @@ class MappingTests( unittest.TestCase ):
         assert hists[0].user == users[0]
         assert hists[1].user is None
         assert hists[1].datasets[0].metadata.chromCol == 1
-        assert hists[1].datasets[0].file_name == "/tmp/dataset_%d.dat" % hists[1].datasets[0].id
+        id = hists[1].datasets[0].id
+        assert hists[1].datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
         # Do an update and check
         hists[1].name = "History 2b"
         model.context.current.flush()
