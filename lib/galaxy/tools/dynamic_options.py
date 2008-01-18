@@ -38,6 +38,17 @@ class DynamicOptions( object ):
                 self.param_ref = filter.get( 'param_ref', None )
                 assert self.param_ref is not None, "Required 'param_ref' attribute missing from 'param_meta' filter"
                 self.param_ref = self.param_ref.strip()
+    def get_dependency_names( self ):
+        """
+        Return the names of parameters these options depend on -- both data
+        and other param types.
+        """
+        rval = []
+        if self.data_ref:
+            rval.append( self.data_ref )
+        if self.param_ref:
+            rval.append( self.param_ref )
+        return rval        
     def get_data_ref_value( self, trans, other_values ):
         # No value indicates a configuration error, the named DataToolParameter must preceed this parameter in the tool config
         assert self.data_ref in other_values, "Value for associated DataToolParameter not found"

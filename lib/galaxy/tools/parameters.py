@@ -428,7 +428,7 @@ class SelectToolParameter( ToolParameter ):
     >>> print p.to_param_dict_string( ["y", "z"] )
     y,z
     """
-    def __init__( self, tool, elem):
+    def __init__( self, tool, elem, context=None ):
         ToolParameter.__init__( self, tool, elem )
         self.multiple = str_bool( elem.get( 'multiple', False ) )
         self.display = elem.get( 'display', None )
@@ -447,7 +447,7 @@ class SelectToolParameter( ToolParameter ):
                 self.legal_values.add( value )
                 selected = ( option.get( "selected", None ) == "true" )
                 self.static_options.append( ( option.text, value, selected ) )
-        self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.options is not None ) ) 
+        self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.options is not None ) )
     def get_options( self, trans, other_values ):
         if self.options:
             return self.options.get_options( trans, other_values )
@@ -465,7 +465,8 @@ class SelectToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={} ):
         # Dynamic options are not yet supported in workflow, allow 
         # specifying the value as text for now.
-        if self.is_dynamic and trans.workflow_building_mode:
+        if self.is_dynamic and trans.workflow_building_mode \
+           and ( self.options is None or self.options.data_ref is None ):
             assert isinstance( value, UnvalidatedValue )
             value = value.value
             if self.multiple:
@@ -486,7 +487,8 @@ class SelectToolParameter( ToolParameter ):
             field.add_option( text, optval, selected )
         return field
     def from_html( self, value, trans=None, other_values={} ):
-        if self.is_dynamic and trans.workflow_building_mode:
+        if self.is_dynamic and trans.workflow_building_mode \
+           and ( self.options is None or self.options.data_ref is None ):
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, other_values )
         if isinstance( value, list ):
@@ -524,7 +526,8 @@ class SelectToolParameter( ToolParameter ):
         return value
     def get_initial_value( self, trans, context ):
         # More working around dynamic options for workflow
-        if self.is_dynamic and trans.workflow_building_mode:
+        if self.is_dynamic and trans.workflow_building_mode \
+           and ( self.options is None or self.options.data_ref is None ):
             # Really the best we can do?
             return UnvalidatedValue( None )
         options = list( self.get_options( trans, context ) )
@@ -558,19 +561,15 @@ class SelectToolParameter( ToolParameter ):
             for t, v, s in options:
                 if v in value:
                     rval.append( t )
-        return "\n".join( rval ) + suffix
-    
+        return "\n".join( rval ) + suffix    
     def get_dependencies( self ):
-        data_ref = param_ref = None
+        """
+        Get the *names* of the other params this param depends on.
+        """
         if self.options:
-            try: data_ref = self.options.data_ref
-            except: pass
-            try: param_ref = self.options.param_ref
-            except: pass
-        if data_ref is None and param_ref is None: return []
-        elif data_ref is None: return [ param_ref ]
-        elif param_ref is None: return [ data_ref ]
-        else: return [ data_ref, param_ref ]
+            return self.options.get_dependency_names()
+        else:
+            return []
 
 class GenomeBuildParameter( SelectToolParameter ):
     """
