@@ -27,6 +27,7 @@ class DynamicOptions( object ):
             self.data_file = None
         self.filters = elem.findall( 'filter' )
         self.data_ref = None
+        self.param_ref = None
         for filter in self.filters:
             filter_type = filter.get( 'type', None )
             assert filter_type is not None, "Required 'type' attribute missing from filter"
