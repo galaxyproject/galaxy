@@ -140,6 +140,11 @@ class WorkflowController( BaseController ):
                 
     @web.json
     def load_workflow( self, trans, id ):
+        """
+        Get the latest Workflow for the StoredWorkflow identified by `id` and
+        encode it as a json string that can be read by the workflow editor
+        web interface.
+        """
         user = trans.get_user()
         id = trans.security.decode_id( id )
         trans.workflow_building_mode = True
@@ -154,7 +159,7 @@ class WorkflowController( BaseController ):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             step_dict = {}
-            step_dict['id'] = step_id = step.external_identifier
+            step_dict['id'] = step.order_index
             step_dict['tool_id'] = tool_id = step.tool_id
             # Load tool
             tool = trans.app.toolbox.tools_by_id[tool_id]
@@ -165,7 +170,7 @@ class WorkflowController( BaseController ):
             # Connections
             input_conn_dict = {}
             for conn in step.input_connections:
-                input_conn_dict[ conn.input_name ] = dict( id=conn.output_step.external_identifier,
+                input_conn_dict[ conn.input_name ] = dict( id=conn.output_step.order_index,
                                                            output_name=conn.output_name )
             step_dict['input_connections'] = input_conn_dict
             # Position
@@ -185,7 +190,7 @@ class WorkflowController( BaseController ):
             step_dict['form_html'] = trans.fill_template( "workflow/editor_tool_form.mako", 
                 tool=tool, as_html=as_html, values=state.inputs, errors={} )
             step_dict['name'] = tool.name
-            data['steps'][step.external_identifier] = step_dict
+            data['steps'][step.order_index] = step_dict
         return data
 
     @web.json
@@ -207,6 +212,8 @@ class WorkflowController( BaseController ):
         workflow.has_errors = False
         # Create each step
         steps = []
+        # The editor will provide ids for each step that we don't need to save,
+        # but do need to use to make connections
         steps_by_external_id = {}
         # First pass to build step objects and populate basic values
         for key, step_dict in data['steps'].iteritems():
@@ -219,8 +226,7 @@ class WorkflowController( BaseController ):
             # Create the model class for the step
             step = model.WorkflowStep()
             steps.append( step )
-            step.external_identifier = step_dict['id']
-            steps_by_external_id[ step.external_identifier ] = step
+            steps_by_external_id[ step_dict['id' ] ] = step
             step.tool_id = step_dict['tool_id']
             step.tool_inputs = tool_inputs
             step.tool_errors = step_dict['tool_errors']
@@ -311,20 +317,17 @@ class WorkflowController( BaseController ):
                 for assoc_name, data in datasets:
                     hid_to_output_pair[ data.hid ] = ( job.id, assoc_name )
             # Mapping from job ids to workflow step ids (0, 1, 2, ...)
-            job_id_to_step_id = dict( ( job_id, i ) for ( i, job_id ) in enumerate( job_ids ) )
+            job_id_to_step_index = dict( ( job_id, i ) for ( i, job_id ) in enumerate( job_ids ) )
             # Back-translate each job
             jobs_by_id = dict( ( job.id, job ) for job in jobs.keys() )
             steps = []
-            steps_by_external_id = {}
-            for step_id, job_id in enumerate( job_ids ):
+            for job_id in job_ids:
                 assert job_id in jobs_by_id, "Attempt to create workflow with job not connected to current history"
                 job = jobs_by_id[ job_id ]
                 tool = trans.app.toolbox.tools_by_id[ job.tool_id ]
                 param_values = job.get_param_values( trans.app )
                 associations = cleanup_param_values( tool.inputs, param_values )
                 step = model.WorkflowStep()
-                step.external_identifier = step_id
-                steps_by_external_id[ step.external_identifier ] = step
                 step.tool_id = job.tool_id
                 step.tool_inputs = tool.params_to_strings( param_values, trans.app )
                 # NOTE: We shouldn't need to do two passes here since only
@@ -335,11 +338,12 @@ class WorkflowController( BaseController ):
                         other_job_id, other_name = hid_to_output_pair[ other_hid ]
                         # Only create association if the associated output dataset
                         # is being included in this workflow
-                        if other_job_id in job_id_to_step_id:
+                        if other_job_id in job_id_to_step_index:
                             conn = model.WorkflowStepConnection()
                             conn.input_step = step
                             conn.input_name = input_name
-                            conn.output_step = steps_by_external_id[ job_id_to_step_id[ other_job_id ] ]
+                            # Should always be connected to an earlier step
+                            conn.output_step = steps[ job_id_to_step_index[ other_job_id ] ]
                             conn.output_name = other_name                   
                 steps.append( step )
             # Workflow to populate
@@ -349,12 +353,11 @@ class WorkflowController( BaseController ):
             attach_ordered_steps( workflow, steps )
             # And let's try to set up some reasonable locations on the canvas
             # (these are pretty arbitrary values)
-            steps_by_external_id = dict( ( step.external_identifier, step ) for step in steps )
             levorder = order_workflow_steps_with_levels( steps )
             base_pos = 2510
             for i, steps_at_level in enumerate( levorder ):
-                for j, external_id in enumerate( steps_at_level ):
-                    step = steps_by_external_id[ external_id]
+                for j, index in enumerate( steps_at_level ):
+                    step = steps[ index ]
                     step.position = dict( top = ( base_pos + 120 * j ),
                                           left = ( base_pos + 220 * i ) )
             # Store it
@@ -489,10 +492,11 @@ def edgelist_for_workflow_steps( steps ):
     on associated `WorkflowStepConnection`s
     """
     edges = []
+    steps_to_index = dict( ( step, i ) for i, step in enumerate( steps ) )
     for step in steps:
-        edges.append( ( step.external_identifier, step.external_identifier ) )
+        edges.append( ( steps_to_index[step], steps_to_index[step] ) )
         for conn in step.input_connections:
-            edges.append( ( conn.output_step.external_identifier, conn.input_step.external_identifier ) )
+            edges.append( ( steps_to_index[conn.output_step], steps_to_index[conn.input_step] ) )
     return edges
 
 def order_workflow_steps( steps ):
@@ -502,8 +506,7 @@ def order_workflow_steps( steps ):
     try:
         edges = edgelist_for_workflow_steps( steps )
         node_order = topsort( edges )
-        steps_by_alt_id = dict( ( step.external_identifier, step ) for step in steps )
-        return [ steps_by_alt_id[ id ] for id in node_order ]
+        return [ steps[i] for i in node_order ]
     except CycleError:
         return None
     

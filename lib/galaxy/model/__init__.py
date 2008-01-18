@@ -472,7 +472,6 @@ class Workflow( object ):
 class WorkflowStep( object ):
     def __init__( self ):
         self.id = None
-        self.external_identifier = None
         self.tool_id = None
         self.tool_inputs = None
         self.tool_errors = None

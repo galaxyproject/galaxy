@@ -189,7 +189,6 @@ WorkflowStep.table = Table( "workflow_step", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), nullable=False ),
-    Column( "external_identifier", Integer ),
     Column( "tool_id", String ),
     Column( "tool_version", String ), # Reserved for future
     Column( "tool_inputs", JSONType ),
