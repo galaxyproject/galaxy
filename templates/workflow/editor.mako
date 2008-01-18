@@ -112,6 +112,25 @@ $( function() {
             return "There are unsaved changes to your workflow which will be lost.";
         }
     }
+    
+    // Tool menu
+    $( "div.toolSectionBody" ).hide();
+    $( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" );
+    var last_expanded = null;
+    $( "div.toolSectionTitle" ).each( function() { 
+       var body = $(this).next( "div.toolSectionBody" );
+       $(this).click( function() {
+           if ( body.is( ":hidden" ) ) {
+               if ( last_expanded ) last_expanded.slideUp( "fast" );
+               last_expanded = body;
+               body.slideDown( "fast" );
+           }
+           else {
+               body.slideUp( "fast" );
+               last_expanded = null;
+           }
+       });
+    });
 });
 
 function notify() {
@@ -321,7 +340,7 @@ div.toolFormRow {
 
         <div id="masthead">
             <div style="float: right; color: black; padding: 3px;"><div class="warningmessagesmall" style="min-height: 15px;">Workflow support is currently in <b><i>beta</i></b></div></div>
-            <div class="title"><b>Galaxy workflow editor</div>
+            <div class="title"><b>Galaxy workflow editor</b></div>
             ## <iframe name="galaxy_masthead" src="${h.url_for( controller='root', action='masthead' )}" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
         </div>
 

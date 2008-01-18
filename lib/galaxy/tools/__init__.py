@@ -468,6 +468,10 @@ class Tool:
         Determine if a tool can be used in workflows. External tools and the
         upload tool are currently not supported by workflows.
         """
+        # Multiple page tools are not supported -- we're eliminating most
+        # of these anyway
+        if self.has_multiple_pages:
+            return False
         # This is probably the best bet for detecting external web tools
         # right now
         if self.action != "/tool_runner/index":
