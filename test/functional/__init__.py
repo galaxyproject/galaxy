@@ -89,6 +89,8 @@ def setup():
     conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port )
     conn.request( "GET", "/" )
     assert conn.getresponse().status == 200, "Test HTTP server did not return '200 OK'"
+
+    log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
         
     os.environ['GALAXY_TEST_HOST'] = galaxy_test_host
     os.environ['GALAXY_TEST_PORT'] = galaxy_test_port
