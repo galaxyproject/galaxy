@@ -89,21 +89,19 @@ class Admin( BaseController ):
                     last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) )
                     diff = (now-last)/3600/24 # days
                     if diff > days:
-                        log.warn( "Purging dataset id %s" %str( row.id ) )
-                        data = app.model.Dataset.get( row.id )
-                        data.purge()
-                        data.flush()
-                        count += 1
-                try:
-                    self.app.model.flush()
-                except:
-                    pass
-                msg = 'purged %d datasets' % count
+                        data = self.app.model.Dataset.get( row.id )
+                        errmsg = data.purge()
+                        if errmsg:
+                            log.warn( errmsg )
+                        else:
+                            log.warn( "Purged dataset id %s with file size %s." % ( str( row.id ), str( row.file_size ) ) )
+                            count += 1
+                msg = 'Purged %d datasets' % count
             else:
                 msg = 'Invalid password'
         return msg
 
-    def tool_reload( self, **kwd ):
+    def tool_reload( self, tool_version=None, **kwd ):
         params = util.Params( kwd )
         if params.passwd==self.app.config.admin_pass:
             tool_id = params.tool_id

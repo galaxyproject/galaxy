@@ -337,25 +337,35 @@ class Dataset( object ):
                 return child_association.child
         return None
     def purge( self ):
-        """Removes the file contents from disk """
-        self.deleted = True
-        self.purged = True
-        self.file_size = 0
+        # Renames the file by appending the string "_delete_me" to the original
+        # file name.  The intent is that the renamed files will be kept on disk
+        # for a specified period of time prior to being manually deleted.  This
+        # makes it easier to "unpurge" the file if necessary.  The database is
+        # also updated appropriately.
         if self.dataset_file is None or not self.dataset_file.readonly:
             #Check to see if another dataset is using this file
             if self.dataset_file:
                 for data in self.select_by( purged=False, filename_id=self.dataset_file.id ):
                     if data.id != self.id:
-                        return
-            #Delete files
-            try:
-                os.unlink( self.file_name )
-            except:
-                pass
-            try:
-                os.unlink( self.extra_files_path )
-            except:
-                pass
+                        return "Error: the dataset id for deletion is %s, while the dataset id retrieved is %s" %( str( self.id ), str( data.id ) )
+            else:
+                # Rename files
+                try:
+                    purged_file_name = self.file_name + "_purged"
+                    os.rename( self.file_name, purged_file_name )
+                    self.deleted = True
+                    self.purged = True
+                    self.file_size = 0
+                    self.flush()
+                except:
+                    return "Error: dataset %s could not be purged, self.file_name: '%s', purged_file_name: '%s'" %( str( self.id ), str( self.file_name ), str( purged_file_name ) ) 
+                try:
+                    os.unlink( self.extra_files_path )
+                except:
+                    pass
+        else:
+            return "Error: dataset %s has dependencies" %str( self.id )
+        return ""
             
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)

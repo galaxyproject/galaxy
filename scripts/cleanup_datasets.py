@@ -81,7 +81,10 @@ def abandon( app, days ):
             data = app.model.Dataset.get( row.id )
             data.deleted = True
             dataset_count += 1
-            total_disk_space += row.file_size
+            try:
+                total_disk_space += row.file_size
+            except:
+                pass
     try:
         app.model.flush()
     except:
@@ -111,7 +114,10 @@ def info_abandon( app, days ):
         if row.history_id in histories_no_users:
             print "Dataset id %s with file size %s will be deleted." %( str( row.id ), str( row.file_size ) )
             dataset_count += 1
-            total_disk_space += row.file_size
+            try:
+                total_disk_space += row.file_size
+            except:
+                pass
     msg = '%d histories ( including a total of %d datasets ) will be deleted.' % ( history_count, dataset_count )
     return msg, total_disk_space
 
@@ -131,16 +137,17 @@ def purge( app, days ):
         last = time.mktime( time.strptime( row.create_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) )
         diff = (now-last)/3600/24 # days
         if diff > days:
-            print "Purging dataset id %s with file size %s." % ( str( row.id ), str( row.file_size ) )
             data = app.model.Dataset.get( row.id )
-            data.purge()
-            data.flush()
-            count += 1
-            total_disk_space += row.file_size
-    try:
-        app.model.flush()
-    except:
-        pass
+            errmsg = data.purge()
+            if errmsg:
+                print errmsg
+            else:
+                print "Purged dataset id %s with file size %s." % ( str( row.id ), str( row.file_size ) )
+                count += 1
+                try:
+                    total_disk_space += row.file_size
+                except:
+                    pass
     msg = 'Purged %d datasets.' % count
     return msg, total_disk_space
 
@@ -156,7 +163,10 @@ def info_purge( app, days ):
         if diff > days:
             print "Dataset id %s with file size %s will be purged." % ( str( row.id ), str( row.file_size ) )
             count += 1
-            total_disk_space += row.file_size
+            try:
+                total_disk_space += row.file_size
+            except:
+                pass
     msg = '%d datasets will be purged.' %count
     return msg, total_disk_space
 
