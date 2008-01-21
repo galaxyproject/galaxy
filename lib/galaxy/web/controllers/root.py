@@ -292,7 +292,8 @@ class Universe( BaseController ):
 
     @web.expose
     def history_delete( self, trans, id = None, **kwd):
-        """Deletes a list of histories, ensures that histories are owned by current user"""
+        # Deletes a list of histories, along with datasets associated with each history.
+        # Ensures that histories are owned by current user.
         history_names = []
         if id:
             if isinstance( id, list ):
@@ -305,18 +306,20 @@ class Universe( BaseController ):
                 if history:
                     if history.user_id != None and user:
                         assert user.id == history.user_id, "History does not belong to current user"
-                    history_names.append(history.name)
+                    history_names.append( history.name )
+                    # Delete all datasets associated with the history being deleted
+                    for dataset in history.datasets:
+                        dataset.deleted = True
                     history.deleted = True
                     # If deleting the current history, make a new current.
                     if history == trans.get_history():
                         trans.new_history()
-                trans.log_event( "History id %s marked as deleted" % str(hid) )
                 self.app.model.flush()
+                trans.log_event( "History id %s marked as deleted" % str(hid) )
             
         else:
             return trans.show_message( "You must select at least one history to delete." )
-        return trans.show_message( "History deleted: %s" % ",".join(history_names),
-                                           refresh_frames=['history'])
+        return trans.show_message( "History deleted: %s" % ",".join(history_names), refresh_frames=['history'] )
 
     @web.expose
     def clear_history( self, trans ):
