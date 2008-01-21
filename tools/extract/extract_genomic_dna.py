@@ -110,7 +110,7 @@ def __main__():
     #if len(twobit_path) > 0: print >> sys.stdout, "2Bit", twobit_path
 
     if (not (os.path.exists(nib_path)) and not (os.path.exists(twobit_path))): 
-        print >> stderr, "No sequences are available for %s. Request them by reporting this error" % dbkey
+        print >> sys.stderr, "No sequences are available for %s. Request them by reporting this error" % dbkey
          
     # open the input bed file, extract genomic dna sequence one by one (line)
     fout = open(output_filename,"w")
