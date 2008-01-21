@@ -74,6 +74,7 @@
   <section name="Fetch Sequences" id="fetchSeq">
     <tool file="extract/fasta-subseq-wrapper.xml" />
     <tool file="extract/twoBitToFa_wrapper.xml" />
+    <tool file="extract/extract_genomic_dna.xml" />
   </section>
   <section name="Fetch Alignments" id="fetchAlign">
     <tool file="maf/interval2maf_pairwise.xml" />
@@ -299,6 +300,7 @@
   </section> -->
   <section name="Metagenomics" id="metagenomics">
     <tool file="metag_tools/short_reads_trim_seq.xml" />
+    <tool file="metag_tools/short_reads_figure_score.xml" />
     <tool file="metag_tools/short_reads_figure_length.xml" />
   </section>
 </toolbox>

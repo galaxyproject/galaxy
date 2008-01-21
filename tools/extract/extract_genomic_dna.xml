@@ -1,0 +1,70 @@
+<tool id="extract_genomic_dna" name="Extract Genomic DNA">
+  <description>using coordinates from assembled/unassebmled genomes</description>
+  <command interpreter="python">extract_genomic_dna.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format</command>
+  <inputs>
+    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"/>
+	<param name="out_format" type="select" label="Output Type">
+	<option value="0">FASTA</option>
+	<option value="1">Interval</option>
+	</param>
+  </inputs>
+  <outputs>
+    <data format="fasta" name="out_file1" />
+  </outputs>
+  <code file="extract_genomic_dna_code.py" />  
+  <tests>
+    <test>
+      <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
+      <param name="out_format" value="0"/>   
+      <output name="out_file1" file="fsa_extract_genomic_dna.dat" />
+    </test>
+    <test>
+      <param name="input" value="droPer1.bed" dbkey="droPer1" ftype="bed" />
+      <param name="out_format" value="0"/>
+      <output name="out_file1" file="droPer1_fasta.dat" />
+    </test>
+    
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+Make sure that the genome build is specified for the interval dataset you are extracting sequences for (click the pencil icon if it is not specified). 
+
+.. class:: infomark
+
+ **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** - previously were achieved by two seperate tools. 
+
+-----
+
+**What it does**
+
+This tool uses coordinate, strand, and build information to fetch genomic DNAs in FASTA format.
+
+-----
+
+**Example**
+
+Input dataset::
+
+    chr7  127475281  127475310  NM_000230  0  +
+    chr7  127485994  127486166  NM_000230  0  +
+    chr7  127486011  127486166  D49487     0  +
+
+Fetch genomic DNAs of the above data::
+
+    &gt;hg17_chr7_127475281_127475310_+
+    GTAGGAATCGCAGCGCCAGCGGTTGCAAG
+    &gt;hg17_chr7_127485994_127486166_+
+    GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCG
+    GATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATC
+    CAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAG
+    GATCAATGACATTTCACACACG
+    &gt;hg17_chr7_127486011_127486166_+
+    TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGG
+    CCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGA
+    CACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCAC
+    ACACG
+
+</help>
+</tool>
