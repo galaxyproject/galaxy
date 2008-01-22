@@ -6,7 +6,7 @@
     <link href="$h.url_for('/static/universe.css')" rel="stylesheet" type="text/css" />
   </head>
   <body>
-    <table align="center" width="60%" class="border" cellpadding="5" cellspacing="5">
+    <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
       <tr>
         <td>
           <h3 align="center">Galaxy Administration</h3>
@@ -29,12 +29,40 @@
           <form method="post" action="admin">
             <p>Admin password: <input type="password" name="passwd" size="8"></p>
             <p>
-              Purge deleted datasets older than <input type="textfield" value="30" size="3" name="purge_days"> days.
-              <button name="action" value="purge">Purge</button>
+              <button name="action" value="info_delete_userless_histories">Delete Userless Histories (info)</button> that were
+              last updated more than <input type="textfield" value="60" size="3" name="days1"> days ago.
+              Information about the histories and datasets that will be affected if you Delete Userless Histories.
             </p>
             <p>
-              Delete abandoned histories older than <input type="textfield" value="30" size="3" name="abandon_days"> days.
-              <button name="action" value="abandon">Abandon</button>
+              <button name="action" value="delete_userless_histories">Delete Userless Histories</button>
+              that were last updated more than <input type="textfield" value="60" size="3" name="days2"> days ago.
+            </p>
+            <p>
+              <button name="action" value="info_purge_histories">Purge Deleted Histories (info)</button>
+              that were deleted more than <input type="textfield" value="60" size="3" name="days3"> days ago.
+              Information about the histories and datasets that will be affected if you Purge Deleted Histories
+            </p>
+            <p>
+              <button name="action" value="purge_histories">Purge Deleted Histories</button>
+              that were deleted more than <input type="textfield" value="60" size="3" name="days4"> days ago.
+            </p>
+            <p>
+              <button name="action" value="info_purge_datasets">Purge Deleted Datasets (info)</button> that were 
+              deleted more than <input type="textfield" value="60" size="3" name="days5"> days ago.
+              Information about the datasets that will be affected if you Purge Deleted Datasets.
+            </p>
+            <p>
+              <button name="action" value="purge_datasets">Purge Deleted Datasets</button>
+              that were deleted more than <input type="textfield" value="60" size="3" name="days6"> days ago.
+            </p>
+            <p>
+              <button name="action" value="info_remove_datasets">Remove Purged Datasets (info)</button> that were purged
+               more than <input type="textfield" value="60" size="3" name="days7"> days ago.
+              Information about the datasets that will be affected if you Remove Purged Datasets.
+            </p>
+            <p>
+              <button name="action" value="remove_datasets">Remove Purged Datasets</button>
+              that were purged more than <input type="textfield" value="60" size="3" name="days8"> days ago.
             </p>
             <p>
               Reload tool: 

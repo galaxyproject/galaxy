@@ -97,6 +97,7 @@ class History( object ):
         self.id = id
         self.name = name or "Unnamed history"
         self.deleted = False
+        self.purged = False
         self.genome_build = None
         # Relationships
         self.user = user
@@ -150,6 +151,30 @@ class History( object ):
         des.hid_counter = self.hid_counter
         des.flush()
         return des
+    def purge( self ):
+        """Purges a history along with all datasets associated with the history."""
+        errmsg = ""
+        if self.deleted:
+            errors = False
+            dataset_count = 0
+            try:
+                for dataset in self.datasets:
+                    errmsg = dataset.purge()
+                    if errmsg:
+                        errors = True
+                        break
+                    else:
+                        dataset_count += 1
+                if not errors:
+                    self.purged = True
+                    self.flush()
+                else:
+                    return errmsg + "\nError purging datasets for history %s" %str( self.id ), dataset_count
+            except:
+                return errmsg + "\nError purging history %s" %str( self.id ), dataset_count
+        else:
+            return "Error: history %s has not previously been deleted, so it cannot be purged" %str( self.id ), dataset_count
+        return err_msg, dataset_count
 
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
@@ -186,6 +211,7 @@ class Dataset( object ):
         self.designation = designation
         self.deleted = False
         self.purged = False
+        self.removed = False
         self.visible = visible
         self.filename_id = filename_id
         self.file_size = file_size
@@ -337,11 +363,12 @@ class Dataset( object ):
                 return child_association.child
         return None
     def purge( self ):
-        # Renames the file by appending the string "_delete_me" to the original
-        # file name.  The intent is that the renamed files will be kept on disk
-        # for a specified period of time prior to being manually deleted.  This
-        # makes it easier to "unpurge" the file if necessary.  The database is
-        # also updated appropriately.
+        """
+        Renames the file by appending the string "_purged" to the original file name.  
+        The intent is that the renamed files will be kept on disk for a specified period 
+        of time prior to being deleted, making it easier to "unpurge" the file if 
+        necessary.  The database is also updated appropriately.
+        """
         if self.dataset_file is None or not self.dataset_file.readonly:
             #Check to see if another dataset is using this file
             if self.dataset_file:
@@ -349,7 +376,7 @@ class Dataset( object ):
                     if data.id != self.id:
                         return "Error: the dataset id for deletion is %s, while the dataset id retrieved is %s" %( str( self.id ), str( data.id ) )
             else:
-                # Rename files
+                # Rename files and update the database
                 try:
                     purged_file_name = self.file_name + "_purged"
                     os.rename( self.file_name, purged_file_name )
@@ -366,7 +393,20 @@ class Dataset( object ):
         else:
             return "Error: dataset %s has dependencies" %str( self.id )
         return ""
-            
+    def remove_from_disk( self ):
+        """Removes the file from disk and updates the database accordingly."""
+        if self.purged:
+            # Remove the file and update the database
+            try:
+                purged_file_name = self.file_name + "_purged"
+                os.unlink( purged_file_name )
+                self.removed = True
+                self.flush()
+            except:
+                return "Error: dataset %s could not be removed, purged_file_name: '%s'" %( str( self.id ), str( purged_file_name ) ) 
+        else:
+            return "Error: dataset %s has not previously been purged, so it cannot be removed from disk" %str( self.id )
+        return ""    
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
     
