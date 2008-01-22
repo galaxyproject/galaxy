@@ -1,0 +1,40 @@
+<tool id="fasta_tool_fasta2tab" name="FASTA to TAB">
+	<description>Converts a FASTA formated file to TAB format</description>
+	<command interpreter="python">fasta_tool_fasta2tab.py $input $output </command>
+	<inputs>
+		<param name="input" type="data" format="fasta" label="Fasta file"/>
+	</inputs>
+	<outputs>
+		<data name="output" format="tabular"/>
+	</outputs>
+	<tests>
+		<test>
+			<param name="input" value="454.fna" />
+			<output name="output" file="fasta_tool_convert2tab_1.out" />
+		</test>
+		<test>
+			<param name="input" value="extract_genomic_dna.fa" />
+			<output name="output" file="fasta_tool_convert2tab_2.out" />
+		</test>
+	</tests>
+	<help>
+	
+**Example**
+
+A fasta file with two sequences::
+
+	&gt;EYKX4VC01B65GS length=54 xy=0784_1754 region=1 run=R_2007_11_07_16_15_57_
+	CCGGTATCCGGGTGCCGTGATGAGCGCCACCGGAACGAATTCGACTATGCCGAA
+	&gt;EYKX4VC01BNCSP length=187 xy=0558_3831 region=1 run=R_2007_11_07_16_15_57_
+	CTTACCGGTCACCACCGTGCCTTCAGGATTGATCGCCAGATCGGTCGGTGCGTCAGGCGG
+	GGTGACATCGCCCACCACGGTACTCACTGGCTGGCTCTGGTTCCCGGCGGCATCGGAGGC
+	CACCACGTTGAGGGTATTCCCCTCGGTTTGTGGCTCGGTGAGAACCACGTTGTAGTCGCC
+	ATTGGTC
+	
+Returns::
+
+	&gt;EYKX4VC01B65GS length=54 xy=0784_1754 region=1 run=R_2007_11_07_16_15_57_	CCGGTATCCGGGTGCCGTGATGAGCGCCACCGGAACGAATTCGACTATGCCGAA
+	&gt;EYKX4VC01BNCSP length=187 xy=0558_3831 region=1 run=R_2007_11_07_16_15_57_	CTTACCGGTCACCACCGTGCCTTCAGGATTGATCGCCAGATCGGTCGGTGCGTCAGGCGGGGTGACATCGCCCACCACGGTACTCACTGGCTGGCTCTGGTTCCCGGCGGCATCGGAGGCCACCACGTTGAGGGTATTCCCCTCGGTTTGTGGCTCGGTGAGAACCACGTTGTAGTCGCCATTGGTC
+
+	</help>
+</tool>

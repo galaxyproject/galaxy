@@ -1,0 +1,81 @@
+<tool id="megablast_wrapper" name="Run Megablast">
+	<description>on genomic data</description>
+	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $disc_word $disc_type $filter_query</command>
+	<inputs>
+		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
+		<param name="source_select" type="select" display="radio" label="Target database">
+			<!-- <options from_file="/depot/data2/galaxy/blastdb.loc" /> -->
+			<option value="nt">nt (for nucleotides)</option>
+		</param>
+		<!-- <param name="something" type="blastdb" label="database"/> --> 
+<!-- 
+		<param name="output_format" type="select" display="radio" label="Output Type">
+			<option value="bed">BED</option>
+			<option value="maf">MAF</option>
+		</param>
+-->
+		<param name="word_size" type="select" label="Word size (-W, length of best perfect match)">
+			<option value="28">28</option>
+			<option value="16">16</option>
+		</param>
+		<param name="iden_cutoff" type="float" size="15" value="0.0" label="Identity percentage cut-off (-p)" help="no cutoff if 0" />
+		<param name="disc_word" type="integer" size="15" value="0" label="Length of a discontiguous word template (-t)" help="contiguous word if 0"/>
+		<param name="disc_type" type="select" label="Type of a discontiguous word template (-N)">
+			<option value="0">0 - coding</option>
+			<option value="1">1 - optimal</option>
+			<option value="2">2 - two simultaneous</option>
+		</param>
+		<param name="filter_query" type="select" label="Filter query sequence (-F)">
+			<option value="T">Yes</option>
+			<option value="F">No</option>
+		</param>
+	</inputs>
+	<outputs>
+		<data name="output1" format="tabular"/>
+	</outputs>
+<!-- 
+	<tests>
+		<test>
+			<param name="input_query" value="megablast_query.fa" ftype="fasta"/>
+			<param name="source_select" value="nt" />
+			<param name="output_format" value="bed" />
+			<param name="word_size" value="28" />
+			<param name="iden_cutoff" value="99.0" />
+			<param name="disc_word" value="0" />
+			<param name="disc_type" value="0" />
+			<param name="filter_query" value="T" />
+			<output name="output1" file="megablast_test.out"/> 
+		</test>
+	</tests>
+-->
+	<help>
+	
+.. class:: warningmark
+
+ Search nt database might require few hours before returning the result.
+
+-----
+
+**What it does**
+
+This tool runs **megablast**, which searches a nucleotide database using nucleotide sequences. 
+The query sequence could be any nucleotide sequences in fasta format. 
+The output is in bed format. 
+At this point, only **nt** is available for searching. 
+
+Other databases and megablast parameters will be available shortly.
+
+-----
+
+**megablast**: Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
+
+Corresponding command line options:
+
+- **-W**: Word size
+- **-p**: Identity percentage cut-off
+- **-t**: Length of a discontiguous word template
+- **-N**: Type of a discontiguous word template
+- **-F**: Filter query sequence
+
+	</help>
+</tool>

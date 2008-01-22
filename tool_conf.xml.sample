@@ -298,9 +298,15 @@
     <tool file="emboss_5/emboss_wordcount.xml" />
     <tool file="emboss_5/emboss_wordmatch.xml" /> 
   </section> -->
+  <section name="Fasta Tools" id="fasta_tools">
+    <tool file="fasta_tools/fasta_tool_compute_length.xml" />
+    <tool file="fasta_tools/fasta_tool_filter_by_length.xml" />
+    <tool file="fasta_tools/fasta_tool_fasta2tab.xml" />
+    <tool file="fasta_tools/fasta_tool_tab2fasta.xml" />
+  </section>
   <section name="Metagenomics" id="metagenomics">
     <tool file="metag_tools/short_reads_trim_seq.xml" />
     <tool file="metag_tools/short_reads_figure_score.xml" />
     <tool file="metag_tools/short_reads_figure_length.xml" />
-  </section>
+ </section>
 </toolbox>
