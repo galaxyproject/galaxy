@@ -12,6 +12,45 @@
 <h2>What's New in Gmaj</h2>
 <p class=vvlarge>
 <dl>
+<dt><b>2008-Jan-08</b><br>
+<dd>	<ul>
+	<li>	Special treatment for pairwise alignments:
+		<ul>
+		<li>	The dotplot is displayed immediately.
+		<li>	Self-alignments are allowed to use the same name for both sequences.
+		</ul>
+	<li>	Filtering for underlays and highlights, based on score:
+		<ul>
+		<li>	Scores are obtained from the annotation files.
+		<li>	A new text box widget (with keyboard shortcuts) allows you to set the
+			display threshold.
+		<li>	Pointing at an underlay/highlight displays its score on the location
+			status line.
+		</ul>
+	<li>	The text alignment, headers, and status lines are now selectable for copying,
+		and for the text alignment the selection is rectangular.
+	<li>	On a Mac, Gmaj uses standard key bindings (<code>Cmd-C</code>,
+		<code>Cmd-V</code>, etc.).
+	<li>	Holding down the <code>Ctrl</code> key (on any platform) prevents the
+		position indicator from changing; this is useful for copying it and for
+		screenshots.
+	<li>	Bugfixes:
+		<ul>
+		<li>	Empty fields in annotation files were not accepted due to improper
+			handling.
+		<li>	When loading a new dataset with File - Open, the old windows were not
+			closed properly.
+		<li>	Descenders of pip header characters were clipped off.
+		</ul>
+	<li>	Minor adjustments to behavior, appearance, and messages, including:
+		<ul>
+		<li>	Sequence names in the MAF cannot end with <code>~</code> (which is used
+			internally for self-alignments).
+		<li>	The first click in an inactive window just activates it.
+		</ul>
+	<li>	Updated and enhanced documentation.
+	</ul>
+<p>
 <dt><b>2007-Jul-26</b><br>
 <dd>	<ul>
 	<li>	Gmaj can now display dotplots in addition to the main multi-pip views,
@@ -422,6 +461,6 @@
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, July 2007</i>
+<i>Cathy Riemer, January 2008</i>
 </body>
 </html>

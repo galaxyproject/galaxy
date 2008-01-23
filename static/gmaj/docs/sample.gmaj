@@ -182,7 +182,7 @@ offset = 0
 # "underlays.0" entry specifies the underlay file to be used
 # when sequence 1 is the reference and sequence 0 is the second
 # sequence.  Note that there is e.g. no "underlays.1" entry in
-# the "seq 1:" section, since we do not currently have any plots
+# the "seq 1:" section, since we do not usually have plots
 # aligning sequences with themselves.
 #
 # However, specifying a quadratic number of files quickly becomes
@@ -209,4 +209,4 @@ offset = 0
 # file.
 #
 #----------------------------------------------------------------
-# Cathy Riemer, July 2007
+# Cathy Riemer, January 2008

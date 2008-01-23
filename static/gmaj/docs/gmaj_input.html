@@ -189,6 +189,21 @@ set the <code>refseq</code> field in your <a href="#param"
 an inappropriate reference sequence.)  Gmaj displays only one
 alignment file at a time.
 <p>
+Gmaj normally requires that each sequence name appears at most
+once in each MAF block, i.e., that the values of the "src" field
+are unique across all of the <code>s</code> lines within the
+same block.  However, there is a special exception for the case
+of pairwise self-alignments: if all of the blocks have just two
+rows, then all of the sequence names can be the same.  In this
+case Gmaj distinguishes the rows in each block by internally
+adding a <code>~</code> suffix to the second row's sequence name;
+the <code>~</code> does not show in the main display, but you may
+occasionally see it in an error message.
+<p>
+The downside of this feature is that <b>sequence names in the MAF
+file must not end with <code>~</code></b>, even for non-self
+alignments.
+<p>
 
 <p class=hdr>
 <h3><a name="exon">Exons</a></h3>
@@ -353,8 +368,8 @@ this:
      35324 72009 (BTK gene) Gene
      49781 49849 (exon 4) Exon
      51403 51484 Exon
-     50350 50513 (conserved 84%) Strongly_conserved +
-     52376 52603 (Kilroy was here) Strongly_conserved
+     50350 50513 (conserved 84%) Strongly_conserved 84
+     52376 52603 (Kilroy was here) Strongly_conserved 92 +
      ... etc.
 </pre>
 The first group of lines describes the intended meaning of the
@@ -365,13 +380,17 @@ The text in parentheses is an optional label which will be
 displayed on Gmaj's position indicator line when the user points
 the mouse at that band.  The parentheses must be present if the
 label is, and the label itself cannot contain any additional
-parentheses.  (The label is an extra feature not supported by
-PipMaker.)  A <code>+</code> or <code>-</code> character at
-the end of a location line will paint just the upper or lower
-half of the band on the pip (but is ignored for dotplots).  This
-allows you to differentiate between the two strands, or to plot
-potentially overlapping features like gene predictions and
-database matches.
+parentheses.  The number following the color category is an
+optional integer score that can be used to interactively adjust
+which underlays are displayed; see "Underlays Box" in the
+Menus and Widgets section of <a href="gmaj_help.html"
+>Starting and Running Gmaj</a> for more information.  (The
+label and score are extra features not supported by PipMaker.)
+A <code>+</code> or <code>-</code> character at the end of a
+location line will paint just the upper or lower half of the band
+on the pip (but is ignored for dotplots).  This allows you to
+differentiate between the two strands, or to plot potentially
+overlapping features like gene predictions and database matches.
 <p>
 Note that if two bands overlap, the one that was specified last
 in the file appears "on top" and obscures the earlier one (except
@@ -404,9 +423,10 @@ specifying an empty highlight file.
 The PipMaker-style format for highlights is the same as for
 underlays, except that any <code>+</code> or <code>-</code>
 indicators will be ignored, and the <code>Hatch</code> color is
-not supported for highlights.  Just as with underlays, labels can
-be included which will be displayed when the user points at the
-highlight, and highlights that are listed later in the file will
+not supported for highlights.  Just as with underlays, labels
+can be included which will be shown when the user points at
+the highlight, scores can be used to limit which entries are
+displayed, and highlights that are listed later in the file will
 cover up those that appear earlier.
 <p>
 
@@ -506,6 +526,22 @@ escaping them with a backslash (<code>\</code>).  However it
 does not provide for escaping the backslash: quoted values
 should not end with <code>\</code> (insert a space before the
 final quote if necessary).
+<p>
+<p class=subhdr>
+<a name="empty"><b>Empty Fields</b></a>
+<p>
+When reading the generic formats, Gmaj treats two adjacent tab
+characters as an empty field.  However, your files will be easier
+for humans to read if you do not leave fields completely empty.
+Gmaj recognizes a value of <code>.</code> (the dot character)
+to mean "unspecified" for fields such as strand, score, feature,
+and color, in some cases even when the official formats don't.
+For instance, GFF v2 explicitly calls for using <code>.</code>
+when there is no score, but Gmaj allows you to do this with the
+other generic formats as well, in order to distinguish between
+"no score" and a score that is truly zero.  For colors, in
+addition to <code>.</code> Gmaj also interprets <code>0</code>
+to mean "unspecified", in keeping with examples at UCSC.
 <p>
 <p class=subhdr>
 <a name="gencoord"><b>Coordinates</b></a>
@@ -688,7 +724,7 @@ PipMaker-style formats instead.
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, July 2007</i>
+<i>Cathy Riemer, January 2008</i>
 
 <p class=scrollspace>
 </body>

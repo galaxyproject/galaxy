@@ -22,6 +22,7 @@ TABLE OF CONTENTS
 <li><a href="#layout">Window Layout</a>
 <li><a href="#mouse">Mouse Controls</a>
 <li><a href="#menu">Menus and Widgets</a>
+<li><a href="#copy">Copying and Printing</a>
 <li><a href="#notes">Footnotes</a>
 </ul>
 <p class=vlarge>
@@ -144,20 +145,30 @@ These parameters do the following:
 <p class=hdr>
 <h3><a name="memory">Memory Allocation</a></h3>
 <p>
-If the dataset you want to view is large, you may need to give
-Java more memory using the <code>-Xmx</code> switch (at least
-with Sun's Java; this option may not be supported by all vendors).
+If the dataset you want to view is large, Gmaj may run out of
+memory, in which case Java will report an
+<code>OutOfMemoryError</code>.  This message will appear in the
+command window where you started Gmaj (for stand-alone mode) or
+in the Java Console window of your web browser (for applet mode).
+If the Java Console window does not appear when you run the Gmaj
+applet, open the Java Plug-in Control Panel on your computer and
+click the setting for Show Console so you can see this and other
+Java messages.
 <p>
-For example, when using stand-alone mode the command line
+The <code>OutOfMemoryError</code> is not uncommon, because the
+default amount of memory that Java allocates is rather small.
+You can give it more memory using the <code>-Xmx</code> switch
+(at least with Sun's Java; this option may not be supported by
+all vendors).  For example, when using stand-alone mode the
+command line
 <pre>
     [path1]java -Xmx1024m -jar [path2]gmaj.jar
 </pre>
 runs Gmaj with a heap memory allowance of ~1 gigabyte.  For the
 applet, you can do this by opening the Java Plug-in Control Panel
-on your computer, going to the Advanced tab, and entering
-<code>-Xmx1024m</code> in the Java Runtime Parameters box (this
-will affect all applets you run via the Java Plug-in, not just
-Gmaj).
+on your computer and entering <code>-Xmx1024m</code> in the Java
+Runtime Parameters box (this will affect all applets you run via
+the Java Plug-in, not just Gmaj).
 <p>
 
 <p class=hdr>
@@ -172,9 +183,9 @@ positions in the reference sequence, but the vertical
 <code>y</code>-axis represents the percentage of matching
 nucleotides in each gap-free segment of the pairwise alignment,
 instead of its position in the second sequence.  The window you
-see first when Gmaj opens is of this type, and if the alignment
-is reference-independent, you can open more of these with other
-sequences as the reference.
+see first when Gmaj opens is usually of this type, and if the
+alignment is reference-independent, you can open more of these
+with other sequences as the reference.
 <p>
 The second type of window focuses exclusively on a particular
 pair of sequences, and displays one pip together with its
@@ -186,6 +197,10 @@ window.  Conceptually the dotplot windows are like children of
 their parent multi-pip window: they have the same reference
 sequence, and if you close a dotplot only that one window closes,
 but if you close the parent all of its children close too.
+<p>
+For the special case where the alignment file has only two
+sequences, the main window is redundant so Gmaj automatically
+hides it and shows the dotplot window directly.
 <p>
 
 <p class=hdr>
@@ -233,15 +248,15 @@ is displayed in one of the status indicators below the menu bar.
 <h3><a name="layout">Window Layout</a></h3>
 <p>
 Each Gmaj window is divided into several sections.  Across the
-top you will see a menu bar (including a text box for setting the
-percent identity threshold), and below that two lines containing
+top you will see a menu bar (including text boxes for setting
+display thresholds), and below that two lines containing
 status indicators with information about the position of the
 mouse pointer, the boundaries of the currently displayed zoom
 region, and the location of the mark (<a href="#red">red</a>
 circle), along with buttons for sliding the zoom region and
 selecting alternative blocks at the marked position.  Several of
 the dividers between these items are draggable, so you can adjust
-the relative space they occupy.  (The menus, threshold box, and
+the relative space they occupy.  (The menus, threshold boxes, and
 buttons are discussed individually in the <a href="#menu">Menus
 and Widgets</a> section of this document.)
 <p>
@@ -389,6 +404,11 @@ prevent long names from crowding out the other information).
 <p class=hdr>
 <h3><a name="mouse">Mouse Controls</a></h3>
 <p>
+As discussed in more detail <a href="#layout">above</a>,
+pointing the mouse in the plots or other panels causes the
+position indicator below the menu bar to display information
+about that location and/or data item.
+<p>
 You can select a particular alignment block by clicking on one
 of its segments in any of the plots (pips or dotplots) with the
 left mouse button.  (Actually you don't have to click exactly on
@@ -438,6 +458,12 @@ up.  If you have a one-button mouse, you can achieve the same
 effect by applying the <code>Shift</code> key when initially
 pressing the mouse button.
 <p>
+Note that these controls only work in the active window (usually
+indicated in the operating system by a differently colored title
+bar).  If a window is not the active one, then your first click
+in it just activates the window; you will need to click again
+to set the mark, select a region, open a menu, etc.
+<p>
 
 <p class=hdr>
 <h3><a name="menu">Menus and Widgets</a></h3>
@@ -468,7 +494,9 @@ computer.
 <p>
 <dt>File - Close:
 <dd>
-Closes the current window.
+Closes the current window, and if it is a multi-pip window, all
+of its dotplot children are closed as well.  When no windows are
+left, Gmaj will exit.
 <p>
 <dt>File - Exit:
 <dd>
@@ -548,10 +576,9 @@ via copy-and-paste.
 <p>
 <dt>Help - Keys:
 <dd>
-Displays a message window listing Gmaj's keyboard shortcuts.
-No <code>Alt</code> key is needed, since Gmaj doesn't use the
-keyboard for much else.  The shortcuts will not work if the
-keyboard focus is in a text box (e.g. the one for % Identity);
+Displays a message window listing Gmaj's keyboard shortcuts.  No
+<code>Alt</code> key is needed.  The shortcuts will not work if
+the keyboard focus is in a text box (e.g. display thresholds);
 in this case press <code>Esc</code> first to cancel the text
 entry and restore the focus to the active window's menu bar.
 <code>Esc</code> will also cancel dialog and message boxes.
@@ -573,13 +600,34 @@ mark indicator when applicable (this is either the marked one,
 or if a dotplot has a different secondary sequence, the
 corresponding projection from the same MAF block).
 <p>
+<dt>Underlays Box:
+<dd>
+Allows you to set a threshold for limiting the displayed
+underlays and highlights based on the optional score values you
+have assigned in the annotation files.  The GFF, GTF, and BED
+formats already include a score field, and the PipMaker-style
+underlay format has been extended to include one as well (see
+<a href="gmaj_input.html">Input Files for Gmaj</a>).  Some of
+these formats allow floating-point score values, but they will
+be rounded off to integers for comparison with the threshold.
+Missing scores are treated as the maximum possible value, so
+they will never be filtered out; however note that <code>0</code>
+(which is sometimes used to mean "no score") will not be changed,
+since Gmaj cannot distinguish this from a score that is really
+zero.  As with the % Identity box, the same threshold applies
+across all windows, and keyboard shortcuts make it easy to adjust
+it up and down.  Also, pointing to a particular underlay or
+highlight will show that annotation's score in the position
+indicator.
+<p>
 <dt>Arrow Buttons:
 <dd>
 These buttons are located to the right of the zoom indicator.
 Clicking on one of them will move the zoom region in the
-indicated direction by half of its width.  The new region is
-added to your zoom history like any other zoom selection, so the
-Zoom - Back command will return to where you were as usual.
+indicated direction by half of its width or height.  The new
+region is added to your zoom history like any other zoom
+selection, so the Zoom - Back command will return to where you
+were as usual.
 <p>
 <dt>Block Buttons:
 <dd>
@@ -613,6 +661,45 @@ that dotplot, it will just be brought to the front unchanged.
 </dl>
 <p>
 
+<p class=hdr>
+<h3><a name="copy">Copying and Printing</a></h3>
+<p>
+Gmaj supports copy/paste via the system clipboard from most of
+its text panels and dialog boxes, using mouse selection followed
+by the standard keystrokes
+(<code>Ctrl-C</code>/<code>Ctrl-V</code> on Windows and Linux,
+<code>Cmd-C</code>/<code>Cmd-V</code> on Macs).  Some labels are
+not copyable, but their values generally are.  (Exception: with
+some versions of Java, all dialog text may be uncopyable in
+applet mode due to a <a href="gmaj_bugs.html">bug</a>.)
+<p>
+In Gmaj's multi-pip and dotplot windows the text alignment, panel
+headers, and status indicators are copyable.  Clicking in any of
+these components (e.g. to sweep out a selection with the mouse)
+will transfer the keyboard focus to that component, as indicated
+by purple lines around it.  This is necessary for the Copy
+keystroke to work, however it means that Gmaj's other keyboard
+shortcuts will be disabled until the focus is restored, either by
+clicking somewhere else or by pressing the <code>Esc</code> key.
+Note that the mouse selection in the text alignment is
+rectangular (unlike the usual line-wrapped stream), and all of
+these components can be scrolled if necessary by dragging the
+mouse just outside their borders.
+<p>
+Gmaj does not currently have its own print capability.  The
+recommended way to record a particular Gmaj view is to use your
+operating system's "screenshot", "print screen", or "grab"
+facility to save an image of the window to a file, then adjust
+it as needed using image-editing software.  (Be careful with
+rescaling and format conversions, as these may degrade the
+image.)
+<p>
+To prevent the position indicator from changing when you move the
+mouse, hold down the <code>Ctrl</code> key.  This is useful both
+for copying the position indicator's contents and for taking
+screenshots.
+<p>
+
 <!-- <hr align=left noshade size=1 width="20%" color=black> -->
 <p class=hdr>
 <h3><a name="notes">Footnotes</a></h3>
@@ -639,7 +726,7 @@ with 0.
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, July 2007</i>
+<i>Cathy Riemer, January 2008</i>
 
 <p class=scrollspace>
 </body>

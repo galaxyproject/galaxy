@@ -87,6 +87,16 @@ around the problem in future releases of Gmaj.
 	different window and then returning to the one you want.
 <p>
 -->
+<li>	<i>Memory leak when closing or rebuilding windows.</i>&nbsp;
+	When windows are closed or rebuilt (e.g. when loading data
+	via File - Open, switching to Large Fonts, or even just
+	displaying dialog boxes), not all of the memory they were
+	using is being reclaimed, so Gmaj will gradually run out
+	and have to be restarted.  How quickly this happens will
+	depend on how much memory you have allocated to Java with
+	the <code><a href="gmaj_help.html#memory">-Xmx</a></code>
+	switch, and the size of your dataset.
+<p>
 <!--
 <li>	<i>Name.</i>&nbsp;
 	Description.
@@ -109,6 +119,6 @@ Thank you for using Gmaj, and helping us to make it better.
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, July 2007</i>
+<i>Cathy Riemer, January 2008</i>
 </body>
 </html>
