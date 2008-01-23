@@ -12,7 +12,7 @@
       	    	<option value="global">Global</option>
       	        <option value="local">Local</option>
             </param>
-            <param name="tree" type="text" label="Tree Definition" size="20" help="For example: ((hg17,panTro1),(mm5,rn3),canFam1)"/>
+            <param name="tree" type="text" label="Tree Definition in Newick format" size="20" help="For example: ((hg17,panTro1),(mm5,rn3),canFam1)"/>
             <param name="model" type="select" label="Substitution Model">
       	        <option value="000000">F81</option>
                 <option value="010010">HKY85</option>
@@ -26,10 +26,10 @@
     <tests>
       <test>
         <param name="input1" value="dnds_inp.fasta"/>
-        <param name="tree" values="(human, chimp, mouse)"/>
+        <param name="tree" values="((human, chimp), mouse)"/>
         <param name="model" values="000000"/>
         <param name="analysis" values="global"/>
-        <output name="out_file1" file="dnds_out.dat"/>
+        <output name="out_file1" file="dnds_out.tabular"/>
       </test>
     </tests>
 	<help>
@@ -42,7 +42,8 @@ This tool takes a FASTA alignment file and estimates dN/dS ratio using HYPHY_, a
 
 .. class:: warningmark
 
-The tool returns an error message if no tree definition or an invalid tree definition is supplied.
+The tool returns an error message if no tree definition or an invalid tree definition is supplied. 
+Any block/s not containing as many species as mentioned in the tree definition will be omitted from the output.
 
 -----
 

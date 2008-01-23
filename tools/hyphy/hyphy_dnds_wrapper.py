@@ -43,10 +43,11 @@ os.unlink(tree_filename)
 os.unlink(FastaReader_filename)
 os.unlink(config_filename)
 
-if nuc_model == "00000":
+if nuc_model == "000000":
     model = "F81"
 elif nuc_model == "010010":
     model = "HKY85"
 else:
     model = "REV"
-print "Analysis: %s; Model: %s" %(analysis, model)
+    
+print "Analysis: %s; Model: %s; Tree: %s" %(analysis, model, tree_contents)

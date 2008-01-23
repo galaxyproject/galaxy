@@ -603,7 +603,7 @@ COUNT_GAPS_IN_FREQUENCIES  = 0;
 function returnResultHeaders (dummy)
 {
     _analysisHeaders = {};
-    _analysisHeaders[0] = "GENE";
+    _analysisHeaders[0] = "BLOCK";
     _analysisHeaders[1] = "BP";
     _analysisHeaders[2] = "S_sites";
     _analysisHeaders[3] = "NS_sites";
@@ -665,7 +665,7 @@ function runAGeneFit (myID)
 
 
     _returnMe = {};
-    _returnMe ["GENE"]              = myID;
+    _returnMe ["BLOCK"]              = myID;
     _returnMe ["LogL"]              = res[1][0];
     _returnMe ["BP"]                 = _snsAVL ["Sites"];
     _returnMe ["S_sites"]             = _snsAVL ["SSites"];
@@ -703,7 +703,7 @@ COUNT_GAPS_IN_FREQUENCIES  = 0;
 function returnResultHeaders (dummy)
 {
     _analysisHeaders = {};
-    _analysisHeaders[0]  = "GENE";
+    _analysisHeaders[0]  = "BLOCK";
     _analysisHeaders[1]  = "BP";
     _analysisHeaders[2]  = "S_sites";
     _analysisHeaders[3]  = "NS_sites";
@@ -785,7 +785,7 @@ function runAGeneFit (myID)
 
 
     _returnMe = {};
-    _returnMe ["GENE"]              = myID;
+    _returnMe ["BLOCK"]              = myID;
     _returnMe ["LogL"]              = res[1][0];
     _returnMe ["BP"]                 = _snsAVL ["Sites"];
     _returnMe ["S_sites"]             = _snsAVL ["SSites"];
@@ -903,21 +903,23 @@ function _prepareFileOutput (_outPath)
 
 function _processAGene (valid, _geneID)
 {
-	if (valid)
+    if (valid)
 	{
 		returnValue = runAGeneFit (_geneID);
-		fprintf (_outputFilePath, returnValue[_returnHeaders[0]]);
+        fprintf (_outputFilePath, returnValue[_returnHeaders[0]]);
 		for (_biterator = 1; _biterator < Abs(_returnHeaders); _biterator = _biterator + 1)
 		{
 			fprintf (_outputFilePath,"\\t",returnValue[_returnHeaders[_biterator]]);
 		}
-		fprintf (_outputFilePath, "\\n");
+        fprintf (_outputFilePath, "\\n");
 	}
+    /*
 	else
 	{
 		fprintf (_outputFilePath, 
 				_geneID, ", Incorrect number of sequences\\n");
 	}
+    */
 	_currentState = 0;
 	return 0;
 }
@@ -940,7 +942,6 @@ _genomeScreenOptions ["0"] = "%s";
     /* which analysis to run on each gene; */    
 _genomeScreenOptions ["1"] = "%s"; 
     /* what output to produce; */    
-
 _genomeScreenOptions ["2"] = "%s"; 
     /* genetic code */    
 _genomeScreenOptions ["3"] = "%s"; 
