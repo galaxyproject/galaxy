@@ -34,8 +34,12 @@ def check_nib_loc(dbkey):
     nibs = {}
     
     for line in open(NIB_LOC):
-        line.strip('\r\n')
+        if line.startswith("#"):
+            continue
+        line=line.strip('\r\n')
         fields = line.split()    # seperate by space
+        if len(fields) < 3:
+            continue
         if (fields[0] == 'seq'):
             nibs[(fields[1])] = fields[2]
     if nibs.has_key(dbkey):
