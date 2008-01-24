@@ -1,9 +1,11 @@
-<tool id="extract_genomic_dna" name="Extract Genomic DNA">
+<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.0.0">
   <description>using coordinates from assembled/unassebmled genomes</description>
   <command interpreter="python">extract_genomic_dna.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format</command>
   <inputs>
-    <!-- <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"/>  -->
-    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"><validator type="dataset_metadata_in_file" filename="/depot/data2/galaxy/alignseq.loc" metadata_name="dbkey" metadata_column="1" message="Sorry, sequences are not currently available for the specified genome. You may request them via email." split=" " line_startswith = "seq" /></param>
+    <!-- <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query"/>  --> 
+    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query">
+    <validator type="dataset_metadata_in_file" filename="/depot/data2/galaxy/alignseq.loc" metadata_name="dbkey" metadata_column="1" message="Sorry, sequences are not currently available for the specified genome. You may request them via email." split=" " line_startswith = "seq" />
+    </param>
 	<param name="out_format" type="select" label="Output Type">
 	<option value="0">FASTA</option>
 	<option value="1">Interval</option>
@@ -41,6 +43,8 @@ Make sure that the genome build is specified for the interval dataset you are ex
 **What it does**
 
 This tool uses coordinate, strand, and build information to fetch genomic DNAs in FASTA format.
+
+If strand is not defined, the default value is "+".
 
 -----
 

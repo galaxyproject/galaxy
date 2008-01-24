@@ -72,8 +72,10 @@
     <tool file="patmat/findcluster_mysql.xml" />
   </section>
   <section name="Fetch Sequences" id="fetchSeq">
+<!-- 
     <tool file="extract/fasta-subseq-wrapper.xml" />
     <tool file="extract/twoBitToFa_wrapper.xml" />
+-->
     <tool file="extract/extract_genomic_dna.xml" />
   </section>
   <section name="Fetch Alignments" id="fetchAlign">

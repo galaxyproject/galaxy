@@ -1,12 +1,7 @@
 #!/usr/bin/env python2.4
 """
-to do:
-1. more error situation/message: BED format and strand
-5. ask what other stuff needs to be done
-----
 use bx-python, only runs through galaxy
-functions from other programs
-usage: %this_prog.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey 
+usage: %this_prog.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format
 by Wen-Yu Chung
 """
 import sys, string, os, re
@@ -36,7 +31,7 @@ def check_nib_loc(dbkey):
     for line in open(NIB_LOC):
         if line.startswith("#"):
             continue
-        line=line.strip('\r\n')
+        line.strip('\r\n')
         fields = line.split()    # seperate by space
         if len(fields) < 3:
             continue
@@ -56,6 +51,8 @@ def check_twobit_loc(dbkey):
         if line.startswith("#"): 
             continue
         fields = line.split()
+        if len(fields) < 2:
+            continue
         twobits[(fields[0])] = fields[1]
 
     if twobits.has_key(dbkey):
@@ -81,7 +78,7 @@ def print_wrapped( fields, s, fout, output_format ):
 def __main__():
 
     """
-    options, args = doc_optparse.parse( __doc__ )    # what are options?
+    options, args = doc_optparse.parse( __doc__ )    
     
     for i in args:
         print i
@@ -114,7 +111,7 @@ def __main__():
     #if len(twobit_path) > 0: print >> sys.stdout, "2Bit", twobit_path
 
     if (not (os.path.exists(nib_path)) and not (os.path.exists(twobit_path))): 
-        print >> stderr, "No sequences are available for %s. Request them by reporting this error" % dbkey
+        print >> sys.stderr, "No sequences are available for %s. Request them by reporting this error" % dbkey
          
     # open the input bed file, extract genomic dna sequence one by one (line)
     fout = open(output_filename,"w")
@@ -126,14 +123,15 @@ def __main__():
             fields = line.split('\t')        # chr7  127475281  127475310  NM_000230  0  +
             chrom, start, end, strand = fields[input_chrom_col], int( fields[input_start_col] ), int( fields[input_end_col] ), fields[input_strand_col]
             
-            
             """
             # check whether chrom is words
             if not (start.isdigit() and end.isdigit()):
                 print >> stderr, "Bad BED fields: ", start, end
             """
             
-            if ((strand != "+") and (strand != "-")): strand = "+"            
+            if ((strand != "+") and (strand != "-")): 
+                #print >> sys.stdout, "strand is not defined or incorrect. Set to \'+\'."
+                strand = "+"            
             
             # for nibs
             s = ''
@@ -142,18 +140,26 @@ def __main__():
                     nib = nibs[chrom]
                 else:
                     nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( nib_path, chrom ) ) )
-                s = nib.get( start , end - start )
-            #elif (os.path.exists(twobit_path)):
+                try:
+                    s = nib.get( start , end - start )
+                except:
+                    print >> sys.stderr, "Unable to fetch the sequence. Most likely to fetch from beyond sequence."
+                    
+            elif (os.path.exists(twobit_path)):
             #elif (os.path.exists("%s/%s.2bit" % (nib_path, chrom))):
-            elif (len(os.listdir(nib_path)) > 0):
-                twobit_path = nib_path + "/" + os.listdir(nib_path)[0]
+            #elif (len(os.listdir(nib_path)) > 0):
+            #    twobit_path = nib_path + "/" + os.listdir(nib_path)[0]
                 # for twobit
                 if chrom in twobits:
                     t = twobits[chrom]
                 else:
                     twobits[chrom] = t = bx.seq.twobit.TwoBitFile(open(twobit_path))
                     #t = bx.seq.twobit.TwoBitFile( open( twobit_path ) )
-                s = t[chrom][start:end]
+                try:
+                    s = t[chrom][start:end]
+                except:
+                    print >> sys.stderr, "Unable to fetch the sequence. Most likely to fetch from beyond sequence."
+                    
             else:
                 print >> sys.stderr, "Sequence %s was not found for genome build %s" % (chrom, dbkey)
                 print >> sys.stderr, "Most likely your data lists wrong chromosome number for this organism"
