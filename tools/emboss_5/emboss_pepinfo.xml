@@ -1,4 +1,4 @@
-<tool id="EMBOSS: pepinfo69" name="pepinfo">
+<tool id="EMBOSS: pepinfo69" name="pepinfo" version="5.0.0">
   <!-- puts file info in output files -->
   <description>Plots simple amino acid properties in parallel</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl pepinfo -sequence $input1 -outfile $out_file1 -goutfile $out_file2 -graph png -hwindow $hwindow $plot_type -auto</command>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: ednapenny11" name="EMBOSS: ednapenny">
+<tool id="EMBOSS: ednapenny11" name="EMBOSS: ednapenny" version="3.0.0">
   <description>Branch and bound to find all most parsimonious trees for nucleic acid sequence parsimony criteria</description>
   <command>ednapenny -sequence $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -valthresh "$valthresh" -outgnum "$outgnum" -numgroups "$numgroups" -howoften "$howoften" -simple $simple -og
   $og -printdata $printdata -progress no -steps $steps -seqatnodes $seqatnodes -drawtree $drawtree -thresh $thresh -auto</command>

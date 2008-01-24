@@ -1,4 +1,4 @@
-<tool id="EMBOSS: tranalign100" name="tranalign">
+<tool id="EMBOSS: tranalign100" name="tranalign" version="4.0.0">
   <description>Align nucleic coding regions given the aligned proteins</description>
   <command>tranalign -asequence $input1 -bsequence $input2 -outseq $out_file1 -table $table -osformat3 $out_format1 -auto</command>
   <inputs>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS_wobble108" name="wobble">
+<tool id="EMBOSS: wobble108" name="wobble" version="5.0.0">
   <description>Wobble base plot</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl wobble -sequence $input1 -graph png -goutfile $ofile1 -outfile $ofile2 -window "$window" -bases "$bases" -auto</command>
   <inputs>

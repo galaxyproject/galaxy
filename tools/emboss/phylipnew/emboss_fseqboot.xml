@@ -1,4 +1,4 @@
-<tool id="EMBOSS: fseqboot15" name="fseqboot">
+<tool id="EMBOSS: fseqboot15" name="fseqboot" version="3.0.0">
   <description>Bootstrapped genetic frequencies algorithm</description>
   <command interpreter="perl">multiple_fasta_alignment_input.pl $mode fseqboot -sequence $input1 -outfile $out_file1 -test $test -regular $regular -fracsample "$fracsample" -blocksize "$blocksize" -reps "$reps" -justweights $justweights -seed "$seed" -printdata $printdata -dotdiff $dotdiff -progress no -auto</command>
   <inputs>

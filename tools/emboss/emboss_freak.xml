@@ -1,4 +1,4 @@
-<tool id="EMBOSS: freak36" name="freak">
+<tool id="EMBOSS: freak36" name="freak" version="4.0.0">
   <description>Residue/base frequency table or plot</description>
   <command>freak -seqall $input1 -outfile $out_file1 -window $window -letters $letters -step $step -auto</command>
   <inputs>

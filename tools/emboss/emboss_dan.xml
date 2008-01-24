@@ -1,4 +1,4 @@
-<tool id="EMBOSS: dan19" name="dan">
+<tool id="EMBOSS: dan19" name="dan" version="4.0.0">
   <description>Calculates DNA RNA/DNA melting temperature</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl dan -sequence $input1 -windowsize $window -goutfile $out_file1 -graph png -plot $plot1 -shiftincrement $shift -dnaconc $dnaconc
   -saltconc $saltconc -product $product -formamide $formamide -mismatch $mismatch -prodlen $prodlen -thermo $thermo -temperature $temperature -rna $rna -outfile $out_file1 -auto</command>

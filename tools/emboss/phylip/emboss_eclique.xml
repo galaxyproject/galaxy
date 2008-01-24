@@ -1,4 +1,4 @@
-<tool id="EMBOSS: eclique1" name="EMBOSS: eclique">
+<tool id="EMBOSS: eclique1" name="EMBOSS: eclique" version="3.0.0">
   <description>Embossified Compatibility Program</description>
   <command>eclique -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -cliqminnum "$cliqminnum" -og $og -outgnum "$outgnum" -drawtree $drawtree -ancestral $ancestral -minclique
   $minclique -printdata $printdata -progress no -matrixout $matrixout -auto</command>

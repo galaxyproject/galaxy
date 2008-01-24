@@ -1,4 +1,4 @@
-<tool id="EMBOSS_primersearch81" name="primersearch">
+<tool id="EMBOSS: primersearch81" name="primersearch" version="5.0.0">
   <description>Searches DNA sequences for matches with primer pairs</description>
   <command>primersearch -seqall $input1 -infile $input2 -outfile $out_file1 -mismatchpercent $mismatchpercent -auto</command>
   <inputs>

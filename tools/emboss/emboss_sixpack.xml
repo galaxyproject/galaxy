@@ -1,4 +1,4 @@
-<tool id="EMBOSS: sixpack90" name="sixpack">
+<tool id="EMBOSS: sixpack90" name="sixpack" version="4.0.0">
   <description>Display a DNA sequence with 6-frame translation and ORFs</description>
   <command>sixpack -sequence $input1 -outfile $out_file1 -outseq $out_file2 -table $table -firstorf $firstorf -lastorf $lastorf -mstart $mstart -reverse $reverse -orfminsize $orfminsize -uppercase
   "$uppercase" -number $number -width "$width" -length "$length" -margin "$margin" -name $disp_name -description $description -offset "$offset" -html $html_out1 -osformat $out_format2 -auto</command>

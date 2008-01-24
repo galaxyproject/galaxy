@@ -1,4 +1,4 @@
-<tool id="EMBOSS: cusp17" name="cusp">
+<tool id="EMBOSS: cusp17" name="cusp" version="4.0.0">
   <description>Create a codon usage table</description>
   <command>cusp -sequence $input1 -outfile $out_file1 -auto</command>
   <inputs>

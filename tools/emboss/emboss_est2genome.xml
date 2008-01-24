@@ -1,4 +1,4 @@
-<tool id="EMBOSS: est2genome32" name="est2genome">
+<tool id="EMBOSS: est2genome32" name="est2genome" version="4.0.0">
   <description>Align EST and genomic DNA sequences</description>
   <command>est2genome -estsequence $input1 -genomesequence $input2 -outfile $out_file1 -match $match -mismatch $mismatch -gappenalty $gappenalty -intronpenalty $intronpenalty -splicepenalty
   $splicepenalty -minscore $minscore -reverse $reverse -splice $splice -mode $mode -best $best -shuffle $shuffle -seed $seed -align $align -width $width -auto</command>

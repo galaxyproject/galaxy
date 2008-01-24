@@ -1,4 +1,4 @@
-<tool id="EMBOSS_marscan49" name="marscan">
+<tool id="EMBOSS: marscan49" name="marscan" version="5.0.0">
   <description>Finds MAR/SAR sites in nucleic sequences</description>
   <command>marscan -sequence $input1 -outfile $out_file1 -rformat2 $out_format1 -auto</command>
   <inputs>

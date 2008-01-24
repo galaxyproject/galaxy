@@ -1,4 +1,4 @@
-<tool id="EMBOSS_pepcoil68" name="pepcoil">
+<tool id="EMBOSS: pepcoil68" name="pepcoil" version="5.0.0">
   <description>Predicts coiled coil regions</description>
   <command>pepcoil -sequence $input1 -outfile $out_file1 -window $window -coil $coil -frame $frame -other $other -auto</command>
   <inputs>

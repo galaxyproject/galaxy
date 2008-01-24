@@ -1,4 +1,4 @@
-<tool id="EMBOSS: fneighbor19" name="fneighbor">
+<tool id="EMBOSS: fneighbor19" name="fneighbor" version="3.0.0">
   <description>Phylogenies from distance matrix by N-J or UPGMA method</description>
   <command interpreter="perl">multiple_fasta_alignment_input_2_outputs.pl $mode fneighbor -datafile $input1 -outfile $out_file1 -trout yes -outtreefile $out_file2 -matrixtype $matrixtype -treetype $treetype -outgrno "$outgrno" -jumble $jumble -seed "$seed" -replicates $replicates -printdata $printdata -progress no -treeprint $treeprint -auto</command>
   <inputs>

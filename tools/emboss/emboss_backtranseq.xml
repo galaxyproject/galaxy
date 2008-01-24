@@ -1,4 +1,4 @@
-<tool id="EMBOSS: backtranseq2" name="backtranseq">
+<tool id="EMBOSS: backtranseq2" name="backtranseq" version="4.0.0">
   <description>Back translate a protein sequence</description>
   <command>backtranseq -sequence $input1 -outfile $out_file1 -cfile $cfile -osformat2 $out_format1 -auto</command>
   <inputs>

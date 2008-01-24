@@ -1,4 +1,4 @@
-<tool id="EMBOSS_banana3" name="banana">
+<tool id="EMBOSS: banana3" name="banana" version="5.0.0">
   <description>Bending and curvature plot in B-DNA</description>
   <command>banana -sequence $input1 -outfile $out_file1 -graph none -auto</command>
   <inputs>

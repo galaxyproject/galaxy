@@ -1,4 +1,4 @@
-<tool id="EMBOSS: econtrast4" name="EMBOSS: econtrast">
+<tool id="EMBOSS: econtrast4" name="EMBOSS: econtrast" version="3.0.0">
   <description>Computes contrasts for comparative method</description>
   <command>econtrast -infile $input1 -outfile $out_file1 -treefile $input2 -datasets "$datasets" -corplusreg $corplusreg -multsets $multsets -printdata $printdata -progress no -auto</command>
   <inputs>

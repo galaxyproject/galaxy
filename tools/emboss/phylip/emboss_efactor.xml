@@ -1,4 +1,4 @@
-<tool id="EMBOSS: efactor14" name="EMBOSS: efactor">
+<tool id="EMBOSS: efactor14" name="EMBOSS: efactor" version="3.0.0">
   <description>Embossified program to factor multistate characters</description>
   <command>efactor -datafile $input1 -outfile $out_file1 -anc $anc -factors $factors -progress no -auto</command>
   <inputs>

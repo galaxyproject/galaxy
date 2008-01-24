@@ -1,4 +1,4 @@
-<tool id="EMBOSS: erestml23" name="EMBOSS: erestml">
+<tool id="EMBOSS: erestml23" name="EMBOSS: erestml" version="3.0.0">
   <description>Embossified restriction sites Maximum Likelihood program</description>
   <command>erestml -datafile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -random $random -randseed "$randseed" -randtimes "$randtimes" -outgnum "$outgnum" -datasets "$datasets"
   -besttree $besttree -og $og -lengths $lengths -sitelen "$sitelen" -extrap "$extrap" -global $global -progress no -multsets $multsets -printdata $printdata -drawtree $drawtree -auto</command>

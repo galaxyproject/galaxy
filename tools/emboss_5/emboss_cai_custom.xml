@@ -1,4 +1,4 @@
-<tool id="EMBOSS: cai_custom6" name="cai custom">
+<tool id="EMBOSS: cai_custom6" name="cai custom" version="5.0.0">
   <description>CAI codon adaptation index using custom codon usage file</description>
   <command>cai -seqall $input1 -outfile $out_file1 -cfile $input2 -auto</command>
   <inputs>

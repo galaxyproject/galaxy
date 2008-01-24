@@ -1,4 +1,4 @@
-<tool id="EMBOSS_nthseq62" name="nthseq">
+<tool id="EMBOSS: nthseq62" name="nthseq" version="5.0.0">
   <description>Writes one sequence from a multiple set of sequences</description>
   <command>nthseq -sequence $input1 -outseq $out_file1 -number $number -osformat2 $out_format1 -auto</command>
   <inputs>

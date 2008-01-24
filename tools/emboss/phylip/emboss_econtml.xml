@@ -1,4 +1,4 @@
-<tool id="EMBOSS: econtml3" name="EMBOSS: econtml">
+<tool id="EMBOSS: econtml3" name="EMBOSS: econtml" version="3.0.0">
   <description>Gene Frequencies and Continuous Characters Maximum Likelihood method</description>
   <command>econtml -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -og $og -outgnum "$outgnum" -drawtree $drawtree -progress no -printdata $printdata -lengths $lengths -global
   $global -random $random -randseed "$randseed" -all $all -datasets $datasets -besttree $besttree -continuous $continuous -multsets $multsets -auto</command>

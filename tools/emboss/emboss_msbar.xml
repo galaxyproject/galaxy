@@ -1,4 +1,4 @@
-<tool id="EMBOSS: msbar55" name="msbar">
+<tool id="EMBOSS: msbar55" name="msbar" version="4.0.0">
   <description>Mutate sequence beyond all recognition</description>
   <command>msbar -sequence $input1 -outseq $out_file1 -count $count -point $point -block $block -codon $codon -inframe $inframe -minimum $minimum -maximum $maximum -osformat2 $out_format1
   -auto</command>

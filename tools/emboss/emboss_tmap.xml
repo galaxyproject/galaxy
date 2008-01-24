@@ -1,4 +1,4 @@
-<tool id="EMBOSS: tmap99" name="tmap">
+<tool id="EMBOSS: tmap99" name="tmap" version="4.0.0">
   <description>Displays membrane spanning regions</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl tmap -sequences $input1 -outfile $out_file1 -goutfile $out_file2 -graph png -rformat $out_format1 -auto</command>
   <inputs>

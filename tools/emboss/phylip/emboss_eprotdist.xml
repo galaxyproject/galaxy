@@ -1,4 +1,4 @@
-<tool id="EMBOSS: eprotdist21" name="EMBOSS: eprotdist">
+<tool id="EMBOSS: eprotdist21" name="EMBOSS: eprotdist" version="3.0.0">
   <description>Embossified program to compute distance matrix from protein sequences</description>
   <command>eprotdist -sequence $input1 -outfile $out_file1 -method $method -categ "$categ" -gencode $gencode -prob "$prob" -tranrate "$tranrate" -basefrequency $basefrequency -freqa "$freqa" -freqc
   "$freqc" -freqg "$freqg" -freqt "$freqt" -printdata $printdata -progress no -auto</command>

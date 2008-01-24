@@ -1,4 +1,4 @@
-<tool id="EMBOSS: cutseq18" name="cutseq">
+<tool id="EMBOSS: cutseq18" name="cutseq" version="4.0.0">
   <description>Removes a specified section from a sequence</description>
   <command>cutseq -sequence $input1 -outseq $out_file1 -from $from -to $to -osformat2 $out_format1 -auto</command>
   <inputs>

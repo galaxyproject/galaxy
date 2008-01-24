@@ -1,4 +1,4 @@
-<tool id="EMBOSS: skipseq91" name="skipseq">
+<tool id="EMBOSS: skipseq91" name="skipseq" version="5.0.0">
   <description>Reads and writes sequences, skipping first few</description>
   <command>skipseq -sequence $input1 -outseq $out_file1 -skip "$skip" -feature $feature -osformat2 $out_format1 -auto</command>
   <inputs>

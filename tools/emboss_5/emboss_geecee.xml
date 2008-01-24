@@ -1,4 +1,4 @@
-<tool id="EMBOSS_geecee41" name="geecee">
+<tool id="EMBOSS: geecee41" name="geecee" version="5.0.0">
   <description>Calculates fractional GC content of nucleic acid sequences</description>
   <command>geecee -sequence $input1 -outfile $out_file1 -auto</command>
   <inputs>

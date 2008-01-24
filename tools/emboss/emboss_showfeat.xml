@@ -1,4 +1,4 @@
-<tool id="EMBOSS: showfeat85" name="showfeat">
+<tool id="EMBOSS: showfeat85" name="showfeat" version="4.0.0">
   <description>Show features of a sequence</description>
   <command>showfeat -sequence $input1 -outfile $out_file1 -matchsource "$matchsource" -matchtype "$matchtype" -matchtag "$matchtag" -matchvalue "$matchvalue" -sort $sort -annotation "$annotation" -id
   $id -description "$description" -scale "$scale" -width "$width" -collapse $collapse -forward $forward -reverse $reverse -unknown $unknown -strand $strand -source $source -position $position -type

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: edolpenny13" name="EMBOSS: edolpenny">
+<tool id="EMBOSS: edolpenny13" name="EMBOSS: edolpenny" version="3.0.0">
   <description>Branch and bound to find all most parsimonious trees for Dollo, polymorphism parsimony criteria</description>
   <command>edolpenny -datafile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -valthresh "$valthresh" -datasets "$datasets" -numgroups "$numgroups" -howoften "$howoften" -simple $simple
   -ancest $ancest -multsets $multsets -printdata $printdata -progress no -steps $steps -statesatnodes $statesatnodes -drawtree $drawtree -thresh $thresh -auto</command>

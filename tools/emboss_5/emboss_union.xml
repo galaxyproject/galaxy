@@ -1,4 +1,4 @@
-<tool id="EMBOSS_union105" name="union">
+<tool id="EMBOSS: union105" name="union" version="5.0.0">
   <description>Reads sequence fragments and builds one sequence</description>
   <command>union -sequence $input1 -outseq $out_file1 -osformat2 $out_format1 -auto</command>
   <inputs>

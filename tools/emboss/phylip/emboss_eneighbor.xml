@@ -1,4 +1,4 @@
-<tool id="EMBOSS: eneighbor19" name="EMBOSS: eneighbor">
+<tool id="EMBOSS: eneighbor19" name="EMBOSS: eneighbor" version="3.0.0">
   <description>Embossified Neighbor-Joining and UPGMA methods</description>
   <command>eneighbor -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -nj $nj -og $og -outgnum "$outgnum" -randseed "$randseed" -random $random -datasets "$datasets" -lt $lt -ut $ut
   -sr $sr -multsets $multsets -printdata $printdata -progress no -drawtree $drawtree -auto</command>

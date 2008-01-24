@@ -1,4 +1,4 @@
-<tool id="EMBOSS: maskfeat50" name="maskfeat">
+<tool id="EMBOSS: maskfeat50" name="maskfeat" version="4.0.0">
   <description>Mask off features of a sequence</description>
   <command>maskfeat -sequence $input1 -outseq $out_file1 -type "$type" -tolower $tolower -maskchar "$maskchar" -osformat2 $out_format1 -auto</command>
   <inputs>

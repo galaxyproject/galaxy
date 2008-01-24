@@ -1,4 +1,4 @@
-<tool id="EMBOSS: helixturnhelix43" name="helixturnhelix">
+<tool id="EMBOSS: helixturnhelix43" name="helixturnhelix" version="4.0.0">
   <description>Report nucleic acid binding motifs</description>
   <command>helixturnhelix -sequence $input1 -outfile $out_file1 -mean $mean -sd $sd -minsd $minsd -eightyseven $eightyseven -rformat2 $out_format1 -auto</command>
   <inputs>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: eseqboot24" name="EMBOSS: eseqboot">
+<tool id="EMBOSS: eseqboot24" name="EMBOSS: eseqboot" version="3.0.0">
   <description>Bootstrap, Jackknife, or Permutation Resampling of Molecular Sequence, Restriction Site, Gene Frequency or Character Data</description>
   <command>eseqboot -datafile $input1 -outfile $out_file1 -randseed "$randseed" -method $method -test $test -reps "$reps" -inter $inter -enzymes $enzymes -all $all -printdata $printdata -progress no
   -auto</command>

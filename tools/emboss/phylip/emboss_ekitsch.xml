@@ -1,4 +1,4 @@
-<tool id="EMBOSS: ekitsch17" name="EMBOSS: ekitsch">
+<tool id="EMBOSS: ekitsch17" name="EMBOSS: ekitsch" version="3.0.0">
   <description>Embossified Fitch-Margoliash and Least Squares Methods with Evolutionary Clock</description>
   <command>ekitsch -infile $input1 -outfile $out_file1 -treefile $out_file2 -besttree $besttree -randseed "$randseed" -randtimes "$randtimes" -datasets $datasets -power "$power" -negbranch $negbranch
   -random $random -lt $lt -ut $ut -replicates $replicates -multsets $multsets -printdata $printdata -progress no -drawtree $drawtree -auto</command>

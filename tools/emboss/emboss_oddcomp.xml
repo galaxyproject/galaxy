@@ -1,4 +1,4 @@
-<tool id="EMBOSS: oddcomp64" name="oddcomp">
+<tool id="EMBOSS: oddcomp64" name="oddcomp" version="4.0.0">
   <description>Find protein sequence regions with a biased composition</description>
   <command>oddcomp -sequence $input1 -compdatafile $input2 -outfile $out_file1 -window $window -ignorebz $ignorebz -auto</command>
   <inputs>

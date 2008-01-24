@@ -1,4 +1,4 @@
-<tool id="EMBOSS: pepnet70" name="pepnet">
+<tool id="EMBOSS: pepnet70" name="pepnet" version="5.0.0">
   <!-- graphical output file with path information -->
   <description>Displays proteins as a helical net</description>
   <command>pepnet -sequence $input1 -graph png -goutfile $out_file1 -squares $squares -diamonds $diamonds -octags $octags -amphipathic $amphipathic -auto</command>

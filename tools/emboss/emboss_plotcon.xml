@@ -1,4 +1,4 @@
-<tool id="EMBOSS: plotcon75" name="plotcon">
+<tool id="EMBOSS: plotcon75" name="plotcon" version="4.0.0">
   <description>Plot quality of conservation of a sequence alignment</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl plotcon -sequences $input1 -graph png -goutfile $out_file1 -winsize $winsize -auto</command>
   <inputs>

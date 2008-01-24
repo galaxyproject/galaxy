@@ -1,4 +1,4 @@
-<tool id="EMBOSS: extractfeat34" name="extractfeat">
+<tool id="EMBOSS: extractfeat34" name="extractfeat" version="4.0.0">
   <description>Extract features from a sequence</description>
   <command>extractfeat -sequence $input1 -outseq $out_file1 -before $before -after $after -source "$source" -type "$type" -sense $sense -minscore $minscore -maxscore $maxscore -tag "$tag" -value
   "$value" -join $join -featinname $featinname -describe "$describe" -osformat2 $out_format1 -auto</command>

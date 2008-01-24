@@ -1,4 +1,4 @@
-<tool id="EMBOSS: sirna89" name="sirna">
+<tool id="EMBOSS: sirna89" name="sirna" version="4.0.0">
   <description>Finds siRNA duplexes in mRNA</description>
   <command>sirna -sequence $input1 -outfile $out_file1 -outseq $out_file2 -poliii $poliii -aa $aa -tt $tt -polybase $polybase -context $context -rformat2 $out_format1 -osformat3 $out_format2
   -auto</command>

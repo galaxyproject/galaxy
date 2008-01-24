@@ -1,4 +1,4 @@
-<tool id="EMBOSS: epenny20" name="EMBOSS: epenny">
+<tool id="EMBOSS: epenny20" name="EMBOSS: epenny" version="3.0.0">
   <description>Embossified branch and bound to find all most parsimonious trees</description>
   <command>epenny -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -method $method -og $og -outgnum "$outgnum" -datasets $datasets -valthresh "$valthresh" -simple $simple -numgroups
   "$numgroups" -howoften "$howoften" -multsets $multsets -printdata $printdata -progress no -steps $steps -seqatnodes $seqatnodes -thresh $thresh -drawtree $drawtree -auto</command>

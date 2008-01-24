@@ -1,4 +1,4 @@
-<tool id="EMBOSS: ednadist6" name="EMBOSS: ednadist">
+<tool id="EMBOSS: ednadist6" name="EMBOSS: ednadist" version="3.0.0">
   <description>Embossified program to compute distance matrix from nucleotide sequences</description>
   <command>ednadist -sequence $input1 -outfile $out_file1 -method $method -ttratio "$ttratio" -matrix $matrix -categories "$categories" -basefrequency $basefrequency -printinitial $printinitial -freqa
   "$freqa" -freqc "$freqc" -freqg "$freqg" -freqt "$freqt" -auto</command>

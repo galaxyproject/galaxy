@@ -1,4 +1,4 @@
-<tool id="EMBOSS_sigcleave88" name="sigcleave">
+<tool id="EMBOSS: sigcleave88" name="sigcleave" version="5.0.0">
   <description>Reports protein signal cleavage sites</description>
   <command>sigcleave -sequence $input1 -outfile $out_file1 -minweight "$minweight" -prokaryote $prokaryote -rformat2 $out_format1 -auto</command>
   <inputs>

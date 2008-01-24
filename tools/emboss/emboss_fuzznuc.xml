@@ -1,4 +1,4 @@
-<tool id="EMBOSS: fuzznuc37" name="fuzznuc">
+<tool id="EMBOSS: fuzznuc37" name="fuzznuc" version="4.0.0">
   <description>Nucleic acid pattern search</description>
   <command>fuzznuc -sequence $input1 -outfile $out_file1 -pattern "$pattern" -pmismatch $mismatch -complement $complement -rformat2 $out_format1 -auto</command>
   <inputs>

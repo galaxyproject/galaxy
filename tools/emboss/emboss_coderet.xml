@@ -1,4 +1,4 @@
-<tool id="EMBOSS: coderet13" name="coderet">
+<tool id="EMBOSS: coderet13" name="coderet" version="4.0.0">
   <description>Extract CDS, mRNA and translations from feature tables</description>
   <command>coderet -seqall $input1 -outseq $out_file1 -osformat2 $out_format1 -cds $cds -mrna $mrna -translation $translation -auto</command>
   <inputs>

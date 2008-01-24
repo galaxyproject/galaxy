@@ -1,4 +1,4 @@
-<tool id="EMBOSS_pasteseq66" name="pasteseq">
+<tool id="EMBOSS: pasteseq66" name="pasteseq" version="5.0.0">
   <description>Insert one sequence into another</description>
   <command>pasteseq -asequence $input2 -bsequence $input1 -outseq $out_file1 -pos $pos -osformat3 $out_format1 -auto</command>
   <inputs>

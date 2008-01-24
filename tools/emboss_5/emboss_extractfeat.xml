@@ -1,4 +1,4 @@
-<tool id="EMBOSS_extractfeat34" name="extractfeat">
+<tool id="EMBOSS: extractfeat34" name="extractfeat" version="5.0.0">
   <!-- tool tested with documentation, functional test not designed due to empty files resulting from test input sequences -->  
   <description>Extract features from a sequence</description>
   <command>extractfeat -sequence $input1 -outseq $out_file1 -before $before -after $after -source "$source" -type "$type" -sense $sense -minscore $minscore -maxscore $maxscore -tag "$tag" -value

@@ -1,4 +1,4 @@
-<tool id="EMBOSS_equicktandem31" name="equicktandem">
+<tool id="EMBOSS: equicktandem31" name="equicktandem" version="5.0.0">
   <description>Finds tandem repeats</description>
   <command>equicktandem -sequence $input1 -outfile $out_file1 -origfile $ofile2 -maxrepeat $maxrepeat -threshold $threshold -rformat2 $out_format1 -auto</command>
   <inputs>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: plotorf76" name="plotorf">
+<tool id="EMBOSS: plotorf76" name="plotorf" version="4.0.0">
   <description>Plot potential open reading frames</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl plotorf -sequence $input1 -graph png -goutfile $out_file1 -start $start -stop $stop -auto</command>
   <inputs>

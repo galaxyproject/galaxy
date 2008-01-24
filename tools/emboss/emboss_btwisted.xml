@@ -1,4 +1,4 @@
-<tool id="EMBOSS: btwisted5" name="btwisted">
+<tool id="EMBOSS: btwisted5" name="btwisted" version="4.0.0">
   <description>Calculates the twisting in a B-DNA sequence</description>
   <command>btwisted -sequence $input1 -outfile $out_file1 -auto</command>
   <inputs>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: efitch15" name="EMBOSS: efitch">
+<tool id="EMBOSS: efitch15" name="EMBOSS: efitch" version="3.0.0">
   <description>Embossified Fitch-Margoliash and Least-Squares Distance Methods</description>
   <command>efitch -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -besttree $besttree -randseed "$randseed" -randtimes "$randtimes" -og $og -outgnum "$outgnum" -datasets $datasets
   -length $length -power "$power" -negbranch $negbranch -random $random -global $global -lt $lt -ut $ut -replicates $replicates -multsets $multsets -printdata $printdata -progress no -drawtree

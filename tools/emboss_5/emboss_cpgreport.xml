@@ -1,4 +1,4 @@
-<tool id="EMBOSS_cpgreport16" name="cpgreport">
+<tool id="EMBOSS: cpgreport16" name="cpgreport" version="5.0.0">
   <description>Reports all CpG rich regions</description>
   <command>cpgreport -sequence $input1 -outfile $out_file1 -outfeat $out_file2 -offormat3 $out_format2 -score $score -auto</command>
   <inputs>

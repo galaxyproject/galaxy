@@ -1,4 +1,4 @@
-<tool id="EMBOSS_noreturn60" name="noreturn">
+<tool id="EMBOSS: noreturn60" name="noreturn" version="5.0.0">
   <description>Removes carriage return from ASCII files</description>
   <command>noreturn -infile $input1 -outfile $out_file1 -system $system -auto</command>
   <inputs>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS_revseq82" name="revseq">
+<tool id="EMBOSS: revseq82" name="revseq" version="5.0.0">
   <description>Reverse and complement a sequence</description>
   <command>revseq -sequence $input1 -outseq $out_file1 -reverse $reverse -complement $complement -osformat2 $out_format1 -auto</command>
   <inputs>
@@ -46,19 +46,6 @@
       <option value="swiss">SwisProt entry (m)</option>
       <option value="text">Plain sequence (s)</option>
       <option value="treecon">Treecon (m)</option>
-      <option value="gff">GFF</option>
-      <option value="pir">PIR</option>
-      <option value="swiss">SwissProt</option>
-      <option value="dbmotif">DbMotif</option>
-      <option value="diffseq">Diffseq</option>
-      <option value="excel">Excel (tab delimited)</option>
-      <option value="feattable">FeatTable</option>
-      <option value="motif">Motif</option>
-      <option value="regions">Regions</option>
-      <option value="seqtable">SeqTable</option>
-      <option value="simple">SRS Simple</option>
-      <option value="srs">SRS</option>
-      <option value="tagseq">TagSeq</option>
     </param>
   </inputs>
   <outputs>

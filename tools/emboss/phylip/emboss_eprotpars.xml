@@ -1,4 +1,4 @@
-<tool id="EMBOSS: eprotpars22" name="EMBOSS: eprotpars">
+<tool id="EMBOSS: eprotpars22" name="EMBOSS: eprotpars" version="3.0.0">
   <description>Embossified Protein Sequence Parsimony Method</description>
   <command>eprotpars -sequence $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -random $random -randseed "$randseed" -randtimes "$randtimes" -outgnum "$outgnum" -valthresh "$valthresh"
   -besttree $besttree -og $og -progress no -printdata $printdata -steps $steps -seqatnodes $seqatnodes -drawtree $drawtree -thresh $thresh -auto</command>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: fprotdist21" name="fprotdist">
+<tool id="EMBOSS: fprotdist21" name="fprotdist" version="3.0.0">
   <description>Protein distance algorithm</description>
   <command interpreter="perl">multiple_fasta_alignment_input.pl $mode fprotdist -sequence $input1 -outfile $out_file1 -model $model -gamma $gamma -gammacoefficient "$gammacoefficient" -invarcoefficient "$invarcoefficient" -aacateg $aacateg -whichcode $whichcode -ease "$ease" -ttratio "$ttratio" -basefreq "$freqa $freqc $freqg $freqt" -printdata $printdata -progress no -auto</command>
   <inputs>

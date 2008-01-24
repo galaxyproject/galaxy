@@ -1,4 +1,4 @@
-<tool id="EMBOSS: fdnadist6" name="fdnadist">
+<tool id="EMBOSS: fdnadist6" name="fdnadist" version="3.0.0">
   <description>Nucleic acid sequence Distance Matrix program</description>
   <command interpreter="perl">multiple_fasta_alignment_input.pl $mode fdnadist -sequence $input1 -outfile $out_file1 -method $method -gamma $gamma -gammacoefficient "$gammacoefficient" -invarfrac "$invarfrac" -ttratio "$ttratio" -freqsfrom $freqsfrom -basefreq "$freqa $freqc $freqg $freqt" -lower $lower -printdata $printdata -progress no -auto</command>
   <inputs>

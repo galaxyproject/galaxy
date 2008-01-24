@@ -1,4 +1,4 @@
-<tool id="EMBOSS: supermatcher95" name="supermatcher">
+<tool id="EMBOSS: supermatcher95" name="supermatcher" version="4.0.0">
   <description>Match large sequences against one or more other sequences</description>
   <command>supermatcher -asequence $input1 -bsequence $input2 -gapopen "$gapopen" -gapextend "$gapextend" -width "$width" -wordlen "$wordlen" -outfile $out_file1 -errorfile $out_file2 -aformat3
   $out_format1 -auto</command>

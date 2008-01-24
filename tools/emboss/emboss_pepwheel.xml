@@ -1,4 +1,4 @@
-<tool id="EMBOSS: pepwheel72" name="pepwheel">
+<tool id="EMBOSS: pepwheel72" name="pepwheel" version="4.0.0">
   <description>Shows protein sequences as helices</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl pepwheel -sequence $input1 -graph png -goutfile $out_file1 -squares $squares -diamonds $diamonds -octags $octags -amphipathic
   $amphipathic -steps $steps -turns $turns -wheel $wheel -auto</command>

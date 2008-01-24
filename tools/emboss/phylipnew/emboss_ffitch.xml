@@ -1,4 +1,4 @@
-<tool id="EMBOSS: ffitch15" name="ffitch">
+<tool id="EMBOSS: ffitch15" name="ffitch" version="3.0.0">
   <description>Fitch-Margoliash and Least-Squares Distance Methods</description>
   <command interpreter="perl">multiple_fasta_alignment_input_2_outputs.pl $mode ffitch -datafile $input1 -outfile $out_file1 -matrixtype $matrixtype -outtreefile $out_file2 -minev $minev -njumble "$njumble" -seed "$seed" -outgrno "$outgrno" -power "$power" -lengths $lengths -negallowed $negallowed -global $global -replicates $replicates -trout yes -printdata $printdata -progress no -treeprint $treeprint -auto</command>
   <inputs>

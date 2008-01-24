@@ -1,4 +1,4 @@
-<tool id="EMBOSS_newcpgseek58" name="newcpgseek">
+<tool id="EMBOSS: newcpgseek58" name="newcpgseek" version="5.0.0">
   <description>Reports CpG rich region</description>
   <command>newcpgseek -sequence $input1 -outfile $out_file1 -score $score -auto</command>
   <inputs>

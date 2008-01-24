@@ -1,4 +1,4 @@
-<tool id="EMBOSS: showorf86" name="showorf">
+<tool id="EMBOSS: showorf86" name="showorf" version="4.0.0">
   <description>Pretty output of DNA translations</description>
   <command>showorf -sequence $input1 -outfile $out_file1 -frames "$frames" -ruler $ruler -plabel $plabel -nlabel $nlabel -width $width -cfile $cfile -auto</command>
   <inputs>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS_water107" name="water">
+<tool id="EMBOSS: water107" name="water" version="5.0.0">
   <description>Smith-Waterman local alignment</description>
   <command>water -asequence $input1 -bsequence $input2 -outfile $out_file1 -gapopen "$gapopen" -gapextend "$gapextend" -brief $brief -aformat3 $out_format1 -auto</command>
   <inputs>

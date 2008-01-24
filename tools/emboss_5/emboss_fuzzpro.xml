@@ -1,4 +1,4 @@
-<tool id="EMBOSS: fuzzpro38" name="fuzzpro">
+<tool id="EMBOSS: fuzzpro38" name="fuzzpro" version="5.0.0">
   <description>Protein pattern search</description>
   <command>fuzzpro -sequence $input1 -outfile $out_file1 -pattern "$pattern" -mismatch $mismatch -rformat2 $out_format1 -auto</command>
   <inputs>

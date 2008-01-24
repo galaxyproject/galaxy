@@ -1,4 +1,4 @@
-<tool id="EMBOSS: isochore47" name="isochore">
+<tool id="EMBOSS: isochore47" name="isochore" version="4.0.0">
   <description>Plots isochores in large DNA sequences</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl isochore -sequence $input1 -outfile $out_file1 -goutfile $out_file2 -graph png -window $window -shift $shift -auto</command>
   <inputs>

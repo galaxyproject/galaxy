@@ -1,4 +1,4 @@
-<tool id="EMBOSS: edollop12" name="EMBOSS: edollop">
+<tool id="EMBOSS: edollop12" name="EMBOSS: edollop" version="3.0.0">
   <description>Embossified Dollo and Polymorphism Parsimony Program</description>
   <command>edollop -datafile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -randseed "$randseed" -randtimes "$randtimes" -valthresh "$valthresh" -datasets "$datasets" -besttree $besttree
   -random $random -dollo $dollo -ancest $ancest -multsets $multsets -printdata $printdata -progress no -steps $steps -statesatnodes $statesatnodes -drawtree $drawtree -thresh $thresh -auto</command>

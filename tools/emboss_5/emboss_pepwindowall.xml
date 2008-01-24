@@ -1,4 +1,4 @@
-<tool id="EMBOSS_pepwindowall74" name="pepwindowall">
+<tool id="EMBOSS: pepwindowall74" name="pepwindowall" version="5.0.0">
   <!-- produces png file -->
   <description>Displays protein hydropathy of a set of sequences</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl pepwindowall -sequence $input1 -graph png -goutfile $out_file1 -length $length -auto</command>

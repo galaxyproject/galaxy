@@ -1,4 +1,4 @@
-<tool id="EMBOSS_fuzztran39" name="fuzztran">
+<tool id="EMBOSS: fuzztran39" name="fuzztran" version="5.0.0">
   <description>Protein pattern search after translation</description>
   <command>fuzztran -sequence $input1 -outfile $out_file1 -pattern "$pattern" -pmismatch $mismatch -frame $frame -table $table -rformat2 $out_format1 -auto</command>
   <inputs>

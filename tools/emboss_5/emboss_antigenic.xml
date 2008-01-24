@@ -1,4 +1,4 @@
-<tool id="EMBOSS_antigenic2" name="antigenic">
+<tool id="EMBOSS: antigenic1" name="antigenic" version="5.0.0">
   <description>Predicts potentially antigenic regions of a protein sequence, using the method of Kolaskar and Tongaonkar.</description>
   <command>antigenic -sequence $input1 -outfile $out_file1 -minlen $minlen -rformat2 $out_format1 -auto</command>
   <inputs>

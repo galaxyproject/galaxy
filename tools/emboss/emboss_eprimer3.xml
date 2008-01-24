@@ -1,4 +1,4 @@
-<tool id="EMBOSS: EPrimer330" name="EPrimer3">
+<tool id="EMBOSS: EPrimer330" name="EPrimer3" version="4.0.0">
   <description>Picks PCR primers and hybridization oligos</description>
   <command>eprimer3 -sequence $input1 -outfile $out_file1 -primer $primer -task $task -hybridprobe $hybridprobe -numreturn $numreturn -gcclamp $gcclamp -osize $osize -minsize $minsize -maxsize
   $maxsize -otm $otm -mintm $mintm -maxtm $maxtm -maxdifftm $maxdifftm -ogcpercent $ogcpercent -mingc $mingc -maxgc $maxgc -saltconc $saltconc -dnaconc $dnaconc -maxpolyx $maxpolyx -productosize

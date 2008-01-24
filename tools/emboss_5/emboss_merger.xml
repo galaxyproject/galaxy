@@ -1,4 +1,4 @@
-<tool id="EMBOSS_merger54" name="merger">
+<tool id="EMBOSS: merger54" name="merger" version="5.0.0">
   <description>Merge two overlapping nucleic acid sequences</description>
   <command>merger -asequence $input1 -bsequence $input2 -outseq $out_file1 -outfile $out_file2 -gapopen $gapopen -gapextend $gapextend -osformat4 $out_format1 -aformat3 $out_format2 -auto</command>
   <inputs>

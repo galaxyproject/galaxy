@@ -1,4 +1,4 @@
-<tool id="EMBOSS_iep45" name="iep">
+<tool id="EMBOSS: iep45" name="iep" version="5.0.0">
   <description>Calculates the isoelectric point of a protein</description>
   <command>iep -sequence $input1 -outfile $out_file1 -step $step -amino $amino -graph png -termini $termini -auto</command>
   <inputs>

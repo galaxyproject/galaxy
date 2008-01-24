@@ -1,4 +1,4 @@
-<tool id="EMBOSS_shuffleseq87" name="shuffleseq">
+<tool id="EMBOSS: shuffleseq87" name="shuffleseq" version="5.0.0">
   <!-- produces random outputs each time -->
   <description>Shuffles a set of sequences maintaining composition</description>
   <command>shuffleseq -sequence $input1 -outseq $out_file1 -shuffle "$shuffle" -osformat2 $out_format1 -auto</command>

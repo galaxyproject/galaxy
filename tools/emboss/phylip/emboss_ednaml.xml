@@ -1,4 +1,4 @@
-<tool id="EMBOSS: ednaml8" name="EMBOSS: ednaml">
+<tool id="EMBOSS: ednaml8" name="EMBOSS: ednaml" version="3.0.0">
   <description>Embossified DNA Maximum Likelihood program</description>
   <command>ednaml -sequence $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -lengths $lengths -global $global -random $random -randseed "$randseed" -randtimes "$randtimes" -freqa "$freqa"
   -freqc "$freqc" -freqg "$freqg" -freqt "$freqt" -catnum "$catnum" -catprob "$catprob" -autog $autog -lambda "$lambda" -outgnum "$outgnum" -besttree $besttree -ttratio "$ttratio" -basefrequency

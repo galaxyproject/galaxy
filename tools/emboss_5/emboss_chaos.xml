@@ -1,4 +1,4 @@
-<tool id="EMBOSS_chaos7" name="chaos">
+<tool id="EMBOSS: chaos7" name="chaos" version="5.0.0">
   <description>Create a chaos game representation plot for a sequence</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl chaos -sequence $input1 -graph png -goutfile $out_file1 -auto</command>
   <inputs>

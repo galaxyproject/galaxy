@@ -1,4 +1,4 @@
-<tool id="EMBOSS: fdnapars10" name="fdnapars">
+<tool id="EMBOSS: fdnapars10" name="fdnapars" version="3.0.0">
   <description>DNA parsimony algorithm</description>
   <command interpreter="perl">multiple_fasta_alignment_input_2_outputs.pl $mode fdnapars -sequence $input1 -outfile $out_file1 -trout yes -outtreefile $out_file2 -maxtrees "$maxtrees" -thorough $thorough -rearrange $rearrange -transversion $transversion -njumble "$njumble" -seed "$seed" -outgrno "$outgrno" -thresh $thresh -threshold "$threshold" -printdata $printdata -progress no -stepbox $stepbox -ancseq $ancseq -treeprint $treeprint -dotdiff $dotdiff -auto</command>
   <inputs>

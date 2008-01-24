@@ -1,4 +1,4 @@
-<tool id="EMBOSS: splitter92" name="splitter">
+<tool id="EMBOSS: splitter92" name="splitter" version="4.0.0">
   <description>Split a sequence into (overlapping) smaller sequences</description>
   <command>splitter -sequence $input1 -outseq $out_file1 -size "$size" -overlap "$overlap" -addoverlap $addoverlap -osformat2 $out_format1 -auto</command>
   <inputs>

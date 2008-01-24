@@ -1,4 +1,4 @@
-<tool id="EMBOSS: ednainvar7" name="EMBOSS: ednainvar">
+<tool id="EMBOSS: ednainvar7" name="EMBOSS: ednainvar" version="3.0.0">
   <description>Embossified program to compute Lake's and Cavender's phylogenetic invariants from nucleotide sequences</description>
   <command>ednainvar -sequence $input1 -outfile $out_file1 -printdata $printdata -progress no -auto</command>
   <inputs>

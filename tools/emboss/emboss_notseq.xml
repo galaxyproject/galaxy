@@ -1,4 +1,4 @@
-<tool id="EMBOSS: notseq61" name="notseq">
+<tool id="EMBOSS: notseq61" name="notseq" version="4.0.0">
   <description>Exclude a set of sequences and write out the remaining ones</description>
   <command>notseq -sequence $input1 -outseq $out_file1 -exclude "$exclude" -osformat3 $out_format1 -auto</command>
   <inputs>

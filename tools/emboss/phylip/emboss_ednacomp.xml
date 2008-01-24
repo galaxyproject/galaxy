@@ -1,4 +1,4 @@
-<tool id="EMBOSS: ednacomp5" name="EMBOSS: ednacomp">
+<tool id="EMBOSS: ednacomp5" name="EMBOSS: ednacomp" version="3.0.0">
   <description>Embossified DNA Compatibility Program</description>
   <command>ednacomp -sequence $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -og $og -outgnum "$outgnum" -randseed "$randseed" -randtimes "$randtimes" -drawtree $drawtree -printdata
   $printdata -progress no -stepoutput $stepoutput -allnodes $allnodes -random $random -auto</command>

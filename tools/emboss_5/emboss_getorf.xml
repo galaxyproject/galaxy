@@ -1,4 +1,4 @@
-<tool id="EMBOSS_getorf42" name="getorf">
+<tool id="EMBOSS: getorf42" name="getorf" version="5.0.0">
   <description>Finds and extracts open reading frames (ORFs)</description>
   <command>getorf -sequence $input1 -outseq $out_file1 -table $table -minsize $minsize -maxsize $maxsize -find $find -methionine $methionine -circular $circular -reverse $reverse -flanking $flanking
   -osformat2 $out_format1 -auto</command>
@@ -72,7 +72,7 @@
       <option value="fitch">Fitch (m)</option>
       <option value="gcg">Wisconsin Package GCG 9.x and 10.x (s)</option>
       <option value="genbank">GENBANK (m)</option>
-      <option value="gff">GFF (m)</option>
+      <!-- <option value="gff">GFF (m)</option> -->
       <option value="hennig86">Hennig86 (m)</option>
       <option value="ig">Intelligenetics (m)</option>
       <option value="jackknifer">Jackknifer (m)</option>

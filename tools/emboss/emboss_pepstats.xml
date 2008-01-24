@@ -1,4 +1,4 @@
-<tool id="EMBOSS: pepstats71" name="pepstats">
+<tool id="EMBOSS: pepstats71" name="pepstats" version="4.0.0">
   <description>Protein statistics</description>
   <command>pepstats -sequence $input1 -outfile $out_file1 -termini $termini -auto</command>
   <inputs>

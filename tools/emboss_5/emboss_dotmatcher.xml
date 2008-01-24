@@ -1,4 +1,4 @@
-<tool id="EMBOSS_dotmatcher24" name="dotmatcher">
+<tool id="EMBOSS: dotmatcher24" name="dotmatcher" version="5.0.0">
   <description>Displays a thresholded dotplot of two sequences</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl dotmatcher -asequence $input1 -bsequence $input2 -goutfile $out_file1 -windowsize $windowsize -threshold $threshold -graph png -xygraph png
   -auto</command>

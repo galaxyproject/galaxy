@@ -1,4 +1,4 @@
-<tool id="EMBOSS_coderet13" name="coderet">
+<tool id="EMBOSS: coderet13" name="coderet" version="5.0.0">
   <description>Extract CDS, mRNA and translations from feature tables</description>
   <!--  <command>coderet -seqall $input1 -outfile $out_file1 -osformat2 $out_format1 -cds $cds -mrna $mrna -translation $translation -auto</command>-->
   <command>coderet -seqall $input1 -outfile $out_file1 -auto</command>
@@ -6,7 +6,8 @@
     <param format="data" name="input1" type="data">
       <label>On query</label>
     </param>
-<!--    <param name="cds" type="boolean" truevalue="yes" falsevalue="no" checked="true">
+    <!--
+    <param name="cds" type="boolean" truevalue="yes" falsevalue="no" checked="true">
       <label>Extract CDS sequences</label>
     </param>
     <param name="mrna" type="select">
@@ -50,7 +51,8 @@
       <option value="swiss">SwisProt entry (m)</option>
       <option value="text">Plain sequence (s)</option>
       <option value="treecon">Treecon (m)</option> 
-    </param> -->
+    </param> 
+    -->
   </inputs>
   <outputs>
     <data format="coderet" name="out_file1" />

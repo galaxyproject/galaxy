@@ -1,4 +1,4 @@
-<tool id="EMBOSS: getorf42" name="getorf">
+<tool id="EMBOSS: getorf42" name="getorf" version="4.0.0">
   <description>Finds and extracts open reading frames (ORFs)</description>
   <command>getorf -sequence $input1 -outseq $out_file1 -table $table -minsize $minsize -maxsize $maxsize -find $find -methionine $methionine -circular $circular -reverse $reverse -flanking $flanking
   -osformat2 $out_format1 -auto</command>

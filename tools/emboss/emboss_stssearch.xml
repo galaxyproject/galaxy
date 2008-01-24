@@ -1,4 +1,4 @@
-<tool id="EMBOSS: stssearch94" name="stssearch">
+<tool id="EMBOSS: stssearch94" name="stssearch" version="4.0.0">
   <description>Search a DNA database for matches with a set of STS primers</description>
   <command>stssearch -seqall $input1 -primersfile $input2 -outfile $out_file1 -auto</command>
   <inputs>

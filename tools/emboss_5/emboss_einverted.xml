@@ -1,4 +1,4 @@
-<tool id="EMBOSS_einverted28" name="einverted">
+<tool id="EMBOSS: einverted28" name="einverted" version="5.0.0">
   <description>Finds DNA inverted repeats</description>
   <command>einverted -sequence $input1 -outfile $out_file1 -gap $gap -threshold $threshold -match $match -mismatch $mismatch -maxrepeat $maxrepeat -auto</command>
   <inputs>

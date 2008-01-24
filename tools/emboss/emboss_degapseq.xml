@@ -1,4 +1,4 @@
-<tool id="EMBOSS: degapseq20" name="degapseq">
+<tool id="EMBOSS: degapseq20" name="degapseq" version="4.0.0">
   <description>Removes gap characters from sequences</description>
   <command>degapseq -sequence $input1 -outseq $out_file1 -osformat2 $out_format1 -auto</command>
   <inputs>

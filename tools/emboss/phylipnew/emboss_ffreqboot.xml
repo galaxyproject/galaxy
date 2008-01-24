@@ -1,4 +1,4 @@
-<tool id="EMBOSS: ffreqboot15" name="ffreqboot">
+<tool id="EMBOSS: ffreqboot15" name="ffreqboot" version="3.0.0">
   <description>Bootstrapped genetic frequencies algorithm</description>
   <command>ffreqboot -infile $input1 -outfile $out_file1 -test $test -regular $regular -fracsample "$fracsample" -blocksize "$blocksize" -reps "$reps" -justweights $justweights -seed "$seed" -printdata $printdata -dotdiff $dotdiff -progress no -auto</command>
   <inputs>

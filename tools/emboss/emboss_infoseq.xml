@@ -1,4 +1,4 @@
-<tool id="EMBOSS: infoseq46" name="infoseq">
+<tool id="EMBOSS: infoseq46" name="infoseq" version="4.0.0">
   <description>Displays some simple information about sequences</description>
   <command>infoseq -sequence $input1 -outfile $out_file1 -html $html_out1 -heading $heading -usa $usa -name $disname -accession $accession -gi $gi -version $version -type $type -length $length -pgc
   $pgc -description $description -auto</command>

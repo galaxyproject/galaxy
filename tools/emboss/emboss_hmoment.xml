@@ -1,4 +1,4 @@
-<tool id="EMBOSS: hmoment44" name="hmoment">
+<tool id="EMBOSS: hmoment44" name="hmoment" version="4.0.0">
   <description>Hydrophobic moment calculation</description>
   <command>hmoment -seqall $input1 -outfile $out_file1 -window $window -aangle $aangle -auto</command>
   <inputs>

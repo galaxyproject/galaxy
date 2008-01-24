@@ -1,4 +1,4 @@
-<tool id="EMBOSS_palindrome65" name="palindrome">
+<tool id="EMBOSS: palindrome65" name="palindrome" version="5.0.0">
   <description>Looks for inverted repeats in a nucleotide sequence</description>
   <command>palindrome -sequence $input1 -outfile $out_file1 -minpallen $minpallen -maxpallen $maxpallen -gaplimit $gaplimit -nummismatches $nummismatches -overlap $overlap -auto</command>
   <inputs>

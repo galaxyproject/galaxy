@@ -1,4 +1,4 @@
-<tool id="EMBOSS: matcher52" name="matcher">
+<tool id="EMBOSS: matcher52" name="matcher" version="4.0.0">
   <description>Finds the best local alignments between two sequences</description>
   <command>matcher -asequence $input1 -bsequence $input2 -outfile $out_file1 -alternatives $alternatives -gappenalty $gappenalty -gaplength $gaplength -aformat3 $out_format1 -auto</command>
   <inputs>

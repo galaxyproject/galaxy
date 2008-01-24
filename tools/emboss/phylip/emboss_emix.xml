@@ -1,4 +1,4 @@
-<tool id="EMBOSS: emix18" name="EMBOSS: emix">
+<tool id="EMBOSS: emix18" name="EMBOSS: emix" version="3.0.0">
   <description>Embossified mixed method parsimony</description>
   <command>emix -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -besttree $besttree -method $method -randseed "$randseed" -randtimes "$randtimes" -og $og -outgnum "$outgnum"
   -valthresh "$valthresh" -datasets $datasets -random $random -ancestral $ancestral -multsets $multsets -printdata $printdata -progress no -statesatnodes $statesatnodes -steps $steps -drawtree

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: fprotpars22" name="fprotpars">
+<tool id="EMBOSS: fprotpars22" name="fprotpars" version="3.0.0">
   <description>Protein pasimony algorithm</description>
   <command interpreter="perl">multiple_fasta_alignment_input_2_outputs.pl $mode fprotpars -sequence $input1 -outfile $out_file1 -trout yes -outtreefile $out_file2 -njumble "$njumble" -seed "$seed" -outgrno "$outgrno" -thresh $thresh -threshold "$threshold" -whichcode $whichcode -printdata "$printdata" -progress no -dotdiff $dotdiff -auto</command>
   <inputs>

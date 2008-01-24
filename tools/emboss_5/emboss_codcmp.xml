@@ -1,4 +1,4 @@
-<tool id="EMBOSS_codcmp12" name="codcmp">
+<tool id="EMBOSS: codcmp12" name="codcmp" version="5.0.0">
   <description>Codon usage table comparison</description>
   <command>codcmp -first $cfile1 -second $cfile2 -outfile $out_file1 -auto</command>
   <inputs>

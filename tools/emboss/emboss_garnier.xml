@@ -1,4 +1,4 @@
-<tool id="EMBOSS: garnier40" name="garnier">
+<tool id="EMBOSS: garnier40" name="garnier" version="4.0.0">
   <description>Predicts protein secondary structure</description>
   <command>garnier -sequence $input1 -outfile $out_file1 -idc $idc -rformat2 $out_format1 -auto</command>
   <inputs>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: transeq101" name="transeq">
+<tool id="EMBOSS: transeq101" name="transeq" version="4.0.0">
   <description>Translate nucleic acid sequences</description>
   <command>transeq -sequence $input1 -outseq $out_file1 -frame $frame -table $table -regions "$regions" -trim $trim -clean $clean -alternative $alternative -osformat2 $out_format1 -auto</command>
   <inputs>

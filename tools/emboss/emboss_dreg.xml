@@ -1,4 +1,4 @@
-<tool id="EMBOSS: dreg27" name="dreg">
+<tool id="EMBOSS: dreg27" name="dreg" version="4.0.0">
   <description>Regular expression search of a nucleotide sequence</description>
   <command>dreg -sequence $input1 -outfile $out_file1 -pattern "$pattern" -auto</command>
   <inputs>

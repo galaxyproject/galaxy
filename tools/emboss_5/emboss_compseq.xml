@@ -1,4 +1,4 @@
-<tool id="EMBOSS_compseq14" name="compseq">
+<tool id="EMBOSS: compseq14" name="compseq" version="5.0.0">
   <description>Count composition of dimer/trimer/etc words in a sequence</description>
   <command>compseq -sequence $input1 -outfile $out_file1 -word $word -frame $frame -auto</command>
   <inputs>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: lindna48" name="lindna">
+<tool id="EMBOSS: lindna48" name="lindna" version="4.0.0">
   <description>Draws linear maps of DNA constructs</description>
   <command>lindna -infile $input1 -graphout png -goutfile $out_file1 -ruler $ruler -blocktype $blocktype -maxgroups $maxgroups -maxlabels $maxlabels -intersymbol $intersymbol -intercolour $intercolour
   -interticks $interticks -gapsize $gapsize -ticklines $ticklines -textheight $textheight -textlength $textlength -margin $margin -tickheight $tickheight -blockheight $blockheight -rangeheight

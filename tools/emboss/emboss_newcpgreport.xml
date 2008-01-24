@@ -1,4 +1,4 @@
-<tool id="EMBOSS: newcpgreport57" name="newcpgreport">
+<tool id="EMBOSS: newcpgreport57" name="newcpgreport" version="4.0.0">
   <description>Report CpG rich areas</description>
   <command>newcpgreport -sequence $input1 -window $window -shift $shift -minlen $minlen -minpc $minpc -outfile $out_file1 -minoe $minoe -auto</command>
   <inputs>

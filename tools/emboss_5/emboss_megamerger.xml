@@ -1,4 +1,4 @@
-<tool id="EMBOSS_megamerger53" name="megamerger">
+<tool id="EMBOSS: megamerger53" name="megamerger" version="5.0.0">
   <description>Merge two large overlapping nucleic acid sequences</description>
   <command>megamerger -asequence $input1 -bsequence $input2 -outseq $out_file1 -outfile $out_file2 -wordsize $wordsize -prefer $prefer -osformat3 $out_format1 -auto</command>
   <inputs>

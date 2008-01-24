@@ -1,4 +1,4 @@
-<tool id="EMBOSS: econsense2" name="EMBOSS: econsense">
+<tool id="EMBOSS: econsense2" name="EMBOSS: econsense" version="3.0.0">
   <description>Embossified consensus tree program</description>
   <command>econsense -infile $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -og $og -outgnum "$outgnum" -drawtree $drawtree -root $root -progress no -printsets $printsets -auto</command>
   <inputs>

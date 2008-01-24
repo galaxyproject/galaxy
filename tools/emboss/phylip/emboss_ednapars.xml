@@ -1,4 +1,4 @@
-<tool id="EMBOSS: ednapars10" name="EMBOSS: ednapars">
+<tool id="EMBOSS: ednapars10" name="EMBOSS: ednapars" version="3.0.0">
   <description>Embossified DNA Parsimony Program</description>
   <command>ednapars -sequence $input1 -outfile $out_file1 -trout yes -treefile $out_file2 -random $random -randseed "$randseed" -randtimes "$randtimes" -outgnum "$outgnum" -valthresh "$valthresh"
   -besttree $besttree -og $og -progress no -printdata $printdata -steps $steps -seqatnodes $seqatnodes -drawtree $drawtree -thresh $thresh -auto</command>

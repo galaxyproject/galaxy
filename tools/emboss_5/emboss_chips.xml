@@ -1,4 +1,4 @@
-<tool id="EMBOSS_chips10" name="chips">
+<tool id="EMBOSS: chips10" name="chips" version="5.0.0">
   <description>Codon usage statistics</description>
   <command>chips -seqall $input1 -outfile $out_file1 -sum $sum -auto</command>
   <inputs>

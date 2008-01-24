@@ -1,4 +1,4 @@
-<tool id="EMBOSS: descseq21" name="descseq">
+<tool id="EMBOSS: descseq21" name="descseq" version="4.0.0">
   <description>Alter the name or description of a sequence</description>
   <command>descseq -sequence $input1 -outseq $out_file1 -name "$seqname" -description "$desc" -append $append -osformat2 $out_format1 -auto</command>
   <inputs>

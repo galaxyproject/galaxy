@@ -1,4 +1,4 @@
-<tool id="EMBOSS: stretcher93" name="stretcher">
+<tool id="EMBOSS: stretcher93" name="stretcher" version="4.0.0">
   <description>Finds the best global alignment between two sequences</description>
   <command>stretcher -asequence $input1 -bsequence $input2 -outfile $out_file1 -gappenalty "$gappenalty" -gaplength "$gaplength" -aformat3 $out_format1 -auto</command>
   <inputs>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: tcode97" name="tcode">
+<tool id="EMBOSS: tcode97" name="tcode" version="4.0.0">
   <description>Fickett TESTCODE statistic to identify protein-coding DNA</description>
   <command>tcode -sequence $input1 -outfile $out_file1 -window "$window" -step "$step" -rformat $out_format1 -auto</command>
   <inputs>

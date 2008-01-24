@@ -1,4 +1,4 @@
-<tool id="EMBOSS: egendist16" name="EMBOSS: egendist">
+<tool id="EMBOSS: egendist16" name="EMBOSS: egendist" version="3.0.0">
   <description>Embossified compute genetic distances from gene frequencies</description>
   <command>egendist -infile $input1 -outfile $out_file1 -method $method -datasets "$datasets" -all $all -lowertriangle $lowertriangle -multsets -progress no -auto</command>
   <inputs>

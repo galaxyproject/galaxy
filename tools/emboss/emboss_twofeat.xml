@@ -1,4 +1,4 @@
-<tool id="EMBOSS: twofeat104" name="twofeat">
+<tool id="EMBOSS: twofeat104" name="twofeat" version="4.0.0">
   <description>Finds neighbouring pairs of features in sequences</description>
   <command>twofeat -sequence $input1 -outfile $out_file1 -atype "$atype" -btype "$btype" -minrange "$minrange" -maxrange "$maxrange" -asource "$asource" -asense $asense -aminscore "$aminscore"
   -amaxscore "$amaxscore" -atag "$atag" -avalue "$avalue" -bsource "$bsource" -bsense "$bsense" -bminscore "$bminscore" -bmaxscore "$bmaxscore" -btag "$btag" -bvalue "$bvalue" -overlap $overlap

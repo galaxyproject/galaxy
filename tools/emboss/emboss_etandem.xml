@@ -1,4 +1,4 @@
-<tool id="EMBOSS: etandem33" name="etandem">
+<tool id="EMBOSS: etandem33" name="etandem" version="4.0.0">
   <description>Looks for tandem repeats in a nucleotide sequence</description>
   <command>etandem -sequence $input1 -outfile $out_file1 -minrepeat $minrepeat -maxrepeat $maxrepeat -threshold $threshold -mismatch $mismatch -uniform $uniform -rformat2 $out_format1 -auto</command>
   <inputs>

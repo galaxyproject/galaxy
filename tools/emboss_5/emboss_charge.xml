@@ -1,4 +1,4 @@
-<tool id="EMBOSS_charge8" name="charge">
+<tool id="EMBOSS: charge8" name="charge" version="5.0.0">
   <description>Protein charge plot</description>
   <command>charge -seqall $input1 -outfile $out_file1 -window $window -auto</command>
   <inputs>

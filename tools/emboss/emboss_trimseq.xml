@@ -1,4 +1,4 @@
-<tool id="EMBOSS: trimseq103" name="trimseq">
+<tool id="EMBOSS: trimseq103" name="trimseq" version="4.0.0">
   <description>Trim ambiguous bits off the ends of sequences</description>
   <command>trimseq -sequence $input1 -outseq $out_file1 -window "$window" -percent "$percent" -strict $strict -star $star -left $left -right $right -osformat2 $out_format1 -auto</command>
   <inputs>

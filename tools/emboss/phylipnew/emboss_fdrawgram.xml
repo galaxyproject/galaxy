@@ -1,4 +1,4 @@
-<tool id="EMBOSS: fdrawgram10" name="fdrawgram">
+<tool id="EMBOSS: fdrawgram10" name="fdrawgram" version="3.0.0">
   <description>Plots a cladogram- or phenogram-like rooted tree diagram</description>
   <command interpreter="perl">fdrawgram_multiple_images.pl $mode fdrawgram -intreefile $input1 -plotfile $out_file1 -grows $grows -style $style -plotter l -lengths $lengths -labelrotation "$labelrotation" -rescaled $rescaled -bscale "$bscale" -treedepth "$treedepth" -stemlength "$stemlength" -nodespace "$nodespace" -nodeposition $nodeposition -pagesheight "$pagesheight" -pageswidth "$pageswidth" -auto</command>
   <inputs>

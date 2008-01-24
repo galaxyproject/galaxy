@@ -1,4 +1,4 @@
-<tool id="EMBOSS_biosed4" name="biosed">
+<tool id="EMBOSS: biosed4" name="biosed" version="5.0.0">
   <description>Replace or delete sequence sections</description>
   <command>biosed -sequence $input1 -outseq $out_file1 -target $target -replace $replace -osformat2 $out_format1 -auto</command>
   <inputs>

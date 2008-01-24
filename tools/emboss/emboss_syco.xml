@@ -1,4 +1,4 @@
-<tool id="EMBOSS: syco96" name="syco">
+<tool id="EMBOSS: syco96" name="syco" version="4.0.0">
   <description>Synonymous codon usage Gribskov statistic plot</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl syco -sequence $input1 -graph png -goutfile $out_file1 -cfile $cfile -window "$window" -uncommon $uncommon -minimum "$minimum"
   -auto</command>

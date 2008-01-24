@@ -1,4 +1,4 @@
-<tool id="EMBOSS_pepwindow73" name="pepwindow">
+<tool id="EMBOSS: pepwindow73" name="pepwindow" version="5.0.0">
   <!-- produces png file -->
   <description>Displays protein hydropathy</description>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl pepwindow -sequence $input1 -graph png -goutfile $out_file1 -length $length -auto</command>

@@ -1,4 +1,4 @@
-<tool id="EMBOSS: patmatdb67" name="patmatdb">
+<tool id="EMBOSS: patmatdb67" name="patmatdb" version="4.0.0">
   <description>Search a protein sequence with a motif</description>
   <command>patmatdb -sequence $input1 -outfile $out_file1 -motif "$motif" -rformat3 $out_format1 -auto</command>
   <inputs>

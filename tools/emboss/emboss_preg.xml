@@ -1,4 +1,4 @@
-<tool id="EMBOSS: preg78" name="preg">
+<tool id="EMBOSS: preg78" name="preg" version="4.0.0">
   <description>Regular expression search of a protein sequence</description>
   <command>preg -sequence $input1 -outfile $out_file1 -pattern "$pattern" -auto</command>
   <inputs>

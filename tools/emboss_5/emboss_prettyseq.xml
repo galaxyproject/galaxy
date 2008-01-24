@@ -1,4 +1,4 @@
-<tool id="EMBOSS_prettyseq80" name="prettyseq">
+<tool id="EMBOSS: prettyseq80" name="prettyseq" version="5.0.0">
   <description>Output sequence with translated ranges</description>
   <command>prettyseq -sequence $input1 -outfile $out_file1 -ruler $ruler -plabel $plabel -nlabel $nlabel -width $width -auto</command>
   <inputs>
