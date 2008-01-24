@@ -259,22 +259,22 @@ class Bed( Interval ):
         i = 0
         if dataset.has_data():
             for i, line in enumerate( file(dataset.file_name) ):
-                found_strand = False
+                metadata_set = False
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
                     if len(elems) > 2:
-                        for str in data.col1_startswith:
-                            if line.lower().startswith(str):
+                        for startswith in data.col1_startswith:
+                            if line.lower().startswith( startswith ):
                                 if len( elems ) > 3:
                                     dataset.metadata.nameCol = 4
                                 if len(elems) < 6:
                                     dataset.metadata.strandCol = 0
                                 else:
                                     dataset.metadata.strandCol = 6
-                                    found_strand = True
+                                metadata_set = True
                                 break
-                if found_strand: break
+                if metadata_set: break
             Tabular.set_meta( self, dataset, i )
     
     def as_ucsc_display_file( self, dataset, **kwd ):
