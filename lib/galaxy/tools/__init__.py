@@ -62,7 +62,7 @@ class ToolBox( object ):
                 try:
                     path = tool.get("file")
                     tool = self.load_tool( os.path.join( self.tool_root_dir, path ) )
-                    log.debug( "Loaded tool: %s", tool.id )
+                    log.debug( "Loaded tool: %s %s" %( tool.id, tool.version ) )
                     self.tools_by_id[tool.id] = tool
                     self.tools_and_sections_by_id[tool.id] = tool, section
                     section.tools.append(tool)
@@ -98,7 +98,7 @@ class ToolBox( object ):
             raise ToolNotFoundException( "No tool with id %s" % tool_id )
         old_tool, section = self.tools_and_sections_by_id[ tool_id ]
         new_tool = self.load_tool( old_tool.config_file )
-        log.debug( "Reloaded tool %s", old_tool.id )
+        log.debug( "Reloaded tool %s %s" %( old_tool.id, old_tool.version ) )
         # Is there a potential sync problem here? This should be roughly 
         # atomic. Too many indexes for tools...
         section.tools[ section.tools.index( old_tool ) ] = new_tool
@@ -122,6 +122,7 @@ class ToolSection( object ):
     def __init__( self, elem ):
         self.name = elem.get( "name" )
         self.id = elem.get( "id" )
+        self.version = elem.get( "version" )
         self.tools = []
 
 class DefaultToolState( object ):
@@ -180,12 +181,18 @@ class Tool:
         Read tool configuration from the element `root` and fill in `self`.
         """
         # Get the (user visible) name of the tool
-        self.name = root.get("name")
-        if not self.name: raise Exception, "Missing tool 'name'"
+        self.name = root.get( "name" )
+        if not self.name: 
+            raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
         # TODO: can this be generated automatically?
-        self.id = root.get("id")
-        if not self.id: raise Exception, "Missing tool 'id'" 
+        self.id = root.get( "id" )
+        if not self.id: 
+            raise Exception, "Missing tool 'id'" 
+        self.version = root.get( "version" )
+        if not self.version: 
+            # For backward compatibility, some tools may not have versions yet.
+            self.version = "1.0.0"
         # Command line (template). Optional for tools that do not invoke a 
         # local program  
         command = root.find("command")

@@ -50,6 +50,7 @@ class Job( object ):
     def __init__( self ):
         self.session_id = None
         self.tool_id = None
+        self.tool_version = None
         self.command_line = None
         self.param_filename = None
         self.parameters = []

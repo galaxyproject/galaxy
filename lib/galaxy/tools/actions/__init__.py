@@ -155,6 +155,11 @@ class DefaultToolAction( object ):
         if trans.get_history() is not None:
             job.history_id = trans.get_history().id
         job.tool_id = tool.id
+        try:
+            # For backward compatability, some tools may not have versions yet.
+            job.tool_version = tool.version
+        except:
+            job.tool_version = "1.0.0"
         ## job.command_line = command_line
         ## job.param_filename = param_filename
         # FIXME: Don't need all of incoming here, just the defined parameters
