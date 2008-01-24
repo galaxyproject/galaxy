@@ -215,7 +215,9 @@ class Admin( BaseController ):
         #   2. The dataset table record's deleted column is set to 't'
         #   3. The dataset table record's purged column is set to 't'
         #   4. The dataset table record's file_size column is set to 0
-        # Nothing is removed from the file system.
+        # TODO: Nothing is currently removed from the file system, but when we are comfortable with the 
+        # purge process, the Dataset.purge() function should be modified to delete the file from disk
+        # rather than simply renaming it.
         params = util.Params( kwd )
         msg = ''
         if params.days6:
@@ -242,6 +244,12 @@ class Admin( BaseController ):
             msg = "Enter the number of days."
         return msg
 
+    # TODO: When we are comfortable with the purge process, eliminate these 2 functions below and
+    # enhance the purge_datasets function above to display the freed disk space.
+    # These functions should not be eliminated until they have been executed, because the first
+    # time that the purge_datasets() function is executed, the dataset files on disk are only
+    # renamed, so the remove_datasets() function below will need to be used to free up the disk space.
+
     def info_remove_datasets( self, **kwd ):
         # Provide info about the datasets that will be affected if the remove_datasets function is executed.
         params = util.Params( kwd )
@@ -254,7 +262,7 @@ class Admin( BaseController ):
                 now = time.time()
                 dt = self.app.model.Dataset.table
             
-                for row in dt.select( ( dt.c.purged=='t' ) & ( dt.c.removed=='f' ) ).execute():
+                for row in dt.select( dt.c.purged=='t' ).execute():
                     last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) )
                     diff = (now-last)/3600/24 # days
                     if diff > days:
@@ -285,7 +293,7 @@ class Admin( BaseController ):
                 now = time.time()
                 dt = self.app.model.Dataset.table
             
-                for row in dt.select( ( dt.c.purged=='t' ) & ( dt.c.removed=='f' ) ).execute():
+                for row in dt.select( dt.c.purged=='t' ).execute():
                     last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) )
                     diff = (now-last)/3600/24 # days
                     if diff > days:

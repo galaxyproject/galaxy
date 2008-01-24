@@ -211,7 +211,6 @@ class Dataset( object ):
         self.designation = designation
         self.deleted = False
         self.purged = False
-        self.removed = False
         self.visible = visible
         self.filename_id = filename_id
         self.file_size = file_size
@@ -383,6 +382,17 @@ class Dataset( object ):
                     self.deleted = True
                     self.purged = True
                     self.file_size = 0
+                    # TODO: when we are comfortable with the purge process,
+                    # retrofit this function to remove the file from disk rather than
+                    # renaming it.  We should eliminate the remove_from_disk()
+                    # function below and have this function do that work.  It is critical
+                    # that these functions are not modified until we have completed the
+                    # entire cycle: 
+                    # delete_userless_histories() -> purge_histories() -> purge_datasets() -> remove_datasets()
+                    # If we do not complete this entire cycle prior to modifying these functions,
+                    # the renamed files will not have been removed from disk.
+
+                    # self.remove_from_disk()
                     self.flush()
                 except:
                     return "Error: dataset %s could not be purged, self.file_name: '%s', purged_file_name: '%s'" %( str( self.id ), str( self.file_name ), str( purged_file_name ) ) 
@@ -400,7 +410,6 @@ class Dataset( object ):
             try:
                 purged_file_name = self.file_name + "_purged"
                 os.unlink( purged_file_name )
-                self.removed = True
                 self.flush()
             except:
                 return "Error: dataset %s could not be removed, purged_file_name: '%s'" %( str( self.id ), str( purged_file_name ) ) 
