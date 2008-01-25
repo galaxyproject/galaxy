@@ -1,4 +1,4 @@
-<tool id="bed2gff1" name="BED-to-GFF" version="2.0.0">
+<tool id="bed2gff1" name="BED-to-GFF" version="1.0.0">
   <description>converter</description>
   <command interpreter="python2.4">bed_to_gff_converter.py $input $out_file1</command>
   <inputs>
@@ -30,11 +30,11 @@ The following data in BED format::
 
 Will be converted to GFF (**note** that the start coordinate is incremented by 1)::
 
-    ##gff-version 2
-    ##bed_to_gff_converter.py
+    ## gff-version 2
+    ## bed2gff.pl $Rev: 601 $
 
-    chr3	bed2gff	match	214672	265280	300	+	.	match Hs.517745;
-    chrX	bed2gff	match	156882	157496	300	+	.	match Hs.530320;
+    chr3    bed2gff Hs.517745       214672  265280  .       +       .       score "300";
+    chrX    bed2gff Hs.530320       156882  157496  .       +       .       score "300";
 
 ------
 

@@ -1,4 +1,4 @@
-<tool id="CONVERTER_bed_to_gff_0" name="Convert BED to GFF" version="2.0.0">
+<tool id="CONVERTER_bed_to_gff_0" name="Convert BED to GFF" version="1.0.0">
   <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
   <!-- Used on the metadata edit page. -->
   <command interpreter="python2.4">bed_to_gff_converter.py $input1 $output1</command>
