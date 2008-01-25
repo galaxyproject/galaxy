@@ -175,7 +175,7 @@ class History( object ):
                 return errmsg + "\nError purging history %s" %str( self.id ), dataset_count
         else:
             return "Error: history %s has not previously been deleted, so it cannot be purged" %str( self.id ), dataset_count
-        return err_msg, dataset_count
+        return errmsg, dataset_count
 
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
