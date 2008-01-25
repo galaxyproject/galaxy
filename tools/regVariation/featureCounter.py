@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+#Guruprasad Ananda
 """
 Calculate coverage of one query on another, and append the coverage to
 the last two columns as bases covered and percent coverage.
@@ -24,6 +24,10 @@ from bx.cookbook import doc_optparse
 
 from galaxyops import *
 
+def stop_err(msg):
+    sys.stderr.write(msg)
+    sys.exit()
+    
 def main():
 
     upstream_pad = 0
@@ -35,28 +39,38 @@ def main():
         chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )      
         in_fname, in2_fname, out_fname = args
     except:
-        print >> sys.stderr, "Data issue: Please check the metadata attributes of the chosen input by clicking on the pencil icon next to it."
-        sys.exit()
-
+        stop_err("Data issue: Please check the metadata attributes of the chosen input by clicking on the pencil icon next to it.")
+        
     try:
         out_file = open( out_fname, "w" )
     except:
-        print >> sys.stderr, "Unable to open output file"
-        sys.exit()
+        stop_err("Unable to open output file.")
+    
+    try:
+        in_file1 = open( in_fname, "r" )
+        in_file2 = open( in2_fname, "r" )
+    except:
+        stop_err("Unable to open input files.")
         
     chr_list = []
     start_list = []
     end_list = []
-    for line in open(in2_fname, 'r'):
+    for line in in_file2:
         line = line.rstrip("\r\n")
         if not(line) or line == "" or line[0:1] == '#':
             continue
         elems = line.split('\t')
-        chr_list.append(elems[chr_col_2])
-        start_list.append(elems[start_col_2])
-        end_list.append(elems[end_col_2])
-
-    for line1 in open(in_fname, 'r'):
+        try:
+            chr_list.append(elems[chr_col_2])
+            start_list.append(elems[start_col_2])
+            end_list.append(elems[end_col_2])
+        except:
+            pass
+    
+    if not(chr_list) and not(start_list) and not(end_list):
+        stop_err("Data issue: Please check the metadata attributes of the chosen input by clicking on the pencil icon next to it.")
+    
+    for line1 in in_file1:
         fp = 0 #number of features fully present
         fp_p = 0 #% covered by fp features
         pp = 0 #number of overlapping features
@@ -66,14 +80,16 @@ def main():
         pp_r = 0 #partly present on right side of the window
         pp_r_p = 0 #% covered by pp_r features
         np = 0 #number of features present
-        chr1 = line1.split('\t')[chr_col_1]
-        start1 = int(line1.split('\t')[start_col_1])
-        end1 = int(line1.split('\t')[end_col_1])
+        try:
+            chr1 = line1.split('\t')[chr_col_1]
+            start1 = int(line1.split('\t')[start_col_1])
+            end1 = int(line1.split('\t')[end_col_1])
+        except:
+            continue
         if not(chr1 in chr_list):
             continue
         
         tmpfile1 = tempfile.NamedTemporaryFile()
-        tmpfile2 = tempfile.NamedTemporaryFile()
         
         for i, chr2 in enumerate(chr_list):
             start2 = int(start_list[i])
@@ -81,7 +97,7 @@ def main():
             if chr2 == chr1:
                 if (start2 < start1 and end2 < start1) or (start2 >end1 and end2 >end1):
                     continue
-                if start2 in range(start1,end1) and end2 in range(start1,end1):    #feature completely lies in the window
+                if start2 in range(start1,end1) and end2 in range(start1,end1+1):    #feature completely lies in the window
                     fp += 1
                     print >>tmpfile1, chr2 + '\t' + str(start2) + '\t' + str(end2)
                 elif (start2 not in range(start1,end1)) and (end2 not in range(start1,end1)):    #feature is longer than the window and covers the window completely                        #feature overlaps  the right side of the window
@@ -90,7 +106,7 @@ def main():
                         fp_p += 100.00
                 elif (start2 not in range(start1,end1)) or (end2 not in range(start1,end1)):    #feature partially overlaps with the window
                     pp += 1
-                    print >>tmpfile2, chr2 + '\t' + str(start2) + '\t' + str(end2)
+                    print >>tmpfile1, chr2 + '\t' + str(start2) + '\t' + str(end2)
                     
         g1 = NiceReaderWrapper( open(tmpfile1.name, 'r' ),
                             chrom_col=chr_col_2,
@@ -98,18 +114,10 @@ def main():
                             end_col=end_col_2,
                             strand_col = strand_col_2,
                             fix_strand=True)
-        g2 = NiceReaderWrapper( open(tmpfile2.name, 'r' ),
-                            chrom_col=chr_col_2,
-                            start_col=start_col_2,
-                            end_col=end_col_2,
-                            strand_col = strand_col_2,
-                            fix_strand=True)
         
         tmpfile1.readline()
-        tmpfile2.readline()
         mincols = 1
         #merge over-lapping features before computing their coverage
-        #g1 has features completely present in the window
         for line in merge(g1,mincols=mincols):
             if type( line ) is GenomicInterval:
                 start = int(line.startCol)
@@ -117,22 +125,17 @@ def main():
             elif type( line ) is list:
                 start = int(line[start_col_1])
                 end = int(line[end_col_1])
-            fp_p += (100.0*abs(end - start)/abs(end1-start1))
-        
-        #g2 has features ovelapping either ends of the window
-        for line in merge(g2,mincols=mincols):
-            if type( line ) is GenomicInterval:
-                start = int(line.startCol)
-                end = int(line.endCol)
-            elif type( line ) is list:
-                start = int(line[start_col_1])
-                end = int(line[end_col_1])
-            if start in range(start1,end1) and end not in range(start1,end1):
-                pp_p += (100.0*abs(end1 - start)/abs(end1-start1))
+            if start in range(start1,end1) and end in range(start1,end1):
+                fp_p += (100.0*abs(end - start)/abs(end1-start1))
+            elif start in range(start1,end1) and end not in range(start1,end1):
+                fp_p += (100.0*abs(end1 - start)/abs(end1-start1))
             elif start not in range(start1,end1) and end in range(start1,end1):
-                pp_p += (100.0*abs(end - start1)/abs(end1-start1))
-        
-        print >>out_file, "%s\t%d\t%2.2f\t%d\t%2.2f" %(line1.strip(),fp,fp_p,pp,pp_p) 
+                fp_p += (100.0*abs(end - start1)/abs(end1-start1))
+            
+        #print >>out_file, "%s\t%d\t%2.2f\t%d\t%2.2f" %(line1.strip(),fp,fp_p,pp,pp_p) 
+        if fp_p > 100:
+            fp_p = 100.00
+        print >>out_file, "%s\t%d\t%d\t%2.2f" %(line1.strip(),fp,pp,fp_p) 
         
 if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-<tool id="featureCoverage" name="Feature coverage">
+<tool id="featureCoverage1" name="Feature coverage" version="1.0.0">
   <description></description>
   <command interpreter="python2.4">featureCounter.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
   <inputs>
@@ -26,7 +26,7 @@
 
 **What it does**
 
-This tool finds the coverage of intervals in the first query on intervals in the second query. The count and coverage are added as 4 new columns, as explained in the example below.
+This tool finds the coverage of intervals in the first query on intervals in the second query. The count and coverage are added as 3 new columns, as explained in the example below.
 
 -----
 
@@ -50,22 +50,21 @@ This tool finds the coverage of intervals in the first query on intervals in the
       
 - the **Result** is the coverage of exons of second query in each of the windows contained in first query::
 
-	  chrX 1     10001 seg 0 - 2 20.00   1 10.00
-   	  chrX 10001 20001 seg 0 - 1 100.00  0 0.00
-	  chrX 20001 30001 seg 0 - 0 0.00    2 80.00
-	  chrX 30001 40001 seg 0 - 1 20.00   1 39.99
+	  chrX 1     10001 seg 0 - 2 1 30.01
+   	  chrX 10001 20001 seg 0 - 1 0 100.00
+	  chrX 20001 30001 seg 0 - 0 2 80.00
+	  chrX 30001 40001 seg 0 - 1 1 59.99
 	  
 - For example, the following line of output (New columns added are indexed by a-d below)::
 
-   chrX 1     10001 seg 0 - 2 20.00   1 10.00
-                            a   b     c   d   
+   chrX 1     10001 seg 0 - 2 1 30.01
+                            a b   c   
                                   
-   implies that 2 exons(a) fall in this window(chrX:1-10001) completely covering 20% of the window size(b) and 1 exon(c) partially overlaps with this window, covering 10% of the window size(d).
+   implies that 2 exons(a) fall in this window(chrX:1-10001) and 1 exon(b) partially overlaps with this window, and these 3 exons cover 30% of the window size(c).
 
 	 a : Number of features in the 2nd query that fall COMPLETELY within this window
-	 b : % of window size covered by features in 'a' (All overlapping features in 'a' will be merged to calculate 'b')
-	 c : Number of features in the 2nd query that partiallyoverlap with this window
-	 d : % of window size covered by features in 'c' (All overlapping features in 'c' will be merged to calculate 'd')
+	 b : Number of features in the 2nd query that partially overlap with this window
+	 c : % of window size covered by features in 'a' and 'b' (Features overlapping with eachother will be merged to calculate 'c')
 	 
 </help>
 </tool>
