@@ -234,7 +234,14 @@ def info_remove_datasets( app, days ):
         diff = (now-last)/3600/24 # days
         if diff > days:
             data = app.model.Dataset.get( row.id )
-            purged_file_name = data.file_name + "_purged"
+            # First try filename directly under file_path
+            purged_file_name = os.path.join( data.file_path, "dataset_%d.dat_purged" % data.id )
+            # Only use that filename if it already exists (backward compatibility),
+            # otherwise construct hashed path
+            if not os.path.exists( purged_file_name ):
+                dir = os.path.join( data.file_path, *directory_hash_id( data.id ) )
+                # Look for file inside hashed directory
+                purged_file_name = os.path.abspath( os.path.join( dir, "dataset_%d.dat_purged" % data.id ) )
             if os.path.isfile( purged_file_name ):
                 print "Dataset id %s with file_size %s will be removed from disk." %( str( row.id ), str( row.file_size ) )
                 dataset_count += 1

@@ -265,9 +265,16 @@ class Admin( BaseController ):
                 for row in dt.select( dt.c.purged=='t' ).execute():
                     last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) )
                     diff = (now-last)/3600/24 # days
-                    if diff > days:
-                        data = self.app.model.Dataset.get( row.id )
-                        purged_file_name = data.file_name + "_purged"
+                    if diff > days:                        
+                        data = app.model.Dataset.get( row.id )
+                        # First try filename directly under file_path
+                        purged_file_name = os.path.join( data.file_path, "dataset_%d.dat_purged" % data.id )
+                        # Only use that filename if it already exists (backward compatibility),
+                        # otherwise construct hashed path
+                        if not os.path.exists( purged_file_name ):
+                            dir = os.path.join( data.file_path, *directory_hash_id( data.id ) )
+                            # Look for file inside hashed directory
+                            purged_file_name = os.path.abspath( os.path.join( dir, "dataset_%d.dat_purged" % data.id ) )
                         if os.path.isfile( purged_file_name ):
                             dataset_count += 1
                             try:
