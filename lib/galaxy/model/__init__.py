@@ -382,7 +382,6 @@ class Dataset( object ):
                     os.rename( self.file_name, purged_file_name )
                     self.deleted = True
                     self.purged = True
-                    self.file_size = 0
                     # TODO: when we are comfortable with the purge process,
                     # retrofit this function to remove the file from disk rather than
                     # renaming it.  We should eliminate the remove_from_disk()
@@ -392,7 +391,7 @@ class Dataset( object ):
                     # delete_userless_histories() -> purge_histories() -> purge_datasets() -> remove_datasets()
                     # If we do not complete this entire cycle prior to modifying these functions,
                     # the renamed files will not have been removed from disk.
-
+                    #self.file_size = 0
                     # self.remove_from_disk()
                     self.flush()
                 except:
@@ -409,8 +408,16 @@ class Dataset( object ):
         if self.purged:
             # Remove the file and update the database
             try:
-                purged_file_name = self.file_name + "_purged"
+                # First try filename directly under file_path
+                purged_file_name = os.path.join( self.file_path, "dataset_%d.dat_purged" % self.id )
+                # Only use that filename if it already exists (backward compatibility),
+                # otherwise construct hashed path
+                if not os.path.exists( purged_file_name ):
+                    dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
+                    # Look for file inside hashed directory
+                    purged_file_name = os.path.abspath( os.path.join( dir, "dataset_%d.dat_purged" % self.id ) )
                 os.unlink( purged_file_name )
+                self.file_size = 0
                 self.flush()
             except:
                 return "Error: dataset %s could not be removed, purged_file_name: '%s'" %( str( self.id ), str( purged_file_name ) ) 
