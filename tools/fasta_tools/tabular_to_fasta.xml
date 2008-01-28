@@ -1,10 +1,10 @@
-<tool id="fasta_tool_tab2fasta" name="TAB to FASTA">
-	<description>Converts a TAB formated file to FASTA format</description>
-	<command interpreter="python">fasta_tool_tab2fasta.py $input $input_titleCol $input_seqCol $output </command>
+<tool id="tab2fasta" name="Tabular-to-FASTA" version="1.0.0">
+	<description>Converts a tabular file to FASTA format</description>
+	<command interpreter="python">tabular_to_fasta.py $input $title_col $seq_col $output </command>
 	<inputs>
 		<param name="input" type="data" format="tabular" label="Tab-delimited file"/>
-		<param name="input_titleCol" type="text" size="15" value="1" label="Which column(s) is the title" help="may use more than one column seperated by comma, ex. 1,2. Values will be concatenated by underline."/>
-		<param name="input_seqCol" type="integer" size="15" value="2" label="Which column is the sequence" />
+		<param name="title_col" type="data_column" data_ref="input" multiple="True" numerical="False" label="Title column(s)" help="Multi-select list - hold the appropriate key while clicking to select multiple columns"/>
+		<param name="seq_col" type="data_column" data_ref="input" numerical="False" label="Sequence column" />
 	</inputs>
 	<outputs>
 		<data name="output" format="fasta"/>
@@ -12,9 +12,9 @@
 	<tests>
 		<test>
 			<param name="input" value="solexa.fna" />
-			<param name="input_titleCol" value="1,2,3,4" />
-			<param name="input_seqCol" value="5" />
-			<output name="output" file="fasta_tool_tab2fasta_1.out" />
+			<param name="title_col" value="1,2,3,4" />
+			<param name="seq_col" value="5" />
+			<output name="output" file="tabular_to_fasta_out1.fasta" />
 		</test>
 	</tests>
 	<help>
@@ -22,15 +22,14 @@
 **Example**
 
 Solexa data::
-
 	5	300	902	419	GACTCATGATTTCTTACCTATTAGTGGTTGAACATC
 	5	300	880	431	GTGATATGTATGTTGACGGCCATAAGGCTGCTTCTT
 	5	300	896	461	GTTGTCGATAGAACTTCATGTGCCTGTAAAACAAGT
 	5	300	890	751	ACCAACCAGAACGTGAAAAAGCGTCCTGCGTGTAGC
 	5	300	897	443	GTTTATGTTGGTTTCATGGTTTTGTCTAACTTTATC
 	5	300	906	879	GCTTTACCGTCTTTCCAGAAATTGTTCCAAGTATCG
-
-Choose **columns 3 and 4** (3,4) to be the fasta title, the tool returns::
+	
+Selecting **c3 and c4** as the Title Columns and **c5** as the Sequence Column will result in::
 
 	&gt;902_419
 	GACTCATGATTTCTTACCTATTAGTGGTTGAACATC

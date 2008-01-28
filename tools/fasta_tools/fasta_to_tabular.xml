@@ -1,6 +1,6 @@
-<tool id="fasta_tool_fasta2tab" name="FASTA to TAB">
-	<description>Converts a FASTA formated file to TAB format</description>
-	<command interpreter="python">fasta_tool_fasta2tab.py $input $output </command>
+<tool id="fasta2tab" name="FASTA-to-Tabular" version="1.0.0">
+	<description>Converts a FASTA file to Tabular format</description>
+	<command interpreter="python">fasta_to_tabular.py $input $output</command>
 	<inputs>
 		<param name="input" type="data" format="fasta" label="Fasta file"/>
 	</inputs>
@@ -10,11 +10,11 @@
 	<tests>
 		<test>
 			<param name="input" value="454.fna" />
-			<output name="output" file="fasta_tool_convert2tab_1.out" />
+			<output name="output" file="fasta_to_tabular_out1.tabular" />
 		</test>
 		<test>
-			<param name="input" value="extract_genomic_dna.fa" />
-			<output name="output" file="fasta_tool_convert2tab_2.out" />
+			<param name="input" value="4.fasta" />
+			<output name="output" file="fasta_to_tabular_out2.tabular" />
 		</test>
 	</tests>
 	<help>
@@ -30,7 +30,7 @@ A fasta file with two sequences::
 	GGTGACATCGCCCACCACGGTACTCACTGGCTGGCTCTGGTTCCCGGCGGCATCGGAGGC
 	CACCACGTTGAGGGTATTCCCCTCGGTTTGTGGCTCGGTGAGAACCACGTTGTAGTCGCC
 	ATTGGTC
-	
+
 Returns::
 
 	&gt;EYKX4VC01B65GS length=54 xy=0784_1754 region=1 run=R_2007_11_07_16_15_57_	CCGGTATCCGGGTGCCGTGATGAGCGCCACCGGAACGAATTCGACTATGCCGAA

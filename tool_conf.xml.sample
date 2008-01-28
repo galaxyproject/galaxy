@@ -55,14 +55,16 @@
     <tool file="stats/grouping.xml" />   
   </section>
   <section name="Convert Formats" id="convert">
-    <tool file="maf/maf_to_fasta.xml" />
-    <tool file="maf/maf_to_bed.xml" />
-    <tool file="filters/gff2bed.xml" />
-    <tool file="filters/bed2gff.xml" />
-    <tool file="filters/axt_to_fasta.xml" />
     <tool file="filters/axt_to_concat_fasta.xml" />
+    <tool file="filters/axt_to_fasta.xml" />
     <tool file="filters/axt_to_lav.xml" />
+    <tool file="filters/bed2gff.xml" />
+    <tool file="fasta_tools/fasta_to_tabular.xml" />
+    <tool file="filters/gff2bed.xml" />
     <tool file="filters/lav_to_bed.xml" />
+    <tool file="maf/maf_to_bed.xml" />
+    <tool file="maf/maf_to_fasta.xml" />
+    <tool file="fasta_tools/tabular_to_fasta.xml" />
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
@@ -303,8 +305,6 @@
   <section name="Fasta Tools" id="fasta_tools">
     <tool file="fasta_tools/fasta_tool_compute_length.xml" />
     <tool file="fasta_tools/fasta_tool_filter_by_length.xml" />
-    <tool file="fasta_tools/fasta_tool_fasta2tab.xml" />
-    <tool file="fasta_tools/fasta_tool_tab2fasta.xml" />
   </section>
   <section name="Metagenomics" id="metagenomics">
     <tool file="metag_tools/short_reads_trim_seq.xml" />
