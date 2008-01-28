@@ -13,7 +13,7 @@
 			<output name="output" file="fasta_tool_compute_length_1.out" />
 		</test>
 		<test>
-			<param name="input" value="fsa_extract_genomic_dna.dat" />
+			<param name="input" value="extract_genomic_dna_out1.fasta" />
 			<output name="output" file="fasta_tool_compute_length_2.out" />
 		</test>
 	</tests>
