@@ -9,7 +9,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input" value="1.bed"/>
+      <param name="input" value="9.bed"/>
       <output name="out_file1" file="bed2gff_out.gff"/>
     </test>
   </tests>
@@ -25,16 +25,24 @@ This tool converts data from BED format to GFF format (scroll down for format de
 
 The following data in BED format::
 
-    chr3   214671   265280   Hs.517745    300    +
-    chrX   156881   157496   Hs.530320    300    +
+	chr28	346187	388197	BC114771	0	+	346187	388197	0	9	144,81,115,63,155,96,134,105,112,	0,24095,26190,31006,32131,33534,36994,41793,41898,
 
 Will be converted to GFF (**note** that the start coordinate is incremented by 1)::
 
-    ##gff-version 2
-    ##bed_to_gff_converter.py
+	##gff-version 2
+	##bed_to_gff_converter.py
 
-    chr3	bed2gff	match	214672	265280	300	+	.	match Hs.517745;
-    chrX	bed2gff	match	156882	157496	300	+	.	match Hs.530320;
+	chr28	bed2gff	mRNA	346188	388197	0	+	.	mRNA BC114771;
+	chr28	bed2gff	exon	346188	346331	0	+	.	exon BC114771;
+	chr28	bed2gff	exon	370283	370363	0	+	.	exon BC114771;
+	chr28	bed2gff	exon	372378	372492	0	+	.	exon BC114771;
+	chr28	bed2gff	exon	377194	377256	0	+	.	exon BC114771;
+	chr28	bed2gff	exon	378319	378473	0	+	.	exon BC114771;
+	chr28	bed2gff	exon	379722	379817	0	+	.	exon BC114771;
+	chr28	bed2gff	exon	383182	383315	0	+	.	exon BC114771;
+	chr28	bed2gff	exon	387981	388085	0	+	.	exon BC114771;
+	chr28	bed2gff	exon	388086	388197	0	+	.	exon BC114771;
+
 
 ------
 
