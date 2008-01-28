@@ -1,183 +1,170 @@
 #!/usr/bin/env python2.4
 """
-use bx-python, only runs through galaxy
-usage: %this_prog.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format
+usage: extract_genomic_dna.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format
 by Wen-Yu Chung
 """
+import pkg_resources
+pkg_resources.require( "bx-python" )
 import sys, string, os, re
-
-import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 import bx.seq.nib
 import bx.seq.twobit
 
-# location
-NIB_LOC = "/depot/data2/galaxy/alignseq.loc"
-TWOBIT_LOC = "/depot/data2/galaxy/twobit.loc"        # did not use at all
+nib_file = "/depot/data2/galaxy/alignseq.loc"
+twobit_file = "/depot/data2/galaxy/twobit.loc"
 
-def reverse_complement(s):
+def stop_err( msg ):
+    sys.stderr.write( msg )
+    sys.exit()
+
+def reverse_complement( s ):
     complement_dna = {"A":"T", "T":"A", "C":"G", "G":"C", "a":"t", "t":"a", "c":"g", "g":"c", "N":"N", "n":"n" }
     reversed_s = []
     for i in s:
-        reversed_s.append(complement_dna[i])
+        reversed_s.append( complement_dna[i] )
     reversed_s.reverse()
-    
-    return "".join(reversed_s)
+    return "".join( reversed_s )
 
-def check_nib_loc(dbkey):
-    nib_path_true = ''
+def check_nib_file( dbkey ):
+    nib_path = ''
     nibs = {}
-    
-    for line in open(NIB_LOC):
-        if line.startswith("#"):
-            continue
-        line.strip('\r\n')
-        fields = line.split()    # seperate by space
-        if len(fields) < 3:
-            continue
-        if (fields[0] == 'seq'):
-            nibs[(fields[1])] = fields[2]
-    if nibs.has_key(dbkey):
-        nib_path_true = nibs[(dbkey)]
-                
-    return nib_path_true 
+    for line in open( nib_file ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( "#" ):
+            fields = line.split()
+            if len( fields ) < 3:
+                continue
+            if ( fields[0] == 'seq' ):
+                nibs[( fields[1] )] = fields[2]
+    if nibs.has_key( dbkey ):
+        nib_path = nibs[( dbkey )]
+    return nib_path
 
-def check_twobit_loc(dbkey):
-    twobit_path_true = ''
+def check_twobit_file( dbkey ):
+    twobit_path = ''
     twobits = {}
-    
-    for line in open(TWOBIT_LOC):
-        #line.strip('\r\n')
-        if line.startswith("#"): 
-            continue
-        fields = line.split()
-        if len(fields) < 2:
-            continue
-        twobits[(fields[0])] = fields[1]
-
-    if twobits.has_key(dbkey):
-        twobit_path_true = twobits[(dbkey)]
-    
-    return twobit_path_true 
-
-def print_wrapped( fields, s, fout, output_format ):
-    l = len( s )        
-    c = 0
-    
-    if (output_format == "0"): # fasta
-        meta_data = "_".join(fields)
-        print >> fout, ">%s" %meta_data    #chrom, start, end
-        while c < l:
-            b = min( c + 50, l )
-            print >> fout, s[c:b]    #print s[c:b]
-            c = b
-    else: # interval
-        meta_data = "\t".join(fields)
-        print >> fout, meta_data, "\t", s
+    for line in open( twobit_file ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( "#" ): 
+            fields = line.split()
+            if len( fields ) < 2:
+                continue
+            twobits[( fields[0] )] = fields[1]
+    if twobits.has_key( dbkey ):
+        twobit_path = twobits[( dbkey )]
+    return twobit_path
         
 def __main__():
-
-    """
-    options, args = doc_optparse.parse( __doc__ )    
-    
-    for i in args:
-        print i
-    """
-
-    # assign parameters to new variable names
-    input_filename = sys.argv[1]                # input: bed format
-    output_filename = sys.argv[2]                # output: fasta format
-    input_chrom_col = int(sys.argv[3]) - 1        # chromosomal
-    input_start_col = int(sys.argv[4]) - 1        # start location
-    input_end_col = int(sys.argv[5]) - 1            # end location
-    input_strand_col = int(sys.argv[6]) - 1         # strand
+    input_filename = sys.argv[1]
+    output_filename = sys.argv[2]
+    includes_strand_col = False
+    strand = None
+    # If any of the following exceptions are thrown, we need to improve the metadata validator.
+    try:
+        chrom_col = int( sys.argv[3] ) - 1
+    except:
+        stop_err( "Chrom column not properly set, click the pencil icon in your history item to set it." )
+    try:
+        start_col = int( sys.argv[4] ) - 1
+    except:
+        stop_err( "Start column not properly set, click the pencil icon in your history item to set it." )
+    try:
+        end_col = int( sys.argv[5] ) - 1
+    except:
+        stop_err( "End column not properly set, click the pencil icon in your history item to set it." )
+    try:
+        strand_col = int( sys.argv[6] ) - 1
+        if strand_col >= 0:
+            includes_strand_col = True
+    except:
+        pass
     dbkey = sys.argv[7]
-    output_format = sys.argv[8]                # 0: fasta; 1: interval
-    
-    # some simple check
-    if dbkey == "?":     #if (re.search("?", dbkey)): 
-        print >> sys.stderr, "Please specify genome build by clicking on pencil icon in the original dataset"
-        
-    if (re.search("^mm\d$", dbkey)): dbkey = "musMus"+dbkey[-1]
-    if (re.search("^rn\d$", dbkey)): dbkey = "ratNor"+dbkey[-1]
-    
-    #if (input_strand_col < 0): input_strand_col = 1000000        #??
-       
-    # search both types
-    nib_path = check_nib_loc(dbkey)
-    twobit_path = check_twobit_loc(dbkey)
-    
-    #if len(nib_path) > 0: print >> sys.stdout, "NIB", nib_path
-    #if len(twobit_path) > 0: print >> sys.stdout, "2Bit", twobit_path
+    output_format = sys.argv[8]
 
-    if (not (os.path.exists(nib_path)) and not (os.path.exists(twobit_path))): 
-        print >> sys.stderr, "No sequences are available for %s. Request them by reporting this error" % dbkey
-         
-    # open the input bed file, extract genomic dna sequence one by one (line)
-    fout = open(output_filename,"w")
+    # TODO: is this still necessary?  If so, let's get it fixed!
+    if (re.search("^mm\d$", dbkey)):
+        dbkey = "musMus" + dbkey[-1]
+    if (re.search("^rn\d$", dbkey)):
+        dbkey = "ratNor" + dbkey[-1]
+    
     nibs = {}
     twobits = {}
-    for line in open(input_filename):
-        if not (line.startswith("#")):
-            line = line.strip('\r\n')
-            fields = line.split('\t')        # chr7  127475281  127475310  NM_000230  0  +
-            chrom, start, end, strand = fields[input_chrom_col], int( fields[input_start_col] ), int( fields[input_end_col] ), fields[input_strand_col]
-            
-            """
-            # check whether chrom is words
-            if not (start.isdigit() and end.isdigit()):
-                print >> stderr, "Bad BED fields: ", start, end
-            """
-            
-            if ((strand != "+") and (strand != "-")): 
-                #print >> sys.stdout, "strand is not defined or incorrect. Set to \'+\'."
-                strand = "+"            
-            
-            # for nibs
-            s = ''
-            if (os.path.exists("%s/%s.nib" % (nib_path, chrom))): #if (os.path.exists(nib_path)):
-                if chrom in nibs:
-                    nib = nibs[chrom]
+    nib_path = check_nib_file( dbkey )
+    twobit_path = check_twobit_file( dbkey )
+    if not os.path.exists( nib_path ) and not os.path.exists( twobit_path ):
+        # If this occurs, we need to fix the metadata validator.
+        stop_err( "No sequences are available for %s, request them by reporting this error." % dbkey )
+
+    skipped_lines = 0
+    first_invalid_line = 0
+    invalid_line = ''
+    fout = open( output_filename, "w" )
+
+    for i, line in enumerate( open( input_filename ) ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( "#" ):
+            fields = line.split( '\t' )
+            try:
+                chrom = fields[chrom_col]
+                start = int( fields[start_col] )
+                end = int( fields[end_col] )
+                if includes_strand_col:
+                    strand = fields[strand_col]
+                if strand not in ['+', '-']:
+                    strand = "+"
+    
+                sequence = ''
+                if os.path.exists( "%s/%s.nib" % ( nib_path, chrom) ):
+                    if chrom in nibs:
+                        nib = nibs[chrom]
+                    else:
+                        nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( nib_path, chrom ) ) )
+                    try:
+                        sequence = nib.get( start, end-start )
+                    except:
+                        fout.close()
+                        stop_err( "Unable to fetch the sequence from %d to %d from %s." %( start, end-start, nib_path ) ) 
+                elif os.path.exists( twobit_path ):
+                    if chrom in twobits:
+                        t = twobits[chrom]
+                    else:
+                        twobits[chrom] = t = bx.seq.twobit.TwoBitFile( file( twobit_path ) )
+                    try:
+                        sequence = t[chrom][start:end]
+                    except:
+                        fout.close()
+                        stop_err( "Unable to fetch the sequence from %d to %d from %s." %( start, end-start, twobit_path ) ) 
                 else:
-                    nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( nib_path, chrom ) ) )
-                try:
-                    s = nib.get( start , end - start )
-                except:
-                    print >> sys.stderr, "Unable to fetch the sequence. Most likely to fetch from beyond sequence."
-                    
-            elif (os.path.exists(twobit_path)):
-            #elif (os.path.exists("%s/%s.2bit" % (nib_path, chrom))):
-            #elif (len(os.listdir(nib_path)) > 0):
-            #    twobit_path = nib_path + "/" + os.listdir(nib_path)[0]
-                # for twobit
-                if chrom in twobits:
-                    t = twobits[chrom]
-                else:
-                    twobits[chrom] = t = bx.seq.twobit.TwoBitFile(open(twobit_path))
-                    #t = bx.seq.twobit.TwoBitFile( open( twobit_path ) )
-                try:
-                    s = t[chrom][start:end]
-                except:
-                    print >> sys.stderr, "Unable to fetch the sequence. Most likely to fetch from beyond sequence."
-                    
-            else:
-                print >> sys.stderr, "Sequence %s was not found for genome build %s" % (chrom, dbkey)
-                print >> sys.stderr, "Most likely your data lists wrong chromosome number for this organism"
-                print >> sys.stderr, "Check your genome build selection"
-            
-            # some post process check
-            if len(s) <= 0: 
-                print >> sys.stderr, '%s_%s_%s is either invalid or not present in the specified genome.' %(chrom,start,end) 
-                   
-            # reverse if necessary
-            if ((input_strand_col >= 0) and (strand == "-")):
-                s = reverse_complement(s)
-        
-            if (output_format == "0"): # fasta
-                fields = [dbkey, str(chrom), str(start), str(end), strand]
-                
-            print_wrapped( fields, s, fout, output_format )
-                
+                    fout.close()
+                    stop_err( "Sequence %s was not found for build %s.  Most likely your data lists the wrong chromosome number for this organism. Check your build selection." % ( chrom, dbkey ) )
+    
+                if not sequence:
+                    fout.close()
+                    stop_err( '%s_%s_%s is either invalid or not present in the specified build.' %( chrom, start, end ) ) 
+                if includes_strand_col and strand == "-":
+                    sequence = reverse_complement( sequence )
+    
+                if output_format == "fasta" :
+                    l = len( sequence )        
+                    c = 0
+                    fields = [dbkey, str( chrom ), str( start ), str( end ), strand]
+                    meta_data = "_".join( fields )
+                    print >> fout, ">%s" %meta_data
+                    while c < l:
+                        b = min( c + 50, l )
+                        print >> fout, sequence[c:b]
+                        c = b
+                else: # output_format == "interval"
+                    meta_data = "\t".join( fields )
+                    print >> fout, meta_data, "\t", sequence
+            except:
+                skipped_lines += 1
+                if not invalid_line:
+                    first_invalid_line = i + 1
+                    invalid_line = line
     fout.close()
-                
+
+    if skipped_lines:
+        print 'Data issue: skipped %d invalid lines starting at line #%d, "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+
 if __name__ == "__main__": __main__()
