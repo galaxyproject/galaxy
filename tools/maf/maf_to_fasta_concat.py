@@ -30,7 +30,7 @@ def __main__():
             for block in maf.Reader( open( input_filename, 'r' ) ):
                 component = block.get_component_by_src_start( spec )
                 if component: file_out.write( component.text )
-                else: file_out.write( "-" * m.text_size )
+                else: file_out.write( "-" * block.text_size )
         except:
             print >>sys.stderr, "Your MAF file appears to be malformed."
             sys.exit()
