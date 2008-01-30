@@ -209,7 +209,14 @@ div.report-row label
     background-color: $info_message_bg;
 }
 
-.errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr
+.ok_bgr 
+{ 
+	background: #AEFF5E; 
+	border: 1px #76EC00 solid; 
+	border-color: #66CC00 #66CC00 #66CC00 #66CC00;
+}
+
+.errormark, .warningmark, .donemark, .infomark, .err_bgr
 {
     padding-left: 20px;
     min-height: 15px;
@@ -226,7 +233,7 @@ div.report-row label
     background-image: url(ok_small.png);
 }
 
-.infomark, .ok_bgr
+.infomark
 {
   background-image: url(info_small.png);
 }

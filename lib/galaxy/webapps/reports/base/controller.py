@@ -2,7 +2,7 @@
 
 import os, time, logging
 # Pieces of Galaxy to make global in every controller
-from galaxy import web
+from galaxy import web, util
 from Cheetah.Template import Template
 
 log = logging.getLogger( __name__ )
