@@ -6,12 +6,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 import pkg_resources
-pkg_resources.require( "pysqlite>=2", "sqlalchemy>=0.3" )
-
-# Attempt to load psycopg but fail quietly since it may not be in an egg 
-# or even needed.
-try: pkg_resources.require( "psycopg2" )
-except: pass
+pkg_resources.require( "sqlalchemy>=0.3" )
 
 import sys
 import datetime
@@ -26,6 +21,12 @@ from galaxy.util.bunch import Bunch
 
 metadata = DynamicMetaData( threadlocal=False )
 context = SessionContext( create_session ) 
+
+dialect_to_egg = { 
+    "sqlite"   : "pysqlite>=2",
+    "postgres" : "psycopg2",
+    "mysql"    : "mysqldb"
+}
 
 # NOTE REGARDING TIMESTAMPS:
 #   It is currently difficult to have the timestamps calculated by the 
@@ -320,6 +321,19 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
+    # Load the appropriate db module
+    dialect = (url.split(':', 1))[0]
+    try:
+        egg = dialect_to_egg[dialect]
+        try:
+            pkg_resources.require( egg )
+            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
+        except:
+            # If the module's in the path elsewhere (i.e. non-egg), it'll still load.
+            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
+    except KeyError:
+        # Let this go, it could possibly work with db's we don't support
+        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
     # Create the database engine
     engine = create_engine( url, **engine_options )
     # Connect the metadata to the database.
