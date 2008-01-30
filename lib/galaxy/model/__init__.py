@@ -160,12 +160,14 @@ class History( object ):
             datasets = []
             try:
                 for dataset in self.datasets:
-                    errmsg = dataset.purge()
-                    if errmsg:
-                        errors = True
-                        break
-                    else:
-                        datasets.append( dataset.file_name )
+                    if not dataset.purged:
+                        dataset.deleted = True
+                        errmsg = dataset.purge()
+                        if errmsg:
+                            errors = True
+                            break
+                        else:
+                            datasets.append( dataset.file_name )
                 if not errors:
                     self.purged = True
                     self.flush()

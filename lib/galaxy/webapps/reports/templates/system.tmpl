@@ -6,6 +6,39 @@
     <link href="$h.url_for('/static/style/base.css')" rel="stylesheet" type="text/css" />
   </head>
   <body>
+    <h3 align="center">Old Histories and Datasets</h3>
+    #if $msg:
+      <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
+        <tr><td class="ok_bgr">$msg</td></tr>
+      </table>
+    #end if
+    <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
+      <tr>
+        <td>
+          <form method="post" action="system">
+            <p>
+              <button name="action" value="userless_histories">Number of Histories</button>
+              that are not associate with a user and were last updated more than 
+              <input type="textfield" value="$userless_histories_days" size="3" name="userless_histories_days"> 
+              days ago.
+            </p>
+            <p>
+              <button name="action" value="deleted_histories">Number of Histories</button>
+              that were deleted more than 
+              <input type="textfield" value="$deleted_histories_days" size="3" name="deleted_histories_days"> 
+              days ago but have not yet been purged.
+            </p>
+            <p>
+              <button name="action" value="deleted_datasets">Number of Datasets</button> 
+              that were deleted more than 
+              <input type="textfield" value="$deleted_datasets_days" size="3" name="deleted_datasets_days"> 
+              days ago but have not yet been purged.
+            </p>
+          </form>
+        </td>
+      </tr>
+    </table>
+    <br clear="left" /><br />
     <h3 align="center">Current Disk Space Where Datasets are Stored</h3>
     <table align="center" width="60%" class="colored">
       <tr><td colspan="5"><div class="reportTitle">Disk Usage for $file_path</div></td></tr>
@@ -51,39 +84,6 @@
           #set ctr+=1
         #end for
       #end if
-    </table>
-    <br clear="left" /><br />
-    <h3 align="center">Old Histories and Datasets</h3>
-    #if $msg:
-      <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
-        <tr><td class="ok_bgr">$msg</td></tr>
-      </table>
-    #end if
-    <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
-      <tr>
-        <td>
-          <form method="post" action="system">
-            <p>
-              <button name="action" value="userless_histories">Number of Histories</button>
-              that are not associate with a user and were last updated more than 
-              <input type="textfield" value="$userless_histories_days" size="3" name="userless_histories_days"> 
-              days ago.
-            </p>
-            <p>
-              <button name="action" value="deleted_histories">Number of Histories</button>
-              that were deleted more than 
-              <input type="textfield" value="$deleted_histories_days" size="3" name="deleted_histories_days"> 
-              days ago but have not yet been purged.
-            </p>
-            <p>
-              <button name="action" value="deleted_datasets">Number of Datasets</button> 
-              that were deleted more than 
-              <input type="textfield" value="$deleted_datasets_days" size="3" name="deleted_datasets_days"> 
-              days ago but have not yet been purged.
-            </p>
-          </form>
-        </td>
-      </tr>
     </table>
   </body>
 </html>
