@@ -88,6 +88,9 @@ class Data( object ):
     def set_meta( self, dataset ):
         """Unimplemented method, allows guessing of metadata from contents of file"""
         return True
+    def set_readonly_meta( self, dataset ):
+        """Unimplemented method, resets the readonly metadata values"""
+        return True
     def missing_meta( self, dataset ):
         """Checks for empty metadata values, Returns True if non-optional metadata is missing"""
         for key, value in dataset.metadata.items():

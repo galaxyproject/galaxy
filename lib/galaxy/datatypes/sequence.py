@@ -13,7 +13,9 @@ log = logging.getLogger(__name__)
 
 class Sequence( data.Text ):
     """Class describing a sequence"""
-    pass
+    def set_readonly_meta( self, dataset ):
+        """Resets the values of readonly metadata elements."""
+        pass
 
 class Alignment( Sequence ):
     """Class describing an alignmnet"""

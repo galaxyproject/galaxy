@@ -344,6 +344,8 @@ class Dataset( object ):
         return self.datatype.init_meta( self, copy_from=copy_from )
     def set_meta( self, **kwd ):
         return self.datatype.set_meta( self, **kwd )
+    def set_readonly_meta( self, **kwd ):
+        return self.datatype.set_readonly_meta( self, **kwd )
     def missing_meta( self ):
         return self.datatype.missing_meta( self )
     def as_display_type( self, type, **kwd ):

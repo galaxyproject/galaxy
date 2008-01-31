@@ -344,9 +344,13 @@ class JobWrapper( object ):
             dataset.info  = stdout + stderr
             dataset.set_size()
             if dataset.has_data():
-                # Call set_meta() on each output dataset.  Some tools add or remove
-                # columns, so this should always be done on output datasets.
-                dataset.set_meta()
+                # Only set metadata values if they are missing...
+                if dataset.missing_meta():
+                    dataset.set_meta()
+                else:
+                    # ...however, some tools add / remove columns,
+                    # so we have to reset the readonly metadata values
+                    dataset.set_readonly_meta()
                 dataset.set_peek()
             else:
                 dataset.blurb = "empty"
