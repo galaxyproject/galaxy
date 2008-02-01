@@ -26,7 +26,7 @@ class Tabular( data.Text ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
     def set_readonly_meta( self, dataset, skip=1, **kwd ):
         """Resets the values of readonly metadata elements."""
-        self.set_meta( dataset, skip=skip )
+        Tabular.set_meta( self, dataset, skip=skip )
     def set_meta( self, dataset, skip=1, **kwd ):
         """
         Tries to determine the number of columns as well as those columns
