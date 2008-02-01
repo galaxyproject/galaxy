@@ -61,7 +61,7 @@ class Interval( Tabular ):
         dataset.peek  = data.get_file_peek( dataset.file_name )
         dataset.blurb = util.commaify( str( data.get_line_count( dataset.file_name ) ) ) + " regions"
     
-    def set_meta( self, dataset, first_line_is_header=False ):
+    def set_meta( self, dataset, first_line_is_header=False, **kwd ):
         Tabular.set_meta( self, dataset, skip=0 )
         
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
@@ -254,7 +254,7 @@ class Bed( Interval ):
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     
-    def set_meta( self, dataset ):
+    def set_meta( self, dataset, **kwd ):
         """Sets the metadata information for datasets previously determined to be in bed format."""
         i = 0
         if dataset.has_data():
@@ -275,7 +275,7 @@ class Bed( Interval ):
                                 metadata_set = True
                                 break
                 if metadata_set: break
-            Tabular.set_meta( self, dataset, i )
+            Tabular.set_meta( self, dataset, skip=i )
     
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
@@ -409,7 +409,7 @@ class Gff( Tabular ):
         Tabular.__init__(self, **kwd)
         self.add_display_app ('gbrowse', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
-    def set_meta( self, dataset ):
+    def set_meta( self, dataset, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
@@ -422,7 +422,7 @@ class Gff( Tabular ):
                         break
                     except:
                         pass
-        Tabular.set_meta( self, dataset, i )
+        Tabular.set_meta( self, dataset, skip=i )
 
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
@@ -528,7 +528,7 @@ class Gff3( Gff ):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
 
-    def set_meta( self, dataset ):
+    def set_meta( self, dataset, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
@@ -553,7 +553,7 @@ class Gff3( Gff ):
                     phase = elems[7]
                     if valid_start and valid_end and start < end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
                         break
-        Tabular.set_meta( self, dataset, i )
+        Tabular.set_meta( self, dataset, skip=i )
 
     def sniff( self, filename ):
         """
@@ -628,7 +628,7 @@ class Wiggle( Tabular ):
     def make_html_table(self, data):
         return Tabular.make_html_table(self, data, skipchar='#')
 
-    def set_meta( self, dataset ):
+    def set_meta( self, dataset, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
@@ -641,7 +641,7 @@ class Wiggle( Tabular ):
                     for str in data.col1_startswith:
                         if elems[0].lower().startswith(str):
                             break
-        Tabular.set_meta( self, dataset, i )
+        Tabular.set_meta( self, dataset, skip=i )
 
     def sniff( self, filename ):
         """
@@ -683,8 +683,8 @@ class CustomTrack ( Tabular ):
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
 
-    def set_meta( self, dataset ):
-        Tabular.set_meta( self, dataset, 1 )
+    def set_meta( self, dataset, **kwd ):
+        Tabular.set_meta( self, dataset, skip=1 )
 
     def make_html_table(self, dataset):
         return Tabular.make_html_table(self, dataset, skipchar='track')
@@ -780,8 +780,8 @@ class GBrowseTrack ( Tabular ):
         Tabular.__init__(self, **kwd)
         self.add_display_app ('gbrowse', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
-    def set_meta( self, dataset ):
-        Tabular.set_meta( self, dataset, 1 )
+    def set_meta( self, dataset, **kwd ):
+        Tabular.set_meta( self, dataset, skip=1 )
     
     def make_html_table(self, dataset):
         return Tabular.make_html_table(self, dataset, skipchar='track')

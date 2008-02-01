@@ -24,10 +24,10 @@ class Tabular( data.Text ):
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
-    def set_readonly_meta( self, dataset, skip=1 ):
+    def set_readonly_meta( self, dataset, skip=1, **kwd ):
         """Resets the values of readonly metadata elements."""
-        self.set_meta( dataset, skip )
-    def set_meta( self, dataset, skip=1 ):
+        self.set_meta( dataset, skip=skip )
+    def set_meta( self, dataset, skip=1, **kwd ):
         """
         Tries to determine the number of columns as well as those columns
         that contain numerical values in the dataset.  A skip parameter is

@@ -85,7 +85,7 @@ class Data( object ):
         # flag the object as modified for SQLAlchemy.
         if copy_from:
             dataset.metadata = copy_from.metadata
-    def set_meta( self, dataset ):
+    def set_meta( self, dataset, **kwd ):
         """Unimplemented method, allows guessing of metadata from contents of file"""
         return True
     def set_readonly_meta( self, dataset ):

@@ -80,7 +80,7 @@ class Maf( Alignment ):
     def init_meta( self, dataset, copy_from=None ):
         Alignment.init_meta( self, dataset, copy_from=copy_from )
     
-    def set_meta( self, dataset, first_line_is_header=False ):
+    def set_meta( self, dataset, first_line_is_header=False, **kwd ):
         """
         Parses and returns species from MAF files.
         """
