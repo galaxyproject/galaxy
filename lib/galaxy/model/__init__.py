@@ -152,32 +152,6 @@ class History( object ):
         des.hid_counter = self.hid_counter
         des.flush()
         return des
-    def purge( self ):
-        """Purges a history along with all datasets associated with the history."""
-        errmsg = ""
-        if self.deleted:
-            errors = False
-            datasets = []
-            try:
-                for dataset in self.datasets:
-                    if not dataset.purged:
-                        dataset.deleted = True
-                        errmsg = dataset.purge()
-                        if errmsg:
-                            errors = True
-                            break
-                        else:
-                            datasets.append( dataset.file_name )
-                if not errors:
-                    self.purged = True
-                    self.flush()
-                else:
-                    return errmsg + "# Error purging datasets for history %s" %str( self.id ), datasets
-            except Exception, exc:
-                return errmsg + "# Error, exception: %s caught attempting to purge history %s" %( str( exc ), self.id ), datasets
-        else:
-            return "# Error: history %s has not previously been deleted, so it cannot be purged" %str( self.id ), datasets
-        return errmsg, datasets
 
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
@@ -366,31 +340,6 @@ class Dataset( object ):
             if child_association.designation == designation:
                 return child_association.child
         return None
-    def purge( self ):
-        """Removes the file from disk and updates the database accordingly."""
-        if self.dataset_file is None or not self.dataset_file.readonly:
-            #Check to see if another dataset is using this file
-            if self.dataset_file:
-                for data in self.select_by( purged=False, filename_id=self.dataset_file.id ):
-                    if data.id != self.id:
-                        return "# Error: the dataset id for deletion is %s, while the dataset id retrieved is %s" %( str( self.id ), str( data.id ) )
-            elif self.deleted:
-                # Delete files and update the database
-                try:
-                    os.unlink( self.file_name )
-                    self.purged = True
-                    self.flush()
-                except Exception, exc:
-                    return "# Error, exception: %s caught attempting to purge %s" %( str( exc ), self.file_name )
-                try:
-                    os.unlink( self.extra_files_path )
-                except:
-                    pass
-            else:
-                return "# Error: '%s' has not previously been deleted, so it cannot be purged" %self.file_name
-        else:
-            return "# Error: '%s' has dependencies, so it cannot be purged" %self.file_name
-        return ""
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
     

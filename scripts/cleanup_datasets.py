@@ -8,6 +8,7 @@ import galaxy.app
 def main():
     parser = OptionParser()
     parser.add_option( "-d", "--days", dest="days", action="store", type="int", help="number of days (60)", default=60 )
+    parser.add_option( "-r", "--remove_from_disk", action="store_true", dest="remove_from_disk", help="remove datasets from disk when purged", default=False )
     parser.add_option( "-1", "--info_delete_userless_histories", action="store_true", dest="info_delete_userless_histories", default=False, help="info about the histories and datasets that will be affected by delete_userless_histories()" )
     parser.add_option( "-2", "--delete_userless_histories", action="store_true", dest="delete_userless_histories", default=False, help="delete userless histories and datasets" )
     parser.add_option( "-3", "--info_purge_histories", action="store_true", dest="info_purge_histories", default=False, help="info about histories and datasets that will be affected by purge_histories()" )
@@ -38,11 +39,19 @@ def main():
     if options.info_purge_histories:
         info_purge_histories( app, options.days )
     elif options.purge_histories:
-        purge_histories( app, options.days )
+        if options.remove_from_disk:
+            print "# Datasets will be removed from disk...\n"
+        else:
+            print "# Datasets will NOT be removed from disk...\n"
+        purge_histories( app, options.days, options.remove_from_disk )
     elif options.info_purge_datasets:
         info_purge_datasets( app, options.days )
     elif options.purge_datasets:
-        purge_datasets( app, options.days )
+        if options.remove_from_disk:
+            print "# Datasets will be removed from disk...\n"
+        else:
+            print "# Datasets will NOT be removed from disk...\n"
+        purge_datasets( app, options.days, options.remove_from_disk )
     app.shutdown()
     sys.exit(0)
 
@@ -134,11 +143,11 @@ def info_purge_histories( app, days ):
             dataset_count += 1
     print '# %d histories ( including a total of %d datasets ) will be purged\n' %( history_count, dataset_count )
 
-def purge_histories( app, days ):
+def purge_histories( app, days, remove_from_disk ):
     # Purges deleted histories whose update_time is older than the specified number of days.
     # A list of each of the affected history records is generated during the process, which is then 
     # used to find all non-purged datasets that are associated with these histories.  Each of these 
-    # datasets is then purged.
+    # datasets is then purged, removing the file from disk only if remove_from_disk is True.
     history_count = 0
     total_datasets_purged = 0
     now  = time.time()
@@ -150,19 +159,57 @@ def purge_histories( app, days ):
         last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) ) 
         diff = (now-last)/3600/24 # days
         if diff > days:
-            history = app.model.History.get( row.id )
-            # Purge the history, this will also purge all datasets associated with the history.
-            errmsg, datasets = history.purge()
+            errmsg, datasets = purge_history( app, row.id, remove_from_disk )
             if errmsg:
                 print errmsg
             else:
                 print '%s' %str( row.id )
-                print '# Associated  datasets:'
-                for file_name in datasets:
-                    print "%s" %file_name
+                if datasets:
+                    print '# Associated  datasets:'
+                    for file_name in datasets:
+                        print "%s" %file_name
                 history_count += 1
             total_datasets_purged += len( datasets )
     print '# %d histories ( including a total of %d datasets ) purged\n' %( history_count, total_datasets_purged )
+
+def purge_history( app, id, remove_from_disk ):
+    """
+    Purges a history along with all datasets associated with the history. Dataset files
+    may or may not be removed from disk.
+    """
+    errmsg = ""
+    history = app.model.History.get( id )
+    if history.deleted:
+        errors = False
+        datasets = []
+        try:
+            for dataset in history.datasets:
+                data = app.model.Dataset.get( dataset.id )
+                if not data.purged:
+                    data.deleted = True
+                    if remove_from_disk:
+                        #errmsg = dataset.purge()
+                        errmsg = purge_dataset( app, data.id )
+                        if errmsg:
+                            errors = True
+                            break
+                        else:
+                            datasets.append( data.file_name )
+                    else:
+                        datasets.append( data.file_name )
+            if not errors:
+                history.purged = True
+            else:
+                return errmsg + "# Error purging datasets for history %s" %str( id ), datasets
+        except Exception, exc:
+            return errmsg + "# Error, exception: %s caught attempting to purge history %s" %( str( exc ), str( id ) ), datasets
+        try:
+            app.model.flush()
+        except Exception, exc:
+            return errmsg + "# Error: exception, %s caught attempting to flush app.model when purging history %d" % ( str( exc ), str( id ) ), datasets
+    else:
+        return errmsg + "# Error: history %s has not previously been deleted, so it cannot be purged" %str( id ), datasets
+    return errmsg, datasets
 
 def info_purge_datasets( app, days ):
     # Provide info about the datasets that will be affected if the purge_datasets function is executed.
@@ -186,7 +233,7 @@ def info_purge_datasets( app, days ):
     print '# %d datasets will be purged' %dataset_count
     print '# Total disk space that will be freed up: ', total_disk_space, '\n'
 
-def purge_datasets( app, days ):
+def purge_datasets( app, days, remove_from_disk ):
     # Purges deleted datasets whose update_time value older than specified number of days.
     dataset_count = 0
     total_disk_space = 0
@@ -198,19 +245,55 @@ def purge_datasets( app, days ):
         last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) )
         diff = (now-last)/3600/24 # days
         if diff > days:
-            data = app.model.Dataset.get( row.id )
-            errmsg = data.purge()
-            if errmsg:
-                print errmsg
+            if remove_from_disk:
+                errmsg = purge_dataset( app, row.id )
+                if errmsg:
+                    print errmsg
+                else:
+                    data = app.model.Dataset.get( row.id )
+                    print '%s' %str( data.file_name )
+                    dataset_count += 1
+                    try:
+                        total_disk_space += row.file_size
+                    except:
+                        pass
             else:
+                data = app.model.Dataset.get( row.id )
+                data.purged = True
+                data.flush()
                 print '%s' %str( data.file_name )
                 dataset_count += 1
-                try:
-                    total_disk_space += row.file_size
-                except:
-                    pass
     print '# %d datasets purged' % dataset_count
-    print '# Total disk space freed up: ', total_disk_space, '\n'
+    if remove_from_disk:
+        print '# Total disk space freed up: ', total_disk_space, '\n'
+
+def purge_dataset( app, id ):
+    """Removes the file from disk and updates the database accordingly."""
+    dataset = app.model.Dataset.get( id )
+
+    if dataset.dataset_file is None or not dataset.dataset_file.readonly:
+        #Check to see if another dataset is using this file
+        if dataset.dataset_file:
+            for data in dataset.select_by( purged=False, filename_id=dataset.dataset_file.id ):
+                if data.id != dataset.id:
+                    return "# Error: the dataset id for deletion is %s, while the dataset id retrieved is %s\n" %( str( dataset.id ), str( data.id ) )
+        elif dataset.deleted:
+            # Remove files from disk and update the database
+            try:
+                os.unlink( dataset.file_name )
+                dataset.purged = True
+                dataset.flush()
+            except Exception, exc:
+                return "# Error, exception: %s caught attempting to purge %s\n" %( str( exc ), dataset.file_name )
+            try:
+                os.unlink( dataset.extra_files_path )
+            except:
+                pass
+        else:
+            return "# Error: '%s' has not previously been deleted, so it cannot be purged\n" %dataset.file_name
+    else:
+        return "# Error: '%s' has dependencies, so it cannot be purged\n" %dataset.file_name
+    return ""
 
 if __name__ == "__main__":
     main()

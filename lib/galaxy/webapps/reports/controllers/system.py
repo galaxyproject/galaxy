@@ -63,7 +63,6 @@ class System( BaseController ):
             msg = "Enter the number of days."
         return str( userless_histories_days ), msg
 
-
     def deleted_histories( self, **kwd ):
         """
         The number of histories that were deleted more than the specified number of days ago, but have not yet been purged.
@@ -165,7 +164,7 @@ class System( BaseController ):
         dt = trans.model.Dataset.table
 
         for row in dt.select( dt.c.file_size>min_file_size ).execute():
-            datasets.append( ( row.id, str( row.create_time )[0:10], row.history_id, row.deleted, row.file_size ) )
+            datasets.append( ( row.id, str( row.update_time )[0:10], row.history_id, row.deleted, row.file_size ) )
         datasets = sorted( datasets, key=operator.itemgetter(4), reverse=True )
         return file_path, disk_usage, datasets, file_size_str
 
