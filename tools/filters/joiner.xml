@@ -24,8 +24,8 @@
       <param name="input2" value="2.bed"/>
       <param name="field1" value="2"/>
       <param name="field2" value="2"/>
-      <param name="unmatched" value="discard"/>
-      <param name="partial" value="discard"/>
+      <param name="unmatched" value=""/>
+      <param name="partial" value=""/>
       <output name="out_file1" file="fs-joiner-1.dat"/>
     </test>
     <test>
@@ -33,8 +33,8 @@
       <param name="input2" value="2.bed"/>
       <param name="field1" value="2"/>
       <param name="field2" value="2"/>
-      <param name="unmatched" value="keep"/>
-      <param name="partial" value="keep"/>
+      <param name="unmatched" value="-u"/>
+      <param name="partial" value="-p"/>
       <output name="out_file1" file="fs-joiner-2.dat"/>
     </test>
   </tests>
