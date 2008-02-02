@@ -26,7 +26,7 @@
       <param name="field2" value="2"/>
       <param name="unmatched" value=""/>
       <param name="partial" value=""/>
-      <output name="out_file1" file="fs-joiner-1.dat"/>
+      <output name="out_file1" file="joiner_out1.bed"/>
     </test>
     <test>
       <param name="input1" value="1.bed"/>
@@ -35,7 +35,7 @@
       <param name="field2" value="2"/>
       <param name="unmatched" value="-u"/>
       <param name="partial" value="-p"/>
-      <output name="out_file1" file="fs-joiner-2.dat"/>
+      <output name="out_file1" file="joiner_out2.bed"/>
     </test>
   </tests>
   <help>
