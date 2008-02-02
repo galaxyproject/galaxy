@@ -15,7 +15,7 @@ def main():
     i = 0
     for i, line in enumerate( open( infile ) ):
         line = line.rstrip( '\r\n' )
-        if line and line.startswith( '/var/opt/galaxy/main/database/files/dataset_' ):
+        if line and line.startswith( '/var/opt/galaxy' ):
             try:
                 purged_filename = line + "_purged"
                 os.rename( line, purged_filename )
