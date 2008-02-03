@@ -291,7 +291,7 @@ class Universe( BaseController ):
         return trans.fill_template( "history_options.tmpl", history = trans.get_history() )
 
     @web.expose
-    def history_delete( self, trans, id = None, **kwd):
+    def history_delete( self, trans, id=None, **kwd):
         """Deletes a list of histories, ensures that histories are owned by current user"""
         history_names = []
         if id:
@@ -301,6 +301,10 @@ class Universe( BaseController ):
                 history_ids = [ id ]
             user = trans.get_user()
             for hid in history_ids:
+                try:
+                    int( hid )
+                except:
+                    return trans.show_message( "Invalid history: %s" % str( hid ) )
                 history = self.app.model.History.get( hid )
                 if history:
                     if history.user_id != None and user:
@@ -310,9 +314,10 @@ class Universe( BaseController ):
                     # If deleting the current history, make a new current.
                     if history == trans.get_history():
                         trans.new_history()
+                else:
+                    return trans.show_message( "Not able to find history %s" % str( hid ) )
                 self.app.model.flush()
                 trans.log_event( "History id %s marked as deleted" % str(hid) )
-            
         else:
             return trans.show_message( "You must select at least one history to delete." )
         return trans.show_message( "History deleted: %s" % ",".join(history_names),
