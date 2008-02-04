@@ -413,6 +413,15 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         return [ da.dataset.file_name for da in job.output_datasets ]
 
+    def check_killed( self ):
+        job = model.Job.get( self.job_id )
+        for da in job.output_datasets:
+            if da.dataset.parent_id is not None:
+                return False
+            if not da.dataset.deleted:
+                return False
+        return True
+
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app

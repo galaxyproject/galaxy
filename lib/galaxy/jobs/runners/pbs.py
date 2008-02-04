@@ -244,7 +244,7 @@ class PBSJobRunner( object ):
             job_id = pbs_job_state.job_id
 	    galaxy_job_id = pbs_job_state.job_wrapper.job_id
             old_state = pbs_job_state.old_state
-            running = pbs_job_state.running         
+            running = pbs_job_state.running
             conn = pbs.pbs_connect( self.pbs_server )
             if conn <= 0:
                 log.debug("(%s/%s) connection to PBS server for state check failed" % (galaxy_job_id, job_id) )
@@ -258,6 +258,7 @@ class PBSJobRunner( object ):
                 log.debug("(%s/%s) job has left queue" % (galaxy_job_id, job_id) )
                 self.finish_job( pbs_job_state )
             else:    
+                killed = pbs_job_state.job_wrapper.check_killed()
                 try:
                     if (jobs[0].attribs[0].name == "job_state"):
                         state = jobs[0].attribs[0].value
@@ -267,6 +268,9 @@ class PBSJobRunner( object ):
                             running = True
                             pbs_job_state.job_wrapper.change_state( "running" )
                             log.debug("(%s/%s) job is now running" % (galaxy_job_id, job_id) )
+                        if killed and state != "E":
+                            log.debug( "(%s/%s) all output datasets deleted by user, dequeueing" % (galaxy_job_id, job_id) )
+                            self.delete_job( job_id )
                         old_state = state
                     pbs_job_state.old_state = old_state
                     pbs_job_state.running = running
@@ -317,6 +321,15 @@ class PBSJobRunner( object ):
         log.info( "sending stop signal to worker threads" )
         self.queue.put( self.STOP_SIGNAL )
         log.info( "pbs job runner stopped" )
+
+    def delete_job( self, job_id ):
+        """Attempts to delete a job from the PBS queue"""
+        conn = pbs.pbs_connect( self.pbs_server )
+        if conn <= 0:
+            log.debug("(%s) connection to PBS server for job delete failed" % job_id )
+            return
+        pbs.pbs_deljob( conn, job_id, 'NULL' )
+        pbs.pbs_disconnect( conn )
 
     def get_stage_in_out( self, fnames ):
         """Convenience function to create a stagein/stageout list"""
