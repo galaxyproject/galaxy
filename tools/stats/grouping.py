@@ -15,16 +15,19 @@ def main():
     
     ops = []
     cols = []
+    rounds = []
     elems = []
     
     for var in sys.argv[4:]:
         ops.append(var.split()[0])
         cols.append(var.split()[1])
+        rounds.append(var.split()[2])
     
     """
-    At this point, ops and cols will look something like this:
+    At this point, ops, cols and rounds will look something like this:
     ops:  ['mean', 'min', 'c']
     cols: ['1', '3', '4']
+    rounds: ['no', 'yes' 'no']
     """
     
     for i, line in enumerate( file ( inputfile )):
@@ -45,9 +48,9 @@ def main():
     
     for k,col in enumerate(cols):
         col = int(col)-1
-        if ops[k] != 'c':
-            # We'll get here only if the user didn't choose 'Concatenate', which is the
-            # only aggregation function that can be used on columns containing strings.
+        if ops[k] not in ['c', 'length', 'unique']:
+            # We'll get here only if the user didn't choose 'Concatenate' or 'Count' or 'Count Distinct', which are the
+            # only aggregation functions that can be used on columns containing strings.
             try:
                 float( elems[col] )
             except:
@@ -99,7 +102,7 @@ def main():
                             valid = True
                             # Before appending the current value, make sure it is numeric if the
                             # operation for the column requires it.
-                            if ops[i] != 'c':
+                            if ops[i] not in ['c','length', 'unique']:
                                 try:
                                     float( fields[col].strip())
                                 except:
@@ -121,13 +124,17 @@ def main():
     
                         for i, op in enumerate( ops ):
                             rfunc = "r." + op 
-                            if op != 'c':
+                            if op not in ['c','length','unique']:
                                 for j, elem in enumerate( prev_vals[i] ):
                                     prev_vals[i][j] = float( elem )
                                 rout = "%.2f" %( eval( rfunc )( prev_vals[i] ))
+                                if rounds[i] == 'yes':
+                                    rout = int(round(float(rout)))
                             else:
                                 rout = eval( rfunc )( prev_vals[i] )
-    
+                            if op == 'unique':
+                                rfunc = "r.length" 
+                                rout = eval( rfunc )( rout )
                             out_str += "\t" + str(rout)
     
                         print >>fout, out_str
@@ -149,7 +156,9 @@ def main():
                         prev_vals.append(val_list)
     
             except Exception, exc:
-                stop_err( "Error executing aggregation functions: %s" %str(exc) )
+                skipped_lines += 1
+                if not first_invalid_line:
+                    first_invalid_line = ii+1
         else:
             skipped_lines += 1
             if not first_invalid_line:
@@ -160,14 +169,23 @@ def main():
     
     for i, op in enumerate(ops):
         rfunc = "r." + op 
-        if op != 'c':
-            for j, elem in enumerate( prev_vals[i] ):
-                prev_vals[i][j] = float( elem )
-            rout = "%.2f" %( eval( rfunc )( prev_vals[i] ))
-        else:
-            rout = eval( rfunc )( prev_vals[i] )
-            
-        out_str += "\t" + str( rout )
+        try:
+            if op not in ['c','length','unique']:
+                for j, elem in enumerate( prev_vals[i] ):
+                    prev_vals[i][j] = float( elem )
+                rout = '%.2f' %( eval( rfunc )( prev_vals[i] ))
+                if rounds[i] == 'yes':
+                    rout = int(round(float(rout)))
+            else:
+                rout = eval( rfunc )( prev_vals[i] )
+            if op == 'unique':
+                rfunc = "r.length" 
+                rout = eval( rfunc )( rout )    
+            out_str += "\t" + str( rout )
+        except:
+            skipped_lines += 1
+            if not first_invalid_line:
+                first_invalid_line = ii+1
     
     print >>fout, out_str
     
@@ -176,6 +194,10 @@ def main():
     for i,op in enumerate(ops):
         if op == 'c':
             op = 'concat'
+        elif op == 'length':
+            op = 'count'
+        elif op == 'unique':
+            op = 'count_distinct'
         msg += op + "[c" + cols[i] + "] "
     if skipped_lines > 0:
         msg+= "--skipped %d invalid lines starting with line %d.  Value '%s' in column %d is not numeric." % ( skipped_lines, first_invalid_line, invalid_value, invalid_column )
