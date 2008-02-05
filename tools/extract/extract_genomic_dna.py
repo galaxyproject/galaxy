@@ -99,6 +99,7 @@ def __main__():
     first_invalid_line = 0
     invalid_line = ''
     fout = open( output_filename, "w" )
+    err_msg = ''
 
     for i, line in enumerate( open( input_filename ) ):
         line = line.rstrip( '\r\n' )
@@ -122,8 +123,8 @@ def __main__():
                     try:
                         sequence = nib.get( start, end-start )
                     except:
-                        fout.close()
-                        stop_err( "Unable to fetch the sequence from %d to %d from %s." %( start, end-start, nib_path ) ) 
+                        err_msg = "Unable to fetch the sequence from %d to %d from %s." %( start, end-start, nib_path )
+                        break
                 elif os.path.exists( twobit_path ):
                     if chrom in twobits:
                         t = twobits[chrom]
@@ -132,15 +133,15 @@ def __main__():
                     try:
                         sequence = t[chrom][start:end]
                     except:
-                        fout.close()
-                        stop_err( "Unable to fetch the sequence from %d to %d from %s." %( start, end-start, twobit_path ) ) 
+                        err_msg = "Unable to fetch the sequence from %d to %d from %s." %( start, end-start, twobit_path )
+                        break
                 else:
-                    fout.close()
-                    stop_err( "Sequence %s was not found for build %s.  Most likely your data lists the wrong chromosome number for this organism. Check your build selection." % ( chrom, dbkey ) )
+                    err_msg = "Sequence %s was not found for build %s.  Most likely your data lists the wrong chromosome number for this organism. Check your build selection." % ( chrom, dbkey )
+                    break
     
                 if not sequence:
-                    fout.close()
-                    stop_err( '%s_%s_%s is either invalid or not present in the specified build.' %( chrom, start, end ) ) 
+                    err_msg = "%s_%s_%s is either invalid or not present in the specified build." %( chrom, start, end )
+                    break
                 if includes_strand_col and strand == "-":
                     sequence = reverse_complement( sequence )
     
@@ -163,7 +164,8 @@ def __main__():
                     first_invalid_line = i + 1
                     invalid_line = line
     fout.close()
-
+    if err_msg:
+        stop_err( err_msg )
     if skipped_lines:
         print 'Data issue: skipped %d invalid lines starting at line #%d, "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
 
