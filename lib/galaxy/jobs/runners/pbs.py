@@ -242,7 +242,7 @@ class PBSJobRunner( object ):
         new_watched = []
         for pbs_job_state in self.watched:
             job_id = pbs_job_state.job_id
-	    galaxy_job_id = pbs_job_state.job_wrapper.job_id
+            galaxy_job_id = pbs_job_state.job_wrapper.job_id
             old_state = pbs_job_state.old_state
             running = pbs_job_state.running
             conn = pbs.pbs_connect( self.pbs_server )
