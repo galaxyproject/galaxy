@@ -508,7 +508,7 @@ class DynamicOptions( object ):
                             d[ fields[ name_col ] ].append( fields[ value_col ] )
                         except: 
                             d[ fields[ name_col ] ] = [ fields[ value_col ] ]
-                elif self.data_file == 'regions.loc' or self.data_file == 'phastOdds.loc' or self.data_file == 'binned_scores.loc':
+                elif self.data_file == 'regions.loc' or self.data_file == 'phastOdds.loc' or self.data_file == 'binned_scores.loc' or self.data_file == 'liftOver.loc':
                     if not fields[ build_col ] in d: 
                         d[ fields[ build_col ] ] = []
                     d[ fields[ build_col ] ].append( (fields[ name_col ], fields[ value_col ]) )
@@ -540,7 +540,7 @@ class DynamicOptions( object ):
             if build in d:
                 for val in d[ build ]:
                     options.append( ( val, val, False ) )
-        elif self.data_file == 'regions.loc' or self.data_file == 'phastOdds.loc' or self.data_file == 'binned_scores.loc':
+        elif self.data_file == 'regions.loc' or self.data_file == 'phastOdds.loc' or self.data_file == 'binned_scores.loc' or self.data_file == 'liftOver.loc':
             if build in d:
                 for (key, val) in d[ build ]:
                     options.append( ( key, val, False ) )

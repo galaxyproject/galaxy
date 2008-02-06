@@ -2,8 +2,15 @@
   <description> between assemblies and genomes</description>
   <command interpreter="python">liftOver_wrapper.py $input "$out_file1" "$out_file2" $dbkey $to_dbkey</command>
   <inputs>
-    <param format="bed" name="input" type="data" label="Convert coordinates of"/>
-    <param name="to_dbkey" type="genomebuild" label="To" />
+    <param format="bed" name="input" type="data" label="Convert co-ordinates of" />
+    <param name="to_dbkey" type="select" label="To">
+      <options from_file="/depot/data2/galaxy/liftOver.loc">
+        <filter type="data_meta" data_ref="input" key="build" />
+        <filter type="column" name="build_col" value="0" />
+        <filter type="column" name="name_col" value="1" />
+        <filter type="column" name="value_col" value="1" />
+      </options>
+    </param>
   </inputs>
   <outputs>
     <data format="bed" name="out_file1" />
@@ -25,11 +32,17 @@
 
 Make sure that the genome build is specified for the input dataset (click the pencil icon if it is not specified).
 
+.. class:: warningmark
+
+The tool will fail to run when the value in the **To** box is **unspecified**. This means that either we don't carry any liftover mappings corresponding to the genome build of the chosen input dataset or the genome build for the input dataset is not specified (click the pencil icon if it is not specified). 
+
 -----
+
+.. class:: infomark
 
 **What it does**
 
-This tool converts genome coordinates and annotation files between assemblies and genomes. It outputs 2 files, one containing all the mapped coordinates and one containing the unmapped coordinates (if any). 
+This tool converts genome coordinates and annotation files between assemblies and genomes. It outputs 2 files, one containing all the mapped coordinates and the other containing the unmapped coordinates (if any). 
 
 -----
 

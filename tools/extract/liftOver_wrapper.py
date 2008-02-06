@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.4
-#Guru
+#Guruprasad Ananda
 """
 Converts coordinates from one build/assembly to another using liftOver binary and mapping files downloaded from UCSC.
 """
@@ -25,9 +25,9 @@ if in_dbkey == "?":
 if out_dbkey == "?": 
     stop_err("Please specify a build for the output dataset using the 'To' dropdown menu.")
 
-#Check if the apping file exists    
+#Check if the Mapping file exists    
 #example file path: hg18ToHg17.over.chain
-mapfilename = in_dbkey + "To" + out_dbkey[0].capitalize() + out_dbkey[1:] + ".over.chain"
+mapfilename = in_dbkey + "To" + out_dbkey[0].upper() + out_dbkey[1:]  + ".over.chain"
 mapfilepath = "/depot/data2/galaxy/" + in_dbkey + "/liftOver/" + mapfilename
 try:
     open(mapfilepath, 'r')
