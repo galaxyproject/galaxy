@@ -4,7 +4,6 @@
 Input: fasta, minimal length, maximal length
 Output: fasta
 Return sequences whose lengths are within the range.
-Wen-Yu Chung
 """
 
 import sys, os
@@ -26,9 +25,10 @@ def __main__():
             title = line
             sequence = ''
         else:
-            sequence += line
-            if line.split()[0].isdigit():
-                sequence += ' '
+            if line:
+                sequence += line
+                if line.split()[0].isdigit():
+                    sequence += ' '
     if sequence:
         seq_hash[( sequence_count, title )] = sequence
     # return only those lengths are in the range
