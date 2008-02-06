@@ -1,0 +1,32 @@
+63221	9606	subspecies
+1	1	no rank
+2759	131567	superkingdom
+6072	33208	no rank
+7711	33511	phylum
+7742	89593	no rank
+7776	7742	superclass
+8287	117571	no rank
+9347	32525	no rank
+9443	314146	order
+9526	314293	parvorder
+9604	314295	family
+9605	207598	genus
+32523	8287	no rank
+32524	32523	no rank
+32525	40674	no rank
+33154	2759	no rank
+33208	33154	kingdom
+33213	6072	no rank
+33316	33213	no rank
+33511	33316	no rank
+40674	32524	class
+89593	7711	subphylum
+117570	7776	no rank
+117571	117570	no rank
+131567	1	no rank
+207598	9604	no rank
+314146	9347	superorder
+314293	376913	infraorder
+314295	9526	superfamily
+376913	9443	suborder
+9606	9605	species

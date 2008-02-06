@@ -1,0 +1,5 @@
+33001686	9443	root	Eukaryota	Metazoa	n	n	Chordata	Craniata	Gnathostomata	Mammalia	n	Euarchontoglires	Primates	n	n	n	n	n	n	n	n	n	n
+23236241	9604	root	Eukaryota	Metazoa	n	n	Chordata	Craniata	Gnathostomata	Mammalia	n	Euarchontoglires	Primates	Haplorrhini	Hominoidea	Hominidae	n	n	n	n	n	n	n
+12583	9606	root	Eukaryota	Metazoa	n	n	Chordata	Craniata	Gnathostomata	Mammalia	n	Euarchontoglires	Primates	Haplorrhini	Hominoidea	Hominidae	n	n	n	Homo	n	Homo sapiens	n
+410771	40674	root	Eukaryota	Metazoa	n	n	Chordata	Craniata	Gnathostomata	Mammalia	n	n	n	n	n	n	n	n	n	n	n	n	n
+2286205	63221	root	Eukaryota	Metazoa	n	n	Chordata	Craniata	Gnathostomata	Mammalia	n	Euarchontoglires	Primates	Haplorrhini	Hominoidea	Hominidae	n	n	n	Homo	n	Homo sapiens	Homo sapiens neanderthalensis

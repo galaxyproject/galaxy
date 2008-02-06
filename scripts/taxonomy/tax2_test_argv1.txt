@@ -1,0 +1,498 @@
+63221	subspecies	0	None
+1	no rank	1	no rank
+1	no rank	131567	no rank
+1	no rank	2759	superkingdom
+1	no rank	33154	no rank
+1	no rank	33208	kingdom
+1	no rank	6072	no rank
+1	no rank	33213	no rank
+1	no rank	33316	no rank
+1	no rank	33511	no rank
+1	no rank	7711	phylum
+1	no rank	89593	subphylum
+1	no rank	7742	no rank
+1	no rank	7776	superclass
+1	no rank	117570	no rank
+1	no rank	117571	no rank
+1	no rank	8287	no rank
+1	no rank	32523	no rank
+1	no rank	32524	no rank
+1	no rank	40674	class
+1	no rank	32525	no rank
+1	no rank	9347	no rank
+1	no rank	314146	superorder
+1	no rank	9443	order
+1	no rank	376913	suborder
+1	no rank	314293	infraorder
+1	no rank	9526	parvorder
+1	no rank	314295	superfamily
+1	no rank	9604	family
+1	no rank	207598	no rank
+1	no rank	9605	genus
+1	no rank	9606	species
+1	no rank	63221	subspecies
+2759	superkingdom	33154	no rank
+2759	superkingdom	33208	kingdom
+2759	superkingdom	6072	no rank
+2759	superkingdom	33213	no rank
+2759	superkingdom	33316	no rank
+2759	superkingdom	33511	no rank
+2759	superkingdom	7711	phylum
+2759	superkingdom	89593	subphylum
+2759	superkingdom	7742	no rank
+2759	superkingdom	7776	superclass
+2759	superkingdom	117570	no rank
+2759	superkingdom	117571	no rank
+2759	superkingdom	8287	no rank
+2759	superkingdom	32523	no rank
+2759	superkingdom	32524	no rank
+2759	superkingdom	40674	class
+2759	superkingdom	32525	no rank
+2759	superkingdom	9347	no rank
+2759	superkingdom	314146	superorder
+2759	superkingdom	9443	order
+2759	superkingdom	376913	suborder
+2759	superkingdom	314293	infraorder
+2759	superkingdom	9526	parvorder
+2759	superkingdom	314295	superfamily
+2759	superkingdom	9604	family
+2759	superkingdom	207598	no rank
+2759	superkingdom	9605	genus
+2759	superkingdom	9606	species
+2759	superkingdom	63221	subspecies
+6072	no rank	33213	no rank
+6072	no rank	33316	no rank
+6072	no rank	33511	no rank
+6072	no rank	7711	phylum
+6072	no rank	89593	subphylum
+6072	no rank	7742	no rank
+6072	no rank	7776	superclass
+6072	no rank	117570	no rank
+6072	no rank	117571	no rank
+6072	no rank	8287	no rank
+6072	no rank	32523	no rank
+6072	no rank	32524	no rank
+6072	no rank	40674	class
+6072	no rank	32525	no rank
+6072	no rank	9347	no rank
+6072	no rank	314146	superorder
+6072	no rank	9443	order
+6072	no rank	376913	suborder
+6072	no rank	314293	infraorder
+6072	no rank	9526	parvorder
+6072	no rank	314295	superfamily
+6072	no rank	9604	family
+6072	no rank	207598	no rank
+6072	no rank	9605	genus
+6072	no rank	9606	species
+6072	no rank	63221	subspecies
+7711	phylum	89593	subphylum
+7711	phylum	7742	no rank
+7711	phylum	7776	superclass
+7711	phylum	117570	no rank
+7711	phylum	117571	no rank
+7711	phylum	8287	no rank
+7711	phylum	32523	no rank
+7711	phylum	32524	no rank
+7711	phylum	40674	class
+7711	phylum	32525	no rank
+7711	phylum	9347	no rank
+7711	phylum	314146	superorder
+7711	phylum	9443	order
+7711	phylum	376913	suborder
+7711	phylum	314293	infraorder
+7711	phylum	9526	parvorder
+7711	phylum	314295	superfamily
+7711	phylum	9604	family
+7711	phylum	207598	no rank
+7711	phylum	9605	genus
+7711	phylum	9606	species
+7711	phylum	63221	subspecies
+7742	no rank	7776	superclass
+7742	no rank	117570	no rank
+7742	no rank	117571	no rank
+7742	no rank	8287	no rank
+7742	no rank	32523	no rank
+7742	no rank	32524	no rank
+7742	no rank	40674	class
+7742	no rank	32525	no rank
+7742	no rank	9347	no rank
+7742	no rank	314146	superorder
+7742	no rank	9443	order
+7742	no rank	376913	suborder
+7742	no rank	314293	infraorder
+7742	no rank	9526	parvorder
+7742	no rank	314295	superfamily
+7742	no rank	9604	family
+7742	no rank	207598	no rank
+7742	no rank	9605	genus
+7742	no rank	9606	species
+7742	no rank	63221	subspecies
+7776	superclass	117570	no rank
+7776	superclass	117571	no rank
+7776	superclass	8287	no rank
+7776	superclass	32523	no rank
+7776	superclass	32524	no rank
+7776	superclass	40674	class
+7776	superclass	32525	no rank
+7776	superclass	9347	no rank
+7776	superclass	314146	superorder
+7776	superclass	9443	order
+7776	superclass	376913	suborder
+7776	superclass	314293	infraorder
+7776	superclass	9526	parvorder
+7776	superclass	314295	superfamily
+7776	superclass	9604	family
+7776	superclass	207598	no rank
+7776	superclass	9605	genus
+7776	superclass	9606	species
+7776	superclass	63221	subspecies
+8287	no rank	32523	no rank
+8287	no rank	32524	no rank
+8287	no rank	40674	class
+8287	no rank	32525	no rank
+8287	no rank	9347	no rank
+8287	no rank	314146	superorder
+8287	no rank	9443	order
+8287	no rank	376913	suborder
+8287	no rank	314293	infraorder
+8287	no rank	9526	parvorder
+8287	no rank	314295	superfamily
+8287	no rank	9604	family
+8287	no rank	207598	no rank
+8287	no rank	9605	genus
+8287	no rank	9606	species
+8287	no rank	63221	subspecies
+9347	no rank	314146	superorder
+9347	no rank	9443	order
+9347	no rank	376913	suborder
+9347	no rank	314293	infraorder
+9347	no rank	9526	parvorder
+9347	no rank	314295	superfamily
+9347	no rank	9604	family
+9347	no rank	207598	no rank
+9347	no rank	9605	genus
+9347	no rank	9606	species
+9347	no rank	63221	subspecies
+9443	order	376913	suborder
+9443	order	314293	infraorder
+9443	order	9526	parvorder
+9443	order	314295	superfamily
+9443	order	9604	family
+9443	order	207598	no rank
+9443	order	9605	genus
+9443	order	9606	species
+9443	order	63221	subspecies
+9526	parvorder	314295	superfamily
+9526	parvorder	9604	family
+9526	parvorder	207598	no rank
+9526	parvorder	9605	genus
+9526	parvorder	9606	species
+9526	parvorder	63221	subspecies
+9604	family	207598	no rank
+9604	family	9605	genus
+9604	family	9606	species
+9604	family	63221	subspecies
+9605	genus	9606	species
+9605	genus	63221	subspecies
+32523	no rank	32524	no rank
+32523	no rank	40674	class
+32523	no rank	32525	no rank
+32523	no rank	9347	no rank
+32523	no rank	314146	superorder
+32523	no rank	9443	order
+32523	no rank	376913	suborder
+32523	no rank	314293	infraorder
+32523	no rank	9526	parvorder
+32523	no rank	314295	superfamily
+32523	no rank	9604	family
+32523	no rank	207598	no rank
+32523	no rank	9605	genus
+32523	no rank	9606	species
+32523	no rank	63221	subspecies
+32524	no rank	40674	class
+32524	no rank	32525	no rank
+32524	no rank	9347	no rank
+32524	no rank	314146	superorder
+32524	no rank	9443	order
+32524	no rank	376913	suborder
+32524	no rank	314293	infraorder
+32524	no rank	9526	parvorder
+32524	no rank	314295	superfamily
+32524	no rank	9604	family
+32524	no rank	207598	no rank
+32524	no rank	9605	genus
+32524	no rank	9606	species
+32524	no rank	63221	subspecies
+32525	no rank	9347	no rank
+32525	no rank	314146	superorder
+32525	no rank	9443	order
+32525	no rank	376913	suborder
+32525	no rank	314293	infraorder
+32525	no rank	9526	parvorder
+32525	no rank	314295	superfamily
+32525	no rank	9604	family
+32525	no rank	207598	no rank
+32525	no rank	9605	genus
+32525	no rank	9606	species
+32525	no rank	63221	subspecies
+33154	no rank	33208	kingdom
+33154	no rank	6072	no rank
+33154	no rank	33213	no rank
+33154	no rank	33316	no rank
+33154	no rank	33511	no rank
+33154	no rank	7711	phylum
+33154	no rank	89593	subphylum
+33154	no rank	7742	no rank
+33154	no rank	7776	superclass
+33154	no rank	117570	no rank
+33154	no rank	117571	no rank
+33154	no rank	8287	no rank
+33154	no rank	32523	no rank
+33154	no rank	32524	no rank
+33154	no rank	40674	class
+33154	no rank	32525	no rank
+33154	no rank	9347	no rank
+33154	no rank	314146	superorder
+33154	no rank	9443	order
+33154	no rank	376913	suborder
+33154	no rank	314293	infraorder
+33154	no rank	9526	parvorder
+33154	no rank	314295	superfamily
+33154	no rank	9604	family
+33154	no rank	207598	no rank
+33154	no rank	9605	genus
+33154	no rank	9606	species
+33154	no rank	63221	subspecies
+33208	kingdom	6072	no rank
+33208	kingdom	33213	no rank
+33208	kingdom	33316	no rank
+33208	kingdom	33511	no rank
+33208	kingdom	7711	phylum
+33208	kingdom	89593	subphylum
+33208	kingdom	7742	no rank
+33208	kingdom	7776	superclass
+33208	kingdom	117570	no rank
+33208	kingdom	117571	no rank
+33208	kingdom	8287	no rank
+33208	kingdom	32523	no rank
+33208	kingdom	32524	no rank
+33208	kingdom	40674	class
+33208	kingdom	32525	no rank
+33208	kingdom	9347	no rank
+33208	kingdom	314146	superorder
+33208	kingdom	9443	order
+33208	kingdom	376913	suborder
+33208	kingdom	314293	infraorder
+33208	kingdom	9526	parvorder
+33208	kingdom	314295	superfamily
+33208	kingdom	9604	family
+33208	kingdom	207598	no rank
+33208	kingdom	9605	genus
+33208	kingdom	9606	species
+33208	kingdom	63221	subspecies
+33213	no rank	33316	no rank
+33213	no rank	33511	no rank
+33213	no rank	7711	phylum
+33213	no rank	89593	subphylum
+33213	no rank	7742	no rank
+33213	no rank	7776	superclass
+33213	no rank	117570	no rank
+33213	no rank	117571	no rank
+33213	no rank	8287	no rank
+33213	no rank	32523	no rank
+33213	no rank	32524	no rank
+33213	no rank	40674	class
+33213	no rank	32525	no rank
+33213	no rank	9347	no rank
+33213	no rank	314146	superorder
+33213	no rank	9443	order
+33213	no rank	376913	suborder
+33213	no rank	314293	infraorder
+33213	no rank	9526	parvorder
+33213	no rank	314295	superfamily
+33213	no rank	9604	family
+33213	no rank	207598	no rank
+33213	no rank	9605	genus
+33213	no rank	9606	species
+33213	no rank	63221	subspecies
+33316	no rank	33511	no rank
+33316	no rank	7711	phylum
+33316	no rank	89593	subphylum
+33316	no rank	7742	no rank
+33316	no rank	7776	superclass
+33316	no rank	117570	no rank
+33316	no rank	117571	no rank
+33316	no rank	8287	no rank
+33316	no rank	32523	no rank
+33316	no rank	32524	no rank
+33316	no rank	40674	class
+33316	no rank	32525	no rank
+33316	no rank	9347	no rank
+33316	no rank	314146	superorder
+33316	no rank	9443	order
+33316	no rank	376913	suborder
+33316	no rank	314293	infraorder
+33316	no rank	9526	parvorder
+33316	no rank	314295	superfamily
+33316	no rank	9604	family
+33316	no rank	207598	no rank
+33316	no rank	9605	genus
+33316	no rank	9606	species
+33316	no rank	63221	subspecies
+33511	no rank	7711	phylum
+33511	no rank	89593	subphylum
+33511	no rank	7742	no rank
+33511	no rank	7776	superclass
+33511	no rank	117570	no rank
+33511	no rank	117571	no rank
+33511	no rank	8287	no rank
+33511	no rank	32523	no rank
+33511	no rank	32524	no rank
+33511	no rank	40674	class
+33511	no rank	32525	no rank
+33511	no rank	9347	no rank
+33511	no rank	314146	superorder
+33511	no rank	9443	order
+33511	no rank	376913	suborder
+33511	no rank	314293	infraorder
+33511	no rank	9526	parvorder
+33511	no rank	314295	superfamily
+33511	no rank	9604	family
+33511	no rank	207598	no rank
+33511	no rank	9605	genus
+33511	no rank	9606	species
+33511	no rank	63221	subspecies
+40674	class	32525	no rank
+40674	class	9347	no rank
+40674	class	314146	superorder
+40674	class	9443	order
+40674	class	376913	suborder
+40674	class	314293	infraorder
+40674	class	9526	parvorder
+40674	class	314295	superfamily
+40674	class	9604	family
+40674	class	207598	no rank
+40674	class	9605	genus
+40674	class	9606	species
+40674	class	63221	subspecies
+89593	subphylum	7742	no rank
+89593	subphylum	7776	superclass
+89593	subphylum	117570	no rank
+89593	subphylum	117571	no rank
+89593	subphylum	8287	no rank
+89593	subphylum	32523	no rank
+89593	subphylum	32524	no rank
+89593	subphylum	40674	class
+89593	subphylum	32525	no rank
+89593	subphylum	9347	no rank
+89593	subphylum	314146	superorder
+89593	subphylum	9443	order
+89593	subphylum	376913	suborder
+89593	subphylum	314293	infraorder
+89593	subphylum	9526	parvorder
+89593	subphylum	314295	superfamily
+89593	subphylum	9604	family
+89593	subphylum	207598	no rank
+89593	subphylum	9605	genus
+89593	subphylum	9606	species
+89593	subphylum	63221	subspecies
+117570	no rank	117571	no rank
+117570	no rank	8287	no rank
+117570	no rank	32523	no rank
+117570	no rank	32524	no rank
+117570	no rank	40674	class
+117570	no rank	32525	no rank
+117570	no rank	9347	no rank
+117570	no rank	314146	superorder
+117570	no rank	9443	order
+117570	no rank	376913	suborder
+117570	no rank	314293	infraorder
+117570	no rank	9526	parvorder
+117570	no rank	314295	superfamily
+117570	no rank	9604	family
+117570	no rank	207598	no rank
+117570	no rank	9605	genus
+117570	no rank	9606	species
+117570	no rank	63221	subspecies
+117571	no rank	8287	no rank
+117571	no rank	32523	no rank
+117571	no rank	32524	no rank
+117571	no rank	40674	class
+117571	no rank	32525	no rank
+117571	no rank	9347	no rank
+117571	no rank	314146	superorder
+117571	no rank	9443	order
+117571	no rank	376913	suborder
+117571	no rank	314293	infraorder
+117571	no rank	9526	parvorder
+117571	no rank	314295	superfamily
+117571	no rank	9604	family
+117571	no rank	207598	no rank
+117571	no rank	9605	genus
+117571	no rank	9606	species
+117571	no rank	63221	subspecies
+131567	no rank	2759	superkingdom
+131567	no rank	33154	no rank
+131567	no rank	33208	kingdom
+131567	no rank	6072	no rank
+131567	no rank	33213	no rank
+131567	no rank	33316	no rank
+131567	no rank	33511	no rank
+131567	no rank	7711	phylum
+131567	no rank	89593	subphylum
+131567	no rank	7742	no rank
+131567	no rank	7776	superclass
+131567	no rank	117570	no rank
+131567	no rank	117571	no rank
+131567	no rank	8287	no rank
+131567	no rank	32523	no rank
+131567	no rank	32524	no rank
+131567	no rank	40674	class
+131567	no rank	32525	no rank
+131567	no rank	9347	no rank
+131567	no rank	314146	superorder
+131567	no rank	9443	order
+131567	no rank	376913	suborder
+131567	no rank	314293	infraorder
+131567	no rank	9526	parvorder
+131567	no rank	314295	superfamily
+131567	no rank	9604	family
+131567	no rank	207598	no rank
+131567	no rank	9605	genus
+131567	no rank	9606	species
+131567	no rank	63221	subspecies
+207598	no rank	9605	genus
+207598	no rank	9606	species
+207598	no rank	63221	subspecies
+314146	superorder	9443	order
+314146	superorder	376913	suborder
+314146	superorder	314293	infraorder
+314146	superorder	9526	parvorder
+314146	superorder	314295	superfamily
+314146	superorder	9604	family
+314146	superorder	207598	no rank
+314146	superorder	9605	genus
+314146	superorder	9606	species
+314146	superorder	63221	subspecies
+314293	infraorder	9526	parvorder
+314293	infraorder	314295	superfamily
+314293	infraorder	9604	family
+314293	infraorder	207598	no rank
+314293	infraorder	9605	genus
+314293	infraorder	9606	species
+314293	infraorder	63221	subspecies
+314295	superfamily	9604	family
+314295	superfamily	207598	no rank
+314295	superfamily	9605	genus
+314295	superfamily	9606	species
+314295	superfamily	63221	subspecies
+376913	suborder	314293	infraorder
+376913	suborder	9526	parvorder
+376913	suborder	314295	superfamily
+376913	suborder	9604	family
+376913	suborder	207598	no rank
+376913	suborder	9605	genus
+376913	suborder	9606	species
+376913	suborder	63221	subspecies
+9606	species	63221	subspecies
