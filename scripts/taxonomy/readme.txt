@@ -10,7 +10,7 @@ How to prepare NCBI taxonomy for Galaxy Metagenomic Toolkit
    - downloads very large gi2taxId files for nucleotide and protein entries of GenBank
    - runs a series of 3 python scripts on these files
    - creates a sqlite database called taxonomy.db (you can use sqlite to explore this database)
-   - this database is used by /tools/metag/tax.py tool to convert gi's into full taxonomic representation
+   - this database is used by /tools/taxonomy/tax.py tool to convert gi's into full taxonomic representation
    
 3. move taxonomy.db into /static/taxonomy/
 
