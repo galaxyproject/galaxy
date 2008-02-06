@@ -24,6 +24,9 @@ import mako.lookup
 pkg_resources.require( "simplejson" )
 import simplejson
 
+pkg_resources.require( "sqlalchemy>=0.3" )
+from sqlalchemy import desc
+            
 import logging
 log = logging.getLogger( __name__ )
 
@@ -230,16 +233,12 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         galaxy_session = self.app.model.GalaxySession()
         if self.user is not None:
             galaxy_session.user_id = self.user.id
-            if self.user.histories:
-                history_id = None
-                update_time = None
-                for history in self.user.histories:
-                    if history_id is None or history.update_time > update_time:
-                        history_id = history.id
-                        update_time = history.update_time
-                history = self.app.model.History.get( history_id )
-                if history is not None:
-                    self.history = history
+            h = self.app.model.History
+            ht = h.table
+            where = ( ht.c.user_id==self.user.id ) & ( ht.c.deleted=='f' )
+            history = h.query().filter( where ).order_by( desc( ht.c.update_time ) ).first()
+            if history is not None:
+                self.history = history
         galaxy_session.remote_host = self.request.remote_host
         galaxy_session.remote_addr = self.request.remote_addr
         try:
