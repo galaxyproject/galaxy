@@ -39,8 +39,12 @@ while args:
         try:
             c, s, e, st = [ int( x ) - 1 for x in colspec.split( "," ) ]
         except:
-            print "Columns in interval file invalid for UCSC custom track."
-            sys.exit()
+            try:
+                c, s, e = [ int( x ) - 1 for x in colspec.split( "," )[:3] ]
+                st = -1    #strand column is absent
+            except:
+                print "Columns in interval file invalid for UCSC custom track."
+                sys.exit()
         
         print >> out, '''track name="%s" description="%s" color=%s visibility=%s''' \
                       % ( name, description, color, visibility )
