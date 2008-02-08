@@ -121,7 +121,8 @@ Job.table = Table( "job", metadata,
     Column( "stdout", String() ),
     Column( "stderr", String() ),
     Column( "traceback", String() ),
-    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ) )
+    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), nullable=True ),
+    Column( "pbs_job_id", String( 255 ) ) )
     
 JobParameter.table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),

@@ -57,6 +57,7 @@ class Job( object ):
         self.input_datasets = []
         self.output_datasets = []
         self.state = Job.states.NEW
+        self.pbs_job_id = None
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
     def add_input_dataset( self, name, dataset ):

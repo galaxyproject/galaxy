@@ -97,24 +97,13 @@ class PBSJobRunner( object ):
         # Change to queued state immediately
         job_wrapper.change_state( 'queued' )
         
-        # random string for job name
-        random.seed()
-        job_name = ""
-        for i in range(10):
-            bit = random.randint(0,1)
-            if bit == 0:
-                bit = random.randint(97,122)
-            else:
-                bit = random.randint(65,90)
-            job_name += chr(bit)
-
         conn = pbs.pbs_connect( self.pbs_server )
         if conn <= 0:
             raise Exception( "Connection to PBS server for submit failed" )
 
         # define job attributes
-        ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_name)
-        efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_name)
+        ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_wrapper.job_id)
+        efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_wrapper.job_id)
 
         # to get returned via scp/rcp we need this
         if self.app.config.pbs_application_server:
@@ -149,7 +138,7 @@ class PBSJobRunner( object ):
             script = pbs_symlink_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], " ".join(job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames()), self.app.config.pbs_stage_path, exec_dir, command_line)
         else:
             script = pbs_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], exec_dir, command_line)
-        job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job_name)
+        job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job_wrapper.job_id)
         fh = file(job_file, "w")
         fh.write(script)
         fh.close()
@@ -158,7 +147,7 @@ class PBSJobRunner( object ):
         if not( os.access(job_file, os.R_OK) and conn > 0 ):
             # FIXME: More information here?
             stderr = stdout = ''
-                    
+
         galaxy_job_id = job_wrapper.job_id
         log.debug("submitting file %s" % job_file )
         log.debug("command is: %s" % command_line)
@@ -170,6 +159,11 @@ class PBSJobRunner( object ):
             stdout = ''
             stderr = "Job (%s) was not queued, PBS error %d: %s" % (galaxy_job_id, pbs.error() )
             log.debug(stderr)
+
+        # store the pbs job id for later
+        job = model.Job.get( galaxy_job_id )
+        job.pbs_job_id = job_id
+        job.flush()
 
         # Get initial job state
         stat_attrl = pbs.new_attrl(1)
@@ -202,7 +196,6 @@ class PBSJobRunner( object ):
         # Store PBS related state information for job
         pbs_job_state = PBSJobState()
         pbs_job_state.job_wrapper = job_wrapper
-        pbs_job_state.job_name = job_name
         pbs_job_state.job_id = job_id
         pbs_job_state.ofile = ofile
         pbs_job_state.efile = efile

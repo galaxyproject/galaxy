@@ -86,6 +86,60 @@ class JobQueue( object ):
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()        
         log.info( "job manager started" )
+        self.check_jobs_at_startup()
+
+    def check_jobs_at_startup( self ):
+        """
+	Checks all jobs that are in the 'running' or 'queued' state in the
+	database and requeues or cleans up as necessary.  Only run as the
+        job manager starts.
+        """
+        model = self.app.model
+        # Jobs in the NEW state won't be requeued unless we're tracking in the database
+        if not self.track_jobs_in_database:
+            for j in model.Job.select( model.Job.c.state == model.Job.states.NEW ):
+                log.debug( "no runner: %s is still in new state, adding to the jobs queue" %j.id )
+                self.queue.put( ( j.id, j.tool_id ) )
+        for j in model.Job.select( (model.Job.c.state == model.Job.states.RUNNING)
+                                 | (model.Job.c.state == model.Job.states.QUEUED) ):
+            job_wrapper = JobWrapper( j.id, self.app.toolbox.tools_by_id[ j.tool_id ], self )
+            if ( not j.command_line ) or ( "/tools/data_source" in j.command_line ) or ( not asbool( self.app.config.use_pbs ) ):
+                # Local jobs are never in the QUEUED state
+                log.debug( "local runner: %s is still in running state, setting to error" %j.id )
+                j.state = j.states.ERROR
+                j.stderr = 'job lost when local runner killed'
+                for d in j.output_datasets:
+                    d.dataset.state = d.dataset.states.ERROR
+                    d.dataset.info = 'This job was killed when Galaxy was restarted.  Please retry the job.'
+                    d.dataset.flush()
+                j.flush()
+            else:
+                pbs_job_state = runners.pbs.PBSJobState()
+                pbs_job_state.ofile = "%s/database/pbs/%s.o" % (os.getcwd(), j.id)
+                pbs_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), j.id)
+                pbs_job_state.job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), j.id)
+                pbs_job_state.job_id = str( j.pbs_job_id )
+                job_wrapper.command_line = j.command_line
+                pbs_job_state.job_wrapper = job_wrapper
+                # The job was in PBS and actually running
+                if j.state == model.Job.states.RUNNING:
+                    log.debug( "pbs runner: %s is still in running state, adding to the PBS queue" %j.id )
+                    pbs_job_state.old_state = 'R'
+                    pbs_job_state.running = True
+                    self.dispatcher.pbs_job_runner.queue.put( pbs_job_state )
+                elif j.state == model.Job.states.QUEUED:
+                    # The job was in PBS but not yet running
+                    if j.pbs_job_id:
+                        log.debug( "pbs runner: %s is still in PBS queued state, adding to the PBS queue" %j.id )
+                        pbs_job_state.old_state = 'Q'
+                        pbs_job_state.running = False
+                        self.dispatcher.pbs_job_runner.queue.put( pbs_job_state )
+                    # The job had reached the pbs queue_job method, but not the PBS queue itself.
+                    else:
+                        log.debug( "pbs runner: %s is still in jobs queued state, adding to the jobs queue" %j.id )
+                        job_wrapper.change_state( model.Job.states.NEW )
+                        # is there a way we can do this without blocking startup?
+                        self.dispatcher.put( job_wrapper )
 
     def monitor( self ):
         """
@@ -101,7 +155,7 @@ class JobQueue( object ):
                 log.exception( "Exception in monitor_step" )
             # Sleep
             self.sleeper.sleep( 1 )
-            
+
     def monitor_step( self ):
         """
         Called repeatedly by `monitor` to process waiting jobs. Gets any new
@@ -116,7 +170,7 @@ class JobQueue( object ):
         new_jobs = []
         if self.track_jobs_in_database:
             model = self.app.model
-            for j in model.Job.select( model.Job.c.state == 'new' ):
+            for j in model.Job.select( model.Job.c.state == model.Job.states.NEW ):
                 job = JobWrapper( j.id, self.app.toolbox.tools_by_id[ j.tool_id ], self )
                 new_jobs.append( job )
         else:
@@ -141,7 +195,8 @@ class JobQueue( object ):
                 # Check the job's dependencies, requeue if they're not done                    
                 job_state = job.check_if_ready_to_run()
                 if job_state == JOB_WAIT: 
-                    new_waiting.append( job )
+                    if not self.track_jobs_in_database:
+                        new_waiting.append( job )
                 elif job_state == JOB_ERROR:
                     log.info( "job %d ended with an error" % job.job_id )
                 elif job_state == JOB_READY:
@@ -192,7 +247,6 @@ class JobQueue( object ):
             self.sleeper.wake()
             log.info( "job queue stopped" )
             self.dispatcher.shutdown()
-            
 
 class JobWrapper( object ):
     """
@@ -259,6 +313,10 @@ class JobWrapper( object ):
         param_filename = self.tool.build_param_file( param_dict, self.working_directory )
         # Build the job's command line
         self.command_line = self.tool.build_command_line( param_dict )
+        # command_line won't actually be set in the db until finish unless you do it here
+        # We need it in the db to be able to restart jobs -ndc
+        job.command_line = self.command_line
+        job.flush()
         # Return list of all extra files
         extra_filenames = config_filenames
         if param_filename is not None:
@@ -378,11 +436,6 @@ class JobWrapper( object ):
         # Call 'exec_after_process' hook
         self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, param_dict=param_dict, 
-                             tool=self.tool, stdout=stdout, stderr=stderr )
-        # hack by ross for testing passing self.param_dict rather than recreating it
-        self.param_dict.update({'__collected_datasets__':collected_datasets})
-        self.tool.call_hook( 'exec_after_process_plus', self.queue.app, inp_data=inp_data, 
-                             out_data=out_data, param_dict=self.param_dict, 
                              tool=self.tool, stdout=stdout, stderr=stderr )
         # TODO
         # validate output datasets
