@@ -46,7 +46,7 @@ class PBSJobState( object ):
         that we need to monitor.
         """
         self.job_wrapper = None
-        self.pbs_job_id = None
+        self.job_id = None
         self.old_state = None
         self.running = False
         self.job_file = None
@@ -160,10 +160,8 @@ class PBSJobRunner( object ):
             stderr = "Job (%s) was not queued, PBS error %d: %s" % (galaxy_job_id, pbs.error() )
             log.debug(stderr)
 
-        # store the pbs job id for later
-        job = model.Job.get( galaxy_job_id )
-        job.pbs_job_id = job_id
-        job.flush()
+        # FIXME: queue needs to be configurable
+        job_wrapper.set_runner( 'pbs://%s/batch' % self.pbs_server, job_id )
 
         # Get initial job state
         stat_attrl = pbs.new_attrl(1)

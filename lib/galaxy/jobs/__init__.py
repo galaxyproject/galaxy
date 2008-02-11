@@ -103,22 +103,20 @@ class JobQueue( object ):
         for j in model.Job.select( (model.Job.c.state == model.Job.states.RUNNING)
                                  | (model.Job.c.state == model.Job.states.QUEUED) ):
             job_wrapper = JobWrapper( j.id, self.app.toolbox.tools_by_id[ j.tool_id ], self )
-            if ( not j.command_line ) or ( "/tools/data_source" in j.command_line ) or ( not asbool( self.app.config.use_pbs ) ):
+            if j.job_runner_name is None:
+                # should only happen with stuff in the database prior to job_runner_name column
+                log.error( "job %s was queued but has no runner, this should not be possible" % j.id )
+                job_wrapper.change_state( model.Job.states.ERROR, info = "This job was killed when Galaxy was restarted.  Please retry the job." )
+            elif j.job_runner_name.startswith('local://'):
                 # Local jobs are never in the QUEUED state
                 log.debug( "local runner: %s is still in running state, setting to error" %j.id )
-                j.state = j.states.ERROR
-                j.stderr = 'job lost when local runner killed'
-                for d in j.output_datasets:
-                    d.dataset.state = d.dataset.states.ERROR
-                    d.dataset.info = 'This job was killed when Galaxy was restarted.  Please retry the job.'
-                    d.dataset.flush()
-                j.flush()
-            else:
+                job_wrapper.change_state( model.Job.states.ERROR, info = "This job was killed when Galaxy was restarted.  Please retry the job." )
+            elif j.job_runner_name.startswith('pbs://'):
                 pbs_job_state = runners.pbs.PBSJobState()
                 pbs_job_state.ofile = "%s/database/pbs/%s.o" % (os.getcwd(), j.id)
                 pbs_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), j.id)
                 pbs_job_state.job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), j.id)
-                pbs_job_state.job_id = str( j.pbs_job_id )
+                pbs_job_state.job_id = str( j.job_runner_external_id )
                 job_wrapper.command_line = j.command_line
                 pbs_job_state.job_wrapper = job_wrapper
                 # The job was in PBS and actually running
@@ -129,7 +127,7 @@ class JobQueue( object ):
                     self.dispatcher.pbs_job_runner.queue.put( pbs_job_state )
                 elif j.state == model.Job.states.QUEUED:
                     # The job was in PBS but not yet running
-                    if j.pbs_job_id:
+                    if j.job_runner_external_id:
                         log.debug( "pbs runner: %s is still in PBS queued state, adding to the PBS queue" %j.id )
                         pbs_job_state.old_state = 'Q'
                         pbs_job_state.running = False
@@ -140,6 +138,8 @@ class JobQueue( object ):
                         job_wrapper.change_state( model.Job.states.NEW )
                         # is there a way we can do this without blocking startup?
                         self.dispatcher.put( job_wrapper )
+            else:
+                log.error( "job %s has an unknown job runner: %s" %( j.id, j.job_runner_name ) )
 
     def monitor( self ):
         """
@@ -349,17 +349,26 @@ class JobWrapper( object ):
         job.flush()
         self.cleanup()
         
-    def change_state( self, state ):
+    def change_state( self, state, info = False ):
         job = model.Job.get( self.job_id )
         job.refresh()
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset
             dataset.refresh()
             dataset.state = state
+            if info:
+                dataset.info = info
             dataset.flush()
         job.state = state
         job.flush()
-        
+
+    def set_runner( self, runner_name, external_id ):
+        job = model.Job.get( self.job_id )
+        job.refresh()
+        job.job_runner_name = runner_name
+        job.job_runner_external_id = external_id
+        job.flush()
+
     def check_if_ready_to_run( self ):
         """
         Check if a job is ready to run by verifying that each of its input 
@@ -508,4 +517,3 @@ class DefaultJobDispatcher( object ):
         self.local_job_runner.shutdown()
         if self.use_pbs:
             self.pbs_job_runner.shutdown()  
-    

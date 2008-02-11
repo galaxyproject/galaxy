@@ -38,6 +38,7 @@ class LocalJobRunner( object ):
                 
     def run_job( self, job_wrapper ):
         job_wrapper.change_state( 'running' )
+        job_wrapper.set_runner( 'local:///', None )
         stderr = stdout = command_line = ''
         # Prepare the job to run
         try:
@@ -56,6 +57,7 @@ class LocalJobRunner( object ):
                                          cwd = job_wrapper.working_directory, 
                                          stdout = subprocess.PIPE, 
                                          stderr = subprocess.PIPE )
+                job_wrapper.set_runner( 'local:///', proc.pid )
                 stdout = proc.stdout.read() 
                 stderr = proc.stderr.read()
                 proc.stdout.close() 
