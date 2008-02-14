@@ -113,6 +113,48 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 #wiki_url=/path/to/my/local/wiki
 #bugs_email=mailto:bugmaster@this.site.com
 
+# ---- Job Runners ----------------------------------------------------------
+
+# Leave everything in this section commented unless you are running Galaxy on a
+# cluster.  Clustering Galaxy is not a straightforward process and requires a
+# lot of pre-configuration.  Please see the Galaxy Wiki before attempting to
+# set any of these options.
+
+# start_job_runners: Comma-separated list of job runners to start.  local is
+# always started.  If left commented, no jobs will be run on the cluster, even
+# if a cluster URL is explicitly defined in the [galaxy:tool_runners] section
+# below.  The only runner currently available is 'pbs'.
+#start_job_runners = pbs
+
+# default_cluster_job_runner: The URL for the default runner to use when a tool
+# doesn't explicity define a runner below.  For help on the cluster URL format,
+# see the Galaxy Wiki.  Leave commented if not using a cluster job runner.
+#default_cluster_job_runner = pbs:///
+
+# The PBS options are described in detail on the Galaxy Wiki
+#pbs_application_server = 
+#pbs_stage_path = 
+#pbs_dataset_server = 
+
+# Individual per-tool job runner overrides.  If not listed here, a tool will
+# run with the runner defined with default_cluster_job_runner.
+[galaxy:tool_runners]
+
+biomart = local:///
+encode_db1 = local:///
+encode_import_all_latest_datasets1 = local:///
+encode_import_chromatin_and_chromosomes1 = local:///
+encode_import_gencode1 = local:///
+encode_import_genes_and_transcripts1 = local:///
+encode_import_multi-species_sequence_analysis1 = local:///
+encode_import_transcription_regulation1 = local:///
+hbvar = local:///
+microbial_import1 = local:///
+ucsc_table_direct1 = local:///
+ucsc_table_direct_archaea1 = local:///
+ucsc_table_direct_test1 = local:///
+upload1 = local:///
+
 # ---- Datatypes ------------------------------------------------------------
 
 [galaxy:datatypes]

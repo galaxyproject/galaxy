@@ -47,9 +47,8 @@ class Configuration( object ):
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.smtp_server = kwargs.get( 'smtp_server', None )
-        self.use_pbs = kwargs.get('use_pbs', False )
-        self.pbs_server = kwargs.get('pbs_server', "" )
-        self.pbs_instance_path = kwargs.get('pbs_instance_path', os.getcwd() )
+        self.start_job_runners = kwargs.get( 'start_job_runners', None )
+        self.default_cluster_job_runner = kwargs.get( 'default_cluster_job_runner', 'local:///' )
         self.pbs_application_server = kwargs.get('pbs_application_server', "" )
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "" )
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "" )
@@ -67,6 +66,11 @@ class Configuration( object ):
         global_conf_parser = ConfigParser.ConfigParser()
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
+        #Store per-tool runner config
+        try:
+            self.tool_runners = global_conf_parser.items("galaxy:tool_runners")
+        except ConfigParser.NoSectionError:
+            self.tool_runners = []
         #Store datatypes config
         try:
             self.datatypes = global_conf_parser.items("galaxy:datatypes")

@@ -200,18 +200,27 @@ class Tool:
             self.command = command.text.lstrip() # get rid of leading whitespace
             interpreter  = command.get("interpreter")
             if interpreter:
-                #if not using pbs, change command to absolute path
-                if not self.app.config.use_pbs or "/tools/data_source" in self.tool_dir:
-                    executable = self.command.split()[0]
-                    abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
-                    self.command = self.command.replace(executable, abs_executable, 1)
-                    self.command = interpreter + " " + self.command
-                else:
-                    self.command = interpreter + " " + os.path.join(self.tool_dir, self.command)
+                # TODO: path munging for cluster/dataset server relocatability
+                executable = self.command.split()[0]
+                abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
+                self.command = self.command.replace(executable, abs_executable, 1)
+                self.command = interpreter + " " + self.command
         else:
             self.command = ''
         # Short description of the tool
         self.description = util.xml_text(root, "description")
+        # Job runner
+        if self.app.config.start_job_runners is None:
+            # Jobs are always local regardless of tool config if no additional
+            # runners are started
+            self.job_runner = "local:///"
+        else:
+            # Set job runner to the cluster default
+            self.job_runner = self.app.config.default_cluster_job_runner
+            for tup in self.app.config.tool_runners:
+                if tup[0] == self.id:
+                    self.job_runner = tup[1]
+                    break
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = util.xml_text(root, "hidden")
         if self.hidden: self.hidden = util.string_as_bool(self.hidden)
@@ -899,10 +908,8 @@ class Tool:
         for name, data in output_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data )
             # Provide access to a path to store additional files
-            if self.app.config.use_pbs and "/tools/data_source" not in self.tool_dir:
-                param_dict[name].files_path = os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) )
-            else:
-                param_dict[name].files_path = os.path.abspath(os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) ))
+            # TODO: path munging for cluster/dataset server relocatability
+            param_dict[name].files_path = os.path.abspath(os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) ))
             
             for child_association in data.children:
                 child = child_association.child
@@ -912,10 +919,8 @@ class Tool:
         param_dict['__app__'] = RawObjectWrapper( self.app )
         # More convienent access to app.config.new_file_path; we don't need to wrap a string
         # But this method of generating additional datasets should be considered DEPRECATED
-        if self.app.config.use_pbs and "/tools/data_source" not in self.tool_dir:
-            param_dict['__new_file_path__'] = self.app.config.new_file_path
-        else:
-            param_dict['__new_file_path__'] = os.path.abspath(self.app.config.new_file_path)
+        # TODO: path munging for cluster/dataset server relocatability
+        param_dict['__new_file_path__'] = os.path.abspath(self.app.config.new_file_path)
         # Return the dictionary of parameters
         return param_dict
     

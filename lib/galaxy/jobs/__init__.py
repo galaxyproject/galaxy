@@ -117,6 +117,7 @@ class JobQueue( object ):
                 pbs_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), j.id)
                 pbs_job_state.job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), j.id)
                 pbs_job_state.job_id = str( j.job_runner_external_id )
+                pbs_job_state.runner_url = job_wrapper.tool.job_runner
                 job_wrapper.command_line = j.command_line
                 pbs_job_state.job_wrapper = job_wrapper
                 # The job was in PBS and actually running
@@ -124,14 +125,14 @@ class JobQueue( object ):
                     log.debug( "pbs runner: %s is still in running state, adding to the PBS queue" %j.id )
                     pbs_job_state.old_state = 'R'
                     pbs_job_state.running = True
-                    self.dispatcher.pbs_job_runner.queue.put( pbs_job_state )
+                    self.dispatcher.job_runners["pbs"].queue.put( pbs_job_state )
                 elif j.state == model.Job.states.QUEUED:
                     # The job was in PBS but not yet running
                     if j.job_runner_external_id:
                         log.debug( "pbs runner: %s is still in PBS queued state, adding to the PBS queue" %j.id )
                         pbs_job_state.old_state = 'Q'
                         pbs_job_state.running = False
-                        self.dispatcher.pbs_job_runner.queue.put( pbs_job_state )
+                        self.dispatcher.job_runners["pbs"].queue.put( pbs_job_state )
                     # The job had reached the pbs queue_job method, but not the PBS queue itself.
                     else:
                         log.debug( "pbs runner: %s is still in jobs queued state, adding to the jobs queue" %j.id )
@@ -362,10 +363,10 @@ class JobWrapper( object ):
         job.state = state
         job.flush()
 
-    def set_runner( self, runner_name, external_id ):
+    def set_runner( self, runner_url, external_id ):
         job = model.Job.get( self.job_id )
         job.refresh()
-        job.job_runner_name = runner_name
+        job.job_runner_name = runner_url
         job.job_runner_external_id = external_id
         job.flush()
 
@@ -455,10 +456,13 @@ class JobWrapper( object ):
         
     def cleanup( self ):
         # remove temporary files
-        for fname in self.extra_filenames: 
-            os.remove( fname )
-        if self.working_directory is not None:
-            os.rmdir( self.working_directory ) 
+        try:
+            for fname in self.extra_filenames: 
+                os.remove( fname )
+            if self.working_directory is not None:
+                os.rmdir( self.working_directory ) 
+        except:
+            log.exception( "Unable to cleanup job %s" % self.job_id )
         
     def get_command_line( self ):
         return self.command_line
@@ -487,33 +491,25 @@ class JobWrapper( object ):
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app
-        self.use_pbs = asbool( app.config.use_pbs )
-        import runners.local
-        self.local_job_runner = runners.local.LocalJobRunner( app )
-        if self.use_pbs:
-            import runners.pbs
-            self.pbs_job_runner = runners.pbs.PBSJobRunner( app )
-            self.put = self.dispatch_pbs
-        else:
-            self.put = self.dispatch_default
+        self.job_runners = {}
+        start_job_runners = ["local"]
+        if app.config.start_job_runners is not None:
+            start_job_runners.extend( app.config.start_job_runners.split(",") )
+        for runner_name in start_job_runners:
+            if runner_name == "local":
+                import runners.local
+                self.job_runners[runner_name] = runners.local.LocalJobRunner( app )
+            elif runner_name == "pbs":
+                import runners.pbs
+                self.job_runners[runner_name] = runners.pbs.PBSJobRunner( app )
+            else:
+                log.error( "Unable to start unknown job runner: %s" %runner_name )
             
-    def dispatch_default( self, job_wrapper ):
-        self.local_job_runner.put( job_wrapper )
-        log.debug( "dispatch_default(): dispatching job %d to local runner" %job_wrapper.job_id )
-            
-    def dispatch_pbs( self, job_wrapper ):
-        # command_line = job_wrapper.get_command_line()
-        # HACK: Need a more robust way for tools to assert whether they should
-        #       be run on the cluster.
-        command_line = job_wrapper.tool.command
-        if ( not command_line ) or ( "/tools/data_source" in command_line ):
-            log.debug( "dispatching job %d to local runner" %job_wrapper.job_id )
-            self.local_job_runner.put( job_wrapper )
-        else:
-            self.pbs_job_runner.put( job_wrapper )
-            log.debug( "dispatch_pbs(): dispatching job %d to pbs runner" %job_wrapper.job_id )
-        
+    def put( self, job_wrapper ):
+        runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
+        log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
+        self.job_runners[runner_name].put( job_wrapper )
+
     def shutdown( self ):
-        self.local_job_runner.shutdown()
-        if self.use_pbs:
-            self.pbs_job_runner.shutdown()  
+        for runner in self.job_runners.itervalues():
+            runner.shutdown()

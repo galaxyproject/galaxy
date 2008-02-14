@@ -52,6 +52,7 @@ class PBSJobState( object ):
         self.job_file = None
         self.ofile = None
         self.efile = None
+        self.runner_url = None
 
 class PBSJobRunner( object ):
     """
@@ -71,24 +72,39 @@ class PBSJobRunner( object ):
         # to 'watched' and then manage the watched jobs.
         self.watched = []
         self.queue = Queue()
-        self.determine_pbs_server()
+        self.default_pbs_server = None
+        self.determine_pbs_server( "pbs:///" )
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
         log.debug( "ready" )
 
-    def determine_pbs_server( self ):
+    def determine_pbs_server( self, url ):
         """Determine what PBS server we are connecting to"""
-        if self.app.config.pbs_server:
-            self.pbs_server = self.app.config.pbs_server
-        else:
-            self.pbs_server = pbs.pbs_default()
-        if self.pbs_server is None:
+        url_split = url.split("/")
+        server = url_split[2]
+        if server == "":
+            if not self.default_pbs_server:
+                server = pbs.pbs_default()
+            else:
+                server = self.default_pbs_server
+        if server is None:
             raise Exception( "Could not find torque server" )
+        return server
+
+    def determine_pbs_queue( self, url ):
+        """Determine what PBS queue we are submitting to"""
+        url_split = url.split("/")
+        queue = url_split[3]
+        if queue == "":
+            # None = server's default queue
+            queue = None
+        return queue
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
         job_wrapper.prepare()
         command_line = job_wrapper.get_command_line()
+        runner_url = job_wrapper.tool.job_runner
         
         # This is silly, why would we queue a job with no command line?
         if not command_line:
@@ -97,7 +113,9 @@ class PBSJobRunner( object ):
         # Change to queued state immediately
         job_wrapper.change_state( 'queued' )
         
-        conn = pbs.pbs_connect( self.pbs_server )
+        pbs_server = self.determine_pbs_server( runner_url )
+        pbs_queue = self.determine_pbs_queue( runner_url )
+        conn = pbs.pbs_connect( pbs_server )
         if conn <= 0:
             raise Exception( "Connection to PBS server for submit failed" )
 
@@ -105,9 +123,8 @@ class PBSJobRunner( object ):
         ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_wrapper.job_id)
         efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_wrapper.job_id)
 
-        # to get returned via scp/rcp we need this
+        # If an application server is set, we're staging
         if self.app.config.pbs_application_server:
-            # separate vars because we need un-munged ofile/efile for collection/cleanup
             pbs_ofile = self.app.config.pbs_application_server + ':' + ofile
             pbs_efile = self.app.config.pbs_application_server + ':' + efile
             stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames() )
@@ -123,8 +140,8 @@ class PBSJobRunner( object ):
             job_attrs[3].value = stageout
             job_attrs[4].name = pbs.ATTR_N
             job_attrs[4].value = "%s" % job_wrapper.job_id
-            exec_dir = self.app.config.pbs_instance_path
-            # FIXME: pbs_instance_path is broken until we munge PATH and PYTHONPATH here
+            exec_dir = os.path.abspath( os.getcwd() )
+        # If not, we're using NFS
         else:
             job_attrs = pbs.new_attropl(2)
             job_attrs[0].name = pbs.ATTR_o
@@ -149,24 +166,33 @@ class PBSJobRunner( object ):
             stderr = stdout = ''
 
         galaxy_job_id = job_wrapper.job_id
-        log.debug("submitting file %s" % job_file )
-        log.debug("command is: %s" % command_line)
-        job_id = pbs.pbs_submit(conn, job_attrs, job_file, None, None)
-        log.debug("queued %s: %s" % (galaxy_job_id, job_id) )
+        log.debug("(%s) submitting file %s" % ( galaxy_job_id, job_file ) )
+        log.debug("(%s) command is: %s" % ( galaxy_job_id, command_line ) )
+        job_id = pbs.pbs_submit(conn, job_attrs, job_file, pbs_queue, None)
+        if pbs_queue is None:
+            log.debug("(%s) queued in default queue as %s" % (galaxy_job_id, job_id) )
+        else:
+            log.debug("(%s) queued in %s queue as %s" % (galaxy_job_id, pbs_queue, job_id) )
         pbs.pbs_disconnect(conn)
 
         if not job_id:
+            errno, text = pbs.error()
+            log.debug( "(%s) pbs_submit failed, PBS error %d: %s" % (galaxy_job_id, errno, text) )
             stdout = ''
-            stderr = "Job (%s) was not queued, PBS error %d: %s" % (galaxy_job_id, pbs.error() )
-            log.debug(stderr)
+            stderr = "Unable to run this job due to a cluster configuration error"
+            # Run failed, finish immediately
+            try:
+                job_wrapper.finish( stdout, stderr )
+            except:
+                log.exception("Job wrapper finish method failed")
+            return
 
-        # FIXME: queue needs to be configurable
-        job_wrapper.set_runner( 'pbs://%s/batch' % self.pbs_server, job_id )
+        job_wrapper.set_runner( runner_url, job_id )
 
         # Get initial job state
         stat_attrl = pbs.new_attrl(1)
         stat_attrl[0].name = 'job_state'
-        conn = pbs.pbs_connect( self.pbs_server )
+        conn = pbs.pbs_connect( pbs_server )
         if conn > 0:
             jobs = pbs.pbs_statjob(conn, job_id, stat_attrl, 'NULL')
             pbs.pbs_disconnect(conn)
@@ -200,6 +226,7 @@ class PBSJobRunner( object ):
         pbs_job_state.job_file = job_file
         pbs_job_state.old_state = old_state
         pbs_job_state.running = running
+        pbs_job_state.runner_url = runner_url
         
         # Add to our 'queue' of jobs to monitor
         self.queue.put( pbs_job_state )
@@ -236,7 +263,8 @@ class PBSJobRunner( object ):
             galaxy_job_id = pbs_job_state.job_wrapper.job_id
             old_state = pbs_job_state.old_state
             running = pbs_job_state.running
-            conn = pbs.pbs_connect( self.pbs_server )
+            pbs_server = self.determine_pbs_server( pbs_job_state.runner_url )
+            conn = pbs.pbs_connect( pbs_server )
             if conn <= 0:
                 log.debug("(%s/%s) connection to PBS server for state check failed" % (galaxy_job_id, job_id) )
                 new_watched.append( pbs_job_state )
@@ -261,7 +289,7 @@ class PBSJobRunner( object ):
                             log.debug("(%s/%s) job is now running" % (galaxy_job_id, job_id) )
                         if killed and state != "E":
                             log.debug( "(%s/%s) all output datasets deleted by user, dequeueing" % (galaxy_job_id, job_id) )
-                            self.delete_job( job_id )
+                            self.delete_job( job_id, pbs_server )
                         old_state = state
                     pbs_job_state.old_state = old_state
                     pbs_job_state.running = running
@@ -313,9 +341,9 @@ class PBSJobRunner( object ):
         self.queue.put( self.STOP_SIGNAL )
         log.info( "pbs job runner stopped" )
 
-    def delete_job( self, job_id ):
+    def delete_job( self, job_id, pbs_server ):
         """Attempts to delete a job from the PBS queue"""
-        conn = pbs.pbs_connect( self.pbs_server )
+        conn = pbs.pbs_connect( pbs_server )
         if conn <= 0:
             log.debug("(%s) connection to PBS server for job delete failed" % job_id )
             return
