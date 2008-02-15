@@ -115,10 +115,10 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 
 # ---- Job Runners ----------------------------------------------------------
 
-# Leave everything in this section commented unless you are running Galaxy on a
-# cluster.  Clustering Galaxy is not a straightforward process and requires a
-# lot of pre-configuration.  Please see the Galaxy Wiki before attempting to
-# set any of these options.
+# Clustering Galaxy is not a straightforward process and requires a lot of
+# pre-configuration.  Please see the Galaxy Wiki before attempting to set any
+# of these options.  If running normally (without a cluster), do not change
+# anything in this section.
 
 # start_job_runners: Comma-separated list of job runners to start.  local is
 # always started.  If left commented, no jobs will be run on the cluster, even
