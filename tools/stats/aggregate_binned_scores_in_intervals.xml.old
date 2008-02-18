@@ -1,35 +1,16 @@
-<tool id="aggregate_scores_in_intervals2" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints" version="1.1.0">
+<tool id="aggregate_scores_in_intervals2" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints">
   <description>Appends the average, min, max of datapoints per interval</description>
-  <command interpreter="python2.4">
-    #if $score_source_type.score_source == "user":#aggregate_scores_in_intervals.py $score_source_type.input2 $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1
-    #else:#aggregate_scores_in_intervals.py $score_source_type.datasets $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1 -b
-    #end if
-  </command>
+  <command interpreter="python2.4">aggregate_scores_in_intervals.py $datasets $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1 -b</command>
   <inputs>
     <param format="interval" name="input1" type="data" label="Interval file"/>
-    <conditional name="score_source_type">
-      <param name="score_source" type="select" label="Score Source">
-        <option value="cached" selected="true">Locally Cached Scores</option>
-        <option value="user">Scores in Your History</option>
-      </param>
-      <when value="cached">
-        <param name="datasets" type="select" label="Available datasets" display="radio">
-          <options from_file="/depot/data2/galaxy/binned_scores.loc" >
-            <filter type="data_meta" data_ref="input1" key="build" />
-            <filter type="column" name="build_col" value="0" />
-            <filter type="column" name="name_col" value="1" />
-            <filter type="column" name="value_col" value="2" />
-          </options>
-       </param>
-      </when>
-      <when value="user">
-        <param format="wig" name="input2" type="data" label="Score file">
-          <options>
-            <filter type="data_meta" data_ref="input1" key="build" />
-          </options>
-        </param>
-      </when>
-    </conditional>
+    <param name="datasets" type="select" label="Available datasets" display="radio">
+      <options from_file="/depot/data2/galaxy/binned_scores.loc" >
+        <filter type="data_meta" data_ref="input1" key="build" />
+        <filter type="column" name="build_col" value="0" />
+        <filter type="column" name="name_col" value="1" />
+        <filter type="column" name="value_col" value="2" />
+      </options>
+    </param> 
   </inputs>
   <outputs>
     <data format="interval" name="out_file1" metadata_source="input1"/>
@@ -37,28 +18,20 @@
   <tests>
     <test>
       <param name="input1" value="6.bed" dbkey="hg17" ftype="bed"/>
-      <param name="score_source" value="cached"/>
       <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg17/phastcons_encode_sep2005_tba" />
       <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
     </test>
     <test>
       <param name="input1" value="9_hg18.bed" dbkey="hg18" ftype="bed"/>
-      <param name="score_source" value="cached"/>
       <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg18/phastCons17way/ba" />
       <output name="out_file1" file="aggregate_binned_scores_in_intervals2.interval" />
-    </test>
-    <test>
-      <param name="input1" value="6.bed" dbkey="hg17" ftype="bed"/>
-      <param name="score_source" value="user"/>
-      <param name="input2" value="aggregate_binned_scores_3.wig" dbkey="hg17" ftype="wig"/>
-      <output name="out_file1" file="aggregate_binned_scores_in_intervals3.out"/>
     </test>
   </tests>
   <help>
 
 .. class:: warningmark
 
-This tool currently only has cached data for genome builds hg16, hg17 and hg18. However, you may use your own data point (wiggle) data, such as is available from UCSC. If you are trying to use your own data point file and it is not appearing as an option, make sure that the builds for your history items are the same.
+This tool currently only works with data from genome builds hg16, hg17 or hg18.
 
 .. class:: warningmark
 

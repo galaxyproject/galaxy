@@ -146,13 +146,8 @@ def main():
                 min_score = 100000000
                 max_score = -100000000
                 for j in range( start, stop ):
-                    valid2 = True
                     if chrom in scores_by_chrom:
                         try:
-                            scores_by_chrom[chrom][j]
-                        except:
-                            valid2 = False
-                        if valid2:
                             # Skip if base is masked
                             if masks and chrom in masks:
                                 if masks[chrom][j]:
@@ -164,6 +159,8 @@ def main():
                                 count += 1
                                 max_score = max( score, max_score )
                                 min_score = min( score, min_score )
+                        except:
+                            continue
                 if count > 0:
                     avg = total/count
                 else:
