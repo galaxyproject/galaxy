@@ -96,10 +96,12 @@ class Universe( BaseController ):
         Returns data directly into the browser. 
         Sets the mime-type according to the extension
         """
-        
         if hid is not None:
+            try:
+                hid = int( hid )
+            except:
+                return "hid '%s' is invalid" %str( hid )
             history = trans.get_history()
-            hid = int( hid )
             for dataset in history.datasets:
                 if dataset.hid == hid:
                     data = dataset
@@ -107,8 +109,10 @@ class Universe( BaseController ):
             else:
                 raise Exception( "No dataset with hid '%d'" % hid )
         else:
-            data = self.app.model.Dataset.get( id )
-            
+            try:
+                data = self.app.model.Dataset.get( id )
+            except:
+                return "Dataset id '%s' is invalid" %str( id )
         if data:
             mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
             trans.response.set_content_type(mime)
@@ -125,9 +129,9 @@ class Universe( BaseController ):
             try:
                 return open( data.file_name )
             except: 
-                return "This item contains no content"
+                return "This dataset contains no content"
         else:
-            return "No data with id=%d" % id
+            return "No dataset with id '%s'" % str( id )
 
     @web.expose
     def display_child(self, trans, parent_id=None, designation=None, tofile=None, toext=".txt"):
