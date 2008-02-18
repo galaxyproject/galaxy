@@ -1,11 +1,13 @@
 
 import sys, os, logging
+import parameters
 
 log = logging.getLogger(__name__)
 
 class DynamicOptions( object ):
     """Handles dynamically generated SelectToolParameter options"""
-    def __init__( self, elem  ):
+    def __init__( self, elem, parameter_type = None  ):
+        self.parameter_type = parameter_type
         self.from_file_data = None
         # FIXME: Pushing these things in as options ends up being pretty ugly. 
         # We should find a way to make this work through the validation mechanism.
@@ -185,6 +187,8 @@ class DynamicOptions( object ):
             return self.generate_from_dataset( file_name, value_col, sep )
         elif key == 'build':
             build = filters[ 'data_meta' ][ 'value' ]
+            if self.parameter_type == parameters.DataToolParameter:
+                return key, build
             build_col = int( filters[ 'columns' ][ 'build_col' ].strip() )
             name_col = int( filters[ 'columns' ][ 'name_col' ] )
             value_col = int( filters[ 'columns' ][ 'value_col' ] )

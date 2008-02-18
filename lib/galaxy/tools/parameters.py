@@ -740,8 +740,18 @@ class DataToolParameter( ToolParameter ):
         self.formats = tuple( formats )
         self.multiple = str_bool( elem.get( 'multiple', False ) )
         self.optional = str_bool( elem.get( 'optional', False ) )
+        #TODO: Enhance dynamic options for DataToolParameters
+        #Currently, only the special case key='build' of type='data_meta' is a valid filter
+        options = elem.find( 'options' )
+        if options is None:
+            self.options = None
+        else:
+            self.options = dynamic_options.DynamicOptions( options, parameter_type = type( self ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
+        filter_key = filter_value = None
+        if self.options:
+            filter_key, filter_value = self.options.get_options( trans, other_values )
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.history
         assert history is not None, "DataToolParameter requires a history"
@@ -756,6 +766,8 @@ class DataToolParameter( ToolParameter ):
                 else:
                     hid = str( data.hid )
                 if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.ERROR]:
+                    if self.options and filter_key == 'build' and data.get_dbkey() != filter_value:
+                        continue
                     selected = ( value and ( data in value ) )
                     field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
                 # Also collect children via association object
@@ -786,9 +798,14 @@ class DataToolParameter( ToolParameter ):
         assert history is not None, "DataToolParameter requires a history"
         history = trans.history
         most_recent_dataset = [None]
+        filter_key = filter_value = None
+        if self.options:
+            filter_key, filter_value = self.options.get_options( trans, context )
         def dataset_collector( datasets ):
             for i, data in enumerate( datasets ):
                 if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.ERROR]:
+                    if self.options and filter_key == 'build' and data.get_dbkey() != filter_value:
+                        continue
                     most_recent_dataset[0] = data
                 # Also collect children via association object
                 dataset_collector( [ assoc.child for assoc in data.children ] )
