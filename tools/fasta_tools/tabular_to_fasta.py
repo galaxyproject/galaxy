@@ -3,7 +3,6 @@
 Input: fasta, minimal length, maximal length
 Output: fasta
 Return sequences whose lengths are within the range.
-Wen-Yu Chung
 """
 
 import sys, os
@@ -31,12 +30,13 @@ def __main__():
     out = open( outfile, 'w' )
 
     for i, line in enumerate( open( infile ) ):
-        line = line.strip( '\r\n' )
+        line = line.rstrip( '\n' )
         fields = line.split()
         fasta_title = []
         for j in title_col_list:
             j = int( j ) - 1
-            fasta_title.append( fields[j] )
+            if ( j < len( fields ) ):
+                fasta_title.append( fields[j] )
         fasta_seq = fields[seq_col]
         if ( fasta_title[0].startswith(">") ):
             fasta_title[0] = fasta_title[0][1:]

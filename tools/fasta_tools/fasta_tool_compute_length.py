@@ -3,7 +3,6 @@
 Input: fasta, minimal length, maximal length
 Output: fasta
 Return sequences whose lengths are within the range.
-Wen-Yu Chung
 """
 
 import sys, os
@@ -11,15 +10,12 @@ import sys, os
 seq_hash = {}
 
 def parse_fasta_format(file_handle):    
-    # detect whether it's score or seq files
-    # return a hash: key = title and value = seq
-        
-    # use seq_hash #tmp_hash = {}
+
     tmp_title = ''
     tmp_seq = ''
     tmp_seq_count = 0
     for i, each_line in enumerate(file_handle):
-        each_line = each_line.strip('\r\n')
+        each_line = each_line.rstrip('\r\n')
         if (each_line[0] == '>'):
             if (len(tmp_seq) > 0):
                 tmp_seq_count += 1
@@ -40,12 +36,10 @@ def __main__():
     input_filename = sys.argv[1]
     output_filename = sys.argv[2]
     
-    # parse fasta format into a hast table
     input_handle = open(input_filename, 'r')
     parse_fasta_format(input_handle)
     input_handle.close()
     
-    # return only those lengths are in the range
     output_handle = open(output_filename, 'w')
     title_keys = seq_hash.keys()
     title_keys.sort()
