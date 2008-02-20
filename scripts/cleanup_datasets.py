@@ -1,9 +1,13 @@
 #!/usr/bin/env python2.4
-#Dan Blankenberg
 
 import sys, os, time, ConfigParser
+from datetime import datetime, timedelta
 from optparse import OptionParser
 import galaxy.app
+import pkg_resources
+
+pkg_resources.require( "sqlalchemy>=0.3" )
+from sqlalchemy import eagerload
 
 def main():
     parser = OptionParser()
@@ -30,247 +34,199 @@ def main():
     for key, value in conf_parser.items( "app:main" ):
         configuration[key] = value
     app = galaxy.app.UniverseApplication( global_conf = ini_file, **configuration )
+    h = app.model.History
+    d = app.model.Dataset
+    cutoff_time = datetime.utcnow() - timedelta( days=options.days )
+
     print "\n# Handling stuff older than %i days\n" %options.days
-    total_disk_space = 0
+
     if options.info_delete_userless_histories:
-        info_delete_userless_histories( app, options.days )
+        info_delete_userless_histories( h, cutoff_time )
     elif options.delete_userless_histories:
-        delete_userless_histories( app, options.days )
+        delete_userless_histories( h, cutoff_time )
     if options.info_purge_histories:
-        info_purge_histories( app, options.days )
+        info_purge_histories( h, cutoff_time )
     elif options.purge_histories:
         if options.remove_from_disk:
             print "# Datasets will be removed from disk...\n"
         else:
             print "# Datasets will NOT be removed from disk...\n"
-        purge_histories( app, options.days, options.remove_from_disk )
+        purge_histories( h, cutoff_time, options.remove_from_disk )
     elif options.info_purge_datasets:
-        info_purge_datasets( app, options.days )
+        info_purge_datasets( d, cutoff_time )
     elif options.purge_datasets:
         if options.remove_from_disk:
             print "# Datasets will be removed from disk...\n"
         else:
             print "# Datasets will NOT be removed from disk...\n"
-        purge_datasets( app, options.days, options.remove_from_disk )
+        purge_datasets( d, cutoff_time, options.remove_from_disk )
     app.shutdown()
     sys.exit(0)
 
-def info_delete_userless_histories( app, days ):
-    # Provide info about the histories and datasets that will be affected if the 
-    # delete_userless_histories function is executed.
-    histories = []
+def info_delete_userless_histories( h, cutoff_time ):
+    # Provide info about the histories and datasets that will be affected if the delete_userless_histories function is executed.
     history_count = 0
     dataset_count = 0
-    now  = time.time()
-    ht = app.model.History.table
-    dt = app.model.Dataset.table   
-    
-    print '# The following userless histories will be deleted'
-    for row in ht.select( ( ht.c.user_id==None ) & ( ht.c.deleted=='f' ) ).execute():
-        last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) ) 
-        diff = (now-last)/3600/24 # days
-        if diff > days:
-            histories.append( row.id )
-            print '%s' %str( row.id )
-            history_count += 1
-    print '# The following associated datasets will be deleted'
-    for row in dt.select( dt.c.deleted=='f' ).execute():
-        if row.history_id in histories:
-            print "%s" %str( row.id )
-            dataset_count += 1
+    where = ( h.table.c.user_id==None ) & ( h.table.c.deleted=='f' ) & ( h.table.c.update_time < cutoff_time )
+    histories = h.query().filter( where ).options( eagerload( 'datasets' ) )
+
+    print '# The following datasets and associated userless histories will be deleted'
+    start = time.clock()
+    for history in histories:
+        for dataset in history.datasets:
+            if not dataset.deleted:
+                print "dataset_%d" %dataset.id
+                dataset_count += 1
+        print "%d" % history.id
+        history_count += 1
+    stop = time.clock()
     print "# %d histories ( including a total of %d datasets ) will be deleted\n" %( history_count, dataset_count )
+    print "Elapsed time: ", stop - start, "\n"
 
-def delete_userless_histories( app, days ):
-    # Deletes userless histories whose update_time value is older than the specified number of days.
-    # A list of each of the affected history records is generated during the process, which is then 
-    # used to find all undeleted datasets that are associated with these histories.  Each of these 
-    # datasets is then deleted ( by setting the Dataset.deleted column to 't', nothing is removed
-    # from the file system ).
-    histories = []
+def delete_userless_histories( h, cutoff_time ):
+    # Deletes userless histories whose update_time value is older than the cutoff_time.
+    # The datasets associated with each history are also deleted.  Nothing is removed from disk.
     history_count = 0
     dataset_count = 0
-    now = time.time()
-    ht = app.model.History.table
-    dt = app.model.Dataset.table    
+    where = ( h.table.c.user_id==None ) & ( h.table.c.deleted=='f' ) & ( h.table.c.update_time < cutoff_time )
+
+    print '# The following datasets and associated userless histories have been deleted'
+    start = time.clock()
+    histories = h.query().filter( where ).options( eagerload( 'datasets' ) )
+    for history in histories:
+        for dataset in history.datasets:
+            if not dataset.deleted:
+                dataset.deleted = True
+                dataset.flush()
+                print "dataset_%d" %dataset.id
+                dataset_count += 1
+        history.deleted = True
+        history.flush()
+        print "%d" % history.id
+        history_count += 1
+    stop = time.clock()
+    print "# Deleted %d histories ( including a total of %d datasets )\n" %( history_count, dataset_count )
+    print "Elapsed time: ", stop - start, "\n"
     
-    print '# The following userless histories are now deleted'
-    for row in ht.select( ( ht.c.user_id==None ) & ( ht.c.deleted=='f' ) ).execute():
-        last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) ) 
-        diff = (now-last)/3600/24 # days
-        if diff > days:
-            history = app.model.History.get( row.id )
-            histories.append( row.id )
-            history.deleted = True
-            print '%s' %str( row.id )
-            history_count += 1
-    # Delete all datasets associated with previously deleted userless histories
-    print '# The following associated datasets are now deleted'
-    for row in dt.select( dt.c.deleted=='f' ).execute():
-        if row.history_id in histories:
-            data = app.model.Dataset.get( row.id )
-            data.deleted = True
-            print '%s' %str( row.id )
-            dataset_count += 1
-    try:
-        app.model.flush()
-        print "# Deleted %d histories ( including a total of %d datasets )\n" % ( history_count, dataset_count )
-    except Exception, exc:
-        print "# Error: exception, %s caught attempting to flush app.model when deleting %d histories ( including a total of %d datasets )\n" % ( str( exc ), history_count, dataset_count )
-
-def info_purge_histories( app, days ):
-    # Provide info about the histories and datasets that will be affected if the 
-    # purge_histories function is executed.
-    histories = []
+def info_purge_histories( h, cutoff_time ):
+    # Provide info about the histories and datasets that will be affected if the purge_histories function is executed.
     history_count = 0
     dataset_count = 0
-    now  = time.time()
-    ht = app.model.History.table
-    dt = app.model.Dataset.table   
+    disk_space = 0
+    where = ( h.table.c.deleted=='t' ) & ( h.table.c.purged=='f' ) & ( h.table.c.update_time < cutoff_time )
 
-    print '# The following deleted histories will be purged'
-    for row in ht.select( ( ht.c.deleted=='t' ) & ( ht.c.purged=='f' ) ).execute():
-        last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) ) 
-        diff = (now-last)/3600/24 # days
-        if diff > days:
-            histories.append( row.id )
-            print '%s' %str( row.id )
-            history_count += 1
-    print '# The following associated datasets will be purged'
-    for row in dt.select( dt.c.purged=='f' ).execute():
-        if row.history_id in histories:
-            data = app.model.Dataset.get( row.id )
-            print "%s" %str( data.file_name )
-            dataset_count += 1
-    print '# %d histories ( including a total of %d datasets ) will be purged\n' %( history_count, dataset_count )
+    print '# The following datasets and associated deleted histories will be purged'
+    start = time.clock()
+    histories = h.query().filter( where ).options( eagerload( 'datasets' ) )   
+    for history in histories:
+        for dataset in history.datasets:
+            if not dataset.purged:
+                print "%s" % dataset.file_name
+                dataset_count += 1
+                try:
+                    disk_space += dataset.file_size
+                except:
+                    pass
+        print "%d" % history.id
+        history_count += 1
+    stop = time.clock()
+    print '# %d histories ( including a total of %d datasets ) will be purged.  Freed disk space: ' %( history_count, dataset_count ), disk_space, '\n'
+    print "Elapsed time: ", stop - start, "\n"
 
-def purge_histories( app, days, remove_from_disk ):
-    # Purges deleted histories whose update_time is older than the specified number of days.
-    # A list of each of the affected history records is generated during the process, which is then 
-    # used to find all non-purged datasets that are associated with these histories.  Each of these 
-    # datasets is then purged, removing the file from disk only if remove_from_disk is True.
+def purge_histories( h, cutoff_time, remove_from_disk ):
+    # Purges deleted histories whose update_time is older than the cutoff_time.
+    # The datasets associated with each history are also purged.
     history_count = 0
-    total_datasets_purged = 0
-    now  = time.time()
-    ht = app.model.History.table
-    dt = app.model.Dataset.table   
+    dataset_count = 0
+    disk_space = 0
+    file_size = 0
+    errors = False
+    where = ( h.table.c.deleted=='t' ) & ( h.table.c.purged=='f' ) & ( h.table.c.update_time < cutoff_time )
 
-    print '# The following deleted histories are now purged'
-    for row in ht.select( ( ht.c.deleted=='t' ) & ( ht.c.purged=='f' ) ).execute():
-        last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) ) 
-        diff = (now-last)/3600/24 # days
-        if diff > days:
-            errmsg, datasets = purge_history( app, row.id, remove_from_disk )
+    print '# The following datasets and associated deleted histories have been purged'
+    start = time.clock()
+    histories = h.query().filter( where ).options( eagerload( 'datasets' ) )      
+    for history in histories:
+        for dataset in history.datasets:
+            if not dataset.purged:
+                if remove_from_disk:
+                    file_size = dataset.file_size
+                    errmsg = purge_dataset( dataset )
+                    if errmsg:
+                        errors = True
+                        print errmsg
+                    else:
+                        print "%s" % dataset.file_name
+                        dataset_count += 1
+                        try:
+                            disk_space += file_size
+                        except:
+                            pass
+                else:
+                    print "%s" % dataset.file_name
+        if not errors:
+            history.purged = True
+            history.flush()
+            print "%d" % history.id
+            history_count += 1
+    stop = time.clock()
+    print '# Purged %d histories ( including a total of %d datasets ).  Freed disk space: ' %( history_count, dataset_count ), disk_space, '\n'
+    print "Elapsed time: ", stop - start, "\n"
+
+def info_purge_datasets( d, cutoff_time ):
+    # Provide info about the datasets that will be affected if the purge_datasets function is executed.
+    dataset_count = 0
+    disk_space = 0
+    where = ( d.table.c.deleted=='t' ) & ( d.table.c.purged=='f' ) & ( d.table.c.update_time < cutoff_time )
+
+    print '# The following deleted datasets will be purged'    
+    start = time.clock()
+    datasets = d.query().filter( where )
+    for dataset in datasets:
+        print "%s" % dataset.file_name
+        dataset_count += 1
+        try:
+            disk_space += dataset.file_size
+        except:
+            pass
+    stop = time.clock()
+    print '# %d datasets will be purged.  Freed disk space: ' %dataset_count, disk_space, '\n'
+    print "Elapsed time: ", stop - start, "\n"
+
+def purge_datasets( d, cutoff_time, remove_from_disk ):
+    # Purges deleted datasets whose update_time is older than cutoff_time.  Files may or may
+    # not be removed from disk.
+    dataset_count = 0
+    disk_space = 0
+    file_size = 0
+    where = ( d.table.c.deleted=='t' ) & ( d.table.c.purged=='f' ) & ( d.table.c.update_time < cutoff_time )
+
+    print '# The following deleted datasets have been purged'
+    start = time.clock()
+    datasets = d.query().filter( where )
+    for dataset in datasets:
+        if remove_from_disk:
+            file_size = dataset.file_size
+            errmsg = purge_dataset( dataset )
             if errmsg:
                 print errmsg
             else:
-                print '%s' %str( row.id )
-                if datasets:
-                    print '# Associated  datasets:'
-                    for file_name in datasets:
-                        print "%s" %file_name
-                history_count += 1
-            total_datasets_purged += len( datasets )
-    print '# %d histories ( including a total of %d datasets ) purged\n' %( history_count, total_datasets_purged )
-
-def purge_history( app, id, remove_from_disk ):
-    """
-    Purges a history along with all datasets associated with the history. Dataset files
-    may or may not be removed from disk.
-    """
-    errmsg = ""
-    history = app.model.History.get( id )
-    if history.deleted:
-        errors = False
-        datasets = []
-        try:
-            for dataset in history.datasets:
-                data = app.model.Dataset.get( dataset.id )
-                if not data.purged:
-                    data.deleted = True
-                    if remove_from_disk:
-                        #errmsg = dataset.purge()
-                        errmsg = purge_dataset( app, data.id )
-                        if errmsg:
-                            errors = True
-                            break
-                        else:
-                            datasets.append( data.file_name )
-                    else:
-                        datasets.append( data.file_name )
-            if not errors:
-                history.purged = True
-            else:
-                return errmsg + "# Error purging datasets for history %s" %str( id ), datasets
-        except Exception, exc:
-            return errmsg + "# Error, exception: %s caught attempting to purge history %s" %( str( exc ), str( id ) ), datasets
-        try:
-            app.model.flush()
-        except Exception, exc:
-            return errmsg + "# Error: exception, %s caught attempting to flush app.model when purging history %d" % ( str( exc ), str( id ) ), datasets
-    else:
-        return errmsg + "# Error: history %s has not previously been deleted, so it cannot be purged" %str( id ), datasets
-    return errmsg, datasets
-
-def info_purge_datasets( app, days ):
-    # Provide info about the datasets that will be affected if the purge_datasets function is executed.
-    dataset_count = 0
-    total_disk_space = 0
-    now = time.time()
-    dt = app.model.Dataset.table
-
-    print '# The following deleted datasets will be purged'
-    for row in dt.select( ( dt.c.deleted=='t' ) & ( dt.c.purged=='f' ) ).execute():
-        last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) )
-        diff = (now-last)/3600/24 # days
-        if diff > days:
-            data = app.model.Dataset.get( row.id )
-            print '%s' %str( data.file_name )
-            dataset_count += 1
-            try:
-                total_disk_space += row.file_size
-            except:
-                pass
-    print '# %d datasets will be purged' %dataset_count
-    print '# Total disk space that will be freed up: ', total_disk_space, '\n'
-
-def purge_datasets( app, days, remove_from_disk ):
-    # Purges deleted datasets whose update_time value older than specified number of days.
-    dataset_count = 0
-    total_disk_space = 0
-    now = time.time()
-    dt = app.model.Dataset.table
-
-    print '# The following deleted datasets are now purged'
-    for row in dt.select( ( dt.c.deleted=='t' ) & ( dt.c.purged=='f' ) ).execute():
-        last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) )
-        diff = (now-last)/3600/24 # days
-        if diff > days:
-            if remove_from_disk:
-                errmsg = purge_dataset( app, row.id )
-                if errmsg:
-                    print errmsg
-                else:
-                    data = app.model.Dataset.get( row.id )
-                    print '%s' %str( data.file_name )
-                    dataset_count += 1
-                    try:
-                        total_disk_space += row.file_size
-                    except:
-                        pass
-            else:
-                data = app.model.Dataset.get( row.id )
-                data.purged = True
-                data.flush()
-                print '%s' %str( data.file_name )
-                dataset_count += 1
-    print '# %d datasets purged' % dataset_count
+                print "%s" % dataset.file_name
+                try:
+                    disk_space += file_size
+                except:
+                    pass
+        else:
+            print "%s" % dataset.file_name
+        dataset_count += 1
+    stop = time.clock()
+    print '# %d datasets purged\n' % dataset_count
     if remove_from_disk:
-        print '# Total disk space freed up: ', total_disk_space, '\n'
+        print '# Freed disk space: ', disk_space, '\n'
+    print "Elapsed time: ", stop - start, "\n"
 
-def purge_dataset( app, id ):
-    """Removes the file from disk and updates the database accordingly."""
-    dataset = app.model.Dataset.get( id )
-
+def purge_dataset( dataset ):
+    # Removes the file from disk and updates the database accordingly.
     if dataset.dataset_file is None or not dataset.dataset_file.readonly:
         #Check to see if another dataset is using this file
         if dataset.dataset_file:

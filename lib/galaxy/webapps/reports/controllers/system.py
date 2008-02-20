@@ -1,6 +1,12 @@
 
 import operator, os
+from datetime import datetime, timedelta
 from galaxy.webapps.reports.base.controller import *
+
+import pkg_resources
+
+pkg_resources.require( "sqlalchemy>=0.3" )
+from sqlalchemy import eagerload, desc
 
 import logging
 log = logging.getLogger( __name__ )
@@ -42,22 +48,18 @@ class System( BaseController ):
         msg = ''
         if params.userless_histories_days:
             userless_histories_days = int( params.userless_histories_days )
-            histories = []
+            cutoff_time = datetime.utcnow() - timedelta( days=userless_histories_days )
             history_count = 0
             dataset_count = 0
-            now  = time.time()
-            ht = self.app.model.History.table
-            dt = self.app.model.Dataset.table   
-            
-            for row in ht.select( ( ht.c.user_id==None ) & ( ht.c.deleted=='f' ) ).execute():
-                last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) ) 
-                diff = (now-last)/3600/24 # days
-                if diff > userless_histories_days:
-                    histories.append( row.id )
-                    history_count += 1
-            for row in dt.select( dt.c.deleted=='f' ).execute():
-                if row.history_id in histories:
-                    dataset_count += 1
+            h = self.app.model.History
+            where = ( h.table.c.user_id==None ) & ( h.table.c.deleted=='f' ) & ( h.table.c.update_time < cutoff_time )
+            histories = h.query().filter( where ).options( eagerload( 'datasets' ) )
+    
+            for history in histories:
+                for dataset in history.datasets:
+                    if not dataset.deleted:
+                        dataset_count += 1
+                history_count += 1
             msg = "%d userless histories ( including a total of %d datasets ) have not been updated for at least %d days." %( history_count, dataset_count, userless_histories_days )
         else:
             msg = "Enter the number of days."
@@ -72,23 +74,25 @@ class System( BaseController ):
         msg = ''
         if params.deleted_histories_days:
             deleted_histories_days = int( params.deleted_histories_days )
-            histories = []
+            cutoff_time = datetime.utcnow() - timedelta( days=deleted_histories_days )
             history_count = 0
             dataset_count = 0
-            now  = time.time()
-            ht = self.app.model.History.table
-            dt = self.app.model.Dataset.table   
+            disk_space = 0
+            h = self.app.model.History
+            d = self.app.model.Dataset
+            where = ( h.table.c.deleted=='t' ) & ( h.table.c.purged=='f' ) & ( h.table.c.update_time < cutoff_time )
             
-            for row in ht.select( ( ht.c.deleted=='t' ) & ( ht.c.purged=='f' ) ).execute():
-                last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) ) 
-                diff = (now-last)/3600/24 # days
-                if diff > deleted_histories_days:
-                    histories.append( row.id )
-                    history_count += 1
-            for row in dt.select( dt.c.purged=='f' ).execute():
-                if row.history_id in histories:
-                    dataset_count += 1
-            msg = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged." %( history_count, dataset_count, deleted_histories_days )
+            histories = h.query().filter( where ).options( eagerload( 'datasets' ) )   
+            for history in histories:
+                for dataset in history.datasets:
+                    if not dataset.purged:
+                        dataset_count += 1
+                        try:
+                            disk_space += dataset.file_size
+                        except:
+                            pass
+                history_count += 1
+            msg = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged.  Disk space: " %( history_count, dataset_count, deleted_histories_days ) + str( disk_space )
         else:
             msg = "Enter the number of days."
         return str( deleted_histories_days ), msg
@@ -99,24 +103,21 @@ class System( BaseController ):
         msg = ''
         if params.deleted_datasets_days:
             deleted_datasets_days = int( params.deleted_datasets_days )
+            cutoff_time = datetime.utcnow() - timedelta( days=deleted_datasets_days )
             dataset_count = 0
-            total_disk_space = 0
-            now = time.time()
-            dt = self.app.model.Dataset.table
-        
-            for row in dt.select( ( dt.c.deleted=='t' ) & ( dt.c.purged=='f' ) ).execute():
-                last = time.mktime( time.strptime( row.update_time.strftime( '%a %b %d %H:%M:%S %Y' ) ) )
-                diff = (now-last)/3600/24 # days
-                if diff > deleted_datasets_days:                        
-                    data = self.app.model.Dataset.get( row.id )
-                    if os.path.exists( data.file_name ):
-                        dataset_count += 1
-                        try:
-                            total_disk_space += row.file_size
-                        except:
-                            pass
+            disk_space = 0
+            d = self.app.model.Dataset
+            where = ( d.table.c.deleted=='t' ) & ( d.table.c.purged=='f' ) & ( d.table.c.update_time < cutoff_time )
+    
+            datasets = d.query().filter( where )
+            for dataset in datasets:
+                dataset_count += 1
+                try:
+                    disk_space += dataset.file_size
+                except:
+                    pass
             msg = str( dataset_count ) + " datasets were deleted more than " + str( deleted_datasets_days ) + \
-            " days ago, but have not yet been purged, total disk space: " + str( total_disk_space ) + "."
+            " days ago, but have not yet been purged, disk space: " + str( disk_space ) + "."
         else:
             msg = "Enter the number of days."
         return str( deleted_datasets_days ), msg
@@ -160,11 +161,12 @@ class System( BaseController ):
         disk_usage = self.get_disk_usage( file_path )
         min_file_size = 2**30 # 100 MB
         file_size_str = '100 MB'
+        d = trans.model.Dataset
         datasets = []
-        dt = trans.model.Dataset.table
+        where = ( d.table.c.file_size > min_file_size )
+        dataset_rows = d.query().filter( where ).order_by( desc( d.table.c.file_size ) )
 
-        for row in dt.select( dt.c.file_size>min_file_size ).execute():
-            datasets.append( ( row.id, str( row.update_time )[0:10], row.history_id, row.deleted, row.file_size ) )
-        datasets = sorted( datasets, key=operator.itemgetter(4), reverse=True )
+        for dataset in dataset_rows:
+            datasets.append( ( dataset.id, str( dataset.update_time )[0:10], dataset.history_id, dataset.deleted, dataset.file_size ) )
         return file_path, disk_usage, datasets, file_size_str
 
