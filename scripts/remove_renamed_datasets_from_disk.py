@@ -13,15 +13,17 @@ def main():
     
     print >> out, "# The following renamed datasets have been removed from disk"
     i = 0
+    removed_files = 0
     for i, line in enumerate( open( infile ) ):
         line = line.rstrip( '\r\n' )
         if line and line.startswith( '/var/opt/galaxy' ):
             try:
                 os.unlink( line )
                 print >> out, line
+                removed_files += 1
             except Exception, exc:
                 print >> out, "# Error, exception " + str( exc ) + " caught attempting to remove " + line
-    print >> out, "# Removed " + str( i ) + " files"    
+    print >> out, "# Removed " + str( removed_files ) + " files"    
 
 if __name__ == "__main__":
     main()

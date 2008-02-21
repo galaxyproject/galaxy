@@ -157,13 +157,13 @@ def purge_histories( h, cutoff_time, remove_from_disk ):
                         print errmsg
                     else:
                         print "%s" % dataset.file_name
-                        dataset_count += 1
-                        try:
-                            disk_space += file_size
-                        except:
-                            pass
                 else:
                     print "%s" % dataset.file_name
+                dataset_count += 1
+                try:
+                    disk_space += file_size
+                except:
+                    pass
         if not errors:
             history.purged = True
             history.flush()
@@ -212,13 +212,13 @@ def purge_datasets( d, cutoff_time, remove_from_disk ):
                 print errmsg
             else:
                 print "%s" % dataset.file_name
-                try:
-                    disk_space += file_size
-                except:
-                    pass
         else:
             print "%s" % dataset.file_name
         dataset_count += 1
+        try:
+            disk_space += file_size
+        except:
+            pass
     stop = time.clock()
     print '# %d datasets purged\n' % dataset_count
     if remove_from_disk:
