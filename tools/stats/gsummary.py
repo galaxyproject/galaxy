@@ -101,7 +101,7 @@ def read_table(datafile, cols):
         valid = True
         line = line.rstrip('\r\n')
         if line and not line.startswith( '#' ):
-            f = line.split()
+            f = line.split( '\t' )
             for col in cols:
                 if col > len(f):
                     valid = False
