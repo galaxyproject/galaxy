@@ -46,12 +46,11 @@ def main():
 
     f1 = fileinput.FileInput( in_fname )
     g1 = NiceReaderWrapper( f1,
-                                chrom_col=chr_col_1,
-                                start_col=start_col_1,
-                                end_col=end_col_1,
-                                strand_col=strand_col_1,
-                                fix_strand=True)
-
+                            chrom_col=chr_col_1,
+                            start_col=start_col_1,
+                            end_col=end_col_1,
+                            strand_col=strand_col_1,
+                            fix_strand=True )
     out_file = open( out_fname, "w" )
 
     # Get the cluster tree
@@ -109,9 +108,18 @@ def main():
                     # three nested for loops?
                     # should only execute this code once per line
                     fileline = fileLines[line].rstrip("\n\r")
-                    cluster_interval = GenomicInterval(g1, fileline.split("\t"), g1.chrom_col, g1.start_col,
-                                         g1.end_col, g1.strand_col, g1.default_strand,
-                                         g1.fix_strand)
+                    try:
+                        cluster_interval = GenomicInterval( g1, fileline.split("\t"), 
+                                                            g1.chrom_col, 
+                                                            g1.start_col,
+                                                            g1.end_col, 
+                                                            g1.strand_col, 
+                                                            g1.default_strand,
+                                                            g1.fix_strand )
+                    except Exception, exc:
+                        print >> sys.stderr, str( exc )
+                        f1.close()
+                        sys.exit()
                     interval_size = cluster_interval.end - cluster_interval.start
                     if outsize == -1 or \
                        ( outsize > interval_size and output == 4 ) or \
