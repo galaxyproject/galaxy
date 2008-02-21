@@ -277,7 +277,7 @@ class PBSJobRunner( object ):
                 log.debug("(%s/%s) job has left queue" % (galaxy_job_id, job_id) )
                 self.finish_job( pbs_job_state )
             else:    
-                killed = pbs_job_state.job_wrapper.check_killed()
+                output_datasets_deleted = pbs_job_state.job_wrapper.check_if_output_datasets_deleted()
                 try:
                     if (jobs[0].attribs[0].name == "job_state"):
                         state = jobs[0].attribs[0].value
@@ -287,7 +287,7 @@ class PBSJobRunner( object ):
                             running = True
                             pbs_job_state.job_wrapper.change_state( "running" )
                             log.debug("(%s/%s) job is now running" % (galaxy_job_id, job_id) )
-                        if killed and state != "E":
+                        if output_datasets_deleted and state != "E":
                             log.debug( "(%s/%s) all output datasets deleted by user, dequeueing" % (galaxy_job_id, job_id) )
                             self.delete_job( job_id, pbs_server )
                         old_state = state
@@ -315,7 +315,7 @@ class PBSJobRunner( object ):
             stderr = efh.read()
         except:
             stdout = ''
-            stderr = 'Job output not returned by PBS.  Manually dequeued or cluster error?'
+            stderr = 'Job output not returned by PBS: the output datasets were deleted while the job was running, the job was manually dequeued or there was a cluster error.'
             log.debug(stderr)
 
         try:

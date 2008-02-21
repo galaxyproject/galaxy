@@ -479,12 +479,14 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         return [ da.dataset.file_name for da in job.output_datasets ]
 
-    def check_killed( self ):
+    def check_if_output_datasets_deleted( self ):
         job = model.Job.get( self.job_id )
-        for da in job.output_datasets:
-            if da.dataset.parent_id is not None:
+        for dataset_assoc in job.output_datasets:
+            dataset = dataset_assoc.dataset
+            dataset.refresh()
+            if dataset.parent_id is not None:
                 return False
-            if not da.dataset.deleted:
+            if not dataset.deleted:
                 return False
         return True
 
