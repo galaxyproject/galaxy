@@ -59,8 +59,28 @@ class Fasta( Sequence ):
         True
         """
         headers = get_headers( filename, None )
+        data_found = False
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0][0] == ">":
+                for i, l in enumerate( headers ):
+                    line = l[0]
+                    if i < 1:
+                        continue
+                    if line:
+                        data_found = True
+                        try:
+                            int( line[0] )
+                            return False
+                        except:
+                            try:
+                                elems = line.split()
+                                int( elems[0] )
+                                return False
+                            except:
+                                return True
+            else:
+                return False
+            if data_found:
                 return True
             else:
                 return False
