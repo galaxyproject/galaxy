@@ -10,6 +10,7 @@ def __main__():
     out = open( output_name, 'w' )
     out.write( "##gff-version 2\n" )
     out.write( "##bed_to_gff_converter.py\n\n" )
+    i = 0
     for i, line in enumerate( file( input_name ) ):
         complete_bed = False
         line = line.rstrip( '\r\n' )

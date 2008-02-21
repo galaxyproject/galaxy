@@ -7,6 +7,7 @@ def __main__():
     skipped_lines = 0
     first_skipped_line = 0
     out = open( output_name, 'w' )
+    i = 0
     for i, line in enumerate( file( input_name ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
