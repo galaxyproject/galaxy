@@ -1,6 +1,6 @@
-<tool id="fasta_tool_compute_length" name="Count FASTA Sequence Length">
+<tool id="fasta_compute_length" name="Count FASTA Sequence Length">
 	<description>returns 2 columns, title and length</description>
-	<command interpreter="python">fasta_tool_compute_length.py $input $output </command>
+	<command interpreter="python">fasta_compute_length.py $input $output </command>
 	<inputs>
 		<param name="input" type="data" format="fasta" label="Fasta file"/>
 	</inputs>

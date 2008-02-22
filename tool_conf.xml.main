@@ -49,11 +49,11 @@
   </section>
   <section name="Convert Formats" id="convert">
     <tool file="filters/bed2gff.xml" />
-    <tool file="fasta_tools/fasta_to_tabular.xml" />
+    <tool file="fasta_tools/fasta2tab/1.0.0/fasta_to_tabular.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="maf/maf_to_bed.xml" />
     <tool file="maf/maf_to_fasta.xml" />
-    <tool file="fasta_tools/tabular_to_fasta.xml" />
+    <tool file="fasta_tools/tab2fasta/1.0.0/tabular_to_fasta.xml" />
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />

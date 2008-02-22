@@ -1,6 +1,6 @@
-<tool id="fasta_tool_filter_by_length" name="Filter FASTA Sequence by Length">
+<tool id="fasta_filter_by_length" name="Filter FASTA Sequence by Length">
 	<description>user define minimal and maximal length they want</description>
-	<command interpreter="python">fasta_tool_filter_by_length.py $input $min_length $max_length $output </command>
+	<command interpreter="python">fasta_filter_by_length.py $input $min_length $max_length $output </command>
 	<inputs>
 		<param name="input" type="data" format="fasta" label="Fasta file"/>
 		<param name="min_length" type="integer" size="15" value="0" label="Minimal length to reurn" />
