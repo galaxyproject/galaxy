@@ -122,12 +122,12 @@
     <tool file="visualization/build_ucsc_custom_track.xml" />
   </section>
   <section name="Regional Variation" id="regVar">
-  	<tool file="regVariation/windowSplitter.xml" />
-  	<tool file="regVariation/featureCounter.xml" />
-	<tool file="regVariation/quality_filter.xml" />
-    <tool file="regVariation/maf_cpg_filter.xml" />
-	<tool file="regVariation/getIndels_2way.xml" />
-	<tool file="regVariation/getIndels_3way.xml" />
+  	<tool file="regVariation/winSplitter/1.0.0/windowSplitter.xml" />
+  	<tool file="regVariation/featureCoverage1/1.0.0/featureCounter.xml" />
+	<tool file="regVariation/qualityFilter/1.0.0/quality_filter.xml" />
+    <tool file="regVariation/cpgFilter/1.0.0/maf_cpg_filter.xml" />
+	<tool file="regVariation/getIndels_2way/1.0.0/getIndels_2way.xml" />
+	<tool file="regVariation/getIndels_3way/1.0.0/getIndels_3way.xml" />
   </section>
  <section name="Evolution: HyPhy" id="hyphy">
     <tool file="hyphy/hyphy_branch_lengths_wrapper1/1.0.0/hyphy_branch_lengths_wrapper.xml" />

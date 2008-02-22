@@ -22,7 +22,7 @@ from bx.intervals.io import *
 from bx.intervals.operations.merge import *
 from bx.cookbook import doc_optparse
 
-from galaxyops import *
+from galaxy.tools.util.galaxyops import *
 
 def stop_err(msg):
     sys.stderr.write(msg)
