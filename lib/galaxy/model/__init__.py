@@ -244,6 +244,9 @@ class Dataset( object ):
             path = self.dataset_file.extra_files_path
         else:
             path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
+            #only use path directly under self.file_path if it exists
+            if not os.path.exists( path ):
+                path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
         # Make path absolute
         return os.path.abspath( path )
     

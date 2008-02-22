@@ -21,6 +21,7 @@ from grouping import *
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
+from galaxy.model import directory_hash_id
 
 log = logging.getLogger( __name__ )
 
@@ -998,13 +999,13 @@ class Tool:
             e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ) )
             raise
     
-    def collect_associated_files( self, output):
+    def collect_associated_files( self, output ):
         for name, outdata in output.items():
-            temp_file_path = os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (outdata.id) )
+            temp_file_path = os.path.join( self.app.config.new_file_path, "dataset_%s_files" % ( outdata.id ) )
             try:
-                if len(os.listdir(temp_file_path)) > 0:
-                    store_file_path = os.path.join(self.app.config.file_path, "dataset_%s_files" % (outdata.id) )
-                    shutil.move(temp_file_path, store_file_path)
+                if len( os.listdir( temp_file_path ) ) > 0:
+                    store_file_path = os.path.join( os.path.join( self.app.config.file_path, *directory_hash_id( outdata.id ) ), "dataset_%d_files" % outdata.id )
+                    shutil.move( temp_file_path, store_file_path )
             except:
                 continue
     
