@@ -1,0 +1,69 @@
+<tool id="blat_wrapper" name="Run Sequence Alignment" version="1.0.0">
+	<description>on short reads against genome builds</description>
+	<command interpreter="python">
+	#if $source.source_select=="database":#blat_wrapper.py 0 $source.dbkey $input_query $output1 $iden $tile_size $one_off
+	#else:#blat_wrapper.py 1 $source.input_target $input_query $output1 $iden $tile_size $one_off
+	#end if
+	</command>
+	<inputs>
+	<conditional name="source">
+		<param name="source_select" type="select" label="Target Source">
+				<option value="database">Genome Build</option>
+				<option value="input_ref">Your Upload File</option>
+		</param>
+		<when value="database">
+			<param name="dbkey" type="genomebuild" label="Genome" />
+		</when>
+		<when value="input_ref">
+			<param name="input_target" type="data" format="fasta" label="Reference Sequence" />
+ 		</when>
+	</conditional>	
+		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
+		<param name="iden" type="float" size="15" value="90.0" label="Minimal Identity (-minIdentity)" />
+		<param name="tile_size" type="integer" size="15" value="11" label="Minimal Size of Match (-tileSize)" help="for shorter reads, use size = 8"/>
+		<param name="one_off" type="integer" size="15" value="0" label="Number of Mismatch in the Word (-oneOff)" />
+	</inputs>
+	<outputs>
+		<data name="output1" format="tabular"/>
+	</outputs>
+	<tests>
+		<test>
+		<param name="source_select" value="database" />
+		<param name="dbkey" value="eschColi_K12_1" />
+		<param name="input_query" value="blat_wrapper_test1.fa" ftype="fasta"/>
+		<param name="iden" value="90.0" />
+		<param name="tile_size" value="11" />
+		<param name="one_off" value="0" />
+		<output name="output1" file="blat_wrapper_test1.out" />
+		</test>
+	</tests>
+	<help>
+	
+**What it does**
+ 
+ This tool runs sequence alignment program on your short reads dataset against a genome build.
+ 
+-----
+ 
+**Example**
+ 
+ Input as multiple fasta file::
+
+	&gt;seq1
+	TGGTAATGGTGGTTTTTTTTTTTTTTTTTTATTTTT
+
+ Search against ce2 (C. elegans March 2004)
+ 
+ (This is output type = pslx)::
+
+	25 1 0 0 0 0 0 0 + seq1 36 10 36 chrI 15080483 9704438 9704464 1 26, 10, 9704438, ggttttttttttttttttttattttt, ggtttttttttttttttttttttttt,
+	27 0 0 0 0 0 1 32 + seq1 36 9 36 chrI 15080483 1302536 1302595 2 21,6, 9,30, 1302536,1302589, tggtttttttttttttttttt,attttt, tggtttttttttttttttttt,attttt,
+
+-----
+
+.. class:: infomark
+ 
+ BLAT: Kent, W James, BLAT--the BLAST-like alignment tool. (2002) Genome Research:12(4) 656-664.
+	
+	</help>
+</tool>
