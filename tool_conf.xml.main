@@ -113,8 +113,8 @@
     <tool file="plotting/histogram_rpy/1.0.0/histogram2.xml" />
     <tool file="plotting/scatterplot_rpy/1.0.0/scatterplot.xml" />
     <tool file="plotting/XY_Plot_1/1.0.0/xy_plot.xml" />
-    <tool file="visualization/GMAJ.xml" />
-    <tool file="visualization/build_ucsc_custom_track.xml" />
+    <tool file="visualization/gmaj_1/1.0.0/GMAJ.xml" />
+    <tool file="visualization/build_ucsc_custom_track_1/1.0.0/build_ucsc_custom_track.xml" />
   </section>
   <section name="Regional Variation" id="regVar">
   	<tool file="regVariation/winSplitter/1.0.0/windowSplitter.xml" />
