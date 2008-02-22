@@ -20,7 +20,7 @@ from bx.intervals.io import *
 from bx.intervals.operations.base_coverage import *
 from bx.cookbook import doc_optparse
 
-from galaxyops import *
+from galaxy.tools.util.galaxyops import *
 
 def main():
 

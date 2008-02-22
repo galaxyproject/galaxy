@@ -48,7 +48,7 @@
   <section name="Join, Subtract and Group" id="group">
     <tool file="filters/join1/2.0.0/joiner.xml" />
     <tool file="filters/comp1/1.0.0/compare.xml"/>
-    <tool file="new_operations/subtract_query.xml"/>
+    <tool file="new_operations/subtract_query1/1.0.0/subtract_query.xml"/>
     <tool file="stats/grouping.xml" />   
   </section>
   <section name="Convert Formats" id="convert">
@@ -97,16 +97,16 @@
     <tool file="extract/phastOdds/phastOdds_for_intervals/1.0.0/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
-  	<tool file="new_operations/intersect.xml" id="intersect" />  
-    <tool file="new_operations/subtract.xml" id="subtract" />
-    <tool file="new_operations/merge.xml" id="merge" />
-    <tool file="new_operations/concat.xml" id="concat" />
-    <tool file="new_operations/basecoverage.xml" id="basecoverage" />
-    <tool file="new_operations/coverage.xml" id="coverage" />
-    <tool file="new_operations/complement.xml" id="complement" />
-    <tool file="new_operations/cluster.xml" id="cluster" />
-    <tool file="new_operations/join.xml" id="join" />
-    <tool file="new_operations/get_flanks.xml" />
+  	<tool file="new_operations/gops_intersect_1/1.0.0/intersect.xml" />  
+    <tool file="new_operations/gops_subtract_1/1.0.0/subtract.xml" id="subtract" />
+    <tool file="new_operations/gops_merge_1/1.0.0/merge.xml" id="merge" />
+    <tool file="new_operations/gops_concat_1/1.0.0/concat.xml" id="concat" />
+    <tool file="new_operations/gops_basecoverage_1/1.0.0/basecoverage.xml" />
+    <tool file="new_operations/gops_coverage_1/1.0.0/coverage.xml" id="coverage" />
+    <tool file="new_operations/gops_complement_1/1.0.0/complement.xml" id="complement" />
+    <tool file="new_operations/gops_cluster_1/1.0.0/cluster.xml" id="cluster" />
+    <tool file="new_operations/gops_join_1/1.0.0/join.xml" id="join" />
+    <tool file="new_operations/get_flanks1/1.0.0/get_flanks.xml" />
   </section>
   <section name="Statistics" id="stats">
     <tool file="stats/gsummary.xml" />

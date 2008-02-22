@@ -23,7 +23,7 @@ from bx.intervals.operations.complement import complement
 from bx.intervals.operations.subtract import subtract
 from bx.cookbook import doc_optparse
 
-from galaxyops import *
+from galaxy.tools.util.galaxyops import *
 
 def main():
     allchroms = False

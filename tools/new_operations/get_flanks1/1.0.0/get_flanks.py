@@ -12,7 +12,7 @@ usage: %prog input out_file size direction region
 import sys, sets, re, os
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
-from galaxyops import *
+from galaxy.tools.util.galaxyops import *
 
 def stop_err( msg ):
     sys.stderr.write( msg )

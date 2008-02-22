@@ -24,7 +24,7 @@ from bx.intervals.io import *
 from bx.intervals.operations.find_clusters import *
 from bx.cookbook import doc_optparse
 
-from galaxyops import *
+from galaxy.tools.util.galaxyops import *
 
 def main():
     distance = 0
