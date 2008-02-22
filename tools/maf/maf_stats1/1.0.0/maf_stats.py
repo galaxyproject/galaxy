@@ -8,7 +8,7 @@ import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.intervals.io
 from numpy import zeros
-import maf_utilities
+from galaxy.tools.util import maf_utilities
 
 def __main__():
     maf_source_type = sys.argv.pop( 1 )

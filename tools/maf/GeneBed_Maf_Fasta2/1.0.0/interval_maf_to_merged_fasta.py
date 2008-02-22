@@ -23,7 +23,7 @@ usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract c
 """
 
 #Dan Blankenberg
-import maf_utilities
+from galaxy.tools.util import maf_utilities
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 import bx.intervals.io

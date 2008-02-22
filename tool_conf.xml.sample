@@ -59,8 +59,8 @@
     <tool file="fasta_tools/fasta2tab/1.0.0/fasta_to_tabular.xml" />
     <tool file="filters/gff2bed1/1.0.0/gff2bed.xml" />
     <tool file="filters/lav_to_bed1/1.0.0/lav_to_bed.xml" />
-    <tool file="maf/maf_to_bed.xml" />
-    <tool file="maf/maf_to_fasta.xml" />
+    <tool file="maf/MAF_To_BED1/1.0.0/maf_to_bed.xml" />
+    <tool file="maf/MAF_To_Fasta1/1.0.0/maf_to_fasta.xml" />
     <tool file="fasta_tools/tab2fasta/1.0.0/tabular_to_fasta.xml" />
   </section>
   <section name="Extract Features" id="features">
@@ -79,17 +79,17 @@
     <tool file="extract/Extract_genomic_DNA_1/2.0.0/extract_genomic_dna.xml" />
   </section>
   <section name="Fetch Alignments" id="fetchAlign">
-    <tool file="maf/interval2maf_pairwise.xml" />
-    <tool file="maf/interval2maf.xml" />
-    <tool file="maf/interval_maf_to_merged_fasta.xml" />
-    <tool file="maf/genebed_maf_to_fasta.xml"/>
-    <tool file="maf/maf_stats.xml"/>
-    <tool file="maf/maf_thread_for_species.xml"/>
-    <tool file="maf/maf_limit_to_species.xml"/>
-    <tool file="maf/maf_limit_size.xml"/>
+    <tool file="maf/Interval2Maf_pairwise1/1.0.0/interval2maf_pairwise.xml" />
+    <tool file="maf/Interval2Maf1/1.0.0/interval2maf.xml" />
+    <tool file="maf/Interval_Maf_Merged_Fasta2/1.0.0/interval_maf_to_merged_fasta.xml" />
+    <tool file="maf/GeneBed_Maf_Fasta2/1.0.0/genebed_maf_to_fasta.xml"/>
+    <tool file="maf/maf_stats1/1.0.0/maf_stats.xml"/>
+    <tool file="maf/MAF_Thread_For_Species1/1.0.0/maf_thread_for_species.xml"/>
+    <tool file="maf/MAF_Limit_To_Species1/1.0.0/maf_limit_to_species.xml"/>
+    <tool file="maf/maf_limit_size1/1.0.0/maf_limit_size.xml"/>
     <tool file="maf/maf_by_block_number.xml"/>
-    <tool file="maf/maf_reverse_complement.xml"/>
-    <tool file="maf/maf_filter.xml"/>
+    <tool file="maf/MAF_Reverse_Complement_1/1.0.0/maf_reverse_complement.xml"/>
+    <tool file="maf/MAF_filter/1.0.0/maf_filter.xml"/>
   </section>
   <section name="Get Genomic Scores" id="scores">
     <tool file="stats/wiggle_to_simple.xml" />

@@ -9,7 +9,7 @@ usage %prog species1,species2 maf_file out_file
 import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
-import maf_utilities
+from galaxy.tools.util import maf_utilities
 
 def __main__():
     print "Restricted to species:", sys.argv[1]

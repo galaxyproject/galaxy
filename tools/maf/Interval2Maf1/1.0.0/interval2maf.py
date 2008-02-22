@@ -27,7 +27,7 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 import bx.align.maf
 import bx.intervals.io
-import maf_utilities
+from galaxy.tools.util import maf_utilities
 import sys
 
 def __main__():
