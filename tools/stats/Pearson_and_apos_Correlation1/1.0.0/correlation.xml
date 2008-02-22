@@ -1,4 +1,4 @@
-<tool id="Pearson&apos;s Correlation1" name="Pearson&apos;s Correlation">
+<tool id="Pearson_and_apos_Correlation1" name="Pearson and apos Correlation">
   <description>between any two numeric columns</description>
   <command interpreter="perl">correlation.pl $input $out_file1 $col1 $col2</command>
   <inputs>

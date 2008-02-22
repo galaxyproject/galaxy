@@ -29,7 +29,7 @@
   </section>
   <section name="Text Manipulation" id="textutil">
     <tool file="filters/addValue/1.0.0/fixedValueColumn.xml" />
-    <tool file="stats/column_maker.xml" />
+    <tool file="stats/Add_a_column1/1.0.0/column_maker.xml" />
     <tool file="filters/cat1/1.0.0/catWrapper.xml" />
     <tool file="filters/Condense_characters1/1.0.0/condense_characters.xml" />
     <tool file="filters/Convert_characters1/1.0.0/convert_characters.xml" />
@@ -41,7 +41,7 @@
     <tool file="filters/Show_tail1/1.0.0/tailWrapper.xml" />
   </section>
   <section name="Filter and Sort" id="filter">
-    <tool file="stats/filtering.xml" />
+    <tool file="stats/Filter1/1.0.0/filtering.xml" />
     <tool file="filters/sort1/1.0.0/sorter.xml" />
     <tool file="filters/Grep1/1.0.0/grep.xml" />
   </section>
@@ -49,7 +49,7 @@
     <tool file="filters/join1/2.0.0/joiner.xml" />
     <tool file="filters/comp1/1.0.0/compare.xml"/>
     <tool file="new_operations/subtract_query1/1.0.0/subtract_query.xml"/>
-    <tool file="stats/grouping.xml" />   
+    <tool file="stats/Grouping1/1.0.0/grouping.xml" />   
   </section>
   <section name="Convert Formats" id="convert">
     <tool file="filters/axt_to_concat_fasta/1.0.0/axt_to_concat_fasta.xml" />
@@ -92,8 +92,8 @@
     <tool file="maf/MAF_filter/1.0.0/maf_filter.xml"/>
   </section>
   <section name="Get Genomic Scores" id="scores">
-    <tool file="stats/wiggle_to_simple.xml" />
-    <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
+    <tool file="stats/wiggle2simple1/1.0.0/wiggle_to_simple.xml" />
+    <tool file="stats/aggregate_scores_in_intervals2/1.1.0/aggregate_binned_scores_in_intervals.xml" />
     <tool file="extract/phastOdds/phastOdds_for_intervals/1.0.0/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
@@ -109,9 +109,9 @@
     <tool file="new_operations/get_flanks1/1.0.0/get_flanks.xml" />
   </section>
   <section name="Statistics" id="stats">
-    <tool file="stats/gsummary.xml" />
+    <tool file="stats/Summary_Statistics1/1.0.0/gsummary.xml" />
     <tool file="filters/Count1/1.0.0/uniq.xml" /> 
-    <tool file="stats/cor.xml" /> 
+    <tool file="stats/cor2/1.0.0/cor.xml" /> 
   </section>
   <section name="Graph/Display Data" id="plots">
     <tool file="plotting/histogram_rpy/1.0.0/histogram2.xml" />
