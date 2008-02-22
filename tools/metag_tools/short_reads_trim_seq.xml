@@ -15,7 +15,7 @@
 		</param>
 		<when value="454">
 		    <param name="input1" type="data" format="fasta,txtseq.zip" label="Sequence file" />
-    		<param name="input2" type="data" format="fasta,txtseq.zip" label="Score file" />
+    		    <param name="input2" type="data" format="txt,txtseq.zip" label="Score file" />
 		</when>
 		<when value="Solexa">
     		<param name="input1" type="data" format="tabular,txtseq.zip" label="Sequence file" />
