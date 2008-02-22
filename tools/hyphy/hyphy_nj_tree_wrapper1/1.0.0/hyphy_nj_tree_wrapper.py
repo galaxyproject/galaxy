@@ -1,7 +1,7 @@
 #Dan Blankenberg
 #takes fasta alignments, a distance metric and builds neighbor joining trees
 import os, sys
-import hyphy_util
+from galaxy.tools.util import hyphy_util
 
 #Retrieve hard coded hyphy path, this will need to be the same across the cluster
 HYPHY_PATH = hyphy_util.HYPHY_PATH

@@ -1,7 +1,7 @@
 #Dan Blankenberg
 #takes commandline tree def and input multiple fasta alignment file and runs the branch length ananlysis
 import os, sys
-import hyphy_util
+from galaxy.tools.util import hyphy_util
 
 #Retrieve hard coded hyphy path, this will need to be the same across the cluster
 HYPHY_PATH = hyphy_util.HYPHY_PATH

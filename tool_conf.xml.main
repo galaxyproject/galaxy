@@ -127,9 +127,9 @@
 	-->
   </section>
  <section name="Evolution: HyPhy" id="hyphy">
-    <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
-    <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
-    <tool file="hyphy/hyphy_dnds_wrapper.xml" />
+    <tool file="hyphy/hyphy_branch_lengths_wrapper1/1.0.0/hyphy_branch_lengths_wrapper.xml" />
+    <tool file="hyphy/hyphy_nj_tree_wrapper1/1.0.0/hyphy_nj_tree_wrapper.xml" />
+    <tool file="hyphy/hyphy_dnds_wrapper1/1.0.0/hyphy_dnds_wrapper.xml" />
  </section>
  <!--
  These are deprecated
