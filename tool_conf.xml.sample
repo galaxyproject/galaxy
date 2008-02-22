@@ -21,11 +21,11 @@
     <tool file="data_source/encode_import_gencode.xml" />
   </section>
   <section name="ENCODE Tools" id="EncodeTools">
-    <tool file="encode/gencode_partition.xml" />
-    <tool file="encode/random_intervals.xml" />
+    <tool file="encode/gencode_partition1/1.0.0/gencode_partition.xml" />
+    <tool file="encode/random_intervals1/1.0.0/random_intervals.xml" />
   </section>
   <section name="Lift-Over" id="liftOver">
-    <tool file="extract/liftOver_wrapper.xml" />
+    <tool file="extract/liftOver1/1.0.0/liftOver_wrapper.xml" />
   </section>
   <section name="Text Manipulation" id="textutil">
     <tool file="filters/fixedValueColumn.xml" />
@@ -65,7 +65,7 @@
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
-    <tool file="extract/extract_GFF_Features.xml" />
+    <tool file="extract/Extract_features1/1.0.0/extract_GFF_Features.xml" />
   </section>
   <section name="Pattern-Matching" id="patmat">
     <tool file="patmat/findcluster_mysql.xml" />
@@ -73,10 +73,10 @@
   <section name="Fetch Sequences" id="fetchSeq">
     <!-- 
     These are deprecated
-    <tool file="extract/fasta-subseq-wrapper.xml" />
-    <tool file="extract/twoBitToFa_wrapper.xml" />
+    <tool file="extract/Extract_genomic_DNA_1/1.0.0/fasta-subseq-wrapper.xml" />
+    <tool file="extract/Extract_genomic_DNA_1/1.0.0/twoBitToFa_wrapper.xml" />
     -->
-    <tool file="extract/extract_genomic_dna.xml" />
+    <tool file="extract/Extract_genomic_DNA_1/2.0.0/extract_genomic_dna.xml" />
   </section>
   <section name="Fetch Alignments" id="fetchAlign">
     <tool file="maf/interval2maf_pairwise.xml" />
@@ -94,7 +94,7 @@
   <section name="Get Genomic Scores" id="scores">
     <tool file="stats/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
-    <tool file="extract/phastOdds/phastOdds_tool.xml" />
+    <tool file="extract/phastOdds/phastOdds_for_intervals/1.0.0/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
   	<tool file="new_operations/intersect.xml" id="intersect" />  

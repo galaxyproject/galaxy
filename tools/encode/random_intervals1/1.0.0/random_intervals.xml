@@ -21,6 +21,13 @@
         <filter type="column" name="value_col" value="1" />
       </options>
     </param> 
+    <!--
+    <param name="regions" type="select" label="Regions to use">
+      <options from_file="/depot/data2/galaxy/phastOdds.loc" name_col="2" value_col="1">
+        <filter type="data_meta" data_ref="input" meta_key="dbkey" meta_key_col="0" />
+      </options>
+    </param> 
+    -->
   </inputs>
   <outputs>
     <data name="out_file1" format="input"/>
