@@ -31,18 +31,18 @@
     <tool file="filters/Convert_characters1/1.0.0/convert_characters.xml" />
     <tool file="filters/createInterval/1.0.0/CreateInterval.xml" />
     <tool file="filters/Cut1/1.0.0/cutWrapper.xml" />
-    <tool file="filters/pasteWrapper.xml" />
-    <tool file="filters/remove_beginning.xml" />
+    <tool file="filters/Paste1/1.0.0/pasteWrapper.xml" />
+    <tool file="filters/Remove_beginning1/1.0.0/remove_beginning.xml" />
     <tool file="filters/Show_beginning1/1.0.0/headWrapper.xml" />
-    <tool file="filters/tailWrapper.xml" />
+    <tool file="filters/Show_tail1/1.0.0/tailWrapper.xml" />
   </section>
   <section name="Filter and Sort" id="filter">
     <tool file="stats/filtering.xml" />
-    <tool file="filters/sorter.xml" />
+    <tool file="filters/sort1/1.0.0/sorter.xml" />
     <tool file="filters/Grep1/1.0.0/grep.xml" />
   </section>
   <section name="Join, Subtract and Group" id="group">
-    <tool file="filters/joiner.xml" />
+    <tool file="filters/join1/2.0.0/joiner.xml" />
     <tool file="filters/comp1/1.0.0/compare.xml"/>
     <tool file="new_operations/subtract_query.xml"/>
     <tool file="stats/grouping.xml" />   
@@ -56,7 +56,7 @@
     <tool file="fasta_tools/tab2fasta/1.0.0/tabular_to_fasta.xml" />
   </section>
   <section name="Extract Features" id="features">
-    <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
+    <tool file="filters/gene2exon1/1.0.0/ucsc_gene_bed_to_exon_bed.xml" />
     <tool file="extract/Extract_features1/1.0.0/extract_GFF_Features.xml" />
   </section>
   <!--  
@@ -106,7 +106,7 @@
   </section>
   <section name="Statistics" id="stats">
     <tool file="stats/gsummary.xml" />
-    <tool file="filters/uniq.xml" /> 
+    <tool file="filters/Count1/1.0.0/uniq.xml" /> 
     <tool file="stats/cor.xml" /> 
   </section>
   <section name="Graph/Display Data" id="plots">
