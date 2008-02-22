@@ -1,6 +1,6 @@
 <tool id="Interval2Bed1" name="Interval2Bed">
   <description>creates a Bed query for displaying at UCSC</description>
-  <command interpreter="perl">Text2BedLike.pl $input_chromCol $input_startCol $input_endCol $input_strandCol $input $out_file1</command>
+  <command interpreter="perl">Interval2BedLike.pl $input_chromCol $input_startCol $input_endCol $input_strandCol $input $out_file1</command>
   <inputs>
     <param format="Interval" name="input" type="data" label="In Query"/>
   </inputs>

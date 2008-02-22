@@ -28,22 +28,22 @@
     <tool file="extract/liftOver1/1.0.0/liftOver_wrapper.xml" />
   </section>
   <section name="Text Manipulation" id="textutil">
-    <tool file="filters/fixedValueColumn.xml" />
+    <tool file="filters/addValue/1.0.0/fixedValueColumn.xml" />
     <tool file="stats/column_maker.xml" />
     <tool file="filters/cat1/1.0.0/catWrapper.xml" />
-    <tool file="filters/condense_characters.xml" />
-    <tool file="filters/convert_characters.xml" />
-    <tool file="filters/CreateInterval.xml" />
-    <tool file="filters/cutWrapper.xml" />
+    <tool file="filters/Condense_characters1/1.0.0/condense_characters.xml" />
+    <tool file="filters/Convert_characters1/1.0.0/convert_characters.xml" />
+    <tool file="filters/createInterval/1.0.0/CreateInterval.xml" />
+    <tool file="filters/Cut1/1.0.0/cutWrapper.xml" />
     <tool file="filters/pasteWrapper.xml" />
     <tool file="filters/remove_beginning.xml" />
-    <tool file="filters/headWrapper.xml" />
+    <tool file="filters/Show_beginning1/1.0.0/headWrapper.xml" />
     <tool file="filters/tailWrapper.xml" />
   </section>
   <section name="Filter and Sort" id="filter">
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
-    <tool file="filters/grep.xml" />
+    <tool file="filters/Grep1/1.0.0/grep.xml" />
   </section>
   <section name="Join, Subtract and Group" id="group">
     <tool file="filters/joiner.xml" />
@@ -57,7 +57,7 @@
     <tool file="filters/axt_to_lav_1/1.0.0/axt_to_lav.xml" />
     <tool file="filters/bed2gff1/2.0.0/bed2gff.xml" />
     <tool file="fasta_tools/fasta2tab/1.0.0/fasta_to_tabular.xml" />
-    <tool file="filters/gff2bed.xml" />
+    <tool file="filters/gff2bed1/1.0.0/gff2bed.xml" />
     <tool file="filters/lav_to_bed.xml" />
     <tool file="maf/maf_to_bed.xml" />
     <tool file="maf/maf_to_fasta.xml" />
