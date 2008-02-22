@@ -15,7 +15,7 @@ def parse_fasta_format(file_handle):
     tmp_seq = ''
     tmp_seq_count = 0
     for i, each_line in enumerate(file_handle):
-        each_line = each_line.rstrip('\n')
+        each_line = each_line.rstrip('\r\n')
         if (each_line[0] == '>'):
             if (len(tmp_seq) > 0):
                 tmp_seq_count += 1

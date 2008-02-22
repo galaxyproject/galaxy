@@ -30,7 +30,7 @@ def __main__():
     out = open( outfile, 'w' )
 
     for i, line in enumerate( open( infile ) ):
-        line = line.rstrip( '\n' )
+        line = line.rstrip( '\r\n' )
         fields = line.split()
         fasta_title = []
         for j in title_col_list:
