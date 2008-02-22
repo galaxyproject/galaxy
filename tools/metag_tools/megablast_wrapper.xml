@@ -1,19 +1,12 @@
 <tool id="megablast_wrapper" name="Run Megablast">
-	<description>on genomic data</description>
+	<description>for Metagenomics Projects</description>
 	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $disc_word $disc_type $filter_query</command>
 	<inputs>
 		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
 		<param name="source_select" type="select" display="radio" label="Target database">
-			<!-- <options from_file="/depot/data2/galaxy/blastdb.loc" /> -->
 			<option value="nt">nt (for nucleotides)</option>
-		</param>
-		<!-- <param name="something" type="blastdb" label="database"/> --> 
-<!-- 
-		<param name="output_format" type="select" display="radio" label="Output Type">
-			<option value="bed">BED</option>
-			<option value="maf">MAF</option>
-		</param>
--->
+			<option value="test">Ecoli_K12</option>
+		</param> 
 		<param name="word_size" type="select" label="Word size (-W, length of best perfect match)">
 			<option value="28">28</option>
 			<option value="16">16</option>
@@ -33,12 +26,10 @@
 	<outputs>
 		<data name="output1" format="tabular"/>
 	</outputs>
-<!-- 
 	<tests>
 		<test>
 			<param name="input_query" value="megablast_query.fa" ftype="fasta"/>
-			<param name="source_select" value="nt" />
-			<param name="output_format" value="bed" />
+			<param name="source_select" value="test" />
 			<param name="word_size" value="28" />
 			<param name="iden_cutoff" value="99.0" />
 			<param name="disc_word" value="0" />
@@ -47,7 +38,6 @@
 			<output name="output1" file="megablast_test.out"/> 
 		</test>
 	</tests>
--->
 	<help>
 	
 .. class:: warningmark
