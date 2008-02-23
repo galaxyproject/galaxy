@@ -149,6 +149,9 @@ def purge_histories( h, cutoff_time, remove_from_disk ):
     for history in histories:
         for dataset in history.datasets:
             if not dataset.purged:
+                if not dataset.deleted:
+                    dataset.deleted = True
+                    dataset.flush()
                 if remove_from_disk:
                     file_size = dataset.file_size
                     errmsg = purge_dataset( dataset )
