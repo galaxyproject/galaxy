@@ -1,0 +1,30 @@
+<tool id="ChangeCase1" name="Change Case">
+  <description>to upper or lower</description>
+  <command interpreter="perl">changeCase.pl $input $out_file1 "$upperLower"</command>
+  <inputs>
+    <param format="txt" name="input" type="data" label="Change"/>
+    <param name="upperLower" type="select" label="To">
+      <option value="up">Upper case</option>
+      <option value="lo">Lower case</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="1.txt"/>
+      <param name="upperLower" value="up"/>
+      <output name="out_file1" file="change-case.dat"/>
+    </test>
+  </tests>
+  <help>
+
+This tool changes case for lower to upper and vice versa.  
+
+.. class:: infomark
+
+If you want to change case on a specific column use this tool in combination with *Text Manipulation->Cut*
+
+</help>
+</tool>

@@ -106,6 +106,7 @@ def main():
 #             contains a single 'scientific name' type
             try:
                 if field[2] == 'scientific name':
+                    field[1] = field[1].replace('\t','_')
                     sqlTemplate = string.Template('insert into names values($taxId, "$name", "$syn")')
                     sql = sqlTemplate.substitute(taxId = int(field[0]), name = field[1], syn = field[2])  
                     cur.execute(sql)

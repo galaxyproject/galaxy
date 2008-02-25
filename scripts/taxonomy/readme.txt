@@ -4,7 +4,7 @@ How to prepare NCBI taxonomy for Galaxy Metagenomic Toolkit
 1. run runTest.sh
    If this script produces NO messages -> everything is OK
    
-2. run processRaxonomy.sh
+2. run processTaxonomy.sh
    This script does several things:
    - downloads taxonomy dump tarball from NCBI ftp site
    - downloads very large gi2taxId files for nucleotide and protein entries of GenBank
