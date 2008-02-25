@@ -1,8 +1,8 @@
-<tool id="trim_reads" name="Trim Reads">
+<tool id="trim_reads" name="Trim Reads" version="2.0.0">
 <description>based on quality scores</description>
 
-<command interpreter="python">#if $sequencing_method_choice.sequencer=="454":#short_reads_trim_seq.py 454 $trim $length $output1 $input1 $input2
-#else:#short_reads_trim_seq.py solexa $trim $length $output1 $input1 $input2 
+<command interpreter="python">#if $sequencing_method_choice.sequencer=="454":#short_reads_trim_seq.py 454 $trim $length $output1 $sequencing_method_choice.input1 $sequencing_method_choice.input2 $sequencing_method_choice.input3
+#else:#short_reads_trim_seq.py solexa $trim $length $output1 $sequencing_method_choice.input1 $sequencing_method_choice.input2 $sequencing_method_choice.input3
 #end if
 </command>
 
@@ -10,16 +10,21 @@
 <page>
 	<conditional name="sequencing_method_choice">
 		<param name="sequencer" type="select" label="short read sequencing method">
-			<option value="454">454</option>
+			<option value="454">454 and SOLiD</option>
 			<option value="Solexa">Solexa</option>
 		</param>
 		<when value="454">
 		    <param name="input1" type="data" format="fasta,txtseq.zip" label="Sequence file" />
-    		    <param name="input2" type="data" format="txt,txtseq.zip" label="Score file" />
+    		<param name="input2" type="data" format="txt,txtseq.zip" label="Score file" />
+    		<param name="input3" type="select" label="To keep homopolymers" >
+    			<option value="yes">Yes</option>
+    			<option value="no">No</option>
+    		</param>
 		</when>
 		<when value="Solexa">
     		<param name="input1" type="data" format="tabular,txtseq.zip" label="Sequence file" />
     		<param name="input2" type="data" format="tabular,txtseq.zip" label="Score file" />
+    		<param name="input3" type="integer" size="5" value="0" label="Trim reads after this position" help="0 as do nothing" />
 		</when>	
 	</conditional>
 	<param name="trim" type="integer" size="5" value="20" label="Minimal quality score" />
@@ -33,20 +38,22 @@
 
 <tests>
 	<test>
-		<param name="sequencer" value="Solexa" />
-		<param name="input1" value="solexa.fna" />
-		<param name="input2" value="solexa.qual" />
-		<param name="trim" value="20" />
-		<param name="length" value="0" />
-		<output name="output1" file="solexaTest.fa" />
-	</test>
-	<test>
 		<param name="sequencer" value="454" />
 		<param name="input1" value="454.fna" />
 		<param name="input2" value="454.qual" />
+		<param name="input3" value="no" />
 		<param name="trim" value="20" />
 		<param name="length" value="0" />
 		<output name="output1" file="454Test.fa" />
+	</test>
+	<test>
+		<param name="sequencer" value="Solexa" />
+		<param name="input1" value="solexa.fna" />
+		<param name="input2" value="solexa.qual" />
+		<param name="input3" value="0" />
+		<param name="trim" value="20" />
+		<param name="length" value="0" />
+		<output name="output1" file="solexaTest.fa" />
 	</test>
 </tests>
 
@@ -55,6 +62,12 @@
 .. class:: warningmark 
 
  Please select correct sequencing method.
+
+<!--  
+.. class:: warningmark 
+
+Your **Quality Score** file needs to be a specific Galaxy **qualityscore** file format. Please click on the pencil symbol in the history panel to change the file format.
+-->
  
 -----
 
@@ -64,7 +77,7 @@ This tool takes raw data from sequencing facility and outputs a multi-fasta file
 
 Accept the following two file formats:
 
-- fasta: for **454** data
+- fasta: for **454** and **SOLiD** data
 - tabular: for **Solexa** data. Only take the maximal value from each 4 quality scores.
 
 If *minimal trimmed length to report* is set to a number larger than zero, the tool ouputs any substrings that are longer than this threshold. 
@@ -73,17 +86,15 @@ If there are more than one substring, the tool outputs all of them in separated 
 -----
 
 
-454 data::
+454 and SOLiD data::
 
 	&gt;seq1
 	CCGGTATCCG
 	
-454 quality score::
-
 	&gt;seq1
 	33 19 34 25 28 28 28 32 15 34 
 
-454 Output (trimmed by quality score 20 and returned the longest substring)::
+454 and SOLiD Output (trimmed by quality score 20 and returned the longest substring)::
 
 	&gt;seq1
 	GGTATC
@@ -92,12 +103,11 @@ Solexa data::
 
 	5	300	902	419	TTCTTACCTATTAGTGGTTGAACATC
 
-
 Solexa quality score (only showed the maximum value)::
 	  
  	40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 15 40
 	
-Solexa Output::
+Solexa Output (trimmed by quality score 20 and returned the longest substring)::
 
 	&gt;15774
 	TTCTTACCTATTAGTGGTTGAACA

@@ -1,42 +1,8 @@
 #! /usr/bin/python
-"""
-Galaxy
-to commit
-4.2 for i, line in enumerate(file(filename)):
-4.4 stop passing read_seqfile and read_scorefile around
-4.5 use --> if __name__ == "__main__": __main__()
-5. use galaxy extention
-Input:
-    quality score file(s): zip or text file
-Output:
-pdf files from R
-    score distribution --> boxplot, Solexa as 36bp, 454 as 20 points
-----
-Wen-Yu Chung
-"""
+
 import os, sys, math, tempfile, zipfile, re
 from rpy import *
 
-# default and initialize values
-number_of_points = 20
-read_seqfile = []
-read_scorefile = []
-title_keys = []
-seq_hash = {}
-score_hash = {}
-trim_seq_hash = {}
-tmp_seq = ''
-tmp_score = []            # change variables here
-
-length_before_trim = []
-length_after_trim = []
-score_points = []
-
-database_tmp = "/tmp/"        # default dir: current directory
-if (not os.path.isdir(database_tmp)):
-    os.mkdir(database_tmp)
-    
-# functions
 def stop_err(msg):
     
     sys.stderr.write(msg)
@@ -44,23 +10,11 @@ def stop_err(msg):
     sys.exit()
     
 
-def read_input_files(file_list):
-    
-    read_file = []
-    
-    for file_name in file_list:
-        infile = open(file_name,'r')
-        read_file = infile.readlines()
-        infile.close()
-
-    return read_file
-
-
 def unzip_files(file_name):
     
     read_file = []
     
-    temp_dir_name = tempfile.mkdtemp() + '/'        #dir=database_tmp
+    temp_dir_name = tempfile.mkdtemp() + '/'        
     temp_new_dest = temp_dir_name + file_name.split('/')[-1]
     command_line = 'cp ' + file_name + ' ' + temp_dir_name + '\nunzip ' + temp_new_dest + ' -d ' + temp_dir_name
     
@@ -81,125 +35,190 @@ def unzip_files(file_name):
     return new_file_dir, read_file
 
 
-def parse_solexa_files(result, type):
-    # parse solexa seq and probability files only
-    # not fasta format
-    # assign numeric id
-        
-    tmp_hash = {}
-    tmp_title = ''
-    tmp_seq = ''
-    tmp_id = 0
-    
-    if (type == 'seq'):
-        for each_line in result:
-            tmp_seq = ''
-            each_line.strip('\r\n')
-            tmp_id += 1
-            fasta_id = '>' + str(tmp_id)
-            (run_id, file_id, read_x, read_y, read) = each_line.split()
-            tmp_hash[(fasta_id)] = read
-    else: # type == score
-        for each_line in result:
-            tmp_seq = []
-            each_line.strip('\r\n')
-            tmp_id += 1
-            fasta_id = '>' + str(tmp_id)
-            each_loc = each_line.split('\t')
-            for each_base in each_loc:
-                each_nuc_error = each_base.split()
-                each_nuc_error[0] = int(each_nuc_error[0])
-                each_nuc_error[1] = int(each_nuc_error[1])
-                each_nuc_error[2] = int(each_nuc_error[2])
-                each_nuc_error[3] = int(each_nuc_error[3])
-                big = max(each_nuc_error)
-                #baseIndex = each_nuc_error.index(big)
-                tmp_seq.append(big)
-            tmp_hash[(fasta_id)] = tmp_seq
-    
-    return tmp_hash
+def merge_to_20_datapoints(tmp_score):
 
+    number_of_points = 20
+    read_length = len(tmp_score)
     
-def parse_fasta_format(result):    
-    # detect whether it's score or seq files
-    # return a hash: key = title and value = seq
-        
-    tmp_hash = {}
-    tmp_title = ''
-    tmp_seq = ''
-
-    for each_line in result:
-        each_line = each_line.strip('\r\n')
-        if (each_line[0] == '>'):
-            if (len(tmp_seq) > 0):
-                tmp_hash[(tmp_title)] = tmp_seq
-            tmp_title = each_line
-            tmp_seq = ''
+    step = int(math.floor((read_length-1)*1.0/number_of_points))
+    score = []
+    point = 1
+    point_sum = 0
+    step_average = 0
+    score_points_tmp = 0
+    
+    for i in xrange(1,read_length):
+        if (i < (point * step)):
+            point_sum += int(tmp_score[i])
+            step_average += 1
         else:
-            tmp_seq = tmp_seq + each_line
-            if (each_line.split()[0].isdigit()):
-                tmp_seq = tmp_seq + ' '
-    if (len(tmp_seq) > 0):
-        tmp_hash[(tmp_title)] = tmp_seq
-        
-    return tmp_hash
+            point_avg = point_sum*1.0/step_average
+            score.append(point_avg)
+            point += 1
+            point_sum = 0
+            step_average = 0
+                                    
+    if (step_average > 0):
+        point_avg = point_sum*1.0/step_average
+        score.append(point_avg)
 
-
-def generate_boxplot_figure():
-    # R module and code
-        
-    score_matrix = []
-    tmp_array = []
+    if (len(score) > number_of_points):
+        last_avg = 0
+        for j in xrange(number_of_points-1,len(score)):
+            last_avg += score[j]
+        last_avg = last_avg/(len(score)-number_of_points+1)
+    else:    
+        last_avg = score[-1]
     
-    # data for R boxplot
-    title_keys = score_hash.keys()
+    score_points_tmp = []
+    
+    for k in range(number_of_points-1):
+        score_points_tmp.append(score[k])
+    
+    score_points_tmp.append(last_avg)
+            
+    return score_points_tmp
+
+def __main__():
+    # I/O
+    infile_score_name = sys.argv[1].strip()
+    outfile_R_name = sys.argv[2].strip()
+
+    # unzip infile
+    tmp_score_dir = ''
+    score_file_list = []
+    if (zipfile.is_zipfile(infile_score_name)): (tmp_score_dir, score_file_list) = unzip_files(infile_score_name)
+    else: score_file_list = [infile_score_name]
+
+    # detect whether it's tabular or fasta format
+    seq_method = ''
+    test_file = score_file_list[0]
+    test_fh = open(test_file,'r')
+    while seq_method == '': 
+        read_scorefile = test_fh.readline()
+        if read_scorefile.startswith('#'):
+            continue 
+        elif read_scorefile.startswith(">"):
+            seq_method = '454'
+        else:
+            seq_method = 'solexa'
+    test_fh.close()
+    
+    # quantile array
+    quality_score = {}
+    
+    # R
+    score_points = []   
+    score_matrix = []
+    
+    tmp_read_length = 0
+    tmp_varied_length = False
+    
+    test_file = score_file_list[0]
     if (seq_method == 'solexa'):
-        for read_title in title_keys:
-            score_points.append(score_hash[(read_title)])
-    else:
-        for read_title in title_keys:
-            tmp_score = '0 ' + score_hash[(read_title)]
-            tmp_list = tmp_score.split()
-            read_length = len(tmp_list)
-            if (read_length > 100):
-                step = int(math.floor((read_length-1)*1.0/number_of_points))
-                score = []
-                point = 1
-                point_sum = 0
-                step_average = 0
-                for i in xrange(1,read_length):
-                    if (i < (point * step)):
-                        point_sum += int(tmp_list[i])
-                        step_average += 1
+        tmp_score = []
+        for i, line in enumerate(open(test_file)):
+            line = line.rstrip('\r\n')
+            tmp_score = line.split('\t')
+            if (tmp_read_length == 0): tmp_read_length = len(tmp_score)
+            if (tmp_read_length != len(tmp_score)):
+                tmp_varied_length = True
+    else:    
+        # skip the last fasta sequence
+        tmp_score = ''
+        for i, line in enumerate(open(test_file)):
+            line = line.rstrip('\r\n')
+            if line.startswith('>'):
+                if len(tmp_score) > 0:
+                    tmp_score = tmp_score.split()
+                    if (tmp_read_length == 0): tmp_read_length = len(tmp_score)
+                    if (tmp_read_length != len(tmp_score)):
+                        tmp_varied_length = True
+                tmp_score = ''
+            else:
+                tmp_score = tmp_score + ' ' + line
+            
+    if (tmp_varied_length): number_of_points = 20
+    else: number_of_points = tmp_read_length
+                        
+    # data for R boxplot
+    # data for quantile
+    if (seq_method == 'solexa'):
+        for score_file in score_file_list:
+            for i, line in enumerate(open(score_file)):
+                line = line.rstrip('\r\n')
+                each_loc = line.split('\t')
+                tmp_array = []
+                for each_base in each_loc:
+                    each_nuc_error = each_base.split()
+                    each_nuc_error[0] = int(each_nuc_error[0])
+                    each_nuc_error[1] = int(each_nuc_error[1])
+                    each_nuc_error[2] = int(each_nuc_error[2])
+                    each_nuc_error[3] = int(each_nuc_error[3])
+                    big = max(each_nuc_error)
+                    tmp_array.append(big)
+                score_points.append(tmp_array)
+                # quantile
+                for j,k in enumerate(tmp_array):
+                    if quality_score.has_key((j,k)):
+                        quality_score[(j, k)] += 1
                     else:
-                        point_avg = point_sum*1.0/step_average
-                        score.append(point_avg)
-                        point += 1
-                        point_sum = 0
-                        step_average = 0
+                        quality_score[(j, k)] = 1
+    else:
+        tmp_score = ''
+        for score_file in score_file_list:
+            for i, line in enumerate(open(score_file)):
+                if line.startswith('>'):
+                    if len(tmp_score) > 0:
+                        tmp_score = ['0'] + tmp_score.split()
+                        read_length = len(tmp_score)
+                        tmp_array = []
+                        if (tmp_varied_length is False):
+                            tmp_score.pop(0)
+                            score_points.append(tmp_score)
+                            tmp_array = tmp_score
+                        elif (read_length > 100):
+                            score_points_tmp = merge_to_20_datapoints(tmp_score)
+                            score_points.append(score_points_tmp)
+                            tmp_array = score_points_tmp
+                        for j, k in enumerate(tmp_array):
+                            if quality_score.has_key((j,k)):
+                                quality_score[(j,k)] += 1
+                            else:
+                                quality_score[(j,k)] = 1
+                    tmp_score = ''
+                else:
+                    tmp_score = tmp_score + ' ' + line
+            if len(tmp_score) > 0:
+                tmp_score = ['0'] + tmp_score.split()
+                read_length = len(tmp_score)
+                if (tmp_varied_length is False):
+                    tmp_score.pop(0)
+                    score_points.append(tmp_score)
+                elif (read_length > 100):
+                    score_points_tmp = merge_to_20_datapoints(tmp_score)
+                    score_points.append(score_points_tmp)
+                    tmp_array = score_points_tmp
+                for j, k in enumerate(tmp_array):
+                    if quality_score.has_key((j,k)):
+                        quality_score[(j,k)] += 1
+                    else:
+                        quality_score[(j,k)] = 1
 
-                if (step_average > 0):
-                    point_avg = point_sum*1.0/step_average
-                    score.append(point_avg)
-
-                if (len(score) > number_of_points):
-                    last_avg = 0
-                    for j in xrange(number_of_points-1,len(score)):
-                        last_avg += score[j]
-                    last_avg = last_avg/(len(score)-number_of_points+1)
-                else:    
-                    last_avg = score[-1]
-                score_points_tmp = []
-                for k in range(number_of_points-1):
-                    score_points_tmp.append(score[k])
-                score_points_tmp.append(last_avg)
-                score_points.append(score_points_tmp)
-                score_points_tmp = []
-
+    
+    """
+    # quantile
+    keys = quality_score.keys()
+    keys.sort()
+    for key in keys:
+        print key, quality_score[key]
+    """
+    
     # reverse the matrix, for R
+    tmp_array = []
     for i in range(number_of_points-1):
         for j in range(len(score_points)):
-            tmp_array.append(score_points[j][i])
+            tmp_array.append(int(score_points[j][i]))
         score_matrix.append(tmp_array)
         tmp_array = []
 
@@ -207,9 +226,8 @@ def generate_boxplot_figure():
     outfile_R_pdf = outfile_R_name 
     r.pdf(outfile_R_pdf)
     
-    #title = infile_score_name.split('/')[-1]
     title = "boxplot of quality scores"
-    if (seq_method=='solexa'):
+    if (tmp_varied_length is False):
         r.boxplot(score_matrix,xlab="location in read length",main=title)
     else:
         r.boxplot(score_matrix,xlab="percentage in read length",xaxt="n",main=title)
@@ -222,45 +240,12 @@ def generate_boxplot_figure():
         r.axis(1,x_old_range,x_new_range)
     
     r.dev_off()
-    
-    return 0
 
+    if (os.path.isdir(tmp_score_dir)):
+        for file_name in score_file_list:
+            os.remove(file_name)
+        os.removedirs(tmp_score_dir)
 
-# I/O
-infile_score_name = sys.argv[1].strip()
-outfile_R_name = sys.argv[2].strip()
+    r.quit(save = "no")
 
-# to unzip or not unzip file
-tmp_score_dir = ''
-score_file_list = []
-if (zipfile.is_zipfile(infile_score_name)): (tmp_score_dir, score_file_list) = unzip_files(infile_score_name)
-else: score_file_list = [infile_score_name]
-read_scorefile = read_input_files(score_file_list)
-if (os.path.isdir(tmp_score_dir)):
-    for file_name in score_file_list:
-        os.remove(file_name)
-    os.removedirs(tmp_score_dir)
-
-# detect whether it's tabular or fasta format
-if read_scorefile[0].startswith(">"):
-    seq_method = '454'
-else:
-    seq_method = 'solexa'
-
-# detect whether it's a sequence file 
-if re.match('[A-Z]', read_scorefile[1]):
-    stop_err("this is not a quality score file.")
-        
-# parse files
-if (seq_method == 'solexa'):
-    score_hash = parse_solexa_files(read_scorefile, 'score')
-    number_of_points = 36
-else: # the other two are both fasta format
-    score_hash = parse_fasta_format(read_scorefile)
-    number_of_points = 20
-
-print seq_method, number_of_points
-
-# R
-status = generate_boxplot_figure()
-r.quit(save = "no")
+if __name__=="__main__":__main__()

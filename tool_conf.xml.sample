@@ -318,6 +318,7 @@
   </section>
   <section name="Short Read Analysis" id="short_read_analysis">
     <tool file="metag_tools/trim_reads/1.0.0/short_reads_trim_seq.xml" />
-    <tool file="metag_tools/quality_score_distribution/1.0.0/short_reads_figure_score.xml" />
- </section>
+    <tool file="metag_tools/blat_wrapper/1.0.0/blat_wrapper.xml" />
+    <tool file="metag_tools/megablast_wrapper/1.0.0/megablast_wrapper.xml" />
+  </section>
 </toolbox>
