@@ -1,4 +1,4 @@
-<tool id="trim_reads" name="Trim Reads" version="2.0.0">
+<tool id="trim_reads" name="Trim Reads" version="1.0.0">
 <description>based on quality scores</description>
 
 <command interpreter="python">#if $sequencing_method_choice.sequencer=="454":#short_reads_trim_seq.py 454 $trim $length $output1 $sequencing_method_choice.input1 $sequencing_method_choice.input2 $sequencing_method_choice.input3
