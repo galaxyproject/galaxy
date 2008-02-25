@@ -179,6 +179,7 @@ lav = galaxy.datatypes.sequence:Lav
 maf = galaxy.datatypes.sequence:Maf
 pdf = galaxy.datatypes.images:Image,application/pdf
 png = galaxy.datatypes.images:Image,image/png
+qualityscore = galaxy.datatypes.qualityscore:QualityScore
 scf = galaxy.datatypes.images:Scf,application/octet-stream
 tabular = galaxy.datatypes.tabular:Tabular
 txt = galaxy.datatypes.data:Text

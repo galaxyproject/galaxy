@@ -5,7 +5,7 @@
 
 <inputs>
 <page>
-    <param name="input1" type="data" format="fasta,tabular,txtseq.zip" label="Quality score file" />
+    <param name="input1" type="data" format="qualityscore, txtseq.zip" label="Quality score file" />
 </page>
 </inputs>
 
@@ -15,16 +15,22 @@
 <!-- 
 <tests>
 	<test>
-		<param name="input1" value="solexa.qual" />
+		<param name="input1" value="solexa.qual" ftype="qualityscore" />
   		<output name="output1" file="solexaScore.pdf" />
 	</test>
 	<test>
-		<param name="input1" value="454.qual" />
+		<param name="input1" value="454.qual" ftype="qualityscore" />
 		<output name="output1" file="454Score.pdf" />
 	</test>
 </tests>
 -->
 <help>
+
+.. class:: warningmark
+
+Your file needs to be a specific Galaxy **qualityscore** datatype (unless it is in zip format). Please click on the pencil symbol in the history panel to change the file format. 
+
+-----
 
 **What it does**
 
