@@ -3,9 +3,9 @@
 import sys, os, time, ConfigParser
 from datetime import datetime, timedelta
 from optparse import OptionParser
-import galaxy.app
+import galaxy.model.mapping
 import pkg_resources
-
+        
 pkg_resources.require( "sqlalchemy>=0.3" )
 from sqlalchemy import eagerload
 
@@ -33,7 +33,9 @@ def main():
     configuration = {}
     for key, value in conf_parser.items( "app:main" ):
         configuration[key] = value
-    app = galaxy.app.UniverseApplication( global_conf = ini_file, **configuration )
+    database_connection = configuration['database_connection']
+    file_path = configuration['file_path']
+    app = CleanupDatasetsApplication( database_connection=database_connection, file_path=file_path )
     h = app.model.History
     d = app.model.Dataset
     cutoff_time = datetime.utcnow() - timedelta( days=options.days )
@@ -60,7 +62,6 @@ def main():
         else:
             print "# Datasets will NOT be removed from disk...\n"
         purge_datasets( d, cutoff_time, options.remove_from_disk )
-    app.shutdown()
     sys.exit(0)
 
 def info_delete_userless_histories( h, cutoff_time ):
@@ -253,6 +254,19 @@ def purge_dataset( dataset ):
     else:
         return "# Error: '%s' has dependencies, so it cannot be purged\n" %dataset.file_name
     return ""
+
+class CleanupDatasetsApplication( object ):
+    """Encapsulates the state of a Universe application"""
+    def __init__( self, database_connection=None, file_path=None ):
+        print >> sys.stderr, "python path is: " + ", ".join( sys.path )
+        if database_connection is None:
+            raise Exception( "CleanupDatasetsApplication requires a database_connection value" )
+        if file_path is None:
+            raise Exception( "CleanupDatasetsApplication requires a file_path value" )
+        self.database_connection = database_connection
+        self.file_path = file_path
+        # Setup the database engine and ORM
+        self.model = galaxy.model.mapping.init( self.file_path, self.database_connection, engine_options={}, create_tables=False )
 
 if __name__ == "__main__":
     main()
