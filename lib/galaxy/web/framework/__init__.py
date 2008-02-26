@@ -164,7 +164,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             if history is None or history.deleted:
                 history = self.new_history()
             self.__history = history
-        if create is True and history is None or history.deleted:
+        if create is True and ( history is None or history.deleted ):
             history = self.new_history()             
         return self.__history
     
