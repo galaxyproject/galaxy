@@ -161,10 +161,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             id = self.get_cookie( name='universe' )
             if id:
                 history = self.app.model.History.get( id )
-            if history is None:
+            if history is None or history.deleted:
                 history = self.new_history()
             self.__history = history
-        if create is True and history is None:
+        if create is True and history is None or history.deleted:
             history = self.new_history()             
         return self.__history
     
@@ -186,7 +186,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         return history
     
     def set_history( self, history ):
-        if history is None:
+        if history is None or history.deleted:
             self.set_cookie( name='universe', value='' )
         else:
             self.set_cookie( name='universe', value=history.id )
