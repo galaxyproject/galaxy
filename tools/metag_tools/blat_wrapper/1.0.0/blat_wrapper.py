@@ -58,11 +58,11 @@ def __main__():
             sys.exit()
     
         # check the query file, see whether all of them are legitimate sequence
-        if (nib_path):
+        if (nib_path and os.path.isdir(nib_path)):
             compress_files = os.listdir(nib_path)
             target_path = nib_path
         elif (twobit_path):
-            compress_files = twobit_path
+            compress_files = [twobit_path]
             target_path = ""
         else:
             print >> sys.stdout, "Requested genome build has no available sequence."
