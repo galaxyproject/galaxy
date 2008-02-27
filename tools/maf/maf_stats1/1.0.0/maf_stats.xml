@@ -9,7 +9,9 @@
     #end if
   </command>
   <inputs>
-    <param format="interval" name="input1" label="Interval File" type="data"/>
+    <param format="interval" name="input1" label="Interval File" type="data">
+      <validator type="unspecified_build" />
+    </param>
     <conditional name="maf_source_type">
       <param name="maf_source" type="select" label="MAF Source">
         <option value="cached" selected="true">Locally Cached Alignments</option>

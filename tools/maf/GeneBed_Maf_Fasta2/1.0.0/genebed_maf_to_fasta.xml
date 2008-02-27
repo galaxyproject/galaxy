@@ -5,7 +5,9 @@
 #end if
   </command>
   <inputs>
-    <param name="input1" type="data" format="bed" label="Gene BED File"/>
+    <param name="input1" type="data" format="bed" label="Gene BED File">
+      <validator type="unspecified_build" />
+    </param>
     <conditional name="maf_source_type">
       <param name="maf_source" type="select" label="MAF Source">
         <option value="cached" selected="true">Locally Cached Alignments</option>

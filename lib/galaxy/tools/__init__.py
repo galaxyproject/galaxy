@@ -769,7 +769,7 @@ class Tool:
                         errors[ input.name ] = old_errors[ input.name ]
                 else:
                     incoming_value = incoming.get( key, None )
-                    if ( incoming_value == 'None' or incoming_value == '?' ) and isinstance( input, SelectToolParameter ) and input.is_dynamic:
+                    if ( incoming_value == 'None' or incoming_value == '?' ) and ( isinstance( input, SelectToolParameter ) or isinstance( input, DataToolParameter ) ) and input.is_dynamic:
                         # FIXME: This is a HACK, but is necessary because the
                         # values in incoming are not yet set by the user when
                         # the select list is dynamically generated.

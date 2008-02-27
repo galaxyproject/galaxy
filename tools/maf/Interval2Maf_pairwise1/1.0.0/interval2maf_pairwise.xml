@@ -2,7 +2,9 @@
   <description>given a set of genomic intervals</description>
   <command interpreter="python2.4">interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafType=$mafType --interval_file=$input1 --output_file=$out_file1 --indexLocation=/depot/data2/galaxy/maf_pairwise.loc</command>
   <inputs>
-    <param name="input1" type="data" format="interval" label="Interval File"/>
+    <param name="input1" type="data" format="interval" label="Interval File">
+      <validator type="unspecified_build" />
+    </param>
     <param name="mafType" type="select" label="Choose MAF source">
       <options from_file="/depot/data2/galaxy/maf_pairwise.loc">
         <filter type="data_meta" data_ref="input1" key="build" />

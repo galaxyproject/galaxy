@@ -746,7 +746,8 @@ class DataToolParameter( ToolParameter ):
         if options is None:
             self.options = None
         else:
-            self.options = dynamic_options.DynamicOptions( options, parameter_type = type( self ) )
+            self.options = dynamic_options.DynamicOptions( options, parameter_type=type( self ) )
+        self.is_dynamic = self.options is not None
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         filter_key = filter_value = None
@@ -756,7 +757,8 @@ class DataToolParameter( ToolParameter ):
         history = trans.history
         assert history is not None, "DataToolParameter requires a history"
         if value is not None:
-            if type( value ) != list: value = [ value ]
+            if type( value ) != list:
+                value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change )
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( datasets, parent_hid ):
@@ -775,13 +777,11 @@ class DataToolParameter( ToolParameter ):
         dataset_collector( history.datasets, None )
         some_data = bool( field.options )
         if some_data:
-            if value is None:
+            if value is None or len( field.options ) == 1:
                 # Ensure that the last item is always selected
-                a, b, c = field.options[-1]; field.options[-1] = a, b, True
-        else:
-            # HACK: we should just disable the form or something
-            field.add_option( "no data has the proper type", '' )                
-        if self.optional == True:
+                a, b, c = field.options[-1]
+                field.options[-1] = a, b, True
+        elif self.optional:
             field.add_option( "Selection is Optional", 'None', True )
         return field
 
@@ -823,7 +823,7 @@ class DataToolParameter( ToolParameter ):
         if trans.workflow_building_mode:
             return None
         if not value:
-            raise ValueError( "A data of the appropriate type is required" ) 
+            raise ValueError( "History does not include a dataset of the required format / build" ) 
         if value in [None, "None"]:
             temp_data = trans.app.model.Dataset( extension = 'data' )
             temp_data.state = temp_data.states.OK
@@ -863,6 +863,15 @@ class DataToolParameter( ToolParameter ):
             return "%s: %s" % ( value.hid, value.name )
         else:
             return "No dataset"
+
+    def get_dependencies( self ):
+        """
+        Get the *names* of the other params this param depends on.
+        """
+        if self.options:
+            return self.options.get_dependency_names()
+        else:
+            return []
 
 # class RawToolParameter( ToolParameter ):
 #     """

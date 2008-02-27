@@ -6,7 +6,9 @@
     #end if
   </command>
   <inputs>
-    <param format="interval" name="input1" type="data" label="Interval file"/>
+    <param format="interval" name="input1" type="data" label="Interval file">
+      <validator type="unspecified_build" message="Unspecified build, this tool works with data from genome builds hg16, hg17 or hg18. Click the pencil icon in your history item to set the genome build."/>
+    </param>
     <conditional name="score_source_type">
       <param name="score_source" type="select" label="Score Source">
         <option value="cached" selected="true">Locally Cached Scores</option>

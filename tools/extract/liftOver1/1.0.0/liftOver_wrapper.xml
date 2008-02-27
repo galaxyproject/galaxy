@@ -2,7 +2,9 @@
   <description> between assemblies and genomes</description>
   <command interpreter="python">liftOver_wrapper.py $input "$out_file1" "$out_file2" $dbkey $to_dbkey</command>
   <inputs>
-    <param format="bed" name="input" type="data" label="Convert co-ordinates of" />
+    <param format="bed" name="input" type="data" label="Convert co-ordinates of">
+      <validator type="unspecified_build" />
+    </param>
     <param name="to_dbkey" type="select" label="To">
       <options from_file="/depot/data2/galaxy/liftOver.loc">
         <filter type="data_meta" data_ref="input" key="build" />

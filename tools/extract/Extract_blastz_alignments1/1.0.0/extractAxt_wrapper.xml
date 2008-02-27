@@ -4,6 +4,7 @@
   <inputs>
     <param format="interval" name="input" type="data" label="Between regions of Query"/>
     <param name="species" type="select" label="and one of these genomes">
+      <validator type="unspecified_build" />
       <options from_file="/depot/data2/galaxy/alignseq.loc" >
         <filter type="data_meta" data_ref="input" key="build" />
         <filter type="column" name="build_col" value="0" />

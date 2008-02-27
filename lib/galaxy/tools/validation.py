@@ -146,9 +146,35 @@ class MetadataValidator( Validator ):
     """
     Validator that checks for missing metadata
     """
+    def __init__( self, message=None ):
+        self.message = message
+    @classmethod
+    def from_element( cls, elem ):
+        return cls( elem.get( 'message', None ) )
     def validate( self, value, history=None ):
         if value and value.missing_meta():
-            raise ValueError( "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes" )
+            if self.message is None:
+                self.message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
+            raise ValueError( self.message )
+
+class UnspecifiedBuildValidator( Validator ):
+    """
+    Validator that checks for missing metadata
+    """
+    def __init__( self, message=None ):
+        self.message = message
+    @classmethod
+    def from_element( cls, elem ):
+        return cls( elem.get( 'message', None ) )
+    def validate( self, value, history=None ):
+        if value:
+            dbkey = value.metadata.dbkey
+            if isinstance( dbkey, list ):
+                dbkey = dbkey[0]
+        if dbkey == '?':
+            if self.message is None:
+                self.message = "Unspecified genome build, click the pencil icon in the history item to set the genome build"
+            raise ValueError( self.message )
 
 class MetadataInFileColumnValidator( Validator ):
     """
@@ -185,6 +211,7 @@ validator_types = dict( expression=ExpressionValidator,
                         in_range=InRangeValidator,
                         length=LengthValidator,
                         metadata=MetadataValidator,
+                        unspecified_build=UnspecifiedBuildValidator,
                         dataset_metadata_in_file=MetadataInFileColumnValidator )
                         
 def get_suite():

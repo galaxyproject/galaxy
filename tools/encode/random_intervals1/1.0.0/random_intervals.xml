@@ -2,7 +2,9 @@
 <description>create a random set of intervals</description>
   <command interpreter="python2.4">random_intervals_no_bits.py $regions $input2 $input1 $out_file1 $input2_chromCol $input2_startCol $input2_endCol $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol $use_mask $strand_overlaps</command>
   <inputs>
-    <param name="input1" type="data" format="interval" label="File to Mimick"/>
+    <param name="input1" type="data" format="interval" label="File to Mimick">
+      <validator type="unspecified_build" message="Unspecified build, this tool works with data from genome builds hg16 or hg17. Click the pencil icon in your history item to set the genome build."/>
+    </param>
     <param name="input2" type="data" format="interval" label="Intervals to Mask"/>
     <param name="use_mask" type="select" label="Use mask">
       <option value="no_mask">No</option>

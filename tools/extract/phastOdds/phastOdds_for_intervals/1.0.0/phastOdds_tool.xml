@@ -2,7 +2,9 @@
   <description>for each interval</description>
   <command interpreter="python2.4">get_scores_galaxy.py $per_col ${score_file}.h5 ${score_file}.mapping.bed $input $output $input_chromCol $input_startCol $input_endCol</command>
   <inputs>
-    <param format="interval" name="input" type="data" label="Interval file"/>
+    <param format="interval" name="input" type="data" label="Interval file">
+      <validator type="unspecified_build" message="Unspecified build, this tool works with data from genome builds hg17. Click the pencil icon in your history item to set the genome build."/>
+    </param>
     <param name="score_file" type="select" label="Available datasets">
       <options from_file="/depot/data2/galaxy/phastOdds.loc" >
         <filter type="data_meta" data_ref="input" key="build" />
