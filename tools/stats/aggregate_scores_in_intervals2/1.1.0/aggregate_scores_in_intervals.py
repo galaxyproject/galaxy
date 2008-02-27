@@ -62,7 +62,7 @@ def load_scores_wiggle( fname ):
         for chrom, pos, val in bx.wiggle.Reader( UCSCOutWrapper(open( fname ) ) ):
             if chrom not in scores_by_chrom:
                 scores_by_chrom[chrom] = BinnedArray()
-                scores_by_chrom[chrom][pos] = val
+            scores_by_chrom[chrom][pos] = val
     except UCSCLimitException:
         # Wiggle data was truncated, at the very least need to warn the user.
         print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
