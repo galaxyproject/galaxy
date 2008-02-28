@@ -79,5 +79,6 @@ def __main__():
         command = 'blat ' + detail_file_path + ' ' + query_file + ' ' + output_tempfile + ' -oneOff=' + one_off + ' -tileSize=' + tile_size + ' -minIdentity=' + min_iden + ' -mask=lower -noHead -out=pslx 2>&1'
         os.system(command)
         os.system('cat %s >> %s' %(output_tempfile, output_file))
-
+        os.remove(output_tempfile)
+        
 if __name__ == '__main__': __main__()
