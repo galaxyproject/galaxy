@@ -72,11 +72,6 @@
     <tool file="patmat/findcluster_mysql.xml" />
   </section>
   <section name="Fetch Sequences" id="fetchSeq">
-    <!-- 
-    These are deprecated
-    <tool file="extract/Extract_genomic_DNA_1/1.0.0/fasta-subseq-wrapper.xml" />
-    <tool file="extract/Extract_genomic_DNA_1/1.0.0/twoBitToFa_wrapper.xml" />
-    -->
     <tool file="extract/Extract_genomic_DNA_1/2.0.0/extract_genomic_dna.xml" />
   </section>
   <section name="Fetch Alignments" id="fetchAlign">
@@ -94,7 +89,7 @@
   </section>
   <section name="Get Genomic Scores" id="scores">
     <tool file="stats/wiggle2simple1/1.0.0/wiggle_to_simple.xml" />
-    <tool file="stats/aggregate_scores_in_intervals2/1.1.0/aggregate_binned_scores_in_intervals.xml" />
+    <tool file="stats/aggregate_scores_in_intervals2/1.1.1/aggregate_binned_scores_in_intervals.xml" />
     <tool file="extract/phastOdds/phastOdds_for_intervals/1.0.0/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
@@ -135,66 +130,6 @@
     <tool file="hyphy/hyphy_nj_tree_wrapper1/1.0.0/hyphy_nj_tree_wrapper.xml" />
     <tool file="hyphy/hyphy_dnds_wrapper1/1.0.0/hyphy_dnds_wrapper.xml" />
  </section>
- <!--
- These are deprecated
- <section name="EMBOSS" id="EMBOSSLite">
-    <tool file="emboss/emboss_cai.xml" />
-    <tool file="emboss/emboss_cai_custom.xml" />
-    <tool file="emboss/emboss_codcmp.xml" />
-    <tool file="emboss/emboss_compseq.xml" />
-    <tool file="emboss/emboss_cpgplot.xml" />
-    <tool file="emboss/emboss_cpgreport.xml" />
-    <tool file="emboss/emboss_cusp.xml" />
-    <tool file="emboss/emboss_cutseq.xml" />
-    <tool file="emboss/emboss_dan.xml" />
-    <tool file="emboss/emboss_einverted.xml" />
-    <tool file="emboss/emboss_equicktandem.xml" />
-    <tool file="emboss/emboss_est2genome.xml" />
-    <tool file="emboss/emboss_etandem.xml" />
-    <tool file="emboss/emboss_freak.xml" />
-    <tool file="emboss/emboss_fuzznuc.xml" />
-    <tool file="emboss/emboss_fuzztran.xml" />
-    <tool file="emboss/emboss_getorf.xml" />
-    <tool file="emboss/emboss_isochore.xml" />
-    <tool file="emboss/emboss_msbar.xml" />
-    <tool file="emboss/emboss_needle.xml" />
-    <tool file="emboss/emboss_newcpgreport.xml" />
-    <tool file="emboss/emboss_newcpgseek.xml" />
-    <tool file="emboss/emboss_newseq.xml" />
-    <tool file="emboss/emboss_notseq.xml" />
-    <tool file="emboss/emboss_nthseq.xml" />
-    <tool file="emboss/emboss_palindrome.xml" />
-    <tool file="emboss/emboss_pasteseq.xml" />
-    <tool file="emboss/emboss_plotorf.xml" />
-    <tool file="emboss/emboss_polydot.xml" />
-    <tool file="emboss/emboss_prettyseq.xml" />
-    <tool file="emboss/emboss_primersearch.xml" />
-    <tool file="emboss/emboss_revseq.xml" />
-    <tool file="emboss/emboss_seqmatchall.xml" />
-    <tool file="emboss/emboss_showorf.xml" />
-    <tool file="emboss/emboss_shuffleseq.xml" />
-    <tool file="emboss/emboss_sirna.xml" />
-    <tool file="emboss/emboss_sixpack.xml" />
-    <tool file="emboss/emboss_splitter.xml" />
-    <tool file="emboss/emboss_stretcher.xml" />
-    <tool file="emboss/emboss_supermatcher.xml" />
-    <tool file="emboss/emboss_syco.xml" />
-    <tool file="emboss/emboss_tranalign.xml" />
-    <tool file="emboss/emboss_transeq.xml" />
-    <tool file="emboss/emboss_trimest.xml" />
-    <tool file="emboss/emboss_trimseq.xml" />
-    <tool file="emboss/emboss_union.xml" />
-    <tool file="emboss/emboss_vectorstrip.xml" />
-    <tool file="emboss/emboss_water.xml" />
-    <tool file="emboss/emboss_wobble.xml" />
-    <tool file="emboss/emboss_wordcount.xml" />
-    <tool file="emboss/emboss_wordmatch.xml" />
-    <tool file="emboss/emboss_backtranseq.xml" />
-    <tool file="emboss/emboss_biosed.xml" />
-    <tool file="emboss/emboss_charge.xml" />
-    <tool file="emboss/emboss_checktrans.xml" />
-  </section>
-  -->
   <!--
   TODO: uncomment the following EMBOSS section whenever 
   moving to test, but comment it in .sample to eliminate 

@@ -1,4 +1,4 @@
-<tool id="aggregate_scores_in_intervals2" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints" version="1.1.0">
+<tool id="aggregate_scores_in_intervals2" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints" version="1.1.1">
   <description>Appends the average, min, max of datapoints per interval</description>
   <command interpreter="python2.4">
     #if $score_source_type.score_source == "user":#aggregate_scores_in_intervals.py $score_source_type.input2 $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1
@@ -6,7 +6,9 @@
     #end if
   </command>
   <inputs>
-    <param format="interval" name="input1" type="data" label="Interval file"/>
+    <param format="interval" name="input1" type="data" label="Interval file">
+      <validator type="unspecified_build" message="Unspecified build, this tool works with data from genome builds hg16, hg17 or hg18. Click the pencil icon in your history item to set the genome build."/>
+    </param>
     <conditional name="score_source_type">
       <param name="score_source" type="select" label="Score Source">
         <option value="cached" selected="true">Locally Cached Scores</option>
