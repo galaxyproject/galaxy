@@ -18,7 +18,9 @@
         <option value="user">Alignments in Your History</option>
       </param>
       <when value="user">
-        <param format="maf" name="input2" label="MAF File" type="data"/>
+        <param format="maf" name="input2" label="MAF File" type="data">
+          <validator type="dataset_ok_validator" />
+        </param>
       </when>
       <when value="cached">
         <param name="mafType" type="select" label="MAF Type">

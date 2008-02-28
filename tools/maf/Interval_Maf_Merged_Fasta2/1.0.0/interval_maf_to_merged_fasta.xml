@@ -15,13 +15,15 @@
               <option value="user">Alignments in Your History</option>
             </param>
             <when value="user">
-              <param name="maf_file" type="data" format="maf" label="MAF File" />
-                <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
-                  <options>
-                    <filter type="data_meta" data_ref="maf_file" />
-                    <filter type="param" name="maf_source" value="user" />
-                  </options>
-                </param>
+              <param name="maf_file" type="data" format="maf" label="MAF File">
+                <validator type="dataset_ok_validator" />
+              </param>
+              <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
+                <options>
+                  <filter type="data_meta" data_ref="maf_file" />
+                  <filter type="param" name="maf_source" value="user" />
+                </options>
+              </param>
             </when>
             <when value="cached">
               <param name="maf_identifier" type="select" label="MAF Type">

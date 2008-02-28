@@ -4,6 +4,7 @@ Classes related to parameter validation.
 
 import re, logging
 from elementtree.ElementTree import XML
+from galaxy import model
 
 log = logging.getLogger( __name__ )
 
@@ -142,6 +143,21 @@ class LengthValidator( Validator ):
         if self.max is not None and len( value ) > self.max:
             raise ValueError( self.message or ( "Must have length no more than %d" % self.max ) )
 
+class DatasetOkValidator( Validator ):
+    """
+    Validator that checks if a dataset is in an 'ok' state
+    """
+    def __init__( self, message=None ):
+        self.message = message
+    @classmethod
+    def from_element( cls, elem ):
+        return cls( elem.get( 'message', None ) )
+    def validate( self, value, history=None ):
+        if value and value.state != model.Dataset.states.OK:
+            if self.message is None:
+                self.message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
+            raise ValueError( self.message )
+
 class MetadataValidator( Validator ):
     """
     Validator that checks for missing metadata
@@ -212,7 +228,8 @@ validator_types = dict( expression=ExpressionValidator,
                         length=LengthValidator,
                         metadata=MetadataValidator,
                         unspecified_build=UnspecifiedBuildValidator,
-                        dataset_metadata_in_file=MetadataInFileColumnValidator )
+                        dataset_metadata_in_file=MetadataInFileColumnValidator,
+                        dataset_ok_validator=DatasetOkValidator )
                         
 def get_suite():
     """Get unittest suite for this module"""

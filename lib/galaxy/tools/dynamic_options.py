@@ -9,14 +9,6 @@ class DynamicOptions( object ):
     def __init__( self, elem, parameter_type = None  ):
         self.parameter_type = parameter_type
         self.from_file_data = None
-        # FIXME: Pushing these things in as options ends up being pretty ugly. 
-        # We should find a way to make this work through the validation mechanism.
-        self.no_data_option = [ ( 'No data available for this build', 'None', True ) ]
-        self.no_data_option_not_selected = [ ( 'No data available for this build', 'None', False ) ]
-        self.no_elems_option = [ ( 'No elements to display, please choose another column', 'None', True ) ]
-        self.unspecified_build_option = [ ( 'unspecified', '?', True ) ]
-        self.build_not_set_option = [ ( 'Build not set, click the pencil icon in your history item to set the build', 'None', True ) ]
-        self.wait_for_maf_option = [ ( 'You must wait for the MAF file to be created before you can use this tool.', 'None', True ) ]
         self.from_file = elem.get( 'from_file', None )
         if self.from_file is not None:
             self.from_file = self.from_file.strip()
@@ -76,7 +68,7 @@ class DynamicOptions( object ):
     def get_unique_elems( self, elems ): 
         seen = set()
         return [ x for x in elems if x not in seen and not seen.add( x ) ]
-    def get_options( self, trans, other_values, must_be_valid=False ):
+    def get_options( self, trans, other_values ):
         filters = {}
         key = None
         # Check for filters and build a dictionary from them
@@ -103,10 +95,6 @@ class DynamicOptions( object ):
                     elif key == 'species': 
                         value = dataset.metadata.species
                 filters[ 'data_meta' ][ 'value' ] = value
-                if self.data_file == 'maf_index.loc' and key == 'build' and value == '?':
-                    if must_be_valid: 
-                        return []
-                    return self.build_not_set_option
             elif filter_type == 'param_meta':
                 filters[ 'param_meta' ] = {}
                 value = self.get_param_ref_value( trans, other_values )
@@ -154,23 +142,16 @@ class DynamicOptions( object ):
             if maf_source == 'cached':
                 maf_uid = filters[ 'param_meta' ][ 'value' ]
                 if maf_uid in [ None, 'None' ]:
-                    if must_be_valid: 
-                        return []
-                    if maf_uid is None: 
-                        return self.no_data_option
-                    if maf_uid == 'None': 
-                        return self.build_not_set_option
-                return self.generate_for_maf( maf_uid, '\t', must_be_valid=must_be_valid )
+                    return []
+                return self.generate_for_maf( maf_uid, '\t' )
             elif maf_source == 'user':
                 dataset = self.get_data_ref_value( trans, other_values )
-                if dataset is None: 
-                    return self.wait_for_maf_option
                 filters[ 'data_meta' ][ 'key' ] = 'species'
                 filters[ 'data_meta' ][ 'value' ] = dataset.metadata.species
         except:
             pass
-        return self.generate_options( filters, must_be_valid=must_be_valid )
-    def generate_options( self, filters={}, sep='\t', must_be_valid=False ):
+        return self.generate_options( filters )
+    def generate_options( self, filters={}, sep='\t' ):
         try: 
             key = filters[ 'data_meta' ][ 'key' ]
         except:
@@ -192,14 +173,14 @@ class DynamicOptions( object ):
             build_col = int( filters[ 'columns' ][ 'build_col' ].strip() )
             name_col = int( filters[ 'columns' ][ 'name_col' ] )
             value_col = int( filters[ 'columns' ][ 'value_col' ] )
-            return self.generate_for_build( build, build_col, name_col, value_col, sep, must_be_valid=must_be_valid )
+            return self.generate_for_build( build, build_col, name_col, value_col, sep )
         else: # key is None
             if self.data_file == 'datatypes_registry':
                 return self.generate_from_datatypes_registry()
             elif self.data_file == 'encode_datasets.loc':
                 encode_group = filters[ 'params' ][ 'encode_group' ]
                 build = filters[ 'params' ][ 'build' ]
-                return self.generate_for_encode( encode_group, build, sep, must_be_valid=must_be_valid )
+                return self.generate_for_encode( encode_group, build, sep )
             elif self.data_file == 'microbial_data.loc':
                 if self.from_file_data is None: 
                     self.load_microbial_data()
@@ -215,7 +196,7 @@ class DynamicOptions( object ):
                     feature = filters[ 'params' ][ 'feature' ]
                 except: 
                     feature = None
-                return self.generate_for_microbial( kingdom, org, feature, must_be_valid=must_be_valid )
+                return self.generate_for_microbial( kingdom, org, feature )
             else:
                 name_col = int( filters[ 'columns' ][ 'name_col' ] )
                 value_col = int( filters[ 'columns' ][ 'value_col' ] )
@@ -231,7 +212,7 @@ class DynamicOptions( object ):
             label = format.capitalize()
             options.append( ( label, format, False ) )
         return options
-    def generate_for_encode( self, encode_group, build, sep, must_be_valid=False ):
+    def generate_for_encode( self, encode_group, build, sep ):
         options = []
         def generate():
             encode_sets = {}
@@ -308,19 +289,12 @@ class DynamicOptions( object ):
                         encode_sets[ group ][ build ][ i ] = ( description, uid, selected )        
             return encode_sets
         d = generate()
-        if len( d ) < 1:
-            if must_be_valid: 
-                return []
-            return self.no_data_option_not_selected
-        else:
-            try: 
-                options = d[ encode_group ][ build ][ 0: ]
-            except:
-                if must_be_valid: 
-                    return []
-                return self.no_data_option_not_selected
+        try: 
+            options = d[ encode_group ][ build ][ 0: ]
+        except:
+            return []
         return options
-    def generate_for_microbial( self, kingdom=None, org=None, feature=None, must_be_valid=False ):
+    def generate_for_microbial( self, kingdom=None, org=None, feature=None ):
         options = []
         if not kingdom and not org and not feature:
             kingdoms = self.from_file_data.keys()
@@ -437,7 +411,7 @@ class DynamicOptions( object ):
         for s in species:
             options.append( ( s, s, False ) )
         return options
-    def generate_for_maf( self, maf_uid, sep, must_be_valid=False ):
+    def generate_for_maf( self, maf_uid, sep ):
         options = []
         d = {}
         for line in open( self.from_file ):
@@ -460,20 +434,14 @@ class DynamicOptions( object ):
                     continue
         for key in d[ maf_uid ][ 'builds' ]:
             options.append( ( key, key, False ) )
-        if not options:
-            if must_be_valid: 
-                return []
-            return self.no_data_option
         return options
-    def generate_from_dataset( self, file_name, value_col, sep, must_be_valid=False ):
+    def generate_from_dataset( self, file_name, value_col, sep ):
         options = []
         elem_list = []
         try: 
             in_file = open( file_name, "r" )
         except:
-            if must_be_valid: 
-                return []
-            return self.no_data_option
+            return []
         try:
             for line in in_file:
                 line = line.rstrip( "\r\n" )
@@ -484,14 +452,12 @@ class DynamicOptions( object ):
             pass
         in_file.close()
         if not( elem_list ):
-            if must_be_valid: 
-                return []
-            return self.no_elems_option
+            return []
         elem_list = self.get_unique_elems( elem_list )
         for elem in elem_list:
             options.append( ( elem, elem, False ) )
         return options
-    def generate_for_build( self, build, build_col, name_col, value_col, sep, must_be_valid=False ):
+    def generate_for_build( self, build, build_col, name_col, value_col, sep ):
         options = []
         d = {}
         for line in open( self.from_file ):
@@ -552,14 +518,6 @@ class DynamicOptions( object ):
             for key in d:
                 if build in d[ key ][ 'builds' ]:
                     options.append( ( d[ key ][ 'description' ], key, False ) )
-            if not options:
-                if must_be_valid: 
-                    return []
-                return self.no_data_option
-        if not options: 
-            if must_be_valid: 
-                return []
-            return self.unspecified_build_option
         return options
     def generate( self, name_col, value_col, sep ):
         options = []
