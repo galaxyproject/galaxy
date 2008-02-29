@@ -13,51 +13,40 @@
       </param>
       <when value="0">
         <param name="feature" type="select" multiple="true" label="Select features" >
-          <options>
-            <filter type="data_meta" data_ref="input1" key="file_name" />
-            <filter type="column" name="value_col" value="0" />
+          <options from_file="data_ref" value_col="0">
+            <filter type="data_meta" data_ref="input1" />
           </options>
         </param> 
       </when>
       <when value="1">
         <param name="feature" type="select" multiple="true" label="Select features" >
-          <options>
-            <filter type="data_meta" data_ref="input1" key="file_name" />
-            <filter type="column" name="value_col" value="1" />
+          <options from_file="data_ref" value_col="1">
+            <filter type="data_meta" data_ref="input1" />
           </options>
-        </param>         	
+        </param>        	
       </when>
       <when value="2">
         <param name="feature" type="select" multiple="true" label="Select features" >
-          <options>
-            <filter type="data_meta" data_ref="input1" key="file_name" />
-            <filter type="column" name="value_col" value="2" />
+          <options from_file="data_ref" value_col="2">
+            <filter type="data_meta" data_ref="input1" />
           </options>
-        </param>          	
+        </param> 
       </when>
       <when value="6">
         <param name="feature" type="select" multiple="true" label="Select features" >
-          <options>
-            <filter type="data_meta" data_ref="input1" key="file_name" />
-            <filter type="column" name="value_col" value="6" />
+          <options from_file="data_ref" value_col="6">
+            <filter type="data_meta" data_ref="input1" />
           </options>
-        </param>           	
+        </param>         	
       </when>
       <when value="7">
         <param name="feature" type="select" multiple="true" label="Select features" >
-          <options>
-            <filter type="data_meta" data_ref="input1" key="file_name" />
-            <filter type="column" name="value_col" value="7" />
+          <options from_file="data_ref" value_col="7">
+            <filter type="data_meta" data_ref="input1" />
           </options>
-        </param>              	
+        </param>            	
       </when>
     </conditional>
-    <!--
-    <param name="out_format" type="select" label="Output format">
-      <option value="GFF" selected="true">GFF</option>
-      <option value="BED">BED</option>
-    </param>
-    -->
   </inputs>
   <outputs>
     <data format="gff" name="out_file1" />

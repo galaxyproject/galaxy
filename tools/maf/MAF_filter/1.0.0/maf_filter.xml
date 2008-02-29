@@ -7,7 +7,7 @@
       <repeat name="maf_filters" title="Filter">
         <param name="species1" type="select" label="When Species" multiple="false">
           <options>
-            <filter type="data_meta" data_ref="input1" key="species" />
+            <filter type="data_meta" data_ref="input1" meta_key="species" />
           </options>
         </param>
         <conditional name="species1_attributes">
@@ -27,7 +27,7 @@
             <repeat name="filter_condition" title="Filter Condition">
               <param name="species2" type="select" label="Species" multiple="false">
                 <options>
-                  <filter type="data_meta" data_ref="input1" key="species" />
+                  <filter type="data_meta" data_ref="input1" meta_key="species" />
                 </options>
               </param>
               <conditional name="species2_attributes">
@@ -64,7 +64,7 @@
             <repeat name="filter_condition" title="Filter Condition">
               <param name="species2" type="select" label="Species" multiple="false">
                 <options>
-                  <filter type="data_meta" data_ref="input1" key="species" />
+                  <filter type="data_meta" data_ref="input1" meta_key="species" />
                 </options>
               </param>
               <conditional name="species2_attributes">

@@ -769,16 +769,6 @@ class Tool:
                         errors[ input.name ] = old_errors[ input.name ]
                 else:
                     incoming_value = incoming.get( key, None )
-                    if ( incoming_value == 'None' or incoming_value == '?' ) and ( isinstance( input, SelectToolParameter ) or isinstance( input, DataToolParameter ) ) and input.is_dynamic:
-                        # FIXME: This is a HACK, but is necessary because the
-                        # values in incoming are not yet set by the user when
-                        # the select list is dynamically generated.
-                        legal_values = input.get_legal_values( trans, context )
-                        if len( legal_values ) > 0 and incoming_value not in legal_values:
-                            values = []
-                            for v in legal_values: values.append( v )
-                            values.sort()
-                            incoming_value = values[0]
                     value, error = self.check_param( trans, input, incoming_value, context )
                     if error:
                         errors[ input.name ] = error

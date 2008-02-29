@@ -5,7 +5,7 @@
     <param format="maf" name="input1" type="data" label="MAF file to convert"/>
     <param name="species" type="select" label="Select species" display="checkboxes" multiple="true" help="a separate history item will be created for each checked species">
       <options>
-        <filter type="data_meta" data_ref="input1" key="species" />
+        <filter type="data_meta" data_ref="input1" meta_key="species" />
       </options>
     </param>
     <param name="complete_blocks" type="select" label="Exclude blocks which have a requested species missing">

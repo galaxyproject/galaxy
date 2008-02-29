@@ -8,13 +8,13 @@
     <param name="hg17" type="select" display="checkboxes" multiple="true">
       <options from_file="/depot/data2/galaxy/encode_datasets.loc">
         <filter type="param" name="encode_group" value="CC" />
-        <filter type="param" name="build" value="hg17" />
+        <filter type="param" name="dbkey" value="hg17" />
       </options>
     </param> 
     <param name="hg16" type="select" display="checkboxes" multiple="true">
       <options from_file="/depot/data2/galaxy/encode_datasets.loc">
         <filter type="param" name="encode_group" value="CC" />
-        <filter type="param" name="build" value="hg16" />
+        <filter type="param" name="dbkey" value="hg16" />
       </options>
     </param> 
   </inputs>

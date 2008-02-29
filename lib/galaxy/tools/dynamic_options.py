@@ -8,7 +8,11 @@ class DynamicOptions( object ):
     """Handles dynamically generated SelectToolParameter options"""
     def __init__( self, elem, parameter_type = None  ):
         self.parameter_type = parameter_type
+        self.data_ref = None
+        self.param_ref = None
         self.from_file_data = None
+
+        # Parse the options tag
         self.from_file = elem.get( 'from_file', None )
         if self.from_file is not None:
             self.from_file = self.from_file.strip()
@@ -19,17 +23,26 @@ class DynamicOptions( object ):
                 self.data_file = self.from_file
         else: 
             self.data_file = None
+        self.name_col = elem.get( 'name_col', None )
+        if self.name_col is not None:
+            self.name_col = int( self.name_col.strip() )
+        self.value_col = elem.get( 'value_col', None )
+        if self.value_col is not None:
+            self.value_col = int( self.value_col.strip() )
+        
+        # Parse the filter tags
         self.filters = elem.findall( 'filter' )
-        self.data_ref = None
-        self.param_ref = None
         for filter in self.filters:
             filter_type = filter.get( 'type', None )
             assert filter_type is not None, "Required 'type' attribute missing from filter"
-            if filter_type.strip() == 'data_meta':
+            filter_type = filter_type.strip()
+
+            if filter_type == 'data_meta':
                 self.data_ref = filter.get( 'data_ref', None )
                 assert self.data_ref is not None, "Required 'data_ref' attribute missing from 'data_meta' filter"
                 self.data_ref = self.data_ref.strip()
-            elif filter_type.strip() == 'param_meta':
+
+            elif filter_type == 'param_meta':
                 self.param_ref = filter.get( 'param_ref', None )
                 assert self.param_ref is not None, "Required 'param_ref' attribute missing from 'param_meta' filter"
                 self.param_ref = self.param_ref.strip()
@@ -74,31 +87,38 @@ class DynamicOptions( object ):
         # Check for filters and build a dictionary from them
         for filter in self.filters:
             filter_type = filter.get( 'type', None )
-            assert filter_type is not None, "type attribute missing from filter"
+            assert filter_type is not None, "'type' attribute missing from filter"
             filter_type = filter_type.strip()
+
             if filter_type == 'data_meta':
                 filters[ 'data_meta' ] = {}
                 dataset = self.get_data_ref_value( trans, other_values )
                 if dataset is None: 
                     return []
-                key = filter.get( 'key', None )
-                if key is not None:
-                    filters[ 'data_meta' ][ 'key' ] = key.strip()
-                value = filter.get( 'value', None )
-                if value is not None: 
-                    value = value.strip()
-                else:
-                    if key == 'build': 
-                        value = dataset.get_dbkey()
-                    elif key == 'file_name': 
-                        value = dataset.get_file_name()
-                    elif key == 'species': 
-                        value = dataset.metadata.species
-                filters[ 'data_meta' ][ 'value' ] = value
+                # meta_key is optional
+                meta_key = filter.get( 'meta_key', None )
+                if meta_key is not None:
+                    filters[ 'data_meta' ][ 'meta_key' ] = meta_key.strip()
+                    if meta_key == 'dbkey':
+                        meta_value = dataset.get_dbkey()
+                    elif meta_key == 'species': 
+                        meta_value = dataset.metadata.species
+                    filters[ 'data_meta' ][ 'meta_value' ] = meta_value
+                elif self.data_file == 'data_ref':
+                    # We'll be reading data directly from the input dataset
+                    filters[ 'data_meta' ][ 'meta_key' ] = 'data_ref'
+                    self.from_file = dataset.get_file_name()
+                    filters[ 'data_meta' ][ 'meta_value' ] = self.from_file
+                # meta_key_col is optional
+                meta_key_col = filter.get( 'meta_key_col', None )
+                if meta_key_col is not None:
+                    filters[ 'data_meta' ][ 'meta_key_col' ] = int( meta_key_col.strip() )
+
             elif filter_type == 'param_meta':
                 filters[ 'param_meta' ] = {}
-                value = self.get_param_ref_value( trans, other_values )
-                filters[ 'param_meta' ][ 'value' ] = value
+                meta_value = self.get_param_ref_value( trans, other_values )
+                filters[ 'param_meta' ][ 'meta_value' ] = meta_value
+
             elif filter_type == 'param_value':
                 n = filter.get( 'name', None )
                 assert n is not None, "param_value filters require a 'name' attribute"
@@ -111,18 +131,7 @@ class DynamicOptions( object ):
                 except:
                     filters[ 'param_values' ] = {}
                     filters[ 'param_values' ][ n ] = v
-            elif filter_type == 'column':
-                n = filter.get( 'name', None )
-                assert n is not None, "column filters require a 'name' attribute"
-                n = n.strip()
-                v = filter.get( 'value', None )
-                assert v is not None, "column filters require a 'value' attribute"
-                v = v.strip()
-                try: 
-                    filters[ 'columns' ][ n ] = v
-                except: 
-                    filters[ 'columns' ] = {}
-                    filters[ 'columns' ][ n ] = v
+
             elif filter_type == 'param':
                 n = filter.get( 'name', None )
                 assert n is not None, "param filters require a 'name' attribute"
@@ -137,50 +146,47 @@ class DynamicOptions( object ):
                     filters[ 'params' ][ n ] = v
         # Now that we've parsed our filters, we need to see if the tool is a maf tool 
         # which requires special handling
+        # TODO: remove or rework this if possible
         try:
             maf_source = filters[ 'params' ][ 'maf_source' ]
             if maf_source == 'cached':
-                maf_uid = filters[ 'param_meta' ][ 'value' ]
+                maf_uid = filters[ 'param_meta' ][ 'meta_value' ]
                 if maf_uid in [ None, 'None' ]:
                     return []
                 return self.generate_for_maf( maf_uid, '\t' )
             elif maf_source == 'user':
                 dataset = self.get_data_ref_value( trans, other_values )
-                filters[ 'data_meta' ][ 'key' ] = 'species'
-                filters[ 'data_meta' ][ 'value' ] = dataset.metadata.species
+                filters[ 'data_meta' ][ 'meta_key' ] = 'species'
+                filters[ 'data_meta' ][ 'meta_value' ] = dataset.metadata.species
         except:
             pass
-        return self.generate_options( filters )
+        return self.generate_options( filters=filters, sep='\t' )
     def generate_options( self, filters={}, sep='\t' ):
         try: 
-            key = filters[ 'data_meta' ][ 'key' ]
+            meta_key = filters[ 'data_meta' ][ 'meta_key' ]
         except:
             try: 
-                key = filters[ 'param_meta' ][ 'key' ]
+                meta_key = filters[ 'param_meta' ][ 'meta_key' ]
             except: 
-                key = None
-        if key == 'species':
-            species = filters[ 'data_meta' ][ 'value' ]
-            return self.generate_for_species( species )
-        elif key == 'file_name':
-            file_name = filters[ 'data_meta' ][ 'value' ]
-            value_col = int( filters[ 'columns' ][ 'value_col' ] )
-            return self.generate_from_dataset( file_name, value_col, sep )
-        elif key == 'build':
-            build = filters[ 'data_meta' ][ 'value' ]
+                meta_key = None
+        if meta_key == 'species':
+            return self.generate_for_species( filters[ 'data_meta' ][ 'meta_value' ] )
+        elif meta_key == 'data_ref':
+            dataset_file_name = filters[ 'data_meta' ][ 'meta_value' ]
+            return self.generate_from_dataset( dataset_file_name, self.value_col, sep )
+        elif meta_key == 'dbkey':
+            dbkey = filters[ 'data_meta' ][ 'meta_value' ]
             if self.parameter_type == parameters.DataToolParameter:
-                return key, build
-            build_col = int( filters[ 'columns' ][ 'build_col' ].strip() )
-            name_col = int( filters[ 'columns' ][ 'name_col' ] )
-            value_col = int( filters[ 'columns' ][ 'value_col' ] )
-            return self.generate_for_build( build, build_col, name_col, value_col, sep )
-        else: # key is None
+                return meta_key, dbkey
+            meta_key_col = filters[ 'data_meta' ][ 'meta_key_col' ]
+            return self.generate_for_build( dbkey, meta_key_col, self.name_col, self.value_col, sep )
+        else: # meta_key is None
             if self.data_file == 'datatypes_registry':
                 return self.generate_from_datatypes_registry()
             elif self.data_file == 'encode_datasets.loc':
                 encode_group = filters[ 'params' ][ 'encode_group' ]
-                build = filters[ 'params' ][ 'build' ]
-                return self.generate_for_encode( encode_group, build, sep )
+                dbkey = filters[ 'params' ][ 'dbkey' ]
+                return self.generate_for_encode( encode_group, dbkey, sep )
             elif self.data_file == 'microbial_data.loc':
                 if self.from_file_data is None: 
                     self.load_microbial_data()
@@ -198,9 +204,7 @@ class DynamicOptions( object ):
                     feature = None
                 return self.generate_for_microbial( kingdom, org, feature )
             else:
-                name_col = int( filters[ 'columns' ][ 'name_col' ] )
-                value_col = int( filters[ 'columns' ][ 'value_col' ] )
-                return self.generate( name_col, value_col, sep )
+                return self.generate( self.name_col, self.value_col, sep )
     def generate_from_datatypes_registry( self ):
         from galaxy.datatypes import registry
         datatypes_registry = registry.Registry()
@@ -212,7 +216,7 @@ class DynamicOptions( object ):
             label = format.capitalize()
             options.append( ( label, format, False ) )
         return options
-    def generate_for_encode( self, encode_group, build, sep ):
+    def generate_for_encode( self, encode_group, dbkey, sep ):
         options = []
         def generate():
             encode_sets = {}
@@ -222,7 +226,7 @@ class DynamicOptions( object ):
                     try:
                         fields = line.split( sep )
                         encode_group = fields[ 0 ]
-                        build = fields[ 1 ]
+                        dbkey = fields[ 1 ]
                         description = fields[ 2 ]
                         uid = fields[ 3 ]
                         path = fields[ 4 ]
@@ -242,15 +246,15 @@ class DynamicOptions( object ):
                     except: 
                         encode_sets[ encode_group ] = {}
                     try:
-                        encode_sets[ encode_group ][ build ].append( ( description, uid, False ) )
+                        encode_sets[ encode_group ][ dbkey ].append( ( description, uid, False ) )
                     except:
-                        encode_sets[ encode_group ][ build ] = []
-                        encode_sets[ encode_group ][ build] .append( ( description, uid, False ) )
+                        encode_sets[ encode_group ][ dbkey ] = []
+                        encode_sets[ encode_group ][ dbkey].append( ( description, uid, False ) )
             #Order by description and date, highest date on top and bold
             for group in encode_sets:
-                for build in encode_sets[ group ]:
-                    ordered_build = []
-                    for description, uid, selected in encode_sets[ group ][ build ]:
+                for dbkey in encode_sets[ group ]:
+                    ordered_dbkey = []
+                    for description, uid, selected in encode_sets[ group ][ dbkey ]:
                         item = {}
                         item[ 'date' ] = 0
                         item[ 'description' ] = ""
@@ -265,32 +269,32 @@ class DynamicOptions( object ):
                             item[ 'date' ] = description[ -9:-1 ]
                             item[ 'description' ] = description[ 0:-10 ]
                             
-                        for i in range( len( ordered_build ) ):
-                            ordered_description, ordered_uid, ordered_selected, ordered_item = ordered_build[ i ]
+                        for i in range( len( ordered_dbkey ) ):
+                            ordered_description, ordered_uid, ordered_selected, ordered_item = ordered_dbkey[ i ]
                             if item[ 'description' ] < ordered_item[ 'description' ]:
-                                ordered_build.insert( i, ( description, uid, selected, item ) )
+                                ordered_dbkey.insert( i, ( description, uid, selected, item ) )
                                 break
                             if item[ 'description' ] == ordered_item[ 'description' ] and item[ 'partitioned' ] == ordered_item[ 'partitioned' ]:
                                 if int( item[ 'date' ] ) > int( ordered_item[ 'date' ] ):
-                                    ordered_build.insert( i, ( description, uid, selected, item ) )
+                                    ordered_dbkey.insert( i, ( description, uid, selected, item ) )
                                     break
                         else: 
-                            ordered_build.append( ( description, uid, selected, item ) )
+                            ordered_dbkey.append( ( description, uid, selected, item ) )
                     last_desc = None
                     last_partitioned = None
-                    for i in range( len( ordered_build ) ) :
-                        description, uid, selected, item = ordered_build[ i ]
+                    for i in range( len( ordered_dbkey ) ) :
+                        description, uid, selected, item = ordered_dbkey[ i ]
                         if item[ 'partitioned' ] != last_partitioned or last_desc != item[ 'description' ]:
                             last_desc = item[ 'description' ]
                             description = "<b>" + description + "</b>"
                         else:
                             last_desc = item[ 'description' ]
                         last_partitioned = item[ 'partitioned' ]
-                        encode_sets[ group ][ build ][ i ] = ( description, uid, selected )        
+                        encode_sets[ group ][ dbkey ][ i ] = ( description, uid, selected )        
             return encode_sets
         d = generate()
         try: 
-            options = d[ encode_group ][ build ][ 0: ]
+            options = d[ encode_group ][ dbkey ][ 0: ]
         except:
             return []
         return options
@@ -464,14 +468,6 @@ class DynamicOptions( object ):
             line = line.rstrip( '\r\n' )
             if line and not line.startswith( '#' ):
                 fields = line.split( sep )
-                # TDDO: regenerate the following data files so that they follow a column standard.
-                # build_col = 0 - put build values in column 0
-                # name_col = 1 - put the select list description values in column 1
-                # value_col = 2 - put the select list value values in column 2
-                # This will allow us to eliminate the following data_file conditionals
-                #
-                # TODO: the alignseq.loc file is currently ony used by the "Extract blastz alignments1"
-                # tool, which seems to be deprecated.  Can we eliminate it altogether?
                 if self.data_file == 'alignseq.loc':
                     if fields[ build_col ].strip() == 'align':
                         try: 
@@ -497,9 +493,6 @@ class DynamicOptions( object ):
                         d[ maf_uid ][ 'builds' ] = build_list
                     except: 
                         continue
-
-        # TODO: the alignseq.loc file is currently ony used by the "Extract blastz alignments1"
-        # tool, which seems to be deprecated.  Can we eliminate it altogether?
         if self.data_file == 'alignseq.loc':
             # FIXME: We need a database of descriptive names corresponding to dbkeys.
             #        We need to resolve the musMusX <--> mmX confusion

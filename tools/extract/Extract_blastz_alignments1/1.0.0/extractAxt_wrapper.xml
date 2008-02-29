@@ -2,16 +2,13 @@
   <description>between query genome and another genome</description>
   <command interpreter="perl">extractAxt_wrapper.pl -i $input -o $out_file1 --species $species -g $dbkey $input_chromCol $input_startCol $input_endCol $input_strandCol</command>
   <inputs>
-    <param format="interval" name="input" type="data" label="Between regions of Query"/>
+    <param format="interval" name="input" type="data" label="Between regions of Query"/>    
     <param name="species" type="select" label="and one of these genomes">
       <validator type="unspecified_build" />
-      <options from_file="/depot/data2/galaxy/alignseq.loc" >
-        <filter type="data_meta" data_ref="input" key="build" />
-        <filter type="column" name="build_col" value="0" />
-        <filter type="column" name="name_col" value="1" />
-        <filter type="column" name="value_col" value="2" />
+      <options from_file="/depot/data2/galaxy/alignseq.loc" name_col="1" value_col="2">
+        <filter type="data_meta" data_ref="input" meta_key="dbkey" meta_key_col="0" />
       </options>
-    </param> 
+    </param>    
   </inputs>
   <outputs>
     <data format="axt" name="out_file1" />

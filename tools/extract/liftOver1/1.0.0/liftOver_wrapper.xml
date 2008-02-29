@@ -6,13 +6,10 @@
       <validator type="unspecified_build" />
     </param>
     <param name="to_dbkey" type="select" label="To">
-      <options from_file="/depot/data2/galaxy/liftOver.loc">
-        <filter type="data_meta" data_ref="input" key="build" />
-        <filter type="column" name="build_col" value="0" />
-        <filter type="column" name="name_col" value="1" />
-        <filter type="column" name="value_col" value="1" />
+      <options from_file="/depot/data2/galaxy/liftOver.loc" name_col="1" value_col="1">
+        <filter type="data_meta" data_ref="input" meta_key="dbkey" meta_key_col="0"/>
       </options>
-    </param>
+    </param> 
   </inputs>
   <outputs>
     <data format="bed" name="out_file1" />

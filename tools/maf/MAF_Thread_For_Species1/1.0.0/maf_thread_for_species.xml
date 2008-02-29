@@ -5,7 +5,7 @@
     <param format="maf" name="input1" type="data" label="MAF file"/>
     <param name="species" type="select" label="Species to keep" display="checkboxes" multiple="true">
       <options>
-        <filter type="data_meta" data_ref="input1" key="species" />
+        <filter type="data_meta" data_ref="input1" meta_key="species" />
       </options>
     </param>
   </inputs>

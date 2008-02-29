@@ -24,11 +24,8 @@
       </when>
       <when value="cached">
         <param name="mafType" type="select" label="MAF Type">
-          <options from_file="/depot/data2/galaxy/maf_index.loc" >
-            <filter type="data_meta" data_ref="input1" key="build" />
-            <filter type="column" name="build_col" value="2" />
-            <filter type="column" name="name_col" value="0" />
-            <filter type="column" name="value_col" value="1" />
+          <options from_file="/depot/data2/galaxy/maf_index.loc" name_col="0" value_col="1">
+            <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="2"/>
           </options>
         </param> 
       </when>
