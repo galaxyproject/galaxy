@@ -31,6 +31,7 @@
     <tool file="filters/Convert_characters1/1.0.0/convert_characters.xml" />
     <tool file="filters/createInterval/1.0.0/CreateInterval.xml" />
     <tool file="filters/Cut1/1.0.0/cutWrapper.xml" />
+    <tool file="filters/ChangeCase1/1.0.0/changeCase.xml" />
     <tool file="filters/Paste1/1.0.0/pasteWrapper.xml" />
     <tool file="filters/Remove_beginning1/1.0.0/remove_beginning.xml" />
     <tool file="filters/Show_beginning1/1.0.0/headWrapper.xml" />
