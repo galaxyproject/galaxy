@@ -21,76 +21,76 @@
     <tool file="data_source/encode_import_gencode.xml" />
   </section>
   <section name="ENCODE Tools" id="EncodeTools">
-    <tool file="encode/gencode_partition1/1.0.0/gencode_partition.xml" />
-    <tool file="encode/random_intervals1/1.0.0/random_intervals.xml" />
+    <tool file="encode/gencode_partition.xml" />
+    <tool file="encode/random_intervals.xml" />
   </section>
   <section name="Lift-Over" id="liftOver">
-    <tool file="extract/liftOver1/1.0.0/liftOver_wrapper.xml" />
+    <tool file="extract/liftOver_wrapper.xml" />
   </section>
   <section name="Text Manipulation" id="textutil">
-    <tool file="filters/addValue/1.0.0/fixedValueColumn.xml" />
+    <tool file="filters/fixedValueColumn.xml" />
     <tool file="stats/Add_a_column1/1.0.0/column_maker.xml" />
-    <tool file="filters/cat1/1.0.0/catWrapper.xml" />
-    <tool file="filters/Condense_characters1/1.0.0/condense_characters.xml" />
-    <tool file="filters/Convert_characters1/1.0.0/convert_characters.xml" />
-    <tool file="filters/createInterval/1.0.0/CreateInterval.xml" />
-    <tool file="filters/Cut1/1.0.0/cutWrapper.xml" />
-    <tool file="filters/ChangeCase1/1.0.0/changeCase.xml" />
-    <tool file="filters/Paste1/1.0.0/pasteWrapper.xml" />
-    <tool file="filters/Remove_beginning1/1.0.0/remove_beginning.xml" />
-    <tool file="filters/Show_beginning1/1.0.0/headWrapper.xml" />
-    <tool file="filters/Show_tail1/1.0.0/tailWrapper.xml" />
+    <tool file="filters/catWrapper.xml" />
+    <tool file="filters/condense_characters.xml" />
+    <tool file="filters/convert_characters.xml" />
+    <tool file="filters/CreateInterval.xml" />
+    <tool file="filters/cutWrapper.xml" />
+    <tool file="filters/changeCase.xml" />
+    <tool file="filters/pasteWrapper.xml" />
+    <tool file="filters/remove_beginning.xml" />
+    <tool file="filters/headWrapper.xml" />
+    <tool file="filters/tailWrapper.xml" />
   </section>
   <section name="Filter and Sort" id="filter">
     <tool file="stats/Filter1/1.0.0/filtering.xml" />
-    <tool file="filters/sort1/1.0.0/sorter.xml" />
-    <tool file="filters/Grep1/1.0.0/grep.xml" />
+    <tool file="filters/sorter.xml" />
+    <tool file="filters/grep.xml" />
   </section>
   <section name="Join, Subtract and Group" id="group">
-    <tool file="filters/join1/2.0.0/joiner.xml" />
-    <tool file="filters/comp1/1.0.0/compare.xml"/>
+    <tool file="filters/joiner.xml" />
+    <tool file="filters/compare.xml"/>
     <tool file="new_operations/subtract_query1/1.0.0/subtract_query.xml"/>
     <tool file="stats/Grouping1/1.0.0/grouping.xml" />   
   </section>
   <section name="Convert Formats" id="convert">
-    <tool file="filters/axt_to_concat_fasta/1.0.0/axt_to_concat_fasta.xml" />
-    <tool file="filters/axt_to_fasta/1.0.0/axt_to_fasta.xml" />
-    <tool file="filters/axt_to_lav_1/1.0.0/axt_to_lav.xml" />
-    <tool file="filters/bed2gff1/2.0.0/bed2gff.xml" />
-    <tool file="fasta_tools/fasta2tab/1.0.0/fasta_to_tabular.xml" />
-    <tool file="filters/gff2bed1/1.0.0/gff2bed.xml" />
-    <tool file="filters/lav_to_bed1/1.0.0/lav_to_bed.xml" />
-    <tool file="maf/MAF_To_BED1/1.0.0/maf_to_bed.xml" />
-    <tool file="maf/MAF_To_Fasta1/1.0.0/maf_to_fasta.xml" />
-    <tool file="fasta_tools/tab2fasta/1.0.0/tabular_to_fasta.xml" />
+    <tool file="filters/axt_to_concat_fasta.xml" />
+    <tool file="filters/axt_to_fasta.xml" />
+    <tool file="filters/axt_to_lav.xml" />
+    <tool file="filters/bed2gff.xml" />
+    <tool file="fasta_tools/fasta_to_tabular.xml" />
+    <tool file="filters/gff2bed.xml" />
+    <tool file="filters/lav_to_bed.xml" />
+    <tool file="maf/maf_to_bed.xml" />
+    <tool file="maf/maf_to_fasta.xml" />
+    <tool file="fasta_tools/tabular_to_fasta.xml" />
   </section>
   <section name="Extract Features" id="features">
-    <tool file="filters/gene2exon1/1.0.0/ucsc_gene_bed_to_exon_bed.xml" />
-    <tool file="extract/Extract_features1/1.0.0/extract_GFF_Features.xml" />
+    <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
+    <tool file="extract/extract_GFF_Features.xml" />
   </section>
   <section name="Pattern-Matching" id="patmat">
     <tool file="patmat/findcluster_mysql.xml" />
   </section>
   <section name="Fetch Sequences" id="fetchSeq">
-    <tool file="extract/Extract_genomic_DNA_1/2.0.0/extract_genomic_dna.xml" />
+    <tool file="extract/extract_genomic_dna.xml" />
   </section>
   <section name="Fetch Alignments" id="fetchAlign">
-    <tool file="maf/Interval2Maf_pairwise1/1.0.0/interval2maf_pairwise.xml" />
-    <tool file="maf/Interval2Maf1/1.0.0/interval2maf.xml" />
-    <tool file="maf/Interval_Maf_Merged_Fasta2/1.0.0/interval_maf_to_merged_fasta.xml" />
-    <tool file="maf/GeneBed_Maf_Fasta2/1.0.0/genebed_maf_to_fasta.xml"/>
-    <tool file="maf/maf_stats1/1.0.0/maf_stats.xml"/>
-    <tool file="maf/MAF_Thread_For_Species1/1.0.0/maf_thread_for_species.xml"/>
-    <tool file="maf/MAF_Limit_To_Species1/1.0.0/maf_limit_to_species.xml"/>
-    <tool file="maf/maf_limit_size1/1.0.0/maf_limit_size.xml"/>
-    <tool file="maf/maf_by_block_number1/1.0.0/maf_by_block_number.xml"/>
-    <tool file="maf/MAF_Reverse_Complement_1/1.0.0/maf_reverse_complement.xml"/>
-    <tool file="maf/MAF_filter/1.0.0/maf_filter.xml"/>
+    <tool file="maf/interval2maf_pairwise.xml" />
+    <tool file="maf/interval2maf.xml" />
+    <tool file="maf/interval_maf_to_merged_fasta.xml" />
+    <tool file="maf/genebed_maf_to_fasta.xml"/>
+    <tool file="maf/maf_stats.xml"/>
+    <tool file="maf/maf_thread_for_species.xml"/>
+    <tool file="maf/maf_limit_to_species.xml"/>
+    <tool file="maf/maf_limit_size.xml"/>
+    <tool file="maf/maf_by_block_number.xml"/>
+    <tool file="maf/maf_reverse_complement.xml"/>
+    <tool file="maf/maf_filter.xml"/>
   </section>
   <section name="Get Genomic Scores" id="scores">
     <tool file="stats/wiggle2simple1/1.0.0/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_scores_in_intervals2/1.1.1/aggregate_binned_scores_in_intervals.xml" />
-    <tool file="extract/phastOdds/phastOdds_for_intervals/1.0.0/phastOdds_tool.xml" />
+    <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
   	<tool file="new_operations/gops_intersect_1/1.0.0/intersect.xml" />  
@@ -106,7 +106,7 @@
   </section>
   <section name="Statistics" id="stats">
     <tool file="stats/Summary_Statistics1/1.0.0/gsummary.xml" />
-    <tool file="filters/Count1/1.0.0/uniq.xml" /> 
+    <tool file="filters/uniq.xml" /> 
     <tool file="stats/cor2/1.0.0/cor.xml" /> 
   </section>
   <section name="Graph/Display Data" id="plots">
@@ -126,9 +126,9 @@
 	<tool file="regVariation/getIndels_3way/1.0.0/getIndels_3way.xml" />
   </section>
  <section name="Evolution: HyPhy" id="hyphy">
-    <tool file="hyphy/hyphy_branch_lengths_wrapper1/1.0.0/hyphy_branch_lengths_wrapper.xml" />
-    <tool file="hyphy/hyphy_nj_tree_wrapper1/1.0.0/hyphy_nj_tree_wrapper.xml" />
-    <tool file="hyphy/hyphy_dnds_wrapper1/1.0.0/hyphy_dnds_wrapper.xml" />
+    <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
+    <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
+    <tool file="hyphy/hyphy_dnds_wrapper.xml" />
  </section>
   <!--
   TODO: uncomment the following EMBOSS section whenever 
@@ -248,12 +248,12 @@
   </section> 
   -->
   <section name="FASTA manipulation" id="fasta_manipulation">
-    <tool file="fasta_tools/fasta_compute_length/1.0.0/fasta_compute_length.xml" />
-    <tool file="fasta_tools/fasta_filter_by_length/1.0.0/fasta_filter_by_length.xml" />
+    <tool file="fasta_tools/fasta_compute_length.xml" />
+    <tool file="fasta_tools/fasta_filter_by_length.xml" />
   </section>
   <section name="Short Read Analysis" id="short_read_analysis">
-    <tool file="metag_tools/trim_reads/1.0.0/short_reads_trim_seq.xml" />
-    <tool file="metag_tools/blat_wrapper/1.0.0/blat_wrapper.xml" />
-    <tool file="metag_tools/megablast_wrapper/1.0.0/megablast_wrapper.xml" />
+    <tool file="metag_tools/short_reads_trim_seq.xml" />
+    <tool file="metag_tools/blat_wrapper.xml" />
+    <tool file="metag_tools/megablast_wrapper.xml" />
   </section>
 </toolbox>
