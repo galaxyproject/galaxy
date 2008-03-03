@@ -7,7 +7,6 @@
   <outputs>
     <data format="text" name="output" metadata_source="input1" />
   </outputs>
-  <!--<code file="operation_filter.py"/> -->
   <tests>
     <test>
       <param name="input1" value="1.bed" />

@@ -10,7 +10,7 @@
     <tool file="data_source/biomart_test.xml" />
     <tool file="data_source/encode_db.xml" />
     <tool file="data_source/hbvar.xml" /> 
-    <tool file="validation/fix_errors/1.0.0/fix_errors.xml" />
+    <tool file="validation/fix_errors.xml" />
   </section>
   <section name="Get ENCODE Data" id="encode">
     <tool file="data_source/encode_import_chromatin_and_chromosomes.xml"/>
@@ -29,7 +29,7 @@
   </section>
   <section name="Text Manipulation" id="textutil">
     <tool file="filters/fixedValueColumn.xml" />
-    <tool file="stats/Add_a_column1/1.0.0/column_maker.xml" />
+    <tool file="stats/column_maker.xml" />
     <tool file="filters/catWrapper.xml" />
     <tool file="filters/condense_characters.xml" />
     <tool file="filters/convert_characters.xml" />
@@ -42,15 +42,15 @@
     <tool file="filters/tailWrapper.xml" />
   </section>
   <section name="Filter and Sort" id="filter">
-    <tool file="stats/Filter1/1.0.0/filtering.xml" />
+    <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
   </section>
   <section name="Join, Subtract and Group" id="group">
     <tool file="filters/joiner.xml" />
     <tool file="filters/compare.xml"/>
-    <tool file="new_operations/subtract_query1/1.0.0/subtract_query.xml"/>
-    <tool file="stats/Grouping1/1.0.0/grouping.xml" />   
+    <tool file="new_operations/subtract_query.xml"/>
+    <tool file="stats/grouping.xml" />   
   </section>
   <section name="Convert Formats" id="convert">
     <tool file="filters/axt_to_concat_fasta.xml" />
@@ -88,42 +88,42 @@
     <tool file="maf/maf_filter.xml"/>
   </section>
   <section name="Get Genomic Scores" id="scores">
-    <tool file="stats/wiggle2simple1/1.0.0/wiggle_to_simple.xml" />
-    <tool file="stats/aggregate_scores_in_intervals2/1.1.1/aggregate_binned_scores_in_intervals.xml" />
+    <tool file="stats/wiggle_to_simple.xml" />
+    <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
-  	<tool file="new_operations/gops_intersect_1/1.0.0/intersect.xml" />  
-    <tool file="new_operations/gops_subtract_1/1.0.0/subtract.xml" id="subtract" />
-    <tool file="new_operations/gops_merge_1/1.0.0/merge.xml" id="merge" />
-    <tool file="new_operations/gops_concat_1/1.0.0/concat.xml" id="concat" />
-    <tool file="new_operations/gops_basecoverage_1/1.0.0/basecoverage.xml" />
-    <tool file="new_operations/gops_coverage_1/1.0.0/coverage.xml" id="coverage" />
-    <tool file="new_operations/gops_complement_1/1.0.0/complement.xml" id="complement" />
-    <tool file="new_operations/gops_cluster_1/1.0.0/cluster.xml" id="cluster" />
-    <tool file="new_operations/gops_join_1/1.0.0/join.xml" id="join" />
-    <tool file="new_operations/get_flanks1/1.0.0/get_flanks.xml" />
+  	<tool file="new_operations/intersect.xml" />  
+    <tool file="new_operations/subtract.xml" />
+    <tool file="new_operations/merge.xml" />
+    <tool file="new_operations/concat.xml" />
+    <tool file="new_operations/basecoverage.xml" />
+    <tool file="new_operations/coverage.xml" />
+    <tool file="new_operations/complement.xml" />
+    <tool file="new_operations/cluster.xml" id="cluster" />
+    <tool file="new_operations/join.xml" />
+    <tool file="new_operations/get_flanks.xml" />
   </section>
   <section name="Statistics" id="stats">
-    <tool file="stats/Summary_Statistics1/1.0.0/gsummary.xml" />
+    <tool file="stats/gsummary.xml" />
     <tool file="filters/uniq.xml" /> 
-    <tool file="stats/cor2/1.0.0/cor.xml" /> 
+    <tool file="stats/cor.xml" /> 
   </section>
   <section name="Graph/Display Data" id="plots">
-    <tool file="plotting/histogram_rpy/1.0.0/histogram2.xml" />
-    <tool file="plotting/scatterplot_rpy/1.0.0/scatterplot.xml" />
-    <tool file="plotting/XY_Plot_1/1.0.0/xy_plot.xml" />
-    <tool file="visualization/gmaj_1/1.0.0/GMAJ.xml" />
-    <tool file="visualization/laj_1/1.0.0/LAJ.xml" />
-    <tool file="visualization/build_ucsc_custom_track_1/1.0.0/build_ucsc_custom_track.xml" />
+    <tool file="plotting/histogram2.xml" />
+    <tool file="plotting/scatterplot.xml" />
+    <tool file="plotting/xy_plot.xml" />
+    <tool file="visualization/GMAJ.xml" />
+    <tool file="visualization/LAJ.xml" />
+    <tool file="visualization/build_ucsc_custom_track.xml" />
   </section>
   <section name="Regional Variation" id="regVar">
-  	<tool file="regVariation/winSplitter/1.0.0/windowSplitter.xml" />
-  	<tool file="regVariation/featureCoverage1/1.0.0/featureCounter.xml" />
-	<tool file="regVariation/qualityFilter/1.0.0/quality_filter.xml" />
-    <tool file="regVariation/cpgFilter/1.0.0/maf_cpg_filter.xml" />
-	<tool file="regVariation/getIndels_2way/1.0.0/getIndels_2way.xml" />
-	<tool file="regVariation/getIndels_3way/1.0.0/getIndels_3way.xml" />
+  	<tool file="regVariation/windowSplitter.xml" />
+  	<tool file="regVariation/featureCounter.xml" />
+	<tool file="regVariation/quality_filter.xml" />
+    <tool file="regVariation/maf_cpg_filter.xml" />
+	<tool file="regVariation/getIndels_2way.xml" />
+	<tool file="regVariation/getIndels_3way.xml" />
   </section>
  <section name="Evolution: HyPhy" id="hyphy">
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />

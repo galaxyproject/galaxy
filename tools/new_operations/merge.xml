@@ -12,7 +12,7 @@
   <outputs>
     <data format="input" name="output" metadata_source="input1" />
   </outputs>
-  <code file="../../operation_filter.py">
+  <code file="operation_filter.py">
     <hook exec_after_process="exec_after_merge" />
   </code>
   <tests>
