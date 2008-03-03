@@ -25,7 +25,7 @@ context = SessionContext( create_session )
 dialect_to_egg = { 
     "sqlite"   : "pysqlite>=2",
     "postgres" : "psycopg2",
-    "mysql"    : "mysqldb"
+    "mysql"    : "MySQL_python"
 }
 
 # NOTE REGARDING TIMESTAMPS:
