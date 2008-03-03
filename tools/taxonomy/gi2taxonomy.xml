@@ -1,0 +1,74 @@
+<tool id="Fetch Taxonomic Ranks" name="Fetch Taxonomic Ranks" version="1.0.0">
+  <description>from a list of GIs</description>
+  <command interpreter="python">tax.py $input $out_file1 -c $giField</command>
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Fetch sequences corresponding to Query"></param>
+    <param name="giField" label="GIs column" type="data_column" data_ref="input" />
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="taxonomyGI.txt"/>
+      <param name="giField" value="1"/>
+      <output name="out_file1" file="taxonomyGI.dat"/>
+    </test>
+  </tests>
+
+  <help>
+
+.. class:: infomark
+
+Use *Filter and Sort->Filter* to restrict output of this tool to desired taxonomic ranks. You can also use *Text Manipulation->Cut* to remove unwanted columns from the output.
+
+------
+
+**What it does**
+
+Fetches taxonomic information for a list of GI numbers (sequiences identifiers used by teh National Center for Biotechnology Information http://www.ncbi.nlm.nih.gov).
+
+-------
+
+**Example**
+
+Suppose you have BLAST output that looks like this::
+  
+   +-----------------------+----------+----------+-----------------+------------+------+--------+
+   | queryId               | targetGI | identity | alignmentLength | mismatches | gaps | score  |
+   +-----------------------+----------+----------+-----------------+------------+------+--------+
+   | 1L_EYKX4VC01BXWX1_265 |  1430919 |    90.09 |             212 |         15 |    6 | 252.00 | 
+   | 1L_EYKX4VC01BXWX1_265 |   516142 |    90.09 |             212 |         15 |    6 | 252.00 | 
+   +-----------------------+----------+----------+-----------------+------------+------+--------+
+
+and you want to obtain full taxonomic representation for GIs listed in *targetGI* column.  The output of this tool will add 21 columns to the input data shown above. The 21 columns will correspond to::
+
+        'root'        :1,
+        'superkingdom':2,
+        'kingdom'     :3,
+        'subkingdom'  :4,
+        'superphylum' :5,
+        'phylum'      :6,
+        'subphylum'   :7,
+        'superclass'  :8,
+        'class'       :9,
+        'subclass'    :10,
+        'superorder'  :11,
+        'order'       :12,
+        'suborder'    :13,
+        'superfamily' :14,
+        'family'      :15,
+        'subfamily'   :16,
+        'tribe'       :17,
+        'subtribe'    :18,
+        'genus'       :19,
+        'subgenus'    :20,
+        'species'     :21,
+        'subspecies'  :22
+
+
+
+
+
+</help>
+</tool>
