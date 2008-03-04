@@ -130,4 +130,56 @@ class Tabular( data.Text ):
         return m_peek
 
 class Taxonomy( Tabular ):
-    pass
+    def __init__(self, **kwd):
+        """Initialize taxonomy datatype"""
+        Tabular.__init__( self, **kwd )
+        self.column_names = ['Name', 'GI', 'Root', 'Superkingdom', 'Kingdom', 'Subkingdom',
+                             'Superphylum', 'Phylum', 'Subphylum', 'Superclass', 'Class', 'Subclass',
+                             'Superorder', 'Order', 'Suborder', 'Superfamily', 'Family', 'Subfamily',
+                             'Tribe', 'Subtribe', 'Genus', 'Subgenus', 'Species', 'Subspecies'
+                             ]
+
+    def make_html_table( self, data, skipchar=None ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        first = True
+        comments = []
+        try:
+            lines =  data.splitlines()
+            for line in lines:
+                line = line.rstrip( '\r\n' )
+                if not line:
+                    continue
+                if skipchar and line.startswith( skipchar ):
+                    comments.append( line )
+                    continue
+
+                elems = line.split( '\t' )
+                # This data type requires at least 24 columns in the data
+                int_col_headers = len( elems ) - len( self.column_names )
+
+                if first: #generate header
+                    first = False
+                    out.append( '<tr>' )
+                    for index, elem in enumerate( elems[0:int_col_headers] ):
+                        out.append( "<th>%s</th>" % ( index+1 ) )
+                    for index, name in enumerate( self.column_names ):
+                        out.append( "<th>%s</th>" % name )
+                    out.append( '</tr>' )
+                
+                while len( comments ) > 0:
+                    out.append( '<tr><td colspan="100%">' )
+                    out.append( escape( comments.pop( 0 ) ) )
+                    out.append( '</td></tr>' )
+                
+                out.append( '<tr>' ) # body
+                for elem in elems:
+                    elem = escape( elem )
+                    out.append( "<td>%s</td>" % elem )
+                out.append( '</tr>' )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % exc
+        return out
+
