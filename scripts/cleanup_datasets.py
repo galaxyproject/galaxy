@@ -150,11 +150,11 @@ def purge_histories( h, cutoff_time, remove_from_disk ):
     for history in histories:
         for dataset in history.datasets:
             if not dataset.purged:
-                if not dataset.deleted:
-                    dataset.deleted = True
-                    dataset.flush()
+                file_size = dataset.file_size
+                dataset.deleted = True
+                dataset.file_size = 0
                 if remove_from_disk:
-                    file_size = dataset.file_size
+                    dataset.flush()
                     errmsg = purge_dataset( dataset )
                     if errmsg:
                         errors = True
@@ -162,6 +162,8 @@ def purge_histories( h, cutoff_time, remove_from_disk ):
                     else:
                         print "%s" % dataset.file_name
                 else:
+                    dataset.purged = True
+                    dataset.flush()
                     print "%s" % dataset.file_name
                 dataset_count += 1
                 try:
@@ -209,16 +211,20 @@ def purge_datasets( d, cutoff_time, remove_from_disk ):
     start = time.clock()
     datasets = d.query().filter( where )
     for dataset in datasets:
+        file_size = dataset.file_size
         if remove_from_disk:
-            file_size = dataset.file_size
             errmsg = purge_dataset( dataset )
             if errmsg:
                 print errmsg
             else:
+                dataset_count += 1
                 print "%s" % dataset.file_name
         else:
+            dataset.purged = True
+            dataset.file_size = 0
+            dataset.flush()
             print "%s" % dataset.file_name
-        dataset_count += 1
+            dataset_count += 1
         try:
             disk_space += file_size
         except:
@@ -242,6 +248,7 @@ def purge_dataset( dataset ):
             try:
                 os.unlink( dataset.file_name )
                 dataset.purged = True
+                dataset.file_size = 0
                 dataset.flush()
             except Exception, exc:
                 return "# Error, exception: %s caught attempting to purge %s\n" %( str( exc ), dataset.file_name )
