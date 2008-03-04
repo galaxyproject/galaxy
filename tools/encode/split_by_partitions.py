@@ -63,9 +63,9 @@ def main():
     try:
         for line in in_file:
             line_count += 1
-            #ignore comment lines
+            line = line.rstrip( '\r\n' )
             if line and not line.startswith( '#' ):
-                fields = line.rstrip( '\r\n' ).split( '\t' )
+                fields = line.split( '\t' )
                 try:
                     chr, start, end = fields[chrCol], int( fields[startCol] ), int( fields[endCol] )
                 except:
@@ -112,12 +112,15 @@ def main():
     in_file.close()
 
     if warnings:
-        err_msg = ""
-        for warning in warnings:
-            err_msg += warning + "\n"
-        if len( warnings ) > 5:
-            err_msg += "There were more than 5 warnings, this tool is useful on ENCODE regions only."
-        stop_err( err_msg )
+        warn_msg = "This tool is useful on ENCODE regions only."
+        if len( warnings ) > 2:
+            warn_msg += "More than 2 warnings: "
+            for warning in warnings[0:2]:
+                warn_msg += warning + ", "
+        else:
+            for warning in warnings:
+                warn_msg += warning + ", "
+        print warn_msg
     if skipped_lines:
         print "Skipped %d invalid lines starting at line # %d: %s" % ( skipped_lines, first_invalid_line, invalid_line )
 
