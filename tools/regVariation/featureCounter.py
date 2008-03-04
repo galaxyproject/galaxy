@@ -37,105 +37,120 @@ def main():
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols1 )
         chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )      
-        in_fname, in2_fname, out_fname = args
+        in1_fname, in2_fname, out_fname = args
     except:
-        stop_err("Data issue: Please check the metadata attributes of the chosen input by clicking on the pencil icon next to it.")
+        stop_err( "Data issue: click the pencil icon in the history item to correct the metadata attributes." )
         
     try:
         out_file = open( out_fname, "w" )
     except:
-        stop_err("Unable to open output file.")
-    
-    try:
-        in_file1 = open( in_fname, "r" )
-        in_file2 = open( in2_fname, "r" )
-    except:
-        stop_err("Unable to open input files.")
+        stop_err( "Unable to open output file." )
         
     chr_list = []
     start_list = []
     end_list = []
-    for line in in_file2:
-        line = line.rstrip("\r\n")
-        if not(line) or line == "" or line[0:1] == '#':
-            continue
-        elems = line.split('\t')
-        try:
-            chr_list.append(elems[chr_col_2])
-            start_list.append(elems[start_col_2])
-            end_list.append(elems[end_col_2])
-        except:
-            pass
+    skipped_lines_input2 = 0
+    first_invalid_line_input2 = None
+    invalid_line_input2 = ''
+    for i, line in enumerate( open( in2_fname ) ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( '#' ):
+            elems = line.split( '\t' )
+            try:
+                chr_list.append( elems[chr_col_2] )
+                start_list.append( elems[start_col_2] )
+                end_list.append( elems[end_col_2] )
+            except:
+                skipped_lines_input2 += 1
+                if first_invalid_line_input2 is None:
+                    first_invalid_line_input2 = i + 1
+                    invalid_line_input2 = line
     
-    if not(chr_list) and not(start_list) and not(end_list):
-        stop_err("Data issue: Please check the metadata attributes of the chosen input by clicking on the pencil icon next to it.")
-    
-    for line1 in in_file1:
-        fp = 0 #number of features fully present
-        fp_p = 0 #% covered by fp features
-        pp = 0 #number of overlapping features
-        pp_p = 0 #% covered by pp features
-        pp_l = 0 #partly present on left side of the window
-        pp_l_p = 0 #% covered by pp_l features
-        pp_r = 0 #partly present on right side of the window
-        pp_r_p = 0 #% covered by pp_r features
-        np = 0 #number of features present
-        try:
-            chr1 = line1.split('\t')[chr_col_1]
-            start1 = int(line1.split('\t')[start_col_1])
-            end1 = int(line1.split('\t')[end_col_1])
-        except:
-            continue
-        if not(chr1 in chr_list):
-            continue
-        
-        tmpfile1 = tempfile.NamedTemporaryFile()
-        
-        for i, chr2 in enumerate(chr_list):
-            start2 = int(start_list[i])
-            end2 = int(end_list[i])
-            if chr2 == chr1:
-                if (start2 < start1 and end2 < start1) or (start2 >end1 and end2 >end1):
-                    continue
-                if start2 in range(start1,end1) and end2 in range(start1,end1+1):    #feature completely lies in the window
-                    fp += 1
-                    print >>tmpfile1, chr2 + '\t' + str(start2) + '\t' + str(end2)
-                elif (start2 not in range(start1,end1)) and (end2 not in range(start1,end1)):    #feature is longer than the window and covers the window completely                        #feature overlaps  the right side of the window
-                    if (start1 in range(start2,end2)) and (end1 in range(start2,end2)):
-                        fp += 1
-                        fp_p += 100.00
-                elif (start2 not in range(start1,end1)) or (end2 not in range(start1,end1)):    #feature partially overlaps with the window
-                    pp += 1
-                    print >>tmpfile1, chr2 + '\t' + str(start2) + '\t' + str(end2)
-                    
-        g1 = NiceReaderWrapper( open(tmpfile1.name, 'r' ),
-                            chrom_col=chr_col_2,
-                            start_col=start_col_2,
-                            end_col=end_col_2,
-                            strand_col = strand_col_2,
-                            fix_strand=True)
-        
-        tmpfile1.readline()
-        mincols = 1
-        #merge over-lapping features before computing their coverage
-        for line in merge(g1,mincols=mincols):
-            if type( line ) is GenomicInterval:
-                start = int(line.startCol)
-                end = int(line.endCol)
-            elif type( line ) is list:
-                start = int(line[start_col_1])
-                end = int(line[end_col_1])
-            if start in range(start1,end1) and end in range(start1,end1):
-                fp_p += (100.0*abs(end - start)/abs(end1-start1))
-            elif start in range(start1,end1) and end not in range(start1,end1):
-                fp_p += (100.0*abs(end1 - start)/abs(end1-start1))
-            elif start not in range(start1,end1) and end in range(start1,end1):
-                fp_p += (100.0*abs(end - start1)/abs(end1-start1))
+    if not( chr_list ) and not( start_list ) and not( end_list ):
+        stop_err( "Data issue: click the pencil icon in the history item to correct the metadata attributes." )
+
+    skipped_lines_input1 = 0
+    first_invalid_line_input1 = None
+    invalid_line_input1 = ''
+    for i, line in enumerate( open( in1_fname ) ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( '#' ):
+            fp = 0 #number of features fully present
+            fp_p = 0 #% covered by fp features
+            pp = 0 #number of overlapping features
+            pp_p = 0 #% covered by pp features
+            pp_l = 0 #partly present on left side of the window
+            pp_l_p = 0 #% covered by pp_l features
+            pp_r = 0 #partly present on right side of the window
+            pp_r_p = 0 #% covered by pp_r features
+            np = 0 #number of features present
             
-        #print >>out_file, "%s\t%d\t%2.2f\t%d\t%2.2f" %(line1.strip(),fp,fp_p,pp,pp_p) 
-        if fp_p > 100:
-            fp_p = 100.00
-        print >>out_file, "%s\t%d\t%d\t%2.2f" %(line1.strip(),fp,pp,fp_p) 
-        
+            elems = line.split( '\t' )
+            try:
+                chr1 = elems[chr_col_1]
+                start1 = int( elems[start_col_1] )
+                end1 = int( elems[end_col_1] )
+            except:
+                chr1 = None
+                skipped_lines_input1 += 1
+                if first_invalid_line_input1 is None:
+                    first_invalid_line_input1 = i + 1
+                    invalid_line_input1 = line
+
+            if not( chr1 in chr_list ):
+                continue
+            
+            tmpfile1 = tempfile.NamedTemporaryFile( 'wb+' )
+            
+            for j, chr2 in enumerate( chr_list ):
+                try:
+                    start2 = int( start_list[j] )
+                    end2 = int( end_list[j] )
+                except:
+                    # Not easy to deal with skipped lines here...
+                    continue
+                if chr2 == chr1:
+                    if ( start2 < start1 and end2 < start1 ) or ( start2 > end1 and end2 > end1 ):
+                        continue
+                    if start2 in range( start1, end1 ) and end2 in range( start1, end1+1 ):    #feature completely lies in the window
+                        fp += 1
+                        tmpfile1.write( "%s\t%s\t%s\n" % ( chr2, str( start2 ), str( end2 ) ) )
+                    elif ( start2 not in range( start1, end1 ) ) and ( end2 not in range( start1, end1 ) ):    #feature is longer than the window and covers the window completely                        #feature overlaps  the right side of the window
+                        if ( start1 in range( start2, end2 ) ) and ( end1 in range( start2, end2 ) ):
+                            fp += 1
+                            fp_p += 100.00
+                    elif ( start2 not in range( start1, end1 ) ) or ( end2 not in range( start1, end1 ) ):    #feature partially overlaps with the window
+                        pp += 1
+                        tmpfile1.write( "%s\t%s\t%s\n" % ( chr2, str( start2 ), str( end2 ) ) )
+
+            tmpfile1.seek( 0 )
+            g1 = NiceReaderWrapper( tmpfile1, chrom_col=chr_col_2, start_col=start_col_2, end_col=end_col_2, strand_col=strand_col_2, fix_strand=True )
+
+            mincols = 1
+            #merge over-lapping features before computing their coverage
+            for merge_line in merge( g1, mincols=mincols ):
+                if type( merge_line ) is GenomicInterval:
+                    start = int( merge_line.startCol )
+                    end = int( merge_line.endCol )
+                elif type( merge_line ) is list:
+                    start = int( merge_line[start_col_1] )
+                    end = int( merge_line[end_col_1] )
+                if start in range( start1, end1 ) and end in range( start1, end1 ):
+                    fp_p += ( 100.0 * abs( end - start ) / abs( end1 - start1 ) )
+                elif start in range( start1, end1 ) and end not in range( start1, end1 ):
+                    fp_p += ( 100.0 * abs( end1 - start ) / abs( end1 - start1 ) )
+                elif start not in range( start1, end1 ) and end in range( start1, end1 ):
+                    fp_p += ( 100.0*abs( end - start1 ) / abs( end1 - start1 ) )
+
+            if fp_p > 100:
+                fp_p = 100.00
+            out_file.write( "%s\t%d\t%d\t%2.2f\n" % ( line, fp, pp, fp_p ) )
+    out_file.close()
+
+    if skipped_lines_input1:
+        print "Skipped %d invalid lines in 1st input starting at line # %d: '%s' " % ( skipped_lines_input1, first_invalid_line_input1, invalid_line_input1 )
+    if skipped_lines_input2:
+        print "Skipped %d invalid lines in 2nd input starting at line # %d: '%s'" % ( skipped_lines_input2, first_invalid_line_input2, invalid_line_input2 )
+
 if __name__ == "__main__":
     main()
