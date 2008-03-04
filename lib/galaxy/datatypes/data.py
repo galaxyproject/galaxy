@@ -330,3 +330,6 @@ def get_line_count(file_name):
         if line and line[0] != '#':
             count += 1
     return count
+
+class Newick( Text ):
+    pass

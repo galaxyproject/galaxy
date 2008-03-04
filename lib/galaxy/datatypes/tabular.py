@@ -129,3 +129,5 @@ class Tabular( data.Text ):
         m_peek = self.make_html_table( dataset.peek )
         return m_peek
 
+class Taxonomy( Tabular ):
+    pass

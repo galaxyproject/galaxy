@@ -1,0 +1,4 @@
+To compile run:
+
+$gcc -o taxonomy2tree -fast avl.c taxonomy2tree.c
+

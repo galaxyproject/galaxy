@@ -1,17 +1,19 @@
 <tool id="Fetch Taxonomic Ranks" name="Fetch Taxonomic Ranks" version="1.0.0">
   <description>from a list of GIs</description>
-  <command interpreter="python">tax.py $input $out_file1 -c $giField</command>
+  <command interpreter="python">tax.py $input $out_file1 $idField $giField</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Fetch sequences corresponding to Query"></param>
-    <param name="giField" label="GIs column" type="data_column" data_ref="input" />
+    <param name="giField" label="GIs column" type="data_column" data_ref="input" help="select column containing GI numbers"/>
+    <param name="idField" label="Name column" type="data_column" data_ref="input" help="select column containing identifiers you want to include into output"/>
   </inputs>
   <outputs>
-    <data format="tabular" name="out_file1" />
+    <data format="taxonomy" name="out_file1" />
   </outputs>
   <tests>
     <test>
       <param name="input" value="taxonomyGI.txt"/>
       <param name="giField" value="1"/>
+      <param name="idField" value="2"/>
       <output name="out_file1" file="taxonomyGI.dat"/>
     </test>
   </tests>
@@ -26,7 +28,7 @@ Use *Filter and Sort->Filter* to restrict output of this tool to desired taxonom
 
 **What it does**
 
-Fetches taxonomic information for a list of GI numbers (sequiences identifiers used by teh National Center for Biotechnology Information http://www.ncbi.nlm.nih.gov).
+Fetches taxonomic information for a list of GI numbers (sequences identifiers used by the National Center for Biotechnology Information http://www.ncbi.nlm.nih.gov).
 
 -------
 
@@ -38,37 +40,58 @@ Suppose you have BLAST output that looks like this::
    | queryId               | targetGI | identity | alignmentLength | mismatches | gaps | score  |
    +-----------------------+----------+----------+-----------------+------------+------+--------+
    | 1L_EYKX4VC01BXWX1_265 |  1430919 |    90.09 |             212 |         15 |    6 | 252.00 | 
-   | 1L_EYKX4VC01BXWX1_265 |   516142 |    90.09 |             212 |         15 |    6 | 252.00 | 
    +-----------------------+----------+----------+-----------------+------------+------+--------+
 
-and you want to obtain full taxonomic representation for GIs listed in *targetGI* column.  The output of this tool will add 21 columns to the input data shown above. The 21 columns will correspond to::
+and you want to obtain full taxonomic representation for GIs listed in *targetGI* column. If you set paramenters as shown here:
 
-        'root'        :1,
-        'superkingdom':2,
-        'kingdom'     :3,
-        'subkingdom'  :4,
-        'superphylum' :5,
-        'phylum'      :6,
-        'subphylum'   :7,
-        'superclass'  :8,
-        'class'       :9,
-        'subclass'    :10,
-        'superorder'  :11,
-        'order'       :12,
-        'suborder'    :13,
-        'superfamily' :14,
-        'family'      :15,
-        'subfamily'   :16,
-        'tribe'       :17,
-        'subtribe'    :18,
-        'genus'       :19,
-        'subgenus'    :20,
-        'species'     :21,
-        'subspecies'  :22
+.. image:: ../static/images/fetchTax.png
 
 
 
+the tool will generate the following output (you may need to scroll sideways to see the entire line)::
+
+  1                     2       3    4         5       6 7 8        9        10            11       12 13               14       15         16          17        18  19  20 21  22  23           24
+  1L_EYKX4VC01BXWX1_265 1430919 root Eukaryota Metazoa n n Chordata Craniata Gnathostomata Mammalia n  Euarchontoglires Primates Haplorrhini Hominoidea Hominidae n   n   n  Homo n  Homo sapiens n
+
+In other words the tool printed *Name column*, *GI column*, and appended 22 columns containing taxonomic ranks from Superkingdom to Subspecies. Below is a formal definition of the output columns::
+
+   Column  Definition
+   ------- ------------------------------------------
+         1 Name (specified by 'Name column' dropdown)
+         2 GI   (specified by 'GI column' dropdown)
+         3 root
+         4 superkingdom
+         5 kingdom
+         6 subkingdom
+         7 superphylum
+         8 phylum
+         9 subphylum
+        10 superclass
+        11 class
+        12 subclass
+        13 superorder
+        14 order
+        15 suborder
+        16 superfamily
+        17 family
+        18 subfamily
+        19 tribe
+        20 subtribe
+        21 genus
+        22 subgenus
+        23 species
+        24 subspecies
+
+------
+
+.. class:: warningmark
+
+**Why do I have these "n" things?** 
+
+Be aware that the NCBI taxonomy (ftp://ftp.ncbi.nih.gov/pub/taxonomy/) this tool relies upon is incomplete.  This means for many species one or more ranks are absent and represented as "**n**". In the above example *subkingdon*, *superphylum* etc. are missing.
 
 
 </help>
 </tool>
+
+
