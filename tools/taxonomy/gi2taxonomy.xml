@@ -1,5 +1,5 @@
 <tool id="Fetch Taxonomic Ranks" name="Fetch Taxonomic Ranks" version="1.0.0">
-  <description>from a list of GIs</description>
+  <description>for a list of GIs</description>
   <command interpreter="python">tax.py $input $out_file1 $idField $giField</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Fetch sequences corresponding to Query"></param>
@@ -47,7 +47,6 @@ and you want to obtain full taxonomic representation for GIs listed in *targetGI
 .. image:: ../static/images/fetchTax.png
 
 
-
 the tool will generate the following output (you may need to scroll sideways to see the entire line)::
 
   1                     2       3    4         5       6 7 8        9        10            11       12 13               14       15         16          17        18  19  20 21  22  23           24
@@ -55,7 +54,7 @@ the tool will generate the following output (you may need to scroll sideways to 
 
 In other words the tool printed *Name column*, *GI column*, and appended 22 columns containing taxonomic ranks from Superkingdom to Subspecies. Below is a formal definition of the output columns::
 
-   Column  Definition
+    Column Definition
    ------- ------------------------------------------
          1 Name (specified by 'Name column' dropdown)
          2 GI   (specified by 'GI column' dropdown)
@@ -88,7 +87,7 @@ In other words the tool printed *Name column*, *GI column*, and appended 22 colu
 
 **Why do I have these "n" things?** 
 
-Be aware that the NCBI taxonomy (ftp://ftp.ncbi.nih.gov/pub/taxonomy/) this tool relies upon is incomplete.  This means for many species one or more ranks are absent and represented as "**n**". In the above example *subkingdon*, *superphylum* etc. are missing.
+Be aware that the NCBI taxonomy (ftp://ftp.ncbi.nih.gov/pub/taxonomy/) this tool relies upon is incomplete.  This means that for many species one or more ranks are absent and represented as "**n**". In the above example *subkingdon*, *superphylum* etc. are missing.
 
 
 </help>
