@@ -90,7 +90,7 @@ def __main__():
     if options.mafSourceType.lower() in ["cached"]:
         index = maf_utilities.maf_index_by_uid( options.mafSource )
         if index is None:
-            print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( maf_identifier )
+            print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( options.mafSource )
             sys.exit()
     elif options.mafSourceType.lower() in ["user"]:
         #index maf for use here, need to remove index_file when finished
