@@ -155,17 +155,17 @@ class Taxonomy( Tabular ):
                     continue
 
                 elems = line.split( '\t' )
-                # This data type requires at least 24 columns in the data
-                int_col_headers = len( elems ) - len( self.column_names )
-
                 if first: #generate header
                     first = False
                     out.append( '<tr>' )
-                    for index, elem in enumerate( elems[0:int_col_headers] ):
-                        out.append( "<th>%s</th>" % ( index+1 ) )
                     for index, name in enumerate( self.column_names ):
-                        out.append( "<th>%s</th>" % name )
-                    out.append( '</tr>' )
+                        out.append( "<th>%s.%s</th>" % ( str( index+1 ), name ) )
+                    # This data type requires at least 24 columns in the data
+                    num_col_headers = len( elems ) - len( self.column_names )
+                    if num_col_headers > 0:
+                        for index in range( len( self.column_names ), len( elems ) ):
+                            out.append( "<th>%s</th>" % ( index+1 ) )
+                        out.append( '</tr>' )
                 
                 while len( comments ) > 0:
                     out.append( '<tr><td colspan="100%">' )

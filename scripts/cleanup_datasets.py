@@ -148,6 +148,7 @@ def purge_histories( h, cutoff_time, remove_from_disk ):
     start = time.clock()
     histories = h.query().filter( where ).options( eagerload( 'datasets' ) )      
     for history in histories:
+        errors = False
         for dataset in history.datasets:
             if not dataset.purged:
                 file_size = dataset.file_size
