@@ -280,6 +280,10 @@ def nice_size(size):
     '95.4 Mb'
     """
     words = [ 'bytes', 'Kb', 'Mb', 'Gb' ]
+    try:
+        size = float( size )
+    except:
+        return '??? bytes'
     for ind, word in enumerate(words):
         step  = 1024 ** (ind + 1)
         if step > size:
