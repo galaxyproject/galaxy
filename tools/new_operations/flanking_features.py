@@ -20,6 +20,8 @@ def stop_err( msg ):
 
 def main(): 
     
+    strand_col_1_defined = True
+    
     # Parsing Command Line here
     options, args = doc_optparse.parse( __doc__ )
     try:
@@ -27,6 +29,7 @@ def main():
         chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )
         infile1, infile2, out_file, direction = args
         if strand_col_1 < 0:
+            strand_col_1_defined = False
             strand = "+"        #if strand is not defined, default it to +
         if strand_col_2 < 0:
             fstrand = ""        
@@ -34,17 +37,13 @@ def main():
         stop_err( "Metadata issue, correct the metadata attributes by clicking on the pencil icon in the history item." )
 
     try:
-        fi = open(infile1,'r')    #fi: primary interval file
-        ff = open(infile2,'r')    #ff: feature file
-    except:
-        stop_err( "Unable to open input file" )
-    try:
         fo = open(out_file,'w')
     except:
         stop_err( "Unable to open output file" )
     
     tmpfile1 = tempfile.NamedTemporaryFile()
     tmpfile2 = tempfile.NamedTemporaryFile()
+    
     try:
         #Sort the features file based on decreasing end positions 
         command_line1 = "sort -f -n -r -k " + str(end_col_2+1) + " -o " + tmpfile1.name + " " + infile2
@@ -60,148 +59,113 @@ def main():
         stop_err( "Sorting input dataset resulted in error: %s: %s" %( error_code1, stdout ))
     if error_code2 != 0:
         stop_err( "Sorting input dataset resulted in error: %s: %s" %( error_code2, stdout ))
-
-
+    
     skipped_lines = 0
     first_invalid_line = 0
     invalid_line = None
     elems = []
-    j=0
-    for i, line in enumerate( file(infile1) ):
-        line = line.strip('\r\n')
-        if line and (not line.startswith( '#' )) and line != '':
-            j+=1
+    i = 0
+    for i, line in enumerate( file( infile1 ) ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( '#' ):
             try:
-                elems = line.split('\t')
+                elems = line.split( '\t' )
                 #if the start and/or end columns are not numbers, skip that line.
                 chr = elems[chr_col_1]
-                start = int(elems[start_col_1])
-                end = int(elems[end_col_1])
-                if strand_col_1 != -1:    #Strand column is defined
-                    strand = elems[strand_col_1]
-                #if the stand value is not + or -, skip that line.
-                assert strand in ['+', '-']
-                if direction == 'Upstream' or direction == 'Both':
-                    if strand == '+':
-                        for fline in file( tmpfile1.name ):
-                            fline = fline.strip('\r\n')
-                            if fline and not fline.startswith( '#' ):
-                                try:
-                                    felems = fline.split('\t')
-                                    fchr = felems[chr_col_2]
-                                    if fchr != chr:
-                                        continue
-                                    if strand_col_1 != -1:    #Strand column is defined
-                                        try:
-                                            fstrand = felems[strand_col_2]
-                                        except:
-                                            fstrand = ""
-                                    else:
-                                        fstrand = ""
-                                    if fstrand != "":
-                                        if strand != fstrand:
-                                            continue
-                                    fstart = int(felems[start_col_2])
-                                    fend = int(felems[end_col_2])
-                                    if fend < start:    #Highest feature end value encountered i.e. the closest upstream feature found
-                                        print >>fo, "%s\t%s" %(line, fline)
-                                        break
-                                except:
-                                    continue
-                    elif strand == '-':
-                        for fline in file( tmpfile2.name ):
-                            fline = fline.strip('\r\n')
-                            if fline and not fline.startswith( '#' ):
-                                try:
-                                    felems = fline.split('\t')
-                                    fchr = felems[chr_col_2]
-                                    if fchr != chr:
-                                        continue
-                                    if strand_col_1 != -1:    #Strand column is defined
-                                        try:
-                                            fstrand = felems[strand_col_2]
-                                        except:
-                                            fstrand = ""
-                                    else:
-                                        fstrand = ""
-                                    if fstrand != "":
-                                        if strand != fstrand:
-                                            continue
-                                    fstart = int(felems[start_col_2])
-                                    fend = int(felems[end_col_2])
-                                    if fstart > end:    #Lowest feature start value encountered i.e. the closest upstream feature found
-                                        print >>fo, "%s\t%s" %(line, fline)
-                                        break
-                                except:
-                                    continue
-                                
-                if direction == 'Downstream' or direction == 'Both':
-                    if strand == '-':
-                        for fline in file( tmpfile1.name ):
-                            fline = fline.strip('\r\n')
-                            if fline and not fline.startswith( '#' ):
-                                try:
-                                    felems = fline.split('\t')
-                                    fchr = felems[chr_col_2]
-                                    if fchr != chr:
-                                        continue
-                                    if strand_col_1 != -1:    #Strand column is defined
-                                        try:
-                                            fstrand = felems[strand_col_2]
-                                        except:
-                                            fstrand = ""
-                                    else:
-                                        fstrand = ""
-                                    if fstrand != "":
-                                        if strand != fstrand:
-                                            continue
-                                    fstart = int(felems[start_col_2])
-                                    fend = int(felems[end_col_2])
-                                    if fend < start:    #Highest feature end value encountered i.e. the closest DOWNstream feature found
-                                        print >>fo, "%s\t%s" %(line, fline)
-                                        break
-                                except:
-                                    continue
-                    elif strand == '+':
-                        for fline in file( tmpfile2.name ):
-                            fline = fline.strip('\r\n')
-                            if fline and not fline.startswith( '#' ):
-                                try:
-                                    felems = fline.split('\t')
-                                    fchr = felems[chr_col_2]
-                                    if fchr != chr:
-                                        continue
-                                    if strand_col_1 != -1:    #Strand column is defined
-                                        try:
-                                            fstrand = felems[strand_col_2]
-                                        except:
-                                            fstrand = ""
-                                    else:
-                                        fstrand = ""
-                                    if fstrand != "":
-                                        if strand != fstrand:
-                                            continue
-                                    fstart = int(felems[start_col_2])
-                                    fend = int(felems[end_col_2])
-                                    if fstart > end:    #Lowest feature start  value encountered i.e. the closest DOWNstream feature found
-                                        print >>fo, "%s\t%s" %(line, fline)
-                                        break
-                                except:
-                                    continue
-            except Exception, exo:
+                start = int( elems[start_col_1] )
+                end = int( elems[end_col_1] )
+            except:
                 skipped_lines += 1
                 if not invalid_line:
                     first_invalid_line = i + 1
                     invalid_line = line
+                    continue
+
+            if strand_col_1_defined:    #Strand column is defined
+                strand = elems[strand_col_1]
+            #if the stand value is not + or -, skip that line.
+            assert strand in ['+', '-']
+
+            if direction == 'Upstream' or direction == 'Both':
+                if strand == '+':
+                    tmp_file_up = tmpfile1.name
+                elif strand == '-':
+                    tmp_file_up = tmpfile2.name
+                for fline in file( tmp_file_up ):
+                    fline = fline.rstrip( '\r\n' )
+                    if fline and not fline.startswith( '#' ):
+                        try:
+                            felems = fline.split( '\t' )
+                            fchr = felems[chr_col_2]
+                            if fchr != chr:
+                                continue
+                            if strand_col_1 != -1:    #Strand column is defined
+                                try:
+                                    fstrand = felems[strand_col_2]
+                                except:
+                                    fstrand = ""
+                            else:
+                                fstrand = ""
+                            if fstrand and strand != fstrand:
+                                continue
+                            try:
+                                fstart = int(felems[start_col_2])
+                                fend = int(felems[end_col_2])
+                            except:
+                                # Not easy to deal with skipped lines here...
+                                continue
+                            if strand == '+':
+                                if fend < start:    #Highest feature end value encountered i.e. the closest upstream feature found
+                                    print >>fo, "%s\t%s" %(line, fline)
+                                    break
+                            elif strand == '-':
+                                if fstart > end:    #Lowest feature start value encountered i.e. the closest upstream feature found
+                                    print >>fo, "%s\t%s" %(line, fline)
+                                    break
+                        except:
+                            continue
+            if direction == 'Downstream' or direction == 'Both':
+                if strand == '-':
+                    tmp_file_down = tmpfile1.name
+                elif strand == '+':
+                    tmp_file_down = tmpfile2.name
+                for fline in file( tmp_file_down ):
+                    fline = fline.rstrip( '\r\n' )
+                    if fline and not fline.startswith( '#' ):
+                        try:
+                            felems = fline.split( '\t' )
+                            fchr = felems[chr_col_2]
+                            if fchr != chr:
+                                continue
+                            if strand_col_1_defined:    #Strand column is defined
+                                try:
+                                    fstrand = felems[strand_col_2]
+                                except:
+                                    fstrand = ""
+                            else:
+                                fstrand = ""
+                            if fstrand and strand != fstrand:
+                                continue
+                            fstart = int(felems[start_col_2])
+                            fend = int(felems[end_col_2])
+                            if strand == '-':
+                                if fend < start:    #Highest feature end value encountered i.e. the closest DOWNstream feature found
+                                    print >>fo, "%s\t%s" %( line, fline )
+                                    break
+                            elif strand == '+':
+                                if fstart > end:    #Lowest feature start value encountered i.e. the closest DOWNstream feature found
+                                    print >>fo, "%s\t%s" %( line, fline )
+                                    break
+                        except:
+                            continue
     fo.close()
-    fi.close()
     
     #If number of skipped lines = num of lines in the file, inform the user to check metadata attributes of the input file.
-    if skipped_lines == j:
-        print 'Data issue: Skipped all lines in your input. Check the metadata attributes of the chosen input by clicking on the pencil icon next to it.'
+    if skipped_lines and skipped_lines == i:
+        print 'All lines in input dataset invalid, check the metadata attributes by clicking on the pencil icon in the history item.'
         sys.exit()
-    elif skipped_lines > 0:
-        print '(Data issue: skipped %d invalid lines starting at line #%d which is "%s")' % ( skipped_lines, first_invalid_line, invalid_line )
+    elif skipped_lines:
+        print 'Data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
     print 'Location : %s' %(direction)
     
 if __name__ == "__main__":
