@@ -25,7 +25,7 @@ export UNIVERSE_HOME PYTHONPATH
 
 ## Certain tools (EMBOSS, PAML...) are not distributed with Galaxy.
 ## If you have them installed, add their bin directories to the PATH.
-PATH=$PATH:/depot/apps/$MACHTYPE/bin:/home/universe/$ARCH/EMBOSS-5.0.0/bin:/home/universe/$ARCH/ImageMagick/bin:/home/universe/$ARCH/PAML/paml3.15/bin:/Users/anton/galaxy/tools/taxonomy
+PATH=$PATH:/depot/apps/$MACHTYPE/bin:/home/universe/$ARCH/EMBOSS-5.0.0/bin:/home/universe/$ARCH/ImageMagick/bin:/home/universe/$ARCH/PAML/paml3.15/bin
 
 ## NODEPATH defaults to $PATH
 : ${NODEPATH:=$PATH}
