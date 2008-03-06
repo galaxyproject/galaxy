@@ -5,7 +5,7 @@
     <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query">
     <validator type="dataset_metadata_in_file" filename="/depot/data2/galaxy/alignseq.loc" metadata_name="dbkey" metadata_column="1" message="Unspecified build (click the pencil icon in the history item) or sequences are not available for the build specified (you may request them via email)." split=" " line_startswith="seq"  />
     </param>
-	<param name="out_format" type="select" label="Output Type">
+	<param name="out_format" type="select" label="Output data type">
 	<option value="fasta">FASTA</option>
 	<option value="interval">Interval</option>
 	</param>
@@ -35,11 +35,18 @@
 
 .. class:: warningmark
 
-Make sure that the genome build is specified for the interval dataset you are extracting sequences for (click the pencil icon if it is not specified). 
+Make sure that the genome build is specified for the dataset from which you are extracting sequences (click the pencil icon in the history item if it is not specified). 
+
+.. class:: warningmark
+
+All of the following will cause a line from the input dataset to be skipped and a warning generated.  The number of warnings and skipped lines is documented in the resulting history item.
+ - Any lines that do not contain at least 3 columns, a chromosome and numerical start and end coordinates.
+ - Sequences that fall outside of the range of a line's start and end coordinates. 
+ - Chromosome, start or end coordinates that are invalid for the specified build.
 
 .. class:: infomark
 
- **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** - previously were achieved by two seperate tools. 
+ **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** previously were achieved by two seperate tools. 
 
 -----
 
@@ -53,13 +60,13 @@ If strand is not defined, the default value is "+".
 
 **Example**
 
-Input dataset::
+If the input dataset is::
 
     chr7  127475281  127475310  NM_000230  0  +
     chr7  127485994  127486166  NM_000230  0  +
     chr7  127486011  127486166  D49487     0  +
 
-Fetch genomic DNAs of the above data::
+Extracting sequences with **FASTA** output data type returns::
 
     &gt;hg17_chr7_127475281_127475310_+
     GTAGGAATCGCAGCGCCAGCGGTTGCAAG
@@ -74,11 +81,11 @@ Fetch genomic DNAs of the above data::
     CACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCAC
     ACACG
 
-Fetch genomic DNAs of the above data and return as interval format::
+Extrracting sequences with **Interval** output data type returns::
 
-        chr7    127475281       127475310       NM_000230       0       +       GTAGGAATCGCAGCGCCAGCGGTTGCAAG
-        chr7    127485994       127486166       NM_000230       0       +       GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
-        chr7    127486011       127486166       D49487  0       +       TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
+    chr7    127475281       127475310       NM_000230       0       +       GTAGGAATCGCAGCGCCAGCGGTTGCAAG
+    chr7    127485994       127486166       NM_000230       0       +       GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
+    chr7    127486011       127486166       D49487  0       +       TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
 
 </help>
 </tool>

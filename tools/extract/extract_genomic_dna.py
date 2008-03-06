@@ -80,26 +80,20 @@ def __main__():
         pass
     dbkey = sys.argv[7]
     output_format = sys.argv[8]
-
-    # TODO: is this still necessary?  If so, let's get it fixed!
-    if (re.search("^mm\d$", dbkey)):
-        dbkey = "musMus" + dbkey[-1]
-    if (re.search("^rn\d$", dbkey)):
-        dbkey = "ratNor" + dbkey[-1]
-    
     nibs = {}
     twobits = {}
     nib_path = check_nib_file( dbkey )
     twobit_path = check_twobit_file( dbkey )
     if not os.path.exists( nib_path ) and not os.path.exists( twobit_path ):
         # If this occurs, we need to fix the metadata validator.
-        stop_err( "No sequences are available for %s, request them by reporting this error." % dbkey )
+        stop_err( "No sequences are available for '%s', request them by reporting this error." % dbkey )
 
     skipped_lines = 0
     first_invalid_line = 0
     invalid_line = ''
     fout = open( output_filename, "w" )
-    err_msg = ''
+    warnings = []
+    warning = ''
 
     for i, line in enumerate( open( input_filename ) ):
         line = line.rstrip( '\r\n' )
@@ -109,64 +103,91 @@ def __main__():
                 chrom = fields[chrom_col]
                 start = int( fields[start_col] )
                 end = int( fields[end_col] )
-                if includes_strand_col:
-                    strand = fields[strand_col]
-                if strand not in ['+', '-']:
-                    strand = "+"
-    
-                sequence = ''
-                if os.path.exists( "%s/%s.nib" % ( nib_path, chrom) ):
-                    if chrom in nibs:
-                        nib = nibs[chrom]
-                    else:
-                        nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( nib_path, chrom ) ) )
-                    try:
-                        sequence = nib.get( start, end-start )
-                    except:
-                        err_msg = "Unable to fetch the sequence from %d to %d from %s." %( start, end-start, nib_path )
-                        break
-                elif os.path.exists( twobit_path ):
-                    if chrom in twobits:
-                        t = twobits[chrom]
-                    else:
-                        twobits[chrom] = t = bx.seq.twobit.TwoBitFile( file( twobit_path ) )
-                    try:
-                        sequence = t[chrom][start:end]
-                    except:
-                        err_msg = "Unable to fetch the sequence from %d to %d from %s." %( start, end-start, twobit_path )
-                        break
-                else:
-                    err_msg = "Sequence %s was not found for build %s.  Most likely your data lists the wrong chromosome number for this organism. Check your build selection." % ( chrom, dbkey )
-                    break
-    
-                if not sequence:
-                    err_msg = "%s_%s_%s is either invalid or not present in the specified build." %( chrom, start, end )
-                    break
-                if includes_strand_col and strand == "-":
-                    sequence = reverse_complement( sequence )
-    
-                if output_format == "fasta" :
-                    l = len( sequence )        
-                    c = 0
-                    fields = [dbkey, str( chrom ), str( start ), str( end ), strand]
-                    meta_data = "_".join( fields )
-                    print >> fout, ">%s" %meta_data
-                    while c < l:
-                        b = min( c + 50, l )
-                        print >> fout, sequence[c:b]
-                        c = b
-                else: # output_format == "interval"
-                    meta_data = "\t".join( fields )
-                    print >> fout, meta_data, "\t", sequence
             except:
+                warning = "Chrom: '%s', start: '%s', end: '%s' is either invalid or not present in build '%s'." %( chrom, start, end, dbkey )
+                warnings.append( warning )
                 skipped_lines += 1
                 if not invalid_line:
                     first_invalid_line = i + 1
                     invalid_line = line
+                    continue
+
+            if includes_strand_col:
+                strand = fields[strand_col]
+            if strand not in ['+', '-']:
+                strand = "+"
+
+            sequence = ''
+            if os.path.exists( "%s/%s.nib" % ( nib_path, chrom) ):
+                if chrom in nibs:
+                    nib = nibs[chrom]
+                else:
+                    nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( nib_path, chrom ) ) )
+                try:
+                    sequence = nib.get( start, end-start )
+                except:
+                    warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'." %( start, end-start, dbkey )
+                    warnings.append( warning )
+                    skipped_lines += 1
+                    if not invalid_line:
+                        first_invalid_line = i + 1
+                        invalid_line = line
+                    continue
+            elif os.path.exists( twobit_path ):
+                if chrom in twobits:
+                    t = twobits[chrom]
+                else:
+                    twobits[chrom] = t = bx.seq.twobit.TwoBitFile( file( twobit_path ) )
+                try:
+                    sequence = t[chrom][start:end]
+                except:
+                    warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'." %( start, end-start, dbkey )
+                    warnings.append( warning )
+                    skipped_lines += 1
+                    if not invalid_line:
+                        first_invalid_line = i + 1
+                        invalid_line = line
+                    continue
+            else:
+                warning = "Chrom '%s' was not found for build '%s'." % ( chrom, dbkey )
+                warnings.append( warning )
+                skipped_lines += 1
+                if not invalid_line:
+                    first_invalid_line = i + 1
+                    invalid_line = line
+                continue
+            if not sequence:
+                warning = "Chrom: '%s', start: '%s', end: '%s' is either invalid or not present in build '%s'." %( chrom, start, end, dbkey )
+                warnings.append( warning )
+                skipped_lines += 1
+                if not invalid_line:
+                    first_invalid_line = i + 1
+                    invalid_line = line
+                continue
+            if includes_strand_col and strand == "-":
+                sequence = reverse_complement( sequence )
+
+            if output_format == "fasta" :
+                l = len( sequence )        
+                c = 0
+                fields = [dbkey, str( chrom ), str( start ), str( end ), strand]
+                meta_data = "_".join( fields )
+                fout.write( ">%s\n" % meta_data )
+                while c < l:
+                    b = min( c + 50, l )
+                    fout.write( "%s\n" % str( sequence[c:b] ) )
+                    c = b
+            else: # output_format == "interval"
+                meta_data = "\t".join( fields )
+                fout.write( "%s\t%s\n" % ( meta_data, str( sequence ) ) )
+
     fout.close()
-    if err_msg:
-        stop_err( err_msg )
+
+    if warnings:
+        warn_msg = "Total of %d warnings, 1st is: " % len( warnings )
+        warn_msg += warnings[0]
+        print warn_msg
     if skipped_lines:
-        print 'Data issue: skipped %d invalid lines starting at line #%d, "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+        print 'Skipped %d invalid lines starting at line #%d, "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
 
 if __name__ == "__main__": __main__()

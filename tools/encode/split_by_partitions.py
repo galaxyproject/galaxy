@@ -96,7 +96,7 @@ def main():
                     # No overlap with any partition? For now throw this since the 
                     # partitions tile the encode regions completely, indicate an interval
                     # that does not even overlap an encode region
-                    warning = "warning: Interval (%s, %d, %d) does not overlap any partition" % ( chr, start, end ) + ", line[" + str( line_count ) + "]"
+                    warning = "warning: Interval (%s, %d, %d) does not overlap any partition" % ( chr, start, end ) + ", line[" + str( line_count ) + "]. "
                     warnings.append( warning )
                     name = "no_overlap"
                     score = 0
@@ -112,14 +112,8 @@ def main():
     in_file.close()
 
     if warnings:
-        warn_msg = "This tool is useful on ENCODE regions only."
-        if len( warnings ) > 2:
-            warn_msg += "More than 2 warnings: "
-            for warning in warnings[0:2]:
-                warn_msg += warning + ", "
-        else:
-            for warning in warnings:
-                warn_msg += warning + ", "
+        warn_msg = "Total of %d warnings, 1st is: " % len( warnings )
+        warn_msg += warnings[0]
         print warn_msg
     if skipped_lines:
         print "Skipped %d invalid lines starting at line # %d: %s" % ( skipped_lines, first_invalid_line, invalid_line )
