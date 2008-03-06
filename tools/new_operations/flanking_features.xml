@@ -2,8 +2,8 @@
   <description>  for every interval</description>
   <command interpreter="python2.4">flanking_features.py $input1 $input2 $out_file1 $direction -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
   <inputs>
-    <param format="interval" name="input1" type="data" label="Select data containing primary intervals"/>
-    <param format="interval" name="input2" type="data" label="Select data containing features"/>
+    <param format="interval" name="input1" type="data" label="For every interval in"/>
+    <param format="interval" name="input2" type="data" label="Fetch features from"/>
     <param name="direction" type="select" label="Location of the flanking features">
       <option value="Both">Both Upstream and Downstream</option>
       <option value="Upstream">Upstream</option>
@@ -27,7 +27,7 @@
 
 **What it does**
 
-For every interval in the primary input file (input 1), this tool fetches the **closest** upstream and/or downstream features from feature file (input 2). 
+For every interval in the **interval** dataset, this tool fetches the **closest** upstream and / or downstream features from the **features** dataset.
 
 -----
 
@@ -35,19 +35,19 @@ For every interval in the primary input file (input 1), this tool fetches the **
 
 **Note:** 
 
-Every line should contain at least 3 columns: Chromosome number, Start and Stop co-ordinates. If any of these columns is missing or if start and stop co-ordinates are not numerical, the tool may encounter exceptions and such lines are skipped as invalid. The number of invalid skipped lines is documented in the resulting history item as a "Data issue".
+Every line should contain at least 3 columns: chromosome number, start and stop coordinates. If any of these columns is missing or if start and stop coordinates are not numerical, the lines will be treated as invalid and skipped. The number of skipped lines is documented in the resulting history item as a "data issue".
 
 -----
 
 **Example**
 
-If the **primary intervals** are as follows::
+If the **intervals** are::
 
    chr1 10   100  Query1.1
    chr1 500  1000 Query1.2
    chr1 1100 1250 Query1.3
 
-and the **features** are as follows::
+and the **features** are::
 
    chr1 120  180  Query2.1
    chr1 140  200  Query2.2
@@ -55,7 +55,7 @@ and the **features** are as follows::
    chr1 2000 2204 Query2.4
    chr1 2500 3000 Query2.5
 
-Running this tool with direction as **Both Upstream and Downstream** will return the following::
+Running this tool for **Both Upstream and Downstream** will return::
 
    chr1 10   100  Query1.1 chr1 120  180  Query2.1
    chr1 500  1000 Query1.2 chr1 140  200  Query2.2
