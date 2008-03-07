@@ -159,8 +159,8 @@ class System( BaseController ):
     def disk_usage( self, trans, **kwd ):
         file_path = trans.app.config.file_path
         disk_usage = self.get_disk_usage( file_path )
-        min_file_size = 2**30 # 100 MB
-        file_size_str = '100 MB'
+        min_file_size = 2**32 # 4 Gb
+        file_size_str = nice_size( min_file_size )
         d = trans.model.Dataset
         datasets = []
         where = ( d.table.c.file_size > min_file_size )
@@ -169,4 +169,19 @@ class System( BaseController ):
         for dataset in dataset_rows:
             datasets.append( ( dataset.id, str( dataset.update_time )[0:10], dataset.history_id, dataset.deleted, dataset.file_size ) )
         return file_path, disk_usage, datasets, file_size_str
+
+def nice_size( size ):
+    """Returns a readably formatted string with the size"""
+    words = [ 'bytes', 'Kb', 'Mb', 'Gb' ]
+    try:
+        size = float( size )
+    except:
+        return '??? bytes'
+    for ind, word in enumerate( words ):
+        step  = 1024 ** ( ind + 1 )
+        if step > size:
+            size = size / float( 1024 ** ind )
+            out  = "%.1f %s" % ( size, word )
+            return out
+    return '??? bytes'
 
