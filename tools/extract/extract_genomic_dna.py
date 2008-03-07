@@ -104,7 +104,7 @@ def __main__():
                 start = int( fields[start_col] )
                 end = int( fields[end_col] )
             except:
-                warning = "Chrom: '%s', start: '%s', end: '%s' is either invalid or not present in build '%s'." %( chrom, start, end, dbkey )
+                warning = "Invalid chrom, start or end column values"
                 warnings.append( warning )
                 skipped_lines += 1
                 if not invalid_line:
