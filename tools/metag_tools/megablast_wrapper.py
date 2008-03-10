@@ -2,7 +2,9 @@
 """
 run megablast for metagenomics data
 """
-import sys, os, tempfile
+
+import sys, os, tempfile, subprocess
+from megablast_xml_parser import *
 
 DB_LOC = "/depot/data2/galaxy/blastdb.loc"
 
@@ -13,11 +15,11 @@ def __main__():
     output_filename = sys.argv[3]
     
     # megablast parameters
-    mega_word_size = sys.argv[4]    # -W
-    mega_iden_cutoff = sys.argv[5]    # -p
+    mega_word_size = sys.argv[4]        # -W
+    mega_iden_cutoff = sys.argv[5]      # -p
     mega_disc_word = sys.argv[6]        # -t
     mega_disc_type = sys.argv[7]        # -N
-    mega_filter = sys.argv[8]        # -F
+    mega_filter = sys.argv[8]           # -F
     
     output_file = open(output_filename, 'w')
     
@@ -32,29 +34,21 @@ def __main__():
             db[(fields[0])].append(fields[j])
     
     # prepare to run megablast
-    if os.system('which megablast 2>&1'): print >> sys.stderr, "Cannot locate megablast."
+    retcode = subprocess.call('which megablast 2>&1', shell='True')
+    if retcode < 0:
+        print >> sys.stderr, "Cannot locate megablast."
+        sys.exit()
         
     for chunk in db[(db_build)]:
-        megablast_output_file = tempfile.NamedTemporaryFile('w')
-        megablast_output_filename = megablast_output_file.name   
-        megablast_arguments = ["megablast", "-d", chunk, "-i", query_filename, "-o", megablast_output_filename] 
-        megablast_parameters = ["-m", "8", "-D", "3", "-a", "8"]
+        megablast_arguments = ["megablast", "-d", chunk, "-i", query_filename]
+        megablast_parameters = ["-m", "7", "-a", "8"]
         megablast_user_inputs = ["-W", mega_word_size, "-p", mega_iden_cutoff, "-t", mega_disc_word, "-N", mega_disc_type, "-F", mega_filter]
-        megablast_command = " ".join(megablast_arguments) + " " + " ".join(megablast_parameters) + " " + " ".join(megablast_user_inputs) + " 2>&1"
-        os.system(megablast_command)
-            
-        for i, line in enumerate( file(megablast_output_filename) ):
-            line = line.rstrip('\r\n')
-            fields = line.split()
-            if (not line.startswith("#")): 
-                # replace subject id with gi number
-                # remove this after re-build blastdb
-                subject_id_fields = fields[1].split('|')
-                if len(subject_id_fields) > 1: gi = subject_id_fields[1]
-                else: gi = subject_id_fields[0]
-                fields[1] = gi
-                print >> output_file, "\t".join(fields) 
-    
+        megablast_command = " ".join(megablast_arguments) + " " + " ".join(megablast_parameters) + " " + " ".join(megablast_user_inputs) + " 2>&1" 
+        
+        # use Anton's parser
+        megablast_output = os.popen(megablast_command)
+        parse_megablast_xml_output(megablast_output,output_file)
+        
     output_file.close()
     
     # megablast generates a file called error.log, if empty, delete it, if not, show the contents

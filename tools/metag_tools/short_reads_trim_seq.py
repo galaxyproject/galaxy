@@ -136,6 +136,7 @@ def __main__():
                         score = None
                         while to_find_score:
                             score_line = score_fh.readline().rstrip('\r\n')
+                            if not score_line: break
                             if score_line.startswith('#'):
                                 continue
                             if (score_line.startswith('>')):
