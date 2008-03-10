@@ -10,29 +10,17 @@ def stop_err(msg):
     sys.exit()
     
 
-def unzip_files(file_name):
+def unzip(zip_file):
     
-    read_file = []
+    zip_inst = zipfile.ZipFile(zip_file, 'r')
     
-    temp_dir_name = tempfile.mkdtemp() + '/'        
-    temp_new_dest = temp_dir_name + file_name.split('/')[-1]
-    command_line = 'cp ' + file_name + ' ' + temp_dir_name + '\nunzip ' + temp_new_dest + ' -d ' + temp_dir_name
+    tmpfilename = tempfile.NamedTemporaryFile().name
+    for name in zip_inst.namelist():
+        file(tmpfilename,'a').write(zip_inst.read(name))
     
-    os.system(command_line)
-    os.remove(temp_new_dest)
+    zip_inst.close()
     
-    dest = os.listdir(temp_dir_name)
-    if ((len(dest) == 1) and (os.path.isdir(dest[0]))):
-        new_file_dir = temp_dir_name + dest[0] + '/'
-        dest = os.listdir(new_file_dir)
-    else:
-        new_file_dir = temp_dir_name
-    
-    for filex in dest:
-        filex = new_file_dir + filex
-        read_file.append(filex)
-        
-    return new_file_dir, read_file
+    return tmpfilename
 
 
 def merge_to_20_datapoints(tmp_score):
@@ -79,21 +67,22 @@ def merge_to_20_datapoints(tmp_score):
             
     return score_points_tmp
 
+
 def __main__():
+
     # I/O
     infile_score_name = sys.argv[1].strip()
     outfile_R_name = sys.argv[2].strip()
 
     # unzip infile
-    tmp_score_dir = ''
-    score_file_list = []
-    if (zipfile.is_zipfile(infile_score_name)): (tmp_score_dir, score_file_list) = unzip_files(infile_score_name)
-    else: score_file_list = [infile_score_name]
+    if (zipfile.is_zipfile(infile_score_name)): 
+        unzip_infile = unzip(infile_score_name)
+    else: unzip_infile = infile_score_name
 
     # detect whether it's tabular or fasta format
     seq_method = ''
-    test_file = score_file_list[0]
-    test_fh = open(test_file,'r')
+    score_file = unzip_infile
+    test_fh = open(score_file,'r')
     while seq_method == '': 
         read_scorefile = test_fh.readline()
         if read_scorefile.startswith('#'):
@@ -114,11 +103,12 @@ def __main__():
     tmp_read_length = 0
     tmp_varied_length = False
     
-    test_file = score_file_list[0]
     if (seq_method == 'solexa'):
         tmp_score = []
-        for i, line in enumerate(open(test_file)):
+        for i, line in enumerate(open(score_file)):
             line = line.rstrip('\r\n')
+            if line.startswith('#'):
+                continue
             tmp_score = line.split('\t')
             if (tmp_read_length == 0): tmp_read_length = len(tmp_score)
             if (tmp_read_length != len(tmp_score)):
@@ -126,8 +116,10 @@ def __main__():
     else:    
         # skip the last fasta sequence
         tmp_score = ''
-        for i, line in enumerate(open(test_file)):
+        for i, line in enumerate(open(score_file)):
             line = line.rstrip('\r\n')
+            if line.startswith('#'):
+                continue
             if line.startswith('>'):
                 if len(tmp_score) > 0:
                     tmp_score = tmp_score.split()
@@ -144,9 +136,10 @@ def __main__():
     # data for R boxplot
     # data for quantile
     if (seq_method == 'solexa'):
-        for score_file in score_file_list:
             for i, line in enumerate(open(score_file)):
                 line = line.rstrip('\r\n')
+                if line.startswith('#'):
+                    continue
                 each_loc = line.split('\t')
                 tmp_array = []
                 for each_base in each_loc:
@@ -165,9 +158,10 @@ def __main__():
                     else:
                         quality_score[(j, k)] = 1
     else:
-        tmp_score = ''
-        for score_file in score_file_list:
+            tmp_score = ''
             for i, line in enumerate(open(score_file)):
+                if line.startswith('#'):
+                    continue
                 if line.startswith('>'):
                     if len(tmp_score) > 0:
                         tmp_score = ['0'] + tmp_score.split()
@@ -207,7 +201,7 @@ def __main__():
 
     
     """
-    # quantile
+    # This is next step: quantile
     keys = quality_score.keys()
     keys.sort()
     for key in keys:
@@ -227,6 +221,12 @@ def __main__():
     r.pdf(outfile_R_pdf)
     
     title = "boxplot of quality scores"
+    
+    for i, subset in enumerate(score_matrix):
+        if not subset:
+            print >> sys.stdout, 'At least one of the columns is empty.'
+            score_matrix[i] = [0]
+            
     if (tmp_varied_length is False):
         r.boxplot(score_matrix,xlab="location in read length",main=title)
     else:
@@ -241,11 +241,9 @@ def __main__():
     
     r.dev_off()
 
-    if (os.path.isdir(tmp_score_dir)):
-        for file_name in score_file_list:
-            os.remove(file_name)
-        os.removedirs(tmp_score_dir)
-
+    if zipfile.is_zipfile(infile_score_name) and os.path.exists(unzip_infile):
+        os.remove(unzip_infile)
+        
     r.quit(save = "no")
 
 if __name__=="__main__":__main__()
