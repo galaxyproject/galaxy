@@ -1,11 +1,11 @@
-<tool id="megablast_wrapper" name="Run Megablast">
+<tool id="megablast_wrapper" name="Run Megablast" version="2.0.0">
 	<description>for Metagenomics Projects</description>
 	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $disc_word $disc_type $filter_query</command>
 	<inputs>
 		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
 		<param name="source_select" type="select" display="radio" label="Target database">
-			<option value="nt">nt (for nucleotides)</option>
 			<option value="test">Ecoli_K12</option>
+			<option value="nt">nt (for nucleotides)</option>
 		</param> 
 		<param name="word_size" type="select" label="Word size (-W, length of best perfect match)">
 			<option value="28">28</option>
@@ -28,14 +28,14 @@
 	</outputs>
 	<tests>
 		<test>
-			<param name="input_query" value="megablast_query.fa" ftype="fasta"/>
+			<param name="input_query" value="megablast_wrapper_test1.fa" ftype="fasta"/>
 			<param name="source_select" value="test" />
 			<param name="word_size" value="28" />
 			<param name="iden_cutoff" value="99.0" />
 			<param name="disc_word" value="0" />
 			<param name="disc_type" value="0" />
 			<param name="filter_query" value="T" />
-			<output name="output1" file="megablast_test.out"/> 
+			<output name="output1" file="megablast_wrapper_test1.out"/> 
 		</test>
 	</tests>
 	<help>
