@@ -10,6 +10,7 @@
 #define	DEFAULT_STRING_ALLOC	  16L
 #define	NUMBER_OF_FIELDS		  24
 #define NUMBER_OF_TAX_FIELDS	  22
+#define AVL_THRESHOLD			  64
 
 char    *rankLabels [NUMBER_OF_TAX_FIELDS] = 
 	 	{"root"        ,
@@ -44,6 +45,8 @@ void			check_pointer	(void*);
 
 char			validTaxonNameChar[256];
 
+long			currentLineID			= 1;
+
 /*---------------------------------------------------------------------------------------------------- */
 
 struct  avl_table *	  idTagAVL     = NULL,
@@ -69,6 +72,24 @@ struct		vector
 	long vLength,
 		 vaLength;
 };
+
+
+
+/*---------------------------------------------------------------------------------------------------- */
+
+void reportError (char * theMessage)
+{
+	fprintf (stderr, "\nERROR: %s\n", theMessage);
+	exit (1);
+}
+
+/*---------------------------------------------------------------------------------------------------- */
+
+void reportErrorLine (char * theMessage, long lineID)
+{
+	fprintf (stderr, "SKIPPED line %d: %s\n", lineID, theMessage);
+}
+
 
 /*---------------------------------------------------------------------------------------------------- */
 
@@ -238,9 +259,11 @@ struct treeNode
 	struct treeNode * parent;
 	long   startIndex,
 		   hitCount,
-		   length;
+		   length
+		   ,beenhere;
 		   
 	struct vector   * children;
+	struct avl_table* cachedChildren;
 	
 } *globalTreeRoot;
 
@@ -251,45 +274,82 @@ struct treeNode * allocateNewTreeNode (void)
 	struct treeNode *newN = (struct treeNode*)malloc (sizeof (struct treeNode));
 	check_pointer (newN);
 	newN->parent = NULL;
-	newN->startIndex = 0;
-	newN->length	 = 0;
-	newN->hitCount   = 0;
-	newN->children = allocateNewVector();
+	newN->startIndex     = 0;
+	newN->length	     = 0;
+	newN->hitCount       = 0;
+	newN->beenhere		 = 0;
+	newN->cachedChildren = NULL;
+	newN->children		 = allocateNewVector();
 	check_pointer (newN->children);
 	return newN;
 }
 
 /*---------------------------------------------------------------------------------------------------- */
-struct treeNode * addAChild (struct treeNode* p, struct treeNode * c)
+
+int compare_tree_nodes (const void *avl_a, const void *avl_b, void * xtra)
 {
-	struct treeNode * c2 = NULL;
-	long i = 0; 
-	for (; i<p->children->vLength; i++)
-		if (((struct treeNode**)p->children->vData)[i]->startIndex == c->startIndex)
-			break;
-	if (p->children->vLength == i)
-	{
-		if (c->parent && c->parent != p)
-		{
-			c2 = allocateNewTreeNode();
-			c2->startIndex = c->startIndex;
-			c2->length	   = c->length; 
-			c2->hitCount   = 1;
-			c = c2;
-		}
-		appendValueToVector (p->children, (long)c);
-		c->parent = p;
-	}
-	return c;
+	long  t1 = ((struct treeNode*)avl_a)->startIndex,
+		  t2 = ((struct treeNode*)avl_b)->startIndex;
+		  
+	if (t1 < t2)
+		return -1;
+	if (t1 > t2)
+		return 1;
+    
+    return 0;
 }
 
 /*---------------------------------------------------------------------------------------------------- */
 
 void	destroyTreeNode (struct treeNode* n)
 {
+	if (n->cachedChildren)
+		avl_destroy (n->cachedChildren, NULL);
 	free (n->children);
 	free (n);
 }
+
+/*---------------------------------------------------------------------------------------------------- */
+
+void	printTreeNode (FILE* f, struct treeNode* n)
+{
+	long i = 0;
+	fprintf (f, "Node name: ");
+	if (n->startIndex>=0)
+	{
+		for (;i < n->length; i++)
+			fputc (globalNameBuffer->sData[n->startIndex + i], f);
+	}
+	else
+		fprintf (f, " empty node");
+	fprintf (f, "\nHit count %d (backup %d)\n", n->hitCount, n->beenhere);
+}
+
+/*---------------------------------------------------------------------------------------------------- */
+
+void	traverseCheck (struct treeNode* n, char first)
+{
+	long i = 0;
+
+	if (!first && n->startIndex >= 0 && n->beenhere != n->hitCount)
+	{
+		printTreeNode (stderr, n);
+		//reportError ("DEATH AND DECAY, BIZNATCH!\n");
+	}
+	
+	for (i = 0; i<n->children->vLength; i++)
+		traverseCheck (((struct treeNode**)n->children->vData)[i], first);	
+	
+	if (first)
+	{
+		if (n->children->vLength == 0)
+			n->beenhere = n->hitCount;
+
+		if (n->parent)
+			n->parent->beenhere += n->beenhere;
+	}
+}
+
 
 /*---------------------------------------------------------------------------------------------------- */
 
@@ -297,30 +357,117 @@ void	traverseTree (FILE *summaryFile, struct treeNode* n, long maxDepth, long cu
 {
 	long i = 0;
 	char c;
+		
 	if (currentDepth <= maxDepth)
 	{
 		if (n->children->vLength && maxDepth > currentDepth)
 		{
-			fputc ('(',summaryFile);
-			for (; i<n->children->vLength; i++)
+			if (n->startIndex < 0)
 			{
-				traverseTree (summaryFile, ((struct treeNode**)n->children->vData)[i], maxDepth, currentDepth+1);
-				if (i<n->children->vLength-1)
-					fputc (',',summaryFile);
+				for (i=0; i>n->startIndex && currentDepth - i < maxDepth; i--)
+					fputc ('(', summaryFile);
+				if (i == n->startIndex)
+					i = 0;
 			}
+			else
+				fputc ('(',summaryFile);
+
+			if (i==0)
+				for (; i<n->children->vLength; i++)
+				{
+					traverseTree (summaryFile, ((struct treeNode**)n->children->vData)[i], maxDepth, currentDepth+1);
+					if (i<n->children->vLength-1)
+						fputc (',',summaryFile);
+				}
+			
+			if (n->startIndex < 0)
+				for (i=0; i>n->startIndex+1 && currentDepth - i < maxDepth; i--)
+					fprintf (summaryFile,")n:%d", n->hitCount);
 			fputc (')',summaryFile);
 		}
-		for (i=n->startIndex; i<n->startIndex+n->length;i++)
+		
+		if (n->startIndex>= 0)
 		{
-			c = globalNameBuffer->sData[i];
-			if (validTaxonNameChar [c])
-				fputc (c,summaryFile);
-			else
-				fputc ('_',summaryFile);
+			for (i=n->startIndex; i<n->startIndex+n->length;i++)
+			{
+				c = globalNameBuffer->sData[i];
+				if (validTaxonNameChar [c])
+					fputc (c,summaryFile);
+				else
+					fputc ('_',summaryFile);
+			}
+			fprintf (summaryFile,":%d", n->hitCount);
 		}
-		fprintf (summaryFile,":%d", n->hitCount);
+		else
+			fprintf (summaryFile, "n:%d", n->hitCount);	
 	}
 }
+
+/*---------------------------------------------------------------------------------------------------- */
+struct treeNode * addAChild (struct treeNode* p, struct treeNode * c, char killIfD)
+{
+	struct treeNode * c2			= NULL;
+	long			  i				= 0;
+	char			  addNode		= 0;
+	
+	if (p->cachedChildren)
+	{
+		if ((c2 = ((struct treeNode*)avl_find (p->cachedChildren, c))) == NULL)
+			addNode = 1;
+		/*else
+		{
+			if (c2->startIndex > globalNameBuffer->sLength || c2->startIndex < 0)
+				printf ("Reject node add %x %d %d\n", c2, c2->startIndex, c->startIndex);
+		}*/
+	}
+	else
+	{
+		for (; i<p->children->vLength; i++)
+			if (((struct treeNode**)p->children->vData)[i]->startIndex == c->startIndex)
+				break;
+		addNode = (p->children->vLength == i);
+	}
+	
+	if (addNode)
+	{
+		if (c->parent && c->parent != p)
+		{
+			c2 = allocateNewTreeNode();
+			c2->startIndex = c->startIndex;
+			c2->length	   = c->length; 
+			c2->hitCount   = 1;
+			//if (p->cachedChildren)
+			//	fprintf (stdout, "%x %x\n", p, c->parent);
+			c = c2;
+
+		}
+		c->parent  = p;
+		appendValueToVector (p->children, (long)c);
+		if (p->children->vLength > AVL_THRESHOLD)
+			if (p->cachedChildren == NULL)
+			{
+				//fprintf (stdout, "Switch %d\n", currentLineID);
+				// switch over the the avl representation of nodes
+				p->cachedChildren = avl_create (compare_tree_nodes, NULL, NULL);
+				for (i=0; i<p->children->vLength; i++)
+					avl_probe(p->cachedChildren, ((struct node**)p->children->vData)[i]);
+			}
+			else
+				avl_probe (p->cachedChildren, c);
+	}
+	else
+	{
+		if (killIfD)
+			destroyTreeNode (c);
+		if (c2)
+			return c2;
+		else
+			c = ((struct treeNode**)p->children->vData)[i];
+			
+	}
+	return c;
+}
+
 
 /*---------------------------------------------------------------------------------------------------- */
 /*---------------------------------------------------------------------------------------------------- */
@@ -358,6 +505,7 @@ int compare_id_tags (const void *avl_a, const void *avl_b, void * xtra)
     
     return 0;
 }
+
 
 /*---------------------------------------------------------------------------------------------------- */
 /*---------------------------------------------------------------------------------------------------- */
@@ -475,22 +623,6 @@ void destroy_string (struct bufferedString* aStr)
 
 /*---------------------------------------------------------------------------------------------------- */
 
-void reportError (char * theMessage)
-{
-	fprintf (stderr, "\nERROR: %s\n", theMessage);
-	exit (1);
-}
-
-/*---------------------------------------------------------------------------------------------------- */
-
-void reportErrorLine (char * theMessage, long lineID)
-{
-	fprintf (stderr, "SKIPPED line %d: %s\n", lineID, theMessage);
-}
-
-
-/*---------------------------------------------------------------------------------------------------- */
-
 int main (int argc, const char * argv[]) 
 {
 		
@@ -507,23 +639,24 @@ int main (int argc, const char * argv[])
 									
 	struct  treeNode				*currentParent = NULL,
 									*currentNode;
-									
+																		
 	char	automatonState			= 0,
 			currentField			= 0,
 			currentChar				= 0,
 			showEmptyNodes			= 0;
 						
-	long	currentLineID			= 1,
-			expectedFields			= NUMBER_OF_FIELDS,
+	long	expectedFields			= NUMBER_OF_FIELDS,
 			indexer,
 			indexer2,
 			indexer3,
-			maxTreeLevel			= 0;
+			maxTreeLevel			= 0,
+			setEOF					= 0,
+			nRunCounter				= 0;
 			
 	FILE  	* treeFile				= NULL,
 			* summaryFile			= NULL,
 			* inFile				= NULL;
-						
+									
 	globalNameBuffer  = allocateNewString();			
 	globalTreeRoot	  = allocateNewTreeNode();
 	currentBuffers    = (struct	bufferedString**)malloc (expectedFields*sizeof (struct	bufferedString*));
@@ -571,7 +704,7 @@ int main (int argc, const char * argv[])
 	
 	currentChar  = fgetc(inFile);
 	currentField = 0;
-	while (!feof(inFile))
+	while (setEOF < 2)
 	{
 		switch (automatonState)
 		{
@@ -591,33 +724,35 @@ int main (int argc, const char * argv[])
 				break;
 				
 			case 1: /* reading sequence ID */
-				if (isalnum(currentChar))
-					appendCharacterToString(currentBuffers[currentField],toupper(currentChar));
+				if (currentChar == '\t')
+				{
+					automatonState = 2;
+					continue;
+				}
 				else
-					if (currentChar == '\t')
-					{
-						automatonState = 2;
-						continue;
-					}
-					else
+				{
+					if (currentChar == '\n' || currentChar == '\r')
 					{
 						reportErrorLine ("Expected a tab following the gid",currentLineID);
 						automatonState = 6;
 						continue;
 					}
-					break;
+					else
+						appendCharacterToString(currentBuffers[currentField],toupper(currentChar));
+						
+				}
+				break;
 					
 			case 2: /* looking for a \t or a \n|\r*/
 				if (currentChar == '\t')
 				{
-					automatonState = 3;
 					currentField   ++;
-					if (currentField == expectedFields)
-					{
-						reportErrorLine ("Too many fields",currentLineID);
-						automatonState = 6;
-						continue;
-					}
+					if (currentField < expectedFields)
+						automatonState = 3;
+
+						//reportErrorLine ("Too many fields",currentLineID);
+						//automatonState = 6;
+						//continue;
 				}
 				else
 					if (currentChar == '\n' || currentChar == '\r')
@@ -628,14 +763,19 @@ int main (int argc, const char * argv[])
 						aTag->taxID     = atoi (currentBuffers[1]->sData);
 						aTag->hit_count = 1;
 						aTag2 = *(struct storedIDTag**)avl_probe(idTagAVL, aTag);
+						//fprintf (stdout, "%d %d %x %x\n", currentLineID,aTag->taxID,aTag,aTag2);
 						if (aTag == aTag2) // new taxID
 						{
 							// process fields
 							currentParent = globalTreeRoot;
+							nRunCounter   = 0;
 							for (indexer = NUMBER_OF_FIELDS-NUMBER_OF_TAX_FIELDS; indexer < NUMBER_OF_FIELDS; indexer++)
 							{
 								indexer2 = strlen(currentBuffers[indexer]->sData);
-								if ((currentBuffers[indexer])->sData[0] != 'n' || indexer2 > 1 || showEmptyNodes && indexer2 > 0) // not 'n'
+								//fprintf (stdout, "%d %d\n", indexer, nRunCounter,indexer2);
+								if ((currentBuffers[indexer])->sData[0] == 'n' && indexer2 == 1)
+									nRunCounter++;
+								else
 								{
 									indexer3 = globalNameBuffer->sLength;
 									appendRangeToString (globalNameBuffer,currentBuffers[indexer],0,indexer2-1);									
@@ -654,6 +794,7 @@ int main (int argc, const char * argv[])
 									if (sTag == sTag3) // new node
 									{
 										//fprintf (stderr, "Add node level %d %d\n",indexer-(NUMBER_OF_FIELDS-NUMBER_OF_TAX_FIELDS), sTag2->startIndex);
+										sTag3 = sTag;
 										sTag3->refNode					= allocateNewTreeNode();
 										sTag3->refNode->length			= sTag2->length;
 										sTag3->refNode->startIndex		= sTag2->startIndex;
@@ -665,14 +806,38 @@ int main (int argc, const char * argv[])
 									
 									sTag3->refNode->hitCount++;
 																			
+									if (showEmptyNodes && nRunCounter>0)
+									{
+										currentNode             = allocateNewTreeNode();
+										currentNode->startIndex = -nRunCounter;
+										currentNode->hitCount	= 1;
+										if (currentParent)
+											currentParent = addAChild (currentParent,currentNode,1);
+										else
+											reportError ("Attempting to attach an empty node a null parent.");
+									}
+									
 									if (currentParent)
-										currentParent = addAChild (currentParent,sTag3->refNode);
+										currentParent = addAChild (currentParent,sTag3->refNode,0);
 									else
 										currentParent = sTag3->refNode;
+								
+									nRunCounter = 0;
 								}
+							}
+							if (nRunCounter>0)
+							{
+								currentNode             = allocateNewTreeNode();
+								currentNode->startIndex = -nRunCounter;
+								currentNode->hitCount	= 1;
+								if (currentParent)
+									currentParent = addAChild (currentParent,currentNode,1);
+								else
+									reportError ("Attempting to attach an empty node a null parent.");
 							}
 							aTag->tNode = currentParent;
 							aTag = allocateIDTag();
+
 						}
 						else
 						{
@@ -683,17 +848,20 @@ int main (int argc, const char * argv[])
 								currentParent->hitCount++;
 								currentParent = currentParent->parent;
 							}
-
+							//printf ("Duplicate tag %d %d\n", aTag2->hit_count, aTag2->taxID);
 						}
-							
+						//traverseCheck (globalTreeRoot);
 						automatonState = 5;
 						continue;
 					}
 					else			
 					{		
-						reportErrorLine ("Expected a tab following a field",currentLineID);
-						automatonState = 6;
-						continue;
+						if (currentField < expectedFields)
+						{
+							reportErrorLine ("Expected a tab following a field",currentLineID);
+							automatonState = 6;
+							continue;
+						}
 					}
 				break;
 				
@@ -746,8 +914,13 @@ int main (int argc, const char * argv[])
 				break;
 		}
 		currentChar = fgetc(inFile);
+		if (feof (inFile))
+		{
+			setEOF		++;
+			currentChar = '\n';
+		}
 	}
-
+	
 	fprintf (stderr, "Read %d unique taxIDs\n", avl_count (idTagAVL));
 	
 	fclose  (inFile);	
@@ -781,6 +954,8 @@ int main (int argc, const char * argv[])
 	
 	traverseTree (treeFile,((struct treeNode**)globalTreeRoot->children->vData)[0],(maxTreeLevel>0)?(maxTreeLevel+1):0xfffffL,0);
 	fclose (treeFile);
+	traverseCheck (((struct treeNode**)globalTreeRoot->children->vData)[0], 1);
+	traverseCheck (((struct treeNode**)globalTreeRoot->children->vData)[0], 0);
 	return 0;
 }
 

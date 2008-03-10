@@ -1,0 +1,51 @@
+<tool id="barchart_gnuplot" name="Bar chart">
+  <description>for multiple columns</description>
+  <command interpreter="python2.4">
+    #if $xtic.userSpecified == "Yes": #bar_chart.py $input $xtic.xticColumn $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size"
+    #else:                            #bar_chart.py $input 0 $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size"
+    #end if
+  </command>
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Dataset" help="Query missing? See TIP below"/>
+    <conditional name="xtic">
+        <param name="userSpecified" type="select" label="Use X Tick labels?" help="see example below">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+        </param>
+        <when value="Yes">
+            <param name="xticColumn" type="data_column" data_ref="input" numerical="False" label="Use this column for X Tick labels" />
+        </when>
+        <when value="No">
+        </when>
+    </conditional>           
+    <param name="colList" label="Numerical columns" type="data_column" numerical="True" multiple="True" data_ref="input" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+    <param name="title" type="text" size="30" value="Bar Chart" label="Plot title"/>
+    <param name="ylabel" type="text" size="30" value="V1" label="Label for Y axis"/>
+    <param name="ymin" type="integer" size="4" value="0" label="Minimal value on Y axis" help="set to 0 for autoscaling"/>
+    <param name="ymax" type="integer" size="4" value="0" label="Maximal value on Y axis" help="set to 0 for autoscaling"/>
+    <param name="pdf_size" type="select" label="Choose chart size (inches)" help="inch = 2.54 cm">
+        <option value="11,8">Normal: 11 by 8</option>
+        <option value="5,3">Small: 5 by 3</option>
+        <option value="17,11">Large: 17 by 11</option>
+        <option value="8,11">Normal Flipped: 8 by 11</option>
+        <option value="3,5">Small Flipped: 3 by 5</option>
+        <option value="11,17">Large Flipped: 11 by 17</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="pdf" name="out_file1" />
+  </outputs>
+  <help>
+
+**What it does**
+
+This tool builds a bar chart on one or more columns. Suppose you have dataset like this one::
+
+  Gene1	10	15  Gene2	20	14  Gene3	67	45  Gene4	55	12
+
+Graphing columns 2 and 3 while using column 1 for X Tick Labels will produce the following plot:
+
+.. image:: ../static/images/bar_chart.png    
+    
+</help>
+</tool>
