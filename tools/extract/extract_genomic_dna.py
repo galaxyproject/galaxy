@@ -103,8 +103,10 @@ def __main__():
                 chrom = fields[chrom_col]
                 start = int( fields[start_col] )
                 end = int( fields[end_col] )
+                if includes_strand_col:
+                    strand = fields[strand_col]
             except:
-                warning = "Invalid chrom, start or end column values"
+                warning = "Invalid chrom, start or end column values. "
                 warnings.append( warning )
                 skipped_lines += 1
                 if not invalid_line:
@@ -112,13 +114,11 @@ def __main__():
                     invalid_line = line
                     continue
 
-            if includes_strand_col:
-                strand = fields[strand_col]
             if strand not in ['+', '-']:
-                strand = "+"
-
+                strand = '+'
             sequence = ''
-            if os.path.exists( "%s/%s.nib" % ( nib_path, chrom) ):
+
+            if os.path.exists( "%s/%s.nib" % ( nib_path, chrom ) ):
                 if chrom in nibs:
                     nib = nibs[chrom]
                 else:
@@ -126,7 +126,7 @@ def __main__():
                 try:
                     sequence = nib.get( start, end-start )
                 except:
-                    warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'." %( start, end-start, dbkey )
+                    warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'. " %( start, end-start, dbkey )
                     warnings.append( warning )
                     skipped_lines += 1
                     if not invalid_line:
@@ -141,7 +141,7 @@ def __main__():
                 try:
                     sequence = t[chrom][start:end]
                 except:
-                    warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'." %( start, end-start, dbkey )
+                    warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'. " %( start, end-start, dbkey )
                     warnings.append( warning )
                     skipped_lines += 1
                     if not invalid_line:
@@ -149,7 +149,7 @@ def __main__():
                         invalid_line = line
                     continue
             else:
-                warning = "Chrom '%s' was not found for build '%s'." % ( chrom, dbkey )
+                warning = "Chrom '%s' was not found for build '%s'. " % ( chrom, dbkey )
                 warnings.append( warning )
                 skipped_lines += 1
                 if not invalid_line:
@@ -157,7 +157,7 @@ def __main__():
                     invalid_line = line
                 continue
             if not sequence:
-                warning = "Chrom: '%s', start: '%s', end: '%s' is either invalid or not present in build '%s'." %( chrom, start, end, dbkey )
+                warning = "Chrom: '%s', start: '%s', end: '%s' is either invalid or not present in build '%s'. " %( chrom, start, end, dbkey )
                 warnings.append( warning )
                 skipped_lines += 1
                 if not invalid_line:
@@ -184,10 +184,10 @@ def __main__():
     fout.close()
 
     if warnings:
-        warn_msg = "Total of %d warnings, 1st is: " % len( warnings )
+        warn_msg = "%d warnings, 1st is: " % len( warnings )
         warn_msg += warnings[0]
         print warn_msg
     if skipped_lines:
-        print 'Skipped %d invalid lines starting at line #%d, "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+        print 'Skipped %d invalid lines, 1st is #%d, "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
 
 if __name__ == "__main__": __main__()

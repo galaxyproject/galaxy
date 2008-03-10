@@ -1,4 +1,4 @@
-<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.0.0">
+<tool id="Extract_genomic_DNA_1" name="Extract Genomic DNA" version="2.0.0">
   <description>using coordinates from assembled/unassebmled genomes</description>
   <command interpreter="python">extract_genomic_dna.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format</command>
   <inputs>
@@ -35,6 +35,10 @@
 
 .. class:: warningmark
 
+This tool requires tabular formatted data!
+
+.. class:: warningmark
+
 Make sure that the genome build is specified for the dataset from which you are extracting sequences (click the pencil icon in the history item if it is not specified). 
 
 .. class:: warningmark
@@ -43,6 +47,7 @@ All of the following will cause a line from the input dataset to be skipped and 
  - Any lines that do not contain at least 3 columns, a chromosome and numerical start and end coordinates.
  - Sequences that fall outside of the range of a line's start and end coordinates. 
  - Chromosome, start or end coordinates that are invalid for the specified build.
+ - Any lines whose data columns are not separated by a **TAB** character ( other white-space characters are invalid ).
 
 .. class:: infomark
 
