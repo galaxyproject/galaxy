@@ -19,8 +19,7 @@ def stop_err( msg ):
     sys.exit()
 
 def main(): 
-    
-    strand_col_1_defined = True
+    infile1_includes_strand = False
     
     # Parsing Command Line here
     options, args = doc_optparse.parse( __doc__ )
@@ -28,8 +27,8 @@ def main():
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols1 )
         chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )
         infile1, infile2, out_file, direction = args
-        if strand_col_1 < 0:
-            strand_col_1_defined = False
+        if strand_col_1 >= 0:
+            infile1_includes_strand = True
             strand = "+"        #if strand is not defined, default it to +
         if strand_col_2 < 0:
             fstrand = ""        
@@ -46,9 +45,9 @@ def main():
     
     try:
         #Sort the features file based on decreasing end positions 
-        command_line1 = "sort -f -n -r -k " + str(end_col_2+1) + " -o " + tmpfile1.name + " " + infile2
+        command_line1 = "sort -f -n -r -k " + str( end_col_2 + 1 ) + " -o " + tmpfile1.name + " " + infile2
         #Sort the features file based on increasing start positions
-        command_line2 = "sort -f -n -k " + str(start_col_2+1) + " -o " + tmpfile2.name + " " + infile2
+        command_line2 = "sort -f -n -k " + str( start_col_2 + 1 ) + " -o " + tmpfile2.name + " " + infile2
     except Exception, exc:
         stop_err( 'Initialization error -> %s' %str(exc) )
     
@@ -59,12 +58,24 @@ def main():
         stop_err( "Sorting input dataset resulted in error: %s: %s" %( error_code1, stdout ))
     if error_code2 != 0:
         stop_err( "Sorting input dataset resulted in error: %s: %s" %( error_code2, stdout ))
-    
+
+    if direction == 'Upstream' or direction == 'Both':
+        if strand == '+':
+            tmp_file_up = tmpfile1.name
+        elif strand == '-':
+            tmp_file_up = tmpfile2.name
+    if direction == 'Downstream' or direction == 'Both':
+        if strand == '-':
+            tmp_file_down = tmpfile1.name
+        elif strand == '+':
+            tmp_file_down = tmpfile2.name
+
     skipped_lines = 0
     first_invalid_line = 0
     invalid_line = None
     elems = []
     i = 0
+
     for i, line in enumerate( file( infile1 ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
@@ -81,16 +92,20 @@ def main():
                     invalid_line = line
                     continue
 
-            if strand_col_1_defined:    #Strand column is defined
-                strand = elems[strand_col_1]
-            #if the stand value is not + or -, skip that line.
-            assert strand in ['+', '-']
+            if infile1_includes_strand:
+                #Strand column is defined
+                try:
+                    strand = elems[strand_col_1]
+                    #if the stand value is not + or -, skip that line.
+                    assert strand in ['+', '-']
+                except:
+                    skipped_lines += 1
+                    if not invalid_line:
+                        first_invalid_line = i + 1
+                        invalid_line = line
+                        continue
 
             if direction == 'Upstream' or direction == 'Both':
-                if strand == '+':
-                    tmp_file_up = tmpfile1.name
-                elif strand == '-':
-                    tmp_file_up = tmpfile2.name
                 for fline in file( tmp_file_up ):
                     fline = fline.rstrip( '\r\n' )
                     if fline and not fline.startswith( '#' ):
@@ -99,7 +114,7 @@ def main():
                             fchr = felems[chr_col_2]
                             if fchr != chr:
                                 continue
-                            if strand_col_1 != -1:    #Strand column is defined
+                            if infile1_includes_strand:
                                 try:
                                     fstrand = felems[strand_col_2]
                                 except:
@@ -108,27 +123,19 @@ def main():
                                 fstrand = ""
                             if fstrand and strand != fstrand:
                                 continue
-                            try:
-                                fstart = int(felems[start_col_2])
-                                fend = int(felems[end_col_2])
-                            except:
-                                # Not easy to deal with skipped lines here...
-                                continue
-                            if strand == '+':
-                                if fend < start:    #Highest feature end value encountered i.e. the closest upstream feature found
-                                    print >>fo, "%s\t%s" %(line, fline)
-                                    break
-                            elif strand == '-':
-                                if fstart > end:    #Lowest feature start value encountered i.e. the closest upstream feature found
-                                    print >>fo, "%s\t%s" %(line, fline)
-                                    break
+                            fstart = int( felems[start_col_2] )
+                            fend = int( felems[end_col_2] )
+                            if strand == '+'and fend < start:    
+                                #Highest feature end value encountered i.e. the closest upstream feature found
+                                fo.write( "%s\t%s\n" % ( line, fline ) )
+                                break
+                            elif strand == '-'and fstart > end:    
+                                #Lowest feature start value encountered i.e. the closest upstream feature found
+                                fo.write( "%s\t%s\n" % ( line, fline ) )
+                                break
                         except:
                             continue
             if direction == 'Downstream' or direction == 'Both':
-                if strand == '-':
-                    tmp_file_down = tmpfile1.name
-                elif strand == '+':
-                    tmp_file_down = tmpfile2.name
                 for fline in file( tmp_file_down ):
                     fline = fline.rstrip( '\r\n' )
                     if fline and not fline.startswith( '#' ):
@@ -137,7 +144,7 @@ def main():
                             fchr = felems[chr_col_2]
                             if fchr != chr:
                                 continue
-                            if strand_col_1_defined:    #Strand column is defined
+                            if infile1_includes_strand:
                                 try:
                                     fstrand = felems[strand_col_2]
                                 except:
@@ -146,16 +153,16 @@ def main():
                                 fstrand = ""
                             if fstrand and strand != fstrand:
                                 continue
-                            fstart = int(felems[start_col_2])
-                            fend = int(felems[end_col_2])
-                            if strand == '-':
-                                if fend < start:    #Highest feature end value encountered i.e. the closest DOWNstream feature found
-                                    print >>fo, "%s\t%s" %( line, fline )
-                                    break
-                            elif strand == '+':
-                                if fstart > end:    #Lowest feature start value encountered i.e. the closest DOWNstream feature found
-                                    print >>fo, "%s\t%s" %( line, fline )
-                                    break
+                            fstart = int( felems[start_col_2] )
+                            fend = int( felems[end_col_2] )
+                            if strand == '-' and fend < start:
+                                #Highest feature end value encountered i.e. the closest DOWNstream feature found
+                                fo.write( "%s\t%s\n" % ( line, fline ) )
+                                break
+                            elif strand == '+' and fstart > end:    
+                                #Lowest feature start value encountered i.e. the closest DOWNstream feature found
+                                fo.write( "%s\t%s\n"  % ( line, fline ) )
+                                break
                         except:
                             continue
     fo.close()
@@ -165,8 +172,8 @@ def main():
         print 'All lines in input dataset invalid, check the metadata attributes by clicking on the pencil icon in the history item.'
         sys.exit()
     elif skipped_lines:
-        print 'Data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
-    print 'Location : %s' %(direction)
+        print 'Data issue: skipped %d invalid lines starting at line #%d" "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+    print 'Location: %s' % ( direction )
     
 if __name__ == "__main__":
     main()
