@@ -20,7 +20,6 @@ def stop_err( msg ):
 
 def main(): 
     infile1_includes_strand = False
-    
     # Parsing Command Line here
     options, args = doc_optparse.parse( __doc__ )
     try:
@@ -81,10 +80,12 @@ def main():
         if line and not line.startswith( '#' ):
             try:
                 elems = line.split( '\t' )
-                #if the start and/or end columns are not numbers, skip that line.
                 chr = elems[chr_col_1]
                 start = int( elems[start_col_1] )
                 end = int( elems[end_col_1] )
+                if infile1_includes_strand:
+                    strand = elems[strand_col_1]
+                    assert strand in ['+', '-']
             except:
                 skipped_lines += 1
                 if not invalid_line:
@@ -92,27 +93,13 @@ def main():
                     invalid_line = line
                     continue
 
-            if infile1_includes_strand:
-                #Strand column is defined
-                try:
-                    strand = elems[strand_col_1]
-                    #if the stand value is not + or -, skip that line.
-                    assert strand in ['+', '-']
-                except:
-                    skipped_lines += 1
-                    if not invalid_line:
-                        first_invalid_line = i + 1
-                        invalid_line = line
-                        continue
-
             if direction == 'Upstream' or direction == 'Both':
                 for fline in file( tmp_file_up ):
                     fline = fline.rstrip( '\r\n' )
                     if fline and not fline.startswith( '#' ):
                         try:
                             felems = fline.split( '\t' )
-                            fchr = felems[chr_col_2]
-                            if fchr != chr:
+                            if chr != felems[chr_col_2]:
                                 continue
                             if infile1_includes_strand:
                                 try:
@@ -125,11 +112,11 @@ def main():
                                 continue
                             fstart = int( felems[start_col_2] )
                             fend = int( felems[end_col_2] )
-                            if strand == '+'and fend < start:    
+                            if strand == '+' and fend < start:    
                                 #Highest feature end value encountered i.e. the closest upstream feature found
                                 fo.write( "%s\t%s\n" % ( line, fline ) )
                                 break
-                            elif strand == '-'and fstart > end:    
+                            elif strand == '-' and fstart > end:    
                                 #Lowest feature start value encountered i.e. the closest upstream feature found
                                 fo.write( "%s\t%s\n" % ( line, fline ) )
                                 break
@@ -141,8 +128,7 @@ def main():
                     if fline and not fline.startswith( '#' ):
                         try:
                             felems = fline.split( '\t' )
-                            fchr = felems[chr_col_2]
-                            if fchr != chr:
+                            if chr != felems[chr_col_2]:
                                 continue
                             if infile1_includes_strand:
                                 try:

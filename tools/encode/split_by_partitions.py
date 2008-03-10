@@ -112,7 +112,7 @@ def main():
     in_file.close()
 
     if warnings:
-        warn_msg = "Total of %d warnings, 1st is: " % len( warnings )
+        warn_msg = "This tool is useful on ENCODE regions only, %d warnings, 1st is: " % len( warnings )
         warn_msg += warnings[0]
         print warn_msg
     if skipped_lines:
