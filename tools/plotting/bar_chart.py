@@ -12,7 +12,7 @@ a generic histogram builder based on gnuplot backend
    ylabel       - y axis label
    yrange_max   - minimal value at the y axis (integer)
    yrange_max   - maximal value at the y_axis (integer) 
-                  to set yrange to auto assign 0 to yrange_mmin and yrange_max
+                  to set yrange to autoscaling assign 0 to yrange_mmin and yrange_max
    graph_file   - file to write histogram image to
    pdf_size     - as X,Y pair in inches (e.g., 11,8 or 8,11 etc.)
    
@@ -65,7 +65,7 @@ def main(tmpFileName):
             try:
                 fields = line.split( '\t' )
                 for col in col_list:
-                    row.append( str( float( fields[int(col)-1] ) ) )
+                    row.append( str( float( fields[int( col )-1] ) ) )
                     
             except:
                 valid = False
@@ -95,17 +95,15 @@ def main(tmpFileName):
         #set the first column
         if xtic > 0:
             g_plot_command = "'%s' using 1:xticlabels(%s) ti 'Column %s', " % ( tmpFileName, str( len( row ) ), col_list[0] )
-            #g_plot_command = "'%s' using 1:xticlabels(%s), " % ( tmpFileName, str( len( row ) ) )
         else:
             g_plot_command = "'%s' using 1, " % ( tmpFileName )
         
         #set subsequent columns
         
         for i in range(1,len(col_list)):
-            g_plot_command += "'%s' using %s t 'Column %s', " % ( tmpFileName, str(i+1), col_list[i] )
-            #g_plot_command += "'%s' using %s, " % ( tmpFileName, str(i+1) )
+            g_plot_command += "'%s' using %s t 'Column %s', " % ( tmpFileName, str( i+1 ), col_list[i] )
         
-        g_plot_command = g_plot_command.rstrip(', ')
+        g_plot_command = g_plot_command.rstrip( ', ' )
         
         yrange = 'set yrange [' + ymin + ":" + ymax + ']'
                     
@@ -131,14 +129,15 @@ def main(tmpFileName):
         except:
             stop_err("Gnuplot error: Data cannot be plotted")
     else:
-        sys.stderr.write('Columns %s of your dataset do not contain valid numeric data' %sys.argv[3] )
+        sys.stderr.write('Column(s) %s of your dataset do not contain valid numeric data' %sys.argv[3] )
         
     if skipped_lines_count > 0:
-        sys.stderr.write('You dataset contains %d invalid lines starting with line#%d\n' % ( skipped_lines_count, skipped_lines_index[0] ) )
+        sys.stdout.write('\nWARNING. You dataset contain(s) %d invalid lines starting with line #%d.  These lines were skipped while building the graph.\n' % ( skipped_lines_count, skipped_lines_index[0]+1 ) )
     
 
 if __name__ == "__main__":
+    # The tempfile initialization is here because while inside the main() it seems to create a condition
+    # when the file is removed before gnuplot has a chance of accessing it
     gp_data_file = tempfile.NamedTemporaryFile('w')
-    #gp_f, gp_data_file = tempfile.mkstemp(suffix="gp", text=True)
     main(gp_data_file.name)
     
