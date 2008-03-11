@@ -12,7 +12,7 @@ a generic histogram builder based on gnuplot backend
    ylabel       - y axis label
    yrange_max   - minimal value at the y axis (integer)
    yrange_max   - maximal value at the y_axis (integer) 
-                  to set yrange to autoscaling assign 0 to yrange_mmin and yrange_max
+                  to set yrange to autoscaling assign 0 to yrange_min and yrange_max
    graph_file   - file to write histogram image to
    pdf_size     - as X,Y pair in inches (e.g., 11,8 or 8,11 etc.)
    
@@ -96,7 +96,7 @@ def main(tmpFileName):
         if xtic > 0:
             g_plot_command = "'%s' using 1:xticlabels(%s) ti 'Column %s', " % ( tmpFileName, str( len( row ) ), col_list[0] )
         else:
-            g_plot_command = "'%s' using 1, " % ( tmpFileName )
+            g_plot_command = "'%s' using 1 ti 'Column %s', " % ( tmpFileName, col_list[0] )
         
         #set subsequent columns
         
