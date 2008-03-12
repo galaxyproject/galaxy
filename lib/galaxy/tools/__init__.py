@@ -870,11 +870,11 @@ class Tool:
         for input in inputs.itervalues():
             if isinstance( input, Repeat ):  
                 for d in input_values[ input.name ]:
-                    handle_unvalidated_param_values( input.inputs, d )
+                    self.handle_unvalidated_param_values( input.inputs, d, app, context )
             elif isinstance( input, Conditional ):
                 values = input_values[ input.name ]
                 current = values["__current_case__"]
-                wrap_values( input.cases[current].inputs, values )
+                self.handle_unvalidated_param_values_helper( input.cases[current].inputs, values, app, context )
             else:
                 # Regular tool parameter
                 value = input_values[ input.name ]
