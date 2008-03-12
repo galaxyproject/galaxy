@@ -90,8 +90,8 @@ class JobQueue( object ):
 
     def check_jobs_at_startup( self ):
         """
-	Checks all jobs that are in the 'running' or 'queued' state in the
-	database and requeues or cleans up as necessary.  Only run as the
+        Checks all jobs that are in the 'running' or 'queued' state in the
+        database and requeues or cleans up as necessary.  Only run as the
         job manager starts.
         """
         model = self.app.model
@@ -286,6 +286,8 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
+        # Do any validation that could not be done at job creation
+        self.tool.handle_unvalidated_param_values( incoming, self.app )
         # Resore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )

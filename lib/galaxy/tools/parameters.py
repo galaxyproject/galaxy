@@ -487,8 +487,12 @@ class SelectToolParameter( ToolParameter ):
             field.add_option( text, optval, selected )
         return field
     def from_html( self, value, trans=None, other_values={} ):
-        if self.is_dynamic and trans.workflow_building_mode \
+        # HACK: trans may be None here if doing late validation, this is
+        # treated the same as not being in workflow mode
+        if self.is_dynamic and ( trans and trans.workflow_building_mode ) \
            and ( self.options is None or self.options.data_ref is not None ):
+            if self.multiple:
+                value = value.split( "\n" )
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, other_values )
         if isinstance( value, list ):

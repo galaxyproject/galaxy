@@ -589,7 +589,7 @@ class Tool:
         
         `callback( level_prefix, parameter, parameter_value )`
         """
-        # HACK: Yet another hack around check_values
+        # HACK: Yet another hack around check_values -- WHY HERE?
         if not self.check_values:
             return
         for input in self.inputs.itervalues():
@@ -853,7 +853,37 @@ class Tool:
                 value = self.inputs[key].value_from_basic( value, app, ignore_errors )
             rval[ key ] = value 
         return rval
-        
+    
+    def handle_unvalidated_param_values( self, input_values, app ):
+        """
+        Find any instances of `UnvalidatedValue` within input_values and
+        validate them (by calling `ToolParameter.from_html` and 
+        `ToolParameter.validate`).
+        """
+        self.handle_unvalidated_param_values_helper( self.inputs, input_values, app )
+
+    def handle_unvalidated_param_values_helper( self, inputs, input_values, app, context=None ):
+        """
+        Recursive helper for `handle_unvalidated_param_values`
+        """
+        context = ExpressionContext( input_values, context )
+        for input in inputs.itervalues():
+            if isinstance( input, Repeat ):  
+                for d in input_values[ input.name ]:
+                    handle_unvalidated_param_values( input.inputs, d )
+            elif isinstance( input, Conditional ):
+                values = input_values[ input.name ]
+                current = values["__current_case__"]
+                wrap_values( input.cases[current].inputs, values )
+            else:
+                # Regular tool parameter
+                value = input_values[ input.name ]
+                if isinstance( value, UnvalidatedValue ):
+                    value = input.from_html( value.value, None, context )
+                    # Then do any further validation on the value
+                    input.validate( value, None )
+                    input_values[ input.name ] = value
+    
     def build_param_dict( self, incoming, input_datasets, output_datasets ):
         """
         Build the dictionary of parameters for substituting into the command
