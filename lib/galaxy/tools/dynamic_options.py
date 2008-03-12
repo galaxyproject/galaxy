@@ -1,16 +1,17 @@
 
 import sys, os, logging
-import parameters
+import parameters, validation
 
 log = logging.getLogger(__name__)
 
 class DynamicOptions( object ):
     """Handles dynamically generated SelectToolParameter options"""
-    def __init__( self, elem, parameter_type = None  ):
+    def __init__( self, elem, parameter_type=None  ):
         self.parameter_type = parameter_type
         self.data_ref = None
         self.param_ref = None
         self.from_file_data = None
+        self.validators = []
 
         # Parse the options tag
         self.from_file = elem.get( 'from_file', None )
@@ -29,7 +30,14 @@ class DynamicOptions( object ):
         self.value_col = elem.get( 'value_col', None )
         if self.value_col is not None:
             self.value_col = int( self.value_col.strip() )
-        
+
+        # Parse the Validator tags
+        for validator in elem.findall( 'validator' ):
+            validator_type = validator.get( 'type', None )
+            assert validator_type is not None, "Required 'type' attribute missing from validator"
+            validator_type = validator_type.strip()
+            self.validators.append( validation.Validator.from_element( validator ) )
+
         # Parse the filter tags
         self.filters = elem.findall( 'filter' )
         for filter in self.filters:
@@ -494,12 +502,6 @@ class DynamicOptions( object ):
                     except: 
                         continue
         if self.data_file == 'alignseq.loc':
-            # FIXME: We need a database of descriptive names corresponding to dbkeys.
-            #        We need to resolve the musMusX <--> mmX confusion
-            if build[ 0:2 ] == "mm": 
-                build = build.replace( 'mm', 'musMus' )
-            if build[ 0:2 ] == "rn": 
-                build = build.replace( 'rn', 'ratNor' )
             if build in d:
                 for val in d[ build ]:
                     options.append( ( val, val, False ) )
@@ -521,3 +523,5 @@ class DynamicOptions( object ):
                 # TODO: this option list should be sorted
                 options.append( ( fields[ name_col ], fields[ value_col ], False ) )
         return options
+
+

@@ -31,6 +31,7 @@ class ToolParameter( object ):
         self.html = "no html set"
         self.repeat = param.get("repeat", None)
         self.condition = param.get( "condition", None )
+        self.dependent_params = []
         self.validators = []
         for elem in param.findall("validator"):
             self.validators.append( validation.Validator.from_element( elem ) )
@@ -434,12 +435,15 @@ class SelectToolParameter( ToolParameter ):
         self.display = elem.get( 'display', None )
         self.separator = elem.get( 'separator', ',' )
         self.legal_values = set()
+        # TODO: the <dynamic_options> tag is deprecated and should be replaced with the <options> tag.
         self.dynamic_options = elem.get( "dynamic_options", None )
         options = elem.find( 'options' )
         if options is None:
             self.options = None
         else:
-            self.options = dynamic_options.DynamicOptions( options )
+            self.options = dynamic_options.DynamicOptions( options, parameter_type=type( self ) )
+            for validator in self.options.validators:
+                self.validators.append( validator )
         if self.dynamic_options is None and self.options is None:
             self.static_options = list()
             for index, option in enumerate( elem.findall( "option" ) ):
