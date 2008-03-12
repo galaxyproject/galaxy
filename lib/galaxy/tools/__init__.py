@@ -860,6 +860,9 @@ class Tool:
         validate them (by calling `ToolParameter.from_html` and 
         `ToolParameter.validate`).
         """
+        # No validation is done when check_values is False
+        if not self.check_values:
+            return
         self.handle_unvalidated_param_values_helper( self.inputs, input_values, app )
 
     def handle_unvalidated_param_values_helper( self, inputs, input_values, app, context=None ):
