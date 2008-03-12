@@ -870,7 +870,7 @@ class Tool:
         for input in inputs.itervalues():
             if isinstance( input, Repeat ):  
                 for d in input_values[ input.name ]:
-                    self.handle_unvalidated_param_values( input.inputs, d, app, context )
+                    self.handle_unvalidated_param_values_helper( input.inputs, d, app, context )
             elif isinstance( input, Conditional ):
                 values = input_values[ input.name ]
                 current = values["__current_case__"]
