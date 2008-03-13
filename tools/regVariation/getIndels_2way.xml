@@ -1,5 +1,5 @@
-<tool id="getIndels_2way" name="Get Indels">
-  <description> for pairwise alignments</description>
+<tool id="getIndels_2way" name="Fetch Indels">
+  <description> from pairwise alignments</description>
   <command interpreter="python">
   	getIndels.py $input1 $out_file1
   </command>

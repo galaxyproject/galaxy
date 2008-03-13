@@ -1,5 +1,5 @@
-<tool id="getIndels_3way" name="Get Indel rates">
-  <description> for 3-way alignments</description>
+<tool id="getIndels_3way" name="Fetch Indels"  version="1.0.1">
+  <description> from 3-way alignments</description>
   <command interpreter="perl">
   	parseMAF_smallIndels.pl $input1 $out_file1 $outgroup
   </command>

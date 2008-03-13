@@ -1,0 +1,62 @@
+<tool id="getIndelRates_3way" name="Estimate Indel Rates" version="1.0.0">
+  <description> for 3-way alignments</description>
+  <command interpreter="python">
+  	getIndelRates_3way.py $input1 $out_file1 $winsize $species
+  </command>
+  <inputs>
+    <page>
+    	<param format="tabular" name="input1" type="data" label="Select data"/>
+    	<param name="winsize" size="10" type="integer" value="1000" label="Estimate rates in windows of size" />
+    	<param name="species" type="select" label="and corresponding to co-ordinates of" multiple="false">
+          <option value="3">Species 1 (Ingroup 1)</option>
+          <option value="7">Species 2 (Ingroup 2)</option>
+          <option value="11">Species 3 (Outgroup)</option>
+        </param>
+    	<!--
+    	<conditional name="region">
+	      <param name="type" type="select" label="Estimate rates per" multiple="false">
+	         <option value="align">Alignment block</option>
+	         <option value="win">Window</option>
+	     </param>
+	     <when value="win">
+	      	<param name="winsize" size="10" type="integer" value="1000" label="of size" />
+
+	      </when>
+	      <when value="align" />
+      </conditional>
+      -->
+    </page>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" metadata_source="input1"/>
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input1" value="indels_3way.tabular"/>
+      <param name="winsize" value="1000"/>
+      <param name="species" value="11"/>
+      <output name="out_file1" file="indelrates_3way.tabular"/>
+    </test>
+  </tests>
+
+ <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool estimates the insertion and deletion rates for alignments in a window of specified size. 
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+Any block/s not containing exactly 3 species will be omitted. 
+   
+</help>  
+
+
+</tool>

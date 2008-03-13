@@ -214,7 +214,7 @@ sub get_indels_within_block{
 			$line1 =~ s/\s+/\t/g;
 			@line1 = split(/\t/, $line1);
 			$end1 =($line1[2]+$line1[3]-1);
-			$seq1 = $line1[1];
+			$seq1 = $line1[1].":".$line1[3];
 			$ingroup1 = (split(/\./, $seq1))[0];
 			$start1 = $line1[2];
 			$align_length1 = $line1[3];
@@ -231,7 +231,7 @@ sub get_indels_within_block{
 			$line1 =~ s/\s+/\t/g;
 			@line1 = split(/\t/, $line1);
 			$end3 =($line1[2]+$line1[3]-1);
-			$seq3 = $line1[1];
+			$seq3 = $line1[1].":".$line1[3];
 			$start3 = $line1[2];
 			$align_length3 = $line1[3];
 			$orient3 = $line1[4];
@@ -248,7 +248,7 @@ sub get_indels_within_block{
             $line2 =~ s/\s+/\t/g;
             @line2 = split(/\t/, $line2);
 			$end2 =($line2[2]+$line2[3]-1);				
-            $seq2 = $line2[1];
+            $seq2 = $line2[1].":".$line2[3];
 			$ingroup2 = (split(/\./, $seq2))[0];
 			$start2 = $line2[2];
 			$align_length2 = $line2[3];
@@ -265,7 +265,7 @@ sub get_indels_within_block{
 			$line2 =~ s/\s+/\t/g;
 			@line2 = split(/\t/, $line2);
 			$end3 =($line2[2]+$line2[3]-1);
-			$seq3 = $line2[1];
+			$seq3 = $line2[1].":".$line2[3];
 			$start3 = $line2[2];
 			$align_length3 = $line2[3];
 			$orient3 = $line2[4];
@@ -281,7 +281,7 @@ sub get_indels_within_block{
 			$line2 =~ s/\s+/\t/g;
 			@line2 = split(/\t/, $line2);
 			$end1 =($line2[2]+$line2[3]-1);
-			$seq1 = $line2[1];
+			$seq1 = $line2[1].":".$line2[3];
 			$ingroup1 = (split(/\./, $seq1))[0];
 			$start1 = $line2[2];
 			$align_length1 = $line2[3];
@@ -299,7 +299,7 @@ sub get_indels_within_block{
 			$line3 =~ s/\s+/\t/g;
 			@line3 = split(/\t/, $line3);
 			$end2 =($line3[2]+$line3[3]-1);
-			$seq2 = $line3[1];
+			$seq2 = $line3[1].":".$line3[3];
 			$ingroup2 = (split(/\./, $seq2))[0];
 			$start2 = $line3[2];
 			$align_length2 = $line3[3];
@@ -316,7 +316,7 @@ sub get_indels_within_block{
         	$line3 =~ s/\s+/\t/g;
         	@line3 = split(/\t/, $line3);
         	$end3 =($line3[2]+$line3[3]-1);
-        	$seq3 = $line3[1];
+        	$seq3 = $line3[1].":".$line3[3];
         	$start3 = $line3[2];
         	$align_length3 = $line3[3];
         	$orient3 = $line3[4];
@@ -339,14 +339,14 @@ sub get_indels_within_block{
                 $coord1 = $start1_plus;
                 $coord2 = $start2_plus;
                 $coord3 = $start3_plus;
-
+		
 		for (my $position = 0; $position < $test1; $position++) {
 			my $indelType = "";
 			my $indel_line = "";	
 			# seq1 deletes
 			 if ((substr($sequence1,$position,1) eq "-") 
-		    		&& (substr($sequence2,$position,1) ne "-")
-	       			&& (substr($sequence3,$position,1) ne "-")){
+		    		&& (substr($sequence2,$position,1) !~ m/[-*\#$?^@]/)
+	       			&& (substr($sequence3,$position,1) !~ m/[-*\#$?^@]/)){
 					$ABC = join("",($ABC,"X"));
 					$indelType = $seq1."_delete";
 
@@ -357,9 +357,9 @@ sub get_indels_within_block{
 		 			$coord2++; $coord3++;
 	       		}	
 			# seq2 deletes
-			elsif ((substr($sequence1,$position,1) ne "-")
+			elsif ((substr($sequence1,$position,1) !~ m/[-*\#$?^@]/)
 				&& (substr($sequence2,$position,1) eq "-")
-				&& (substr($sequence3,$position,1) ne "-")){
+				&& (substr($sequence3,$position,1) !~ m/[-*\$?^]/)){
 					$ABC = join("",($ABC,"Y"));
 					$indelType = $seq2."_delete";
 					#print OFILE "$count\t$seq1\t$coord1\t$orient1\t$seq2\t$coord2\t$orient2\t$seq3\t$coord3\t$orient3\t$indelType\n";
@@ -371,7 +371,7 @@ sub get_indels_within_block{
 
 			}
 			# seq1 inserts
-			elsif ((substr($sequence1,$position,1) ne "-")
+			elsif ((substr($sequence1,$position,1) !~ m/[-*\#$?^@]/)
 				&& (substr($sequence2,$position,1) eq "-")
 				&& (substr($sequence3,$position,1) eq "-")){
 					$ABC = join("",($ABC,"Z"));
@@ -384,7 +384,7 @@ sub get_indels_within_block{
 			}
 			# seq2 inserts	
 			elsif ((substr($sequence1,$position,1) eq "-")
-				&& (substr($sequence2,$position,1) ne "-")
+				&& (substr($sequence2,$position,1) !~ m/[-*\#$?^@]/)
 				&& (substr($sequence3,$position,1) eq "-")){
 					$ABC = join("",($ABC,"W"));
 					$indelType = $seq2."_insert";
@@ -395,8 +395,8 @@ sub get_indels_within_block{
 					$coord2++;
 			}
 			# seq3 deletes
-			elsif ((substr($sequence1,$position,1) ne "-")
-				&& (substr($sequence2,$position,1) ne "-")
+			elsif ((substr($sequence1,$position,1) !~ m/[-*\#$?^@]/)
+				&& (substr($sequence2,$position,1) !~ m/[-*\#$?^@]/)
 				&& (substr($sequence3,$position,1) eq "-")){
 					$ABC = join("",($ABC,"S"));
 					$indelType = $seq3."_delete";
@@ -409,7 +409,7 @@ sub get_indels_within_block{
 			# seq3 inserts
 			elsif ((substr($sequence1,$position,1) eq "-")
 				&& (substr($sequence2,$position,1) eq "-")
-				&& (substr($sequence3,$position,1) ne "-")){
+				&& (substr($sequence3,$position,1) !~ m/[-*\#$?^@]/)){
 					$ABC = join("",($ABC,"T"));
 					$indelType = $seq3."_insert";
 					#print OFILE "$count\t$seq1\t$coord1\t$orient1\t$seq2\t$coord2\t$orient2\t$seq3\t$coord3\t$orient3\t$indelType\n";
@@ -425,7 +425,6 @@ sub get_indels_within_block{
 		}
 		@array_return=($seq1,$seq2,$seq3,$ABC);
 		return (@array_return); 
-
 
 	}
 	# ignore pairwise cases for now, just count the number of blocks
@@ -516,7 +515,7 @@ sub get_starts_only{
                 chomp($line);
                 $line =~ s/^\s*//;
                 $line =~ s/\s+/\t/g;
-                my @line1 = split(/\t/, $line);
+				my @line1 = split(/\t/, $line);
                  $seq1 = $line1[1];
                  $coord1 = $line1[2];
                 $seq2 = $line1[4];
@@ -610,12 +609,12 @@ for ($counter6 = 0; $counter6 < @seq1_delete_startOnly; $counter6++){
 # # if inserts, increase coords for the sequence inserted, other sequences give coords for 5' and 3' bases flanking the gap
 # # for deletes, increase coords for other 2 sequences and the one deleted give coords for 5' and 3' bases flanking the gap
 
-get_final_format(@final1);
-get_final_format(@final2);
-get_final_format(@final3);
-get_final_format(@final4);
 get_final_format(@final5);
 get_final_format(@final6);
+get_final_format(@final3);
+get_final_format(@final4);
+get_final_format(@final1);
+get_final_format(@final2);
 
 sub get_final_format{
 	my (@final) = @_;
