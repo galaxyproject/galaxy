@@ -22,6 +22,7 @@
       <when value="cached">
         <param name="mafType" type="select" label="Choose alignments">
           <options from_file="/depot/data2/galaxy/maf_index.loc" name_col="0" value_col="1">
+            <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
             <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="2"/>
           </options>
         </param> 

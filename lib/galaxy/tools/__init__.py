@@ -836,6 +836,9 @@ class Tool:
                 filtered_value = param.filter_value( value, trans, param_values )
                 # Then do any further validation on the value
                 param.validate( filtered_value, trans.history )
+            elif value is None and isinstance( param, SelectToolParameter ):
+               # An empty select list or column list
+               param.validate( value, trans.history ) 
         except ValueError, e:
             error = str( e )
         return value, error

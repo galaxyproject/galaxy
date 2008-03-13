@@ -192,6 +192,19 @@ class UnspecifiedBuildValidator( Validator ):
                 self.message = "Unspecified genome build, click the pencil icon in the history item to set the genome build"
             raise ValueError( self.message )
 
+class NoOptionsValidator( Validator ):
+    """Validator that checks for empty select list"""
+    def __init__( self, message=None ):
+        self.message = message
+    @classmethod
+    def from_element( cls, elem ):
+        return cls( elem.get( 'message', None ) )
+    def validate( self, value, history=None ):
+        if value is None:
+            if self.message is None:
+                self.message = "No options available for selection"
+            raise ValueError( self.message )
+
 class MetadataInFileColumnValidator( Validator ):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
@@ -221,13 +234,13 @@ class MetadataInFileColumnValidator( Validator ):
                 return
         raise ValueError( self.message )
 
-
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,
                         in_range=InRangeValidator,
                         length=LengthValidator,
                         metadata=MetadataValidator,
                         unspecified_build=UnspecifiedBuildValidator,
+                        no_options=NoOptionsValidator,
                         dataset_metadata_in_file=MetadataInFileColumnValidator,
                         dataset_ok_validator=DatasetOkValidator )
                         
