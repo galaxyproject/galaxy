@@ -1,6 +1,5 @@
 To compile run:
 
-$gcc -o taxonomy2tree -fast avl.c taxonomy2tree.c
+$gcc -o tree2PS-fast -fast avl.c tree2ps.c
 
 Then place the binary into a directory that is listed in setup_paths.sh script located in the root of Galaxy installation
-

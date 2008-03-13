@@ -87,7 +87,7 @@ In other words the tool printed *Name column*, *GI column*, and appended 22 colu
 
 **Why do I have these "n" things?** 
 
-Be aware that the NCBI taxonomy (ftp://ftp.ncbi.nih.gov/pub/taxonomy/) this tool relies upon is incomplete.  This means that for many species one or more ranks are absent and represented as "**n**". In the above example *subkingdon*, *superphylum* etc. are missing.
+Be aware that the NCBI taxonomy (ftp://ftp.ncbi.nih.gov/pub/taxonomy/) this tool relies upon is incomplete.  This means that for many species one or more ranks are absent and represented as "**n**". In the above example *subkingdom*, *superphylum* etc. are missing.
 
 
 </help>

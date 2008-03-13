@@ -1,0 +1,123 @@
+<tool id="Draw_phylogram" name="Draw phylogram" version="1.0.0">
+  <description>from a newick file</description>
+  <command interpreter="python">t2ps_wrapper.py $input $out_file1 $max_tree_level $font_size $max_leaves 1</command>
+  <inputs>
+    <param format="taxonomy" name="input" type="data" label="Draw phylogram for"></param>
+    <param name="max_tree_level" label="show ranks from root to" type="select" help="Choosing to show entire tree may produce very large PDF file disabling your viewer">
+        <option value="8">Class</option> 
+        <option value="0">Show entire tree</option>
+        <option value="1">Superkingdom</option>
+        <option value="2">Kingdom</option>
+        <option value="3">Subkingdom</option>
+        <option value="4">Superphylum</option>
+        <option value="5">Phylum</option>
+        <option value="6">Subphylum</option>
+        <option value="7">Superclass</option>
+        <option value="9">Subclass</option>
+        <option value="10">Superorder</option>
+        <option value="11">Order</option>
+        <option value="12">Suborder</option>
+        <option value="13">Superfamily</option>
+        <option value="14">Family</option>
+        <option value="15">Subfamily</option>
+        <option value="16">Tribe</option>
+        <option value="17">Subtribe</option>
+        <option value="18">Genus</option>
+        <option value="19">Subgenus</option>
+        <option value="20">Species</option>
+        <option value="21">Subspecies</option>
+    </param>
+    <param name="font_size" type="select" label="select font size">
+        <option value="8">Normal</option>
+        <option value="4">Tiny</option>
+        <option value="12">Large</option>
+    </param>
+    <param name="max_leaves" type="text" size="5" value="0" label="maximum number of leaves" help="set to 0 to show all"/>
+  </inputs>
+  <outputs>
+    <data format="pdf" name="out_file1" />
+  </outputs>
+  <help>
+
+**What it does**
+
+Given taxonomy representation (produced by *Taxonomy manipulation->Fetch Taxonomic Ranks* tool) this utility produces a graphical representations of phylogenetic tree in PDF format.
+
+--------
+
+**Example 1: Fake data**
+
+Suppose you have the following dataset::
+
+    Species_1 1 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum1 subphylum1 superclass1 class1 subclass1 superorder1 order1 suborder1 superfamily1 family1 subfamily1 tribe1 subtribe1 genus1 subgenus1 species1 subspecies1
+    Species_2 2 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum1 subphylum1 superclass1 class1 subclass1 superorder1 order1 suborder1 superfamily1 family1 subfamily1 tribe1 subtribe1 genus2 subgenus2 species2 subspecies2
+    Species_3 3 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum3 subphylum3 superclass3 class3 subclass3 superorder3 order3 suborder3 superfamily3 family3 subfamily3 tribe3 subtribe3 genus3 subgenus3 species3 subspecies3
+    Species_4 4 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum4 subphylum4 superclass4 class4 subclass4 superorder4 order4 suborder4 superfamily4 family4 subfamily4 tribe4 subtribe4 genus4 subgenus4 species4 subspecies4
+
+Drawing the tree with default parameters (without changing anything in the interface) will produce this tree:
+
+.. image:: ../static/images/t2ps_ideal.png 
+   :width: 500
+
+(for explanation of colors and numbers on the tree scroll to the bottom of this help section)
+
+Here *Class* rank represent terminal nodes (leaves) of the tree because it is the default setting of the "*show ranks from root to*" drop-down.  Changing the drop-down to "*Subspecies*" will produce this:
+
+.. image:: ../static/images/t2ps_ideal_ssp.png 
+   :width: 1000
+
+--------
+
+**Example 2: Fake data with missing nodes**
+
+Real taxonomic datasets almost always contain empty nodes.  These are represented with "**n**" as shown below::
+
+    Species_1 1 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum1 subphylum1 superclass1 class1 subclass1 superorder1 order1 suborder1 superfamily1 family1 subfamily1 tribe1 subtribe1 genus1 subgenus1 species1 subspecies1
+    Species_2 2 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum1 subphylum1 superclass1 class1 subclass1 superorder1 order1 suborder1 superfamily1 family1 subfamily1 tribe1 subtribe1 genus2 n         species2 subspecies2
+    Species_3 3 root superkingdom1 kingdom1 subkingdom1 superphylum1 n       subphylum3 superclass3 class3 subclass3 superorder3 order3 suborder3 superfamily3 family3 subfamily3 tribe3 subtribe3 genus3 subgenus3 species3 subspecies3
+    Species_4 4 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum4 subphylum4 superclass4 class4 subclass4 superorder4 order4 suborder4 superfamily4 family4 subfamily4 tribe4 subtribe4 genus4 subgenus4 species4 subspecies4
+    
+(here *phylum* for Species_3 and *subgenus* for Species_2 are unassigned)
+
+A full tree for this dataset will look like this:
+
+.. image:: ../static/images/t2ps_missing_nodes.png 
+   :width: 1000
+
+Missing nodes are simply omitted from the tree (there are no gray boxes corresponding to "n") but the branch length is maintained so that taxa belonging to the same taxonomic rank are always aligned with each other
+
+--------
+
+**Autoscaling the tree**
+
+You can use the "*maximum number of leaves*" to restrict the tree to a specified number of leaves (external nodes).  Using the following setting on the above dataset (note *show ranks from root to* set to *show entire tree* and *maximum number of leaves* is set *3*):
+
+.. image:: ../static/images/t2ps_autoscale.png 
+
+will produce this tree:
+
+.. image:: ../static/images/t2ps_autoscale_tree.png 
+   :width: 1000
+
+Here the tree is automatically trimmed at a taxonomic rank that will only have 3 outer nodes.  This is very useful for initial evaluation of very large trees where you want to only see, say, 1,000 outer nodes at once.
+
+-------
+
+**Explanation of phylogenetic tree markup** 
+
+Branches of the tree are colored according to the heatmap below.  The "bluer" the branch the lesser the numer of leaves it leads to and vice versa. 
+
+.. image:: ../static/images/t2ps_heatmap.png 
+
+Each node is labeled with taxonomic name and the number of tree leaves belonging to this taxonomic group:
+
+.. image:: ../static/images/t2ps_node_label.png 
+
+
+
+
+
+  </help>
+</tool>
+
+
