@@ -35,7 +35,7 @@
 
 .. class:: warningmark
 
-This tool requires tabular formatted data.  If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*.
+This tool requires tabular formatted data.  If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*.
 
 .. class:: warningmark
 

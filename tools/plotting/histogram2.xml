@@ -14,9 +14,13 @@
   </outputs>
   <help>
 
+.. class:: infomark
+
+**TIP:** To remove comment lines that do not begin with a *#* character, use *Text Manipulation-&gt;Remove beginning*
+
  .. class:: infomark
 
-**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
 
 -----
 

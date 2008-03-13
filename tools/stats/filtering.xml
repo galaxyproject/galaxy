@@ -34,7 +34,7 @@ Double equal signs, ==, must be used as *"equal to"* (e.g., **c1 == 'chr22'**)
 
 .. class:: infomark
 
-**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
 
 -----
 

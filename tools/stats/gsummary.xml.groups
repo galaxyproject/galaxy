@@ -18,7 +18,7 @@ This tool expects input datasets to consist of tab-delimited columns (blank or c
 
 .. class:: infomark
 
-**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
 
 .. class:: infomark
 
