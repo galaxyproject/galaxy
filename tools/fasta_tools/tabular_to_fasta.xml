@@ -1,9 +1,11 @@
-<tool id="tab2fasta" name="Tabular-to-FASTA" version="1.0.0">
+<tool id="tab2fasta" name="Tabular-to-FASTA" version="1.1.0">
 	<description>Converts a tabular file to FASTA format</description>
 	<command interpreter="python">tabular_to_fasta.py $input $title_col $seq_col $output </command>
 	<inputs>
 		<param name="input" type="data" format="tabular" label="Tab-delimited file"/>
-		<param name="title_col" type="data_column" data_ref="input" multiple="True" numerical="False" label="Title column(s)" help="Multi-select list - hold the appropriate key while clicking to select multiple columns"/>
+		<param name="title_col" type="data_column" data_ref="input" multiple="True" numerical="False" label="Title column(s)" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
+		  <validator type="no_options" message="No title column selected"/>
+		</param>
 		<param name="seq_col" type="data_column" data_ref="input" numerical="False" label="Sequence column" />
 	</inputs>
 	<outputs>

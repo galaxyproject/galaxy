@@ -33,31 +33,34 @@ def __main__():
     for i, line in enumerate( open( infile ) ):
         error = False
         line = line.rstrip( '\r\n' )
-        fields = line.split( '\t' )
-        fasta_title = []
-        for j in title_col_list:
-            j = int( j ) - 1
-            try:
-                fasta_title.append( fields[j] )
-            except:
-                error = True
-                break
-        if not error:
-            try:
-                fasta_seq = fields[seq_col]
-                if fasta_title[0].startswith( ">" ):
-                    fasta_title[0] = fasta_title[0][1:]
-                print >> out, ">%s\n%s" % ( "_".join( fasta_title ), fasta_seq )
-            except:
-                error = True
-        if error:
-            skipped_lines += 1
-            if not invalid_line:
-                first_invalid_line = i + 1
-                invalid_line = line
+        if line and not line.startswith( '#' ):
+            fields = line.split( '\t' )
+            fasta_title = []
+            for j in title_col_list:
+                try:
+                    j = int( j ) - 1
+                    fasta_title.append( fields[j] )
+                except:
+                    skipped_lines += 1
+                    if not invalid_line:
+                        first_invalid_line = i + 1
+                        invalid_line = line
+                    error = True
+                    break
+            if not error:
+                try:
+                    fasta_seq = fields[seq_col]
+                    if fasta_title[0].startswith( ">" ):
+                        fasta_title[0] = fasta_title[0][1:]
+                    print >> out, ">%s\n%s" % ( "_".join( fasta_title ), fasta_seq )
+                except:
+                    skipped_lines += 1
+                    if not invalid_line:
+                        first_invalid_line = i + 1
+                        invalid_line = line
     out.close()    
 
     if skipped_lines > 0:
-        print 'Data issue: skipped %d blank or invalid lines starting at line #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+        print 'Data issue: skipped %d blank or invalid lines starting at #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
 
 if __name__ == "__main__" : __main__()
