@@ -43,17 +43,18 @@ if len(sys.argv) < 2:
     print "usage: check_galaxy.py <server>"
     sys.exit(1)
 
-if sys.argv[1].find(".") < 0:
-    server = "%s.g2.bx.psu.edu" % sys.argv[1]
+server = sys.argv[1]
+if server.endswith(".g2.bx.psu.edu"):
+    if debug:
+        print "Checking a PSU Galaxy server, using maint file"
     maint = "/errordocument/502/%s/maint" % sys.argv[1]
 else:
-    server = sys.argv[1]
     maint = None
 
 # state information
 var_dir = os.path.join( home, ".check_galaxy", server )
 if not os.access( var_dir, os.F_OK ):
-    os.makedirs( var_dir )
+    os.makedirs( var_dir, 0700 )
 
 # get user/pass
 login_file = os.path.join( var_dir, "login" )
@@ -69,7 +70,7 @@ except:
     print ""
     print "If the user does not exist, check_galaxy will create it"
     print "for you."
-    sys.exit( 1 )
+    sys.exit(1)
 ( username, password ) = f.readline().split()
 
 # find/import twill

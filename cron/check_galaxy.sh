@@ -96,6 +96,21 @@ for dir in $VAR/$1 $NOTIFIED_MAIL $NOTIFIED_PAGE; do
     fi
 done
 
+if [ ! -f "$VAR/$1/login" ]; then
+    [ $DEBUG = 1 ] && cat <<EOF
+Please create the file:
+  $VAR/$1/login
+This should contain a username and password to log in to
+Galaxy with, on one line, separated by whitespace, e.g.:
+
+check_galaxy@example.com password
+
+If the user does not exist, check_galaxy will create it
+for you.
+EOF
+    exit 0
+fi
+
 if [ $STAGGER ]; then
     if [ -f "$STAGGER_FILE" ]; then
         STAGGER_COUNT=`cat $STAGGER_FILE`
