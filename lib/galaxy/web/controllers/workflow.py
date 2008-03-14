@@ -4,7 +4,7 @@ import simplejson
 
 from galaxy.tools.parameters import DataToolParameter
 from galaxy.tools import DefaultToolState
-from galaxy.tools.grouping import Repeat, Conditional
+from galaxy.tools.parameters.grouping import Repeat, Conditional
 from galaxy.datatypes.data import Data
 from galaxy.util.odict import odict
 from galaxy.util.topsort import topsort, topsort_levels, CycleError

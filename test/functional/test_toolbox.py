@@ -43,10 +43,10 @@ class ToolTestCase( TwillTestCase ):
         return self.name
 
     def __expand_grouping(self, tool_inputs, declared_inputs ):
+        from galaxy.tools.parameters import grouping
         expanded_inputs = {}
         for key, value in tool_inputs.items():
-            import galaxy.tools.grouping
-            if isinstance(value, galaxy.tools.grouping.Conditional):
+            if isinstance(value, grouping.Conditional):
                 for i, case in enumerate(value.cases):
                     if declared_inputs[value.test_param.name] == case.value:
                         if isinstance(case.value, str):

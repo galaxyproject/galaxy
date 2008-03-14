@@ -1,6 +1,10 @@
+"""
+Support for generating the options for a SelectToolParameter dynamically (based
+on the values of other parameters or other aspects of the current state)
+"""
 
 import sys, os, logging
-import parameters, validation
+import basic, validation
 
 log = logging.getLogger(__name__)
 
@@ -184,7 +188,7 @@ class DynamicOptions( object ):
             return self.generate_from_dataset( dataset_file_name, self.value_col, sep )
         elif meta_key == 'dbkey':
             dbkey = filters[ 'data_meta' ][ 'meta_value' ]
-            if self.parameter_type == parameters.DataToolParameter:
+            if self.parameter_type == basic.DataToolParameter:
                 return meta_key, dbkey
             meta_key_col = filters[ 'data_meta' ][ 'meta_key_col' ]
             return self.generate_for_build( dbkey, meta_key_col, self.name_col, self.value_col, sep )

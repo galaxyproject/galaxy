@@ -1,17 +1,18 @@
 """
-Classes encapsulating tool parameters
+Basic tool parameters.
 """
 
 import logging, string, sys
-from galaxy import config, datatypes, util
-from galaxy.datatypes.tabular import *
-import validation, dynamic_options
+
 from elementtree.ElementTree import XML, Element
+
+from galaxy import config, datatypes, util
+from galaxy.web import form_builder
+
+import validation, dynamic_options
 
 # For BaseURLToolParameter
 from galaxy.web import url_for
-from galaxy.web import form_builder
-from galaxy.model import Dataset
 
 log = logging.getLogger(__name__)
 

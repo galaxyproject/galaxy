@@ -17,7 +17,7 @@ from galaxy.util.bunch import Bunch
 from galaxy import util, jobs, model
 from elementtree import ElementTree
 from parameters import *
-from grouping import *
+from parameters.grouping import *
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction

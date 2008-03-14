@@ -1,5 +1,8 @@
 """
-Exceptions and handlers for tools
+Exceptions and handlers for tools.
+
+FIXME: These are used by tool scripts, not the framework, and should not live
+       in this package.
 """
 
 class UCSCLimitException( Exception ):

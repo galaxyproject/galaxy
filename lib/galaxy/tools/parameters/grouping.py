@@ -2,7 +2,7 @@
 Constructs for grouping tool parameters
 """
 
-from galaxy.tools.parameters import ToolParameter
+from basic import ToolParameter
 
 class Group( object ):
     def __init__( self ):

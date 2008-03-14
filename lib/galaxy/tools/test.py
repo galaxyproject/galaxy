@@ -1,7 +1,7 @@
 import new, sys
 import galaxy.util
 import parameters
-import grouping
+from parameters import grouping
 from elementtree.ElementTree import XML
 
 class ToolTestBuilder( object ):
