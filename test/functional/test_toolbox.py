@@ -54,7 +54,7 @@ class ToolTestCase( TwillTestCase ):
                         else:
                             expanded_inputs["%s|%s" % (value.name, value.test_param.name)] = case.value
                         for input_name, input_value in case.inputs.items():
-                            if isinstance(input_value, galaxy.tools.grouping.Conditional):
+                            if isinstance(input_value, grouping.Conditional):
                                 expanded_inputs.update(self.__expand_grouping({input_name:input_value}), declared_inputs)
                             elif isinstance(declared_inputs[input_name], str):
                                 expanded_inputs.update({"%s|%s" % (value.name, input_name):declared_inputs[input_name].split(",")})
