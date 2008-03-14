@@ -6,7 +6,7 @@ def validate_input( trans, error_map, param_values, page_param_map ):
     dbkeys = set()
     tracks = param_values['tracks']
     for track in tracks:
-        if track['input'] is not None:
+        if track['input']:
             dbkeys.add( track['input'].dbkey )
     if len( dbkeys ) > 1:
         # FIXME: Should be able to assume error map structure is created
