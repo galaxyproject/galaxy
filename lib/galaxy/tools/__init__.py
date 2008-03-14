@@ -623,7 +623,7 @@ class Tool:
         # Process incoming data
         if not( self.check_values ):
             # If `self.check_values` is false we don't do any checking or
-            # processing on inut parameters. This is used to pass raw values
+            # processing on input parameters. This is used to pass raw values
             # through to/from external sites. FIXME: This should be handled
             # more cleanly, there is no reason why external sites need to
             # post back to the same URL that the tool interface uses.
@@ -771,8 +771,9 @@ class Tool:
                 group_state[ input.test_param.name ] = value
             else:
                 if key not in incoming and update_only:
-                    # The value is already in the state, but preserve the old
-                    # error if it exists
+                    # No new value provided, and we are only updating, so keep
+                    # the old value (which should already be in the state) and
+                    # preserve the old error message.
                     if input.name in old_errors:
                         errors[ input.name ] = old_errors[ input.name ]
                 # SelectToolParameters and DataToolParameters whose options are dynamically
