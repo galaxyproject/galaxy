@@ -71,11 +71,7 @@ VAR="$HOME/.check_galaxy"
 
 # sanity
 if [ ! -f $CHECK_GALAXY ]; then
-    [ $DEBUG = 1 ] && echo "$CHECK_GALAXY missing"
-    exit 0
-fi
-if [ ! -d $VAR ]; then
-    [ $DEBUG = 1 ] && echo "$VAR is missing"
+    [ $DEBUG = 1 ] && echo "$CHECK_GALAXY is missing"
     exit 0
 fi
 
@@ -92,7 +88,7 @@ COUNT="$VAR/$1/wrap.count"
 STAGGER_FILE="$VAR/$1/wrap.stagger"
 for dir in $VAR/$1 $NOTIFIED_MAIL $NOTIFIED_PAGE; do
     if [ ! -d $dir ]; then
-        mkdir $dir
+        mkdir -p -m 0700 $dir
         if [ $? -ne 0 ]; then
             [ $DEBUG = 1 ] && echo "unable to create dir: $dir"
             exit 0
