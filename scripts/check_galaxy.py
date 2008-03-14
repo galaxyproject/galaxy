@@ -1,0 +1,357 @@
+#!/usr/bin/env python
+"""
+check_python can be run by hand, although it is meant to run from cron
+via the check_galaxy.sh script in Galaxy's cron/ directory.
+"""
+
+import socket, sys, os, time, tempfile, filecmp, htmllib, formatter
+from user import home
+
+# options
+if os.environ.has_key( "DEBUG" ):
+    debug = os.environ["DEBUG"]
+else:
+    debug = False
+scripts_dir = os.path.abspath( os.path.dirname( sys.argv[0] ) )
+test_data_dir = os.path.join( scripts_dir, "..", "test-data" )
+# what tools to run - not so pretty
+tools = {
+    "gops_intersect_1" :
+    [
+        {
+            "inputs" :
+            (
+                os.path.join( test_data_dir, "1.bed" ),
+                os.path.join( test_data_dir, "2.bed" )
+            )
+        },
+        { "check_file" : os.path.join( test_data_dir, "gops-intersect.dat" ) },
+        {
+            "tool_run_options" :
+            {
+                "input1" : "1.bed",
+                "input2" : "2.bed",
+                "min" : "1",
+                "returntype" : ""
+            }
+        }
+    ]
+}
+
+# handle arg(s)
+if len(sys.argv) < 2:
+    print "usage: check_galaxy.py <server>"
+    sys.exit(1)
+
+if sys.argv[1].find(".") < 0:
+    server = "%s.g2.bx.psu.edu" % sys.argv[1]
+    maint = "/errordocument/502/%s/maint" % sys.argv[1]
+else:
+    server = sys.argv[1]
+    maint = None
+
+# state information
+var_dir = os.path.join( home, ".check_galaxy", server )
+if not os.access( var_dir, os.F_OK ):
+    os.makedirs( var_dir )
+
+# get user/pass
+login_file = os.path.join( var_dir, "login" )
+try:
+    f = open( login_file, 'r' )
+except:
+    print "Please create the file:"
+    print " ", login_file
+    print "This should contain a username and password to log in to"
+    print "Galaxy with, on one line, separated by whitespace, e.g.:"
+    print ""
+    print "check_galaxy@example.com password"
+    print ""
+    print "If the user does not exist, check_galaxy will create it"
+    print "for you."
+    sys.exit( 1 )
+( username, password ) = f.readline().split()
+
+# find/import twill
+lib_dir = os.path.join( scripts_dir, "..", "lib" )
+eggs_dir = os.path.join( scripts_dir, "..", "eggs", "py%s-noplatform" %sys.version[:3] )
+sys.path.append( lib_dir )
+sys.path.append( eggs_dir )
+import pkg_resources
+pkg_resources.require( "twill" )
+import twill
+import twill.commands as tc
+
+# default timeout for twill browser is never
+socket.setdefaulttimeout(300)
+
+# user-agent
+tc.agent("Mozilla/5.0 (compatible; check_galaxy/0.1)")
+
+class Browser:
+
+    def __init__(self):
+        self.server = server
+        self.maint = maint
+        self.tool = None
+        self.tool_opts = None
+        self.id = None
+        self.status = None
+        self.check_file = None
+        self.hid = None
+        self.cookie_jar = os.path.join( var_dir, "cookie_jar" )
+        dprint("cookie jar path: %s" % self.cookie_jar)
+        if not os.access(self.cookie_jar, os.R_OK):
+            dprint("no cookie jar at above path, creating")
+            tc.save_cookies(self.cookie_jar)
+        tc.load_cookies(self.cookie_jar)
+
+    def get(self, path):
+        tc.go("http://%s%s" % (self.server, path))
+        tc.code(200)
+
+    def reset(self):
+        self.get("/history_new")
+        self.tool = None
+        self.tool_opts = None
+        self.id = None
+        self.status = None
+        self.check_file = None
+	#self.get("/history")
+	self.get("/root/history_options")
+        p = hidParser()
+        p.feed(tc.browser.get_html())
+        if p.hid is not None:
+            self.hid = p.hid
+        else:
+            raise Exception, "Unable to determine hid after creating new history"
+
+    def check_redir(self, url):
+        try:
+            tc.get_browser()._browser.set_handle_redirect(False)
+            tc.go(url)
+            tc.code(302)
+            tc.get_browser()._browser.set_handle_redirect(True)
+            dprint( "%s is returning redirect (302)" % url )
+            return(True)
+        except twill.errors.TwillAssertionError, e:
+            tc.get_browser()._browser.set_handle_redirect(True)
+            dprint( "%s is not returning redirect (302): %s" % (url, e) )
+            code = tc.browser.get_code()
+            if code == 502:
+                is_maint = self.check_maint()
+                if is_maint:
+                    dprint( "Galaxy is down, but a maint file was found, so not sending alert" )
+                    sys.exit(0)
+                else:
+                    print "Galaxy is down (code 502)"
+                    sys.exit(1)
+            return(False)
+
+    # checks for a maint file
+    def check_maint(self):
+        if self.maint is None:
+            #dprint( "Warning: unable to check maint file for %s" % self.server )
+            return(False)
+        try:
+            self.get(self.maint)
+            return(True)
+        except twill.errors.TwillAssertionError, e:
+            return(False)
+
+    def login(self, user, pw):
+        self.get("/user/login")
+        tc.fv("1", "email", user)
+        tc.fv("1", "password", pw)
+        tc.submit("Login")
+        tc.code(200)
+        if len(tc.browser.get_all_forms()) > 0:
+            # uh ohs, fail
+            p = userParser()
+            p.feed(tc.browser.get_html())
+            if p.no_user:
+                dprint("user does not exist, will try creating")
+                self.create_user(user, pw)
+            elif p.bad_pw:
+                raise Exception, "Password is incorrect"
+            else:
+                raise Exception, "Unknown error logging in"
+        tc.save_cookies(self.cookie_jar)
+
+    def create_user(self, user, pw):
+        self.get("/user/create")
+        tc.fv("1", "email", user)
+        tc.fv("1", "password", pw)
+        tc.fv("1", "confirm", pw)
+        tc.submit("Create")
+        tc.code(200)
+        if len(tc.browser.get_all_forms()) > 0:
+            p = userParser()
+            p.feed(tc.browser.get_html())
+            if p.already_exists:
+                raise Exception, 'The user you were trying to create already exists'
+
+    def upload(self, file):
+        self.get("/tool_runner/index?tool_id=upload1")
+        tc.fv("1","file_type", "bed")
+        tc.formfile("1","file_data", file)
+        tc.submit("runtool_btn")
+        tc.code(200)
+
+    def runtool(self):
+        self.get("/tool_runner/index?tool_id=%s" % self.tool)
+        for k, v in self.tool_opts.items():
+            tc.fv("1", k, v)
+        tc.submit("runtool_btn")
+        tc.code(200)
+
+    def wait(self):
+        sleep_amount = 1
+        count = 0
+        maxiter = 16
+        while count < maxiter:
+            count += 1
+            self.get("/root/history")
+            page = tc.browser.get_html()
+            if page.find( '<!-- running: do not change this comment, used by TwillTestCase.wait -->' ) > -1:
+                time.sleep( sleep_amount )
+                sleep_amount += 1
+            else:
+                break
+        if count == maxiter:
+            raise Exception, "Tool never finished"
+
+    def check_status(self):
+        self.get("/root/history")
+        p = historyParser()
+        p.feed(tc.browser.get_html())
+        if p.status != "ok":
+            raise Exception, "JOB %s NOT OK: %s" % (p.id, p.status)
+        self.id = p.id
+        self.status = p.status
+        #return((p.id, p.status))
+
+    def diff(self):
+        self.get("/datasets/%s/display/index" % self.id)
+        data = tc.browser.get_html()
+        tmp = tempfile.mkstemp()
+        dprint("tmp file: %s" % tmp[1])
+        tmpfh = os.fdopen(tmp[0], 'w')
+        tmpfh.write(data)
+        tmpfh.close()
+        if filecmp.cmp(tmp[1], self.check_file):
+            dprint("Tool output is as expected")
+        else:
+            if not debug:
+                os.remove(tmp[1])
+            raise Exception, "Tool output differs from expected"
+        if not debug:
+            os.remove(tmp[1])
+
+    def delete_history(self):
+        self.get("/history_delete?id=%s" % self.hid)
+
+class userParser(htmllib.HTMLParser):
+    def __init__(self):
+        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
+        self.in_span = False
+        self.no_user = False
+        self.bad_pw = False
+        self.already_exists = False
+    def start_span(self, attrs):
+        self.in_span = True
+    def end_span(self):
+        self.in_span = False
+    def handle_data(self, data):
+        if self.in_span:
+            if data == "No such user":
+                self.no_user = True
+            elif data == "Invalid password":
+                self.bad_pw = True
+            elif data == "User with that email already exists":
+                self.already_exists = True
+
+class historyParser(htmllib.HTMLParser):
+    def __init__(self):
+        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
+        self.status = None
+        self.id = None
+    def start_div(self, attrs):
+        # find the top history item
+        for i in attrs:
+            if i[0] == "class" and i[1].startswith("historyItemWrapper historyItem historyItem-"):
+                self.status = i[1].rsplit("historyItemWrapper historyItem historyItem-", 1)[1]
+                dprint("status: %s" % self.status)
+            if i[0] == "id" and i[1].startswith("historyItem-"):
+                self.id = i[1].rsplit("historyItem-", 1)[1]
+                dprint("id: %s" % self.id)
+        if self.status is not None:
+            self.reset()
+
+class hidParser(htmllib.HTMLParser):
+    def __init__(self):
+        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
+        self.hid = None
+    def start_a(self, attrs):
+        for i in attrs:
+            if i[0] == "href" and i[1].startswith("/history_delete?id="):
+                self.hid = i[1].rsplit("/history_delete?id=", 1)[1]
+                dprint("history id: %s" % self.hid)
+        if self.hid is not None:
+            self.reset()
+
+def dprint(str):
+    if debug:
+        print str
+
+# do stuff here
+if __name__ == "__main__":
+
+    dprint("checking %s" % server)
+
+    b = Browser()
+
+    # login (or not)
+    if b.check_redir("http://%s/user/account" % server):
+        # if the account page redirects, we need to login
+        dprint("not logged in... logging in")
+        b.login(username, password)
+    else:
+        # we are logged in
+        dprint("we are already logged in (via cookies), hooray!")
+
+    for tool, params in tools.iteritems():
+
+        check_file = ""
+
+        # make sure history and state is clean
+        b.reset()
+        b.tool = tool
+
+        # get all the tool run conditions
+        for dict in params:
+            for k, v in dict.items():
+                if k == 'inputs':
+                    for file in v:
+                        b.upload(file)
+                elif k == 'check_file':
+                    b.check_file = v
+                elif k == 'tool_run_options':
+                    b.tool_opts = v
+                else:
+                    raise Exception, "Unknown key in tools dict: %s" % k
+
+        b.runtool()
+        b.wait()
+        #st = b.check_status()
+        b.check_status()
+        b.diff()
+        b.delete_history()
+
+        # by this point, everything else has succeeded.  there should be no maint.
+        is_maint = b.check_maint()
+        if is_maint:
+            print "Galaxy is up and fully functional, but a maint file is in place."
+            sys.exit(1)
+
+    sys.exit(0)
