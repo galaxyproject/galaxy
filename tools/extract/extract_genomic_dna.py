@@ -112,7 +112,7 @@ def __main__():
                 if not invalid_line:
                     first_invalid_line = i + 1
                     invalid_line = line
-                    continue
+                continue
 
             if strand not in ['+', '-']:
                 strand = '+'
