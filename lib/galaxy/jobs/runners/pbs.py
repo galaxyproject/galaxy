@@ -274,8 +274,13 @@ class PBSJobRunner( object ):
             jobs = pbs.pbs_statjob(conn, pbs_job_state.job_id, stat_attrl, 'NULL')
             pbs.pbs_disconnect(conn)    
             if len( jobs ) < 1:
-                log.debug("(%s/%s) job has left queue" % (galaxy_job_id, job_id) )
-                self.finish_job( pbs_job_state )
+                errno, text = pbs.error()
+                if errno != 15001:
+                    log.info("(%s/%s) State check resulted in error (%d): %s" % (galaxy_job_id, job_id, errno, text) )
+                    new_watched.append( pbs_job_state )
+                else:
+                    log.debug("(%s/%s) job has left queue" % (galaxy_job_id, job_id) )
+                    self.finish_job( pbs_job_state )
             else:    
                 output_datasets_deleted = pbs_job_state.job_wrapper.check_if_output_datasets_deleted()
                 try:
