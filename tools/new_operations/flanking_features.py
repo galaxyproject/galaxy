@@ -20,6 +20,8 @@ def stop_err( msg ):
 
 def main(): 
     infile1_includes_strand = False
+    strand = "+"        #if strand is not defined, default it to +
+    
     # Parsing Command Line here
     options, args = doc_optparse.parse( __doc__ )
     try:
@@ -27,10 +29,7 @@ def main():
         chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )
         infile1, infile2, out_file, direction = args
         if strand_col_1 >= 0:
-            infile1_includes_strand = True
-            strand = "+"        #if strand is not defined, default it to +
-        if strand_col_2 < 0:
-            fstrand = ""        
+            infile1_includes_strand = True      
     except:
         stop_err( "Metadata issue, correct the metadata attributes by clicking on the pencil icon in the history item." )
 
