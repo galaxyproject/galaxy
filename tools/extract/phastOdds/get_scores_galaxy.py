@@ -41,21 +41,28 @@ def main():
     h5 = openFile( h5_fname, mode = "r" )
     # Load intervals and names for the subregions
     intersecters = {}
-    for line in open( mapping_fname ):
-        chr, start, end, name = line.split()[0:4]
-        if not intersecters.has_key( chr ): 
-            intersecters[ chr ] = intervals.Intersecter()
-        intersecters[ chr ].add_interval( intervals.Interval( int( start ), int( end ), name ) )
-    in_file = open( in_fname )
-    out_file = open( out_fname, "w" )
-    # Find the subregion containing each input interval 
-    for index, line in enumerate( in_file ):
+    for i, line in enumerate( file( mapping_fname ) ):
         line = line.rstrip( '\r\n' )
-        if line.startswith( "#" ):
-            if index == 0:
-                print >> out_file, line + "\tscore"
+        if line and not line.startswith( '#' ):
+            chr, start, end, name = line.split()[0:4]
+            if not intersecters.has_key( chr ): 
+                intersecters[ chr ] = intervals.Intersecter()
+            intersecters[ chr ].add_interval( intervals.Interval( int( start ), int( end ), name ) )
+
+    # Find the subregion containing each input interval
+    skipped_lines = 0
+    first_invalid_line = 0
+    invalid_line = ''
+    out_file = open( out_fname, "w" )
+    warnings = []
+    warning = ''
+    for i, line in enumerate( file( in_fname ) ):
+        line = line.rstrip( '\r\n' )
+        if line.startswith( '#' ):
+            if i == 0:
+                out_file.write( "%s\tscore\n" % line )
             else:
-                print >> out_file, line,
+                out_file.write( "%s\n" % line )
         fields = line.split( "\t" )
         try:
             chr = fields[ chrom_col ]
@@ -67,17 +74,41 @@ def main():
         try:
             matches = intersecters[ chr ].find( start, end )
         except:
-            stop_err( "'%s' is not a valid chrom value for the region" %chr )
+            warning = "'%s' is not a valid chrom value for the region. " %chr
+            warnings.append( warning )
+            skipped_lines += 1
+            if not invalid_line:
+                first_invalid_line = i + 1
+                invalid_line = line
+            continue
         if not len( matches ) == 1:
-            stop_err( "Interval must match exactly one target region" )
+            warning = "Interval must match exactly one target region. "
+            warnings.append( warning )
+            skipped_lines += 1
+            if not invalid_line:
+                first_invalid_line = i + 1
+                invalid_line = line
+            continue
         region = matches[0]
         if not ( start >= region.start and end <= region.end ):
-            stop_err( "Interval must fall entirely within region" )
+            warning = "Interval must fall entirely within region. "
+            warnings.append( warning )
+            skipped_lines += 1
+            if not invalid_line:
+                first_invalid_line = i + 1
+                invalid_line = line
+            continue
         region_name = region.value
         rel_start = start - region.start
         rel_end = end - region.start
         if not rel_start < rel_end:
-            stop_err( "Region %s is empty - relative start:%d, relative end:%d" % ( region_name, rel_start, rel_end ) )
+            warning = "Region %s is empty - relative start:%d, relative end:%d. " % ( region_name, rel_start, rel_end )
+            warnings.append( warning )
+            skipped_lines += 1
+            if not invalid_line:
+                first_invalid_line = i + 1
+                invalid_line = line
+            continue
         s = h5.getNode( h5.root, "scores_" + region_name )
         c = h5.getNode( h5.root, "counts_" + region_name )
         score = s[rel_end-1]
@@ -88,10 +119,16 @@ def main():
         if per_col: 
             score /= count
         fields.append( str( score ) )
-        print >>out_file, "\t".join( fields )
+        out_file.write( "%s\n" % "\t".join( fields ) )
     # Close the file handle
     h5.close()
-    in_file.close()
     out_file.close()
-        
+
+    if warnings:
+        warn_msg = "PhastOdds scores are only available for ENCODE regions. %d warnings, 1st is: " % len( warnings )
+        warn_msg += warnings[0]
+        print warn_msg
+    if skipped_lines:
+        print 'Skipped %d invalid lines, 1st is #%d, "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+
 if __name__ == "__main__": main()

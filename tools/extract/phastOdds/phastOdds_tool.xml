@@ -1,4 +1,4 @@
-<tool id="phastOdds_for_intervals" name="Compute phastOdds score">
+<tool id="phastOdds_for_intervals" name="Compute phastOdds score" version="1.0.0">
   <description>for each interval</description>
   <command interpreter="python2.4">get_scores_galaxy.py $per_col ${score_file}.h5 ${score_file}.mapping.bed $input $output $input_chromCol $input_startCol $input_endCol</command>
   <inputs>
