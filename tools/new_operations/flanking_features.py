@@ -100,12 +100,9 @@ def main():
                             felems = fline.split( '\t' )
                             if chr != felems[chr_col_2]:
                                 continue
-                            if infile1_includes_strand:
-                                try:
-                                    fstrand = felems[strand_col_2]
-                                except:
-                                    fstrand = ""
-                            else:
+                            try:
+                                fstrand = felems[strand_col_2]
+                            except:
                                 fstrand = ""
                             if fstrand and strand != fstrand:
                                 continue
@@ -129,12 +126,9 @@ def main():
                             felems = fline.split( '\t' )
                             if chr != felems[chr_col_2]:
                                 continue
-                            if infile1_includes_strand:
-                                try:
-                                    fstrand = felems[strand_col_2]
-                                except:
-                                    fstrand = ""
-                            else:
+                            try:
+                                fstrand = felems[strand_col_2]
+                            except:
                                 fstrand = ""
                             if fstrand and strand != fstrand:
                                 continue

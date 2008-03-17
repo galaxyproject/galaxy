@@ -37,6 +37,8 @@ For every interval in the **interval** dataset, this tool fetches the **closest*
 
 Every line should contain at least 3 columns: chromosome number, start and stop coordinates. If any of these columns is missing or if start and stop coordinates are not numerical, the lines will be treated as invalid and skipped. The number of skipped lines is documented in the resulting history item as a "data issue".
 
+If the strand column is missing from your input interval dataset, the intervals will be considered to be on positive strand. You can add a strand column to your input dataset by using the *Text Manipulation->Add column* tool. 
+
 -----
 
 **Example**
