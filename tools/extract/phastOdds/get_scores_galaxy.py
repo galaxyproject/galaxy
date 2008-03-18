@@ -69,7 +69,13 @@ def main():
             start = int( fields[ start_col ] )
             end = int( fields[ end_col ] )
         except:
-            stop_err( "Invalid chrom, start and end column settings. Click the pencil icon in your history item to correct the settings." )
+            warning = "Invalid value for chrom, start or end column."
+            warnings.append( warning )
+            skipped_lines += 1
+            if not invalid_line:
+                first_invalid_line = i + 1
+                invalid_line = line
+            continue
         # Find matching interval
         try:
             matches = intersecters[ chr ].find( start, end )
@@ -102,7 +108,7 @@ def main():
         rel_start = start - region.start
         rel_end = end - region.start
         if not rel_start < rel_end:
-            warning = "Region %s is empty - relative start:%d, relative end:%d. " % ( region_name, rel_start, rel_end )
+            warning = "Region %s is empty, relative start:%d, relative end:%d. " % ( region_name, rel_start, rel_end )
             warnings.append( warning )
             skipped_lines += 1
             if not invalid_line:

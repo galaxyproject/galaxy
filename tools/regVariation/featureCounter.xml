@@ -26,45 +26,44 @@
 
 **What it does**
 
-This tool finds the coverage of intervals in the first query on intervals in the second query. The count and coverage are added as 3 new columns, as explained in the example below.
+This tool finds the coverage of intervals in the first query on intervals in the second query. The count and coverage are added as 3 new columns in the resulting dataset.
 
 -----
 
 **Example**
 
+- If **First query** consists of the following windows::
 
-- if **First query** consists of following windows::
-
-      chrX 1     10001 seg 0 -
-      chrX 10001 20001 seg 0 -
-      chrX 20001 30001 seg 0 -
-      chrX 30001 40001 seg 0 -
+    chrX 1     10001 seg 0 -
+    chrX 10001 20001 seg 0 -
+    chrX 20001 30001 seg 0 -
+    chrX 30001 40001 seg 0 -
       
-- and **Second query** consits of following exons::
+- and **Second query** consists of the following exons::
 
-      chrX 5000  6000  seg2 0 -
-      chrX 5500  7000  seg2 0 -
-      chrX 9000  22000 seg2 0 -
-      chrX 24000 34000 seg2 0 -
-      chrX 36000 38000 seg2 0 -
+    chrX 5000  6000  seg2 0 -
+    chrX 5500  7000  seg2 0 -
+    chrX 9000  22000 seg2 0 -
+    chrX 24000 34000 seg2 0 -
+    chrX 36000 38000 seg2 0 -
       
-- the **Result** is the coverage of exons of second query in each of the windows contained in first query::
+- the **Result** is the coverage of exons of the second query in each of the windows contained in first query::
 
-	  chrX 1     10001 seg 0 - 2 1 30.01
-   	  chrX 10001 20001 seg 0 - 1 0 100.00
-	  chrX 20001 30001 seg 0 - 0 2 80.00
-	  chrX 30001 40001 seg 0 - 1 1 59.99
+    chrX 1     10001 seg 0 - 2 1 30.01
+    chrX 10001 20001 seg 0 - 1 0 100.00
+    chrX 20001 30001 seg 0 - 0 2 80.00
+    chrX 30001 40001 seg 0 - 1 1 59.99
 	  
-- For example, the following line of output (New columns added are indexed by a-d below)::
+- To clarify, the following line of output ( added columns are indexed by a, b and c )::
 
-   chrX 1     10001 seg 0 - 2 1 30.01
-                            a b   c   
+                         a b c
+    chrX 1 10001 seg 0 - 2 1 30.01
                                   
-   implies that 2 exons(a) fall in this window(chrX:1-10001) and 1 exon(b) partially overlaps with this window, and these 3 exons cover 30% of the window size(c).
+  implies that 2 exons (a) fall into this window ( chrX:1-10001 ), 1 exon (b) partially overlaps this window, and these 3 exons cover 30.01% of the window size (c).
 
-	 a : Number of features in the 2nd query that fall COMPLETELY within this window
-	 b : Number of features in the 2nd query that partially overlap with this window
-	 c : % of window size covered by features in 'a' and 'b' (Features overlapping with eachother will be merged to calculate 'c')
+  * a: number of features in the 2nd query that fall **completely** within this window
+  * b: number of features in the 2nd query that partially overlap this window
+  * c: % of window size covered by features in (a) and (b) - features overlapping with each other will be merged to calculate (c)
 	 
 </help>
 </tool>

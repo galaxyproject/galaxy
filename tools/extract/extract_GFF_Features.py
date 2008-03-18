@@ -22,32 +22,30 @@ def main():
     try:
         inp_file, out_file, column, features = args
     except:
-        stop_err("One or more arguments is missing or invalid.\nUsage: prog input output column features")
-    
+        stop_err( "One or more arguments is missing or invalid.\nUsage: prog input output column features" )
     try:
-        column = int(column)
+        column = int( column )
     except:
-        stop_err("%s is an invalid column." %(column))
+        stop_err( "Column %s is an invalid column." % column )
     
     if features == None:
-        stop_err( "Column %d has no features to display. Please select another column." %(column+1))
+        stop_err( "Column %d has no features to display, select another column." %( column + 1 ) )
 
-    try:
-        fo=open(out_file,'w')
-        for line in open(inp_file):
-            if line[0] == '#' or not(line) or line == "":
-                print >>fo, line.strip()
-                continue
+    fo=open( out_file, 'w' )
+    for i, line in enumerate( file( inp_file ) ):
+        line = line.rstrip( '\r\n' )
+        if line and line.startswith( '#' ):
+            # Keep valid comment lines in the output
+            fo.write( "%s\n" % line )
+        else:
             try:
-                if line.split('\t')[column] in features.split(','):
-                    print >>fo, line.strip()
+                if line.split( '\t' )[column] in features.split( ',' ):
+                    fo.write( "%s\n" % line )
             except:
                 pass
-        fo.close()
-    except Exception, exc:
-        print >> sys.stderr, exc
+    fo.close()
             
-    print 'Field = Column %d and Features = %s' %(column+1, features)
+    print 'Column %d features: %s' %( column + 1, features )
 
 if __name__ == "__main__":
     main()       

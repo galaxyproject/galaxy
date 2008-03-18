@@ -2,7 +2,7 @@
   <description> between assemblies and genomes</description>
   <command interpreter="python">liftOver_wrapper.py $input "$out_file1" "$out_file2" $dbkey $to_dbkey</command>
   <inputs>
-    <param format="bed" name="input" type="data" label="Convert co-ordinates of">
+    <param format="bed" name="input" type="data" label="Convert coordinates of">
       <validator type="unspecified_build" />
     </param>
     <param name="to_dbkey" type="select" label="To">
@@ -29,11 +29,11 @@
 
 .. class:: warningmark
 
-Make sure that the genome build is specified for the input dataset (click the pencil icon if it is not specified).
+Make sure that the genome build of the input dataset is specified (click the pencil icon in the history item to set it if necessary).
 
 .. class:: warningmark
 
-The tool will fail to run when the value in the **To** box is **unspecified**. This means that either we don't carry any liftover mappings corresponding to the genome build of the chosen input dataset or the genome build for the input dataset is not specified (click the pencil icon if it is not specified). 
+The **To** list will be empty if we don't carry any liftover mappings corresponding to the genome build of the input dataset. 
 
 -----
 
@@ -41,19 +41,19 @@ The tool will fail to run when the value in the **To** box is **unspecified**. T
 
 **What it does**
 
-This tool converts genome coordinates and annotation files between assemblies and genomes. It outputs 2 files, one containing all the mapped coordinates and the other containing the unmapped coordinates (if any). 
+This tool converts coordinates and annotations between assemblies and genomes. It produces 2 files, one containing all the mapped coordinates and the other containing the unmapped coordinates, if any. 
 
 -----
 
 **Example**
 
-Running this tool to convert the following hg16 intervals into hg18 intervals::
+Converting the following hg16 intervals to hg18 intervals::
 
     chrX  85170   112199  AK002185  0  +
     chrX  110458  112199  AK097346  0  +
     chrX  112203  121212  AK074528  0  -
 
-will return the following hg18 intervals::
+will produce the following hg18 intervals::
 
     chrX  132991  160020  AK002185  0  +
     chrX  158279  160020  AK097346  0  +

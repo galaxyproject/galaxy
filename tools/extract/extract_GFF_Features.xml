@@ -4,7 +4,7 @@
   <inputs>
     <param format="gff" name="input1" type="data" label="Select GFF data"/>
     <conditional name="column_choice">
-      <param name="col" type="select" label="Select field">
+      <param name="col" type="select" label="From">
         <option value="0" selected="true">Column 1 / Sequence name</option>
         <option value="1">Column 2 / Source</option>
         <option value="2">Column 3 / Feature</option>
@@ -12,35 +12,35 @@
         <option value="7">Column 8 / Frame</option>
       </param>
       <when value="0">
-        <param name="feature" type="select" multiple="true" label="Select features" >
+        <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
           <options from_file="data_ref" value_col="0">
             <filter type="data_meta" data_ref="input1" />
           </options>
         </param> 
       </when>
       <when value="1">
-        <param name="feature" type="select" multiple="true" label="Select features" >
+        <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
           <options from_file="data_ref" value_col="1">
             <filter type="data_meta" data_ref="input1" />
           </options>
         </param>        	
       </when>
       <when value="2">
-        <param name="feature" type="select" multiple="true" label="Select features" >
+        <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
           <options from_file="data_ref" value_col="2">
             <filter type="data_meta" data_ref="input1" />
           </options>
         </param> 
       </when>
       <when value="6">
-        <param name="feature" type="select" multiple="true" label="Select features" >
+        <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
           <options from_file="data_ref" value_col="6">
             <filter type="data_meta" data_ref="input1" />
           </options>
         </param>         	
       </when>
       <when value="7">
-        <param name="feature" type="select" multiple="true" label="Select features" >
+        <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
           <options from_file="data_ref" value_col="7">
             <filter type="data_meta" data_ref="input1" />
           </options>
@@ -63,25 +63,13 @@
 
 **What it does**
 
-This tool extracts selected features from a history item in GFF format. To convert the output GFF file to BED format, please use **GFF-to-BED converter** under **Convert Formats** section.
-
-The interface for this tool contains two pages (steps): 
-
- * **Step 1 of 2**. Choose GFF data from history to extract features from.
- * **Step 2 of 2**. Choose field and features to be extracted. Once you select the field the **Select features** widget will refresh and display non-redundant set of values present in that column.  
-
-----
-
-.. class:: warningmark
-
-If the chosen column is absent in the input GFF file, the tool displays a message in the "Select Features" drop-down menu. Running the tool in this case will return an empty output. Also, running the tool on columns with ONLY one feature will return an output same as the input.
-
+This tool extracts selected features from GFF data.
 
 -----
 
 **Example**
 
-Selecting **promoter** from the following GFF-formatted data::
+Selecting **promoter** from the following GFF data::
 
     chr22  GeneA  enhancer  10000000  10001000  500  +  .  TGA
     chr22  GeneA  promoter  10010000  10010100  900  +  .  TGA
