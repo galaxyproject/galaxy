@@ -85,39 +85,47 @@ class Tabular( data.Text ):
                 if i > 100: break # Hopefully we never get here...
             dataset.metadata.column_types = column_types
 
-    def make_html_table(self, data, skipchar=None):
+    def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         first = True
         comments = []
         try:
+            data = dataset.peek
             lines =  data.splitlines()
             for line in lines:
-                if skipchar and line.startswith(skipchar):
-                    comments.append(line.strip())
-                    continue
                 line = line.strip()
                 if not line:
                     continue
+                comment = False
+                for skipchar in skipchars:
+                    if line.startswith( skipchar ):
+                        comments.append( line )
+                        comment = True
+                        break
+                if comment:
+                    continue
                 elems = line.split("\t")
-                
-                if first: #generate header
+                if first: # Generate column header
                     first = False
                     out.append('<tr>')
                     for index, elem in enumerate(elems):
                         out.append("<th>%s</th>" % (index+1))
                     out.append('</tr>')
-                
-                while len(comments)>0:
+                while len(comments)>0: # Keep comments
                     out.append('<tr><td colspan="100%">')
                     out.append(escape(comments.pop(0)))
                     out.append('</td></tr>')
-                
-                out.append('<tr>') # body
-                for elem in elems:
+                out.append('<tr>')
+                for elem in elems: # body
                     elem = escape(elem)
                     out.append("<td>%s</td>" % elem)
                 out.append('</tr>')
+            # Peek may consis only of comments
+            while len( comments ) > 0:
+                out.append( '<tr><td colspan="100%">' )
+                out.append( escape( comments.pop(0) ) )
+                out.append( '</td></tr>' )
             out.append('</table>')
             out = "".join(out)
         except Exception, exc:
@@ -126,8 +134,7 @@ class Tabular( data.Text ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        m_peek = self.make_html_table( dataset.peek )
-        return m_peek
+        return self.make_html_table( dataset )
 
 class Taxonomy( Tabular ):
     def __init__(self, **kwd):
@@ -139,23 +146,28 @@ class Taxonomy( Tabular ):
                              'Tribe', 'Subtribe', 'Genus', 'Subgenus', 'Species', 'Subspecies'
                              ]
 
-    def make_html_table( self, data, skipchar=None ):
+    def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         first = True
         comments = []
         try:
+            data = dataset.peek
             lines =  data.splitlines()
             for line in lines:
-                line = line.rstrip( '\r\n' )
+                line = line.strip()
                 if not line:
                     continue
-                if skipchar and line.startswith( skipchar ):
-                    comments.append( line )
+                comment = False
+                for skipchar in skipchars:
+                    if line.startswith( skipchar ):
+                        comments.append( line )
+                        comment = True
+                        break
+                if comment:
                     continue
-
                 elems = line.split( '\t' )
-                if first: #generate header
+                if first: # Generate column header
                     first = False
                     out.append( '<tr>' )
                     for index, name in enumerate( self.column_names ):
@@ -166,17 +178,21 @@ class Taxonomy( Tabular ):
                         for index in range( len( self.column_names ), len( elems ) ):
                             out.append( "<th>%s</th>" % ( index+1 ) )
                         out.append( '</tr>' )
-                
+                # Keep comments
                 while len( comments ) > 0:
                     out.append( '<tr><td colspan="100%">' )
                     out.append( escape( comments.pop( 0 ) ) )
                     out.append( '</td></tr>' )
-                
                 out.append( '<tr>' ) # body
                 for elem in elems:
                     elem = escape( elem )
                     out.append( "<td>%s</td>" % elem )
                 out.append( '</tr>' )
+            # Peek may consis only of comments
+            while len( comments ) > 0:
+                out.append( '<tr><td colspan="100%">' )
+                out.append( escape( comments.pop(0) ) )
+                out.append( '</td></tr>' )
             out.append( '</table>' )
             out = "".join( out )
         except Exception, exc:

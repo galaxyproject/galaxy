@@ -4,6 +4,7 @@ Image classes
 
 import data
 import logging
+from cgi import escape
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy import util
@@ -128,6 +129,31 @@ class Maf( Alignment ):
         if dataset.metadata.species in [None, []]:
             return True
         return False
+
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return self.make_html_table( dataset )
+
+    def make_html_table( self, dataset, skipchars=[] ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        try:
+            out.append('<tr><th>')
+            for species in dataset.metadata.species:
+                out.append( '%s,&nbsp;' % species )
+            out.append( '</th></tr>' )
+            data = dataset.peek
+            lines =  data.splitlines()
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                out.append( '<tr><td>%s</td></tr>' % line )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % exc
+        return out
 
     def sniff( self, filename ):
         """

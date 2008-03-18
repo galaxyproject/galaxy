@@ -107,7 +107,7 @@ class Interval( Tabular ):
                                             int( elems[3] )
                                         except:
                                             dataset.metadata.nameCol = 4 
-                                    if len( elems ) < 6:
+                                    if len( elems ) < 6 or elems[5] not in data.valid_strand:
                                         dataset.metadata.strandCol = 0
                                     else:
                                         dataset.metadata.strandCol = 6
@@ -168,6 +168,64 @@ class Interval( Tabular ):
                 os.write(fd, '%s\n' % '\t'.join(tmp) )    
         os.close(fd)
         return open(temp_name)
+
+    def make_html_table( self, dataset, skipchars=[] ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        first = True
+        comments = []
+        try:
+            data = dataset.peek
+            lines =  data.splitlines()
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                comment = False
+                for skipchar in skipchars:
+                    if line.startswith( skipchar ):
+                        comments.append( line )
+                        comment = True
+                        break
+                if comment:
+                    continue
+                elems = line.split( '\t' )
+                if first: # Generate column header
+                    first = False
+                    out.append('<tr>')
+                    for index, elem in enumerate( elems ):
+                        if index+1 == dataset.metadata.chromCol:
+                            out.append( '<th>%s.Chrom</th>' % ( index+1 ) )
+                        elif index+1 == dataset.metadata.startCol:
+                            out.append( '<th>%s.Start</th>' % ( index+1 ) )
+                        elif index+1 == dataset.metadata.endCol:
+                            out.append( '<th>%s.End</th>' % ( index+1 ) )
+                        elif dataset.metadata.strandCol and ( index+1 == dataset.metadata.strandCol ):
+                            out.append( '<th>%s.Strand</th>' % ( index+1 ) )
+                        elif dataset.metadata.nameCol and ( index+1 == dataset.metadata.nameCol ):
+                            out.append( '<th>%s.Name</th>' % ( index+1 ) )
+                        else:
+                            out.append( '<th>%s</th>' % ( index+1 ) )
+                    out.append('</tr>')
+                while len( comments ) > 0: # Keep comments
+                    out.append( '<tr><td colspan="100%">' )
+                    out.append( escape( comments.pop( 0 ) ) )
+                    out.append( '</td></tr>' )
+                out.append( '<tr>' ) # body
+                for elem in elems:
+                    elem = escape( elem )
+                    out.append( '<td>%s</td>' % elem )
+                out.append( '</tr>' )
+            # Peek may consis only of comments
+            while len( comments ) > 0:
+                out.append( '<tr><td colspan="100%">' )
+                out.append( escape( comments.pop(0) ) )
+                out.append( '</td></tr>' )
+            out.append( '</table>' )
+            out = ''.join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % str( exc )
+        return out
 
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
@@ -424,8 +482,8 @@ class Gff( Tabular ):
                         pass
         Tabular.set_meta( self, dataset, skip=i )
 
-    def make_html_table(self, data):
-        return Tabular.make_html_table(self, data, skipchar='#')
+    def make_html_table( self, dataset ):
+        return Tabular.make_html_table( self, dataset, skipchars=['#'] )
     
     def as_gbrowse_display_file( self, dataset, **kwd ):
         """Returns file contents that can be displayed in GBrowse apps."""
@@ -625,8 +683,8 @@ class Wiggle( Tabular ):
 
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     
-    def make_html_table(self, data):
-        return Tabular.make_html_table(self, data, skipchar='#')
+    def make_html_table( self, dataset ):
+        return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
 
     def set_meta( self, dataset, **kwd ):
         i = 0
@@ -686,8 +744,8 @@ class CustomTrack ( Tabular ):
     def set_meta( self, dataset, **kwd ):
         Tabular.set_meta( self, dataset, skip=1 )
 
-    def make_html_table(self, dataset):
-        return Tabular.make_html_table(self, dataset, skipchar='track')
+    def make_html_table( self, dataset ):
+        return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
 
     def get_estimated_display_viewport( self, dataset ):
         try:
@@ -783,8 +841,8 @@ class GBrowseTrack ( Tabular ):
     def set_meta( self, dataset, **kwd ):
         Tabular.set_meta( self, dataset, skip=1 )
     
-    def make_html_table(self, dataset):
-        return Tabular.make_html_table(self, dataset, skipchar='track')
+    def make_html_table( self, dataset ):
+        return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
     
     def get_estimated_display_viewport( self, dataset ):
         #TODO: fix me...
