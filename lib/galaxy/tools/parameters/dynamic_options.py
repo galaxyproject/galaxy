@@ -505,6 +505,10 @@ class DynamicOptions( object ):
                         d[ maf_uid ][ 'builds' ] = build_list
                     except: 
                         continue
+                else:
+                    if build not in d: d[ build ] = []
+                    if build == fields[ build_col ].strip():
+                        d[ build ].append( ( fields[ name_col ], fields[ value_col ] ) )
         if self.data_file == 'alignseq.loc':
             if build in d:
                 for val in d[ build ]:
@@ -517,6 +521,10 @@ class DynamicOptions( object ):
             for key in d:
                 if build in d[ key ][ 'builds' ]:
                     options.append( ( d[ key ][ 'description' ], key, False ) )
+        else:
+            if build in d:
+                for name, value in d[ build ]:
+                    options.append( ( name, value, False ) )
         return options
     def generate( self, name_col, value_col, sep ):
         options = []
