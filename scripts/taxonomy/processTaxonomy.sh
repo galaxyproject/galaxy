@@ -10,15 +10,8 @@ gunzip gi_taxid_nucl.dmp.gz
 gunzip gi_taxid_prot.dmp.gz
 cat gi_taxid_nucl.dmp gi_taxid_prot.dmp > gi_taxid_all.dmp
 rm gi_taxid_nucl.dmp gi_taxid_prot.dmp
-echo "Parsing nodes.dmp..."
-cat nodes.dmp | tr -s "\t" "|" | tr "|" "\t" | cut -f 1,2,3,5 > nodes.txt
-echo "Collapsing taxonomy. This will take several hours..."
-python tax1_NodeParser.py nodes.txt > node2child.txt
 echo "Parsing names.dmg"
 cat names.dmp | cut -f 1,2,4 -d "|" | tr -s "\t" "|"  | tr "|" "\t" | sed s/\"//g > names.txt
-echo "Running tax2_Node2Name.py"
-python tax2_Node2Name.py node2child.txt names.txt taxonomy.db
-echo "Running tax3_gi2tax.py"
-python tax3_gi2tax.py taxonomy.db gi_taxid_all.dmp
+python process_NCBI_taxonomy.py gi_taxid_all.dmp names.txt taxonomy.db
 echo "Done!.."
 

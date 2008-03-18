@@ -1,0 +1,100 @@
+1	all	synonym	
+1	root	scientific name	
+2	Bacteria	scientific name	
+2	Monera	in-part	
+2	Procaryotae	in-part	
+2	Prokaryota	in-part	
+2	Prokaryotae	in-part	
+2	bacteria	blast name	
+2	eubacteria	genbank common name	
+2	not Bacteria Haeckel 1894	synonym	
+2	prokaryotes	in-part	
+6	Azorhizobium	scientific name	
+6	Azorhizobium Dreyfus et al. 1988	synonym	
+6	Azotirhizobium	equivalent name	
+7	Azorhizobium caulinodans	scientific name	
+7	Azorhizobium caulinodans Dreyfus et al. 1988	synonym	
+7	Azotirhizobium caulinodans	equivalent name	
+9	Acyrthosiphon pisum symbiont P	includes	
+9	Buchnera aphidicola	scientific name	
+9	Buchnera aphidicola Munson et al. 1991	synonym	
+10	Cellvibrio Winogradsky 1929	synonym	
+10	Cellvibrio	scientific name	
+10	Cellvibrio (ex Winogradsky 1929) Blackall et al. 1986 emend. Humphry et al. 2003	synonym	
+11	'Cellvibrio gilvus'	synonym	
+11	Cellvibrio gilvus	scientific name	
+13	Dictyoglomus	scientific name	
+13	Dictyoglomus Saiki et al. 1985	synonym	
+14	Dictyoglomus thermophilum	scientific name	
+14	Dictyoglomus thermophilum Saiki et al. 1985	synonym	
+16	Methyliphilus	equivalent name	
+16	Methylophilus	scientific name	
+16	Methylophilus Jenkins et al. 1987	synonym	
+16	Methylotrophus	misspelling	
+17	Methyliphilus methylitrophus	equivalent name	
+17	Methyliphilus methylotrophus	equivalent name	
+17	Methylophilus methylitrophus	equivalent name	
+17	Methylophilus methylotrophus	scientific name	
+17	Methylophilus methylotrophus Jenkins et al. 1987	synonym	
+17	Methylotrophus methylophilus	synonym	
+18	Pelobacter	scientific name	
+18	Pelobacter Schink and Pfennig 1983	synonym	
+19	Pelobacter carbinolicus	scientific name	
+19	Pelobacter carbinolicus Schink 1984	synonym	
+20	Phenylobacterium	scientific name	
+20	Phenylobacterium Lingens et al. 1985 emend. Kanso and Patel 2004	synonym	
+20	Phenylobacterium Lingens et al. 1985 emend. Tiago et al. 2005	synonym	
+21	Phenylobacterium immobile	scientific name	
+21	Phenylobacterium immobile Lingens et al. 1985	synonym	
+22	Shewanella	scientific name	
+22	Shewanella MacDonell and Colwell 1986	synonym	
+23	Alteromonas colwelliana	synonym	
+23	Shewanella colwelliana	scientific name	
+23	Shewanella colwelliana (Weiner et al. 1988) Coyne et al. 1990	synonym	
+24	Pseudomonas putrefaciens (Derby and Hammer) Long and Hammer 1941	synonym	
+24	Alteromonas putrefaciens	synonym	
+24	Alteromonas putrefaciens (ex Derby and Hammer) Lee et al. 1981	synonym	
+24	Alteromonas putrifaciens	misspelling	
+24	Pseudomonas putrefaciens	synonym	
+24	Shewanella putrefaciens	scientific name	
+24	Shewanella putrefaciens (Lee et al. 1981) MacDonell and Colwell 1986	synonym	
+24	Shewanella putrifaciens	misspelling	
+25	Alteromonas hanedai	synonym	
+25	Alteromonas hanedai Jensen et al. 1981	synonym	
+25	Shewanella hanedai	scientific name	
+25	Shewanella hanedai (Jensen et al. 1981) MacDonell and Colwell 1986	synonym	
+27	halophilic eubacterium (NRCC 41227)	synonym	
+27	halophilic eubacterium NRCC 41227	scientific name	
+27	halophilic eubacterium NRCC41227	synonym	
+29	Myxobacteria	synonym	
+29	Myxococcales	scientific name	
+29	Myxococcales Tchan et al. 1948	synonym	
+29	The Myxobacteria	synonym	
+29	fruiting gliding bacteria	genbank common name	
+31	Myxococcaceae	scientific name	
+31	Myxococcaceae Jahn 1924	synonym	
+32	Myxococcus	scientific name	
+32	Myxococcus Thaxter 1892	synonym	
+33	Micrococcus fulvus Cohn 1875	synonym	
+33	Micrococcus fulvus	synonym	
+33	Myxococcus fulvus	scientific name	
+33	Myxococcus fulvus (Cohn 1875) Jahn 1911	synonym	
+34	Myxococcus xanthus	scientific name	
+34	Myxococcus xanthus Beebe 1941	synonym	
+34	Myxococcus xanthus retron Mx162	includes	
+34	Myxococcus xanthus retron Mx65	includes	
+35	Chondrococcus macrosporus Krzemieniewska and Krzemieniewski 1926	synonym	
+35	'Corallococcus macrosporus'	synonym	
+35	Chondrococcus macrosporus	synonym	
+35	Corallococcus macrosporus	synonym	
+35	Myxococcus macrosporus	scientific name	
+35	Myxococcus macrosporus (Krzemieniewska and Krzemieniewski 1926) Zahler and McCurdy 1974	synonym	
+35	not Myxococcus macrosporus Zukal 1897	synonym	
+36	Chondrococcus coralloides (Thaxter 1892) Jahn 1924	synonym	
+36	Chondrococcus polycystus (Kofler 1913) Krzemieniewska and Krzemieniewski 1926	synonym	
+36	Myxococcus clavatus Quehl 1906	synonym	
+36	Myxococcus digitatus Quehl 1906	synonym	
+36	Myxococcus exiguus Kofler 1913	synonym	
+36	Myxococcus polycystus Kofler 1913	synonym	
+36	Chondrococcus coralloides	synonym	
+36	Chondrococcus polycystus	synonym	
