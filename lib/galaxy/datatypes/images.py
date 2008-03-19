@@ -76,11 +76,44 @@ class Image( data.Data ):
         dataset.peek  = 'Image in %s format (%s)' % ( dataset.extension, data.nice_size( dataset.get_size() ) )
         dataset.blurb = 'image' 
 
+def create_applet_tag_peek( class_name, archive, params ):
+    text = """
+<!--[if !IE]>-->
+<object classid="java:%s" 
+      type="application/x-java-applet"
+      height="30" width="200" align="center" >
+      <param name="archive" value="%s"/>""" % ( class_name, archive )
+    for name, value in params.iteritems():
+        text += """<param name="%s" value="%s"/>""" % ( name, value )
+    text += """
+<!--<![endif]-->
+<object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93" 
+        height="30" width="200" >
+        <param name="code" value="%s" />
+        <param name="archive" value="%s"/>""" % ( class_name, archive )
+    for name, value in params.iteritems():
+        text += """<param name="%s" value="%s"/>""" % ( name, value )
+    text += """</object> 
+<!--[if !IE]>-->
+</object>
+<!--<![endif]-->
+"""
+    return """<div><p align="center">%s</p></div>""" % text
+
 class Gmaj( data.Data ):
     """Class describing a GMAJ Applet"""
     file_ext = "gmaj.zip"
     def set_peek( self, dataset ):
-        dataset.peek  = "<p align=\"center\"><applet code=\"edu.psu.bx.gmaj.MajApplet.class\" archive=\"/static/gmaj/gmaj.jar\" width=\"200\" height=\"30\" align=\"middle\"> <param name=bundle value=\"display?id="+str(dataset.id)+"&tofile=yes&toext=.zip\"> <param name=buttonlabel value=\"Launch GMAJ\"><param name=nobutton value=\"false\"><param name=urlpause value=\"100\"><param name=debug value=\"false\"><i>Your browser is not responding to the &lt;applet&gt; tag.</i></applet></p>"
+        params = {
+        "bundle":"display?id=%s&tofile=yes&toext=.zip" % dataset.id,
+        "buttonlabel": "Launch GMAJ",
+        "nobutton": "false",
+        "urlpause" :"100",
+        "debug": "false",
+        }
+        class_name = "edu.psu.bx.gmaj.MajApplet.class"
+        archive = "/static/gmaj/gmaj.jar"
+        dataset.peek = create_applet_tag_peek( class_name, archive, params )
         dataset.blurb = 'GMAJ Multiple Alignment Viewer'
     def display_peek(self, dataset):
         try:
@@ -142,8 +175,16 @@ class Laj( data.Text ):
     """Class describing a LAJ Applet"""
     file_ext = "laj"
     def set_peek( self, dataset ):
-        export_url = "/history_add_to?"+urlencode({'history_id':dataset.history_id,'ext':'lav','name':'LAJ Output','info':'Added by LAJ','dbkey':dataset.dbkey})
-        dataset.peek  = "<p align=\"center\"><applet code=\"edu.psu.cse.bio.laj.LajApplet.class\" archive=\"static/laj/laj.jar\" width=\"200\" height=\"30\"><param name=buttonlabel value=\"Launch LAJ\"><param name=title value=\"LAJ in Galaxy\"><param name=posturl value=\""+export_url+"\"><param name=alignfile1 value=\"display?id="+str(dataset.id)+"\"><param name=noseq value=\"true\"></applet></p>"
+        params = {
+        "alignfile1": "display?id=%s" % dataset.id,
+        "buttonlabel": "Launch LAJ",
+        "title": "LAJ in Galaxy",
+        "posturl": "history_add_to?%s" % urlencode( { 'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey } ),
+        "noseq": "true"
+        }
+        class_name = "edu.psu.cse.bio.laj.LajApplet.class"
+        archive = "/static/laj/laj.jar"
+        dataset.peek = create_applet_tag_peek( class_name, archive, params )
         dataset.blurb = 'LAJ Multiple Alignment Viewer'
     def display_peek(self, dataset):
         try:
