@@ -172,57 +172,27 @@ class Interval( Tabular ):
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
-        first = True
         comments = []
         try:
-            data = dataset.peek
-            lines =  data.splitlines()
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-                comment = False
-                for skipchar in skipchars:
-                    if line.startswith( skipchar ):
-                        comments.append( line )
-                        comment = True
-                        break
-                if comment:
-                    continue
-                elems = line.split( '\t' )
-                if first: # Generate column header
-                    first = False
-                    out.append('<tr>')
-                    for index, elem in enumerate( elems ):
-                        if index+1 == dataset.metadata.chromCol:
-                            out.append( '<th>%s.Chrom</th>' % ( index+1 ) )
-                        elif index+1 == dataset.metadata.startCol:
-                            out.append( '<th>%s.Start</th>' % ( index+1 ) )
-                        elif index+1 == dataset.metadata.endCol:
-                            out.append( '<th>%s.End</th>' % ( index+1 ) )
-                        elif dataset.metadata.strandCol and ( index+1 == dataset.metadata.strandCol ):
-                            out.append( '<th>%s.Strand</th>' % ( index+1 ) )
-                        elif dataset.metadata.nameCol and ( index+1 == dataset.metadata.nameCol ):
-                            out.append( '<th>%s.Name</th>' % ( index+1 ) )
-                        else:
-                            out.append( '<th>%s</th>' % ( index+1 ) )
-                    out.append('</tr>')
-                while len( comments ) > 0: # Keep comments
-                    out.append( '<tr><td colspan="100%">' )
-                    out.append( escape( comments.pop( 0 ) ) )
-                    out.append( '</td></tr>' )
-                out.append( '<tr>' ) # body
-                for elem in elems:
-                    elem = escape( elem )
-                    out.append( '<td>%s</td>' % elem )
-                out.append( '</tr>' )
-            # Peek may consis only of comments
-            while len( comments ) > 0:
-                out.append( '<tr><td colspan="100%">' )
-                out.append( escape( comments.pop(0) ) )
-                out.append( '</td></tr>' )
+            # Generate column header
+            out.append('<tr>')
+            for i in range( 1, dataset.metadata.columns+1 ):
+                if i == dataset.metadata.chromCol:
+                    out.append( '<th>%s.Chrom</th>' % i )
+                elif i == dataset.metadata.startCol:
+                    out.append( '<th>%s.Start</th>' % i )
+                elif i == dataset.metadata.endCol:
+                    out.append( '<th>%s.End</th>' % i )
+                elif dataset.metadata.strandCol and i == dataset.metadata.strandCol:
+                    out.append( '<th>%s.Strand</th>' % i )
+                elif dataset.metadata.nameCol and i == dataset.metadata.nameCol:
+                    out.append( '<th>%s.Name</th>' % i )
+                else:
+                    out.append( '<th>%s</th>' % i )
+            out.append('</tr>')
+            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
             out.append( '</table>' )
-            out = ''.join( out )
+            out = "".join( out )
         except Exception, exc:
             out = "Can't create peek %s" % str( exc )
         return out

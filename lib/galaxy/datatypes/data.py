@@ -102,6 +102,39 @@ class Data( object ):
         """Set the peek and blurb text"""
         dataset.peek  = ''
         dataset.blurb = 'data'
+    def make_html_peek_rows( self, dataset, skipchars=[] ):
+        out = [""]
+        comments = []
+        data = dataset.peek
+        lines =  data.splitlines()
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            comment = False
+            for skipchar in skipchars:
+                if line.startswith( skipchar ):
+                    comments.append( line )
+                    comment = True
+                    break
+            if comment:
+                continue
+            elems = line.split( '\t' ) 
+            while len( comments ) > 0: # Keep comments
+                out.append( '<tr><td colspan="100%">' )
+                out.append( escape( comments.pop(0) ) )
+                out.append( '</td></tr>' )
+            out.append( '<tr>' )
+            for elem in elems: # valid data
+                elem = escape( elem )
+                out.append( '<td>%s</td>' % elem )
+            out.append( '</tr>' )
+        # Peek may consist only of comments
+        while len( comments ) > 0:
+            out.append( '<tr><td colspan="100%">' )
+            out.append( escape( comments.pop(0) ) )
+            out.append( '</td></tr>' )
+        return "".join( out )
     def display_peek(self, dataset):
         """Returns formated html of peek"""
         try:

@@ -148,7 +148,7 @@ class Maf( Alignment ):
                 line = line.strip()
                 if not line:
                     continue
-                out.append( '<tr><td>%s</td></tr>' % line )
+                out.append( '<tr><td>%s</td></tr>' % escape( line ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception, exc:

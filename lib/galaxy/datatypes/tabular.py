@@ -88,48 +88,16 @@ class Tabular( data.Text ):
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
-        first = True
-        comments = []
         try:
-            data = dataset.peek
-            lines =  data.splitlines()
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-                comment = False
-                for skipchar in skipchars:
-                    if line.startswith( skipchar ):
-                        comments.append( line )
-                        comment = True
-                        break
-                if comment:
-                    continue
-                elems = line.split("\t")
-                if first: # Generate column header
-                    first = False
-                    out.append('<tr>')
-                    for index, elem in enumerate(elems):
-                        out.append("<th>%s</th>" % (index+1))
-                    out.append('</tr>')
-                while len(comments)>0: # Keep comments
-                    out.append('<tr><td colspan="100%">')
-                    out.append(escape(comments.pop(0)))
-                    out.append('</td></tr>')
-                out.append('<tr>')
-                for elem in elems: # body
-                    elem = escape(elem)
-                    out.append("<td>%s</td>" % elem)
-                out.append('</tr>')
-            # Peek may consis only of comments
-            while len( comments ) > 0:
-                out.append( '<tr><td colspan="100%">' )
-                out.append( escape( comments.pop(0) ) )
-                out.append( '</td></tr>' )
-            out.append('</table>')
-            out = "".join(out)
+            # Generate column header
+            for i in range( 1, dataset.metadata.columns+1 ):
+                out.append( '<th>%s</th>' % str( i ) )
+            out.append( '</tr>' )
+            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
+            out.append( '</table>' )
+            out = "".join( out )
         except Exception, exc:
-            out = "Can't create peek %s" % exc
+            out = "Can't create peek %s" % str( exc )
         return out
 
     def display_peek( self, dataset ):
@@ -149,50 +117,18 @@ class Taxonomy( Tabular ):
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
-        first = True
         comments = []
         try:
-            data = dataset.peek
-            lines =  data.splitlines()
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-                comment = False
-                for skipchar in skipchars:
-                    if line.startswith( skipchar ):
-                        comments.append( line )
-                        comment = True
-                        break
-                if comment:
-                    continue
-                elems = line.split( '\t' )
-                if first: # Generate column header
-                    first = False
-                    out.append( '<tr>' )
-                    for index, name in enumerate( self.column_names ):
-                        out.append( "<th>%s.%s</th>" % ( str( index+1 ), name ) )
-                    # This data type requires at least 24 columns in the data
-                    num_col_headers = len( elems ) - len( self.column_names )
-                    if num_col_headers > 0:
-                        for index in range( len( self.column_names ), len( elems ) ):
-                            out.append( "<th>%s</th>" % ( index+1 ) )
-                        out.append( '</tr>' )
-                # Keep comments
-                while len( comments ) > 0:
-                    out.append( '<tr><td colspan="100%">' )
-                    out.append( escape( comments.pop( 0 ) ) )
-                    out.append( '</td></tr>' )
-                out.append( '<tr>' ) # body
-                for elem in elems:
-                    elem = escape( elem )
-                    out.append( "<td>%s</td>" % elem )
+            # Generate column header
+            out.append( '<tr>' )
+            for i, name in enumerate( self.column_names ):
+                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
+            # This data type requires at least 24 columns in the data
+            if dataset.metadata.columns - len( self.column_names ) > 0:
+                for i in range( len( self.column_names ), dataset.metadata.columns ):
+                    out.append( '<th>%s</th>' % str( i+1 ) )
                 out.append( '</tr>' )
-            # Peek may consis only of comments
-            while len( comments ) > 0:
-                out.append( '<tr><td colspan="100%">' )
-                out.append( escape( comments.pop(0) ) )
-                out.append( '</td></tr>' )
+            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception, exc:
