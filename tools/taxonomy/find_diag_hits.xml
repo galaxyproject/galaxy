@@ -24,7 +24,7 @@
             <option value="subtribe">Subtribe</option>
             <option value="genus">Genus</option>
             <option value="subgenus">Subgenus</option>
-            <option value="species">Species</option>
+            <option selected="true" value="species">Species</option>
             <option value="subspecies">Subspecies</option>
         </param>
         <param name="out_format" type="select" label="Select output format">

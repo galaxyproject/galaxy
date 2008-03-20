@@ -97,12 +97,14 @@ try:
     elif sys.argv[4] == 'counts':
         out_format = False
     else:
-        stop_err('Plase specify "reads" or "counts" for output format\n')
+        stop_err('Please specify "reads" or "counts" for output format\n')
     out_file = open(sys.argv[5], 'w')
     
 except:
     stop_err('Check arguments\n')
     
+if taxa[0] == 'None': stop_err('Please, use checkboxes to specify taxonomic ranks.\n')
+
 sql = ""
 for i in range(len(taxa)):
         if taxa[i] == 'order': taxa[i] = 'ord' # SQL does not like fields to be named 'order'
@@ -133,7 +135,7 @@ try:
         val_string = "insert into tax values(" + val_string + ")"
         cur.execute(val_string)
 except Exception, e:
-    stop_err(e)
+    stop_err('%s\n' % e)
 
 tax_file.close()    
 

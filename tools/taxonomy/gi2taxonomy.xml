@@ -1,9 +1,9 @@
-<tool id="Fetch Taxonomic Ranks" name="Fetch Taxonomic Ranks" version="1.0.0">
+<tool id="Fetch Taxonomic Ranks" name="Fetch Taxonomic Ranks" version="1.1.0">
   <description>for a list of GIs</description>
-  <command interpreter="python">tax.py $input $out_file1 $idField $giField</command>
+  <command interpreter="python">gi2taxonomy.py $input $giField $idField $out_file1</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Fetch sequences corresponding to Query"></param>
-    <param name="giField" label="GIs column" type="data_column" data_ref="input" help="select column containing GI numbers"/>
+    <param name="giField" label="GIs column" type="data_column" data_ref="input" numerical="True" help="select column containing GI numbers"/>
     <param name="idField" label="Name column" type="data_column" data_ref="input" help="select column containing identifiers you want to include into output"/>
   </inputs>
   <outputs>
@@ -49,10 +49,10 @@ and you want to obtain full taxonomic representation for GIs listed in *targetGI
 
 the tool will generate the following output (you may need to scroll sideways to see the entire line)::
 
-  1                     2       3    4         5       6 7 8        9        10            11       12 13               14       15         16          17        18  19  20 21  22  23           24
-  1L_EYKX4VC01BXWX1_265 1430919 root Eukaryota Metazoa n n Chordata Craniata Gnathostomata Mammalia n  Euarchontoglires Primates Haplorrhini Hominoidea Hominidae n   n   n  Homo n  Homo sapiens n
+  1                     2    3    4         5       6 7 8        9        10            11       12 13               14       15         16          17        18  19  20 21  22  23           24 25
+  1L_EYKX4VC01BXWX1_265 9606 root Eukaryota Metazoa n n Chordata Craniata Gnathostomata Mammalia n  Euarchontoglires Primates Haplorrhini Hominoidea Hominidae n   n   n  Homo n  Homo sapiens n  1430919
 
-In other words the tool printed *Name column*, *GI column*, and appended 22 columns containing taxonomic ranks from Superkingdom to Subspecies. Below is a formal definition of the output columns::
+In other words the tool printed *Name column*, *taxonomy Id*, appended 22 columns containing taxonomic ranks from Superkingdom to Subspecies and added *GI* as the last column. Below is a formal definition of the output columns::
 
     Column Definition
    ------- ------------------------------------------
