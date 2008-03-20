@@ -145,14 +145,14 @@ except:
 #  a sorting using this command:
 #  sort -n -k 1
 
-GI2TAX = '/Volumes/METAG/processTaxTest/gi_taxId_sorted.txt'
+GI2TAX = '/depot/data2/galaxy/taxonomy/gi_taxId_sorted.txt'
 
 #  NAME_FILE and NODE_FILE point to names.dmg and nodes.dmg
 #  files contained within:
 #  ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
 
-NAME_FILE = '/Volumes/METAG/processTaxTest/names.dmp'
-NODE_FILE = '/Volumes/METAG/processTaxTest/nodes.dmp'
+NAME_FILE = '/depot/data2/galaxy/taxonomy/names.dmp'
+NODE_FILE = '/depot/data2/galaxy/taxonomy/nodes.dmp'
 
 g2n =  gi_name_to_sorted_list(in_f, gi_col, name_col)
 
