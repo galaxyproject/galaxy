@@ -1,0 +1,21 @@
+#This is a sample file distributed with Galaxy that is used by some
+#tools.  The twobit.loc file has this format (white space characters 
+#are TAB characters):
+#
+#<Build>	<FullPathToFile>
+droPer1	/depot/data2/galaxy/droPer1/droPer1.2bit
+apiMel2 /depot/data2/galaxy/apiMel2/apiMel2.2bit
+droAna1	/depot/data2/galaxy/droAna1/droAna1.2bit
+droAna2	/depot/data2/galaxy/droAna2/droAna2.2bit
+droAna3	/depot/data2/galaxy/droAna3/droAna3.2bit
+droSec1	/depot/data2/galaxy/droSec1/droSec1.2bit
+droGri2	/depot/data2/galaxy/droGri2/droGri2.2bit
+droGri1	/depot/data2/galaxy/droGri1/droGri1.2bit
+droEre2	/depot/data2/galaxy/droEre2/droEre2.2bit
+droEre1	/depot/data2/galaxy/droEre1/droEre1.2bit
+droVir3	/depot/data2/galaxy/droVir3/droVir3.2bit
+droVir2	/depot/data2/galaxy/droVir2/droVir2.2bit
+droVir1	/depot/data2/galaxy/droVir1/droVir1.2bit
+droMoj3	/depot/data2/galaxy/droMoj3/droMoj3.2bit
+droMoj2	/depot/data2/galaxy/droMoj2/droMoj2.2bit
+droMoj1	/depot/data2/galaxy/droMoj1/droMoj1.2bit
