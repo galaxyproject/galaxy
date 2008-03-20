@@ -1,0 +1,43 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use alignment data stored as axt files.  You will need to index 
+#them and then create an alignseq.loc file similar to this one (store
+#it in this directory ) that points to the directories in which those 
+#alignments are stored.  The alignseq.loc file has this format ( white
+#space characters are TAB characters:
+#
+#align	<build1>	<build2>	<dir>
+#
+#So if you had hg18/mm8 alignments in /align/hg18/mm8, the alignseq.loc 
+#entry would look like this:
+#
+#align hg18 musMus8 /align/hg18/mm8
+#
+#Your file should include an entry per line for each alignment file 
+#you have stored.
+#
+align anoGam1 dm1 /depot/data2/galaxy/anoGam1/align/dm1
+align anoGam1 dm2 /depot/data2/galaxy/anoGam1/align/dm2
+align canFam1 hg17 /depot/data2/galaxy/canFam1/align/hg17
+align canFam1 musMus6 /depot/data2/galaxy/canFam1/align/mm6
+align canFam2 canFam2 /depot/data2/galaxy/canFam2/align/canFam2
+align canFam2 hg17 /depot/data2/galaxy/canFam2/align/hg17
+align canFam2 hg18 /depot/data2/galaxy/canFam2/align/hg18
+align canFam2 musMus6 /depot/data2/galaxy/canFam2/align/mm6
+align canFam2 musMus7 /depot/data2/galaxy/canFam2/align/mm7
+align canFam2 musMus8 /depot/data2/galaxy/canFam2/align/mm8
+align canFam2 ratNor3 /depot/data2/galaxy/canFam2/align/rn3
+align canFam2 ratNor4 /depot/data2/galaxy/canFam2/align/rn4
+align danRer2 fr1 /depot/data2/galaxy/danRer2/align/fr1
+align danRer2 hg17 /depot/data2/galaxy/danRer2/align/hg17
+align danRer2 musMus6 /depot/data2/galaxy/danRer2/align/mm6
+align danRer2 tetNig1 /depot/data2/galaxy/danRer2/align/tetNig1
+align danRer3 fr1 /depot/data2/galaxy/danRer3/align/fr1
+align danRer3 hg18 /depot/data2/galaxy/danRer3/align/hg18
+align danRer3 musMus7 /depot/data2/galaxy/danRer3/align/mm7
+align danRer3 musMus8 /depot/data2/galaxy/danRer3/align/mm8
+align danRer3 tetNig1 /depot/data2/galaxy/danRer3/align/tetNig1
+align danRer4 fr1 /depot/data2/galaxy/danRer4/align/fr1
+align danRer4 hg18 /depot/data2/galaxy/danRer4/align/hg18
+align danRer4 musMus8 /depot/data2/galaxy/danRer4/align/mm8
+align danRer4 ratNor4 /depot/data2/galaxy/danRer4/align/rn4
+align danRer4 tetNig1 /depot/data2/galaxy/danRer4/align/tetNig1

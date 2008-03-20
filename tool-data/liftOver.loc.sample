@@ -1,0 +1,41 @@
+#This is a sample file distributed with Galaxy that is used by the
+#liftOver tools.  The liftOver.loc file has this format (white space 
+#characters are TAB characters):
+#
+#<FromSpecies>	<ToSpecies>
+#
+anoCar1	galGal3
+anoCar1	gasAcu1
+anoCar1	hg18
+anoCar1	mm8
+anoCar1	mm9
+anoCar1	ornAna1
+anoCar1	xenTro2
+anoGam1	dm2
+anoGam1	dm3
+apiMel1	dm2
+apiMel2	dm2
+bosTau2	bosTau3
+bosTau2	hg17
+bosTau2	hg18
+bosTau2	mm7
+bosTau2	mm8
+bosTau2	rn4
+canFam1	canFam2
+canFam1	hg17
+canFam1	mm5
+canFam1	mm6
+canFam2	equCab1
+canFam2	hg17
+canFam2	hg18
+canFam2	mm6
+canFam2	mm7
+canFam2	mm8
+canFam2	mm9
+canFam2	rn3
+canFam2	rn4
+ce2	ce4
+ce4	caePb1
+ce4	caeRem2
+ce4	cb3
+ce4	priPac1

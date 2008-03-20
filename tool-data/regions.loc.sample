@@ -1,0 +1,8 @@
+#This is a sample file distributed with Galaxy that is used by some
+#ENCODE tools.  The regions.loc file has this format (white space 
+#characters are TAB characters):
+#
+#<build>	<uid>	<region_description>	<file_path>
+#
+hg16	encode_hg16	ENCODE Regions	/depot/data2/galaxy/regions/encode_regions_coords_hg16.bed 
+hg17	encode_hg17	ENCODE Regions	/depot/data2/galaxy/regions/encode_regions_coords_hg17.bed
