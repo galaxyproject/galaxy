@@ -99,6 +99,7 @@
     <tool file="new_operations/cluster.xml" id="cluster" />
     <tool file="new_operations/join.xml" />
     <tool file="new_operations/get_flanks.xml" />
+    <tool file="new_operations/flanking_features.xml" />
   </section>
   <section name="Statistics" id="stats">
     <tool file="stats/gsummary.xml" />
