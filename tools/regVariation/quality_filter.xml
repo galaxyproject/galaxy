@@ -1,4 +1,4 @@
-<tool id="qualityFilter" name="Filter nucleotides">
+<tool id="qualityFilter" name="Filter nucleotides" version="1.0.1">
   <description> based on quality scores</description>
   <command interpreter="python2.4">
   	quality_filter.py 
@@ -11,6 +11,8 @@
   	${mask_region.region} 
   	#if $mask_region.region == "3"
   		${mask_region.lengthr},${mask_region.lengthl}
+  	#elif $mask_region.region == "0"
+  		1
   	#else
   		${mask_region.length}
 	#end if
@@ -44,9 +46,6 @@
         <option value="3">Corresponding column + neighbors on both sides</option>
       </param>
       <when value="0">
-        <param name="length" type="select" value="1">
-          <option value="1" selected="true">1</option>
-        </param>
       </when>
       <when value="1">
         <param name="length" size="10" type="integer" value="2" label="Number of right-side neighbors"/>

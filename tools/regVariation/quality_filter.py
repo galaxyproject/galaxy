@@ -1,5 +1,5 @@
 #! /usr/bin/python
-
+#Guruprasad Ananda
 """
 Filter based on nucleotide quality (PHRED score).
 
@@ -21,7 +21,6 @@ import psyco_full
 import sys
 import os, os.path
 from UserDict import DictMixin
-import bx.wiggle
 from bx.binned_array import BinnedArray, FileBinnedArray
 from bx.bitset import *
 from bx.bitset_builders import *
@@ -111,6 +110,10 @@ def main():
         print >>sys.stderr, "No primary species selected. Try again by selecting at least one primary species." 
         sys.exit()
         
+    if mask_species == 'None':
+        print >>sys.stderr, "No mask species selected. Try again by selecting at least one species to mask." 
+        sys.exit()
+        
     mask_chr_count = 0
     mask_chr_dict = {0:'#', 1:'$', 2:'^', 3:'*', 4:'?'}
     mask_reg_dict = {0:'Current pos', 1:'Current+Downstream', 2:'Current+Upstream', 3:'Current+Both sides'}
@@ -172,25 +175,25 @@ def main():
             else:    #enter if the species is a primary species
                 index = pspecies.index(dbkey)
                 sequence = block.components[seq].text
-                start = block.components[seq].start
+                s_start = block.components[seq].start
                 size = len(sequence)    #this includes the gaps too
-                end = start + size
                 status_str = '1'*size
                 status_list = list(status_str)
                 if status_strings == []:
                     status_strings.append(status_str)
-                pos = start
                 ind = 0
-                while pos < end:    
-                    #scores_by_chrom = load_scores_ba_dir( file.strip() )
+                s_end = block.components[seq].end
+                #Get scores for the entire sequence
+                try:
+                    scores = scores_by_chrom[index][chr][s_start:s_end]
+                except:
+                    continue
+                pos = 0
+                while pos < (s_end-s_start):    
                     if sequence[ind] == '-':    #No score for GAPS
-                        pos += 1
                         ind += 1
                         continue
-                    try:
-                        score = scores_by_chrom[index][chr][pos]    #Get score for the current n.t position
-                    except Exception, e:
-                        score = 0
+                    score = scores[pos]
                     if score < qual_cutoff:
                         score = 0
                         
