@@ -108,7 +108,7 @@ class Taxonomy( Tabular ):
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
         Tabular.__init__( self, **kwd )
-        self.column_names = ['Name', 'GI', 'Root', 'Superkingdom', 'Kingdom', 'Subkingdom',
+        self.column_names = ['Name', 'TaxId', 'Root', 'Superkingdom', 'Kingdom', 'Subkingdom',
                              'Superphylum', 'Phylum', 'Subphylum', 'Superclass', 'Class', 'Subclass',
                              'Superorder', 'Order', 'Suborder', 'Superfamily', 'Family', 'Subfamily',
                              'Tribe', 'Subtribe', 'Genus', 'Subgenus', 'Species', 'Subspecies'
