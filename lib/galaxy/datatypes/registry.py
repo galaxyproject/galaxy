@@ -52,6 +52,7 @@ class Registry( object ):
                 'qualityscore': qualityscore.QualityScore(),
                 'scf'         : images.Scf(),
                 'tabular'     : tabular.Tabular(),
+                'taxonomy'    : tabular.Taxonomy(),
                 'txt'         : data.Text(),
                 'txtseq.zip'  : images.Txtseq(),
                 'wig'         : interval.Wiggle()
@@ -72,6 +73,7 @@ class Registry( object ):
                 'qualityscore': 'text/plain',
                 'scf'         : 'application/octet-stream',
                 'tabular'     : 'text/plain',
+                'taxonomy'    : 'text/plain',
                 'txt'         : 'text/plain',
                 'txtseq.zip'  : 'application/zip',
                 'wig'         : 'text/plain'
