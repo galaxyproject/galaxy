@@ -1,12 +1,12 @@
 <tool id="Interval2Maf_pairwise1" name="Extract Pairwise MAF blocks">
   <description>given a set of genomic intervals</description>
-  <command interpreter="python2.4">interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafType=$mafType --interval_file=$input1 --output_file=$out_file1 --indexLocation=/depot/data2/galaxy/maf_pairwise.loc</command>
+  <command interpreter="python2.4">interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafType=$mafType --interval_file=$input1 --output_file=$out_file1 --indexLocation=${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc</command>
   <inputs>
     <param name="input1" type="data" format="interval" label="Interval File">
       <validator type="unspecified_build" />
     </param>
     <param name="mafType" type="select" label="Choose MAF source">
-      <options from_file="/depot/data2/galaxy/maf_pairwise.loc" name_col="0" value_col="1">
+      <options from_file="maf_pairwise.loc" name_col="0" value_col="1">
         <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
         <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="2"/>
       </options>

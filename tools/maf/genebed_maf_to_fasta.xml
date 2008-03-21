@@ -26,13 +26,13 @@
       </when>
       <when value="cached">
         <param name="maf_identifier" type="select" label="MAF Type" >
-          <options from_file="/depot/data2/galaxy/maf_index.loc" name_col="0" value_col="1">
+          <options from_file="maf_index.loc" name_col="0" value_col="1">
             <validator type="no_options" message="No alignments are available for the build associated with the selected gene bed file"/>
             <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="2"/>
           </options>
         </param> 
         <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
-          <options from_file="/depot/data2/galaxy/maf_index.loc">
+          <options from_file="maf_index.loc">
             <filter type="param_meta" param_ref="maf_identifier" />
             <filter type="param" name="maf_source" value="cached" />
           </options>

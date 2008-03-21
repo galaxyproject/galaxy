@@ -18,16 +18,16 @@ class DynamicOptions( object ):
         self.validators = []
 
         # Parse the options tag
-        self.from_file = elem.get( 'from_file', None )
-        if self.from_file is not None:
-            self.from_file = self.from_file.strip()
-            try: 
-                i = self.from_file.rindex( "/" )
-                self.data_file = self.from_file[ i+1: ]
-            except:
-                self.data_file = self.from_file
+        self.data_file = elem.get( 'from_file', None )
+        if self.data_file is not None:
+            self.data_file = self.data_file.strip()
+            if self.data_file.startswith( 'static' ):
+                # static files ( ucsc/builds.txt, etc ) have relative paths in the tool config
+                self.from_file = self.data_file
+            else:
+                self.from_file = "%s/%s" % ( os.environ.get( 'GALAXY_DATA_INDEX_DIR' ), self.data_file )
         else: 
-            self.data_file = None
+            self.from_file = None
         self.name_col = elem.get( 'name_col', None )
         if self.name_col is not None:
             self.name_col = int( self.name_col.strip() )

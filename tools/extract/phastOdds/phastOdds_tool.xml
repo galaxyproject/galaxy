@@ -6,7 +6,7 @@
       <validator type="unspecified_build" message="Unspecified build, this tool works with data from genome builds hg17. Click the pencil icon in your history item to set the genome build."/>
     </param>
     <param name="score_file" type="select" label="Available datasets">
-      <options from_file="/depot/data2/galaxy/phastOdds.loc" name_col="1" value_col="2">
+      <options from_file="phastOdds.loc" name_col="1" value_col="2">
         <filter type="data_meta" data_ref="input" meta_key="dbkey" meta_key_col="0"/>
       </options>
     </param> 

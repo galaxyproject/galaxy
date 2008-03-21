@@ -1,9 +1,11 @@
+import os
 
 def load_maf_data( sep='\t' ):
     # FIXME: this function is duplicated in the DynamicOptions class.  It is used here only to
     # set data.name in exec_before_job(). 
     maf_sets = {}
-    for line in open( "/depot/data2/galaxy/maf_index.loc" ):
+    filename = "%s/maf_index.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
+    for i, line in enumerate( file( filename ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
             fields = line.split( sep )

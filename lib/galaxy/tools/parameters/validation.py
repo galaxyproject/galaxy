@@ -2,7 +2,7 @@
 Classes related to parameter validation.
 """
 
-import re, logging
+import os, re, logging
 from elementtree.ElementTree import XML
 from galaxy import model
 
@@ -222,6 +222,7 @@ class MetadataInFileColumnValidator( Validator ):
         self.metadata_name = metadata_name
         self.message = message
         self.valid_values = []
+        filename = "%s/%s" % ( os.environ.get( 'GALAXY_DATA_INDEX_DIR' ), filename )
         for line in open( filename ):
             if line_startswith is None or line.startswith( line_startswith ):
                 fields = line.split( split )

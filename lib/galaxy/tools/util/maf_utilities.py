@@ -9,7 +9,7 @@ import bx.intervals
 import bx.interval_index_file
 import sys, os, string, tempfile
 
-MAF_LOCATION_FILE = "/depot/data2/galaxy/maf_index.loc"
+MAF_LOCATION_FILE = "%s/maf_index.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
 
 #an object corresponding to a reference layered alignment
 class RegionAlignment( object ):

@@ -6,7 +6,7 @@
       <validator type="unspecified_build" />
     </param>
     <param name="to_dbkey" type="select" label="To">
-      <options from_file="/depot/data2/galaxy/liftOver.loc" name_col="1" value_col="2">
+      <options from_file="liftOver.loc" name_col="1" value_col="2">
         <filter type="data_meta" data_ref="input" meta_key="dbkey" meta_key_col="0"/>
       </options>
     </param> 

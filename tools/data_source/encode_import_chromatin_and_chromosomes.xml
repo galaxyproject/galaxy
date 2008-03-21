@@ -6,13 +6,13 @@
       <p><div class="toolFormTitle">hg16 (most recent datasets in bold)</div>$hg16</p>
     </display>
     <param name="hg17" type="select" display="checkboxes" multiple="true">
-      <options from_file="/depot/data2/galaxy/encode_datasets.loc">
+      <options from_file="encode_datasets.loc">
         <filter type="param" name="encode_group" value="CC" />
         <filter type="param" name="dbkey" value="hg17" />
       </options>
     </param> 
     <param name="hg16" type="select" display="checkboxes" multiple="true">
-      <options from_file="/depot/data2/galaxy/encode_datasets.loc">
+      <options from_file="encode_datasets.loc">
         <filter type="param" name="encode_group" value="CC" />
         <filter type="param" name="dbkey" value="hg16" />
       </options>

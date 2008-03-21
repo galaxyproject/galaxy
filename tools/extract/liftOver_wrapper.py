@@ -21,7 +21,7 @@ mapfilepath = sys.argv[5]
 
 #ensure dbkey is set
 if in_dbkey == "?": 
-    stop_err( "Input dataset genome build unspecified, click the pencil icon in hte history item to specify it." )
+    stop_err( "Input dataset genome build unspecified, click the pencil icon in the history item to specify it." )
 
 cmd_line = "liftOver " + infile + " " + mapfilepath + " " + outfile1 + " " + outfile2 + "  > /dev/null 2>&1"
 

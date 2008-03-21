@@ -24,7 +24,8 @@ while have_none:
 #create dictionary keyed by uid of tuples of (displayName,filePath,build) for all files
 available_files = {}
 try:
-    for line in open( "/depot/data2/galaxy/microbes/microbial_data.loc" ):
+    filename = "%s/microbial_data.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
+    for i, line in enumerate( file( filename ) ):
         if not line or line[0:1] == "#" : continue
         fields = line.split('\t')
         try:

@@ -16,7 +16,7 @@ def stop_err( msg ):
 def main():
     uids = sys.argv[1].split(",")
     out_file1 = sys.argv[2]
-    file_name = "/depot/data2/galaxy/encode_datasets.loc"
+    file_name = "%s/encode_datasets.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
     
     #remove NONE from uids
     have_none = True
@@ -29,7 +29,7 @@ def main():
     #create dictionary keyed by uid of tuples of (displayName,filePath,build) for all files
     available_files = {}
     try:
-        for line in open( file_name ):
+        for i, line in enumerate( file ( file_name ) ):
             line = line.rstrip( '\r\n' )
             if line and not line.startswith( '#' ):
                 fields = line.split( '\t' )

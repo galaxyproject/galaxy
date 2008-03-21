@@ -10,8 +10,8 @@ from bx.cookbook import doc_optparse
 import bx.seq.nib
 import bx.seq.twobit
 
-nib_file = "/depot/data2/galaxy/alignseq.loc"
-twobit_file = "/depot/data2/galaxy/twobit.loc"
+nib_file = "%s/alignseq.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
+twobit_file = "%s/twobit.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
 
 def stop_err( msg ):
     sys.stderr.write( msg )

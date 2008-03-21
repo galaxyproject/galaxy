@@ -4,7 +4,9 @@ def load_microbial_data( sep='\t' ):
     # set data.name in exec_after_process(). 
     microbe_info= {}
     orgs = {}
-    for line in open( "/depot/data2/galaxy/microbes/microbial_data.loc" ):
+    
+    filename = "%s/microbial_data.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
+    for i, line in enumerate( file( filename ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
             fields = line.split( sep )

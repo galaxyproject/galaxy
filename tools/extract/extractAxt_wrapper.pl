@@ -5,7 +5,7 @@
 # directory of universe's tools section
 # Takes the following parameters:
 # extractorAxt_wrapper.pl -i $inp_file1 -o $out_file1 --species $species -g $dbkey $chroCol $startCol $endCol $strandCol
-# Location of alignment files is taken from /depot/data2/galaxy/alignseq.loc (to change -> edit line 19)
+# Location of alignment files is taken from $GALAXY_DATA_INDEX_DIR/alignseq.loc (to change -> edit line 19)
 
 use strict;
 use warnings;
@@ -16,7 +16,7 @@ die "Your query genome, $ARGV[7], is the same as your target genome, $ARGV[5]. P
 
 die "Not enough params -> check\n" unless @ARGV == 12;
 
-my $alignseqLoc = "/depot/data2/galaxy/alignseq.loc";
+my $alignseqLoc = "$GALAXY_DATA_INDEX_DIR/alignseq.loc";
 my %alignLocation = ();
 my @locFields = ();
 my $extractAxtStatus = 0;

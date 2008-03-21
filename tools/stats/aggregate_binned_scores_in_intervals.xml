@@ -16,7 +16,7 @@
       </param>
       <when value="cached">
         <param name="datasets" type="select" label="Available datasets" display="radio">
-          <options from_file="/depot/data2/galaxy/binned_scores.loc" name_col="1" value_col="2">
+          <options from_file="binned_scores.loc" name_col="1" value_col="2">
             <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="0"/>
           </options>
         </param>

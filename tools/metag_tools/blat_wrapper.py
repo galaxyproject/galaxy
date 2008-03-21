@@ -2,13 +2,13 @@
 
 import os, sys, tempfile
 
-nib_file = "/depot/data2/galaxy/alignseq.loc"
-twobit_file = "/depot/data2/galaxy/twobit.loc"
+nib_file = "%s/alignseq.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
+twobit_file = "/%s/twobit.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
 
 def check_nib_file( dbkey ):
     nib_path = ''
     nibs = {}
-    for line in open( nib_file ):
+    for i, line in enumerate( file( nib_file ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ):
             fields = line.split()
@@ -23,7 +23,7 @@ def check_nib_file( dbkey ):
 def check_twobit_file( dbkey ):
     twobit_path = ''
     twobits = {}
-    for line in open( twobit_file ):
+    for i, line in enumerate( file( twobit_file ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ): 
             fields = line.split()

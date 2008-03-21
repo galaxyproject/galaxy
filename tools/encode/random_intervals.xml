@@ -16,7 +16,7 @@
       <option value="none">None</option>
     </param>
     <param name="regions" type="select" label="Regions to use">
-      <options from_file="/depot/data2/galaxy/regions.loc" name_col="2" value_col="1">
+      <options from_file="regions.loc" name_col="2" value_col="1">
         <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="0" />
       </options>
     </param> 

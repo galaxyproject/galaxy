@@ -16,7 +16,7 @@
   	#else
   		${mask_region.length}
 	#end if
-  	"/depot/data2/galaxy/quality_scores.loc"
+  	${GALAXY_DATA_INDEX_DIR}/quality_scores.loc
   </command>
   <inputs>
     <param format="maf" name="input" type="data" label="Select data"/>
