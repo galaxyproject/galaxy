@@ -781,7 +781,6 @@ int main (int argc, const char * argv[])
 		currentChar = fgetc(queryFile);
 	}
 
-	fclose (structFile);
 	fclose (queryFile);
 	fclose (outFile);
 	return 0;
