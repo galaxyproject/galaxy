@@ -21,6 +21,7 @@ pbs_template = """#!/bin/sh
 export LC_ALL='%s'
 export PATH='%s'
 export PYTHONPATH='%s'
+export GALAXY_DATA_INDEX_DIR='%s'
 cd %s
 %s
 """
@@ -29,6 +30,7 @@ pbs_symlink_template = """#!/bin/sh
 export LC_ALL='%s'
 export PATH='%s'
 export PYTHONPATH='%s'
+export GALAXY_DATA_INDEX_DIR='%s'
 for dataset in %s; do
     dir=`dirname $dataset`
     file=`basename $dataset`
@@ -152,9 +154,9 @@ class PBSJobRunner( object ):
 
         # write the job script
         if self.app.config.pbs_stage_path != '':
-            script = pbs_symlink_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], " ".join(job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames()), self.app.config.pbs_stage_path, exec_dir, command_line)
+            script = pbs_symlink_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], os.environ['GALAXY_DATA_INDEX_DIR'], " ".join(job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames()), self.app.config.pbs_stage_path, exec_dir, command_line)
         else:
-            script = pbs_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], exec_dir, command_line)
+            script = pbs_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], os.environ['GALAXY_DATA_INDEX_DIR'], exec_dir, command_line)
         job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job_wrapper.job_id)
         fh = file(job_file, "w")
         fh.write(script)
