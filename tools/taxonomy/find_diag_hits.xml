@@ -1,8 +1,8 @@
 <tool id="find_diag_hits" name="Find" version="1.0.0">
     <description>diagnostic hits</description>
-    <command interpreter="python">find_diag_hits.py $input $id_col $rank_list $out_format $out_file1</command>
+    <command interpreter="python">find_diag_hits.py $input1 $id_col $rank_list $out_format $out_file1</command>
     <inputs>
-        <param format="taxonomy" name="input" type="data" label="Find diagnostic hits in"/>
+        <param format="taxonomy" name="input1" type="data" label="Find diagnostic hits in"/>
         <param name="id_col" type="data_column" data_ref="input" numerical="False" label="Select column with sequence id" />
         <param name="rank_list" type="select" display="checkboxes" multiple="true" label="select taxonomic ranks">
             <option value="superkingdom">Superkingdom</option>
@@ -37,7 +37,7 @@
     </outputs>
       <tests>
     <test>
-      <param name="input" value="taxonomyGI.dat"/>
+      <param name="input1" value="taxonomyGI.dat" type="taxonomy"/>
       <param name="id_col" value="1" />
       <param name="rank_list" value="order,genus" />
       <param name="out_format" value="counts" />

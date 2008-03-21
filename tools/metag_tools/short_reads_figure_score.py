@@ -230,7 +230,7 @@ def __main__():
     if (tmp_varied_length is False):
         r.boxplot(score_matrix,xlab="location in read length",main=title)
     else:
-        r.boxplot(score_matrix,xlab="percentage in read length",xaxt="n",main=title)
+        r.boxplot(score_matrix,xlab="position within read (% of total length)",xaxt="n",main=title)
         x_old_range = []
         x_new_range = []
         step = 100/number_of_points 
