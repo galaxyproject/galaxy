@@ -138,9 +138,9 @@ class Maf( Alignment ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
-            out.append('<tr><th>')
+            out.append('<tr><th>Species:&nbsp;')
             for species in dataset.metadata.species:
-                out.append( '%s,&nbsp;' % species )
+                out.append( '%s&nbsp;' % species )
             out.append( '</th></tr>' )
             data = dataset.peek
             lines =  data.splitlines()

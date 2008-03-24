@@ -51,7 +51,6 @@ class Data( object ):
         """Initialize the datatype"""
         object.__init__(self, **kwd)
         self.supported_display_apps = self.supported_display_apps.copy()
-    
     def write_from_stream(self, dataset, stream):
         """Writes data from a stream"""
         fd = open(dataset.file_name, 'wb')
@@ -61,13 +60,11 @@ class Data( object ):
                 break
             os.write(fd, chunk)
         os.close(fd)
-
     def set_raw_data(self, dataset, data):
         """Saves the data on the disc"""
         fd = open(dataset.file_name, 'wb')
         os.write(fd, data)
         os.close(fd)
-    
     def get_raw_data( self, dataset ):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         try:
@@ -75,7 +72,6 @@ class Data( object ):
         except OSError, e:
             log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
             return ''
-
     def init_meta( self, dataset, copy_from=None ):
         # Metadata should be left mostly uninitialized.  Dataset will
         # handle returning default values when metadata is not set.
@@ -102,45 +98,22 @@ class Data( object ):
         """Set the peek and blurb text"""
         dataset.peek  = ''
         dataset.blurb = 'data'
-    def make_html_peek_rows( self, dataset, skipchars=[] ):
-        out = [""]
-        comments = []
-        data = dataset.peek
-        lines =  data.splitlines()
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            comment = False
-            for skipchar in skipchars:
-                if line.startswith( skipchar ):
-                    comments.append( line )
-                    comment = True
-                    break
-            if comment:
-                continue
-            elems = line.split( '\t' ) 
-            while len( comments ) > 0: # Keep comments
-                out.append( '<tr><td colspan="100%">' )
-                out.append( escape( comments.pop(0) ) )
-                out.append( '</td></tr>' )
-            out.append( '<tr>' )
-            for elem in elems: # valid data
-                elem = escape( elem )
-                out.append( '<td>%s</td>' % elem )
-            out.append( '</tr>' )
-        # Peek may consist only of comments
-        while len( comments ) > 0:
-            out.append( '<tr><td colspan="100%">' )
-            out.append( escape( comments.pop(0) ) )
-            out.append( '</td></tr>' )
-        return "".join( out )
     def display_peek(self, dataset):
-        """Returns formated html of peek"""
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
         try:
-            return escape(dataset.peek)
-        except:
-            return "peek unavailable"
+            data = dataset.peek
+            lines =  data.splitlines()
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                out.append( '<tr><td>%s</td></tr>' % escape( line ) )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % str( exc )
+        return out
     def display_name(self, dataset):
         """Returns formated html of dataset name"""
         try:

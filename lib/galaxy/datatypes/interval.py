@@ -710,13 +710,11 @@ class CustomTrack ( Tabular ):
         """Initialize interval datatype, by adding UCSC display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
-
     def set_meta( self, dataset, **kwd ):
         Tabular.set_meta( self, dataset, skip=1 )
-
-    def make_html_table( self, dataset ):
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
-
     def get_estimated_display_viewport( self, dataset ):
         try:
             for line in open(dataset.file_name):
@@ -734,10 +732,8 @@ class CustomTrack ( Tabular ):
         except:
             #return "."
             return ('', '', '')
-    
     def as_ucsc_display_file( self, dataset ):
         return open(dataset.file_name)
-
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
         if dataset.has_data:
@@ -752,7 +748,6 @@ class CustomTrack ( Tabular ):
                         link = "%sdb=%s&position=%s:%s-%s&hgt.customText=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )
                         ret_val.append( (site_name, link) )
         return ret_val
-
     def sniff( self, filename ):
         """
         Determines whether the file is in customtrack format.
