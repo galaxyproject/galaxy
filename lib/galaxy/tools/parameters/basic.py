@@ -450,7 +450,7 @@ class SelectToolParameter( ToolParameter ):
             for index, option in enumerate( elem.findall( "option" ) ):
                 value = option.get( "value" )
                 self.legal_values.add( value )
-                selected = ( option.get( "selected", None ) == "true" )
+                selected = str_bool( option.get( "selected", False ) )
                 self.static_options.append( ( option.text, value, selected ) )
         self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.options is not None ) )
     def get_options( self, trans, other_values ):
