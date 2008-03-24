@@ -48,16 +48,10 @@ def __main__():
         # use Anton's parser
         megablast_output = os.popen(megablast_command)
         #parse_megablast_xml_output(megablast_output,output_file)
+        # to avoid reading whole file into memory
         for i, line in enumerate(megablast_output):
-            line = line.strip('\r\n')
-            fields = line.split()
-            if (not line.startswith("#")): 
-                # replace subject id with gi number
-                # remove this after re-build blastdb
-                subject_id_fields = fields[1].split('|')
-                gi = subject_id_fields[1]
-                fields[1] = gi
-                print >> output_file, "\t".join(fields) 
+            line = line.rstrip('\r\n')
+            print >> output_file, line 
         
     output_file.close()
     

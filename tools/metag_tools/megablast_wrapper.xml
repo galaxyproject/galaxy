@@ -1,4 +1,4 @@
-<tool id="megablast_wrapper" name="Run Megablast" version="2.0.0">
+<tool id="megablast_wrapper" name="Megablast" version="2.0.0">
 	<description>for Metagenomics Projects</description>
 	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $disc_word $disc_type $filter_query</command>
 	<inputs>
@@ -48,18 +48,18 @@
 
 **What it does**
 
-This tool runs **megablast**, which searches a nucleotide database using nucleotide sequences. 
-The query sequence could be any nucleotide sequences in fasta format. 
-The output is in bed format. 
-At this point, only **nt** is available for searching. 
+This tool runs **megablast** (for information about megablast, please see the reference below) and search against a nucleotide database. 
+The query sequence could be any nucleotide sequences in fasta format. At this point, only **nt** is available for searching. 
 
 Other databases and megablast parameters will be available shortly.
 
 -----
 
-**megablast**: Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
+** Reference **
 
-Corresponding command line options:
+ **megablast**: Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
+
+ Corresponding command line options:
 
 - **-W**: Word size
 - **-p**: Identity percentage cut-off

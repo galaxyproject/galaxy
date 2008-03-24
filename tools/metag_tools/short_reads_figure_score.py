@@ -1,5 +1,14 @@
 #! /usr/bin/python
 
+"""
+boxplot:
+- box: first quartile and third quartile
+- line inside the box: median
+- outlier: 1.5 IQR higher than the third quartile or 1.5 IQR lower than the first quartile
+           IQR = third quartile - first quartile
+- The smallest/largest value that is not an outlier is connected to the box by with a horizontal line.
+"""
+
 import os, sys, math, tempfile, zipfile, re
 from rpy import *
 
@@ -88,13 +97,20 @@ def __main__():
         if read_scorefile.startswith('#'):
             continue 
         elif read_scorefile.startswith(">"):
-            seq_method = '454'
-        else:
+            read_next_line = test_fh.readline()
+            if read_next_line.split()[0].isdigit():
+                seq_method = '454'
+        elif len(read_scorefile.split('\t')) > 0:
             seq_method = 'solexa'
+        else:
+            stop_err('Your input file format does not fit the requirement. Please either use fasta format or tabular format')
     test_fh.close()
     
     # quantile array
     quality_score = {}
+    
+    # minimal read length for 454 file
+    read_length_threshold = 100
     
     # R
     score_points = []   
@@ -134,7 +150,7 @@ def __main__():
     else: number_of_points = tmp_read_length
                         
     # data for R boxplot
-    # data for quantile
+    # data for quartile
     if (seq_method == 'solexa'):
             for i, line in enumerate(open(score_file)):
                 line = line.rstrip('\r\n')
@@ -144,14 +160,18 @@ def __main__():
                 tmp_array = []
                 for each_base in each_loc:
                     each_nuc_error = each_base.split()
-                    each_nuc_error[0] = int(each_nuc_error[0])
-                    each_nuc_error[1] = int(each_nuc_error[1])
-                    each_nuc_error[2] = int(each_nuc_error[2])
-                    each_nuc_error[3] = int(each_nuc_error[3])
-                    big = max(each_nuc_error)
-                    tmp_array.append(big)
+                    try:
+                        each_nuc_error[0] = int(each_nuc_error[0])
+                        each_nuc_error[1] = int(each_nuc_error[1])
+                        each_nuc_error[2] = int(each_nuc_error[2])
+                        each_nuc_error[3] = int(each_nuc_error[3])
+                        big = max(each_nuc_error)
+                    except:
+                        print 'Invalid numbers in the file. Skipped'
+                        big = 0
+                    tmp_array.append(big)                        
                 score_points.append(tmp_array)
-                # quantile
+                # quartile
                 for j,k in enumerate(tmp_array):
                     if quality_score.has_key((j,k)):
                         quality_score[(j, k)] += 1
@@ -171,10 +191,11 @@ def __main__():
                             tmp_score.pop(0)
                             score_points.append(tmp_score)
                             tmp_array = tmp_score
-                        elif (read_length > 100):
+                        elif (read_length > read_length_threshold):
                             score_points_tmp = merge_to_20_datapoints(tmp_score)
                             score_points.append(score_points_tmp)
                             tmp_array = score_points_tmp
+                        # quartile
                         for j, k in enumerate(tmp_array):
                             if quality_score.has_key((j,k)):
                                 quality_score[(j,k)] += 1
@@ -189,7 +210,7 @@ def __main__():
                 if (tmp_varied_length is False):
                     tmp_score.pop(0)
                     score_points.append(tmp_score)
-                elif (read_length > 100):
+                elif (read_length > read_length_threshold):
                     score_points_tmp = merge_to_20_datapoints(tmp_score)
                     score_points.append(score_points_tmp)
                     tmp_array = score_points_tmp
@@ -199,15 +220,7 @@ def __main__():
                     else:
                         quality_score[(j,k)] = 1
 
-    
-    """
-    # This is next step: quantile
-    keys = quality_score.keys()
-    keys.sort()
-    for key in keys:
-        print key, quality_score[key]
-    """
-    
+        
     # reverse the matrix, for R
     tmp_array = []
     for i in range(number_of_points-1):
@@ -233,8 +246,8 @@ def __main__():
         r.boxplot(score_matrix,xlab="position within read (% of total length)",xaxt="n",main=title)
         x_old_range = []
         x_new_range = []
-        step = 100/number_of_points 
-        for i in xrange(0,100,step):
+        step = read_length_threshold/number_of_points 
+        for i in xrange(0,read_length_threshold,step):
             x_old_range.append((i/step))
             x_new_range.append(i)
         r.axis(1,x_old_range,x_new_range)
