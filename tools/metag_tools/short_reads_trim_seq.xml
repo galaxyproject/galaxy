@@ -78,39 +78,58 @@ Accept the following two file formats:
 - fasta: for **454** and **SOLiD** data
 - tabular: for **Solexa** data. Only take the maximal value from each 4 quality scores.
 
-If *minimal trimmed length to report* is set to a number larger than zero, the tool ouputs any substrings that are longer than this threshold. 
+If *minimal length of trimmed reads to report* is set to a number larger than zero, the tool ouputs any substrings that are longer than this threshold. 
 If there are more than one substring, the tool outputs all of them in separated fasta format.
 
 -----
 
+**Example 1.**
 
-454 and SOLiD data::
+For 454 and SOLiD files
 
+- the sequence file is fasta format as following::
+	
 	&gt;seq1
 	CCGGTATCCG
 	
-	&gt;seq1
+- and the score file is also a fasta-like format::
+
+	&gt;quality score for seq1
 	33 19 34 25 28 28 28 32 15 34 
 
-454 and SOLiD Output (trimmed by quality score 20 and returned the longest substring)::
+- if use **20** as *minimal quality score*, and
+- use **0** as *minimal length of trimmed reads to report*
+
+- the output will return the longest sub-sequence::
 
 	&gt;seq1
 	GGTATC
 
-Solexa data::
+-----
+
+**Example 2.**
+
+For Solexa files
+
+- the sequence file is fasta format as following::
 
 	5	300	902	419	TTCTTACCTATTAGTGGTTGAACATC
+	
+- and the score file is also a fasta-like format::
 
-Solexa quality score (only showed the maximum value)::
-	  
  	40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 15 40
 	
-Solexa Output (trimmed by quality score 20 and returned the longest substring)::
+	Note: only showed the maximum score here
+
+- if use **20** as *minimal quality score*, and
+- use **0** as *minimal length of trimmed reads to report*
+
+- the output will return the longest sub-sequence::  
 
 	&gt;15774
 	TTCTTACCTATTAGTGGTTGAACA
 	
-The fasta title will be replaced by a unique number in Solexa output.
+	Note: The fasta title will be replaced by a unique number in Solexa output.
 
 </help>
 </tool>
