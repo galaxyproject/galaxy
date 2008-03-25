@@ -6,20 +6,42 @@ run megablast for metagenomics data
 import sys, os, tempfile, subprocess
 #from megablast_xml_parser import *
 
+def stop_err(msg):
+    
+    sys.stderr.write(msg)
+    sys.stderr.write("\n")
+    sys.exit()
+    
+
 def __main__():
+    
     # file I/O
     db_build = sys.argv[1]
-    query_filename = sys.argv[2]
-    output_filename = sys.argv[3]
+    query_filename = sys.argv[2].strip()
+    output_filename = sys.argv[3].strip()
     
     # megablast parameters
-    mega_word_size = sys.argv[4]        # -W
-    mega_iden_cutoff = sys.argv[5]      # -p
-    mega_disc_word = sys.argv[6]        # -t
+    try:
+        mega_word_size = int(sys.argv[4])        # -W
+    except:
+        stop_err('Invalid value for word size')
+    
+    try:    
+        mega_iden_cutoff = float(sys.argv[5])      # -p
+    except:
+        stop_err('Invalid value for identity cut-off')
+    
+    try:
+        mega_disc_word = sys.argv[6]        # -t
+    except:
+        stop_err('Invalid value for discontiguous word template')
+    
     mega_disc_type = sys.argv[7]        # -N
     mega_filter = sys.argv[8]           # -F
+    
     GALAXY_DATA_INDEX_DIR = sys.argv[9]
     DB_LOC = "%s/blastdb.loc" % GALAXY_DATA_INDEX_DIR
+    
     output_file = open(output_filename, 'w')
     
     # prepare the database
@@ -35,8 +57,7 @@ def __main__():
     # prepare to run megablast
     retcode = subprocess.call('which megablast 2>&1', shell='True')
     if retcode < 0:
-        print >> sys.stderr, "Cannot locate megablast."
-        sys.exit()
+        stop_err("Cannot locate megablast.")
         
     for chunk in db[(db_build)]:
         megablast_arguments = ["megablast", "-d", chunk, "-i", query_filename]
@@ -44,9 +65,7 @@ def __main__():
         megablast_user_inputs = ["-W", mega_word_size, "-p", mega_iden_cutoff, "-t", mega_disc_word, "-N", mega_disc_type, "-F", mega_filter]
         megablast_command = " ".join(megablast_arguments) + " " + " ".join(megablast_parameters) + " " + " ".join(megablast_user_inputs) + " 2>&1" 
         
-        # use Anton's parser
         megablast_output = os.popen(megablast_command)
-        #parse_megablast_xml_output(megablast_output,output_file)
         # to avoid reading whole file into memory
         for i, line in enumerate(megablast_output):
             line = line.rstrip('\r\n')

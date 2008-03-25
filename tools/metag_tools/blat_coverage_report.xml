@@ -17,7 +17,7 @@
 
 .. class:: warningmark
 
- Only Accept **BLAT output type pslx**.
+**Note**. Only works for BLAT output type **pslx** (hint: add -out=pslx in the command).
 
 -----
 	
@@ -31,23 +31,22 @@
 
 - 3rd column: the nucleotide from reference genome at the chromosome location (2nd column).
 
-- 4th column: total coverage of the reads (number of reads that mapped to the chromosome location).
+- 4th column: total coverage of the reads (number of reads that were mapped to the chromosome location).
 
-- 5th column: percentage of reads that support a nucleotide **A** at this location.
+- 5th column: percentage of reads that support nucleotide **A** at this location.
 
-- 6th column: percentage of reads that support a nucleotide **T** at this location.
+- 6th column: percentage of reads that support nucleotide **T** at this location.
 
-- 7th column: percentage of reads that support a nucleotide **C** at this location.
+- 7th column: percentage of reads that support nucleotide **C** at this location.
 
-- 8th column: percentage of reads that support a nucleotide **G** at this location.
-
- If there is no read to support a particular nucleotide, the column is left empty. 
+- 8th column: percentage of reads that support nucleotide **G** at this location.
+ 
  
 -----
 
 **Example**
 
-- The BLAT results look like the following::
+- The BLAT pslx results look like the following (tab separated with sequence at the end)::
 
 	30	0	0	0	0	0	0	0	+	seq0	30	0	30	chr	4639675	4549207	4549237	1	30,	0,	4549207,	cggacagcgccgccaccaacaaagccacca,	cggacagcgccgccaccaacaaagccacca,
 	30	0	0	0	0	0	0	0	+	seq1	30	0	30	chr	4639675	614777	614807	1	30,	0,	614777,		aaaacaccggatgctccggcgctggcagat,	aaaacaccggatgctccggcgctggcagat,
@@ -69,6 +68,12 @@
 	chr		614784	C		1	A(0)	T(0)	C(100)	G(0)
 	
 	Only show part of the result.
+	
+-----
+
+**Reference**
+ 
+ BLAT: Kent, W James, BLAT--the BLAST-like alignment tool. (2002) Genome Research:12(4) 656-664.
 	
 	</help>
 </tool>

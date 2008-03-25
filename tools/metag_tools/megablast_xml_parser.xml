@@ -1,0 +1,54 @@
+<tool id="megablast_xml_parser" name="Parse megablast xml output">
+<description> </description>
+<command interpreter="python">megablast_xml_parser.py $input1 $output1</command>
+<inputs>
+	<param name="input1" type="data" format="txt" label="Megablast XML Output" />
+</inputs>
+<outputs>
+	<data name="output1" format="tabular"/>
+</outputs>
+<tests>
+	<test>
+		<param name="input1" value="megablast_xml_parser_test1.txt" />
+		<output name="output1" file="megablast_xml_parser_test1.out" ftype="tabular" />
+	</test>
+</tests>
+<help>
+
+.. class:: warningmark 
+
+**TIP**. To get xml output from megablast, add option **-m 7** in the command line.
+
+ 
+.. class:: warningmark 
+
+**Important**. Please **zip** your xml file and upload the zipped file. This will help speeding up the process. (hint: under shell command, try: gzip -c your_xml_file > your_xml_file.gz)
+
+-----
+	
+**What it does**
+
+This tool is for users to upload their own megablast xml output and converts to tabular format, showing all information for retrieving alignment blocks.
+ 
+-----
+
+**Example**
+
+- Query sequence::
+ 	
+ 	&gt;seq1
+	CGGACAGCGCCGCCACCAACAAAGCCACCA
+ 
+- Parsed output::
+ 
+ 	seq1 	30 	gnl|BL_ORD_ID|0 	5528445 	['59.96', '8.38112e-11', '1', '30', '5436010', '5436039', '1', '1', '30', '30', 'CGGACAGCGCCGCCACCAACAAAGCCACCA', 'CGGACAGCGCCGCCACCAACAAAGCCACCA', '||||||||||||||||||||||||||||||']
+
+-----
+
+**Reference**
+
+ **megablast**: Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
+
+
+</help>
+</tool>

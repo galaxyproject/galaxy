@@ -28,11 +28,15 @@ def unzip(zip_file):
 
 
 def show_output(outfile_seq, seq_title, segments):
+    
     if (len(segments) > 1):
         for i in range(len(segments)):
             print >> outfile_seq, "%s_%d\n%s" % (seq_title, i, segments[i])
     elif (len(segments[0]) > 0):
         print >> outfile_seq, "%s\n%s" % (seq_title, segments[0])
+    else:
+        return
+    
     return
 
 
@@ -105,6 +109,7 @@ def __main__():
     infile_seq_name = sys.argv[5].strip()
     infile_score_name = sys.argv[6].strip()
     special_argument = sys.argv[7].strip()
+    
     if seq_method == '454':
         keep_homopolymers = special_argument
     else:
@@ -119,10 +124,8 @@ def __main__():
         unzip_score_infile = unzip(infile_score_name)
     else: unzip_score_infile = infile_score_name
 
-    
     outfile_seq = open(outfile_seq_name,'w')
     
-
     if (os.path.exists(unzip_seq_infile) and os.path.exists(unzip_score_infile)):
         # read one sequence
         to_find_score = True
@@ -156,7 +159,7 @@ def __main__():
                                     try:
                                         each_score = int(each_score)
                                     except:
-                                        stop_err('Score file contains non-numerical values at line %d' %(i))
+                                        stop_err('Score file contains non-numerical values: %s' %(each_score))
                                 if not score: score = score_line
                                 else:
                                     score = score + ' ' + score_line
@@ -177,7 +180,7 @@ def __main__():
                             try:
                                 each_score = int(each_score)
                             except:
-                                stop_err('Score file contains non-numerical values at line %d' %(i))
+                                stop_err('Score file contains non-numerical values: %s' %(each_score))
                         if not score: score = score_line
                         else:
                             score = score + ' ' + score_line
@@ -193,7 +196,16 @@ def __main__():
                 if line.startswith('#'):
                     continue
                 seq_title = '>' + str(i)
+                
+                # the last column of solexa file is the sequence column
                 seq = line.split()[-1]
+                seq.replace('.','N')
+                seq.replace('-','N')
+                try:
+                    assert seq.isalpha() is True
+                except:
+                    stop_err('Invalid characters in the read at line %d' %(i))
+                                        
                 score = score_fh.readline()
                 each_loc = score.split('\t')
                 score = []

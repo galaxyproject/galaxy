@@ -21,7 +21,7 @@
 	</conditional>	
 		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
 		<param name="iden" type="float" size="15" value="90.0" label="Minimal Identity (-minIdentity)" />
-		<param name="tile_size" type="integer" size="15" value="11" label="Minimal Size of Match (-tileSize)" help="for shorter reads, use size = 8"/>
+		<param name="tile_size" type="integer" size="15" value="11" label="Minimal Size of Exact Match (-tileSize)" help="for shorter reads, use size = 8. Must be between 6 and 18."/>
 		<param name="one_off" type="integer" size="15" value="0" label="Number of Mismatch in the Word (-oneOff)" />
 	</inputs>
 	<outputs>
@@ -40,29 +40,33 @@
 	</tests>
 	<help>
 	
+.. class:: warningmark 
+
+Use smaller word size (*Minimal Size of Exact Match*) will increase the computational time.
+
+-----
+	
 **What it does**
  
- This tool runs sequence alignment program on your short reads dataset against a genome build.
+ This tool runs alignment program **BLAT**. Your short reads file is searched against a genome build (select from table) or another uploaded file. 
  
 -----
  
 **Example**
  
- Input as multiple fasta file::
+- Input as multiple fasta file::
 
 	&gt;seq1
 	TGGTAATGGTGGTTTTTTTTTTTTTTTTTTATTTTT
 
- Search against ce2 (C. elegans March 2004)
- 
- (This is output type = pslx)::
+- Search against ce2 (C. elegans March 2004)::
 
 	25 1 0 0 0 0 0 0 + seq1 36 10 36 chrI 15080483 9704438 9704464 1 26, 10, 9704438, ggttttttttttttttttttattttt, ggtttttttttttttttttttttttt,
 	27 0 0 0 0 0 1 32 + seq1 36 9 36 chrI 15080483 1302536 1302595 2 21,6, 9,30, 1302536,1302589, tggtttttttttttttttttt,attttt, tggtttttttttttttttttt,attttt,
 
 -----
 
-.. class:: infomark
+**Reference**
  
  BLAT: Kent, W James, BLAT--the BLAST-like alignment tool. (2002) Genome Research:12(4) 656-664.
 	
