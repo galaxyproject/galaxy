@@ -22,16 +22,19 @@ def __main__():
     
     # megablast parameters
     try:
-        mega_word_size = int(sys.argv[4])        # -W
+        test = int(sys.argv[4])
+        mega_word_size = sys.argv[4]        # -W
     except:
         stop_err('Invalid value for word size')
     
-    try:    
-        mega_iden_cutoff = float(sys.argv[5])      # -p
+    try:
+        test = float(sys.argv[5])
+        mega_iden_cutoff = sys.argv[5]      # -p
     except:
         stop_err('Invalid value for identity cut-off')
     
     try:
+        test = int(sys.argv[6])
         mega_disc_word = sys.argv[6]        # -t
     except:
         stop_err('Invalid value for discontiguous word template')

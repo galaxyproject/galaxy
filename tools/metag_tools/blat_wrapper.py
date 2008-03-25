@@ -47,18 +47,21 @@ def __main__():
     output_file = sys.argv[4]
     
     try:
-        min_iden = float(sys.argv[5])
+        test = float(sys.argv[5])
+        min_iden = sys.argv[5]
     except:
         stop_err('Invalid value for minimal identity')
     
-    try:    
-        tile_size = int(sys.argv[6])
-        assert tile_size >= 6 and tile_size <= 18
+    try:  
+        test = int(sys.argv[6])
+        tile_size = sys.argv[6]
+        assert test >= 6 and test <= 18
     except:
         stop_err('Invalid value for tile size. DNA word size must be between 6 and 18.')
         
     try:
-        one_off = int(sys.argv[7])
+        test = int(sys.argv[7])
+        one_off = sys.argv[7]
     except:
         stop_err('Invalid value for mismatch numbers in the word')
         
