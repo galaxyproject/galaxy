@@ -7,6 +7,7 @@ Read a maf and print the text as a fasta file.
 import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
+from galaxy.tools.util import maf_utilities
 
 def __main__():
     print "Restricted to species:", sys.argv[3]
@@ -31,12 +32,12 @@ def __main__():
                 spec, chrom = maf.src_split( component.src )
                 if not spec or not chrom:
                         spec = chrom = component.src
-                file_out.write( ">" + component.src + "(" + component.strand + "):" + str( component.start ) + "-" + str( component.end ) + "|" + spec + "_" + str( block_num ) + "\n" )
-                file_out.write( component.text + "\n" )
+                file_out.write( "%s\n" % maf_utilities.get_fasta_header( component, suffix = "%s_%i" % ( spec, block_num ) ) )
+                file_out.write( "%s\n" % component.text )
             file_out.write( "\n" )
         file_in.close()
-    except:
-        print >>sys.stderr, "Your MAF file appears to be malformed."
+    except Exception, e:
+        print >>sys.stderr, "Your MAF file appears to be malformed:", e
         sys.exit()
     file_out.close()
 

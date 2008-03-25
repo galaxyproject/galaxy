@@ -317,3 +317,13 @@ def get_species_in_maf( maf_filename ):
 def remove_temp_index_file( index_filename ):
     try: os.unlink( index_filename )
     except: pass
+
+def get_fasta_header( component, attributes = {}, suffix = None ):
+    header = ">%s(%s):%i-%i|" % ( component.src, component.strand, component.get_forward_strand_start(), component.get_forward_strand_end() )
+    for key, value in attributes.iteritems():
+        header = "%s%s=%s|" % ( header, key, value )
+    if suffix:
+        header = "%s%s" % ( header, suffix )
+    else:
+        header = "%s%s" % ( header, bx.align.src_split( component.src )[ 0 ] )
+    return header
