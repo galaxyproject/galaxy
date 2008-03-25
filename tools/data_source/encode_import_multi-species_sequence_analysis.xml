@@ -1,5 +1,5 @@
 <tool id="encode_import_multi-species_sequence_analysis1" name="Multi-species Sequence Analysis">
-  <command interpreter="python">encode_import.py $hg17,$hg16 $output</command>
+  <command interpreter="python">encode_import.py $hg17,$hg16 $output ${GALAXY_DATA_INDEX_DIR}</command>
   <inputs>
     <display>
       <p><div class="toolFormTitle">hg17 (most recent datasets in bold)</div>$hg17</p>

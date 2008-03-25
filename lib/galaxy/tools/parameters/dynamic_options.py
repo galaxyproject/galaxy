@@ -14,20 +14,14 @@ class DynamicOptions( object ):
         self.parameter_type = parameter_type
         self.data_ref = None
         self.param_ref = None
-        self.from_file_data = None
+        self.data_file_path = None
+        self.data_file_data = None
         self.validators = []
 
         # Parse the options tag
         self.data_file = elem.get( 'from_file', None )
         if self.data_file is not None:
             self.data_file = self.data_file.strip()
-            if self.data_file.startswith( 'static' ):
-                # static files ( ucsc/builds.txt, etc ) have relative paths in the tool config
-                self.from_file = self.data_file
-            else:
-                self.from_file = "%s/%s" % ( os.environ.get( 'GALAXY_DATA_INDEX_DIR' ), self.data_file )
-        else: 
-            self.from_file = None
         self.name_col = elem.get( 'name_col', None )
         if self.name_col is not None:
             self.name_col = int( self.name_col.strip() )
@@ -119,8 +113,8 @@ class DynamicOptions( object ):
                 elif self.data_file == 'data_ref':
                     # We'll be reading data directly from the input dataset
                     filters[ 'data_meta' ][ 'meta_key' ] = 'data_ref'
-                    self.from_file = dataset.get_file_name()
-                    filters[ 'data_meta' ][ 'meta_value' ] = self.from_file
+                    self.data_file_path = dataset.get_file_name()
+                    filters[ 'data_meta' ][ 'meta_value' ] = self.data_file_path
                 # meta_key_col is optional
                 meta_key_col = filter.get( 'meta_key_col', None )
                 if meta_key_col is not None:
@@ -156,6 +150,10 @@ class DynamicOptions( object ):
                 except:
                     filters[ 'params' ] = {}
                     filters[ 'params' ][ n ] = v
+        if self.data_file and self.data_file.startswith( 'static' ):
+            self.data_file_path = self.data_file
+        elif self.data_file not in [ None, 'data_ref' ]:
+            self.data_file_path = "%s/%s" % ( trans.app.config.tool_data_path, self.data_file )
         # Now that we've parsed our filters, we need to see if the tool is a maf tool 
         # which requires special handling
         # TODO: remove or rework this if possible
@@ -200,7 +198,7 @@ class DynamicOptions( object ):
                 dbkey = filters[ 'params' ][ 'dbkey' ]
                 return self.generate_for_encode( encode_group, dbkey, sep )
             elif self.data_file == 'microbial_data.loc':
-                if self.from_file_data is None: 
+                if self.data_file_data is None: 
                     self.load_microbial_data()
                 try: 
                     kingdom = filters[ 'param_values' ][ 'kingdom' ]
@@ -232,7 +230,7 @@ class DynamicOptions( object ):
         options = []
         def generate():
             encode_sets = {}
-            for line in open( self.from_file ):
+            for line in open( self.data_file_path ):
                 line = line.rstrip( '\r\n' )
                 if line and not line.startswith( '#' ):
                     try:
@@ -313,42 +311,42 @@ class DynamicOptions( object ):
     def generate_for_microbial( self, kingdom=None, org=None, feature=None ):
         options = []
         if not kingdom and not org and not feature:
-            kingdoms = self.from_file_data.keys()
+            kingdoms = self.data_file_data.keys()
             kingdoms.sort()
             for kingdom in kingdoms:
                 options.append( ( kingdom, kingdom, False ) )
             if options:
                 options[0] = ( options[0][0], options[0][1], True )
         elif kingdom and not org and not feature:
-            orgs = self.from_file_data[ kingdom ].keys()
+            orgs = self.data_file_data[ kingdom ].keys()
             #need to sort by name
             swap_test = False
             for i in range( 0, len( orgs ) - 1 ):
                 for j in range( 0, len( orgs ) - i - 1 ):
-                    if self.from_file_data[ kingdom ][ orgs[ j ] ][ 'name' ] > self.from_file_data[ kingdom ][ orgs[ j + 1 ] ][ 'name' ]:
+                    if self.data_file_data[ kingdom ][ orgs[ j ] ][ 'name' ] > self.data_file_data[ kingdom ][ orgs[ j + 1 ] ][ 'name' ]:
                         orgs[ j ], orgs[ j + 1 ] = orgs[ j + 1 ], orgs[ j ]
                     swap_test = True
                 if swap_test == False: 
                     break
             for org in orgs:
-                 if self.from_file_data[ kingdom ][ org ][ 'link_site' ] == "UCSC":
-                    options.append( ( "<b>" + self.from_file_data[ kingdom ][ org ][ 'name' ] + "</b> <a href=\"" + self.from_file_data[ kingdom ][ org ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", org, False ) )
+                 if self.data_file_data[ kingdom ][ org ][ 'link_site' ] == "UCSC":
+                    options.append( ( "<b>" + self.data_file_data[ kingdom ][ org ][ 'name' ] + "</b> <a href=\"" + self.data_file_data[ kingdom ][ org ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", org, False ) )
                  else:
-                    options.append( ( self.from_file_data[ kingdom ][ org ][ 'name' ] + " <a href=\"" + self.from_file_data[ kingdom ][ org ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", org, False ) )
+                    options.append( ( self.data_file_data[ kingdom ][ org ][ 'name' ] + " <a href=\"" + self.data_file_data[ kingdom ][ org ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", org, False ) )
             if options:
                 options[0] = ( options[0][0], options[0][1], True )
         else:
-            chroms = self.from_file_data[ kingdom ][ org ][ 'chrs' ].keys()
+            chroms = self.data_file_data[ kingdom ][ org ][ 'chrs' ].keys()
             chroms.sort()
             for chr in chroms:
-                 for data in self.from_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'data' ]:
-                     if self.from_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'data' ][ data ][ 'feature' ] == feature:
-                         options.append( ( self.from_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'name' ] + " <a href=\"" + self.from_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", data, False ) )
+                 for data in self.data_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'data' ]:
+                     if self.data_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'data' ][ data ][ 'feature' ] == feature:
+                         options.append( ( self.data_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'name' ] + " <a href=\"" + self.data_file_data[ kingdom ][ org ][ 'chrs' ][ chr ][ 'info_url' ] + "\" target=\"_blank\">(about)</a>", data, False ) )
         return options
     def load_microbial_data( self, sep='\t' ):
         microbe_info= {}
         orgs = {}
-        for line in open( self.from_file ):
+        for line in open( self.data_file_path ):
             line = line.rstrip( '\r\n' )
             if line and not line.startswith( '#' ):
                 fields = line.split( sep )
@@ -421,7 +419,7 @@ class DynamicOptions( object ):
                 microbe_info[ org[ 'kingdom' ] ] = {}
             if org_num not in microbe_info[ org[ 'kingdom' ] ]:
                 microbe_info[ org[ 'kingdom' ] ][org_num] = org
-        self.from_file_data = microbe_info
+        self.data_file_data = microbe_info
     def generate_for_species( self, species ):
         options = []
         for s in species:
@@ -430,7 +428,7 @@ class DynamicOptions( object ):
     def generate_for_maf( self, maf_uid, sep ):
         options = []
         d = {}
-        for line in open( self.from_file ):
+        for line in open( self.data_file_path ):
             line = line.rstrip( '\r\n' )
             if line and not line.startswith( '#' ):
                 fields = line.split( sep )
@@ -476,7 +474,7 @@ class DynamicOptions( object ):
     def generate_for_build( self, build, build_col, name_col, value_col, sep ):
         options = []
         d = {}
-        for line in open( self.from_file ):
+        for line in open( self.data_file_path ):
             line = line.rstrip( '\r\n' )
             if line and not line.startswith( '#' ):
                 fields = line.split( sep )
@@ -528,7 +526,7 @@ class DynamicOptions( object ):
         return options
     def generate( self, name_col, value_col, sep ):
         options = []
-        for line in open( self.from_file ):
+        for line in open( self.data_file_path ):
             line = line.rstrip( '\r\n' )
             if line and not line.startswith( '#' ):
                 fields = line.split( sep )

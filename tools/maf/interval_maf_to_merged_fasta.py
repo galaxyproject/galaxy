@@ -18,8 +18,9 @@ usage: %prog maf_file [options]
    -i, --interval_file=i:       Input interval file
    -o, --output_file=o:      Output MAF file
    -p, --species=p: Species to include in output
+   -z, --mafIndexFileDir=z: Directory of local maf_index.loc file
 
-usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract comma_separated_list_of_indexed_maf_files input_gene_bed_file output_fasta_file cached|user
+usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract comma_separated_list_of_indexed_maf_files input_gene_bed_file output_fasta_file cached|user GALAXY_DATA_INDEX_DIR
 """
 
 #Dan Blankenberg
@@ -82,13 +83,14 @@ def __main__():
         else: 
             print >>sys.stderr, "Strand column has not been specified."
             sys.exit()
+    mafIndexFile = "%s/maf_index.loc" % options.mafIndexFileDir
     #Finish parsing command line
         
     #get index for mafs based on type 
     index = index_filename = None
     #using specified uid for locally cached
     if options.mafSourceType.lower() in ["cached"]:
-        index = maf_utilities.maf_index_by_uid( options.mafSource )
+        index = maf_utilities.maf_index_by_uid( options.mafSource, mafIndexFile )
         if index is None:
             print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( options.mafSource )
             sys.exit()

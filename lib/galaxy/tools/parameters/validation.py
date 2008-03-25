@@ -212,17 +212,23 @@ class MetadataInFileColumnValidator( Validator ):
     @classmethod
     def from_element( cls, elem ):
         filename = elem.get( "filename", None )
+        if filename:
+            filename = filename.strip()
         metadata_name = elem.get( "metadata_name", None )
+        if metadata_name:
+            metadata_name = metadata_name.strip()
         metadata_column = int( elem.get( "metadata_column", 0 ) )
         message = elem.get( "message", "Value for metadata %s was not found in %s." % ( metadata_name, filename ) )
         split = elem.get( "split", None )
         line_startswith = elem.get( "line_startswith", None  )
+        if line_startswith:
+            line_startswith = line_startswith.strip()
         return cls( filename, metadata_name, metadata_column, message, split, line_startswith )
-    def __init__( self, filename, metadata_name, metadata_column, message = "Value for metadata not found." , split = None, line_startswith = None ):
+    def __init__( self, filename, metadata_name, metadata_column, message="Value for metadata not found.", split=None, line_startswith=None ):
         self.metadata_name = metadata_name
         self.message = message
         self.valid_values = []
-        filename = "%s/%s" % ( os.environ.get( 'GALAXY_DATA_INDEX_DIR' ), filename )
+        #filename = "%s/%s" % ( GALAXY_DATA_INDEX_DIR, filename )
         for line in open( filename ):
             if line_startswith is None or line.startswith( line_startswith ):
                 fields = line.split( split )

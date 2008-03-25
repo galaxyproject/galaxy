@@ -16,7 +16,7 @@ def stop_err( msg ):
 def main():
     uids = sys.argv[1].split(",")
     out_file1 = sys.argv[2]
-    file_name = "%s/encode_datasets.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
+    file_name = "%s/encode_datasets.loc" % sys.argv[3]
     
     #remove NONE from uids
     have_none = True

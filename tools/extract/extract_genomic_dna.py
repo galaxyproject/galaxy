@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.4
 """
-usage: extract_genomic_dna.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format
+usage: extract_genomic_dna.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format GALAXY_DATA_INDEX_DIR
 by Wen-Yu Chung
 """
 import pkg_resources
@@ -9,9 +9,6 @@ import sys, string, os, re
 from bx.cookbook import doc_optparse
 import bx.seq.nib
 import bx.seq.twobit
-
-nib_file = "%s/alignseq.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
-twobit_file = "%s/twobit.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
 
 def stop_err( msg ):
     sys.stderr.write( msg )
@@ -25,7 +22,8 @@ def reverse_complement( s ):
     reversed_s.reverse()
     return "".join( reversed_s )
 
-def check_nib_file( dbkey ):
+def check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR ):
+    nib_file = "%s/alignseq.loc" % GALAXY_DATA_INDEX_DIR
     nib_path = ''
     nibs = {}
     for line in open( nib_file ):
@@ -40,7 +38,8 @@ def check_nib_file( dbkey ):
         nib_path = nibs[( dbkey )]
     return nib_path
 
-def check_twobit_file( dbkey ):
+def check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR ):
+    twobit_file = "%s/twobit.loc" % GALAXY_DATA_INDEX_DIR
     twobit_path = ''
     twobits = {}
     for line in open( twobit_file ):
@@ -80,10 +79,11 @@ def __main__():
         pass
     dbkey = sys.argv[7]
     output_format = sys.argv[8]
+    GALAXY_DATA_INDEX_DIR = sys.argv[9]
     nibs = {}
     twobits = {}
-    nib_path = check_nib_file( dbkey )
-    twobit_path = check_twobit_file( dbkey )
+    nib_path = check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR )
+    twobit_path = check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR )
     if not os.path.exists( nib_path ) and not os.path.exists( twobit_path ):
         # If this occurs, we need to fix the metadata validator.
         stop_err( "No sequences are available for '%s', request them by reporting this error." % dbkey )

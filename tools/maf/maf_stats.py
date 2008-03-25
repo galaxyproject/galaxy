@@ -26,7 +26,8 @@ def __main__():
     summary = sys.argv[8].strip()
     if summary.lower() == "true": summary = True
     else: summary = False
-    
+
+    mafIndexFile = "%s/maf_index.loc" % sys.argv[9]
     index = index_filename = None
     if maf_source_type == "user":
         #index maf for use here
@@ -36,7 +37,7 @@ def __main__():
             sys.exit()
     elif maf_source_type == "cached":
         #access existing indexes
-        index = maf_utilities.maf_index_by_uid( input_maf_filename )
+        index = maf_utilities.maf_index_by_uid( input_maf_filename, mafIndexFile )
         if index is None:
             print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( input_maf_filename )
             sys.exit()

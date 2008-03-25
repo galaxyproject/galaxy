@@ -32,6 +32,7 @@ class Configuration( object ):
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
+        self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
@@ -55,7 +56,6 @@ class Configuration( object ):
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "" )
         self.use_heartbeat = kwargs.get( 'use_heartbeat', False )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea" ).lower().split(",")
-        self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,flybase" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
         self.wiki_url = kwargs.get( 'wiki_url', None )
         self.bugs_email = kwargs.get( 'bugs_email', None )
@@ -87,7 +87,7 @@ class Configuration( object ):
         return self.config_dict.get( key, default )
     def check( self ):
         # Check that required directories exist
-        for path in self.root, self.file_path, self.tool_path, self.template_path, self.job_working_directory, self.datatype_converters_path:
+        for path in self.root, self.file_path, self.tool_path, self.tool_data_path, self.template_path, self.job_working_directory, self.datatype_converters_path:
             if not os.path.isdir( path ):
                 raise ConfigurationError("Directory does not exist: %s" % path )
         # Check that required files exist

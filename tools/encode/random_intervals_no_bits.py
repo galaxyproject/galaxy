@@ -106,7 +106,7 @@ def main():
         use_mask = sys.argv[11]
         overlaps = sys.argv[12]
     available_regions = {}
-    loc_file = "%s/regions.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
+    loc_file = "%s/regions.loc" % sys.argv[-1]
     
     for i, line in enumerate( file( loc_file ) ):
         line = line.rstrip( '\r\n' )

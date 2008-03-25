@@ -14,12 +14,7 @@ echo "Architecture appears to be $ARCH $PYTHON_UCS"
 UNIVERSE_HOME=`pwd`
 PYTHONPATH=$UNIVERSE_HOME/lib:$UNIVERSE_HOME/eggs/$PYTHON_UCS:$UNIVERSE_HOME/eggs
 
-# The following directory must include location ( xxx.loc ) files that point to the
-# location where the locally cached data is stored.  These location files are used
-# by various tools.
-GALAXY_DATA_INDEX_DIR=$UNIVERSE_HOME/tool-data
-
-export UNIVERSE_HOME PYTHONPATH GALAXY_DATA_INDEX_DIR
+export UNIVERSE_HOME PYTHONPATH
 
 ## For PBS - if you need to force node paths (i.e. the arch the frontend
 ## runs on is not the same arch as the compute nodes or Galaxy is

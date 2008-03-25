@@ -9,8 +9,6 @@ import bx.intervals
 import bx.interval_index_file
 import sys, os, string, tempfile
 
-MAF_LOCATION_FILE = "%s/maf_index.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
-
 #an object corresponding to a reference layered alignment
 class RegionAlignment( object ):
     
@@ -126,8 +124,8 @@ class SplicedAlignment( object ):
         return self.exons[-1].end
 
 #Open a MAF index using a UID
-def maf_index_by_uid( maf_uid, index_location_file = None ):
-    for line in open( index_location_file or MAF_LOCATION_FILE ):
+def maf_index_by_uid( maf_uid, index_location_file ):
+    for line in open( index_location_file ):
         try:
             #read each line, if not enough fields, go to next line
             if line[0:1] == "#" : continue

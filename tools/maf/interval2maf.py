@@ -20,6 +20,7 @@ usage: %prog maf_file [options]
    -o, --output_file=o:      Output MAF file
    -p, --species=p: Species to include in output
    -l, --indexLocation=l: Override default maf_index.loc file
+   -z, --mafIndexFile=z: Directory of local maf index file ( maf_index.loc or maf_pairwise.loc )
 """
 
 #Dan Blankenberg
@@ -84,7 +85,7 @@ def __main__():
         if options.indexLocation:
             index = maf_utilities.maf_index_by_uid( options.mafType, options.indexLocation )
         else:
-            index = maf_utilities.maf_index_by_uid( options.mafType )
+            index = maf_utilities.maf_index_by_uid( options.mafType, options.mafIndexFile )
         if index is None:
             print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( options.mafType )
             sys.exit()

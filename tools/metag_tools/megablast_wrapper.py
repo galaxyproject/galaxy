@@ -6,8 +6,6 @@ run megablast for metagenomics data
 import sys, os, tempfile, subprocess
 #from megablast_xml_parser import *
 
-DB_LOC = "%s/blastdb.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
-
 def __main__():
     # file I/O
     db_build = sys.argv[1]
@@ -20,7 +18,8 @@ def __main__():
     mega_disc_word = sys.argv[6]        # -t
     mega_disc_type = sys.argv[7]        # -N
     mega_filter = sys.argv[8]           # -F
-    
+    GALAXY_DATA_INDEX_DIR = sys.argv[9]
+    DB_LOC = "%s/blastdb.loc" % GALAXY_DATA_INDEX_DIR
     output_file = open(output_filename, 'w')
     
     # prepare the database

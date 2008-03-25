@@ -2,10 +2,8 @@
 
 import os, sys, tempfile
 
-nib_file = "%s/alignseq.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
-twobit_file = "/%s/twobit.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
-
-def check_nib_file( dbkey ):
+def check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR ):
+    nib_file = "%s/alignseq.loc" % GALAXY_DATA_INDEX_DIR
     nib_path = ''
     nibs = {}
     for i, line in enumerate( file( nib_file ) ):
@@ -20,7 +18,8 @@ def check_nib_file( dbkey ):
         nib_path = nibs[( dbkey )]
     return nib_path
 
-def check_twobit_file( dbkey ):
+def check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR ):
+    twobit_file = "%s/twobit.loc" % GALAXY_DATA_INDEX_DIR
     twobit_path = ''
     twobits = {}
     for i, line in enumerate( file( twobit_file ) ):
@@ -43,7 +42,8 @@ def __main__():
     min_iden = sys.argv[5]
     tile_size = sys.argv[6]
     one_off = sys.argv[7]
-    
+    GALAXY_DATA_INDEX_DIR = sys.argv[8]
+
     all_files = []
     if (source_format == '0'):
         # check target genome
@@ -51,8 +51,8 @@ def __main__():
         if dbkey == '?':
             print >> sys.stdout, "No genome build specified. please check your dataset."
             sys.exit()
-        nib_path = check_nib_file( dbkey )
-        twobit_path = check_twobit_file( dbkey )
+        nib_path = check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR )
+        twobit_path = check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR )
         if not os.path.exists( nib_path ) and not os.path.exists( twobit_path ):
             print >> sys.stdout, "No sequences are available for %s, request them by reporting this error." % dbkey
             sys.exit()

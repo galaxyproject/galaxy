@@ -1,6 +1,6 @@
 <tool id="megablast_wrapper" name="Megablast" version="2.0.0">
 	<description>for Metagenomics Projects</description>
-	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $disc_word $disc_type $filter_query</command>
+	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $disc_word $disc_type $filter_query ${GALAXY_DATA_INDEX_DIR}</command>
 	<inputs>
 		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
 		<param name="source_select" type="select" display="radio" label="Target database">

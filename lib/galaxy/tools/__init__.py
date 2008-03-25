@@ -991,7 +991,7 @@ class Tool:
         # TODO: path munging for cluster/dataset server relocatability
         param_dict['__new_file_path__'] = os.path.abspath(self.app.config.new_file_path)
         # The following points to location (xxx.loc) files which are pointers to locally cached data
-        param_dict['GALAXY_DATA_INDEX_DIR'] = os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
+        param_dict['GALAXY_DATA_INDEX_DIR'] = self.app.config.tool_data_path
         # Return the dictionary of parameters
         return param_dict
     

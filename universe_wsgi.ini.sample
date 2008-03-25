@@ -48,6 +48,7 @@ new_file_path = database/tmp
 # Tools
 tool_config_file = tool_conf.xml
 tool_path = tools
+tool_data_path = tool-data
 
 # Datatype converters
 datatype_converters_config_file = datatype_converters_conf.xml

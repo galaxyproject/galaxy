@@ -1,10 +1,10 @@
 import os
 
-def load_maf_data( sep='\t' ):
+def load_maf_data( GALAXY_DATA_INDEX_DIR, sep='\t' ):
     # FIXME: this function is duplicated in the DynamicOptions class.  It is used here only to
     # set data.name in exec_before_job(). 
     maf_sets = {}
-    filename = "%s/maf_index.loc" % os.environ.get( 'GALAXY_DATA_INDEX_DIR' )
+    filename = "%s/maf_index.loc" % GALAXY_DATA_INDEX_DIR
     for i, line in enumerate( file( filename ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
@@ -27,7 +27,7 @@ def load_maf_data( sep='\t' ):
                 continue
     return maf_sets
 def exec_before_job(app, inp_data, out_data, param_dict, tool):
-    maf_sets = load_maf_data()
+    maf_sets = load_maf_data( app.config.tool_data_path, sep='\t'  )
     if param_dict[ 'maf_source_type' ][ 'maf_source' ] == "cached":
         for name, data in out_data.items():
             try:
