@@ -1,5 +1,5 @@
-<tool id="Fetch Taxonomic Ranks" name="Fetch Taxonomic Ranks" version="1.1.0">
-  <description>for a list of GIs</description>
+<tool id="Fetch Taxonomic Ranks" name="Fetch" version="1.1.0">
+  <description>taxonomic representation</description>
   <command interpreter="python">gi2taxonomy.py $input $giField $idField $out_file1</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Fetch sequences corresponding to Query"></param>
