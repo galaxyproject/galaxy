@@ -102,17 +102,19 @@ def __main__():
             read_next_line = test_fh.readline()
             fields = read_next_line.split()
             for score in fields:
-                if score.isdigit():
+                try: 
+                    x = int(score)
                     seq_method = '454'
-                else:
+                except:
                     seq_method = 'Failed'
                     break
         elif len(read_scorefile.split('\t')) > 0:
             fields = read_scorefile.split()
             for score in fields:
-                if score.isdigit():
+                try:
+                    x = int(score)
                     seq_method = 'solexa'
-                else:
+                except:
                     seq_method = 'Failed'
                     break
         else:

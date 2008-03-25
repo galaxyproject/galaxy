@@ -153,7 +153,9 @@ def __main__():
                                 score = None
                             else:
                                 for each_score in score_line.split():
-                                    if each_score.isdigit() is False:
+                                    try:
+                                        each_score = int(each_score)
+                                    except:
                                         stop_err('Score file contains non-numerical values at line %d' %(i))
                                 if not score: score = score_line
                                 else:
@@ -172,7 +174,9 @@ def __main__():
                         continue
                     if ( not score_line.startswith('>')):
                         for each_score in score_line.split():
-                            if each_score.isdigit() is False:
+                            try:
+                                each_score = int(each_score)
+                            except:
                                 stop_err('Score file contains non-numerical values at line %d' %(i))
                         if not score: score = score_line
                         else:
