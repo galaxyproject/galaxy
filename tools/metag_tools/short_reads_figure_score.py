@@ -89,21 +89,38 @@ def __main__():
     else: unzip_infile = infile_score_name
 
     # detect whether it's tabular or fasta format
-    seq_method = ''
+    seq_method = None
     score_file = unzip_infile
     test_fh = open(score_file,'r')
-    while seq_method == '': 
+    while seq_method is None: 
         read_scorefile = test_fh.readline()
         if read_scorefile.startswith('#'):
             continue 
+        if not read_scorefile:
+            continue
         elif read_scorefile.startswith(">"):
             read_next_line = test_fh.readline()
-            if read_next_line.split()[0].isdigit():
-                seq_method = '454'
+            fields = read_next_line.split()
+            for score in fields:
+                if score.isdigit():
+                    seq_method = '454'
+                else:
+                    seq_method = 'Failed'
+                    break
         elif len(read_scorefile.split('\t')) > 0:
-            seq_method = 'solexa'
+            fields = read_scorefile.split()
+            for score in fields:
+                if score.isdigit():
+                    seq_method = 'solexa'
+                else:
+                    seq_method = 'Failed'
+                    break
         else:
-            stop_err('Your input file format does not fit the requirement. Please either use fasta format or tabular format')
+            stop_err('Your input file format does not fit the requirement. Please use either fasta format or tabular format')
+            
+    if seq_method == 'Failed':
+        stop_err('Unable to determine the file format. Please use either fasta-like format (except title lines, the file contains only numeric values) or tabular format')
+        
     test_fh.close()
     
     # quantile array
@@ -124,6 +141,8 @@ def __main__():
         for i, line in enumerate(open(score_file)):
             line = line.rstrip('\r\n')
             if line.startswith('#'):
+                continue
+            if not line:
                 continue
             tmp_score = line.split('\t')
             if (tmp_read_length == 0): tmp_read_length = len(tmp_score)

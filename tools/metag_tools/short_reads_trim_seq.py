@@ -52,17 +52,21 @@ def trim_seq(seq, score, specific_argument, trim_score, threshold):
         keep_homopolymers = specific_argument
                 
     new_trim_seq = ''
-            
+    max_segment = 0
+    
     for i in range(len(seq)):
-        if (i >= len(score)): score.append(0) 
+        if i >= len(score):
+            score.append(-1)
+                
         if (int(score[i]) >= trim_score):
             pass_nuc = seq[i:(i+1)]
         else:
             # keep homopolymers?
             if keep_homopolymers == 'yes' and (((i == 0) or (seq[i:(i+1)].lower() == seq[(i-1):i].lower()))):
-                    pass_nuc = seq[i:(i+1)]
+                pass_nuc = seq[i:(i+1)]
             else:
-                pass_nuc = ' '             
+                pass_nuc = ' '
+                         
         new_trim_seq = new_trim_seq + pass_nuc
             
         # find the max substrings
@@ -136,12 +140,11 @@ def __main__():
                         score = None
                         while to_find_score:
                             score_line = score_fh.readline().rstrip('\r\n')
-                            if not score_line: break
                             if score_line.startswith('#'):
                                 continue
                             if (score_line.startswith('>')):
                                 if score:
-                                    score = score.split()       
+                                    score = score.split()
                                     new_trim_seq_segments = trim_seq(seq, score, special_argument, threshold_trim, threshold_report)                                            
                                     # output trimmed sequence to a fasta file
                                     segments = new_trim_seq_segments.split(',')
@@ -149,6 +152,9 @@ def __main__():
                                     to_find_score = False    
                                 score = None
                             else:
+                                for each_score in score_line.split():
+                                    if each_score.isdigit() is False:
+                                        stop_err('Score file contains non-numerical values at line %d' %(i))
                                 if not score: score = score_line
                                 else:
                                     score = score + ' ' + score_line
@@ -165,6 +171,9 @@ def __main__():
                     if score_line.startswith('#'):
                         continue
                     if ( not score_line.startswith('>')):
+                        for each_score in score_line.split():
+                            if each_score.isdigit() is False:
+                                stop_err('Score file contains non-numerical values at line %d' %(i))
                         if not score: score = score_line
                         else:
                             score = score + ' ' + score_line
@@ -186,11 +195,14 @@ def __main__():
                 score = []
                 for each_base in each_loc:
                     each_nuc_error = each_base.split()
-                    each_nuc_error[0] = int(each_nuc_error[0])
-                    each_nuc_error[1] = int(each_nuc_error[1])
-                    each_nuc_error[2] = int(each_nuc_error[2])
-                    each_nuc_error[3] = int(each_nuc_error[3])
-                    big = max(each_nuc_error)
+                    try:
+                        each_nuc_error[0] = int(each_nuc_error[0])
+                        each_nuc_error[1] = int(each_nuc_error[1])
+                        each_nuc_error[2] = int(each_nuc_error[2])
+                        each_nuc_error[3] = int(each_nuc_error[3])
+                        big = max(each_nuc_error)
+                    except:
+                        stop_err('Invalid value in score file at line %d' %(i))
                     score.append(big)
                 new_trim_seq_segments = trim_seq(seq, score, special_argument, threshold_trim, threshold_report)
                 # output trimmed sequence to a fasta file
