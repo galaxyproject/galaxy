@@ -4,6 +4,6 @@
 #
 #TODO: fill in this format
 #
-nt	/depot/data2/galaxy/blastdb/nt/nt.chunk.00 /depot/data2/galaxy/blastdb/nt/nt.chunk.01 /depot/data2/galaxy/blastdb/nt/nt.chunk.02 /depot/data2/galaxy/blastdb/nt/nt.chunk.03 /depot/data2/galaxy/blastdb/nt/nt.chunk.04 /depot/data2/galaxy/blastdb/nt/nt.chunk.05 /depot/data2/galaxy/blastdb/nt/nt.chunk.06 /depot/data2/galaxy/blastdb/nt/nt.chunk.07 /depot/data2/galaxy/blastdb/nt/nt.chunk.08 /depot/data2/galaxy/blastdb/nt/nt.chunk.09 /depot/data2/galaxy/blastdb/nt/nt.chunk.10 /depot/data2/galaxy/blastdb/nt/nt.chunk.11 /depot/data2/galaxy/blastdb/nt/nt.chunk.12 /depot/data2/galaxy/blastdb/nt/nt.chunk.13 /depot/data2/galaxy/blastdb/nt/nt.chunk.14 /depot/data2/galaxy/blastdb/nt/nt.chunk.15 /depot/data2/galaxy/blastdb/nt/nt.chunk.16 /depot/data2/galaxy/blastdb/nt/nt.chunk.17 /depot/data2/galaxy/blastdb/nt/nt.chunk.18 /depot/data2/galaxy/blastdb/nt/nt.chunk.19 /depot/data2/galaxy/blastdb/nt/nt.chunk.20 /depot/data2/galaxy/blastdb/nt/nt.chunk.21 /depot/data2/galaxy/blastdb/nt/nt.chunk.22 /depot/data2/galaxy/blastdb/nt/nt.chunk.23
+nt  /depot/data2/galaxy/blastdb/nt/nt.chunk
 nr	/depot/data2/galaxy/blastdb/nr/nr.chunk.0 /depot/data2/galaxy/blastdb/nr/nr.chunk.1 /depot/data2/galaxy/blastdb/nr/nr.chunk.2
 test	/depot/data2/galaxy/blastdb/test/test.fa

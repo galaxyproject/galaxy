@@ -49,9 +49,9 @@ def __main__():
     
     # prepare the database
     db = {}
-    db_file = open(DB_LOC, "r")
-    for i, line in enumerate(db_file):
+    for i, line in enumerate(file(DB_LOC)):
         line = line.rstrip('\r\n')
+        if line.startswith('#'): continue
         fields = line.split()
         db[(fields[0])] = []
         for j in xrange(1, len(fields)):
@@ -61,6 +61,11 @@ def __main__():
     retcode = subprocess.call('which megablast 2>&1', shell='True')
     if retcode < 0:
         stop_err("Cannot locate megablast.")
+    
+    try:    
+        assert db.has_key(db_build) is True
+    except:
+        stop_err('Cannot locate the target database. Please check your location file.')
         
     for chunk in db[(db_build)]:
         megablast_arguments = ["megablast", "-d", chunk, "-i", query_filename]

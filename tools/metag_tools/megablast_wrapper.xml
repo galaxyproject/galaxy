@@ -5,9 +5,9 @@
 		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
 		<param name="source_select" type="select" display="radio" label="Target database">
 			<option value="test">Ecoli_K12</option>
-			<option value="nt">nt (for nucleotides)</option>
+			<option value="nt">nt</option>
 		</param> 
-		<param name="word_size" type="select" label="Word size (-W, length of best perfect match)">
+		<param name="word_size" type="select" label="Word size (-W)" help="Size of best perfect match">
 			<option value="28">28</option>
 			<option value="16">16</option>
 		</param>
@@ -55,17 +55,19 @@ Other databases and megablast parameters will be available shortly.
 
 -----
 
-**Reference**
-
- **megablast**: Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
-
- Corresponding command line options:
+**Parameters**
 
 - **-W**: Word size
 - **-p**: Identity percentage cut-off
 - **-t**: Length of a discontiguous word template
 - **-N**: Type of a discontiguous word template
 - **-F**: Filter query sequence
+
+-----
+
+**Reference**
+
+ **megablast**: Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
 
 	</help>
 </tool>

@@ -62,6 +62,7 @@ def __main__():
     try:
         test = int(sys.argv[7])
         one_off = sys.argv[7]
+        assert test >= 0 and test <= int(tile_size)
     except:
         stop_err('Invalid value for mismatch numbers in the word')
         
