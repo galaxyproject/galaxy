@@ -399,15 +399,15 @@ class TwillTestCase( unittest.TestCase ):
                     changed = False
                     for elem in kwd[control.name]:
                         """
-                        For file parameter, control.value is the index of the file list, but elem is the filename.
-                        The following loop gets the filename of that index.
+                        For DataToolParameter, control.value is the index of the DataToolParameter select list, 
+                        but elem is the filename.  The following loop gets the filename of that index.
                         """
                         param_text = ''
-                        for param in tc.show().split('<select') : 
+                        for param in tc.show().split('<select'):
                             param = ('<select' + param.split('select>')[0] + 'select>').replace('selected', 'selected="yes"')
-                            if param.find('on_chang') != -1 and param.find('name="%s"' % control.name) != -1: 
+                            if param.find('on_chang') != -1 and param.find('name="%s"' % control.name) != -1:
                                 tree = ElementTree.fromstring(param)
-                                for option in tree.findall('option') : 
+                                for option in tree.findall('option'): 
                                     if option.get('value') in control.value:
                                         param_text = option.text.strip()
                                         break
@@ -417,10 +417,14 @@ class TwillTestCase( unittest.TestCase ):
                             changed = True
                             break
                     if changed:
-                        #Clear Control and set to proper value
+                        # Clear Control and set to proper value - the command: 
+                        # formvalue <formnum> <fieldname> <value>
+                        # sets the given field in the given form to the given value. 
+                        # For read-only form widgets/controls, the click may be recorded for use by submit, 
+                        # but the value is not changed unless the 'config' command has changed the default behavior.
                         control.clear()
                         for elem in kwd[control.name]:
-                            tc.fv(str(form), str(i+1), str(elem) )                        
+                            tc.formvalue(str(form), str(i+1), str(elem) )                        
                         #Create a new submit control, allows form to refresh, instead of going to next page
                         control = ClientForm.SubmitControl('SubmitControl','___refresh_grouping___',{'name':'refresh_grouping'})
                         control.add_to_form(tc.showforms()[form-1])
@@ -439,10 +443,18 @@ class TwillTestCase( unittest.TestCase ):
                 if control.name == key:
                     control.clear()
                     if control.is_of_kind("text"):
-                        tc.fv(str(form), str(i+1), ",".join(value) )
+                        # set the given field in the given form to the given value. 
+                        tc.formvalue(str(form), str(i+1), ",".join(value) )
                     else:
-                        for elem in value:
-                            tc.fv(str(form), str(i+1), str(elem) )
+                        try:
+                            for elem in value:
+                                tc.formvalue(str(form), str(i+1), str(elem) )
+                        except Exception, exc:
+                            errmsg = "Attempting to set field '%s' to value '%s' threw exception: '%s'\n" % ( str( key ), str( elem ), str( exc ) )
+                            errmsg += "control: %s\n" % str( control )
+                            errmsg += "If the above control has a dependency which is a DataToolparameter, make sure to include a proper 'ftype'\n"
+                            errmsg += "attribute to the tag for the control within the <test> tag set.\n"
+                            raise AssertionError( errmsg )
                     break
         tc.submit(button)
 
@@ -457,7 +469,7 @@ class TwillTestCase( unittest.TestCase ):
     """Functions associated with Galaxy tools"""
     def run_tool( self, tool_id, **kwd ):
         tool_id = tool_id.replace(" ", "+")
-        """Runs the tool 'tool_id' and pass it the key/values from the *kwd"""
+        """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
         self.visit_url( "%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
         tc.find('runtool_btn')
         self.submit_form(**kwd)

@@ -23,7 +23,7 @@
   <tests>
     <test>
       <param name="input1" value="4.maf"/>
-      <param name="species" values="bosTau2,canFam2,hg17,panTro1,rheMac2,rn3"/>
+      <param name="species" value="bosTau2,canFam2,hg17,panTro1,rheMac2,rn3"/>
       <param name="allow_partial" value="0"/>
       <param name="min_species" value="0"/>
       <output name="out_file1" file="cf_maf_limit_to_species.dat"/>

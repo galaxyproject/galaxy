@@ -26,9 +26,9 @@
     <tests>
       <test>
         <param name="input1" value="dnds_inp.fasta"/>
-        <param name="tree" values="((human, chimp), mouse)"/>
-        <param name="model" values="000000"/>
-        <param name="analysis" values="global"/>
+        <param name="tree" value="((human, chimp), mouse)"/>
+        <param name="model" value="000000"/>
+        <param name="analysis" value="global"/>
         <output name="out_file1" file="dnds_out.tabular"/>
       </test>
     </tests>

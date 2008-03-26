@@ -32,9 +32,9 @@
     <tests>
       <test>
         <param name="input1" value="branchlength_fasta_in.dat"/>
-        <param name="tree" values="((hg17,panTro1),(mm5,rn3),canFam1)"/>
-        <param name="model" values="012345"/>
-        <param name="base_freq" values="Observed"/>
+        <param name="tree" value="((hg17,panTro1),(mm5,rn3),canFam1)"/>
+        <param name="model" value="012345"/>
+        <param name="base_freq" value="Observed"/>
         <output name="out_file1" file="branchlength_out.dat"/>
       </test>
     </tests>

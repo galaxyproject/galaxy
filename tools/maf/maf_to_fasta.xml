@@ -37,17 +37,17 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="3.maf"/>
-      <param name="species" values="canFam1"/>
-      <param name="fasta_type" values="concatenated"/>
-      <output name="out_file1" file="cf_maf2fasta_concat.dat"/>
+      <param name="input1" value="3.maf" ftype="maf"/>
+      <param name="species" value="canFam1"/>
+      <param name="fasta_type" value="concatenated"/>
+      <output name="out_file1" file="cf_maf2fasta_concat.dat" ftype="fasta"/>
     </test>
     <test>
-      <param name="input1" value="4.maf"/>
-      <param name="species" values="hg17,panTro1,rheMac2,rn3,mm7,canFam2,bosTau2,dasNov1"/>
+      <param name="input1" value="4.maf" ftype="maf"/>
+      <param name="species" value="hg17,panTro1,rheMac2,rn3,mm7,canFam2,bosTau2,dasNov1"/>
       <param name="complete_blocks" value="partial_allowed"/>
-      <param name="fasta_type" values="multiple"/>
-      <output name="out_file1" file="cf_maf2fasta.dat"/>
+      <param name="fasta_type" value="multiple"/>
+      <output name="out_file1" file="cf_maf2fasta.dat" ftype="fasta"/>
     </test>
   </tests>
   <help>
