@@ -3,7 +3,7 @@
     <command interpreter="python">find_diag_hits.py $input1 $id_col $rank_list $out_format $out_file1</command>
     <inputs>
         <param format="taxonomy" name="input1" type="data" label="Find diagnostic hits in"/>
-        <param name="id_col" type="data_column" data_ref="input" numerical="False" label="Select column with sequence id" />
+        <param name="id_col" type="data_column" data_ref="input1" numerical="False" label="Select column with sequence id" />
         <param name="rank_list" type="select" display="checkboxes" multiple="true" label="select taxonomic ranks">
             <option value="superkingdom">Superkingdom</option>
             <option value="kingdom">Kingdom</option>
@@ -37,11 +37,11 @@
     </outputs>
       <tests>
     <test>
-      <param name="input1" value="taxonomyGI.dat" type="taxonomy"/>
+      <param name="input1" value="taxonomyGI.dat" ftype="taxonomy"/>
       <param name="id_col" value="1" />
       <param name="rank_list" value="order,genus" />
       <param name="out_format" value="counts" />
-      <output name="out_file1" file="find_diag_hits.dat"/>
+      <output name="out_file1" file="find_diag_hits.dat" ftype="tabular"/>
     </test> 
   </tests>
 
