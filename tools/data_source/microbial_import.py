@@ -24,7 +24,7 @@ while have_none:
 #create dictionary keyed by uid of tuples of (displayName,filePath,build) for all files
 available_files = {}
 try:
-    filename = sys.argv[9]
+    filename = sys.argv[-1]
     for i, line in enumerate( file( filename ) ):
         if not line or line[0:1] == "#" : continue
         fields = line.split('\t')

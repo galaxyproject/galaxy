@@ -1,12 +1,12 @@
 
-def load_microbial_data( GALAXY_INDEX_DATA_DIR, sep='\t' ):
+def load_microbial_data( GALAXY_DATA_INDEX_DIR, sep='\t' ):
     # FIXME: this function is duplicated in the DynamicOptions class.  It is used here only to
     # set data.name in exec_after_process(). 
     microbe_info= {}
     orgs = {}
     
     filename = "%s/microbial_data.loc" % GALAXY_DATA_INDEX_DIR
-    for i, line in enumerate( file( filename ) ):
+    for i, line in enumerate( open( filename ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
             fields = line.split( sep )
@@ -96,7 +96,8 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
     if not (kingdom or org):
         print "Parameters are not available."
     
-    microbe_info = load_microbial_data( param_dict.get( 'GALAXY_INDEX_DATA_DIR' ), sep='\t' )
+    GALAXY_DATA_INDEX_DIR = app.config.tool_data_path
+    microbe_info = load_microbial_data( GALAXY_DATA_INDEX_DIR, sep='\t' )
     new_stdout = ""
     split_stdout = stdout.split("\n")
     basic_name = ""
