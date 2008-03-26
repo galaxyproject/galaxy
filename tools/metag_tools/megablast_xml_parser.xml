@@ -1,6 +1,6 @@
 <tool id="megablast_xml_parser" name="Parse megablast xml output">
 <description> </description>
-<command interpreter="python">megablast_xml_parser.py $input1 $output1</command>
+<command interpreter="python2.4">megablast_xml_parser.py $input1 $output1</command>
 <inputs>
 	<param name="input1" type="data" format="txt" label="Megablast XML Output" />
 </inputs>
@@ -9,7 +9,7 @@
 </outputs>
 <tests>
 	<test>
-		<param name="input1" value="megablast_xml_parser_test1.txt" />
+		<param name="input1" value="megablast_xml_parser_test1.gz" />
 		<output name="output1" file="megablast_xml_parser_test1.out" ftype="tabular" />
 	</test>
 </tests>

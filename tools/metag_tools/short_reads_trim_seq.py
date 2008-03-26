@@ -199,8 +199,8 @@ def __main__():
                 
                 # the last column of solexa file is the sequence column
                 seq = line.split()[-1]
-                seq.replace('.','N')
-                seq.replace('-','N')
+                seq = seq.replace('.','N')
+                seq = seq.replace('-','N')
                 try:
                     assert seq.isalpha() is True
                 except:
