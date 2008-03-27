@@ -265,5 +265,7 @@
     <tool file="metag_tools/short_reads_trim_seq.xml" />
     <tool file="metag_tools/blat_wrapper.xml" />
     <tool file="metag_tools/megablast_wrapper.xml" />
+    <tool file="metag_tools/megablast_xml_parser.xml" />
+    <tool file="metag_tools/blat_coverage_report.xml" />
   </section>
 </toolbox>

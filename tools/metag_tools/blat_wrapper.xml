@@ -30,7 +30,7 @@
 	<tests>
 		<test>
 		<param name="source_select" value="database" />
-		<param name="dbkey" value="eschColi_K12_1" />
+		<param name="dbkey" value="eschColi_K12" />
 		<param name="input_query" value="blat_wrapper_test1.fa" ftype="fasta"/>
 		<param name="iden" value="90.0" />
 		<param name="tile_size" value="11" />
