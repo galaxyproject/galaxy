@@ -57,6 +57,7 @@ class Job( object ):
         self.input_datasets = []
         self.output_datasets = []
         self.state = Job.states.NEW
+        self.info = None
         self.job_runner_name = None
         self.job_runner_external_id = None
     def add_parameter( self, name, value ):

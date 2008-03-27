@@ -362,9 +362,9 @@ class JobWrapper( object ):
             if info:
                 dataset.info = info
             dataset.flush()
+        if info:
+            job.info = info
         job.state = state
-        if state == model.Job.states.ERROR and info:
-            job.stderr = info
         job.flush()
 
     def set_runner( self, runner_url, external_id ):
