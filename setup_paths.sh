@@ -7,12 +7,19 @@ export MACHTYPE LC_ALL
 KERNEL=`uname -s | tr "A-Z" "a-z"`
 ARCH="$KERNEL-$MACHTYPE"
 
-PYTHON_UCS=`./scripts/check_python_ucs.py`
-
-echo "Architecture appears to be $ARCH $PYTHON_UCS"
+PLATFORMS=`$GALAXY_PYTHON ./scripts/get_platforms.py`
 
 UNIVERSE_HOME=`pwd`
-PYTHONPATH=$UNIVERSE_HOME/lib:$UNIVERSE_HOME/eggs/$PYTHON_UCS:$UNIVERSE_HOME/eggs
+PYTHONPATH=$UNIVERSE_HOME/lib
+for PLATFORM in $PLATFORMS; do
+    echo "Using eggs in $PLATFORM"
+    PYTHONPATH=$PYTHONPATH:$UNIVERSE_HOME/eggs/$PLATFORM
+done
+
+$GALAXY_PYTHON ./scripts/check_eggs.py
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 
 export UNIVERSE_HOME PYTHONPATH
 

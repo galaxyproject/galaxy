@@ -1,6 +1,7 @@
 #!/bin/sh
 
-source setup_paths.sh
+. ./scripts/get_python.sh
+. ./setup_paths.sh
 
 # Create directories
 CREATE_DIRS="
@@ -14,4 +15,4 @@ for CREATE_DIR in $CREATE_DIRS; do
     fi
 done
 
-python2.4 ./scripts/paster.py serve universe_wsgi.ini $@
+$GALAXY_PYTHON ./scripts/paster.py serve universe_wsgi.ini $@

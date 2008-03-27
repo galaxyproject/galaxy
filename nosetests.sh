@@ -1,7 +1,9 @@
 #!/bin/sh
 
-source setup_paths.sh
+. ./scripts/get_python.sh
+. ./setup_paths.sh
 
-export PYTHONPATH=$PYTHONPATH:eggs/NoseHTML-0.2-py2.4.egg
+pyver=`$GALAXY_PYTHON -c 'import sys; print sys.version[:3]'`
+export PYTHONPATH=$PYTHONPATH:eggs/py$pyver-noplatform/NoseHTML-0.2-py$pyver.egg
 
-python2.4 ./scripts/nosetests.py $@
+$GALAXY_PYTHON ./scripts/nosetests.py $@
