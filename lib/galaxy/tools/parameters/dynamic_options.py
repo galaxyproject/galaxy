@@ -10,8 +10,8 @@ log = logging.getLogger(__name__)
 
 class DynamicOptions( object ):
     """Handles dynamically generated SelectToolParameter options"""
-    def __init__( self, elem, parameter_type=None  ):
-        self.parameter_type = parameter_type
+    def __init__( self, elem, tool_param  ):
+        self.tool_param = tool_param
         self.data_ref = None
         self.param_ref = None
         self.data_file_path = None
@@ -34,7 +34,7 @@ class DynamicOptions( object ):
             validator_type = validator.get( 'type', None )
             assert validator_type is not None, "Required 'type' attribute missing from validator"
             validator_type = validator_type.strip()
-            self.validators.append( validation.Validator.from_element( validator ) )
+            self.validators.append( validation.Validator.from_element( self.tool_param, validator ) )
 
         # Parse the filter tags
         self.filters = elem.findall( 'filter' )
@@ -186,7 +186,7 @@ class DynamicOptions( object ):
             return self.generate_from_dataset( dataset_file_name, self.value_col, sep )
         elif meta_key == 'dbkey':
             dbkey = filters[ 'data_meta' ][ 'meta_value' ]
-            if self.parameter_type == basic.DataToolParameter:
+            if type( self.tool_param ) == basic.DataToolParameter:
                 return meta_key, dbkey
             meta_key_col = filters[ 'data_meta' ][ 'meta_key_col' ]
             return self.generate_for_build( dbkey, meta_key_col, self.name_col, self.value_col, sep )

@@ -13,9 +13,9 @@ class Validator( object ):
     A validator checks that a value meets some conditions OR raises ValueError
     """
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         type = elem.get( 'type' )
-        return validator_types[type].from_element( elem )
+        return validator_types[type].from_element( param, elem )
     def validate( self, value, history=None ):
         raise TypeError( "Abstract Method" )
         
@@ -37,7 +37,7 @@ class RegexValidator( Validator ):
     ValueError: Not gonna happen
     """
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         return cls( elem.get( 'message' ), elem.text )
     def __init__( self, message, expression ):
         self.message = message
@@ -66,7 +66,7 @@ class ExpressionValidator( Validator ):
     ValueError: Not gonna happen
     """
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         return cls( elem.get( 'message' ), elem.text )
     def __init__( self, message, expression ):
         self.message = message
@@ -95,7 +95,7 @@ class InRangeValidator( Validator ):
     ValueError: Not gonna happen
     """
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ), elem.get( 'min' ), elem.get( 'max' ) )
     def __init__( self, message, min, max ):
         self.message = message or ( "Value must be between %f and %f" % ( min, max ) )
@@ -127,7 +127,7 @@ class LengthValidator( Validator ):
     ValueError: Must have length no more than 8
     """
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ), elem.get( 'min', None ), elem.get( 'max', None ) )
     def __init__( self, message, min, max ):
         self.message = message
@@ -150,7 +150,7 @@ class DatasetOkValidator( Validator ):
     def __init__( self, message=None ):
         self.message = message
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ) )
     def validate( self, value, history=None ):
         if value and value.state != model.Dataset.states.OK:
@@ -165,7 +165,7 @@ class MetadataValidator( Validator ):
     def __init__( self, message=None ):
         self.message = message
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ) )
     def validate( self, value, history=None ):
         if value and value.missing_meta():
@@ -180,7 +180,7 @@ class UnspecifiedBuildValidator( Validator ):
     def __init__( self, message=None ):
         self.message = message
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ) )
     def validate( self, value, history=None ):
         if value:
@@ -197,7 +197,7 @@ class NoOptionsValidator( Validator ):
     def __init__( self, message=None ):
         self.message = message
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ) )
     def validate( self, value, history=None ):
         if value is None:
@@ -210,10 +210,10 @@ class MetadataInFileColumnValidator( Validator ):
     Validator that checks if the value for a dataset's metadata item exists in a file.
     """
     @classmethod
-    def from_element( cls, elem ):
+    def from_element( cls, param, elem ):
         filename = elem.get( "filename", None )
         if filename:
-            filename = filename.strip()
+            filename = "%s/%s" % ( param.tool.app.config.tool_data_path, filename.strip() )
         metadata_name = elem.get( "metadata_name", None )
         if metadata_name:
             metadata_name = metadata_name.strip()
@@ -228,7 +228,6 @@ class MetadataInFileColumnValidator( Validator ):
         self.metadata_name = metadata_name
         self.message = message
         self.valid_values = []
-        #filename = "%s/%s" % ( GALAXY_DATA_INDEX_DIR, filename )
         for line in open( filename ):
             if line_startswith is None or line.startswith( line_startswith ):
                 fields = line.split( split )

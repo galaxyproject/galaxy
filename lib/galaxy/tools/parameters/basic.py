@@ -35,7 +35,7 @@ class ToolParameter( object ):
         self.dependent_params = []
         self.validators = []
         for elem in param.findall("validator"):
-            self.validators.append( validation.Validator.from_element( elem ) )
+            self.validators.append( validation.Validator.from_element( self, elem ) )
 
     def get_label( self ):
         """Return user friendly name for the parameter"""
@@ -442,7 +442,7 @@ class SelectToolParameter( ToolParameter ):
         if options is None:
             self.options = None
         else:
-            self.options = dynamic_options.DynamicOptions( options, parameter_type=type( self ) )
+            self.options = dynamic_options.DynamicOptions( options, self )
             for validator in self.options.validators:
                 self.validators.append( validator )
         if self.dynamic_options is None and self.options is None:
@@ -755,7 +755,7 @@ class DataToolParameter( ToolParameter ):
         if options is None:
             self.options = None
         else:
-            self.options = dynamic_options.DynamicOptions( options, parameter_type=type( self ) )
+            self.options = dynamic_options.DynamicOptions( options, self )
         self.is_dynamic = self.options is not None
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
