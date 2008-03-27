@@ -16,9 +16,12 @@ for PLATFORM in $PLATFORMS; do
     PYTHONPATH=$PYTHONPATH:$UNIVERSE_HOME/eggs/$PLATFORM
 done
 
-$GALAXY_PYTHON ./scripts/check_eggs.py
-if [ $? -ne 0 ]; then
-    exit 1
+# skip egg check for buildbot
+if [ "$USER" != "buildbot" ]; then
+    $GALAXY_PYTHON ./scripts/check_eggs.py
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
 fi
 
 export UNIVERSE_HOME PYTHONPATH
