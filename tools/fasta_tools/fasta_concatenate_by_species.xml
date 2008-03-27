@@ -1,0 +1,62 @@
+<tool id="fasta_concatenate0" name="Concatenate FASTA" version="0.0.0">
+  <description>alignment by species</description>
+  <command interpreter="python">fasta_concatenate_by_species.py $input1 $out_file1</command>
+  <inputs>
+    <param name="input1" type="data" format="fasta" label="FASTA alignment"/>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="fasta"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="cf_maf2fasta.dat" />
+      <output name="out_file1" file="fasta_concatenate_out.fasta" />
+    </test>
+  </tests>
+  <help>
+This tools attempts to parse FASTA headers to determine the species for each sequence in a multiple FASTA alignment.
+It then linearly concatenates the sequences for each species in the file, creating one sequence per determined species.
+
+**Example**
+
+Starting FASTA::
+  
+  >hg18.chr1(+):10016339-10016341|hg18_0
+  GT
+  >panTro2.chr1(+):10195380-10195382|panTro2_0
+  GT
+  >rheMac2.chr1(+):13119747-13119749|rheMac2_0
+  GT
+  >mm8.chr4(-):148269679-148269681|mm8_0
+  GT
+  >canFam2.chr5(+):66213635-66213637|canFam2_0
+  GT
+  
+  >hg18.chr1(-):100323677-100323679|hg18_1
+  GT
+  >panTro2.chr1(-):101678671-101678673|panTro2_1
+  GT
+  >rheMac2.chr1(-):103154011-103154013|rheMac2_1
+  GT
+  >mm8.chr3(+):116620616-116620618|mm8_1
+  GT
+  >canFam2.chr6(+):52954092-52954094|canFam2_1
+  GT
+  
+
+
+Becomes::
+  
+  >hg18
+  GTGT
+  >panTro2
+  GTGT
+  >rheMac2
+  GTGT
+  >mm8
+  GTGT
+  >canFam2
+  GTGT
+
+</help>
+</tool>

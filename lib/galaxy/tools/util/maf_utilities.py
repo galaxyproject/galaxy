@@ -327,3 +327,63 @@ def get_fasta_header( component, attributes = {}, suffix = None ):
     else:
         header = "%s%s" % ( header, bx.align.src_split( component.src )[ 0 ] )
     return header
+
+def get_attributes_from_fasta_header( header ):
+    if not header: return {}
+    attributes = {}
+    header = header.lstrip( '>' )
+    header = header.strip()
+    fields = header.split( '|' )
+    try:
+        region = fields[0]
+        region = region.split( '(', 1 )
+        temp = region[0].split( '.', 1 )
+        attributes['species'] = temp[0]
+        if len( temp ) == 2:
+            attributes['chrom'] = temp[1]
+        else:
+            attributes['chrom'] = temp[0]
+        region = region[1].split( ')', 1 )
+        attributes['strand'] = region[0]
+        region = region[1].lstrip( ':' ).split( '-' )
+        attributes['start'] = int( region[0] )
+        attributes['end'] = int( region[1] )
+    except:
+        #fields 0 is not a region coordinate
+        pass
+    if len( fields ) > 2:
+        for i in xrange( 1, len( fields ) - 1 ):
+            prop = fields[i].split( '=' )
+            attributes[ prop[0] ] = prop[1]
+    if len( fields ) > 1:
+        attributes['__suffix__'] = fields[-1]
+    return attributes
+
+def iter_fasta_alignment( filename ):
+    class fastaComponent:
+        def __init__( self, species, text = "" ):
+            self.species = species
+            self.text = text
+        def extend( self, text ):
+            self.text = self.text + text.replace( '\n', '' ).replace( '\r', '' ).strip()
+    #yields a list of fastaComponents for a FASTA file
+    f = open( filename, 'rb' )
+    components = []
+    #cur_component = None
+    while True:
+        line = f.readline()
+        if not line:
+            if components:
+                yield components
+            return
+        line = line.strip()
+        if not line:
+            if components:
+                yield components
+            components = []
+        elif line.startswith( '>' ):
+            attributes = get_attributes_from_fasta_header( line )
+            components.append( fastaComponent( attributes['species'] ) )
+        elif components:
+            components[-1].extend( line )
+
