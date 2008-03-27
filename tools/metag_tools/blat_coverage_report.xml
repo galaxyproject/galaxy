@@ -58,14 +58,14 @@
 - The report showed overall coverage of reads on each chromosome location::
  
 	##title location ref.  cov.	A       T       C       G	
-	chr		614777	A	1	A(100)	T(0)	C(0)	G(0)
-	chr		614778	A	1	A(100)	T(0)	C(0)	G(0)
-	chr		614779	A	1	A(100)	T(0)	C(0)	G(0)
-	chr		614780	A	1	A(100)	T(0)	C(0)	G(0)
-	chr		614781	C	1	A(0)	T(0)	C(100)	G(0)
-	chr		614782	A	1	A(100)	T(0)	C(0)	G(0)
-	chr		614783	C	1	A(0)	T(0)	C(100)	G(0)
-	chr		614784	C	1	A(0)	T(0)	C(100)	G(0)
+	chr	614777	A	1	A(100)	T(0)	C(0)	G(0)
+	chr	614778	A	1	A(100)	T(0)	C(0)	G(0)
+	chr	614779	A	1	A(100)	T(0)	C(0)	G(0)
+	chr	614780	A	1	A(100)	T(0)	C(0)	G(0)
+	chr	614781	C	1	A(0)	T(0)	C(100)	G(0)
+	chr	614782	A	1	A(100)	T(0)	C(0)	G(0)
+	chr	614783	C	1	A(0)	T(0)	C(100)	G(0)
+	chr	614784	C	1	A(0)	T(0)	C(100)	G(0)
 	
 	Only show part of the result.
 	

@@ -4,6 +4,7 @@
 #
 #TODO: fill in this format
 #
-nt  /depot/data2/galaxy/blastdb/nt/nt.chunk
+nt	/depot/data2/galaxy/blastdb/nt/nt.chunk
+wgs	/depot/data2/galaxy/blastdb/wgs/wgs.chunk
 nr	/depot/data2/galaxy/blastdb/nr/nr.chunk.0 /depot/data2/galaxy/blastdb/nr/nr.chunk.1 /depot/data2/galaxy/blastdb/nr/nr.chunk.2
 test	/depot/data2/galaxy/blastdb/test/test.fa

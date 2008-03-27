@@ -6,6 +6,7 @@
 		<param name="source_select" type="select" display="radio" label="Target database">
 			<option value="test">Ecoli_K12</option>
 			<option value="nt">nt</option>
+			<option value="wgs">wgs</option>
 		</param> 
 		<param name="word_size" type="select" label="Word size (-W)" help="Size of best perfect match">
 			<option value="28">28</option>
