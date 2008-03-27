@@ -452,8 +452,8 @@ class TwillTestCase( unittest.TestCase ):
                         except Exception, exc:
                             errmsg = "Attempting to set field '%s' to value '%s' threw exception: '%s'\n" % ( str( key ), str( elem ), str( exc ) )
                             errmsg += "control: %s\n" % str( control )
-                            errmsg += "If the above control has a dependency which is a DataToolparameter, make sure to include a proper 'ftype'\n"
-                            errmsg += "attribute to the tag for the control within the <test> tag set.\n"
+                            errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
+                            errmsg += "make sure to include a proper 'ftype' attribute to the tag for the control within the <test> tag set.\n"
                             raise AssertionError( errmsg )
                     break
         tc.submit(button)
