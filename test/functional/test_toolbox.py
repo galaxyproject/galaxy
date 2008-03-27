@@ -20,11 +20,21 @@ class ToolTestCase( TwillTestCase ):
         # Upload any needed files
         for fname, extra in self.testdef.required_files:
             self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ) )
-            print fname, extra
-        # Run the tool
-        all_inputs = dict( ( name, value ) for ( name, value, _ ) in self.testdef.inputs )
+            print "Uploaded file: ", fname, ", ftype: ", extra.get( 'ftype', 'auto' ), ", extra: ", extra
+        # We need to handle the case where we've uploaded a valid compressed file since the upload
+        # tool will have decompressed it on the fly.
+        all_inputs = {}
+        for name, value, _ in self.testdef.inputs:
+            if value:
+                for end in [ '.zip', '.gz' ]:
+                    if value.endswith( end ):
+                        value = value.rstrip( end )
+                        break
+            all_inputs[ name ] = value
+
         # Do the first page
         page_inputs =  self.__expand_grouping(self.testdef.tool.inputs_by_page[0], all_inputs)
+        # Run the tool
         self.run_tool( self.testdef.tool.id, **page_inputs )
         print "page_inputs (0)", page_inputs
         # Do other pages if they exist
