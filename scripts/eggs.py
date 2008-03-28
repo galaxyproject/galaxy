@@ -75,10 +75,11 @@ class Egg:
         for orig_fn in z.namelist():
             fn = ( orig_fn.split( os.path.sep, 1 ) )[1]
             abs_fn = os.path.join( dir, fn )
+            # could break things
+            if "ez_setup" in abs_fn:
+                continue
             if not os.access( os.path.dirname( abs_fn ), os.F_OK ):
                 os.makedirs( os.path.dirname( abs_fn ) )
-            if os.path.basename( abs_fn ) == "ez_setup.py":
-                continue
             otf = open( abs_fn, "wb" )
             otf.write( z.read( orig_fn ) )
             otf.close()
@@ -92,7 +93,8 @@ class Egg:
             # the top dir will now be an empty string
             if fn == "":
                 continue
-            if os.path.basename( abs_fn ) == "ez_setup.py":
+            # could break things
+            if "ez_setup" in abs_fn:
                 continue
             if fn.endswith( os.path.sep ):
                 if not os.access( os.path.dirname( abs_fn ), os.F_OK ):
