@@ -1,10 +1,12 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 """
 Script that just echos the command line.
 """
 
 import sys, os, urllib
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 BUFFER = 1048576
 

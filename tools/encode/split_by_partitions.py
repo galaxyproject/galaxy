@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Original script from /home/james/work/encode/feature_partitions/split_by_partitions.py
 
 #Usage: python(2.4) split_by_partitions.py partition_index in_file out_file chrCol startCol endCol strandCol
@@ -9,6 +9,8 @@ import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.bitset import *
 from bx.bitset_builders import *
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err( msg ):
     sys.stderr.write( msg )

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 # Greg Von Kuster
 """
 usage: %prog score_file interval_file chrom start stop [out_file] [options] 
@@ -26,6 +26,8 @@ from bx.bitset_builders import *
 from fpconst import isNaN
 from bx.cookbook import doc_optparse
 from galaxy.tools.exception_handling import *
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 class FileBinnedArrayDir( DictMixin ):
     """

@@ -1,6 +1,6 @@
 <tool id="subtract_query1" name="Subtract Whole Query">
   <description>from another query</description>
-  <command interpreter="python2.4">subtract_query.py $input1 $input2 $begin_col $end_col $output</command>
+  <command interpreter="python">subtract_query.py $input1 $input2 $begin_col $end_col $output</command>
   <inputs>
     <param format="txt" name="input2" type="data" label="Subtract" help="Second query" />
     <param format="txt" name="input1" type="data" label="from" help="First query" />

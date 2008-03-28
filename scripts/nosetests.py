@@ -1,8 +1,10 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 # EASY-INSTALL-ENTRY-SCRIPT: 'nose','console_scripts','nosetests'
 __requires__ = 'nose'
 import sys
 from pkg_resources import load_entry_point
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 sys.exit(
    load_entry_point('nose', 'console_scripts', 'nosetests')()

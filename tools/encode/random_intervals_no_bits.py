@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 #%prog bounding_region_file mask_intervals_file intervals_to_mimic_file out_file mask_chr mask_start mask_end interval_chr interval_start interval_end interval_strand use_mask allow_strand_overlaps
 import sys, random
@@ -9,6 +9,8 @@ pkg_resources.require( "bx-python" )
 import bx.intervals.io
 import bx.intervals.intersection
 import psyco_full
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 max_iters = 5
 

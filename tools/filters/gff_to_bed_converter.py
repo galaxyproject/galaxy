@@ -1,5 +1,7 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 import sys
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
     input_name = sys.argv[1]

@@ -1,6 +1,6 @@
 <tool id="lav_to_bed1" name="LAV to BED">
 <description>Converts a LAV formated file to BED format</description>
-<command interpreter="python2.4">lav_to_bed.py $lav_file $bed_file1 $bed_file2</command>
+<command interpreter="python">lav_to_bed.py $lav_file $bed_file1 $bed_file2</command>
 
   <inputs>
       <page>

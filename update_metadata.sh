@@ -1,5 +1,6 @@
 #!/bin/sh
 
-source setup_paths.sh
+. ./scripts/get_python.sh
+. ./setup_paths.sh
 
-python2.4 ./scripts/update_metadata.py universe_wsgi.ini $@
+$GALAXY_PYTHON ./scripts/update_metadata.py universe_wsgi.ini $@

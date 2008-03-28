@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 # Greg Von Kuster
 
 """
@@ -10,6 +10,8 @@ import sys, sets, re
 
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def get_lines(fname, begin_col='', end_col=''):
     lines = set([])

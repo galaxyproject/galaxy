@@ -1,6 +1,6 @@
 <tool id="laj_1" name="LAJ">
 <description>Pairwise Alignment Viewer</description>
-  <command interpreter="python2.4">LAJ.py $maf_input $out_file1</command>
+  <command interpreter="python">LAJ.py $maf_input $out_file1</command>
   <inputs>
       <param name="maf_input" type="data" format="lav" label="Alignment File" optional="False"/>
       <param name="seq_file1" type="data" format="fasta" label="First Sequence File" optional="True"/>

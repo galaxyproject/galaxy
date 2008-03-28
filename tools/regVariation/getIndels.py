@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 
 """
 Estimate INDELs for pait-wise alignments.
@@ -28,6 +28,8 @@ from fpconst import isNaN
 from bx.cookbook import doc_optparse
 from galaxy.tools.exception_handling import *
 import bx.align.maf
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():   
     # Parsing Command Line here

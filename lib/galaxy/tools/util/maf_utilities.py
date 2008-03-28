@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 """
 Provides wrappers and utilities for working with MAF files and alignments.
 """
@@ -8,6 +8,8 @@ import bx.align.maf
 import bx.intervals
 import bx.interval_index_file
 import sys, os, string, tempfile
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 #an object corresponding to a reference layered alignment
 class RegionAlignment( object ):

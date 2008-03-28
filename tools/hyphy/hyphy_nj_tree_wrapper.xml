@@ -3,7 +3,7 @@
     
     <description>Builder</description>
     
-    <command interpreter="python2.4">hyphy_nj_tree_wrapper.py $input1 $out_file1 $out_file2 $distance_metric</command>
+    <command interpreter="python">hyphy_nj_tree_wrapper.py $input1 $out_file1 $out_file2 $distance_metric</command>
     
     <inputs>
         <page>

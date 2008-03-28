@@ -1,6 +1,6 @@
 <tool id="winSplitter" name="Make windows">
   <description></description>
-  <command interpreter="python2.4">windowSplitter.py $input $size $out_file1 ${wintype.choice} ${wintype.offset} -l $input_chromCol,$input_startCol,$input_endCol,$input_strandCol</command>
+  <command interpreter="python">windowSplitter.py $input $size $out_file1 ${wintype.choice} ${wintype.offset} -l $input_chromCol,$input_startCol,$input_endCol,$input_strandCol</command>
   <inputs>
     <!--<param label="Genome" name="dbkey" type="genomebuild"/>-->
     <param format="interval" name="input" type="data" label="Select data"/>

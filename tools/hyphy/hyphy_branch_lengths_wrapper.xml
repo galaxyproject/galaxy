@@ -3,7 +3,7 @@
 	
 	<description>Estimation</description>
 	
-	<command interpreter="python2.4">hyphy_branch_lengths_wrapper.py $input1 $out_file1 "$tree" "$model" "$base_freq" "Global"</command>
+	<command interpreter="python">hyphy_branch_lengths_wrapper.py $input1 $out_file1 "$tree" "$model" "$base_freq" "Global"</command>
 	
     <inputs>
         <page>

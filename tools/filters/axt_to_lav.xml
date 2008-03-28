@@ -1,6 +1,6 @@
 <tool id="axt_to_lav_1" name="AXT to LAV">
   <description>Converts an AXT formated file to LAV format</description>
-  <command interpreter="python2.4">axt_to_lav.py ${GALAXY_DATA_INDEX_DIR}/$dbkey_1/seq/%s.nib:$dbkey_1:./static/ucsc/chrom/${dbkey_1}.len ${GALAXY_DATA_INDEX_DIR}/$dbkey_2/seq/%s.nib:$dbkey_2:./static/ucsc/chrom/${dbkey_2}.len $align_input $lav_file $seq_file1 $seq_file2</command>
+  <command interpreter="python">axt_to_lav.py ${GALAXY_DATA_INDEX_DIR}/$dbkey_1/seq/%s.nib:$dbkey_1:./static/ucsc/chrom/${dbkey_1}.len ${GALAXY_DATA_INDEX_DIR}/$dbkey_2/seq/%s.nib:$dbkey_2:./static/ucsc/chrom/${dbkey_2}.len $align_input $lav_file $seq_file1 $seq_file2</command>
   <inputs>
     <param name="align_input" type="data" format="axt" label="Alignment File" optional="False"/>
     <param name="dbkey_1" type="select" label="Genome">

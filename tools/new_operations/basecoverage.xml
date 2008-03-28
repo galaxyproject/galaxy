@@ -1,6 +1,6 @@
 <tool id="gops_basecoverage_1" name="Base Coverage">
   <description>of all intervals</description>
-  <command interpreter="python2.4">gops_basecoverage.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol</command>
+  <command interpreter="python">gops_basecoverage.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol</command>
   <inputs>
     <param format="interval" name="input1" type="data">
       <label>Compute coverage for</label>

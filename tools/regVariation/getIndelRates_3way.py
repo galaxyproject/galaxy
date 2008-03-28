@@ -1,7 +1,9 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Guruprasad Ananda
 
 import sys, os, tempfile, string
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 fout = open(sys.argv[2],'w')
 winsize = int(sys.argv[3])

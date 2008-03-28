@@ -1,6 +1,6 @@
 <tool id="gff2bed1" name="GFF-to-BED">
   <description>converter</description>
-  <command interpreter="python2.4">gff_to_bed_converter.py $input $out_file1</command>
+  <command interpreter="python">gff_to_bed_converter.py $input $out_file1</command>
   <inputs>
     <param format="gff" name="input" type="data" label="Convert this query"/>
   </inputs>

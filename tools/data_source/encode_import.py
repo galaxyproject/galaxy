@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 """
 Script that imports locally stored data as a new dataset for the user
@@ -6,7 +6,9 @@ Usage: import id outputfile
 """
 import sys, os
 from shutil import copyfile
-#tempfile, shutil
+
+assert sys.version_info[:2] >= ( 2, 4 )
+
 BUFFER = 1048576
 
 def stop_err( msg ):

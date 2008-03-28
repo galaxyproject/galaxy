@@ -1,6 +1,6 @@
 <tool id="maf_stats1" name="MAF Coverage Stats">
   <description>Alignment coverage information</description>
-  <command interpreter="python2.4">
+  <command interpreter="python">
     maf_stats.py
     #if $maf_source_type.maf_source == "user":
       $maf_source_type.maf_source $input2 $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary

@@ -1,7 +1,9 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Retreives data from UCSC and stores in a file. UCSC parameters are provided in the input/output file.
 import urllib, sys, os, gzip, tempfile, shutil
 from galaxy.datatypes import data
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err( msg ):
     sys.stderr.write( msg )

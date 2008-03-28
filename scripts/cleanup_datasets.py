@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 import sys, os, time, ConfigParser
 from datetime import datetime, timedelta
@@ -8,6 +8,8 @@ import pkg_resources
         
 pkg_resources.require( "sqlalchemy>=0.3" )
 from sqlalchemy import eagerload
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
     parser = OptionParser()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 """
 Updates dataset.size column.
 Remember to backup your database before running.
@@ -7,6 +7,7 @@ Remember to backup your database before running.
 import sys, os, ConfigParser
 import galaxy.app
 
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
     ini_file = sys.argv.pop(1)

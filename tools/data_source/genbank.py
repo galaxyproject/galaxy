@@ -1,6 +1,8 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 from Bio import GenBank
 import sys, os, sets, textwrap
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def make_fasta(rec):
     '''Creates fasta format from a record'''

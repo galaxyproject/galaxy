@@ -1,6 +1,8 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 import urllib
 import sys, os, sets
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 CHUNK   = 2**20 # 1Mb 
 MAXSIZE = CHUNK * 100

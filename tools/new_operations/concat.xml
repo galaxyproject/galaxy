@@ -1,6 +1,6 @@
 <tool id="gops_concat_1" name="Concatenate">
   <description>two queries into one query</description>
-  <command interpreter="python2.4">gops_concat.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol $sameformat</command>
+  <command interpreter="python">gops_concat.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol $sameformat</command>
   <inputs>
     <param format="interval" name="input1" type="data" help="First query">
       <label>Concatenate</label>

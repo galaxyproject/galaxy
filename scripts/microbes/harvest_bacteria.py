@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 
 #Harvest Bacteria
@@ -11,6 +11,8 @@ from urllib import urlretrieve
 from ftplib import FTP
 from BeautifulSoup import BeautifulSoup
 from util import get_bed_from_genbank, get_bed_from_glimmer3, get_bed_from_GeneMarkHMM, get_bed_from_GeneMark
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 #this defines the types of ftp files we are interested in, and how to process/convert them to a form for our use
 desired_ftp_files = {'GeneMark':{'ext':'GeneMark-2.5f','parser':'process_GeneMark'},

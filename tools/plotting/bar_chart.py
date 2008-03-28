@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 
 """
@@ -23,10 +23,11 @@ anton nekrutenko | anton@bx.psu.edu
 
 """
 
-
 from Numeric import *
 import Gnuplot, Gnuplot.funcutils
 import sys, string, tempfile, os
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err(msg):
     sys.stderr.write(msg)

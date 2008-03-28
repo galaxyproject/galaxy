@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 """
 usage: %prog width height bg_color hatch_color [color alpha stop_pos] +
@@ -8,6 +8,8 @@ from __future__ import division
 
 import sys
 import cairo
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def parse_css_color( color ):
     if color.startswith( '#' ):

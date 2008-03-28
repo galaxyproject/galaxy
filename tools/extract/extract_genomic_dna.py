@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 """
 usage: extract_genomic_dna.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format GALAXY_DATA_INDEX_DIR
 by Wen-Yu Chung
@@ -10,6 +10,8 @@ from bx.cookbook import doc_optparse
 import bx.seq.nib
 import bx.seq.twobit
 
+assert sys.version_info[:2] >= ( 2, 4 )
+    
 def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()

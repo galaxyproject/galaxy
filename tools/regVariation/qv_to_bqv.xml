@@ -1,6 +1,6 @@
 <tool id="qv2bqv" name="qv2bqv">
   <description></description>
-  <command interpreter="python2.4">qv_to_bqv.py "$input1" $output</command>
+  <command interpreter="python">qv_to_bqv.py "$input1" $output</command>
   <inputs>
     <param name="input1" type="data" format="interval" help="Directory" />
    </inputs>

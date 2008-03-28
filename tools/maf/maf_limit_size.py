@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 """
 Removes blocks that fall outside of specified size range.
@@ -7,6 +7,8 @@ Removes blocks that fall outside of specified size range.
 import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 """
 Reads an interval or gene BED and a MAF Source.
@@ -29,6 +29,8 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 import bx.intervals.io
 import sys
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
     

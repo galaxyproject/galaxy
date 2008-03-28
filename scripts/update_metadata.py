@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 """
 Updates metadata in the database to match rev 1891.
@@ -11,6 +11,7 @@ import galaxy.app
 from galaxy.util.bunch import Bunch
 import galaxy.datatypes.tabular
 
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
     ini_file = sys.argv.pop(1)

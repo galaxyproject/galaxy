@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 """
 Reads a MAF file. Produces a MAF file containing
@@ -10,6 +10,8 @@ usage: %prog input_maf_file output_maf_file
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 import sys
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
     #Parse Command Line

@@ -1,6 +1,6 @@
 <tool id="phastOdds_for_intervals" name="Compute phastOdds score" version="1.0.0">
   <description>for each interval</description>
-  <command interpreter="python2.4">get_scores_galaxy.py $per_col ${score_file}.h5 ${score_file}.mapping.bed $input $output $input_chromCol $input_startCol $input_endCol</command>
+  <command interpreter="python">get_scores_galaxy.py $per_col ${score_file}.h5 ${score_file}.mapping.bed $input $output $input_chromCol $input_startCol $input_endCol</command>
   <inputs>
     <param format="interval" name="input" type="data" label="Interval file">
       <validator type="unspecified_build" message="Unspecified build, this tool works with data from genome builds hg17. Click the pencil icon in your history item to set the genome build."/>

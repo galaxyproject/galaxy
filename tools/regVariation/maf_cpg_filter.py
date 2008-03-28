@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 
 #Adapted from bx/scripts/maf_mask_cpg.py
 """
@@ -20,6 +20,8 @@ import bx.align.maf
 from bx.cookbook import doc_optparse
 import sys
 import bx.align.sitemask.cpg
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
     options, args = doc_optparse.parse( __doc__ )

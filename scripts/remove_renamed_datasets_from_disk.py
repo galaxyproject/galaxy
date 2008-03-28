@@ -1,10 +1,12 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 """
 Removes a dataset file ( which was first renamed by appending _purged to the file name ) from disk.
-Usage: python2.4 remove_renamed_datasets_from_disk.py renamed.log
+Usage: python remove_renamed_datasets_from_disk.py renamed.log
 """
 
 import sys, os
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
     infile = sys.argv[1]

@@ -1,10 +1,12 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 """
 Renames a dataset file by appending _purged to the file name so that it can later be removed from disk.
-Usage: python2.4 rename_purged_datasets.py purge.log
+Usage: python rename_purged_datasets.py purge.log
 """
 
 import sys, os
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
     infile = sys.argv[1]

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 """
 Reads a list of block numbers and a maf. Produces a new maf containing the
@@ -8,6 +8,8 @@ blocks specified by number.
 import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
 

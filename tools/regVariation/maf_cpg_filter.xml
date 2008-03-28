@@ -1,6 +1,6 @@
 <tool id="cpgFilter" name="Mask CpG sites">
   <description> from MAF file</description>
-  <command interpreter="python2.4">
+  <command interpreter="python">
   	maf_cpg_filter.py 
   	$input 
   	$out_file1 

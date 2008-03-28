@@ -1,9 +1,11 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 
 import sys
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.intervals.io
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err( msg ):
     sys.stderr.write( msg )

@@ -1,6 +1,6 @@
 <tool id="build_ucsc_custom_track_1" name="Build custom track">
   <description>for UCSC genome browser</description>    
-  <command interpreter="python2.4">
+  <command interpreter="python">
     build_ucsc_custom_track.py 
       "$out_file1"
       #for $t in $tracks

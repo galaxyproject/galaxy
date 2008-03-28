@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 import pkg_resources; 
 pkg_resources.require( "Cheetah" )
@@ -8,6 +8,8 @@ from Cheetah.Template import Template
 import string
 from subprocess import Popen, PIPE
 import os.path
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def run( cmd ):
     return Popen( cmd, stdout=PIPE).communicate()[0]

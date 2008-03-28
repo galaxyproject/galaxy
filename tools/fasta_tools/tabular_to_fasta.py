@@ -1,10 +1,12 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 """
 Input: fasta, minimal length, maximal length
 Output: fasta
 Return sequences whose lengths are within the range.
 """
 import sys, os
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err( msg ):
     sys.stderr.write( msg )

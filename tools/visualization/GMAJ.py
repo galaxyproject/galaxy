@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 """
 Script that Creates a zip file for use by GMAJ
@@ -6,6 +6,8 @@ Script that Creates a zip file for use by GMAJ
 import os, sys, zipfile
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 out_file = sys.argv[1]
 maf_file = sys.argv[2]

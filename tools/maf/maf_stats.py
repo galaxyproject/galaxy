@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 """
 Reads a list of intervals and a maf. Outputs a new set of intervals with statistics appended.
@@ -9,6 +9,8 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.intervals.io
 from numpy import zeros
 from galaxy.tools.util import maf_utilities
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
     maf_source_type = sys.argv.pop( 1 )

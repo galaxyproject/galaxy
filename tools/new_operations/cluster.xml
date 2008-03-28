@@ -1,6 +1,6 @@
 <tool id="gops_cluster_1" name="Cluster">
   <description>the intervals of a query</description>
-  <command interpreter="python2.4">gops_cluster.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -d $distance -m $minregions -o $returntype</command>
+  <command interpreter="python">gops_cluster.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -d $distance -m $minregions -o $returntype</command>
   <inputs>
     <param format="interval" name="input1" type="data">
       <label>Cluster intervals of</label>

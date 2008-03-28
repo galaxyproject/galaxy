@@ -1,6 +1,6 @@
 <tool id="MAF_Reverse_Complement_1" name="Reverse Compliment">
   <description>a MAF file</description>
-  <command interpreter="python2.4">maf_reverse_complement.py $input1 $out_file1</command>
+  <command interpreter="python">maf_reverse_complement.py $input1 $out_file1</command>
   <inputs>
     <page>
         <param format="maf" name="input1" label="Alignment File" type="data"/>

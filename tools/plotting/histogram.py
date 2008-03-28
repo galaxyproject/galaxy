@@ -1,8 +1,10 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Greg Von Kuster
 
 import sys
 from rpy import *
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err(msg):
     sys.stderr.write(msg)

@@ -1,6 +1,6 @@
 <tool id="featureCoverage1" name="Feature coverage" version="1.0.0">
   <description></description>
-  <command interpreter="python2.4">featureCounter.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
+  <command interpreter="python">featureCounter.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
   <inputs>
     <param format="interval" name="input1" type="data" help="First query">
       <label>What portion of</label>

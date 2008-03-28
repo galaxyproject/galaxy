@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 """
 Count total base coverage.
@@ -21,6 +21,8 @@ from bx.intervals.operations.base_coverage import *
 from bx.cookbook import doc_optparse
 
 from galaxy.tools.util.galaxyops import *
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
 

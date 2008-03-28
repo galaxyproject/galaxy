@@ -1,6 +1,6 @@
 <tool id="gmaj_1" name="GMAJ">
 <description>Multiple Alignment Viewer</description>
-  <command interpreter="python2.4">GMAJ.py $out_file1 $maf_input $dbkey $exons_file $highlights_file $underlays_file $repeats_file $links_file</command>
+  <command interpreter="python">GMAJ.py $out_file1 $maf_input $dbkey $exons_file $highlights_file $underlays_file $repeats_file $links_file</command>
   <inputs>
       <param name="maf_input" type="data" format="maf" label="Alignment File" optional="False"/>
       <param name="exons_file" type="data" format="bed" label="Exons File" optional="True"/>

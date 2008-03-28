@@ -1,6 +1,6 @@
 <tool id="gops_merge_1" name="Merge">
   <description>the overlapping intervals of a query</description>
-  <command interpreter="python2.4">gops_merge.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol $returntype</command>
+  <command interpreter="python">gops_merge.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol $returntype</command>
   <inputs>
     <param format="interval" name="input1" type="data">
       <label>Merge overlaping regions of</label>

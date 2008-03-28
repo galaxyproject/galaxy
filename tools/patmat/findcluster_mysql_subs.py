@@ -1,10 +1,12 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 import sys, os, sets
-#import pg
 from time import time, localtime, strftime
 import pkg_resources
 pkg_resources.require( "sqlalchemy>=0.2" )
 from sqlalchemy import *
+
+assert sys.version_info[:2] >= ( 2, 4 )
+
 STDERR = sys.stderr
 
    

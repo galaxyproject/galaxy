@@ -1,6 +1,6 @@
 <tool id="Grouping1" name="Group">
   <description>data by a column and perform aggregate operation on other columns.</description>
-  <command interpreter="python2.4">
+  <command interpreter="python">
     grouping.py 
       $out_file1
       $input1

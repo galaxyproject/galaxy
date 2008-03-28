@@ -1,6 +1,6 @@
 <tool id="find_clusters_mysql" name="Find Clusters">
   <description> search for clusters(specific combination of patterns in a window size) on a genome</description>
-  <command interpreter="python2.4">findcluster_mysql.py -g $dbkey -x $flag -c $chroms -f $positions -b $input1 -r $range -p $patterns -w $wsize  -o $out_file1 -i $out_file2 -l $out_file3</command>
+  <command interpreter="python">findcluster_mysql.py -g $dbkey -x $flag -c $chroms -f $positions -b $input1 -r $range -p $patterns -w $wsize  -o $out_file1 -i $out_file2 -l $out_file3</command>
   <inputs>
     <page>
         <param name="dbkey" label="Genome" type="select" dynamic_options="get_available_data_genomes( )"/>

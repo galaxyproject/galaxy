@@ -1,10 +1,12 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 # python histogram input_file output_file column bins 
 import sys, os
 import matplotlib; matplotlib.use('Agg')
 
 from pylab import *
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err(msg):
     sys.stderr.write(msg)

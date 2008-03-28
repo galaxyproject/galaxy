@@ -1,6 +1,6 @@
 <tool id="qualityFilter" name="Filter nucleotides" version="1.0.1">
   <description> based on quality scores</description>
-  <command interpreter="python2.4">
+  <command interpreter="python">
   	quality_filter.py 
   	$input 
   	$out_file1 

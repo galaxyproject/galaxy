@@ -1,7 +1,9 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 
 import sys, os
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
     base_dir = os.path.join( os.getcwd(), "bacteria" )

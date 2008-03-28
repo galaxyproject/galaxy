@@ -1,6 +1,6 @@
 <tool id="gops_complement_1" name="Complement">
   <description>intervals of a query</description>
-  <command interpreter="python2.4">gops_complement.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -d $dbkey $allchroms</command>
+  <command interpreter="python">gops_complement.py $input1 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -d $dbkey $allchroms</command>
   <inputs>
     <param format="interval" name="input1" type="data">
       <label>Complement regions of</label>

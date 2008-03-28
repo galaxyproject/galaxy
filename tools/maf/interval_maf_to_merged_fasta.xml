@@ -1,6 +1,6 @@
 <tool id="Interval_Maf_Merged_Fasta2" name="Stitch MAF blocks">
   <description>given a set of genomic intervals</description>
-  <command interpreter="python2.4">#if $maf_source_type.maf_source == "user":#interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_file --interval_file=$input1 --output_file=$out_file1 --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafSourceType=$maf_source_type.maf_source --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
+  <command interpreter="python">#if $maf_source_type.maf_source == "user":#interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_file --interval_file=$input1 --output_file=$out_file1 --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafSourceType=$maf_source_type.maf_source --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
 #else:#interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_identifier --interval_file=$input1 --output_file=$out_file1 --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafSourceType=$maf_source_type.maf_source --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
 #end if
   </command>

@@ -3,7 +3,7 @@
 	
 	<description>table browser</description>
 	
-	<command interpreter="python2.4">ucsc_tablebrowser.py $output</command>
+	<command interpreter="python">ucsc_tablebrowser.py $output</command>
 	
 	<inputs action="http://genome.ucsc.edu/cgi-bin/hgTables" check_values="false" method="get">
 		<display>go to UCSC Table Browser $GALAXY_URL</display>

@@ -1,6 +1,6 @@
 <tool id="gops_intersect_1" name="Intersect">
   <description>the intervals of two queries</description>
-  <command interpreter="python2.4">gops_intersect.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol -m $min $returntype</command>
+  <command interpreter="python">gops_intersect.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol -m $min $returntype</command>
   <inputs>
     <param name="returntype" type="select" label="Return" help="(see figure below)">
       <option value="">Overlapping Intervals</option>

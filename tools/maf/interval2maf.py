@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 """
 Reads a list of intervals and a maf. Produces a new maf containing the
@@ -30,6 +30,8 @@ import bx.align.maf
 import bx.intervals.io
 from galaxy.tools.util import maf_utilities
 import sys
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
     index = index_filename = None

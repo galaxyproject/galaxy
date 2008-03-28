@@ -1,6 +1,8 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 # This code exists in 2 places: ~/datatypes/converters and ~/tools/filters
 import sys
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
     input_name = sys.argv[1]

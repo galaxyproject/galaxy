@@ -1,7 +1,9 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 
 import sys
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 #genbank_to_bed
 class Region:

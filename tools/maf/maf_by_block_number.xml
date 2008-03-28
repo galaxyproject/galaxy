@@ -1,6 +1,6 @@
 <tool id="maf_by_block_number1" name="Extract MAF by block number">
   <description>given a set of block numbers and a MAF file</description>
-  <command interpreter="python2.4">maf_by_block_number.py $input1 $input2 $out_file1 $block_col</command>
+  <command interpreter="python">maf_by_block_number.py $input1 $input2 $out_file1 $block_col</command>
   <inputs>
     <param format="txt" name="input1" type="data" label="Block Numbers"/>
     <param format="maf" name="input2" label="MAF File" type="data"/>

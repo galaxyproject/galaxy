@@ -1,10 +1,12 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Guruprasad Ananda
 """
 Converts coordinates from one build/assembly to another using liftOver binary and mapping files downloaded from UCSC.
 """
 
 import sys, os, string
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err(msg):
     sys.stderr.write(msg)

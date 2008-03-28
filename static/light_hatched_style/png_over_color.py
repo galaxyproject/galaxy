@@ -1,8 +1,10 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 import sys
 import Image
 import ImageColor
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 over = Image.open( sys.argv[1] )
 color = ImageColor.getrgb( sys.argv[2] )

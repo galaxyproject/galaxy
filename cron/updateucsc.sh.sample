@@ -17,7 +17,7 @@ echo "Updating UCSC static tables."
 
 # Try to build "builds.txt"
 echo "Updating builds.txt"
-python2.4 ${GALAXY}/cron/parse_builds.py > ${GALAXY}/static/ucsc/new/builds.txt
+python ${GALAXY}/cron/parse_builds.py > ${GALAXY}/static/ucsc/new/builds.txt
 if [ $? -eq 0 ]
 then
     cp -uf ${GALAXY}/static/ucsc/new/builds.txt ${GALAXY}/static/ucsc/builds.txt
@@ -27,7 +27,7 @@ fi
 
 # Try to build ucsc_build_sites.txt
 echo "Updating ucsc_build_sites.txt"
-python2.4 ${GALAXY}/cron/parse_builds_3_sites.py > ${GALAXY}/static/ucsc/new/ucsc_build_sites.txt
+python ${GALAXY}/cron/parse_builds_3_sites.py > ${GALAXY}/static/ucsc/new/ucsc_build_sites.txt
 if [ $? -eq 0 ]
 then
     cp -uf ${GALAXY}/static/ucsc/new/ucsc_build_sites.txt ${GALAXY}/static/ucsc/ucsc_build_sites.txt
@@ -37,7 +37,7 @@ fi
 
 # Try to build chromInfo tables
 echo "Building chromInfo tables."
-python2.4 ${GALAXY}/cron/build_chrom_db.py ${GALAXY}/static/ucsc/chrom/new/ ${GALAXY}/static/ucsc/builds.txt
+python ${GALAXY}/cron/build_chrom_db.py ${GALAXY}/static/ucsc/chrom/new/ ${GALAXY}/static/ucsc/builds.txt
 if [ $? -eq 0 ]
 then
     cp -uf ${GALAXY}/static/ucsc/chrom/new/*.len ${GALAXY}/static/ucsc/chrom/
@@ -51,7 +51,7 @@ echo "Update complete."
 
 #Perform Manual Additions here
 echo "Adding Manual Builds."
-python2.4 ${GALAXY}/cron/add_manual_builds.py ${GALAXY}/static/ucsc/manual_builds.txt ${GALAXY}/static/ucsc/builds.txt ${GALAXY}/static/ucsc/chrom/
+python ${GALAXY}/cron/add_manual_builds.py ${GALAXY}/static/ucsc/manual_builds.txt ${GALAXY}/static/ucsc/builds.txt ${GALAXY}/static/ucsc/chrom/
 if [ $? -eq 0 ]
 then
     echo "Manual addition was successful."
