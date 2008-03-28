@@ -158,7 +158,7 @@ def __main__():
                     first_invalid_line = i + 1
                     invalid_line = line
                 continue
-            if not sequence:
+            if sequence == '':
                 warning = "Chrom: '%s', start: '%s', end: '%s' is either invalid or not present in build '%s'. " %( chrom, start, end, dbkey )
                 warnings.append( warning )
                 skipped_lines += 1
