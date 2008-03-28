@@ -262,6 +262,8 @@
     <tool file="fasta_tools/fasta_concatenate_by_species.xml" />
   </section>
   <section name="Short Read Analysis" id="short_read_analysis">
+    <tool file="metag_tools/short_reads_figure_score.xml" />
+    <tool file="metag_tools/short_reads_figure_high_quality_length.xml" />
     <tool file="metag_tools/short_reads_trim_seq.xml" />
     <tool file="metag_tools/blat_wrapper.xml" />
     <tool file="metag_tools/megablast_wrapper.xml" />

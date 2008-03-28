@@ -12,6 +12,7 @@
 <outputs>
   	<data name="output1" format="pdf" />
 </outputs>
+<!-- 
 <tests>
 	<test>
 		<param name="input1" value="solexa.qual" ftype="qualityscore" />
@@ -22,6 +23,7 @@
 		<output name="output1" file="454Score.pdf" />
 	</test>
 </tests>
+-->
 <help>
 
 .. class:: warningmark
