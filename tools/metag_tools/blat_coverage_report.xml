@@ -1,4 +1,4 @@
-<tool id="generate_coverage_report" name="Coverage of the Reads">
+<tool id="generate_coverage_report" name="Show Polymorphism of the Reads">
 	<description>showing the percentage of reads supporting each nucleotide</description>
 	<command interpreter="python">blat_coverage_report.py $input1 $output1</command>
 	<inputs>	
@@ -73,7 +73,7 @@
 
 **Reference**
  
- BLAT: Kent, W James, BLAT--the BLAST-like alignment tool. (2002) Genome Research:12(4) 656-664.
+ **BLAT**: Kent, W James, BLAT--the BLAST-like alignment tool. (2002) Genome Research:12(4) 656-664.
 	
 	</help>
 </tool>
