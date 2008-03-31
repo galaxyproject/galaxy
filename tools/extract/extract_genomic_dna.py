@@ -115,6 +115,14 @@ def __main__():
                     first_invalid_line = i + 1
                     invalid_line = line
                 continue
+            if start > end:
+                warning = "Invalid interval, start '%d' > end '%d'.  " % ( start, end )
+                warnings.append( warning )
+                skipped_lines += 1
+                if not invalid_line:
+                    first_invalid_line = i + 1
+                    invalid_line = line
+                continue
 
             if strand not in ['+', '-']:
                 strand = '+'
