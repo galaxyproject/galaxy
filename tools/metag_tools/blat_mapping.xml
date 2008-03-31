@@ -1,0 +1,42 @@
+<tool id="blat2wig" name="Show Coverage of the Reads">
+	<description>in wiggle format</description>
+	<command interpreter="python">blat_mapping.py $input1 $output1</command>
+	<inputs>	
+		<param name="input1" type="data" format="tabular" label="Alignment Result"/>
+	</inputs>
+	<outputs>
+		<data name="output1" format="wig"/>
+	</outputs> 
+	<tests>
+		<test>
+			<param name="input1" value="blat_mapping_test1.txt" ftype="tabular" />
+			<output name="output1" file="blat_mapping_test1.out" />
+		</test>
+	</tests>
+	<help>
+
+.. class:: warningmark
+
+**TIP**. To generate acceptable files, please use alignment program **BLAT** with option **-out=pslx**. 
+
+.. class:: warningmark
+
+**TIP**. Please edit the database information by click on the pencil symbol in your history panel. Select the corresponding genome build.
+
+-----
+	
+**What it does**
+ 
+ This tool takes **BLAT pslx** output and returns a wig-like file showing the number of reads (coverage) mapped at each chromosome location. Use **Graph/Display Data --> Build custom track** tool to show the coverage mapping in UCSC Genome Browser.
+
+-----
+
+**Example**
+
+ Showing reads coverage on human chromosome 22 (partial result) in UCSC Genome Browser Custom Track (black lines) with SNPs:
+ 
+ .. image:: ../static/images/blat_mapping_example.png
+ 	:width: 600
+ 	
+	</help>
+</tool>

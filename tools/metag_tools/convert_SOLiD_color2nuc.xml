@@ -1,0 +1,72 @@
+<tool id="color2nuc" name="Convert Color Space" version="1.0.0">
+<description> to Nucleotides </description>
+<command interpreter="python">convert_SOLiD_color2nuc.py $input1 $input2 $output1 </command>
+
+<inputs>
+    <param name="input1" type="data" format="txt" label="SOLiD Color Coding File" />
+    <param name="input2" type="select" label="Keep Prefix Nucleotide">
+    	<option value="yes">Yes</option>
+    	<option value="no">No</option>
+    </param>
+</inputs>
+<outputs>
+  	<data name="output1" format="fasta" />
+</outputs>
+<!-- 
+<tests>
+	<test>
+		<param name="input1" value="convert_SOLiD_color2nuc_test1.txt" ftype="txt" />
+		<param name="input2" value="no" />
+		<output name="output1" file="convert_SOLiD_color2nuc_test1.out" />
+	</test>
+</tests>
+-->
+<help>
+
+.. class:: warningmark
+
+**TIP**. The tool was designed for color space files generated from AB SOLiD sequencer. The file format must be fasta-like: the title starts with a ">" sign, and each color-space sequence starts with a leading nucleotide.
+ 
+-----
+
+**What it does**
+
+ This tool convert a color-space sequence to nucleotides. The leading character must be one of the nucleotides (A, C, G, T). 
+ 
+-----
+
+**Example**
+
+- If the color-space file looks like this::
+
+	&gt;seq1
+	A013
+	&gt;seq2
+	T011213122200221123032111221021210131332222101
+	
+- If you would like to **keep** the leading nucleotide::
+
+	&gt;seq1
+	AACG
+	&gt;seq2
+	TTGTCATGAGAAAGACAGCCGACACTCAAGTCAACGTATCTCTGGT
+	
+- If you **do not want to keep** the leading nucleotide (the length of nucleotide sequence will be one less than the color-space sequence)::
+ 
+ 	&gt;seq1
+ 	ACG
+ 	&gt;seq2
+	TGTCATGAGAAAGACAGCCGACACTCAAGTCAACGTATCTCTGGT 
+
+-----
+
+**SOLiD Color Coding Alignment matrix**
+
+ Each di-nucleotide is represented by a single digit: 0 to 3. The matrix is symmetric, thus the leading nucleotide is necessary to determine the sequence (otherwise there are four possibilities).
+
+ 
+ .. image:: ../static/images/dualcolorcode.png
+
+
+</help>
+</tool>

@@ -270,6 +270,5 @@
     <tool file="metag_tools/megablast_xml_parser.xml" />
     <tool file="metag_tools/blat_coverage_report.xml" />
     <tool file="metag_tools/blat_mapping.xml" />
-    <tool file="metag_tools/convert_SOLiD_color2nuc.xml" />
   </section>
 </toolbox>
