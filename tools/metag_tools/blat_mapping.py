@@ -86,7 +86,7 @@ def __main__():
         if (chrom != previous_chrom):
             print >> outputfh, 'variableStep chrom=%s' %(chrom)
             previous_chrom = chrom
-        print >> outputfh, location, sum
+        print >> outputfh, "%s\t%s" %(location, sum)
     outputfh.close()
     
     if invalid_lines:
