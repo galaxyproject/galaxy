@@ -58,7 +58,7 @@ def __main__():
             db[(fields[0])].append(fields[j])
     
     # prepare to run megablast
-    retcode = subprocess.call('which megablast 2>&1', shell='True')
+    retcode = subprocess.call('which megablast', shell='True')
     if retcode < 0:
         stop_err("Cannot locate megablast.")
     
@@ -77,6 +77,7 @@ def __main__():
         # to avoid reading whole file into memory
         for i, line in enumerate(megablast_output):
             line = line.rstrip('\r\n')
+            if len(line.split()) < 12: continue
             print >> output_file, line 
         
     output_file.close()
