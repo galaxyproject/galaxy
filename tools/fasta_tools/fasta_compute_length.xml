@@ -1,5 +1,5 @@
-<tool id="fasta_compute_length" name="Count FASTA Sequence Length">
-	<description>returns 2 columns, title and length</description>
+<tool id="fasta_compute_length" name="Count FASTA Length">
+	<description> </description>
 	<command interpreter="python">fasta_compute_length.py $input $output </command>
 	<inputs>
 		<param name="input" type="data" format="fasta" label="Fasta file"/>
@@ -18,10 +18,16 @@
 		</test>
 	</tests>
 	<help>
-	
+
+**What it does**
+
+ This tool counts the length of each fasta sequence in the file. The output file has two columns per line (separated by tab): fasta titles and lengths of the sequences. 
+
+-----	
+
 **Example**
 
-Fasta Sequence::
+- assume the input file contains fasta sequences::
 
 	&gt;seq1
 	TCATTTA
@@ -30,7 +36,7 @@ Fasta Sequence::
 	&gt;seq3
 	TCACATGATG
 
-Returns::
+- the tool will return(first column is the titles, second column is the length of the sequences)::
 	
 	&gt;seq1	7
 	&gt;seq2	12

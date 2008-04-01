@@ -1,4 +1,4 @@
-<tool id="blat2wig" name="Show Coverage of the Reads">
+<tool id="blat2wig" name="Coverage of the Reads">
 	<description>in wiggle format</description>
 	<command interpreter="python">blat_mapping.py $input1 $output1</command>
 	<inputs>	
@@ -21,7 +21,7 @@
 
 .. class:: warningmark
 
-**TIP**. Please edit the database information by click on the pencil symbol in your history panel. Select the corresponding genome build.
+**TIP**. Please edit the database information by click on the pencil icon next to your dataset. Select the corresponding genome build.
 
 -----
 	
@@ -36,7 +36,7 @@
  Showing reads coverage on human chromosome 22 (partial result) in UCSC Genome Browser Custom Track (black lines) with SNPs:
  
  .. image:: ../static/images/blat_mapping_example.png
- 	:width: 600
+ 	:width: 500
  	
 	</help>
 </tool>

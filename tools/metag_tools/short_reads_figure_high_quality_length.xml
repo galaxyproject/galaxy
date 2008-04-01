@@ -47,13 +47,14 @@ Illumina (Solexa) data::
 	&gt;seq1
 	23 33 34 25 28 28 28 32 23 34 27 4 28 28 31 21 28
 
-- If the threshold was set to 20::
+- If the threshold was set to 20:
 
-	lengths of continuous quality scores that are higher than 20 is 11, 5 (a low quality score 4 in the middle)
+  - a low quality score 4 in the middle separated two segments of lengths 11 and 5.
 
-	The histogram will be built based on the numbers (11, 5).
+  - The histogram will be built based on the numbers (11, 5).
 	 	
-- For Illumina (Solexa) data, only the maximal of 4 values will be considered.
+- For Illumina (Solexa) data, only the maximal of 4 values will be considered
+
 
 </help>
 </tool>

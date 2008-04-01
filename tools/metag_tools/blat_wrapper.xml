@@ -1,5 +1,5 @@
-<tool id="blat_wrapper" name="Run Sequence Alignment" version="1.0.0">
-  <description>on short reads against genome builds</description>
+<tool id="blat_wrapper" name="BLAT" version="1.0.0">
+  <description>sequence alignment on short reads against a genome build</description>
   <command interpreter="python">
     #if $source.source_select=="database":#blat_wrapper.py 0 $source.dbkey $input_query $output1 $iden $tile_size $one_off
     #else:#blat_wrapper.py 1 $source.input_target $input_query $output1 $iden $tile_size $one_off
@@ -21,7 +21,7 @@
 	</conditional>	
 		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
 		<param name="iden" type="float" size="15" value="90.0" label="Minimal Identity (-minIdentity)" />
-		<param name="tile_size" type="integer" size="15" value="11" label="Minimal Size of Exact Match (-tileSize)" help="for shorter reads, use size = 8. Must be between 6 and 18."/>
+		<param name="tile_size" type="integer" size="15" value="11" label="Minimal Size of Exact Match (-tileSize)" help="Must be between 6 and 18."/>
 		<param name="one_off" type="integer" size="15" value="0" label="Number of Mismatch in the Word (-oneOff)" help="Must be between 0 and 2." />
 	</inputs>
 	<outputs>
@@ -52,19 +52,25 @@ Use a larger mismatch number (*Number of Mismatch in the Word*) will increase th
 	
 **What it does**
  
- This tool runs alignment program **BLAT**. Your short reads file is searched against a genome build or another uploaded file. 
+This tool currently uses alignment program **BLAT**. Your short reads file is searched against a genome build or another uploaded file. 
  
 -----
  
 **Example**
  
-- Input as multiple fasta file::
+- Input a multiple fasta file::
 
 	&gt;seq1
 	TGGTAATGGTGGTTTTTTTTTTTTTTTTTTATTTTT
 
-- Use default settings.
+- Use default settings:
 
+  - alignment identity must be higher than or equal to 90%.
+  
+  - minimal size of exact match to trigger an alignment is 11.
+  
+  - allow 0 mismatch in the above exact match size.
+  
 - Search against ce2 (C. elegans March 2004), partial result::
 
 	25 1 0 0 0 0 0 0 + seq1 36 10 36 chrI 15080483 9704438 9704464 1 26, 10, 9704438, ggttttttttttttttttttattttt, ggtttttttttttttttttttttttt,
@@ -74,11 +80,11 @@ Use a larger mismatch number (*Number of Mismatch in the Word*) will increase th
 
 **Parameters**
 
-- *Minimal Identity (-minIdentity)* : In percent, the minimum sequence identity between the query and target alignment. Default is 90.
+- *Minimal Identity* (**-minIdentity**) : In percent, the minimum sequence identity between the query and target alignment. Default is 90.
 
-- *Minimal Size of Exact Match (-tileSize)* : The size of a match that will trigger an alignment. Default is 11. Usually between 8 and 12. Must be between 6 and 18.
+- *Minimal Size of Exact Match* (**-tileSize**) : The size of a match that will trigger an alignment. Default is 11. Usually between 8 and 12. Must be between 6 and 18.
 
-- *Number of Mismatch in the Word (-oneOff)* : The number of mismatches allowed in the word (tile size) and still triggers an alignment. Default is 0.
+- *Number of Mismatch in the Word* (**-oneOff**) : The number of mismatches allowed in the word (tile size) and still triggers an alignment. Default is 0.
 
 -----
 

@@ -1,10 +1,10 @@
-<tool id="fasta_filter_by_length" name="Filter FASTA Sequence by Length">
-	<description>user define minimal and maximal length they want</description>
+<tool id="fasta_filter_by_length" name="Filter FASTA by Length">
+	<description> </description>
 	<command interpreter="python">fasta_filter_by_length.py $input $min_length $max_length $output </command>
 	<inputs>
 		<param name="input" type="data" format="fasta" label="Fasta file"/>
-		<param name="min_length" type="integer" size="15" value="0" label="Minimal length to reurn" />
-		<param name="max_length" type="integer" size="15" value="0" label="Maximal length to return" help="no limitation if 0"/> 
+		<param name="min_length" type="integer" size="15" value="0" label="Minimal length of the return sequence" />
+		<param name="max_length" type="integer" size="15" value="0" label="Maximal length of the return sequence" help="no limitation if 0"/> 
 	</inputs>
 	<outputs>
 		<data name="output" format="fasta"/>
@@ -18,10 +18,22 @@
 		</test>
 	</tests>
 	<help>
+
+.. class:: infomark
+
+**TIP**. If only want to show sequences longer than a threshold, set *minimal length* to the threshold and leave *maximal length* to zero.
+
+-----
+
+**What it does**
 	
+ This tool accepts two parameters: *minimal length* and *maximal length*, and returns sequences of length within the two thresholds.
+ 
+-----
+
 **Example**
 
-Fasta Sequence::
+- assume the input file contains fasta sequences::
 
 	&gt;seq1
 	TCATTTAATGAC
@@ -32,12 +44,13 @@ Fasta Sequence::
 	&gt;seq4
 	ATGGAAGC
 
-Choose minimal length as 10, maximal length as 0 (no limitation), the tool returns::
+- return sequences with length longer than 10bp (set the *minimal length* to 10, and the *maximal length* to 0 (no limitation)):: 
 
-	&gt;seq1
+ 	&gt;seq1
 	TCATTTAATGAC
 	&gt;seq3
 	TCACATGATGCCG
+
 
 	</help>
 </tool>
