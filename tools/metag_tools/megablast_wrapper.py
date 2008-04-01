@@ -57,10 +57,6 @@ def __main__():
         for j in xrange(1, len(fields)):
             db[(fields[0])].append(fields[j])
     
-    # prepare to run megablast
-    retcode = subprocess.call('which megablast', shell='True')
-    if retcode < 0:
-        stop_err("Cannot locate megablast.")
     
     try:    
         assert db.has_key(db_build) is True
@@ -71,13 +67,12 @@ def __main__():
         megablast_arguments = ["megablast", "-d", chunk, "-i", query_filename]
         megablast_parameters = ["-m", "8", "-a", "8"]
         megablast_user_inputs = ["-W", mega_word_size, "-p", mega_iden_cutoff, "-t", mega_disc_word, "-N", mega_disc_type, "-F", mega_filter]
-        megablast_command = " ".join(megablast_arguments) + " " + " ".join(megablast_parameters) + " " + " ".join(megablast_user_inputs) + " 2>&1" 
+        megablast_command = " ".join(megablast_arguments) + " " + " ".join(megablast_parameters) + " " + " ".join(megablast_user_inputs) + " 2>./error.log" 
         
         megablast_output = os.popen(megablast_command)
         # to avoid reading whole file into memory
         for i, line in enumerate(megablast_output):
             line = line.rstrip('\r\n')
-            if len(line.split()) < 12: continue
             print >> output_file, line 
         
     output_file.close()
