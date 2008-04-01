@@ -45,7 +45,7 @@ def __main__():
     title_keys.sort()
     for (i, fasta_title) in title_keys:
         tmp_seq = seq_hash[(i, fasta_title)]
-        print >> output_handle, "%s\t%d" %(fasta_title, len(tmp_seq))
+        print >> output_handle, "%s\t%d" %(fasta_title[1:], len(tmp_seq))
     output_handle.close()
     return 0
 
