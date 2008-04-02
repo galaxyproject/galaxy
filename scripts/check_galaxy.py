@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-check_python can be run by hand, although it is meant to run from cron
+check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
 
@@ -112,20 +112,18 @@ class Browser:
         tc.code(200)
 
     def reset(self):
-        self.get("/history_new")
         self.tool = None
         self.tool_opts = None
         self.id = None
         self.status = None
         self.check_file = None
-	#self.get("/history")
-	self.get("/root/history_options")
-        p = hidParser()
+        self.delete_datasets()
+        self.get("/root/history")
+        p = didParser()
         p.feed(tc.browser.get_html())
-        if p.hid is not None:
-            self.hid = p.hid
-        else:
-            raise Exception, "Unable to determine hid after creating new history"
+        if len(p.dids) > 0:
+            print "Remaining datasets ids:", " ".join( p.dids )
+            raise Exception, "History still contains datasets after attempting to delete them"
 
     def check_redir(self, url):
         try:
@@ -249,8 +247,13 @@ class Browser:
         if not debug:
             os.remove(tmp[1])
 
-    def delete_history(self):
-        self.get("/history_delete?id=%s" % self.hid)
+    def delete_datasets(self):
+        self.get("/root/history")
+        p = didParser()
+        p.feed(tc.browser.get_html())
+        dids = p.dids
+        for did in dids:
+            self.get("/root/delete?id=%s" % did)
 
 class userParser(htmllib.HTMLParser):
     def __init__(self):
@@ -289,17 +292,15 @@ class historyParser(htmllib.HTMLParser):
         if self.status is not None:
             self.reset()
 
-class hidParser(htmllib.HTMLParser):
+class didParser(htmllib.HTMLParser):
     def __init__(self):
         htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
-        self.hid = None
-    def start_a(self, attrs):
+        self.dids = []
+    def start_div(self, attrs):
         for i in attrs:
-            if i[0] == "href" and i[1].startswith("/history_delete?id="):
-                self.hid = i[1].rsplit("/history_delete?id=", 1)[1]
-                dprint("history id: %s" % self.hid)
-        if self.hid is not None:
-            self.reset()
+            if i[0] == "id" and i[1].startswith("historyItemContainer-"):
+                self.dids.append( i[1].rsplit("historyItemContainer-", 1)[1] )
+                dprint("got a dataset id: %s" % self.dids[-1])
 
 def dprint(str):
     if debug:
@@ -344,10 +345,9 @@ if __name__ == "__main__":
 
         b.runtool()
         b.wait()
-        #st = b.check_status()
         b.check_status()
         b.diff()
-        b.delete_history()
+        b.delete_datasets()
 
         # by this point, everything else has succeeded.  there should be no maint.
         is_maint = b.check_maint()
