@@ -1,7 +1,10 @@
 #! /usr/bin/python
     
-import cElementTree 
 import sys, os
+if float( sys.version[:3] ) >= 2.5:
+    import xml.etree.cElementTree as cElementTree
+else:
+    import cElementTree 
 
 def parse_megablast_xml_output(infile_name,outfile_name):
 

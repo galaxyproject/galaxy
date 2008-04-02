@@ -8,14 +8,18 @@ usage: %prog data_file.h5 region_mapping.bed in_file out_file chrom_col start_co
 from __future__ import division
 
 import sys
-from numarray import *
-from numarray.ieeespecial import *
+from numpy import *
 from tables import *
 
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 
 from bx import intervals
+
+# ignore wanrnings about NumArray flavor
+from warnings import filterwarnings
+from tables.exceptions import FlavorWarning
+filterwarnings("ignore", category=FlavorWarning)
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
