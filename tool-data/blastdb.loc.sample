@@ -2,9 +2,8 @@
 #short read tools.  The blastdb.loc file has this format (white space 
 #characters are TAB characters):
 #
-#TODO: fill in this format
+#<database>	<path to base name> 
 #
-nt	/depot/data2/galaxy/blastdb/nt/nt.chunk
-wgs	/depot/data2/galaxy/blastdb/wgs/wgs.chunk
-nr	/depot/data2/galaxy/blastdb/nr/nr.chunk.0 /depot/data2/galaxy/blastdb/nr/nr.chunk.1 /depot/data2/galaxy/blastdb/nr/nr.chunk.2
-test	/depot/data2/galaxy/blastdb/test/test.fa
+#nt	/depot/data2/galaxy/blastdb/nt/nt.chunk
+#wgs	/depot/data2/galaxy/blastdb/wgs/wgs.chunk
+#test	/depot/data2/galaxy/blastdb/test/test.fa
