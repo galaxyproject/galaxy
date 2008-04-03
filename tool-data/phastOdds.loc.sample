@@ -4,4 +4,4 @@
 #
 #<build>	<description>	<path to phastOdds score files>
 #
-hg17	ENCODE regions only, SEP-2005 tba.v2 alignments	/depot/data2/galaxy/phastOdds_precomputed/encode_SEP-2005_tba.v2_phastOdds
+#hg17	ENCODE regions only, SEP-2005 tba.v2 alignments	/depot/data2/galaxy/phastOdds_precomputed/encode_SEP-2005_tba.v2_phastOdds

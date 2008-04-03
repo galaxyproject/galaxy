@@ -10,14 +10,14 @@
 #Your file should include an entry per line for each FileBinnedArray file 
 #you have stored.
 #
-hg16	ENCODE binCons on MLAGAN alignments	/depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan
-hg16	ENCODE binCons on TBA alignments	/depot/data2/galaxy/binned_scores/hg16/encode_bincons_tba
-hg16	ENCODE GERP on MLAGAN alignment	/depot/data2/galaxy/binned_scores/hg16/encode_gerp_lagan
-hg16	ENCODE GERP on TBA alignment	/depot/data2/galaxy/binned_scores/hg16/encode_gerp_tba
-hg16	ENCODE phastCons on MLAGAN alignment	/depot/data2/galaxy/binned_scores/hg16/encode_phastcons_lagan
-hg16	ENCODE phastCons on TBA alignment	/depot/data2/galaxy/binned_scores/hg16/encode_phatcons_tba
-hg17	ENCODE phastCons on TBA alignment	/depot/data2/galaxy/binned_scores/hg17/phastcons_encode_sep2005_tba
-hg17	phastCons on 8-species multiz, 16-Jun-2005	/depot/data2/galaxy/binned_scores/hg17/phastcons_mzPt1Mm5Rn3Cf1Gg2Fr1Dr1/
-hg17	phastCons on 17-species multiz, 13-Apr-2006	/depot/data2/galaxy/binned_scores/hg17/phastCons17way/ba
-hg17	ESPERR Regulatory Potential, 7-species, 23-Jun-2006	/depot/data2/galaxy/binned_scores/hg17/esperr_rp_7way/ba
-hg18	phastCons on 17-species multiz, 06-Apr-2006	/depot/data2/galaxy/binned_scores/hg18/phastCons17way/ba
+#hg16	ENCODE binCons on MLAGAN alignments	/depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan
+#hg16	ENCODE binCons on TBA alignments	/depot/data2/galaxy/binned_scores/hg16/encode_bincons_tba
+#hg16	ENCODE GERP on MLAGAN alignment	/depot/data2/galaxy/binned_scores/hg16/encode_gerp_lagan
+#hg16	ENCODE GERP on TBA alignment	/depot/data2/galaxy/binned_scores/hg16/encode_gerp_tba
+#hg16	ENCODE phastCons on MLAGAN alignment	/depot/data2/galaxy/binned_scores/hg16/encode_phastcons_lagan
+#hg16	ENCODE phastCons on TBA alignment	/depot/data2/galaxy/binned_scores/hg16/encode_phatcons_tba
+#hg17	ENCODE phastCons on TBA alignment	/depot/data2/galaxy/binned_scores/hg17/phastcons_encode_sep2005_tba
+#hg17	phastCons on 8-species multiz, 16-Jun-2005	/depot/data2/galaxy/binned_scores/hg17/phastcons_mzPt1Mm5Rn3Cf1Gg2Fr1Dr1/
+#hg17	phastCons on 17-species multiz, 13-Apr-2006	/depot/data2/galaxy/binned_scores/hg17/phastCons17way/ba
+#hg17	ESPERR Regulatory Potential, 7-species, 23-Jun-2006	/depot/data2/galaxy/binned_scores/hg17/esperr_rp_7way/ba
+#hg18	phastCons on 17-species multiz, 06-Apr-2006	/depot/data2/galaxy/binned_scores/hg18/phastCons17way/ba
