@@ -1,11 +1,11 @@
 <tool id="EMBOSS: fuzzpro38" name="fuzzpro" version="5.0.0">
   <description>Protein pattern search</description>
-  <command>fuzzpro -sequence $input1 -outfile $out_file1 -pattern "$pattern" -mismatch $mismatch -rformat2 $out_format1 -auto</command>
+  <command>fuzzpro -sequence $input1 -outfile $out_file1 -pattern "$pattern" -pmismatch $mismatch -rformat2 $out_format1 -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>
     </param>
-    <param name="pattern" size="5" type="text" value="">
+    <param name="pattern" size="30" type="text" value="">
       <label>Search pattern</label>
     </param>
     <param name="mismatch" size="5" type="text" value="0">
