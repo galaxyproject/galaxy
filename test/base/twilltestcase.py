@@ -210,9 +210,17 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "history_available" )
 
     """Functions associated with datasets (history items) and meta data"""
+    def get_job_stderr( self, id ):
+        self.visit_page( "dataset/stderr?id=%s" % id )
+        return self.last_page()
+
     def _assert_dataset_state( self, elem, state ):
-        assert elem.get( 'state' ) == state, \
-            "Expecting dataset state '%s' but is '%s'. Dataset blurb: %s" % ( state, elem.get('state'), elem.text.strip() )
+        if elem.get( 'state' ) != state:
+            errmsg = "Expecting dataset state '%s' but is '%s'. Dataset blurb: %s\n\n" % ( state, elem.get('state'), elem.text.strip() )
+            errmsg += "---------------------- >> begin tool stderr << -----------------------\n"
+            errmsg += self.get_job_stderr( elem.get( 'id' ) ) + "\n"
+            errmsg += "----------------------- >> end tool stderr << ------------------------\n"
+            raise AssertionError( errmsg )
 
     def check_metadata_for_string( self, patt, hid=None ):
         """Looks for 'patt' in the edit page when editing a dataset"""

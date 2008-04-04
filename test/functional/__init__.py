@@ -52,9 +52,18 @@ def setup():
             database_connection = os.environ['GALAXY_TEST_DBURI']
         else:
             database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
+        if 'GALAXY_TEST_RUNNERS' in os.environ:
+            start_job_runners = os.environ['GALAXY_TEST_RUNNERS']
+        else:
+            start_job_runners = None
+        if 'GALAXY_TEST_DEF_RUNNER' in os.environ:
+            default_cluster_job_runner = os.environ['GALAXY_TEST_DEF_RUNNER']
+        else:
+            default_cluster_job_runner = 'local:///'
     
         app = UniverseApplication( job_queue_workers = 5,
-                                   use_pbs = ( 'GALAXY_TEST_USE_PBS' in os.environ ),
+                                   start_job_runners = start_job_runners,
+                                   default_cluster_job_runner = default_cluster_job_runner,
                                    template_path = "templates",
                                    database_connection = database_connection,
                                    file_path = file_path,

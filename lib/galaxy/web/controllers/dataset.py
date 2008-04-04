@@ -51,6 +51,13 @@ class DatasetInterface( BaseController ):
         return trans.fill_template( "dataset/errors.tmpl", dataset=dataset )
     
     @web.expose
+    def stderr( self, trans, id ):
+        dataset = model.Dataset.get( id )
+        job = dataset.creating_job_associations[0].job
+        trans.response.set_content_type( 'text/plain' )
+        return job.stderr
+
+    @web.expose
     def report_error( self, trans, id, email="no email provided", message="" ):
         smtp_server = trans.app.config.smtp_server
         if smtp_server is None:
