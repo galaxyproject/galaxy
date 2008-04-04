@@ -152,7 +152,7 @@ class DynamicOptions( object ):
                     filters[ 'params' ][ n ] = v
         if self.data_file and self.data_file.startswith( 'static' ):
             self.data_file_path = self.data_file
-        elif self.data_file not in [ None, 'data_ref' ]:
+        elif self.data_file not in [ None, 'data_ref' ] and not os.path.isabs( self.data_file ):
             self.data_file_path = "%s/%s" % ( trans.app.config.tool_data_path, self.data_file )
         # Now that we've parsed our filters, we need to see if the tool is a maf tool 
         # which requires special handling

@@ -47,7 +47,7 @@ class TwillTestCase( unittest.TestCase ):
             if files_differ:
                 diff = difflib.unified_diff( local_file, history_data, "local_file", "history_data" )
                 diff_slice = list( islice( diff, 40 ) )
-                if file1.endswith( '.pdf' ) or file2.endswith( 'pdf' ):
+                if file1.endswith( '.pdf' ) or file2.endswith( '.pdf' ):
                     # PDF files contain both a creation and modification date, so we need to
                     # handle these differences.  As long as the rest of the PDF file does not differ,
                     # we're ok.
