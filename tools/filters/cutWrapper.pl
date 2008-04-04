@@ -25,21 +25,17 @@ foreach ( split /,/, $ARGV[1] ) {
 
 die "No columns specified, columns are not preceded with 'c', or commas are not used to separate column numbers: $ARGV[1]\n" if @columns == 0;
 
-if ($ARGV[2] eq 'T') {
-    $del = "\t";
-} elsif ($ARGV[2] eq 'C')  {
-    $del = ",";
-} elsif ($ARGV[2] eq 'D')  {
-    $del = "-";
-} elsif ($ARGV[2] eq 'U')  {
-    $del = "_";
-} elsif ($ARGV[2] eq 'P')  {
-    $del = "|";
-} elsif ($ARGV[2] eq 'Dt') {
-    $del = ".";
-} elsif ($ARGV[2] eq 'Sp') {
-    $del = " ";
-}
+my $column_delimiters_href = {
+  'T' => q{\t},
+  'C' => ",",
+  'D' => "-",
+  'U' => "_",
+  'P' => q{\|},
+  'Dt' => q{\.},
+  'Sp' => q{\s+}
+};
+
+$del = $column_delimiters_href->{$ARGV[2]};
 
 open (OUT, ">$ARGV[3]") or die "Cannot create $ARGV[2]:$!\n";
 open (IN,  "<$ARGV[0]") or die "Cannot open $ARGV[0]:$!\n";
