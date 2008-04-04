@@ -47,6 +47,14 @@ class TwillTestCase( unittest.TestCase ):
             if files_differ:
                 diff = difflib.unified_diff( local_file, history_data, "local_file", "history_data" )
                 diff_slice = list( islice( diff, 40 ) )
+                if file1.endswith( '.pdf' ) or file2.endswith( 'pdf' ):
+                    # PDF files contain both a creation and modification date, so we need to
+                    # handle these differences.  As long as the rest of the PDF file does not differ,
+                    # we're ok.
+                    if len( diff_slice ) == 13 and \
+                    diff_slice[6].startswith( '-/CreationDate' ) and diff_slice[7].startswith( '-/ModDate' ) \
+                    and diff_slice[8].startswith( '+/CreationDate' ) and diff_slice[9].startswith( '+/ModDate' ):
+                        return True
                 raise AssertionError( "".join( diff_slice ) )
         return True
 
@@ -300,6 +308,7 @@ class TwillTestCase( unittest.TestCase ):
             try:
                 self.files_diff( local_name, temp_name )
             except AssertionError, err:
+                os.remove(temp_name)
                 errmsg = 'History item %s different than expected, difference:\n' % hid
                 errmsg += str( err )
                 raise AssertionError( errmsg )

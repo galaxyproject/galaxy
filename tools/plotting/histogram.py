@@ -22,8 +22,10 @@ def main():
     title = sys.argv[4]
     xlab = sys.argv[5]
     breaks = int( sys.argv[6] )
-    if breaks == 0: breaks = "Sturges"
-    if sys.argv[7] == "true": density = True
+    if breaks == 0:
+        breaks = "Sturges"
+    if sys.argv[7] == "true":
+        density = True
     else: density = False
 
     matrix = []
@@ -76,12 +78,12 @@ def main():
             r.dev_off()
         except Exception, exc:
             stop_err( "%s" %str( exc ) )
-        print "..on columnn %s" %sys.argv[3]
     else:
-        print "..all values in column %s are non-numeric." %sys.argv[3]
+        stop_err( "All values in column %s are non-numeric." %sys.argv[3] )
 
+    print "Histogram of column %s. " %sys.argv[3]
     if skipped_lines > 0:
-        print "..skipped %d invalid lines starting with line #%d containing value '%s'." % ( skipped_lines, first_invalid_line, invalid_value )
+        print "Skipped %d invalid lines starting with line #%d, '%s'." % ( skipped_lines, first_invalid_line, invalid_value )
 
     r.quit( save="no" )
     

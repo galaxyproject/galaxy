@@ -12,6 +12,17 @@
   <outputs>
     <data format="pdf" name="out_file1" />
   </outputs>
+  <tests>
+    <test>
+      <param name="input" value="histogram_in1.tabular" ftype="tabular"/>
+      <param name="numerical_column" value="2"/>
+      <param name="breaks" value="0"/>
+      <param name="title" value="Histogram"/>
+      <param name="xlab" value="V1"/>
+      <param name="density" value="true"/>
+      <output name="out_file1" file="histogram_out1.pdf" />
+    </test>
+  </tests>
   <help>
 
 .. class:: infomark
