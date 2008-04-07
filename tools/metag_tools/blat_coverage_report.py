@@ -5,6 +5,7 @@ import os, sys
 def stop_err( msg ):
 
     sys.stderr.write( msg )
+    sys.stderr.write('\n')
     sys.exit()
 
 
@@ -69,7 +70,7 @@ def __main__():
                     try:
                         diff_hash[(chrom, cur_index)] = [0,0,0,0,sub_b.upper()]    # a, t, c, g, ref. nuc.
                     except:
-                        stop_err('Memory error. Program stopped')
+                        stop_err('Memory error. Program stopped.')
                 if sub_a in ['a','t','c','g']:
                     diff_hash[(chrom, cur_index)][nuc_index[(sub_a)]] += 1
                 else:
@@ -77,7 +78,7 @@ def __main__():
                         
     outputfh = open(outfile, 'w')
     
-    print >> outputfh, "##title\tlocation\tref.\tcov.\tA\tT\tC\tG"
+    outputfh.write("##title\tlocation\tref.\tcov.\tA\tT\tC\tG\n")
     keys = diff_hash.keys()
     keys.sort()
     for i in keys:
@@ -94,7 +95,8 @@ def __main__():
         result += "T(%0.0f)\t" %(ratio_T)
         result += "C(%0.0f)\t" %(ratio_C)
         result += "G(%0.0f)" %(ratio_G)
-        print >> outputfh, result
+        outputfh.write(result)
+        outputfh.write('\n')
         
     outputfh.close()
 

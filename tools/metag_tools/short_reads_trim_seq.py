@@ -7,6 +7,8 @@ output: trimmed read file
 
 import os, sys, math, tempfile, zipfile, re
 
+assert sys.version_info[:2] >= (2.4)
+
 def stop_err(msg):
     
     sys.stderr.write(msg)
@@ -27,15 +29,18 @@ def unzip(zip_file):
     return tmpfilename
 
 
-def show_output(outfile_seq, seq_title, segments):
+def show_output(outfile, seq_title, segments):
+    
+    outfile_seq = open(outfile,'a')
     
     if (len(segments) > 1):
         for i in range(len(segments)):
-            print >> outfile_seq, "%s_%d\n%s" % (seq_title, i, segments[i])
-    elif (len(segments[0]) > 0):
-        print >> outfile_seq, "%s\n%s" % (seq_title, segments[0])
+            outfile_seq.write("%s_%d\n%s\n" % (seq_title, i, segments[i]))
     else:
-        return
+        if segments[0]:
+            outfile_seq.write("%s\n%s\n" % (seq_title, segments[0]))
+    
+    outfile_seq.close()
     
     return
 
@@ -96,10 +101,12 @@ def __main__():
 
     # I/O
     seq_method = sys.argv[1].strip().lower()
+    
     try:
         threshold_trim = int(sys.argv[2].strip())
     except:
         stop_err("Invalid value for minimal quality score")
+    
     try:
         threshold_report = int(sys.argv[3].strip())
     except:
@@ -124,7 +131,6 @@ def __main__():
         unzip_score_infile = unzip(infile_score_name)
     else: unzip_score_infile = infile_score_name
 
-    outfile_seq = open(outfile_seq_name,'w')
     
     if (os.path.exists(unzip_seq_infile) and os.path.exists(unzip_score_infile)):
         # read one sequence
@@ -151,7 +157,7 @@ def __main__():
                                     new_trim_seq_segments = trim_seq(seq, score, special_argument, threshold_trim, threshold_report)                                            
                                     # output trimmed sequence to a fasta file
                                     segments = new_trim_seq_segments.split(',')
-                                    show_output(outfile_seq, seq_title, segments)
+                                    show_output(outfile_seq_name, seq_title, segments)
                                     to_find_score = False    
                                 score = None
                             else:
@@ -189,7 +195,7 @@ def __main__():
                     new_trim_seq_segments = trim_seq(seq, score, special_argument, threshold_trim, threshold_report)                                            
                     # output trimmed sequence to a fasta file
                     segments = new_trim_seq_segments.split(',')
-                    show_output(outfile_seq, seq_title, segments)    
+                    show_output(outfile_seq_name, seq_title, segments)    
         else: # Solexa format
             for i, line in enumerate (open (unzip_seq_infile) ):
                 line = line.rstrip('\r\n')
@@ -201,9 +207,8 @@ def __main__():
                 seq = line.split()[-1]
                 seq = seq.replace('.','N')
                 seq = seq.replace('-','N')
-                try:
-                    assert seq.isalpha() is True
-                except:
+                
+                if not seq.isalpha():
                     stop_err('Invalid characters in the read at line %d' %(i))
                                         
                 score = score_fh.readline()
@@ -223,9 +228,9 @@ def __main__():
                 new_trim_seq_segments = trim_seq(seq, score, special_argument, threshold_trim, threshold_report)
                 # output trimmed sequence to a fasta file
                 segments = new_trim_seq_segments.split(',')
-                show_output(outfile_seq, seq_title, segments)    
+                show_output(outfile_seq_name, seq_title, segments)    
         score_fh.close()
-    outfile_seq.close()
+        
                             
     if (zipfile.is_zipfile(infile_seq_name)): os.remove(unzip_seq_infile)
     if (zipfile.is_zipfile(infile_score_name)): os.remove(unzip_score_infile)

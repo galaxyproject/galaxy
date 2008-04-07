@@ -7,8 +7,6 @@ example: T011213122200221123032111221021210131332222101
 
 import sys, os
 
-assert sys.version_info[:2] >= (2.4)
-
 def stop_err(msg):
     
     sys.stderr.write(msg)
@@ -30,16 +28,12 @@ def color2base(color_seq):
     seq_prefix = prefix = color_seq[0].upper()
     color_seq = color_seq[1:]
                 
-    try:
-        assert (seq_prefix in first_nuc) is True
-    except:
+    if not (seq_prefix in first_nuc):
         stop_err('The leading nucleotide is invalid. Must be one of the four nucleotides: A, T, C, G.\nThe file contains a %s' %seq_prefix )
 
     for code in color_seq:
         
-        try:
-            assert (code in ['0','1','2','3']) is True
-        except:
+        if not (code in ['0','1','2','3']):
             stop_err('Expect digits (0, 1, 2, 3) in the color-cading data. File contains numbers other than the set.\nThe file contains a %s' %code)
         
         second_nuc = code_matrix[code]
@@ -56,12 +50,15 @@ def __main__():
     outfilename = sys.argv[3]
 
     outfile = open(outfilename,'w')
+
     prefix = ''
     color_seq = ''
     for i, line in enumerate(file(infilename)):
         line = line.rstrip('\r\n')
+
         if not line: continue
         if line.startswith("#"): continue
+    
         if line.startswith(">"):
             
             if color_seq:
@@ -70,8 +67,8 @@ def __main__():
                 if keep_prefix == 'yes':
                     nuc_seq = prefix + nuc_seq
                 
-                print >> outfile, title
-                print >> outfile, nuc_seq
+                outfile.write(title+'\n')
+                outfile.write(nuc_seq+'\n')
                 
             title = line
             color_seq = ''
@@ -84,8 +81,8 @@ def __main__():
         if keep_prefix == 'yes':
             nuc_seq = prefix + nuc_seq
 
-        print >> outfile, title
-        print >> outfile, nuc_seq
+        outfile.write(title+'\n')
+        outfile.write(nuc_seq+'\n')
             
     outfile.close()
     

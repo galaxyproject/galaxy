@@ -2,8 +2,6 @@
 
 import os, sys
 
-assert sys.version_info[:2] >= (2.4)
-
 def reverse_complement(s):
 
     complement_dna = {"A":"T", "T":"A", "C":"G", "G":"C", "a":"t", "t":"a", "c":"g", "g":"c", "N":"N", "n":"n" , ".":"."}
@@ -43,9 +41,7 @@ def __main__():
         
         chrom = fields[13]
         
-        try:
-            assert chrom.startswith('chr') is True
-        except:
+        if not chrom.startswith('chr'):
             invalid_chrom += 1
             continue
             
@@ -84,15 +80,15 @@ def __main__():
         (chrom, location) = i
         sum = coverage[(i)]
         if (chrom != previous_chrom):
-            print >> outputfh, 'variableStep chrom=%s' %(chrom)
+            outputfh.write('variableStep chrom=%s\n' %(chrom))
             previous_chrom = chrom
-        print >> outputfh, "%s\t%s" %(location, sum)
+        outputfh.write("%s\t%s\n" %(location, sum))
     outputfh.close()
     
     if invalid_lines:
-        print >> sys.stdout, "Skip %d invalid lines. These lines could be headers or have fewer columns than standard output." %(invalid_lines)
-    
+        print "Skip %d invalid lines. These lines could be headers or have fewer columns than standard output." %(invalid_lines)
+
     if invalid_chrom:
-        print >> sys.stdout, "Skip %d invalid lines with errors in chromosome id. The chromosome id must begin with \'chr\' to be correctly mapped to ucsc genome browser."
+        print "Skip %d invalid lines with errors in chromosome id. The chromosome id must begin with \'chr\' to be correctly mapped to ucsc genome browser."
         
 if __name__ == '__main__': __main__()

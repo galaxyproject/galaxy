@@ -19,23 +19,23 @@ def __main__():
     db_build = sys.argv[1]
     query_filename = sys.argv[2].strip()
     output_filename = sys.argv[3].strip()
+    mega_word_size = sys.argv[4]        # -W
+    mega_iden_cutoff = sys.argv[5]      # -p
+    mega_disc_word = sys.argv[6]        # -t
     
     # megablast parameters
     try:
-        test = int(sys.argv[4])
-        mega_word_size = sys.argv[4]        # -W
+        int(mega_word_size)    
     except:
         stop_err('Invalid value for word size')
     
     try:
-        test = float(sys.argv[5])
-        mega_iden_cutoff = sys.argv[5]      # -p
+        float(mega_iden_cutoff)
     except:
         stop_err('Invalid value for identity cut-off')
     
     try:
-        test = int(sys.argv[6])
-        mega_disc_word = sys.argv[6]        # -t
+        int(mega_disc_word)    
     except:
         stop_err('Invalid value for discontiguous word template')
     
@@ -49,8 +49,10 @@ def __main__():
     db = {}
     for i, line in enumerate(file(DB_LOC)):
         line = line.rstrip('\r\n')
+        
         if not line: continue
         if line.startswith('#'): continue
+        
         fields = line.split()
         if len(fields) == 2:
             db[(fields[0])] = fields[1]

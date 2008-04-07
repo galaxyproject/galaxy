@@ -3,6 +3,8 @@
 import os, sys, math, tempfile, zipfile, re
 from rpy import *
 
+assert sys.version_info[:2] >= (2.4)
+
 def stop_err(msg):
     
     sys.stderr.write(msg)
@@ -55,7 +57,7 @@ def __main__():
             fields = read_next_line.split()
             for score in fields:
                 try: 
-                    x = int(score)
+                    int(score)
                     seq_method = '454'
                 except:
                     seq_method = 'Failed'
@@ -64,7 +66,7 @@ def __main__():
             fields = read_scorefile.split()
             for score in fields:
                 try:
-                    x = int(score)
+                    int(score)
                     seq_method = 'solexa'
                 except:
                     seq_method = 'Failed'
@@ -86,17 +88,14 @@ def __main__():
                                
     if (seq_method == 'solexa'):
             for i, line in enumerate(open(score_file)):
+
                 line = line.rstrip('\r\n')
                 if line.startswith('#'):
                     continue
                 if not line:
                     continue
                 
-                try:
-                    each_loc = line.split('\t')
-                except:
-                    invalid_lines += 1
-                    continue
+                each_loc = line.split('\t')
                 
                 for j, each_base in enumerate(each_loc):
                     each_nuc_error = each_base.split()
@@ -163,9 +162,9 @@ def __main__():
     
     # throw messages of invalid values
     if invalid_lines > 0: 
-        print >> sys.stdout, 'Skipped %d lines due to invalid format' %(invalid_lines)
+        print 'Skipped %d lines due to invalid format' %(invalid_lines)
     if invalid_scores > 0:
-        print >> sys.stdout, 'Skipped %d scores due to invalid values' %(invalid_scores)
+        print 'Skipped %d scores due to invalid values' %(invalid_scores)
                
     # generate pdf figures
     cont_high_quality = array (cont_high_quality)

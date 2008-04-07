@@ -2,6 +2,8 @@
 
 import os, sys, tempfile
 
+assert sys.version_info[:2] >= (2.4)
+
 def stop_err(msg):
     
     sys.stderr.write(msg)
@@ -45,23 +47,23 @@ def __main__():
     target_file = sys.argv[2]
     query_file = sys.argv[3]
     output_file = sys.argv[4]
+    min_iden = sys.argv[5]
+    tile_size = sys.argv[6]
+    one_off = sys.argv[7]
     
     try:
-        test = float(sys.argv[5])
-        min_iden = sys.argv[5]
+        float(min_iden)    
     except:
         stop_err('Invalid value for minimal identity')
     
     try:  
-        test = int(sys.argv[6])
-        tile_size = sys.argv[6]
+        test = int(tile_size)
         assert test >= 6 and test <= 18
     except:
         stop_err('Invalid value for tile size. DNA word size must be between 6 and 18.')
         
     try:
-        test = int(sys.argv[7])
-        one_off = sys.argv[7]
+        test = int(one_off)
         assert test >= 0 and test <= int(tile_size)
     except:
         stop_err('Invalid value for mismatch numbers in the word')
@@ -73,9 +75,6 @@ def __main__():
 
         # check target genome
         dbkey = target_file
-        if dbkey == '?':
-            print >> sys.stdout, "No genome build specified. please check your dataset."
-            sys.exit()
         nib_path = check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR )
         twobit_path = check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR )
         if not os.path.exists( nib_path ) and not os.path.exists( twobit_path ):

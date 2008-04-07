@@ -188,7 +188,7 @@ def __main__():
                         each_nuc_error[3] = int(each_nuc_error[3])
                         big = max(each_nuc_error)
                     except:
-                        print 'Invalid numbers in the file. Skipped'
+                        print 'Invalid numbers in the file. Skipped.'
                         big = 0
                     tmp_array.append(big)                        
                 score_points.append(tmp_array)
@@ -258,7 +258,7 @@ def __main__():
     
     for i, subset in enumerate(score_matrix):
         if not subset:
-            print >> sys.stdout, 'At least one of the columns is empty.'
+            print 'At least one of the columns is empty.'
             score_matrix[i] = [0]
             
     if (tmp_varied_length is False):
