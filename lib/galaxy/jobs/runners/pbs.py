@@ -54,6 +54,37 @@ class PBSJobState( object ):
         self.efile = None
         self.runner_url = None
 
+class PBSServer( object ):
+    """
+    Wraps PBS methods, although only used for parsing pbs:// URLs at present.
+    """
+    def __init__( self ):
+        self.default_pbs_server = None
+    def determine_pbs_server( self, url, rewrite = False ):
+        """Determine what PBS server we are connecting to"""
+        url_split = url.split("/")
+        server = url_split[2]
+        if server == "":
+            if not self.default_pbs_server:
+                self.default_pbs_server = pbs.pbs_default()
+                log.debug( "Set default PBS server to %s" % self.default_pbs_server )
+            server = self.default_pbs_server
+            url_split[2] = server
+        if server is None:
+            raise Exception( "Could not find torque server" )
+        if rewrite:
+            return ( server, "/".join( url_split ) )
+        else:
+            return server
+    def determine_pbs_queue( self, url ):
+        """Determine what PBS queue we are submitting to"""
+        url_split = url.split("/")
+        queue = url_split[3]
+        if queue == "":
+            # None == server's default queue
+            queue = None
+        return queue
+
 class PBSJobRunner( object ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
@@ -72,33 +103,12 @@ class PBSJobRunner( object ):
         # to 'watched' and then manage the watched jobs.
         self.watched = []
         self.queue = Queue()
-        self.default_pbs_server = None
-        self.determine_pbs_server( "pbs:///" )
+        self.pbs_server = PBSServer()
+        # set the default server during startup
+        self.pbs_server.determine_pbs_server( 'pbs:///' )
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
         log.debug( "ready" )
-
-    def determine_pbs_server( self, url ):
-        """Determine what PBS server we are connecting to"""
-        url_split = url.split("/")
-        server = url_split[2]
-        if server == "":
-            if not self.default_pbs_server:
-                server = pbs.pbs_default()
-            else:
-                server = self.default_pbs_server
-        if server is None:
-            raise Exception( "Could not find torque server" )
-        return server
-
-    def determine_pbs_queue( self, url ):
-        """Determine what PBS queue we are submitting to"""
-        url_split = url.split("/")
-        queue = url_split[3]
-        if queue == "":
-            # None = server's default queue
-            queue = None
-        return queue
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
@@ -110,12 +120,18 @@ class PBSJobRunner( object ):
         if not command_line:
             job_wrapper.finish( '', '' )
         
+        # job was deleted while we were preparing it
+        if job_wrapper.get_state() == 'deleted':
+            log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
+            job_wrapper.cleanup()
+            return
+
         # Change to queued state immediately
         job_wrapper.change_state( 'queued' )
         
-        pbs_server = self.determine_pbs_server( runner_url )
-        pbs_queue = self.determine_pbs_queue( runner_url )
-        conn = pbs.pbs_connect( pbs_server )
+        ( pbs_server_name, runner_url ) = self.pbs_server.determine_pbs_server( runner_url, rewrite = True )
+        pbs_queue_name = self.pbs_server.determine_pbs_queue( runner_url )
+        conn = pbs.pbs_connect( pbs_server_name )
         if conn <= 0:
             raise Exception( "Connection to PBS server for submit failed" )
 
@@ -165,14 +181,20 @@ class PBSJobRunner( object ):
             # FIXME: More information here?
             stderr = stdout = ''
 
+        # job was deleted while we were preparing it
+        if job_wrapper.get_state() == 'deleted':
+            log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
+            job_wrapper.cleanup()
+            return
+
         galaxy_job_id = job_wrapper.job_id
         log.debug("(%s) submitting file %s" % ( galaxy_job_id, job_file ) )
         log.debug("(%s) command is: %s" % ( galaxy_job_id, command_line ) )
-        job_id = pbs.pbs_submit(conn, job_attrs, job_file, pbs_queue, None)
-        if pbs_queue is None:
+        job_id = pbs.pbs_submit(conn, job_attrs, job_file, pbs_queue_name, None)
+        if pbs_queue_name is None:
             log.debug("(%s) queued in default queue as %s" % (galaxy_job_id, job_id) )
         else:
-            log.debug("(%s) queued in %s queue as %s" % (galaxy_job_id, pbs_queue, job_id) )
+            log.debug("(%s) queued in %s queue as %s" % (galaxy_job_id, pbs_queue_name, job_id) )
         pbs.pbs_disconnect(conn)
 
         if not job_id:
@@ -192,7 +214,7 @@ class PBSJobRunner( object ):
         # Get initial job state
         stat_attrl = pbs.new_attrl(1)
         stat_attrl[0].name = 'job_state'
-        conn = pbs.pbs_connect( pbs_server )
+        conn = pbs.pbs_connect( pbs_server_name )
         if conn > 0:
             jobs = pbs.pbs_statjob(conn, job_id, stat_attrl, 'NULL')
             pbs.pbs_disconnect(conn)
@@ -263,8 +285,8 @@ class PBSJobRunner( object ):
             galaxy_job_id = pbs_job_state.job_wrapper.job_id
             old_state = pbs_job_state.old_state
             running = pbs_job_state.running
-            pbs_server = self.determine_pbs_server( pbs_job_state.runner_url )
-            conn = pbs.pbs_connect( pbs_server )
+            pbs_server_name = self.pbs_server.determine_pbs_server( pbs_job_state.runner_url )
+            conn = pbs.pbs_connect( pbs_server_name )
             if conn <= 0:
                 log.debug("(%s/%s) connection to PBS server for state check failed" % (galaxy_job_id, job_id) )
                 new_watched.append( pbs_job_state )
@@ -282,7 +304,6 @@ class PBSJobRunner( object ):
                     log.debug("(%s/%s) job has left queue" % (galaxy_job_id, job_id) )
                     self.finish_job( pbs_job_state )
             else:    
-                output_datasets_deleted = pbs_job_state.job_wrapper.check_if_output_datasets_deleted()
                 try:
                     if (jobs[0].attribs[0].name == "job_state"):
                         state = jobs[0].attribs[0].value
@@ -292,9 +313,6 @@ class PBSJobRunner( object ):
                             running = True
                             pbs_job_state.job_wrapper.change_state( "running" )
                             log.debug("(%s/%s) job is now running" % (galaxy_job_id, job_id) )
-                        if output_datasets_deleted and state != "E":
-                            log.debug( "(%s/%s) all output datasets deleted by user, dequeueing" % (galaxy_job_id, job_id) )
-                            self.delete_job( job_id, pbs_server )
                         old_state = state
                     pbs_job_state.old_state = old_state
                     pbs_job_state.running = running
@@ -346,15 +364,6 @@ class PBSJobRunner( object ):
         self.queue.put( self.STOP_SIGNAL )
         log.info( "pbs job runner stopped" )
 
-    def delete_job( self, job_id, pbs_server ):
-        """Attempts to delete a job from the PBS queue"""
-        conn = pbs.pbs_connect( pbs_server )
-        if conn <= 0:
-            log.debug("(%s) connection to PBS server for job delete failed" % job_id )
-            return
-        pbs.pbs_deljob( conn, job_id, 'NULL' )
-        pbs.pbs_disconnect( conn )
-
     def get_stage_in_out( self, fnames ):
         """Convenience function to create a stagein/stageout list"""
         stage = ''
@@ -369,3 +378,15 @@ class PBSJobRunner( object ):
                     stage_name = fname
                 stage += "%s@%s:%s" % (stage_name, self.app.config.pbs_dataset_server, fname)
         return stage
+
+def stop_job( job ):
+    """Attempts to delete a job from the PBS queue"""
+    pbs_server = PBSServer()
+    pbs_server_name = pbs_server.determine_pbs_server( str( job.job_runner_name ) )
+    conn = pbs.pbs_connect( pbs_server_name )
+    if conn <= 0:
+        log.debug("(%s/%s) Connection to PBS server for job delete failed" % ( job.id, job.job_runner_external_id ) )
+        return
+    pbs.pbs_deljob( conn, str( job.job_runner_external_id ), 'NULL' )
+    pbs.pbs_disconnect( conn )
+    log.debug( "(%s/%s) Removed from PBS queue at user's request" % ( job.id, job.job_runner_external_id ) )

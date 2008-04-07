@@ -46,7 +46,8 @@ class Job( object ):
                     QUEUED = 'queued',
                     RUNNING = 'running',
                     OK = 'ok',
-                    ERROR = 'error' )
+                    ERROR = 'error',
+                    DELETED = 'deleted' )
     def __init__( self ):
         self.session_id = None
         self.tool_id = None
@@ -171,7 +172,8 @@ class Dataset( object ):
                     RUNNING = 'running',
                     OK = 'ok',
                     EMPTY = 'empty',
-                    ERROR = 'error')
+                    ERROR = 'error',
+                    DELETED = 'deleted')
     file_path = "/tmp/"
     engine = None
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 

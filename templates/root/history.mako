@@ -154,7 +154,7 @@
                     setupHistoryItem( container.children( ".historyItemWrapper" ) );
                     initShowHide();
                     // If new state was terminal, stop tracking
-                    if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty")) {
+                    if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty") || ( val.state == "deleted" )) {
                         delete tracked_datasets[ parseInt(id) ];
                     } else {
                         tracked_datasets[ parseInt(id) ] = val.state;
@@ -246,7 +246,7 @@ div#footer {
     <script type="text/javascript">
     var tracked_datasets = {};
     %for data in reversed( history.active_datasets ):
-        %if data.visible and data.state not in [ "empty", "error", "ok" ]:
+        %if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]:
             tracked_datasets[ ${data.id} ] = "${data.state}";
         %endif
     %endfor

@@ -32,6 +32,7 @@ class UniverseApplication( object ):
         self.datatypes_registry.load_datatype_converters(self.config.datatype_converters_config, self.config.datatype_converters_path, self.toolbox)
         # Start the job queue
         self.job_queue = jobs.JobQueue( self )
+        self.job_stop_queue = jobs.JobStopQueue( self )
         self.heartbeat = None
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
@@ -40,6 +41,7 @@ class UniverseApplication( object ):
                 self.heartbeat = heartbeat.Heartbeat()
                 self.heartbeat.start()
     def shutdown( self ):
+        self.job_stop_queue.shutdown()
         self.job_queue.shutdown()
         if self.heartbeat:
             self.heartbeat.shutdown()

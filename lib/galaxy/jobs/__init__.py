@@ -15,7 +15,7 @@ from Queue import Queue, Empty
 log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
-JOB_WAIT, JOB_ERROR, JOB_OK, JOB_READY = 'wait', 'error', 'ok', 'ready'
+JOB_WAIT, JOB_ERROR, JOB_OK, JOB_READY, JOB_DELETED = 'wait', 'error', 'ok', 'ready', 'deleted'
 
 class Sleeper( object ):
     """
@@ -208,6 +208,8 @@ class JobQueue( object ):
                     else : # or dispatch the job directly
                         self.dispatcher.put( job )
                         log.debug( "job %d dispatched" % job.job_id)
+                elif job_state == JOB_DELETED:
+                    log.debug( "job %d deleted by user while still queued" % job.job_id )
                 else:
                     log.error( "unknown job state '%s' for job %d" % ( job_state, job.job_id ))
             except:
@@ -367,6 +369,11 @@ class JobWrapper( object ):
         job.state = state
         job.flush()
 
+    def get_state( self ):
+        job = model.Job.get( self.job_id )
+        job.refresh()
+        return job.state
+
     def set_runner( self, runner_url, external_id ):
         job = model.Job.get( self.job_id )
         job.refresh()
@@ -388,13 +395,19 @@ class JobWrapper( object ):
         for dataset_assoc in job.input_datasets:
             idata = dataset_assoc.dataset
             idata.refresh()
+            # don't run jobs for which the input dataset was deleted
+            if idata.deleted == True:
+                self.fail( "input data %d was deleted before this job ran" % idata.hid )
+                return JOB_ERROR
             # an error in the input data causes us to bail immediately
-            if idata.state == idata.states.ERROR:
+            elif idata.state == idata.states.ERROR:
                 self.fail( "error in input data %d" % idata.hid )
                 return JOB_ERROR
             elif idata.state != idata.states.OK:
                 # need to requeue
                 return JOB_WAIT
+        if job.state == model.Job.states.DELETED:
+            return JOB_DELETED
         return JOB_READY
         
     def finish( self, stdout, stderr ):
@@ -406,6 +419,10 @@ class JobWrapper( object ):
         # default post job setup
         mapping.context.current.clear()
         job = model.Job.get( self.job_id )
+        # if the job was deleted, don't finish it
+        if job.state == job.states.DELETED:
+            self.cleanup()
+            return
         job.state = 'ok'
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset
@@ -483,17 +500,6 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         return [ da.dataset.file_name for da in job.output_datasets ]
 
-    def check_if_output_datasets_deleted( self ):
-        job = model.Job.get( self.job_id )
-        for dataset_assoc in job.output_datasets:
-            dataset = dataset_assoc.dataset
-            dataset.refresh()
-            if dataset.parent_id is not None:
-                return False
-            if not dataset.deleted:
-                return False
-        return True
-
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app
@@ -519,3 +525,108 @@ class DefaultJobDispatcher( object ):
     def shutdown( self ):
         for runner in self.job_runners.itervalues():
             runner.shutdown()
+
+class JobStopQueue( object ):
+    """
+    A queue for jobs which need to be terminated prematurely.
+    """
+    STOP_SIGNAL = object()
+    def __init__( self, app ):
+        self.app = app
+
+        # Keep track of the pid that started the job manager, only it
+        # has valid threads
+        self.parent_pid = os.getpid()
+        # Contains new jobs. Note this is not used if track_jobs_in_database is True
+        self.queue = Queue()
+
+        # Contains jobs that are waiting (only use from monitor thread)
+        self.waiting = []
+
+        # Helper for interruptable sleep
+        self.sleeper = Sleeper()
+        self.running = True
+        self.monitor_thread = threading.Thread( target=self.monitor )
+        self.monitor_thread.start()        
+        log.info( "job stopper started" )
+
+    def monitor( self ):
+        """
+        Continually iterate the waiting jobs, stop any that are found.
+        """
+        # HACK: Delay until after forking, we need a way to do post fork notification!!!
+        time.sleep( 10 )
+        while self.running:
+            try:
+                self.monitor_step()
+            except:
+                log.exception( "Exception in monitor_step" )
+            # Sleep
+            self.sleeper.sleep( 1 )
+
+    def monitor_step( self ):
+        """
+        Called repeatedly by `monitor` to stop jobs.
+        """
+        # Pull all new jobs from the queue at once
+        jobs = []
+        try:
+            while 1:
+                job = self.queue.get_nowait()
+                if job is self.STOP_SIGNAL:
+                    return
+                # Append to watch queue
+                jobs.append( job )
+        except Empty:
+            pass  
+
+        for job in jobs:
+            # only handle jobs queued or running
+            if job.state not in [ model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.NEW ]:
+                return
+            self.mark_deleted( job.id )
+            if job.job_runner_name is None:
+                # job is in JobQueue or PBSJobRunner, will be dequeued due to state change above
+                return
+            elif job.job_runner_name.startswith( 'local://' ):
+                stop_job = runners.local.stop_job
+            elif job.job_runner_name.startswith( 'pbs://' ):
+                stop_job = runners.pbs.stop_job
+            else:
+                return
+            # stop
+            try:
+                log.debug( "User deleted running job %s, attempting to stop" % job.id )
+                stop_job( job )
+            except Exception, e:
+                log.error( "Unable to stop job %s (error in runner's stop method): %s" % ( job.id, e ) )
+
+    def mark_deleted( self, job_id ):
+        job = model.Job.get( job_id )
+        job.refresh()
+        job.state = job.states.DELETED
+        job.info = "Job deleted by user before it completed."
+        job.flush()
+        for dataset_assoc in job.output_datasets:
+            dataset = dataset_assoc.dataset
+            dataset.refresh()
+            dataset.state = model.Dataset.states.DELETED
+            dataset.blurb = 'deleted'
+            dataset.peek = 'Job deleted'
+            dataset.info = 'Job deleted by user before it completed'
+            dataset.flush()
+
+    def put( self, job ):
+        self.queue.put( job )
+
+    def shutdown( self ):
+        """Attempts to gracefully shut down the worker thread"""
+        if self.parent_pid != os.getpid():
+            # We're not the real job queue, do nothing
+            return
+        else:
+            log.info( "sending stop signal to worker thread" )
+            self.running = False
+            self.queue.put( self.STOP_SIGNAL )
+            self.sleeper.wake()
+            log.info( "job stopper stopped" )
