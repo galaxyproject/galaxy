@@ -267,13 +267,13 @@ class Universe( BaseController ):
                     # assert data.parent == None, "You must delete the primary dataset first."
                     # history.datasets.remove( data )
                     data.deleted = True
+                    data.flush()
                     trans.log_event( "Dataset id %s marked as deleted" % str(id) )
                     if data.parent_id is None:
                         try:
                             self.app.job_stop_queue.put( data.creating_job_associations[0].job )
                         except IndexError:
                             pass    # upload tool will cause this since it doesn't have a job
-            self.app.model.flush()
         return self.history( trans )
         
     @web.expose
@@ -290,13 +290,13 @@ class Universe( BaseController ):
                 # assert data.parent == None, "You must delete the primary dataset first."
                 # history.datasets.remove( data )
                 data.deleted = True
+                data.flush()
                 trans.log_event( "Dataset id %s marked as deleted async" % str(id) )
                 if data.parent_id is None:
                     try:
                         self.app.job_stop_queue.put( data.creating_job_associations[0].job )
                     except IndexError:
                         pass    # upload tool will cause this since it doesn't have a job
-            self.app.model.flush()
         return "OK"
 
     @web.expose

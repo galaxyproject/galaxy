@@ -584,6 +584,9 @@ class JobStopQueue( object ):
             # only handle jobs queued or running
             if job.state not in [ model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.NEW ]:
                 return
+            if not self.check_if_output_datasets_deleted( job.id ):
+                # job has multiple datasets that aren't parent/child and not all of them are deleted.
+                return
             self.mark_deleted( job.id )
             if job.job_runner_name is None:
                 # job is in JobQueue or PBSJobRunner, will be dequeued due to state change above
@@ -600,6 +603,15 @@ class JobStopQueue( object ):
                 stop_job( job )
             except Exception, e:
                 log.error( "Unable to stop job %s (error in runner's stop method): %s" % ( job.id, e ) )
+
+    def check_if_output_datasets_deleted( self, job_id ):
+        job = model.Job.get( job_id )
+        for dataset_assoc in job.output_datasets:
+            dataset = dataset_assoc.dataset
+            dataset.refresh()
+            if not dataset.deleted:
+                return False
+        return True
 
     def mark_deleted( self, job_id ):
         job = model.Job.get( job_id )
