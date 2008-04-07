@@ -717,6 +717,7 @@ class CustomTrack ( Tabular ):
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
     def get_estimated_display_viewport( self, dataset ):
         try:
+            wiggle_format = False
             for line in open(dataset.file_name):
                 if (line.startswith("chr") or line.startswith("scaffold")):  
                     start = line.split("\t")[1].replace(",","")   
@@ -728,6 +729,24 @@ class CustomTrack ( Tabular ):
                         value = ( line.split("\t")[0], end, start )
 
                     break
+
+                elif (line.startswith('variableStep')):
+                    # wiggle format
+                    wiggle_format = True
+                    wig_chr = line.split()[1].split('=')[1]
+                    if not wig_chr.startswith("chr"):
+                        value = ('', '', '')
+                        break
+                elif wiggle_format:
+                    # wiggle format
+                    if line.split("\t")[0].isdigit():
+                        start = line.split("\t")[0]
+                        end = str(int(start) + 1)
+                        value = (wig_chr, start, end)
+                    else:
+                        value = (wig_chr, '', '')
+                    break
+                            
             return value #returns the co-ordinates of the 1st track/dataset
         except:
             #return "."
