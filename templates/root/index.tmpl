@@ -40,7 +40,11 @@
 	<table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
             <tr height="100%" style="height: 100%">
                 <td height="100%" style="height: 100%;">
-                    <iframe name="galaxy_main" id="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( '/static/welcome.html' )}"> </iframe>
+		    #if $tool_id is not None:
+                    	<iframe name="galaxy_main" id="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( 'tool_runner', tool_id=$tool_id, from_noframe=True )}"> </iframe>
+		    #else
+                    	<iframe name="galaxy_main" id="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( '/static/welcome.html' )}"> </iframe>
+		    #end if
                 </td>
             </tr>
 	</table>

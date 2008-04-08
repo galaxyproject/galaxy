@@ -7,6 +7,12 @@ from galaxy.web.base.controller import *
 import logging
 log = logging.getLogger( __name__ )
 
+class AddFrameData:
+    def __init__( self ):
+        self.wiki_url = None
+        self.debug = None
+        self.from_noframe = None
+
 class ToolRunner( BaseController ):
 
     #Hack to get biomart to work, ideally, we could pass tool_id to biomart and receive it back
@@ -21,7 +27,7 @@ class ToolRunner( BaseController ):
         return self.index(trans, tool_id=tool_id, **kwd)
 
     @web.expose
-    def index(self, trans, tool_id=None, **kwd):
+    def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         # No tool id passed, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect( "/static/welcome.html" )
@@ -39,4 +45,9 @@ class ToolRunner( BaseController ):
         template, vars = tool.handle_input( trans, params.__dict__ )
         if len(params) > 0:
             trans.log_event( "Tool params: %s" % (str(params)), tool_id=tool_id )
-        return trans.fill_template( template, history=history, toolbox=toolbox, tool=tool, util=util, **vars )
+        add_frame = AddFrameData()
+        add_frame.debug = trans.debug
+        if from_noframe is not None:
+            add_frame.wiki_url = trans.app.config.wiki_url
+            add_frame.from_noframe = True
+        return trans.fill_template( template, history=history, toolbox=toolbox, tool=tool, util=util, add_frame=add_frame, **vars )

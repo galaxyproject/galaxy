@@ -34,7 +34,7 @@ class Universe( BaseController ):
         #         result = trans.fill_template('index_frames.tmpl', mode=mode)
         #         return [ result ]
         if trans.app.config.get( "use_new_layout", "false" ) == "true":
-            return trans.fill_template( "root/index.tmpl" )
+            return trans.fill_template( "root/index.tmpl", tool_id=tool_id )
         else:
             return trans.fill_template( "index_frames.tmpl" )
         

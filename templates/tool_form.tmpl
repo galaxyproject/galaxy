@@ -16,6 +16,11 @@ jQuery( function() {
         jQuery( "#tool_form" ).submit();
     });
 });
+#if not $add_frame.debug
+    if( window.name != "galaxy_main" ) {
+        location.replace( '$h.url_for( controller='root', action='index', tool_id=$tool.id )' );
+    }
+#end if
 </script>
 </head>
 
@@ -93,6 +98,15 @@ jQuery( function() {
                 
     </div>
 #end def
+
+#if $add_frame.from_noframe
+    <div class="warningmessage">
+    <strong>Welcome to Galaxy</strong>
+    <hr/>
+    It appears that you found this tool from a link outside of Galaxy.  If you're not familiar with Galaxy, please consider visiting the <a href="$h.url_for( controller='root' )" target="_top">welcome page</a>.  To learn more about what Galaxy is and what it can do for you, please visit the <a href="$add_frame.wiki_url" target="_top">Galaxy wiki</a>.
+    </div>
+    <br/>
+#end if
 
 <div class="toolForm" id="$tool.id">
   #if $tool.has_multiple_pages 
