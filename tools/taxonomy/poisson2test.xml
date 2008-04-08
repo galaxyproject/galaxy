@@ -1,0 +1,110 @@
+<tool id="poisson2test" name="Poisson 2 test" version="1.0.0">
+  <description>on tab-delimited file</description>
+  <command interpreter="python">poisson2test.py $input1 $input2 $input3 $input4 $input5 > $output1 </command>
+  <inputs>
+    <param name="input1" format="tabular" type="data" label="Input File"/>
+    <param name="input2" type="integer" size="5" value="2" label="First Column"/>
+    <param name="input3" type="integer" size="5" value="3" label="Second Column"/>
+    <param name="input4" type="float" size="5" value="1" label="D value"/>
+    <param name="input5" type="select" label="correction method">
+        <option value="0">Bonferroni</option>
+        <option value="1">FDR</option>
+    </param> 
+  </inputs>
+  <outputs>
+    <data format="tabular" name="output1" />
+  </outputs> 
+  <tests>
+    <test>
+        <param name="input1" value="poisson2test1.txt"/>
+        <param name="input2" value="2" />
+        <param name="input3" value="3" />
+        <param name="input4" value="0.44" />
+        <param name="input5" value="0" />
+        <output name="output1" file="poisson2test1.out" />    
+    </test>
+    <test>
+        <param name="input1" value="poisson2test2.txt"/>
+        <param name="input2" value="2" />
+        <param name="input3" value="3" />
+        <param name="input4" value="0.44" />
+        <param name="input5" value="0" />
+        <output name="output1" file="poisson2test2.out" />    
+    </test>    
+  </tests>
+  <help>
+
+**What it does**
+
+Suppose you have metagenomic samples from two different locations and have classified the reads unique to various taxa. Now you want to test if the number of reads that fall in a particular taxon in location 1 is different from those that fall in the same taxon in location 2. 
+This utility performs this analysis. It assumes that the data comes from a Poisson process and calculates two Z scores (Z1 and Z2) based on the work by Shiue and Bain; 1982 (Z1) and Huffman; 1984 (Z2).
+
+-----
+
+**Z score formula**
+
+Equation 1:
+
+.. image:: ../static/images/poisson2test_eqn1.png 
+
+ 
+Equation 2:
+
+.. image:: ../static/images/poisson2test_eqn2.png
+
+
+X = number of reads falling in a particular taxon in location 1
+ 
+Y = number of reads falling in the same taxon in location 2
+ 
+d = correction factor that accounts for biases in sample collection, DNA concentration, read numbers etc. between the two locations. 
+
+Not only that, this utility also provides corresponding p-values and corrected p-values (using Bonferroni or False Discovery Rate (FDR)). It takes in an input file (a tab delimited file consisting of three or more columns (taxon/category, read counts in location 1, read counts in location 2)), columns to compare, d value and a correction method 0 (Bonferroni) or 1 (FDR).
+
+-----
+
+**Example**
+
+- Input File: phylum, read count in location-1, read count in location-2::
+
+    Annelida            36     2
+    Apicomplexa         17     8
+    Arthropoda        1964   928
+    Ascomycota         436    49
+    Basidiomycota       77    55
+
+- Arguments to be supplied by the user::
+
+    col_i   col_j   d-value    correction-method
+    
+    2       3       0.44       Bonferroni
+
+- Output File: phylum, readcount1, readcount2, z1, z2, p1, p2, corrected p1, corrected p2::
+
+    Annelida            36     2   3.385   4.276  0.000356  0.000010  0.00463  0.00012
+    Apicomplexa         17     8  -0.157  -0.156  0.437707  0.438103  1.00000  1.00000
+    Arthropoda        1964   928  -1.790  -1.777  0.036755  0.037744  0.47782  0.49067
+    Ascomycota         436    49   9.778  11.418  0.000000  0.000000  0.00000  0.00000
+    Basidiomycota       77    55  -2.771  -2.659  0.002792  0.003916  0.03629  0.05091
+
+-----
+
+**Note**
+
+- Input file should be Tab delimited
+- i &lt; j
+- d cannot be 0
+- k = Bonferroni or FDR
+
+-----
+
+**References**
+
+- Shiue, W. and Bain, L. (1982). Experiment Size and Power Comparisons for Two-Sample Poisson Tests. Applied Statistics 31, 130-134.
+
+- Huffman, M. D. (1984). An Improved Approximate Two-Sample Poisson Test. Applied Statistics 33, 224-226.
+
+  </help>
+</tool>
+
+
