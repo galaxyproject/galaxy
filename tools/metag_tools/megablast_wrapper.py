@@ -84,7 +84,7 @@ def __main__():
         
         try:
             gi, gi_len = fields[1].split('_')
-            new_line = fields[0]+'\t'+gi+'\t'+gi_len+'\t'.join(fields[2:])
+            new_line = fields[0]+'\t'+gi+'\t'+gi_len+'\t'+'\t'.join(fields[2:])
         except:
             invalid_lines += 1
             new_line = line
