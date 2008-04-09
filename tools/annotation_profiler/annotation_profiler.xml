@@ -1,0 +1,82 @@
+<tool id="Annotation_Profiler_0" name="Profile Annotations" Version="1.0.0">
+  <description>for a set of genomic intervals</description>
+  <command interpreter="python2.4">annotation_profiler_for_interval.py -i $input1 -c $input1_chromCol -s $input1_startCol -e $input1_endCol -o $out_file1 $keep_empty -p /depot/data2/galaxy/annotation_profiler/$dbkey -b 3
+#if $select_tables.select_table == "some":#-t $select_tables.table_names
+#end if
+  </command>
+  <inputs>
+    <param format="interval" name="input1" type="data" label="Choose Intervals">
+      <validator type="dataset_metadata_in_file" filename="annotation_profiler.loc" metadata_name="dbkey" metadata_column="0" message="Profiling is not currently available for this species."/>
+    </param>
+    <param name="keep_empty" type="select" label="Keep Region/Table Pairs with 0 Coverage">
+      <option value="-k">Keep</option>
+      <option value="" selected="true">Discard</option>
+    </param>
+    <conditional name="select_tables">
+      <param name="select_table" type="select" label="Limit Tables">
+        <option value="all" selected="true">Use all tables</option>
+        <option value="some">Select desired tables</option>
+      </param>
+      <when value="all">
+      </when>
+      <when value="some">
+     <param name="table_names" type="select" display="checkboxes" multiple="true" label="Choose Tables to Use" help="Selecting no tables will result in using all tables.">
+       <options from_file="annotation_profiler.loc" name_col="2" value_col="1">
+         <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="0"/>
+       </options>
+     </param> 
+      </when>
+    </conditional>
+   </inputs>
+   <outputs>
+     <data format="input" name="out_file1"/>
+   </outputs>
+   <tests>
+     <test>
+       <param name="input1" value="4.bed" dbkey="hg18"/>
+       <param name="keep_empty" value=""/>
+       <param name="select_table" value="some"/>
+       <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refFlat,refGene,snp126"/>
+       <param name="keep_empty" value=""/>
+       <output name="out_file1" file="annotation_profiler_1.out" />
+     </test>
+   </tests>
+   <help>
+**What it does**
+
+Takes an input set of intervals and for each interval determines the base coverage of the interval by a set of features (tables) available from UCSC.
+
+By default, this tool will check the coverage of your intervals against all available features; you may, however, choose to select only those tables that you want to include.
+
+In the listing of available tables, the number in parentheses **()** is the total number of bases covered by the feature across all chromosomes.
+
+-----
+
+**Example** 
+
+Using the interval below and selecting several tables::
+
+ chr1 4558 14764 uc001aab.1 0 -
+
+results in::
+
+ chr1 4558 14764 uc001aab.1 0 - xenoMrna 10203
+ chr1 4558 14764 uc001aab.1 0 - snp126 205
+ chr1 4558 14764 uc001aab.1 0 - chainStrPur2Link 1323
+ chr1 4558 14764 uc001aab.1 0 - netXenTro2 3050
+ chr1 4558 14764 uc001aab.1 0 - intronEst 10206
+ chr1 4558 14764 uc001aab.1 0 - snp126orthoPanTro2RheMac2 61
+ chr1 4558 14764 uc001aab.1 0 - multiz28way 10206
+ chr1 4558 14764 uc001aab.1 0 - chainEquCab1 10206
+ chr1 4558 14764 uc001aab.1 0 - affyTxnPhase3HeLaNuclear 9011
+ chr1 4558 14764 uc001aab.1 0 - affyHuEx1 3553
+ chr1 4558 14764 uc001aab.1 0 - clonePos 10206
+ chr1 4558 14764 uc001aab.1 0 - ctgPos 10206
+ chr1 4558 14764 uc001aab.1 0 - snp126Exceptions 151
+ chr1 4558 14764 uc001aab.1 0 - chainOryLat1 3718
+ chr1 4558 14764 uc001aab.1 0 - genomicSuperDups 10206
+ chr1 4558 14764 uc001aab.1 0 - netGalGal3 3686
+ chr1 4558 14764 uc001aab.1 0 - phastCons28wayPlacMammal 10172
+
+  </help>
+</tool>

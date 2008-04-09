@@ -1,0 +1,11 @@
+#build	tableName	tableDescription
+#hg18	acembly	acembly (1635047140)
+#hg18	acescan	acescan (755672)
+#hg18	affyGnf1h	affyGnf1h (59183600)
+#hg18	affyHuEx1	affyHuEx1 (177129194)
+#hg18	affyHumanExon	affyHumanExon (177129194)
+#hg18	affyRatio	affyRatio (474485615)
+#hg18	affyTxnPhase3FragsHDF	affyTxnPhase3FragsHDF (51209878)
+#hg18	affyTxnPhase3FragsHeLaBottomStrand	affyTxnPhase3FragsHeLaBottomStrand (5245191)
+#hg18	affyTxnPhase3FragsHeLaCyto	affyTxnPhase3FragsHeLaCyto (67255037)
+#hg18	affyTxnPhase3FragsHeLaNuclear	affyTxnPhase3FragsHeLaNuclear (87323622)
