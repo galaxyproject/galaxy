@@ -31,7 +31,7 @@ class UploadToolAction( object ):
                 file_name = file_name.split( '\\' )[-1]
                 file_name = file_name.split( '/' )[-1]
                 data_list.append( self.add_file( trans, data_file.file, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
-            except BadFileException, e:
+            except Exception, e:
                 return self.upload_empty( trans, "Error:", str( e ) )
         if url_paste not in [None, ""]:
             if url_paste[0:7].lower() == "http://" or url_paste[0:6].lower() == "ftp://":
@@ -39,12 +39,12 @@ class UploadToolAction( object ):
                 for line in url_paste:
                     try:
                         data_list.append( self.add_file( trans, urllib.urlopen( line ), line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
-                    except BadFileException, e:
+                    except Exception, e:
                         return self.upload_empty( trans, "Error:", str( e ) )
             else:
                 try:
                     data_list.append( self.add_file( trans, StringIO.StringIO( url_paste ), 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
-                except BadFileException, e:
+                except Exception, e:
                     return self.upload_empty( trans, "Error:", str( e ) )
         if self.empty:
             return self.upload_empty( trans, "Empty file error:", "you attempted to upload an empty file." )
