@@ -406,7 +406,7 @@ def require( pkg ):
     egg = c.get_for_require( name )
     try:
         if egg is None:
-            pkg_resources.working_set.require( name )
+            pkg_resources.working_set.require( pkg )
         else:
             pkg_resources.working_set.require( "%s==%s" % ( name, egg.get_vertag() ) )
         return
@@ -435,7 +435,6 @@ def require( pkg ):
     except pkg_resources.DistributionNotFound, e:
 	# the initial require itself is the first dep, but it can have
 	# multiple deps, which will be fetched by the require below.
-        print >>sys.stdout, "foo"
         dep = pkg_resources.Requirement.parse( str( e ) ).project_name
         egg = c.get_for_require( dep )
         if egg is None:
@@ -445,8 +444,7 @@ def require( pkg ):
         if not egg.have:
             if not egg.fetch():
                 raise EggNotFetchable( egg.name )
-            pkg_resources.working_set.require( "%s==%s" % ( name, egg.get_vertag() ) )
-    #require( pkg )
+            require( pkg )
 
 # convenience stuff
 def get_ucs():
