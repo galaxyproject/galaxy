@@ -7,6 +7,7 @@ the reverse complement for each block in the source file.
 usage: %prog input_maf_file output_maf_file
 """
 #Dan Blankenberg
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 import sys

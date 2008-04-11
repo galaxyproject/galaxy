@@ -9,6 +9,7 @@ usage: %prog bed_file_1 bed_file_2 out_file
     -2, --cols2=N,N,N,N: Columns for start, end, strand in second file
 """
 
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 

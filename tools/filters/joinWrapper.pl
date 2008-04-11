@@ -31,6 +31,8 @@ if ($OOption eq "Y") {
   $option = "";
 }
 
+$ENV{'LC_ALL'} = 'POSIX';
+
 if ($mode eq "V") {
   `join -v 1 $option -1 $field1 -2 $field2 $file1 $file2 | tr " " "\t" > $out_file1`;
 } else {

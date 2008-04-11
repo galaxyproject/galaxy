@@ -1,5 +1,6 @@
 # runs after the job (and after the default post-filter)
 import sets, os
+from galaxy import eggs
 from galaxy import jobs
 from galaxy.tools.parameters import DataToolParameter
 

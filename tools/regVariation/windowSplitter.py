@@ -9,6 +9,7 @@ usage: %prog input size out_file
 
 import sys, sets, re, os
 
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *

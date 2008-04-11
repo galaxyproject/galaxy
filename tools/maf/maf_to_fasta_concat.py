@@ -7,6 +7,7 @@ usage %prog species1,species2 maf_file out_file
 """
 #Dan Blankenberg
 import sys
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
 from galaxy.tools.util import maf_utilities

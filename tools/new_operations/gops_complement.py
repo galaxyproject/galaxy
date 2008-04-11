@@ -9,6 +9,7 @@ usage: %prog in_file out_file
     -a, --all: Complement all chromosomes (Genome-wide complement)
 """
 
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 

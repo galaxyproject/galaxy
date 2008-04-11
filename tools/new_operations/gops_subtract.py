@@ -11,6 +11,7 @@ usage: %prog bed_file_1 bed_file_2 out_file
     -p, --pieces: just print pieces of second set (after padding)
 """
 
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 

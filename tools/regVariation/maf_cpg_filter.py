@@ -9,6 +9,7 @@ usage: %prog < input > output restricted
     -m, --mask=N: Character to use as mask ('?' is default)
 """
 
+from galaxy import eggs
 import pkg_resources 
 pkg_resources.require( "bx-python" )
 try:

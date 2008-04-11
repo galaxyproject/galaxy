@@ -14,21 +14,6 @@ def unpack_prebuilt_lzo():
         t.close()
 
 def build_lzo():
-    # download
-    if not os.access( LZO_ARCHIVE, os.F_OK ):
-        pkg_resources.require( "twill" )
-        import twill.commands as tc
-        import twill.errors as te
-        try:
-            print "build_lzo(): Downloading LZO source archive from:"
-            print " ", LZO_URL
-            tc.go( LZO_URL )
-            tc.code( 200 )
-            tc.save_html( LZO_ARCHIVE )
-        except te.TwillAssertionError, e:
-            print "build_lzo(): Unable to fetch LZO source archive from:"
-            print " ", LZO_URL
-            sys.exit( 1 )
     # untar
     print "build_lzo(): Unpacking LZO source archive from:"
     print " ", LZO_ARCHIVE
@@ -89,7 +74,6 @@ else:
 LZO_VERSION = "1.08"
 LZO_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "lzo-%s.tar.gz" %LZO_VERSION ) )
 LZO_BINARY_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "lzo-%s-%s.tar.bz2" %( LZO_VERSION, pkg_resources.get_platform() ) ) )
-LZO_URL = "http://www.oberhumer.com/opensource/lzo/download/LZO-v1/lzo-%s.tar.gz" %LZO_VERSION
 # there's no need to have a completely separate build script for this
 if pkg_resources.get_platform() == "macosx-10.3-fat":
     CONFIGURE  = "CFLAGS='-O -g -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch i386 -arch ppc' "

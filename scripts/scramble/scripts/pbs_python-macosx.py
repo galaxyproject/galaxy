@@ -14,21 +14,6 @@ def unpack_prebuilt_torque():
         t.close()
 
 def build_torque():
-    # download
-    if not os.access( TORQUE_ARCHIVE, os.F_OK ):
-        pkg_resources.require( "twill" )
-        import twill.commands as tc
-        import twill.errors as te
-        try:
-            print "build_torque(): Downloading Torque source archive from:"
-            print " ", TORQUE_URL
-            tc.go( TORQUE_URL )
-            tc.code( 200 )
-            tc.save_html( TORQUE_ARCHIVE )
-        except te.TwillAssertionError, e:
-            print "build_torque(): Unable to fetch Torque source archive from:"
-            print " ", TORQUE_URL
-            sys.exit( 1 )
     # untar
     print "build_torque(): Unpacking Torque source archive from:"
     print " ", TORQUE_ARCHIVE
@@ -107,7 +92,6 @@ else:
 TORQUE_VERSION = ( tag.split( "_" ) )[1]
 TORQUE_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "torque-%s.tar.gz" %TORQUE_VERSION ) )
 TORQUE_BINARY_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "torque-%s-%s.tar.bz2" %( TORQUE_VERSION, pkg_resources.get_platform() ) ) )
-TORQUE_URL = "http://www.clusterresources.com/downloads/torque/torque-%s.tar.gz" %TORQUE_VERSION
 CONFIGURE  = "CFLAGS='-O -g -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch i386 -arch ppc' "
 CONFIGURE += "LDFLAGS='-Wl,-syslibroot,/Developer/SDKs/MacOSX10.4u.sdk -arch i386 -arch ppc' "
 CONFIGURE += "./configure --prefix=/usr/local --disable-dependency-tracking --without-tcl --without-tk"

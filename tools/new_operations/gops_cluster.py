@@ -11,6 +11,7 @@ usage: %prog in_file out_file
     -o, --output=N: 1)merged 2)filtered 3)clustered 4) minimum 5) maximum
 """
 
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 

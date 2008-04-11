@@ -14,21 +14,6 @@ def unpack_prebuilt_postgres():
         t.close()
 
 def build_postgres():
-    # download
-    if not os.access( POSTGRES_ARCHIVE, os.F_OK ):
-        pkg_resources.require( "twill" )
-        import twill.commands as tc
-        import twill.errors as te
-        try:
-            print "build_postgres(): Downloading postgres source archive from:"
-            print " ", POSTGRES_URL
-            tc.go( POSTGRES_URL )
-            tc.code( 200 )
-            tc.save_html( POSTGRES_ARCHIVE )
-        except te.TwillAssertionError, e:
-            print "build_postgres(): Unable to fetch postgres source archive from:"
-            print " ", POSTGRES_URL
-            sys.exit( 1 )
     # untar
     print "build_postgres(): Unpacking postgres source archive from:"
     print " ", POSTGRES_ARCHIVE
@@ -93,7 +78,6 @@ else:
 POSTGRES_VERSION = ( tag.split( "_" ) )[1]
 POSTGRES_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "postgresql-%s.tar.bz2" %POSTGRES_VERSION ) )
 POSTGRES_BINARY_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "postgresql-%s-%s.tar.bz2" %( POSTGRES_VERSION, pkg_resources.get_platform() ) ) )
-POSTGRES_URL = "http://ftp8.us.postgresql.org/postgresql/source/v%s/postgresql-%s.tar.bz2" %( POSTGRES_VERSION, POSTGRES_VERSION )
 # there's no need to have a completely separate build script for this
 if pkg_resources.get_platform() == "macosx-10.3-fat":
     CONFIGURE = "CFLAGS='-O -g -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch i386 -arch ppc' LDFLAGS='-arch i386 -arch ppc' LD='gcc -mmacosx-version-min=10.4 -isysroot /Developer/SDKs/MacOSX10.4u.sdk -nostartfiles -arch i386 -arch ppc' ./configure --prefix=%s/postgres --disable-shared --disable-dependency-tracking --without-readline" %os.getcwd()

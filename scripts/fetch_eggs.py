@@ -1,34 +1,48 @@
-import sys
-from eggs import *
+"""
+usage: fetch_eggs.py [egg_name]
+    With no arguments, fetches all eggs necessary according to the
+    settings in universe_wsgi.ini.
+  egg_name - Fetch only this egg (as defined in eggs.ini) or 'all' for
+    all eggs (even those not required by your settings).
+"""
+import os, sys, logging
 
-config_eggs = ConfigEggs()
-galaxy_eggs = GalaxyEggs()
+root = logging.getLogger()
+root.setLevel( 10 )
+root.addHandler( logging.StreamHandler( sys.stdout ) )
 
-# "all" argument used to fetch all eggs, for buildbot
-if len( sys.argv ) == 2:
-    if sys.argv[1] == "all":
-        galaxy_config = "all"
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "lib" ) )
+sys.path.append( lib )
+
+from galaxy.eggs import *
+
+c = Crate()
+c.parse()
+try:
+    if len( sys.argv ) == 1:
+        galaxy_config = GalaxyConfig()
+        ignore = []
+        for name in c.get_names():
+            if not galaxy_config.check_conditional( name ):
+                ignore.append( name )
+        c.fetch( ignore=ignore )
     else:
-        print "Unknown argument:", sys.argv[1]
-        sys.exit( 1 )
-else:
-    galaxy_config = GalaxyConfig()
-
-missing_eggs = get_missing_eggs( config_eggs, galaxy_eggs, galaxy_config )
-if len( missing_eggs ) != 0:
-    ret = fetch_eggs( config_eggs.repo, missing_eggs )
-    if ret == []:
-        print "Eggs fetched successfully"
-        sys.exit( 0 )
-    else:
-        print ""
-        print 'fetch_eggs.py was unable to download some eggs.  You may have success'
-        print '"scrambling" them yourself:'
-        print ""
-        for name in ret:
-            print " ", sys.executable, os.path.join( os.path.dirname( sys.argv[0] ), "scramble.py" ), name
-        print ""
-        sys.exit( 1 )
-else:
-    print "All eggs are up to date for this revision of Galaxy"
-sys.exit( 0 )
+        if sys.argv[1] == 'all':
+            c.fetch()
+        else:
+            egg = c.get( sys.argv[1] )
+            if egg is None:
+                print "error: %s not in eggs.ini" % sys.argv[1]
+                sys.exit( 1 )
+            egg.fetch()
+except EggNotFetchable, e:
+    print "One of the python eggs necessary to run Galaxy couldn't be downloaded"
+    print "automatically.  You may want to try building it by hand with:"
+    print "  python scripts/scramble.py %s" % e
+    sys.exit( 1 )
+except PlatformNotSupported, e:
+    print "Your platform (%s) is not supported." % e
+    print "Pre-built galaxy eggs are not available from the Galaxy developers for"
+    print "your platform.  You may be able to build them by hand with:"
+    print "  python scripts/scramble.py"
+    sys.exit( 1 )

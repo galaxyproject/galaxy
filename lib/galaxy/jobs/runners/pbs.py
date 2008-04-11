@@ -6,6 +6,7 @@ import time
 from Queue import Queue, Empty
 
 from galaxy import model
+from paste.deploy.converters import asbool
 
 import pkg_resources
 
@@ -18,17 +19,27 @@ except:
 log = logging.getLogger( __name__ )
 
 pbs_template = """#!/bin/sh
-export LC_ALL='%s'
-export PATH='%s'
-export PYTHONPATH='%s'
+GALAXY_LIB="%s"
+if [ "$GALAXY_LIB" != "None" ]; then
+    if [ -n "$PYTHONPATH" ]; then
+        export PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
+    else
+        export PYTHONPATH="$GALAXY_LIB"
+    fi
+fi
 cd %s
 %s
 """
 
 pbs_symlink_template = """#!/bin/sh
-export LC_ALL='%s'
-export PATH='%s'
-export PYTHONPATH='%s'
+GALAXY_LIB="%s"
+if [ "$GALAXY_LIB" != "None" ]; then
+    if [ -n "$PYTHONPATH" ]; then
+        export PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
+    else
+        export PYTHONPATH="$GALAXY_LIB"
+    fi
+fi
 for dataset in %s; do
     dir=`dirname $dataset`
     file=`basename $dataset`
@@ -168,9 +179,9 @@ class PBSJobRunner( object ):
 
         # write the job script
         if self.app.config.pbs_stage_path != '':
-            script = pbs_symlink_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], " ".join(job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames()), self.app.config.pbs_stage_path, exec_dir, command_line)
+            script = pbs_symlink_template % (job_wrapper.galaxy_lib_dir, " ".join(job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames()), self.app.config.pbs_stage_path, exec_dir, command_line)
         else:
-            script = pbs_template % (os.environ['LC_ALL'], os.environ['NODEPATH'], os.environ['PYTHONPATH'], exec_dir, command_line)
+            script = pbs_template % (job_wrapper.galaxy_lib_dir, exec_dir, command_line)
         job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job_wrapper.job_id)
         fh = file(job_file, "w")
         fh.write(script)
@@ -347,12 +358,13 @@ class PBSJobRunner( object ):
             log.exception("Job wrapper finish method failed")
 
         # clean up the job_file, ofile, efile
-        if os.access(ofile, os.R_OK):
-            os.unlink(ofile)
-        if os.access(efile, os.R_OK):
-            os.unlink(efile)
-        if os.access(job_file, os.R_OK):
-            os.unlink(job_file)
+        if not asbool( self.app.config.get( 'debug', False ) ):
+            if os.access(ofile, os.R_OK):
+                os.unlink(ofile)
+            if os.access(efile, os.R_OK):
+                os.unlink(efile)
+            if os.access(job_file, os.R_OK):
+                os.unlink(job_file)
             
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""

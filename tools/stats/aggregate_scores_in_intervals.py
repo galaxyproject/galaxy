@@ -7,6 +7,7 @@ usage: %prog score_file interval_file chrom start stop [out_file] [options]
 """
 
 from __future__ import division
+from galaxy import eggs
 import pkg_resources 
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "lrucache" )

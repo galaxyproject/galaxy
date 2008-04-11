@@ -10,6 +10,7 @@ usage: %prog input1 input2 out_file direction
 """
 
 import sys, os, tempfile, commands
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *

@@ -10,6 +10,7 @@ usage: %prog input_maf output_maf species1,species2
 """
 #Dan Blankenberg
 import sys
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 

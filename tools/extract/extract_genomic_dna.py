@@ -3,6 +3,7 @@
 usage: extract_genomic_dna.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format GALAXY_DATA_INDEX_DIR
 by Wen-Yu Chung
 """
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 import sys, string, os, re

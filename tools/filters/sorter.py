@@ -12,6 +12,7 @@ import string
 import sys
 import re
 import commands
+from os import environ
 
 def getopts(argv):
     opts = {}
@@ -102,6 +103,7 @@ def main():
         
     # Launch sort.
     
+    environ['LC_ALL'] = 'POSIX'
     commandline = "sort -f"+style+"+"+str(column)+" -o "+outputfile+" "+inputfile+order
 
     errorcode, stdout = commands.getstatusoutput(commandline)

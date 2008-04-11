@@ -9,6 +9,7 @@ usage: %prog in_file out_file
     -3, --threecol: Output 3 column bed
 """
 
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 

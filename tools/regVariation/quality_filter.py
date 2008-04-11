@@ -8,6 +8,7 @@ usage: %prog input out_file primary_species mask_species score mask_char mask_re
 
 
 from __future__ import division
+from galaxy import eggs
 import pkg_resources 
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "lrucache" )

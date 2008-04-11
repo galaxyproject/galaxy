@@ -8,6 +8,7 @@ usage: %prog input1 out_file1 column features
 
 import sys, os
 
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 

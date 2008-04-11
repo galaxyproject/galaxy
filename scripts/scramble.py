@@ -1,32 +1,36 @@
 """
-usage: scramble.py <egg_name> [platform]
-    egg_name - The name of an egg to build, as defined in eggs.ini
-    platform - An optional platform to build the egg for.
-
-The platform option is mostly intended for the Galaxy developers who distribute
-eggs via the Galaxy Eggs site.  Please see the comments in eggs.ini for more
-information about using the platform option.
+usage: scramble.py [egg_name]
+    With no arguments, scrambles all eggs necessary according to the
+    settings in universe_wsgi.ini.
+  egg_name - Scramble only this egg (as defined in eggs.ini) or 'all'
+    for all eggs (even those not required by your settings).
 """
-import os, sys
-from eggs import scramble
+import os, sys, logging
 
-if len( sys.argv ) < 2:
-    print __doc__
-    sys.exit( 1 )
+root = logging.getLogger()
+root.setLevel( 10 )
+root.addHandler( logging.StreamHandler( sys.stdout ) )
 
-#scramble_lib = os.path.join( os.path.dirname( sys.argv[0] ), "scramble", "lib" )
-#sys.path.append( scramble_lib )
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "lib" ) )
+sys.path.append( lib )
 
-#try:
-#    from setuptools import *
-#except:
-#    from ez_setup import use_setuptools
-#    use_setuptools( download_delay=8, to_dir=scramble_lib )
-#    from setuptools import *
+from galaxy.eggs import Crate, GalaxyConfig
 
-if len( sys.argv ) == 3:
-    plat = sys.argv[2]
+c = Crate()
+c.parse()
+if len( sys.argv ) == 1:
+    galaxy_config = GalaxyConfig()
+    ignore = []
+    for name in c.get_names():
+        if not galaxy_config.check_conditional( name ):
+            ignore.append( name )
+    c.scramble( ignore=ignore )
 else:
-    plat = "default"
-
-scramble( sys.argv[1], plat )
+    if sys.argv[1] == 'all':
+        c.scramble()
+    else:
+        egg = c.get( sys.argv[1] )
+        if egg is None:
+            print "error: %s not in eggs.ini" % sys.argv[1]
+            sys.exit( 1 )
+        egg.scramble()

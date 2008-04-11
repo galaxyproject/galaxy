@@ -6,6 +6,7 @@
 from __future__ import division
 
 import sys
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.bitset import *
 from bx.bitset_builders import *

@@ -42,6 +42,7 @@ tax_read_grouping.py <file in taxonomy format> <id column> <taxonomic ranks> <ou
 
 """
 
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( 'pysqlite' )
 from pysqlite2 import dbapi2 as sqlite

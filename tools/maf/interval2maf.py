@@ -24,6 +24,7 @@ usage: %prog maf_file [options]
 """
 
 #Dan Blankenberg
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 import bx.align.maf

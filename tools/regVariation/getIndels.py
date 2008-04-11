@@ -7,6 +7,7 @@ usage: %prog maf_input out_file1 out_file2
 """
 
 from __future__ import division
+from galaxy import eggs
 import pkg_resources 
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "lrucache" )

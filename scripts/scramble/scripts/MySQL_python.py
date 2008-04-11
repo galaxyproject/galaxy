@@ -14,21 +14,6 @@ def unpack_prebuilt_mysql():
         t.close()
 
 def build_mysql():
-    # download
-    if not os.access( MYSQL_ARCHIVE, os.F_OK ):
-        pkg_resources.require( "twill" )
-        import twill.commands as tc
-        import twill.errors as te
-        try:
-            print "build_mysql(): Downloading mysql source archive from:"
-            print " ", MYSQL_URL
-            tc.go( MYSQL_URL )
-            tc.code( 200 )
-            tc.save_html( MYSQL_ARCHIVE )
-        except te.TwillAssertionError, e:
-            print "build_mysql(): Unable to fetch mysql source archive from:"
-            print " ", MYSQL_URL
-            sys.exit( 1 )
     # untar
     print "build_mysql(): Unpacking mysql source archive from:"
     print " ", MYSQL_ARCHIVE
@@ -92,7 +77,6 @@ else:
 MYSQL_VERSION = ( tag.split( "_" ) )[1]
 MYSQL_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "mysql-%s.tar.gz" %MYSQL_VERSION ) )
 MYSQL_BINARY_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "mysql-%s-%s.tar.bz2" %( MYSQL_VERSION, pkg_resources.get_platform() ) ) )
-MYSQL_URL = "http://mysql.mirrors.pair.com/Downloads/MySQL-5.0/mysql-%s.tar.gz" %MYSQL_VERSION
 # there's no need to have a completely separate build script for this
 if pkg_resources.get_platform() == "macosx-10.3-fat":
     CONFIGURE  = "CFLAGS='-O -g -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch i386 -arch ppc' "

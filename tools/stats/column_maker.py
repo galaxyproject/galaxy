@@ -7,6 +7,7 @@ informing the user about the number of lines skipped.  Invalid lines are those t
 defined when the get_wrap_func function (immediately below) is applied to the first uncommented line in the input file.
 """
 import sys, sets, re, os.path
+from galaxy import eggs
 from galaxy.tools import validation
 
 def get_wrap_func(value, round):

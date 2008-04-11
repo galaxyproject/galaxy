@@ -7,6 +7,7 @@ usage: %prog in_file out_file
     -1, --cols1=N,N,N,N: Columns for start, end, strand in first file
 """
 
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 

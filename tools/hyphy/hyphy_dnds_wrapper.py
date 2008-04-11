@@ -1,6 +1,7 @@
 #Guru
 #takes fasta alignments, a distance metric and builds neighbor joining trees
 import os, sys
+from galaxy import eggs
 from galaxy.tools.util import hyphy_util
 
 #Retrieve hard coded hyphy path, this will need to be the same across the cluster

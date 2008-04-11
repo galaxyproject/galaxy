@@ -7,6 +7,7 @@ alignment per species.
 """
 
 import sys, tempfile
+from galaxy import eggs
 from galaxy.tools.util.maf_utilities import iter_fasta_alignment
 from galaxy.util.odict import odict
 

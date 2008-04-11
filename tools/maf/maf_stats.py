@@ -5,6 +5,7 @@ Reads a list of intervals and a maf. Outputs a new set of intervals with statist
 """
 
 import sys
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.intervals.io
 from numpy import zeros

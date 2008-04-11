@@ -14,6 +14,7 @@ usage: %prog in_file_1 in_file_2 out_file
     -s, --sameformat: All files are precisely the same format.
 """
 
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 

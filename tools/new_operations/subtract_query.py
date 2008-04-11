@@ -8,6 +8,7 @@ usage: %prog in_file_1 in_file_2 begin_col end_col output
 
 import sys, sets, re
 
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 

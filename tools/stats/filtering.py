@@ -7,6 +7,7 @@ Invalid lines are those that do not follow the standard defined when the get_wra
 is applied to the first uncommented line in the input file.
 """
 import sys, sets, re, os.path
+from galaxy import eggs
 from galaxy.tools import validation
 
 def get_wrap_func(value):

@@ -6,6 +6,7 @@ blocks specified by number.
 """
 
 import sys
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 

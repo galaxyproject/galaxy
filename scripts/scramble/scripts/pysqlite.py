@@ -1,13 +1,9 @@
 import os, sys, subprocess, tarfile, zipfile, shutil
 
 def unpack_sqlite_source():
-    if not os.access( SQLITE_ARCHIVE, os.F_OK ):
-        print "unpack_sqlite_source(): No copy of sqlite source found in archives directory - fetching now"
-        fetch_sqlite()
-    else:
-        print "unpack_sqlite_source(): Found a previously downloaded sqlite source."
-        print "unpack_sqlite_source(): To force a new download, remove the archive:"
-        print " ", SQLITE_ARCHIVE
+    print "unpack_sqlite_source(): Found a previously downloaded sqlite source."
+    print "unpack_sqlite_source(): To force a new download, remove the archive:"
+    print " ", SQLITE_ARCHIVE
     os.makedirs( "sqlite" )
     z = zipfile.ZipFile( SQLITE_ARCHIVE, "r" )
     for fn in z.namelist():
@@ -17,20 +13,6 @@ def unpack_sqlite_source():
         o.write( z.read( fn ) )
         o.close()
     z.close()
-
-def fetch_sqlite():
-    pkg_resources.require( "twill" )
-    import twill.commands as tc
-    import twill.errors as te
-    try:
-        print "fetch_sqlite(): Downloading sqlite source archive from:"
-        print " ", SQLITE_URL
-        tc.go( SQLITE_URL )
-        tc.code( 200 )
-        tc.save_html( SQLITE_ARCHIVE )
-    except te.TwillAssertionError, e:
-        print "fetch_sqlite(): Unable to fetch sqlite source archive from:"
-        print " ", SQLITE_URL
 
 # change back to the build dir
 if os.path.dirname( sys.argv[0] ) != "":
@@ -57,7 +39,6 @@ else:
 
 SQLITE_VERSION = ( tag.split( "_" ) )[1]
 SQLITE_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "sqlite-source-%s.zip" %SQLITE_VERSION.replace( ".", "_" ) ) )
-SQLITE_URL = "http://www.sqlite.org/sqlite-source-%s.zip" %SQLITE_VERSION.replace( ".", "_" )
 
 # clean, in case you're running this by hand from a dirty module source dir
 for dir in [ "build", "dist", "sqlite" ]:

@@ -3,6 +3,7 @@ Manage Galaxy eggs
 """
 
 import os, sys, shutil, tarfile, zipfile, subprocess, ConfigParser, glob, urllib2
+from types import ModuleType
 
 import logging
 log = logging.getLogger( __name__ )
@@ -12,6 +13,9 @@ import pkg_resources
 # we MUST have the top level galaxy dir for automatic egg fetching
 # within tools.  i don't know of any way around this. -ndc
 galaxy_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "..", ".." ) )
+
+class NewEgg( Exception ):
+    pass
 
 class EggNotFetchable( Exception ):
     pass
@@ -406,6 +410,8 @@ def require( pkg ):
         else:
             pkg_resources.working_set.require( "%s==%s" % ( name, egg.get_vertag() ) )
         return
+    except UserWarning, e:
+        sys.exit( 1 )
     except pkg_resources.VersionConflict, e:
         # there's a conflicting egg on the pythonpath, remove it
         dist = pkg_resources.get_distribution( name )
@@ -419,9 +425,17 @@ def require( pkg ):
         if not egg.have:
             if not egg.fetch():
                 raise EggNotFetchable( egg.name )
+            pkg_resources.working_set.require( "%s==%s" % ( name, egg.get_vertag() ) )
+            if dist.project_name in sys.modules:
+                try:
+                    mod = sys.modules[dist.project_name]
+                    reload( mod )
+                except:
+                    raise NewEgg( "Galaxy downloaded a new egg (%s) but was unable to reload the module it contained.  Please try starting Galaxy again." % egg.name )
     except pkg_resources.DistributionNotFound, e:
 	# the initial require itself is the first dep, but it can have
 	# multiple deps, which will be fetched by the require below.
+        print >>sys.stdout, "foo"
         dep = pkg_resources.Requirement.parse( str( e ) ).project_name
         egg = c.get_for_require( dep )
         if egg is None:
@@ -431,7 +445,8 @@ def require( pkg ):
         if not egg.have:
             if not egg.fetch():
                 raise EggNotFetchable( egg.name )
-    require( pkg )
+            pkg_resources.working_set.require( "%s==%s" % ( name, egg.get_vertag() ) )
+    #require( pkg )
 
 # convenience stuff
 def get_ucs():

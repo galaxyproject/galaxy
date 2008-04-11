@@ -5,6 +5,7 @@ Removes blocks that fall outside of specified size range.
 """
 
 import sys
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 

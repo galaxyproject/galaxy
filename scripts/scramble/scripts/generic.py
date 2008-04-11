@@ -21,7 +21,7 @@ else:
 # in case you're running this by hand from a dirty module source dir
 for dir in [ "build", "dist" ]:
     if os.access( dir, os.F_OK ):
-        print "scramble_it.py: removing dir:", dir
+        print "scramble.py: removing dir:", dir
         shutil.rmtree( dir )
 
 # reset args for distutils

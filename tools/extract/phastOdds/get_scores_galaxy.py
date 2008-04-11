@@ -8,6 +8,7 @@ usage: %prog data_file.h5 region_mapping.bed in_file out_file chrom_col start_co
 from __future__ import division
 
 import sys
+from galaxy import eggs
 from numpy import *
 from tables import *
 

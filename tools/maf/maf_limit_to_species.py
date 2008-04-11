@@ -8,6 +8,7 @@ columns containing only gaps.
 usage: %prog species,species2,... input_maf output_maf allow_partial min_species_per_block
 """
 #Dan Blankenberg
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 import sys
