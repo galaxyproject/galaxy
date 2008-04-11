@@ -219,7 +219,7 @@ class Tool:
             # Set job runner to the cluster default
             self.job_runner = self.app.config.default_cluster_job_runner
             for tup in self.app.config.tool_runners:
-                if tup[0] == self.id:
+                if tup[0] == self.id.lower():
                     self.job_runner = tup[1]
                     break
         # Is this a 'hidden' tool (hidden in tool menu)
