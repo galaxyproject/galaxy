@@ -433,8 +433,8 @@ def require( pkg ):
                 except:
                     raise NewEgg( "Galaxy downloaded a new egg (%s) but was unable to reload the module it contained.  Please try starting Galaxy again." % egg.name )
     except pkg_resources.DistributionNotFound, e:
-	# the initial require itself is the first dep, but it can have
-	# multiple deps, which will be fetched by the require below.
+        # the initial require itself is the first dep, but it can have
+        # multiple deps, which will be fetched by the require below.
         dep = pkg_resources.Requirement.parse( str( e ) ).project_name
         egg = c.get_for_require( dep )
         if egg is None:
@@ -444,7 +444,7 @@ def require( pkg ):
         if not egg.have:
             if not egg.fetch():
                 raise EggNotFetchable( egg.name )
-            require( pkg )
+    require( pkg )
 
 # convenience stuff
 def get_ucs():
