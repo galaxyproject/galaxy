@@ -13,10 +13,31 @@ The package resource API is designed to work with normal filesystem packages,
 method.
 """
 
-import sys, os, zipimport, time, re, imp, new, pkgutil  # XXX
-from sets import ImmutableSet
+import sys, os, zipimport, time, re, imp, new
+
+try:
+    frozenset
+except NameError:
+    from sets import ImmutableSet as frozenset
+
 from os import utime, rename, unlink    # capture these to bypass sandboxing
 from os import open as os_open
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def get_supported_platform():
     """Return this platform's maximum compatible version.
@@ -38,6 +59,26 @@ def get_supported_platform():
         except ValueError:
             pass    # not Mac OS X
     return plat
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 __all__ = [
     # Basic resource access and distribution/entry point discovery
@@ -82,8 +123,7 @@ __all__ = [
 ]
 class ResolutionError(Exception):
     """Abstract base for dependency resolution errors"""
-    def __repr__(self):
-        return self.__class__.__name__+repr(self.args)
+    def __repr__(self): return self.__class__.__name__+repr(self.args)
 
 class VersionConflict(ResolutionError):
     """An already-installed version conflicts with the requested version"""
@@ -93,7 +133,6 @@ class DistributionNotFound(ResolutionError):
 
 class UnknownExtra(ResolutionError):
     """Distribution doesn't have an "extra feature" of the given name"""
-
 _provider_factories = {}
 PY_MAJOR = sys.version[:3]
 EGG_DIST    = 3
@@ -161,6 +200,8 @@ def get_build_platform():
 macosVersionString = re.compile(r"macosx-(\d+)\.(\d+)-(.*)")
 darwinVersionString = re.compile(r"darwin-(\d+)\.(\d+)\.(\d+)-(.*)")
 get_platform = get_build_platform   # XXX backward compat
+
+
 
 def compatible_platforms(provided,required):
     """Can code for the `provided` platform run on the `required` platform?
@@ -244,15 +285,6 @@ def get_entry_info(dist, group, name):
     return get_distribution(dist).get_entry_info(group, name)
 
 
-try:
-    from pkgutil import get_importer
-except ImportError:
-    import _pkgutil as pkgutil
-    get_importer = pkgutil.get_importer
-else:
-    import pkgutil
-
-
 class IMetadataProvider:
 
     def has_metadata(name):
@@ -275,6 +307,15 @@ class IMetadataProvider:
 
     def run_script(script_name, namespace):
         """Execute the named script in the supplied namespace dictionary"""
+
+
+
+
+
+
+
+
+
 
 
 
@@ -883,6 +924,23 @@ variable to point to an accessible directory.
         return target_path
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     def postprocess(self, tempname, filename):
         """Perform any platform-specific postprocessing of `tempname`
 
@@ -897,7 +955,31 @@ variable to point to an accessible directory.
         is the name it will be renamed to by the caller after this routine
         returns.
         """
-        # XXX
+
+        if os.name == 'posix':
+            # Make the resource executable
+            mode = ((os.stat(tempname).st_mode) | 0555) & 07777
+            os.chmod(tempname, mode)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     def set_extraction_path(self, path):
@@ -970,7 +1052,7 @@ def get_default_cache():
         dirname = ''
         for key in keys:
             if key in os.environ:
-                dirname = os.path.join(os.environ[key])
+                dirname = os.path.join(dirname, os.environ[key])
             else:
                 break
         else:
@@ -1411,6 +1493,7 @@ class PathMetadata(DefaultProvider):
         metadata = PathMetadata(egg_path, os.path.join(egg_path,'EGG-INFO'))
         dist = Distribution.from_filename(egg_path, metadata=metadata)
     """
+
     def __init__(self, path, egg_info):
         self.module_path = path
         self.egg_info = egg_info
@@ -1430,6 +1513,87 @@ class EggMetadata(ZipProvider):
         else:
             self.module_path = importer.archive
         self._setup_prefix()
+
+
+class ImpWrapper:
+    """PEP 302 Importer that wraps Python's "normal" import algorithm"""
+
+    def __init__(self, path=None):
+        self.path = path
+
+    def find_module(self, fullname, path=None):
+        subname = fullname.split(".")[-1]
+        if subname != fullname and self.path is None:
+            return None
+        if self.path is None:
+            path = None
+        else:
+            path = [self.path]
+        try:
+            file, filename, etc = imp.find_module(subname, path)
+        except ImportError:
+            return None
+        return ImpLoader(file, filename, etc)
+
+
+class ImpLoader:
+    """PEP 302 Loader that wraps Python's "normal" import algorithm"""
+
+    def __init__(self, file, filename, etc):
+        self.file = file
+        self.filename = filename
+        self.etc = etc
+
+    def load_module(self, fullname):
+        try:
+            mod = imp.load_module(fullname, self.file, self.filename, self.etc)
+        finally:
+            if self.file: self.file.close()
+        # Note: we don't set __loader__ because we want the module to look
+        # normal; i.e. this is just a wrapper for standard import machinery
+        return mod
+
+
+
+
+def get_importer(path_item):
+    """Retrieve a PEP 302 "importer" for the given path item
+
+    If there is no importer, this returns a wrapper around the builtin import
+    machinery.  The returned importer is only cached if it was created by a
+    path hook.
+    """
+    try:
+        importer = sys.path_importer_cache[path_item]
+    except KeyError:
+        for hook in sys.path_hooks:
+            try:
+                importer = hook(path_item)
+            except ImportError:
+                pass
+            else:
+                break
+        else:
+            importer = None
+
+    sys.path_importer_cache.setdefault(path_item,importer)
+    if importer is None:
+        try:
+            importer = ImpWrapper(path_item)
+        except ImportError:
+            pass
+    return importer
+
+try:
+    from pkgutil import get_importer, ImpImporter
+except ImportError:
+    pass    # Python 2.3 or 2.4, use our own implementation
+else:
+    ImpWrapper = ImpImporter    # Python 2.5, use pkgutil's implementation
+    del ImpLoader, ImpImporter
+
+
+
 
 
 
@@ -1510,10 +1674,10 @@ def find_on_path(importer, path_item, only=False):
                 elif not only and lower.endswith('.egg-link'):
                     for line in file(os.path.join(path_item, entry)):
                         if not line.strip(): continue
-                        for item in find_distributions(line.rstrip()):
+                        for item in find_distributions(os.path.join(path_item,line.rstrip())):
                             yield item
-
-register_finder(pkgutil.ImpImporter, find_on_path)
+                        break
+register_finder(ImpWrapper,find_on_path)
 
 _namespace_handlers = {}
 _namespace_packages = {}
@@ -1609,8 +1773,8 @@ def file_ns_handler(importer, path_item, packageName, module):
         # Only return the path if it's not already there
         return subpath
 
-register_namespace_handler(pkgutil.ImpImporter, file_ns_handler)
-register_namespace_handler(zipimport.zipimporter, file_ns_handler)
+register_namespace_handler(ImpWrapper,file_ns_handler)
+register_namespace_handler(zipimport.zipimporter,file_ns_handler)
 
 
 def null_ns_handler(importer, path_item, packageName, module):
@@ -1963,8 +2127,8 @@ class Distribution(object):
         self.insert_on(path)
         if path is sys.path:
             fixup_namespace_packages(self.location)
-            for pkg in self._get_metadata('namespace_packages.txt'):
-                if pkg in sys.modules: declare_namespace(pkg)
+            map(declare_namespace, self._get_metadata('namespace_packages.txt'))
+
 
     def egg_name(self):
         """Return what this distribution's standard .egg filename should be"""
@@ -2066,7 +2230,8 @@ class Distribution(object):
         for p, item in enumerate(npath):
             if item==nloc:
                 break
-            elif item==bdir:
+            elif item==bdir and self.precedence==EGG_DIST:
+                # if it's an .egg, give it precedence over its directory
                 path.insert(p, loc)
                 npath.insert(p, nloc)
                 break
@@ -2085,7 +2250,6 @@ class Distribution(object):
                 p = np  # ha!
 
         return
-
 
 
 
@@ -2264,7 +2428,7 @@ class Requirement:
         self.index, self.extras = index, tuple(map(safe_extra,extras))
         self.hashCmp = (
             self.key, tuple([(op,parsed) for parsed,trans,op,ver in index]),
-            ImmutableSet(self.extras)
+            frozenset(self.extras)
         )
         self.__hash = hash(self.hashCmp)
 

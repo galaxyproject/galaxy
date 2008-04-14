@@ -1,7 +1,5 @@
 #!/bin/sh
 
-. ./scripts/get_python.sh
-
 SAMPLES="
 datatype_converters_conf.xml.sample
 reports_wsgi.ini.sample
@@ -31,4 +29,11 @@ for sample in $SAMPLES; do
     fi
 done
 
-$GALAXY_PYTHON ./scripts/fetch_eggs.py
+for dir in database/files database/tmp; do
+    if [ ! -d $dir ]; then
+        echo "Creating $dir"
+        mkdir $dir
+    fi
+done
+
+python ./scripts/fetch_eggs.py
