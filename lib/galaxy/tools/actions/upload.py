@@ -33,23 +33,34 @@ class UploadToolAction( object ):
                 data_list.append( self.add_file( trans, data_file.file, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
                 return self.upload_empty( trans, "Error:", str( e ) )
-        if url_paste not in [None, ""]:
-            if url_paste[0:7].lower() == "http://" or url_paste[0:6].lower() == "ftp://":
-                url_paste = url_paste.replace( "\r","" ).split("\n")
+        if url_paste not in [ None, "" ]:
+            if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
+                url_paste = url_paste.replace( '\r', '' ).split( '\n' )
                 for line in url_paste:
+                    line = line.rstrip( '\r\n' )
+                    if line:
+                        try:
+                            data_list.append( self.add_file( trans, urllib.urlopen( line ), line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
+                        except Exception, e:
+                            return self.upload_empty( trans, "Error:", str( e ) )
+            else:
+                is_valid = False
+                for line in url_paste:
+                    line = line.rstrip( '\r\n' )
+                    if line:
+                        is_valid = True
+                        break
+                if is_valid:
                     try:
-                        data_list.append( self.add_file( trans, urllib.urlopen( line ), line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
+                        data_list.append( self.add_file( trans, StringIO.StringIO( url_paste ), 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
                     except Exception, e:
                         return self.upload_empty( trans, "Error:", str( e ) )
-            else:
-                try:
-                    data_list.append( self.add_file( trans, StringIO.StringIO( url_paste ), 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
-                except Exception, e:
-                    return self.upload_empty( trans, "Error:", str( e ) )
+                else:
+                    return self.upload_empty( trans, "No data error:", "you pasted no data." )
         if self.empty:
             return self.upload_empty( trans, "Empty file error:", "you attempted to upload an empty file." )
         elif len( data_list ) < 1:
-            return self.upload_empty( trans, "No data error:","either you pasted no data, the url you specified is invalid, or you have not specified a file." )
+            return self.upload_empty( trans, "No data error:", "either you pasted no data, the url you specified is invalid, or you have not specified a file." )
         return dict( output=data_list[0] )
 
     def upload_empty(self, trans, err_code, err_msg):
