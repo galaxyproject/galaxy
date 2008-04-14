@@ -61,11 +61,11 @@
 
 .. class:: warningmark 
 
-**Note**. Please select sequencing method.
+ Please select sequencing method.
   
 .. class:: warningmark
 
-**TIP**. To use this tool your quality score dataset needs to be in *Quality Score* format. Click pencil icon next to your dataset to set datatype to *Quality Score*.
+ To use this tool your quality score dataset needs to be in *Quality Score* format. Click pencil icon next to your dataset to set datatype to *Quality Score*.
  
 -----
 

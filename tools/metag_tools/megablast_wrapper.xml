@@ -39,34 +39,41 @@
 	</tests>
 	<help>
 	
-.. class:: warningmark
+.. class:: infomark
 
- Search nt database might require few hours before returning the result.
+**TIP**. Searching might require few hours before returning the result.
 
 -----
 
 **What it does**
 
 This tool runs **megablast** (for information about megablast, please see the reference below) and search against a nucleotide database. 
-The query sequence could be any nucleotide sequences in fasta format. At this point, only **nt** is available for searching. 
+The query sequence could be any nucleotide sequences in fasta format.  
 
-Other databases and megablast parameters will be available shortly.
 
 -----
 
 **Parameters**
 
-- **-W**: Word size
-- **-p**: Identity percentage cut-off
-- **-t**: Length of a discontiguous word template
-- **-N**: Type of a discontiguous word template
-- **-F**: Filter query sequence
+- *Word size* (**-W**) : the minimal length of an exact match  
+- *Identity percentage cut-off* (**-p**) : the minimal identity for an alignment
+- *Length of a discontiguous word template* (**-t**) : allow a certain mismatch pattern in a word. To be used with **-W** and **-N**. Please see the examples below.  
+- *Type of a discontiguous word template* (**-N**)
+    - coding: 110, in each triplets, the first two nucleotides must be matches and the third nucleotide can be a mismatch 
+    - optimal: based on the hit probability simulations for random sequences
+    - two simultaneous: alignment satisfied either one of the above templates will be extended
+- *Filter query sequence* (**-F**) : mask low-complexity regions in the query sequence
+
+**Example**
+
+- W = 11, t = 16, coding: 1101101101101101
+- W = 11, t = 16, optimal: 1110010110110111
 
 -----
 
 **Reference**
 
- **megablast**: Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
+ **Megablast**: Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
 
 	</help>
 </tool>

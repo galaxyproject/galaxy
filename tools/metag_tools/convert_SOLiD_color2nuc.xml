@@ -25,7 +25,7 @@
 
 .. class:: warningmark
 
-**TIP**. The tool was designed for color space files generated from ABI SOLiD sequencer. The file format must be fasta-like: the title starts with a ">" sign, and each color space sequence starts with a leading nucleotide.
+ The tool was designed for color space files generated from ABI SOLiD sequencer. The file format must be fasta-like: the title starts with a ">" sign, and each color space sequence starts with a leading nucleotide.
  
 -----
 

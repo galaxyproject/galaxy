@@ -103,7 +103,7 @@ def __main__():
             fields = read_next_line.split()
             for score in fields:
                 try: 
-                    x = int(score)
+                    int(score)
                     seq_method = '454'
                 except:
                     seq_method = 'Failed'
@@ -112,7 +112,7 @@ def __main__():
             fields = read_scorefile.split()
             for score in fields:
                 try:
-                    x = int(score)
+                    int(score)
                     seq_method = 'solexa'
                 except:
                     seq_method = 'Failed'

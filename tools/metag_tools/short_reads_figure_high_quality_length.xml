@@ -29,7 +29,7 @@
 
 .. class:: warningmark
 
-**TIP**. To use this tool your dataset needs to be in *Quality Score* format. Click pencil icon next to your dataset to set datatype to *Quality Score*.
+ To use this tool your dataset needs to be in *Quality Score* format. Click pencil icon next to your dataset to set datatype to *Quality Score*.
 
 -----
 
@@ -65,7 +65,7 @@ Illumina (Solexa) data::
 
   - The histogram will be built based on the numbers (11, 5).
 	 	
-- For Illumina (Solexa) data, only the maximal of 4 values will be considered
+- For Illumina (Solexa) data, only the maximal of the 4 values will be used.
 
 
 </help>
