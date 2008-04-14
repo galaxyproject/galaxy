@@ -1,5 +1,6 @@
 # Greg Von Kuster
 import urllib
+from galaxy import eggs
 from galaxy.datatypes import sniff
 from galaxy import datatypes, config
 import tempfile, shutil
