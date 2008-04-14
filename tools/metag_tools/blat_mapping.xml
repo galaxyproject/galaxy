@@ -1,19 +1,19 @@
 <tool id="blat2wig" name="Coverage of the Reads">
-	<description>in wiggle format</description>
-	<command interpreter="python">blat_mapping.py $input1 $output1</command>
-	<inputs>	
-		<param name="input1" type="data" format="tabular" label="Alignment Result"/>
-	</inputs>
-	<outputs>
-		<data name="output1" format="wig"/>
-	</outputs> 
-	<tests>
-		<test>
-			<param name="input1" value="blat_mapping_test1.txt" ftype="tabular" />
-			<output name="output1" file="blat_mapping_test1.out" />
-		</test>
-	</tests>
-	<help>
+  <description>in wiggle format</description>
+  <command interpreter="python">blat_mapping.py $input1 $output1</command>
+  <inputs>	
+    <param name="input1" type="data" format="tabular" label="Alignment Result"/>
+  </inputs>
+  <outputs>
+    <data name="output1" format="wig"/>
+  </outputs> 
+  <tests>
+    <test>
+      <param name="input1" value="blat_mapping_test1.txt" ftype="tabular" />
+      <output name="output1" file="blat_mapping_test1.out" />
+    </test>
+  </tests>
+  <help>
 
 .. class:: warningmark
 
@@ -38,5 +38,5 @@
  .. image:: ../static/images/blat_mapping_example.png
  	:width: 600
  	
-	</help>
+  </help>
 </tool>

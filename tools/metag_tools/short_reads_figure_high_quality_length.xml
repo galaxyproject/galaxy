@@ -14,13 +14,13 @@
 </outputs>
 <tests>
 	<test>
-		<param name="input1" value="solexa.qual" ftype="qualityscore" />
-		<param name="input2" value="5" ftype="integer" />
+		<param name="input1" value="solexa.qualityscore" ftype="qualityscore" />
+		<param name="input2" value="5" />
   		<output name="output1" file="solexa_high_quality_hist.pdf" ftype="pdf"/>
 	</test>
 	<test>
-		<param name="input1" value="454.qual" ftype="qualityscore" />
-		<param name="input2" value="5" ftype="inter" />
+		<param name="input1" value="454.qualityscore" ftype="qualityscore" />
+		<param name="input2" value="5" />
 		<output name="output1" file="454_high_quality_hist.pdf" ftype="pdf"/>
 	</test>
 </tests>

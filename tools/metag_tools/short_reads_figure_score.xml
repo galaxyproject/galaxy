@@ -14,11 +14,11 @@
 </outputs> 
 <tests>
 	<test>
-		<param name="input1" value="solexa.qual" ftype="qualityscore" />
+		<param name="input1" value="solexa.qualityscore" ftype="qualityscore" />
   		<output name="output1" file="solexaScore.pdf" ftype="pdf" />
 	</test>
 	<test>
-		<param name="input1" value="454.qual" ftype="qualityscore" />
+		<param name="input1" value="454.qualityscore" ftype="qualityscore" />
 		<output name="output1" file="454Score.pdf" ftype="pdf" />
 	</test>
 </tests>

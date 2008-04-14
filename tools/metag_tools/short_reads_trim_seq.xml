@@ -40,7 +40,7 @@
 	<test>
 		<param name="sequencer" value="454" />
 		<param name="input1" value="454.fna" />
-		<param name="input2" value="454.qual" ftype="qualityscore" />
+		<param name="input2" value="454.qualityscore" ftype="qualityscore" />
 		<param name="input3" value="no" />
 		<param name="trim" value="20" />
 		<param name="length" value="0" />
@@ -49,7 +49,7 @@
 	<test>
 		<param name="sequencer" value="Solexa" />
 		<param name="input1" value="solexa.fna" />
-		<param name="input2" value="solexa.qual" ftype="qualityscore" />
+		<param name="input2" value="solexa.qualityscore" ftype="qualityscore" />
 		<param name="input3" value="0" />
 		<param name="trim" value="20" />
 		<param name="length" value="0" />
