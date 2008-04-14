@@ -11,10 +11,10 @@
   </outputs>
   <tests>
     <test>
-      <param name="input" value="taxonomyGI.txt"/>
+      <param name="input" value="taxonomy2gi-input.txt"/>
       <param name="giField" value="1"/>
       <param name="idField" value="2"/>
-      <output name="out_file1" file="taxonomyGI.dat"/>
+      <output name="out_file1" file="taxonomy2gi-output.txt"/>
     </test>
   </tests>
 
