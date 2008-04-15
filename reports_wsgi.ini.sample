@@ -19,7 +19,7 @@ log_level = DEBUG
 # Database connection
 #database_file = database/universe.sqlite
 # You may use a SQLAlchemy connection string to specify an external database instead
-database_connection = postgres:///galaxy_test
+database_connection = postgres:///galaxy_test?host=/var/run/postgresql
 
 # Where dataset files are saved
 file_path = database/files

@@ -5,6 +5,7 @@
 #bases covered. The original intervals are repeated for each Table/Feature.
 
 import struct, optparse, os, random
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.intervals.io
 try:
