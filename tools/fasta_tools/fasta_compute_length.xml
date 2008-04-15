@@ -9,7 +9,7 @@
 	</outputs>
 	<tests>
 		<test>
-			<param name="input" value="454.fna" />
+			<param name="input" value="454.fasta" />
 			<output name="output" file="fasta_tool_compute_length_1.out" />
 		</test>
 		<test>

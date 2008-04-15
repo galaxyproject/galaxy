@@ -1,5 +1,4 @@
 #! /usr/bin/python
-
 """
 boxplot:
 - box: first quartile and third quartile
@@ -12,272 +11,264 @@ boxplot:
 import os, sys, math, tempfile, zipfile, re
 from rpy import *
 
-def stop_err(msg):
-    
-    sys.stderr.write(msg)
-    sys.stderr.write("\n")
-    sys.exit()
-    
+assert sys.version_info[:2] >= ( 2, 4 )
 
-def unzip(zip_file):
-    
-    zip_inst = zipfile.ZipFile(zip_file, 'r')
-    
+def stop_err( msg ):
+    sys.stderr.write( "%s\n" % msg )
+    sys.exit()
+
+def unzip( filename ):
+    zip_file = zipfile.ZipFile( filename, 'r' )
     tmpfilename = tempfile.NamedTemporaryFile().name
-    for name in zip_inst.namelist():
-        file(tmpfilename,'a').write(zip_inst.read(name))
-    
-    zip_inst.close()
-    
+    for name in zip_file.namelist():
+        file( tmpfilename, 'a' ).write( zip_file.read( name ) )
+    zip_file.close()
     return tmpfilename
 
-
-def merge_to_20_datapoints(tmp_score):
-
+def merge_to_20_datapoints( score ):
     number_of_points = 20
-    read_length = len(tmp_score)
-    
-    step = int(math.floor((read_length-1)*1.0/number_of_points))
-    score = []
+    read_length = len( score )
+    step = int( math.floor( ( read_length - 1 ) * 1.0 / number_of_points ) )
+    scores = []
     point = 1
     point_sum = 0
     step_average = 0
-    score_points_tmp = 0
+    score_points = 0
     
-    for i in xrange(1,read_length):
-        if (i < (point * step)):
-            point_sum += int(tmp_score[i])
+    for i in xrange( 1, read_length ):
+        if i < ( point * step ):
+            point_sum += int( score[i] )
             step_average += 1
         else:
-            point_avg = point_sum*1.0/step_average
-            score.append(point_avg)
+            point_avg = point_sum * 1.0 / step_average
+            scores.append( point_avg )
             point += 1
             point_sum = 0
-            step_average = 0
-                                    
-    if (step_average > 0):
-        point_avg = point_sum*1.0/step_average
-        score.append(point_avg)
-
-    if (len(score) > number_of_points):
+            step_average = 0                       
+    if step_average > 0:
+        point_avg = point_sum * 1.0 / step_average
+        scores.append( point_avg )
+    if len( scores ) > number_of_points:
         last_avg = 0
-        for j in xrange(number_of_points-1,len(score)):
-            last_avg += score[j]
-        last_avg = last_avg/(len(score)-number_of_points+1)
+        for j in xrange( number_of_points - 1, len( scores ) ):
+            last_avg += scores[j]
+        last_avg = last_avg / ( len(scores) - number_of_points + 1 )
     else:    
-        last_avg = score[-1]
-    
-    score_points_tmp = []
-    
-    for k in range(number_of_points-1):
-        score_points_tmp.append(score[k])
-    
-    score_points_tmp.append(last_avg)
-            
-    return score_points_tmp
-
+        last_avg = scores[-1]
+    score_points = []
+    for k in range( number_of_points - 1 ):
+        score_points.append( scores[k] )
+    score_points.append( last_avg )
+    return score_points
 
 def __main__():
-
-    # I/O
     infile_score_name = sys.argv[1].strip()
     outfile_R_name = sys.argv[2].strip()
 
-    # unzip infile
-    if (zipfile.is_zipfile(infile_score_name)): 
-        unzip_infile = unzip(infile_score_name)
-    else: unzip_infile = infile_score_name
+    infile_is_zipped = False
+    if zipfile.is_zipfile( infile_score_name ):
+        infile_is_zipped = True
+        infile_name = unzip( infile_score_name )
+    else:
+        infile_name = infile_score_name
 
-    # detect whether it's tabular or fasta format
+    # Determine tabular or fasta format within the first 100 lines
     seq_method = None
-    score_file = unzip_infile
-    test_fh = open(score_file,'r')
-    while seq_method is None: 
-        read_scorefile = test_fh.readline()
-        if read_scorefile.startswith('#'):
-            continue 
-        if not read_scorefile:
+    data_type = None
+    for i, line in enumerate( file( infile_name ) ):
+        line = line.rstrip( '\r\n' )
+        if not line or line.startswith( '#' ):
             continue
-        elif read_scorefile.startswith(">"):
-            read_next_line = test_fh.readline()
-            fields = read_next_line.split()
+        if data_type == None:
+            if line.startswith( '>' ):
+                data_type = 'fasta'
+                continue
+            elif len( line.split( '\t' ) ) > 0:
+                fields = line.split()
+                for score in fields:
+                    try:
+                        int( score )
+                        data_type = 'tabular'
+                        seq_method = 'solexa'
+                        break
+                    except:
+                        break
+        elif data_type == 'fasta':
+            fields = line.split()
             for score in fields:
                 try: 
-                    int(score)
+                    int( score )
                     seq_method = '454'
-                except:
-                    seq_method = 'Failed'
                     break
-        elif len(read_scorefile.split('\t')) > 0:
-            fields = read_scorefile.split()
-            for score in fields:
-                try:
-                    int(score)
-                    seq_method = 'solexa'
                 except:
-                    seq_method = 'Failed'
                     break
-        else:
-            stop_err('Your input file format does not fit the requirement. Please use either fasta format or tabular format')
-            
-    if seq_method == 'Failed':
-        stop_err('Unable to determine the file format. Please use either fasta-like format (except title lines, the file contains only numeric values) or tabular format')
-        
-    test_fh.close()
-    
-    # quantile array
-    quality_score = {}
-    
-    # minimal read length for 454 file
-    read_length_threshold = 100
-    
-    # R
+        if i == 100:
+            break
+
+    if data_type is None:
+        stop_err( 'This tool can only use fasta data or tabular data.' ) 
+    if seq_method is None:
+        stop_err( 'Invalid data for fasta format.')
+
+    # Determine fixed length or variable length within the first 100 lines
+    read_length = 0
+    variable_length = False
+    if seq_method == 'solexa':
+        for i, line in enumerate( file( infile_name ) ):
+            line = line.rstrip( '\r\n' )
+            if not line or line.startswith( '#' ):
+                continue
+            scores = line.split('\t')
+            if read_length == 0:
+                read_length = len( scores )
+            if read_length != len( scores ):
+                variable_length = True
+                break
+            if i == 100:
+                break
+    elif seq_method == '454':
+        score = ''
+        for i, line in enumerate( file( infile_name ) ):
+            line = line.rstrip( '\r\n' )
+            if not line or line.startswith( '#' ):
+                continue
+            if line.startswith( '>' ):
+                if len( score ) > 0:
+                    score = score.split()
+                    if read_length == 0:
+                        read_length = len( score )
+                    if read_length != len( score ):
+                        variable_length = True
+                        break
+                score = ''
+            else:
+                score = score + ' ' + line
+            if i == 100:
+                break
+
+    if variable_length:
+        number_of_points = 20
+    else:
+        number_of_points = read_length
+    quality_score = {} # quantile dictionary
+    read_length_threshold = 100 # minimal read length for 454 file
     score_points = []   
     score_matrix = []
-    
-    tmp_read_length = 0
-    tmp_varied_length = False
-    
-    if (seq_method == 'solexa'):
-        tmp_score = []
-        for i, line in enumerate(open(score_file)):
-            line = line.rstrip('\r\n')
-            if line.startswith('#'):
-                continue
-            if not line:
-                continue
-            tmp_score = line.split('\t')
-            if (tmp_read_length == 0): tmp_read_length = len(tmp_score)
-            if (tmp_read_length != len(tmp_score)):
-                tmp_varied_length = True
-    else:    
-        # skip the last fasta sequence
-        tmp_score = ''
-        for i, line in enumerate(open(score_file)):
-            line = line.rstrip('\r\n')
-            if line.startswith('#'):
-                continue
-            if line.startswith('>'):
-                if len(tmp_score) > 0:
-                    tmp_score = tmp_score.split()
-                    if (tmp_read_length == 0): tmp_read_length = len(tmp_score)
-                    if (tmp_read_length != len(tmp_score)):
-                        tmp_varied_length = True
-                tmp_score = ''
-            else:
-                tmp_score = tmp_score + ' ' + line
-            
-    if (tmp_varied_length): number_of_points = 20
-    else: number_of_points = tmp_read_length
-                        
-    # data for R boxplot
-    # data for quartile
-    if (seq_method == 'solexa'):
-            for i, line in enumerate(open(score_file)):
-                line = line.rstrip('\r\n')
-                if line.startswith('#'):
-                    continue
-                each_loc = line.split('\t')
-                tmp_array = []
-                for each_base in each_loc:
-                    each_nuc_error = each_base.split()
-                    try:
-                        each_nuc_error[0] = int(each_nuc_error[0])
-                        each_nuc_error[1] = int(each_nuc_error[1])
-                        each_nuc_error[2] = int(each_nuc_error[2])
-                        each_nuc_error[3] = int(each_nuc_error[3])
-                        big = max(each_nuc_error)
-                    except:
-                        print 'Invalid numbers in the file. Skipped.'
-                        big = 0
-                    tmp_array.append(big)                        
-                score_points.append(tmp_array)
-                # quartile
-                for j,k in enumerate(tmp_array):
-                    if quality_score.has_key((j,k)):
-                        quality_score[(j, k)] += 1
-                    else:
-                        quality_score[(j, k)] = 1
-    else:
-            tmp_score = ''
-            for i, line in enumerate(open(score_file)):
-                if line.startswith('#'):
-                    continue
-                if line.startswith('>'):
-                    if len(tmp_score) > 0:
-                        tmp_score = ['0'] + tmp_score.split()
-                        read_length = len(tmp_score)
-                        tmp_array = []
-                        if (tmp_varied_length is False):
-                            tmp_score.pop(0)
-                            score_points.append(tmp_score)
-                            tmp_array = tmp_score
-                        elif (read_length > read_length_threshold):
-                            score_points_tmp = merge_to_20_datapoints(tmp_score)
-                            score_points.append(score_points_tmp)
-                            tmp_array = score_points_tmp
-                        # quartile
-                        for j, k in enumerate(tmp_array):
-                            if quality_score.has_key((j,k)):
-                                quality_score[(j,k)] += 1
-                            else:
-                                quality_score[(j,k)] = 1
-                    tmp_score = ''
-                else:
-                    tmp_score = tmp_score + ' ' + line
-            if len(tmp_score) > 0:
-                tmp_score = ['0'] + tmp_score.split()
-                read_length = len(tmp_score)
-                if (tmp_varied_length is False):
-                    tmp_score.pop(0)
-                    score_points.append(tmp_score)
-                elif (read_length > read_length_threshold):
-                    score_points_tmp = merge_to_20_datapoints(tmp_score)
-                    score_points.append(score_points_tmp)
-                    tmp_array = score_points_tmp
-                for j, k in enumerate(tmp_array):
-                    if quality_score.has_key((j,k)):
-                        quality_score[(j,k)] += 1
-                    else:
-                        quality_score[(j,k)] = 1
+    invalid_scores = 0   
 
-        
+    if seq_method == 'solexa':
+        for i, line in enumerate( open( infile_name ) ):
+            line = line.rstrip( '\r\n' )
+            if not line or line.startswith( '#' ):
+                continue
+            tmp_array = []
+            scores = line.split( '\t' )
+            for bases in scores:
+                nuc_errors = bases.split()
+                try:
+                    nuc_errors[0] = int( nuc_errors[0] )
+                    nuc_errors[1] = int( nuc_errors[1] )
+                    nuc_errors[2] = int( nuc_errors[2] )
+                    nuc_errors[3] = int( nuc_errors[3] )
+                    big = max( nuc_errors )
+                except:
+                    #print 'Invalid numbers in the file. Skipped.'
+                    invalid_scores += 1
+                    big = 0
+                tmp_array.append( big )                        
+            score_points.append( tmp_array )
+            # quartile
+            for j, k in enumerate( tmp_array ):
+                if quality_score.has_key( ( j, k ) ):
+                    quality_score[ ( j, k ) ] += 1
+                else:
+                    quality_score[ ( j, k ) ] = 1
+    elif seq_method == '454':
+        # skip the last fasta sequence
+        score = ''
+        for i, line in enumerate( open( infile_name ) ):
+            line = line.rstrip( '\r\n' )
+            if not line or line.startswith( '#' ):
+                continue
+            if line.startswith( '>' ):
+                if len( score ) > 0:
+                    score = ['0'] + score.split()
+                    read_length = len( score )
+                    tmp_array = []
+                    if not variable_length:
+                        score.pop(0)
+                        score_points.append( score )
+                        tmp_array = score
+                    elif read_length > read_length_threshold:
+                        score_points_tmp = merge_to_20_datapoints( score )
+                        score_points.append( score_points_tmp )
+                        tmp_array = score_points_tmp
+                    # quartile
+                    for j, k in enumerate( tmp_array ):
+                        if quality_score.has_key( ( j, k ) ):
+                            quality_score[ ( j, k ) ] += 1
+                        else:
+                            quality_score[ ( j ,k ) ] = 1
+                score = ''
+            else:
+                score = "%s %s" % ( score, line )
+        if len( score ) > 0:
+            score = ['0'] + score.split()
+            read_length = len( score )
+            if not variable_length:
+                score.pop(0)
+                score_points.append( score )
+            elif read_length > read_length_threshold:
+                score_points_tmp = merge_to_20_datapoints( score )
+                score_points.append( score_points_tmp )
+                tmp_array = score_points_tmp
+            for j, k in enumerate( tmp_array ):
+                if quality_score.has_key( ( j, k ) ):
+                    quality_score[ ( j, k ) ] += 1
+                else:
+                    quality_score[ ( j, k ) ] = 1
+
     # reverse the matrix, for R
     tmp_array = []
-    for i in range(number_of_points-1):
-        for j in range(len(score_points)):
-            tmp_array.append(int(score_points[j][i]))
-        score_matrix.append(tmp_array)
+    for i in range( number_of_points - 1 ):
+        for j in range( len( score_points ) ):
+            tmp_array.append( int( score_points[j][i] ) )
+        score_matrix.append( tmp_array )
         tmp_array = []
 
     # generate pdf figures
     outfile_R_pdf = outfile_R_name 
-    r.pdf(outfile_R_pdf)
+    r.pdf( outfile_R_pdf )
     
     title = "boxplot of quality scores"
-    
-    for i, subset in enumerate(score_matrix):
+    empty_score_matrix_columns = 0
+    for i, subset in enumerate( score_matrix ):
         if not subset:
-            print 'At least one of the columns is empty.'
+            empty_score_matrix_columns += 1
             score_matrix[i] = [0]
             
-    if (tmp_varied_length is False):
-        r.boxplot(score_matrix,xlab="location in read length",main=title)
+    if not variable_length:
+        r.boxplot( score_matrix, xlab="location in read length", main=title )
     else:
-        r.boxplot(score_matrix,xlab="position within read (% of total length)",xaxt="n",main=title)
+        r.boxplot( score_matrix, xlab="position within read (% of total length)", xaxt="n", main=title )
         x_old_range = []
         x_new_range = []
-        step = read_length_threshold/number_of_points 
-        for i in xrange(0,read_length_threshold,step):
-            x_old_range.append((i/step))
-            x_new_range.append(i)
-        r.axis(1,x_old_range,x_new_range)
-    
+        step = read_length_threshold / number_of_points 
+        for i in xrange( 0, read_length_threshold, step ):
+            x_old_range.append( ( i / step ) )
+            x_new_range.append( i )
+        r.axis( 1, x_old_range, x_new_range )
     r.dev_off()
 
-    if zipfile.is_zipfile(infile_score_name) and os.path.exists(unzip_infile):
-        os.remove(unzip_infile)
-        
+    if infile_is_zipped and os.path.exists( infile_name ):
+        # Need to delete temporary file created when we unzipped the infile archive
+        os.remove( infile_name )
+
+    if invalid_scores > 0:
+        print 'Skipped %d invalid scores. ' % invalid_scores
+    if empty_score_matrix_columns > 0:
+        print '%d missing scores in score_matrix. ' % empty_score_matrix_columns
+
     r.quit(save = "no")
 
 if __name__=="__main__":__main__()

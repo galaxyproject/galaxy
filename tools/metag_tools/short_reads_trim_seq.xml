@@ -39,21 +39,21 @@
 <tests>
 	<test>
 		<param name="sequencer" value="454" />
-		<param name="input1" value="454.fna" />
+		<param name="input1" value="454.fasta" ftype="fasta" />
 		<param name="input2" value="454.qualityscore" ftype="qualityscore" />
 		<param name="input3" value="no" />
 		<param name="trim" value="20" />
 		<param name="length" value="0" />
-		<output name="output1" file="454Test.fa" />
+		<output name="output1" file="short_reads_trim_seq_out1.fasta" />
 	</test>
 	<test>
 		<param name="sequencer" value="Solexa" />
-		<param name="input1" value="solexa.fna" />
+		<param name="input1" value="solexa.tabular" ftype="tabular" />
 		<param name="input2" value="solexa.qualityscore" ftype="qualityscore" />
 		<param name="input3" value="0" />
 		<param name="trim" value="20" />
 		<param name="length" value="0" />
-		<output name="output1" file="solexaTest.fa" />
+		<output name="output1" file="short_reads_trim_seq_out2.fasta" />
 	</test>
 </tests>
 
