@@ -11,7 +11,7 @@
 	</outputs>
 	<tests>
 		<test>
-			<param name="input" value="solexa.fna" />
+			<param name="input" value="solexa.tabular" />
 			<param name="title_col" value="1,2,3,4" />
 			<param name="seq_col" value="5" />
 			<output name="output" file="tabular_to_fasta_out1.fasta" />
