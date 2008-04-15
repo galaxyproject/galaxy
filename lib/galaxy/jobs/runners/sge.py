@@ -14,18 +14,19 @@ except:
 
 log = logging.getLogger( __name__ )
 
-DRMAA_state = {
-    DRMAA.Session.UNDETERMINED: 'process status cannot be determined',
-    DRMAA.Session.QUEUED_ACTIVE: 'job is queued and waiting to be scheduled',
-    DRMAA.Session.SYSTEM_ON_HOLD: 'job is queued and in system hold',
-    DRMAA.Session.USER_ON_HOLD: 'job is queued and in user hold',
-    DRMAA.Session.USER_SYSTEM_ON_HOLD: 'job is queued and in user and system hold',
-    DRMAA.Session.RUNNING: 'job is running',
-    DRMAA.Session.SYSTEM_SUSPENDED: 'job is system suspended',
-    DRMAA.Session.USER_SUSPENDED: 'job is user suspended',
-    DRMAA.Session.DONE: 'job finished normally',
-    DRMAA.Session.FAILED: 'job finished, but failed',
-}
+if DRMAA is not None:
+    DRMAA_state = {
+        DRMAA.Session.UNDETERMINED: 'process status cannot be determined',
+        DRMAA.Session.QUEUED_ACTIVE: 'job is queued and waiting to be scheduled',
+        DRMAA.Session.SYSTEM_ON_HOLD: 'job is queued and in system hold',
+        DRMAA.Session.USER_ON_HOLD: 'job is queued and in user hold',
+        DRMAA.Session.USER_SYSTEM_ON_HOLD: 'job is queued and in user and system hold',
+        DRMAA.Session.RUNNING: 'job is running',
+        DRMAA.Session.SYSTEM_SUSPENDED: 'job is system suspended',
+        DRMAA.Session.USER_SUSPENDED: 'job is user suspended',
+        DRMAA.Session.DONE: 'job finished normally',
+        DRMAA.Session.FAILED: 'job finished, but failed',
+    }
 
 sge_template = """#!/bin/sh
 #$ -S /bin/sh
