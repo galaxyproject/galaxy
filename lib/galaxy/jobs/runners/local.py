@@ -92,31 +92,36 @@ class LocalJobRunner( object ):
             self.queue.put( self.STOP_SIGNAL )
         log.info( "local job runner stopped" )
 
-def check_pid( pid ):
-    try:
-        os.kill( pid, 0 )
-        return True
-    except OSError, e:
-        if e.errno == errno.ESRCH:
-            log.debug( "local.check_pid(): PID %d is dead" % pid )
-        else:
-            log.warning( "local.check_pid(): Got errno %s when attempting to check PID %d: %s" %( errno.errorcode[e.errno], pid, e.strerror ) )
-        return False
-
-def stop_job( job ):
-    pid = int( job.job_runner_external_id )
-    if not check_pid( pid ):
-        log.warning( "local.stop_job(): %s: PID %d was already dead or can't be signaled" %job.id )
-        return
-    for sig in [ 15, 9 ]:
+    def check_pid( self, pid ):
         try:
-            os.killpg( pid, sig )
+            os.kill( pid, 0 )
+            return True
         except OSError, e:
-            log.warning( "local.stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job.id, errno.errorcode[e.errno], sig, pid, e.strerror ) )
-            return  # give up
-        sleep( 2 )
-        if not check_pid( pid ):
-            log.debug( "local.stop_job(): %s: PID %d successfully killed with signal %d" %( job.id, pid, sig ) )
+            if e.errno == errno.ESRCH:
+                log.debug( "check_pid(): PID %d is dead" % pid )
+            else:
+                log.warning( "check_pid(): Got errno %s when attempting to check PID %d: %s" %( errno.errorcode[e.errno], pid, e.strerror ) )
+            return False
+
+    def stop_job( self, job ):
+        pid = int( job.job_runner_external_id )
+        if not self.check_pid( pid ):
+            log.warning( "stop_job(): %s: PID %d was already dead or can't be signaled" %job.id )
             return
-    else:
-        log.warning( "local.stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" %( job.id, pid ) )
+        for sig in [ 15, 9 ]:
+            try:
+                os.killpg( pid, sig )
+            except OSError, e:
+                log.warning( "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job.id, errno.errorcode[e.errno], sig, pid, e.strerror ) )
+                return  # give up
+            sleep( 2 )
+            if not self.check_pid( pid ):
+                log.debug( "stop_job(): %s: PID %d successfully killed with signal %d" %( job.id, pid, sig ) )
+                return
+        else:
+            log.warning( "stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" %( job.id, pid ) )
+
+    def recover( self, job, job_wrapper ):
+        # local jobs can't be recovered
+        job_wrapper.change_state( model.Job.states.ERROR, info = "This job was killed when Galaxy was restarted.  Please retry the job." )
+

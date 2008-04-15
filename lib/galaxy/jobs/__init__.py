@@ -39,7 +39,7 @@ class JobQueue( object ):
     a JobRunner.
     """
     STOP_SIGNAL = object()
-    def __init__( self, app ):
+    def __init__( self, app, dispatcher ):
         """Start the job manager"""
         self.app = app
         # Should we use IPC to communicate (needed if forking)
@@ -82,7 +82,7 @@ class JobQueue( object ):
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
         self.running = True
-        self.dispatcher = DefaultJobDispatcher( app )
+        self.dispatcher = dispatcher
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()        
         log.info( "job manager started" )
@@ -97,50 +97,14 @@ class JobQueue( object ):
         model = self.app.model
         # Jobs in the NEW state won't be requeued unless we're tracking in the database
         if not self.track_jobs_in_database:
-            for j in model.Job.select( model.Job.c.state == model.Job.states.NEW ):
-                log.debug( "no runner: %s is still in new state, adding to the jobs queue" %j.id )
-                self.queue.put( ( j.id, j.tool_id ) )
-        for j in model.Job.select( (model.Job.c.state == model.Job.states.RUNNING)
+            for job in model.Job.select( model.Job.c.state == model.Job.states.NEW ):
+                log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
+                self.queue.put( ( job.id, job.tool_id ) )
+        for job in model.Job.select( (model.Job.c.state == model.Job.states.RUNNING)
                                  | (model.Job.c.state == model.Job.states.QUEUED) ):
-            job_wrapper = JobWrapper( j.id, self.app.toolbox.tools_by_id[ j.tool_id ], self )
-            if j.job_runner_name is None:
-                # should only happen with stuff in the database prior to job_runner_name column
-                log.error( "job %s was queued but has no runner, this should not be possible" % j.id )
-                job_wrapper.change_state( model.Job.states.ERROR, info = "This job was killed when Galaxy was restarted.  Please retry the job." )
-            elif j.job_runner_name.startswith('local://'):
-                # Local jobs are never in the QUEUED state
-                log.debug( "local runner: %s is still in running state, setting to error" %j.id )
-                job_wrapper.change_state( model.Job.states.ERROR, info = "This job was killed when Galaxy was restarted.  Please retry the job." )
-            elif j.job_runner_name.startswith('pbs://'):
-                pbs_job_state = runners.pbs.PBSJobState()
-                pbs_job_state.ofile = "%s/database/pbs/%s.o" % (os.getcwd(), j.id)
-                pbs_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), j.id)
-                pbs_job_state.job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), j.id)
-                pbs_job_state.job_id = str( j.job_runner_external_id )
-                pbs_job_state.runner_url = job_wrapper.tool.job_runner
-                job_wrapper.command_line = j.command_line
-                pbs_job_state.job_wrapper = job_wrapper
-                # The job was in PBS and actually running
-                if j.state == model.Job.states.RUNNING:
-                    log.debug( "pbs runner: %s is still in running state, adding to the PBS queue" %j.id )
-                    pbs_job_state.old_state = 'R'
-                    pbs_job_state.running = True
-                    self.dispatcher.job_runners["pbs"].queue.put( pbs_job_state )
-                elif j.state == model.Job.states.QUEUED:
-                    # The job was in PBS but not yet running
-                    if j.job_runner_external_id:
-                        log.debug( "pbs runner: %s is still in PBS queued state, adding to the PBS queue" %j.id )
-                        pbs_job_state.old_state = 'Q'
-                        pbs_job_state.running = False
-                        self.dispatcher.job_runners["pbs"].queue.put( pbs_job_state )
-                    # The job had reached the pbs queue_job method, but not the PBS queue itself.
-                    else:
-                        log.debug( "pbs runner: %s is still in jobs queued state, adding to the jobs queue" %j.id )
-                        job_wrapper.change_state( model.Job.states.NEW )
-                        # is there a way we can do this without blocking startup?
-                        self.dispatcher.put( job_wrapper )
-            else:
-                log.error( "job %s has an unknown job runner: %s" %( j.id, j.job_runner_name ) )
+            # why are we passing the queue to the wrapper?
+            job_wrapper = JobWrapper( job.id, self.app.toolbox.tools_by_id[ job.tool_id ], self )
+            self.dispatcher.recover( job, job_wrapper )
 
     def monitor( self ):
         """
@@ -341,6 +305,10 @@ class JobWrapper( object ):
         """
         job = model.Job.get( self.job_id )
         job.refresh()
+        # if the job was deleted, don't fail it
+        if job.state == job.states.DELETED:
+            self.cleanup()
+            return
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset
             dataset.refresh()
@@ -423,6 +391,7 @@ class JobWrapper( object ):
         # default post job setup
         mapping.context.current.clear()
         job = model.Job.get( self.job_id )
+        # TODO: change PBS to use fail() instead of finish()
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED:
             self.cleanup()
@@ -518,6 +487,9 @@ class DefaultJobDispatcher( object ):
             elif runner_name == "pbs":
                 import runners.pbs
                 self.job_runners[runner_name] = runners.pbs.PBSJobRunner( app )
+            elif runner_name == "sge":
+                import runners.sge
+                self.job_runners[runner_name] = runners.sge.SGEJobRunner( app )
             else:
                 log.error( "Unable to start unknown job runner: %s" %runner_name )
             
@@ -525,6 +497,16 @@ class DefaultJobDispatcher( object ):
         runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
         log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
         self.job_runners[runner_name].put( job_wrapper )
+
+    def stop( self, job ):
+        runner_name = ( job.job_runner_name.split(":", 1) )[0]
+        log.debug( "stopping job %d in %s runner" %( job.id, runner_name ) )
+        self.job_runners[runner_name].stop_job( job )
+
+    def recover( self, job, job_wrapper ):
+        runner_name = ( job.job_runner_name.split(":", 1) )[0]
+        log.debug( "recovering job %d in %s runner" %( job.id, runner_name ) )
+        self.job_runners[runner_name].recover( job, job_wrapper )
 
     def shutdown( self ):
         for runner in self.job_runners.itervalues():
@@ -535,8 +517,9 @@ class JobStopQueue( object ):
     A queue for jobs which need to be terminated prematurely.
     """
     STOP_SIGNAL = object()
-    def __init__( self, app ):
+    def __init__( self, app, dispatcher ):
         self.app = app
+        self.dispatcher = dispatcher
 
         # Keep track of the pid that started the job manager, only it
         # has valid threads
@@ -585,28 +568,18 @@ class JobStopQueue( object ):
             pass  
 
         for job in jobs:
-            # only handle jobs queued or running
+            # jobs in a non queued/running/new state do not need to be stopped
             if job.state not in [ model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.NEW ]:
                 return
+            # job has multiple datasets that aren't parent/child and not all of them are deleted.
             if not self.check_if_output_datasets_deleted( job.id ):
-                # job has multiple datasets that aren't parent/child and not all of them are deleted.
                 return
             self.mark_deleted( job.id )
+            # job is in JobQueue or FooJobRunner, will be dequeued due to state change above
             if job.job_runner_name is None:
-                # job is in JobQueue or PBSJobRunner, will be dequeued due to state change above
                 return
-            elif job.job_runner_name.startswith( 'local://' ):
-                stop_job = runners.local.stop_job
-            elif job.job_runner_name.startswith( 'pbs://' ):
-                stop_job = runners.pbs.stop_job
-            else:
-                return
-            # stop
-            try:
-                log.debug( "User deleted running job %s, attempting to stop" % job.id )
-                stop_job( job )
-            except Exception, e:
-                log.error( "Unable to stop job %s (error in runner's stop method): %s" % ( job.id, e ) )
+            # tell the dispatcher to stop the job
+            self.dispatcher.stop( job )
 
     def check_if_output_datasets_deleted( self, job_id ):
         job = model.Job.get( job_id )

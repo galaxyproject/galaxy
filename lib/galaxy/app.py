@@ -31,8 +31,9 @@ class UniverseApplication( object ):
         #Load datatype converters
         self.datatypes_registry.load_datatype_converters(self.config.datatype_converters_config, self.config.datatype_converters_path, self.toolbox)
         # Start the job queue
-        self.job_queue = jobs.JobQueue( self )
-        self.job_stop_queue = jobs.JobStopQueue( self )
+        job_dispatcher = jobs.DefaultJobDispatcher( self )
+        self.job_queue = jobs.JobQueue( self, job_dispatcher )
+        self.job_stop_queue = jobs.JobStopQueue( self, job_dispatcher )
         self.heartbeat = None
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:

@@ -391,14 +391,35 @@ class PBSJobRunner( object ):
                 stage += "%s@%s:%s" % (stage_name, self.app.config.pbs_dataset_server, fname)
         return stage
 
-def stop_job( job ):
-    """Attempts to delete a job from the PBS queue"""
-    pbs_server = PBSServer()
-    pbs_server_name = pbs_server.determine_pbs_server( str( job.job_runner_name ) )
-    conn = pbs.pbs_connect( pbs_server_name )
-    if conn <= 0:
-        log.debug("(%s/%s) Connection to PBS server for job delete failed" % ( job.id, job.job_runner_external_id ) )
-        return
-    pbs.pbs_deljob( conn, str( job.job_runner_external_id ), 'NULL' )
-    pbs.pbs_disconnect( conn )
-    log.debug( "(%s/%s) Removed from PBS queue at user's request" % ( job.id, job.job_runner_external_id ) )
+    def stop_job( self, job ):
+        """Attempts to delete a job from the PBS queue"""
+        #pbs_server = PBSServer()
+        pbs_server_name = self.pbs_server.determine_pbs_server( str( job.job_runner_name ) )
+        conn = pbs.pbs_connect( pbs_server_name )
+        if conn <= 0:
+            log.debug("(%s/%s) Connection to PBS server for job delete failed" % ( job.id, job.job_runner_external_id ) )
+            return
+        pbs.pbs_deljob( conn, str( job.job_runner_external_id ), 'NULL' )
+        pbs.pbs_disconnect( conn )
+        log.debug( "(%s/%s) Removed from PBS queue at user's request" % ( job.id, job.job_runner_external_id ) )
+
+    def recover( self, job, job_wrapper ):
+        """Recovers jobs stuck in the queued/running state when Galaxy started"""
+        pbs_job_state = PBSJobState()
+        pbs_job_state.ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job.id)
+        pbs_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), job.id)
+        pbs_job_state.job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job.id)
+        pbs_job_state.job_id = str( job.job_runner_external_id )
+        pbs_job_state.runner_url = job_wrapper.tool.job_runner
+        job_wrapper.command_line = job.command_line
+        pbs_job_state.job_wrapper = job_wrapper
+        if job.state == model.Job.states.RUNNING:
+            log.debug( "(%s/%s) is still in running state, adding to the PBS queue" % ( job.id, job.job_runner_external_id ) )
+            pbs_job_state.old_state = 'R'
+            pbs_job_state.running = True
+            self.queue.put( pbs_job_state )
+        elif job.state == model.Job.states.QUEUED:
+            log.debug( "(%s/%s) is still in PBS queued state, adding to the PBS queue" % ( job.id, job.job_runner_external_id ) )
+            pbs_job_state.old_state = 'Q'
+            pbs_job_state.running = False
+            self.queue.put( pbs_job_state )
