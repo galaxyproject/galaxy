@@ -4,6 +4,7 @@
 Script that Creates a zip file for use by GMAJ
 """
 import os, sys, zipfile
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
 

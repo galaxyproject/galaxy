@@ -748,6 +748,7 @@ class DataToolParameter( ToolParameter ):
                 formats.append( tool.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
         self.formats = tuple( formats )
         self.multiple = str_bool( elem.get( 'multiple', False ) )
+        # Optional DataToolParameters are used in tools like GMAJ and LAJ
         self.optional = str_bool( elem.get( 'optional', False ) )
         #TODO: Enhance dynamic options for DataToolParameters
         #Currently, only the special case key='build' of type='data_meta' is a valid filter
@@ -789,8 +790,11 @@ class DataToolParameter( ToolParameter ):
             if value is None or len( field.options ) == 1:
                 # Ensure that the last item is always selected
                 a, b, c = field.options[-1]
-                field.options[-1] = a, b, True
-        elif self.optional:
+                if self.optional:
+                    field.options[-1] = a, b, False
+                else:
+                    field.options[-1] = a, b, True
+        if self.optional:
             field.add_option( "Selection is Optional", 'None', True )
         return field
 
