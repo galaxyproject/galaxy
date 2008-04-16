@@ -425,10 +425,17 @@ def require( pkg ):
         # there's a conflicting egg on the pythonpath, remove it
         dist = pkg_resources.get_distribution( name )
         working_set = pkg_resources.working_set
-        working_set.entries.remove( dist.location )
+        # use the canonical path for comparisons
+        location = os.path.realpath( dist.location )
+        for entry in working_set.entries:
+            if os.path.realpath( entry ) == location:
+                working_set.entries.remove( entry )
+                break
+        else:
+            raise   # some path weirdness has prevented us from finding the offender
         del working_set.by_key[dist.key]
-        working_set.entry_keys[dist.location] = []
-        sys.path.remove(dist.location)
+        working_set.entry_keys[entry] = []
+        sys.path.remove(entry)
         # get
         egg.find()
         if not egg.have:
