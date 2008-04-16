@@ -28,10 +28,14 @@ def main():
     
     try:
         for fields in bx.wiggle.IntervalReader( UCSCOutWrapper( in_file ) ):
-            print >>out_file, "\t".join( map( str, fields ) )
+            out_file.write( "%s\n" % "\t".join( map( str, fields ) ) )
     except UCSCLimitException:
         # Wiggle data was truncated, at the very least need to warn the user.
         print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
+    except ValueError, e:
+        in_file.close()
+        out_file.close()
+        stop_err( str( e ) )
 
     in_file.close()
     out_file.close()
