@@ -363,6 +363,15 @@ class GalaxyConfig:
             # database connection is unset, so sqlite is the default
             except:
                 return True
+        elif egg_name == "DRMAA_python":
+            try:
+                runners = self.config.get( "app:main", "start_job_runners" ).split(",")
+                if "sge" in runners:
+                    return True
+                else:
+                    return False
+            except:
+                return False
         elif egg_name == "pbs_python":
             try:
                 runners = self.config.get( "app:main", "start_job_runners" ).split(",")
