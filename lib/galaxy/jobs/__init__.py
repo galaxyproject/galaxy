@@ -284,7 +284,7 @@ class JobWrapper( object ):
         # Build the job's command line
         self.command_line = self.tool.build_command_line( param_dict )
         # FIXME: for now, tools get Galaxy's lib dir in their path
-        if self.command_line.startswith( 'python' ):
+        if self.command_line and self.command_line.startswith( 'python' ):
             self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
         # command_line won't actually be set in the db until finish unless you do it here
         # We need it in the db to be able to restart jobs -ndc
