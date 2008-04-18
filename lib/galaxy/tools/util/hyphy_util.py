@@ -11,10 +11,6 @@ def get_filled_temp_filename(contents):
     fh.close()
     return filename
 
-#Hard Coded hyphy path, this will need to be the same across the cluster
-HYPHY_PATH = "/home/universe/linux-i686/HYPHY"
-HYPHY_EXECUTABLE = os.path.join(HYPHY_PATH,"HYPHY")
-
 NJ_tree_shared_ibf = """
 COUNT_GAPS_IN_FREQUENCIES = 0;
 methodIndex				  = 1;

@@ -4,9 +4,10 @@ import os, sys
 from galaxy import eggs
 from galaxy.tools.util import hyphy_util
 
-#Retrieve hard coded hyphy path, this will need to be the same across the cluster
-HYPHY_PATH = hyphy_util.HYPHY_PATH
-HYPHY_EXECUTABLE = hyphy_util.HYPHY_EXECUTABLE
+#Retrieve hyphy path, this will need to be the same across the cluster
+tool_data = sys.argv.pop()
+HYPHY_PATH = os.path.join( tool_data, "HYPHY" )
+HYPHY_EXECUTABLE = os.path.join( HYPHY_PATH, "HYPHY" )
 
 #Read command line arguments
 input_filename = os.path.abspath(sys.argv[1].strip())

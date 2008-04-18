@@ -3,7 +3,7 @@
 	
 	<description>Estimation</description>
 	
-	<command interpreter="python">hyphy_dnds_wrapper.py $input1 $out_file1 "$tree" "$model" $analysis</command>
+	<command interpreter="python">hyphy_dnds_wrapper.py $input1 $out_file1 "$tree" "$model" $analysis ${GALAXY_DATA_INDEX_DIR}</command>
 	
     <inputs>
         <page>
