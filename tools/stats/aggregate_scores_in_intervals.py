@@ -30,6 +30,41 @@ from galaxy.tools.exception_handling import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+import tempfile, struct
+class PositionalScoresOnDisk:
+    fmt = 'f'
+    fmt_size = struct.calcsize( fmt )
+    default_value = float( 'nan' )
+    
+    def __init__( self ):
+        self.file = tempfile.TemporaryFile( 'w+b' )
+        self.length = 0
+    def __getitem__( self, i ):
+        if i < 0: i = self.length + i
+        if i < 0 or i >= self.length: return self.default_value
+        try:
+            self.file.seek( i * self.fmt_size )
+            return struct.unpack( self.fmt, self.file.read( self.fmt_size ) )[0]
+        except Exception, e:
+            raise IndexError, e
+    def __setitem__( self, i, value ):
+        if i < 0: i = self.length + i
+        if i < 0: raise IndexError, 'Negative assignment index out of range'
+        if i >= self.length:
+            self.file.seek( self.length * self.fmt_size )
+            self.file.write( struct.pack( self.fmt, self.default_value ) * ( i - self.length ) )
+            self.length = i + 1
+        self.file.seek( i * self.fmt_size )
+        self.file.write( struct.pack( self.fmt, value ) )
+    def __len__( self ):
+        return self.length
+    def __repr__( self ):
+        i = 0
+        repr = "[ "
+        for i in xrange( self.length ):
+            repr = "%s %s," % ( repr, self[i] )
+        return "%s ]" % ( repr )
+
 class FileBinnedArrayDir( DictMixin ):
     """
     Adapter that makes a directory of FileBinnedArray files look like
@@ -61,10 +96,16 @@ def load_scores_wiggle( fname ):
     by chromosome.
     """ 
     scores_by_chrom = dict()
+    chrom_buffer_size = 3 #use BinnedArray() for this number of chroms, otherwise, use PositionalScoresOnDisk()
+    #TODO: allow this value to be specified in the command line
     try:
-        for chrom, pos, val in bx.wiggle.Reader( UCSCOutWrapper(open( fname ) ) ):
+        for chrom, pos, val in bx.wiggle.Reader( UCSCOutWrapper( open( fname ) ) ):
             if chrom not in scores_by_chrom:
-                scores_by_chrom[chrom] = BinnedArray()
+                if chrom_buffer_size:
+                    scores_by_chrom[chrom] = BinnedArray()
+                    chrom_buffer_size -= 1
+                else:
+                    scores_by_chrom[chrom] = PositionalScoresOnDisk()
             scores_by_chrom[chrom][pos] = val
     except UCSCLimitException:
         # Wiggle data was truncated, at the very least need to warn the user.
