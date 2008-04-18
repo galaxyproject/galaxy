@@ -3,6 +3,12 @@
 import sys, os, time, ConfigParser
 from datetime import datetime, timedelta
 from optparse import OptionParser
+
+new_path = [ os.path.join( os.getcwd(), "lib" ) ]
+new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+sys.path = new_path
+
+from galaxy import eggs
 import galaxy.model.mapping
 import pkg_resources
         
