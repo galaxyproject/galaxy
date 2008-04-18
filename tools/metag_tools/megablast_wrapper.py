@@ -34,9 +34,13 @@ def __main__():
     except:
         stop_err('Invalid value for identity cut-off')
     try:
-        int(mega_disc_word)    
+        test = int(mega_disc_word)
+        if test > 0:
+            assert test in [16,18,21] and int(mega_word_size) == 12
+        else:
+            assert test == 0
     except:
-        stop_err('Invalid value for discontiguous word template')
+        stop_err('Invalid value for discontiguous word template. Must be either 0, 16, 18, or 21. The last three choices would work only if word size is 12.')
         
     # prepare the database
     db = {}

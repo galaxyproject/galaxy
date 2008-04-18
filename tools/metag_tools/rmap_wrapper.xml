@@ -1,0 +1,60 @@
+<tool id="rmap_wrapper" name="RMAP" version="1.0.0">
+    <description>for Solexa Short Reads Alignment</description>
+    <command interpreter="python">rmap_wrapper.py $database $input_seq $read_len $align_len $mismatch $output1
+    </command>
+    <inputs>
+        <param name="database" type="select" display="radio" label="Target database">
+            <options from_file="faseq.loc" name_col="0" value_col="1"/>
+        </param>
+        <param name="input_seq" type="data" format="fasta" label="Query Sequence"/>
+        <param name="read_len" type="integer" size="15" value="36" label="Length of the Reads"/>
+        <param name="align_len" type="integer" size="15" value="36" label="Length of an Alignment"/>
+        <param name="mismatch" type="integer" size="15" value="3" label="Number of Mismatches Allowed"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="bed"/>
+    </outputs>
+    <!--     
+    <tests>
+        <test>
+            <param name="database" value="/depot/data2/galaxy/faseq/test" />
+            <param name="input_seq" value="rmap_wrapper_test1.fa" ftype="fasta"/>
+            <param name="read_len" value="36" />
+            <param name="align_len" value="36" />
+            <param name="mismatch" value="3" />
+            <output name="output1" file="rmap_wrapper_test1.bed"/> 
+        </test>
+    </tests>
+     -->
+    <help>
+    
+.. class:: warningmark
+
+ RMAP was developed for **Solexa** reads. 
+
+.. class:: infomark
+
+**TIP**. Each read should have at least the minimal length specified as the *Length of the Reads* parameter. Reads with lengths longer than the expected value will be trimmed at the 3'end. 
+
+-----
+
+**What it does**
+
+This tool runs **rmap** (for more information, please see the reference below), mapping Solexa reads onto a genome build.   
+
+-----
+
+**Parameters**
+
+- *Length of the Reads* (**-w**) : the minimal length of the reads
+- *Length of an Alignment* (**-h**) : the minimal length of an alignment  
+- *Number of Mismatches Allowed* (**-m**) : the maximal number of mismatches allowed in an alignment 
+
+-----
+
+**Reference**
+
+ **RMAP** is developed by Dr. Andrew D Smith and Dr. Zhenyu Xuan at the Cold Spring Harbor Laboratory. Please see http://rulai.cshl.edu/rmap/
+
+    </help>
+</tool>

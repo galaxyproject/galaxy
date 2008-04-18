@@ -1,0 +1,9 @@
+#This is a sample file distributed with Galaxy that enables tools
+# to use genome fasta sequence files.
+#(white space characters are TAB characters):
+#
+# <GenomeBuild> <dir>
+#
+# In the dir, each file is fasta format and contains only one sequence.
+#
+#hg18	/depot/data2/galaxy/faseq/hg18

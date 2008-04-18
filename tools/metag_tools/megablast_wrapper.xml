@@ -9,9 +9,10 @@
 		<param name="word_size" type="select" label="Word size (-W)" help="Size of best perfect match">
 			<option value="28">28</option>
 			<option value="16">16</option>
+			<option value="12">12</option>
 		</param>
 		<param name="iden_cutoff" type="float" size="15" value="0.0" label="Identity percentage cut-off (-p)" help="no cutoff if 0" />
-		<param name="disc_word" type="integer" size="15" value="0" label="Length of a discontiguous word template (-t)" help="contiguous word if 0"/>
+		<param name="disc_word" type="integer" size="15" value="0" label="Length of a discontiguous word template (-t)" help="contiguous word if 0. Only support 16, 18, or 21."/>
 		<param name="disc_type" type="select" label="Type of a discontiguous word template (-N)">
 			<option value="0">0 - coding</option>
 			<option value="1">1 - optimal</option>
@@ -64,10 +65,14 @@ The query sequence could be any nucleotide sequences in fasta format.
     - two simultaneous: alignment satisfied either one of the above templates will be extended
 - *Filter query sequence* (**-F**) : mask low-complexity regions in the query sequence
 
-**Example**
+**Examples of discontiguous word template**
 
-- W = 11, t = 16, coding: 1101101101101101
-- W = 11, t = 16, optimal: 1110010110110111
+- W = 12, t = 16, coding: 1111101101101101
+- W = 12, t = 16, optimal: 1110110110110111
+- W = 12, t = 18, coding: 101101101101101101
+- W = 12, t = 18, optimal: 111010110010110111
+- W = 12, t = 21, coding: 100101101101100101101
+- W = 12, t = 21, optimal: 111010010110010010111
 
 -----
 
