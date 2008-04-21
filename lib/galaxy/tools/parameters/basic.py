@@ -11,6 +11,8 @@ from galaxy.web import form_builder
 
 import validation, dynamic_options
 
+from galaxy.util.none_like import NoneDataset
+
 # For BaseURLToolParameter
 from galaxy.web import url_for
 
@@ -838,16 +840,14 @@ class DataToolParameter( ToolParameter ):
         if not value:
             raise ValueError( "History does not include a dataset of the required format / build" ) 
         if value in [None, "None"]:
-            temp_data = trans.app.model.Dataset( extension = 'data' )
-            temp_data.state = temp_data.states.OK
-            return temp_data
+            return NoneDataset( datatypes_registry = trans.app.datatypes_registry, ext = self.extensions[0] )
         if isinstance( value, list ):
             return [ trans.app.model.Dataset.get( v ) for v in value ]
         else:
             return trans.app.model.Dataset.get( value )
 
     def value_to_basic( self, value, app ):
-        if value is None:
+        if value is None or isinstance( value, NoneDataset ):
             return None
         if isinstance( value, str ):
             return value
@@ -869,6 +869,7 @@ class DataToolParameter( ToolParameter ):
                 raise
 
     def to_param_dict_string( self, value ):
+        if value is None: return "None"
         return value.file_name
         
     def value_to_display_text( self, value, app ):

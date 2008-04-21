@@ -1,5 +1,6 @@
 from galaxy.util.bunch import Bunch
 from galaxy.tools.parameters import *
+from galaxy.util.none_like import NoneDataset
 
 import logging
 log = logging.getLogger( __name__ )
@@ -51,22 +52,20 @@ class DefaultToolAction( object ):
         input_dbkey = incoming.get( "dbkey", "?" )
         input_meta = Bunch()
         for name, data in inp_data.items():
-            # Hack for tools whose DataToolParameter params are optional
-            if data == None:
-                data = trans.app.model.Dataset( extension = 'data' )
-                data.state = data.states.OK
-            input_names.append( 'data %s' % data.hid )
-            input_ext = data.ext
-            if data.dbkey not in [None, '?']:
-                input_dbkey = data.dbkey
-            for meta_key, meta_value in data.metadata.items():
-                if meta_value is not None:
-                    meta_value = str(data.datatype.metadata_spec[meta_key].wrap(meta_value, data))
-                    meta_key = '%s_%s' % (name, meta_key)
-                    incoming[meta_key] = meta_value
-                else:
-                    incoming_key = '%s_%s' % (name, meta_key)
-                    incoming[incoming_key] = data.datatype.metadata_spec[meta_key].no_value
+            if data is not None:
+                if not isinstance( data, NoneDataset ):
+                    input_names.append( 'data %s' % data.hid )
+                input_ext = data.ext
+                if data.dbkey not in [None, '?']:
+                    input_dbkey = data.dbkey
+                for meta_key, meta_value in data.metadata.items():
+                    if meta_value is not None:
+                        meta_value = str(data.datatype.metadata_spec[meta_key].wrap(meta_value, data))
+                        meta_key = '%s_%s' % (name, meta_key)
+                        incoming[meta_key] = meta_value
+                    else:
+                        incoming_key = '%s_%s' % (name, meta_key)
+                        incoming[incoming_key] = data.datatype.metadata_spec[meta_key].no_value
 
         # Build name for output datasets based on tool name and input names
         output_base_name = tool.name
@@ -168,7 +167,8 @@ class DefaultToolAction( object ):
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
         for name, dataset in inp_data.iteritems():
-            job.add_input_dataset( name, dataset )
+            if not isinstance( dataset, NoneDataset ):
+                job.add_input_dataset( name, dataset )
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
         trans.app.model.flush()
