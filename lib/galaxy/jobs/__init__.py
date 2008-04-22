@@ -102,9 +102,10 @@ class JobQueue( object ):
                 self.queue.put( ( job.id, job.tool_id ) )
         for job in model.Job.select( (model.Job.c.state == model.Job.states.RUNNING)
                                  | (model.Job.c.state == model.Job.states.QUEUED) ):
-            # why are we passing the queue to the wrapper?
-            job_wrapper = JobWrapper( job.id, self.app.toolbox.tools_by_id[ job.tool_id ], self )
-            self.dispatcher.recover( job, job_wrapper )
+            if job.job_runner_name is not None:
+                # why are we passing the queue to the wrapper?
+                job_wrapper = JobWrapper( job.id, self.app.toolbox.tools_by_id[ job.tool_id ], self )
+                self.dispatcher.recover( job, job_wrapper )
 
     def monitor( self ):
         """

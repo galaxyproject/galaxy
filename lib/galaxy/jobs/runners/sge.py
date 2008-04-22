@@ -111,6 +111,12 @@ class SGEJobRunner( object ):
             job_wrapper.finish( '', '' )
             return
         
+        # Check for deletion before we change state
+        if job_wrapper.get_state() == 'deleted':
+            log.debug( "Job %s deleted by user before it entered the SGE queue" % job_wrapper.job_id )
+            job_wrapper.cleanup()
+            return
+
         # Change to queued state immediately
         job_wrapper.change_state( 'queued' )
         

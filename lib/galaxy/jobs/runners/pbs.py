@@ -1,8 +1,4 @@
-import logging
-import threading
-import os
-import random
-import time
+import os, logging, threading, time
 from Queue import Queue, Empty
 
 from galaxy import model
@@ -65,37 +61,6 @@ class PBSJobState( object ):
         self.efile = None
         self.runner_url = None
 
-class PBSServer( object ):
-    """
-    Wraps PBS methods, although only used for parsing pbs:// URLs at present.
-    """
-    def __init__( self ):
-        self.default_pbs_server = None
-    def determine_pbs_server( self, url, rewrite = False ):
-        """Determine what PBS server we are connecting to"""
-        url_split = url.split("/")
-        server = url_split[2]
-        if server == "":
-            if not self.default_pbs_server:
-                self.default_pbs_server = pbs.pbs_default()
-                log.debug( "Set default PBS server to %s" % self.default_pbs_server )
-            server = self.default_pbs_server
-            url_split[2] = server
-        if server is None:
-            raise Exception( "Could not find torque server" )
-        if rewrite:
-            return ( server, "/".join( url_split ) )
-        else:
-            return server
-    def determine_pbs_queue( self, url ):
-        """Determine what PBS queue we are submitting to"""
-        url_split = url.split("/")
-        queue = url_split[3]
-        if queue == "":
-            # None == server's default queue
-            queue = None
-        return queue
-
 class PBSJobRunner( object ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
@@ -114,12 +79,38 @@ class PBSJobRunner( object ):
         # to 'watched' and then manage the watched jobs.
         self.watched = []
         self.queue = Queue()
-        self.pbs_server = PBSServer()
         # set the default server during startup
-        self.pbs_server.determine_pbs_server( 'pbs:///' )
+        self.default_pbs_server = None
+        self.determine_pbs_server( 'pbs:///' )
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
         log.debug( "ready" )
+
+    def determine_pbs_server( self, url, rewrite = False ):
+        """Determine what PBS server we are connecting to"""
+        url_split = url.split("/")
+        server = url_split[2]
+        if server == "":
+            if not self.default_pbs_server:
+                self.default_pbs_server = pbs.pbs_default()
+                log.debug( "Set default PBS server to %s" % self.default_pbs_server )
+            server = self.default_pbs_server
+            url_split[2] = server
+        if server is None:
+            raise Exception( "Could not find torque server" )
+        if rewrite:
+            return ( server, "/".join( url_split ) )
+        else:
+            return server
+
+    def determine_pbs_queue( self, url ):
+        """Determine what PBS queue we are submitting to"""
+        url_split = url.split("/")
+        queue = url_split[3]
+        if queue == "":
+            # None == server's default queue
+            queue = None
+        return queue
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
@@ -130,8 +121,9 @@ class PBSJobRunner( object ):
         # This is silly, why would we queue a job with no command line?
         if not command_line:
             job_wrapper.finish( '', '' )
+            return
         
-        # job was deleted while we were preparing it
+        # Check for deletion before we change state
         if job_wrapper.get_state() == 'deleted':
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
             job_wrapper.cleanup()
@@ -140,10 +132,10 @@ class PBSJobRunner( object ):
         # Change to queued state immediately
         job_wrapper.change_state( 'queued' )
         
-        ( pbs_server_name, runner_url ) = self.pbs_server.determine_pbs_server( runner_url, rewrite = True )
-        pbs_queue_name = self.pbs_server.determine_pbs_queue( runner_url )
-        conn = pbs.pbs_connect( pbs_server_name )
-        if conn <= 0:
+        ( pbs_server_name, runner_url ) = self.determine_pbs_server( runner_url, rewrite = True )
+        pbs_queue_name = self.determine_pbs_queue( runner_url )
+        c = pbs.pbs_connect( pbs_server_name )
+        if c <= 0:
             raise Exception( "Connection to PBS server for submit failed" )
 
         # define job attributes
@@ -187,69 +179,36 @@ class PBSJobRunner( object ):
         fh.write(script)
         fh.close()
 
-        # Attempt to queue
-        if not( os.access(job_file, os.R_OK) and conn > 0 ):
-            # FIXME: More information here?
-            stderr = stdout = ''
-
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == 'deleted':
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
+            pbs.pbs_disconnect(c)
+            self.cleanup( ( ofile, efile, job_file ) )
             job_wrapper.cleanup()
             return
 
+        # submit
         galaxy_job_id = job_wrapper.job_id
         log.debug("(%s) submitting file %s" % ( galaxy_job_id, job_file ) )
         log.debug("(%s) command is: %s" % ( galaxy_job_id, command_line ) )
-        job_id = pbs.pbs_submit(conn, job_attrs, job_file, pbs_queue_name, None)
+        job_id = pbs.pbs_submit(c, job_attrs, job_file, pbs_queue_name, None)
+        pbs.pbs_disconnect(c)
+
+        # check to see if it submitted
+        if not job_id:
+            errno, text = pbs.error()
+            log.debug( "(%s) pbs_submit failed, PBS error %d: %s" % (galaxy_job_id, errno, text) )
+            job_wrapper.fail( "Unable to run this job due to a cluster error" )
+            return
+
         if pbs_queue_name is None:
             log.debug("(%s) queued in default queue as %s" % (galaxy_job_id, job_id) )
         else:
             log.debug("(%s) queued in %s queue as %s" % (galaxy_job_id, pbs_queue_name, job_id) )
-        pbs.pbs_disconnect(conn)
 
-        if not job_id:
-            errno, text = pbs.error()
-            log.debug( "(%s) pbs_submit failed, PBS error %d: %s" % (galaxy_job_id, errno, text) )
-            stdout = ''
-            stderr = "Unable to run this job due to a cluster configuration error"
-            # Run failed, finish immediately
-            try:
-                job_wrapper.finish( stdout, stderr )
-            except:
-                log.exception("Job wrapper finish method failed")
-            return
-
+        # store runner information for tracking if Galaxy restarts
         job_wrapper.set_runner( runner_url, job_id )
 
-        # Get initial job state
-        stat_attrl = pbs.new_attrl(1)
-        stat_attrl[0].name = 'job_state'
-        conn = pbs.pbs_connect( pbs_server_name )
-        if conn > 0:
-            jobs = pbs.pbs_statjob(conn, job_id, stat_attrl, 'NULL')
-            pbs.pbs_disconnect(conn)
-        else:
-            log.info("(%s) WARNING: connection to PBS server for initial job state failed" % job_id)
-
-        old_state = ""
-        try:
-            if (jobs[0].attribs[0].name == "job_state"):
-                old_state = jobs[0].attribs[0].value
-                log.debug("(%s/%s) initial state is %s" % (galaxy_job_id, job_id, old_state) )
-        except:
-            log.info("(%s/%s) unable to retrieve initial state" % (galaxy_job_id, job_id) )
-
-        # ran immediately
-        if old_state == "R":
-            job_wrapper.change_state( "running" )
-            running = True
-            log.debug("(%s/%s) job is now running" % (galaxy_job_id, job_id) )
-
-        # queued
-        else:
-            running = False
-            
         # Store PBS related state information for job
         pbs_job_state = PBSJobState()
         pbs_job_state.job_wrapper = job_wrapper
@@ -257,8 +216,8 @@ class PBSJobRunner( object ):
         pbs_job_state.ofile = ofile
         pbs_job_state.efile = efile
         pbs_job_state.job_file = job_file
-        pbs_job_state.old_state = old_state
-        pbs_job_state.running = running
+        pbs_job_state.old_state = 'N'
+        pbs_job_state.running = False
         pbs_job_state.runner_url = runner_url
         
         # Add to our 'queue' of jobs to monitor
@@ -291,48 +250,84 @@ class PBSJobRunner( object ):
         with state changes.
         """
         new_watched = []
+        # reduce pbs load by batching status queries
+        ( failures, states ) = self.check_all_jobs()
         for pbs_job_state in self.watched:
             job_id = pbs_job_state.job_id
             galaxy_job_id = pbs_job_state.job_wrapper.job_id
             old_state = pbs_job_state.old_state
-            running = pbs_job_state.running
-            pbs_server_name = self.pbs_server.determine_pbs_server( pbs_job_state.runner_url )
-            conn = pbs.pbs_connect( pbs_server_name )
-            if conn <= 0:
-                log.debug("(%s/%s) connection to PBS server for state check failed" % (galaxy_job_id, job_id) )
+            pbs_server_name = self.determine_pbs_server( pbs_job_state.runner_url )
+            if pbs_server_name in failures:
+                log.debug( "(%s/%s) Skipping state check because PBS server connection failed" % ( galaxy_job_id, job_id ) )
                 new_watched.append( pbs_job_state )
                 continue
-            stat_attrl = pbs.new_attrl(1)
-            stat_attrl[0].name = 'job_state'
-            jobs = pbs.pbs_statjob(conn, pbs_job_state.job_id, stat_attrl, 'NULL')
-            pbs.pbs_disconnect(conn)    
-            if len( jobs ) < 1:
-                errno, text = pbs.error()
-                if errno != 15001:
-                    log.info("(%s/%s) State check resulted in error (%d): %s" % (galaxy_job_id, job_id, errno, text) )
-                    new_watched.append( pbs_job_state )
-                else:
-                    log.debug("(%s/%s) job has left queue" % (galaxy_job_id, job_id) )
-                    self.finish_job( pbs_job_state )
-            else:    
-                try:
-                    if (jobs[0].attribs[0].name == "job_state"):
-                        state = jobs[0].attribs[0].value
-                        if state != old_state:
-                            log.debug("(%s/%s) job state changed from %s to %s" % ( galaxy_job_id, job_id, old_state, state ) )
-                        if state == "R" and not running:
-                            running = True
-                            pbs_job_state.job_wrapper.change_state( "running" )
-                            log.debug("(%s/%s) job is now running" % (galaxy_job_id, job_id) )
-                        old_state = state
-                    pbs_job_state.old_state = old_state
-                    pbs_job_state.running = running
-                except:
-                    log.exception("(%s/%s) unable to check state" % (galaxy_job_id, job_id) )
+            if states.has_key( job_id ):
+                state = states[job_id]
+                if state != old_state:
+                    log.debug("(%s/%s) job state changed from %s to %s" % ( galaxy_job_id, job_id, old_state, state ) )
+                if state == "R" and not pbs_job_state.running:
+                    pbs_job_state.running = True
+                    pbs_job_state.job_wrapper.change_state( "running" )
+                pbs_job_state.old_state = state
                 new_watched.append( pbs_job_state )
+            else:
+                try:
+                    # recheck to make sure it wasn't a communication problem
+                    self.check_single_job( pbs_server_name, job_id )
+                    log.warning( "(%s/%s) job was not in state check list, but was found with individual state check" )
+                    new_watched.append( pbs_job_state )
+                except:
+                    errno, text = pbs.error()
+                    if errno != 15001:
+                        log.info("(%s/%s) state check resulted in error (%d): %s" % (galaxy_job_id, job_id, errno, text) )
+                        new_watched.append( pbs_job_state )
+                    else:
+                        log.debug("(%s/%s) job has left queue" % (galaxy_job_id, job_id) )
+                        self.finish_job( pbs_job_state )
         # Replace the watch list with the updated version
         self.watched = new_watched
         
+    def check_all_jobs( self ):
+        """
+        Returns a list of servers that failed to be contacted and a dict
+        of "job_id : state" pairs.
+        """
+        servers = []
+        failures = []
+        states = {}
+        for pbs_job_state in self.watched:
+            pbs_server_name = self.determine_pbs_server( pbs_job_state.runner_url )
+            if pbs_server_name not in servers:
+                servers.append( pbs_server_name )
+        for pbs_server_name in servers:
+            c = pbs.pbs_connect( pbs_server_name )
+            if c <= 0:
+                log.debug("connection to PBS server %s for state check failed" % pbs_server_name )
+                failures.append( pbs_server_name )
+                continue
+            stat_attrl = pbs.new_attrl(1)
+            stat_attrl[0].name = 'job_state'
+            jobs = pbs.pbs_statjob( c, None, stat_attrl, None )
+            pbs.pbs_disconnect( c )
+            for job in jobs:
+                states[job.name] = job.attribs[0].value
+        return( ( failures, states ) )
+
+    def check_single_job( self, pbs_server_name, job_id ):
+        """
+        Returns the state of a single job, used to make sure a job is
+        really dead.
+        """
+        c = pbs.pbs_connect( pbs_server_name )
+        if c <= 0:
+            log.debug("connection to PBS server %s for state check failed" % pbs_server_name )
+            return None
+        stat_attrl = pbs.new_attrl(1)
+        stat_attrl[0].name = 'job_state'
+        jobs = pbs.pbs_statjob( c, job_id, stat_attrl, None )
+        pbs.pbs_disconnect( c )
+        return jobs[0].attribs[0].value
+
     def finish_job( self, pbs_job_state ):
         """
         Get the output/error for a finished job, pass to `job_wrapper.finish`
@@ -357,15 +352,15 @@ class PBSJobRunner( object ):
         except:
             log.exception("Job wrapper finish method failed")
 
-        # clean up the job_file, ofile, efile
+        # clean up the pbs files
+        self.cleanup( ( ofile, efile, job_file ) )
+
+    def cleanup( self, files ):
         if not asbool( self.app.config.get( 'debug', False ) ):
-            if os.access(ofile, os.R_OK):
-                os.unlink(ofile)
-            if os.access(efile, os.R_OK):
-                os.unlink(efile)
-            if os.access(job_file, os.R_OK):
-                os.unlink(job_file)
-            
+            for file in files:
+                if os.access( file, os.R_OK ):
+                    os.unlink( file )
+
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
         self.queue_job( job_wrapper )
@@ -393,14 +388,13 @@ class PBSJobRunner( object ):
 
     def stop_job( self, job ):
         """Attempts to delete a job from the PBS queue"""
-        #pbs_server = PBSServer()
-        pbs_server_name = self.pbs_server.determine_pbs_server( str( job.job_runner_name ) )
-        conn = pbs.pbs_connect( pbs_server_name )
-        if conn <= 0:
+        pbs_server_name = self.determine_pbs_server( str( job.job_runner_name ) )
+        c = pbs.pbs_connect( pbs_server_name )
+        if c <= 0:
             log.debug("(%s/%s) Connection to PBS server for job delete failed" % ( job.id, job.job_runner_external_id ) )
             return
-        pbs.pbs_deljob( conn, str( job.job_runner_external_id ), 'NULL' )
-        pbs.pbs_disconnect( conn )
+        pbs.pbs_deljob( c, str( job.job_runner_external_id ), 'NULL' )
+        pbs.pbs_disconnect( c )
         log.debug( "(%s/%s) Removed from PBS queue at user's request" % ( job.id, job.job_runner_external_id ) )
 
     def recover( self, job, job_wrapper ):
