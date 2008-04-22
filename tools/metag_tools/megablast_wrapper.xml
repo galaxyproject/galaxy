@@ -2,10 +2,10 @@
 	<description>for Metagenomics Projects</description>
 	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $disc_word $disc_type $filter_query ${GALAXY_DATA_INDEX_DIR}</command>
 	<inputs>
-		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
 		<param name="source_select" type="select" display="radio" label="Target database">
 			<options from_file="blastdb.loc" name_col="0" value_col="0"/>
-		</param> 
+		</param>
+		<param name="input_query" type="data" format="fasta" label="Sequence file"/> 
 		<param name="word_size" type="select" label="Word size (-W)" help="Size of best perfect match">
 			<option value="28">28</option>
 			<option value="16">16</option>

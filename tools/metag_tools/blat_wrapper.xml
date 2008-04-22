@@ -8,7 +8,7 @@
   </command>
 	<inputs>
 	<conditional name="source">
-		<param name="source_select" type="select" label="Target Source">
+		<param name="source_select" type="select" label="Target source">
 				<option value="database">Genome Build</option>
 				<option value="input_ref">Your Upload File</option>
 		</param>
@@ -16,13 +16,13 @@
 			<param name="dbkey" type="genomebuild" label="Genome" />
 		</when>
 		<when value="input_ref">
-			<param name="input_target" type="data" format="fasta" label="Reference Sequence" />
+			<param name="input_target" type="data" format="fasta" label="Reference sequence" />
  		</when>
 	</conditional>	
-		<param name="input_query" type="data" format="fasta" label="Query Sequence"/>
-		<param name="iden" type="float" size="15" value="90.0" label="Minimal Identity (-minIdentity)" />
-		<param name="tile_size" type="integer" size="15" value="11" label="Minimal Size of Exact Match (-tileSize)" help="Must be between 6 and 18."/>
-		<param name="one_off" type="integer" size="15" value="0" label="Number of Mismatch in the Word (-oneOff)" help="Must be between 0 and 2." />
+		<param name="input_query" type="data" format="fasta" label="Sequence file"/>
+		<param name="iden" type="float" size="15" value="90.0" label="Minimal identity (-minIdentity)" />
+		<param name="tile_size" type="integer" size="15" value="11" label="Minimal size of exact match (-tileSize)" help="Must be between 6 and 18."/>
+		<param name="one_off" type="integer" size="15" value="0" label="Number of mismatch in the word (-oneOff)" help="Must be between 0 and 2." />
 	</inputs>
 	<outputs>
 		<data name="output1" format="tabular"/>

@@ -9,13 +9,13 @@
 <inputs>
 <page>
 	<conditional name="sequencing_method_choice">
-		<param name="sequencer" type="select" label="short read sequencing method">
+		<param name="sequencer" type="select" label="Short read sequencing method">
 			<option value="454">454 and SOLiD</option>
 			<option value="Solexa">Solexa</option>
 		</param>
 		<when value="454">
 		    <param name="input1" type="data" format="fasta,txtseq.zip" label="Sequence file" />
-    		<param name="input2" type="data" format="qualityscore,txtseq.zip" label="Score file" />
+    		<param name="input2" type="data" format="qualityscore,txtseq.zip" label="Quality score file" />
     		<param name="input3" type="select" label="To keep homopolymers" >
     			<option value="yes">Yes</option>
     			<option value="no">No</option>

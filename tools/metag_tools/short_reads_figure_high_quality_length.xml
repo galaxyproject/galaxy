@@ -5,8 +5,8 @@
 
 <inputs>
 <page>
-    <param name="input1" type="data" format="qualityscore,txtseq.zip" label="Sequence file" />
-    <param name="input2" type="integer" size="5" value="20" label="Quality Score Threshold" />
+    <param name="input1" type="data" format="qualityscore,txtseq.zip" label="Quality score file" help="No dataset? Read tip below"/>
+    <param name="input2" type="integer" size="5" value="20" label="Quality score threshold" />
 </page>
 </inputs>
 <outputs>
@@ -29,7 +29,7 @@
 
 .. class:: warningmark
 
- To use this tool your dataset needs to be in *Quality Score* format. Click pencil icon next to your dataset to set datatype to *Quality Score*.
+ To use this tool your dataset needs to be in *Quality Score* format. Click pencil icon next to your dataset to set datatype to *Quality Score* (see below for examples of quality scores).
 
 -----
 

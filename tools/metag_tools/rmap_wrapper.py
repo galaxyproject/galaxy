@@ -1,9 +1,5 @@
 #! /usr/bin/python
 
-"""
-3. create test files, run functional test
-"""
-
 import os, sys, tempfile
 
 assert sys.version_info[:2] >= (2.4)
@@ -24,22 +20,37 @@ def __main__():
     mismatch = sys.argv[5]              # -m
     output_file = sys.argv[6]
     
+    # first guess the read length
+    guess_read_len = 0
+    seq = ''
+    for i, line in enumerate(open(infile)):
+        line = line.rstrip('\r\n')
+        if line.startswith('>'):
+            if seq:
+                guess_read_len = len(seq)
+                break
+        else:
+            seq += line
+            
     try: 
         test = int(read_len)
-        assert test >= 20 and test <= 64
+        if test == 0:
+            read_len = str(guess_read_len)
+        else:
+            assert test >= 20 and test <= 64
     except:
         stop_err('Invalid value for read length. Must be between 20 and 64.')
     
     try:
         int(align_len)    
     except:
-        stop_err('Invalid value for minimal length of an alignment.')
+        stop_err('Invalid value for minimal length of a hit.')
     
     try:
-        test = int(mismatch)
-        assert test >= 0 and test <= int(0.1*int(read_len))
+        int(mismatch)
+        #assert test >= 0 and test <= int(0.1*int(read_len))
     except:
-        stop_err('Invalid value for mismatch numbers in an alignment. Please use a value smaller than %d' % (int(0.1*int(read_len))))
+        stop_err('Invalid value for mismatch numbers in an alignment.')
     
     all_files = []
     if os.path.isdir(target_path):
@@ -59,14 +70,14 @@ def __main__():
         command = "rmap -h %s -w %s -m %s -c %s %s -o %s 2>&1" % ( align_len, read_len, mismatch, detail_file_path, infile, output_tempfile )
         #print command
         try:
-            assert os.system( command ) == 0
-        except:
-            stop_err('Execution failed. Please check whether RMAP was installed.')
+            os.system( command )
+        except Exception, e:
+            stop_err( str( e ) )
 
         try:
-            assert os.system( 'cat %s >> %s' % ( output_tempfile, output_file ) ) == 0
-        except:
-            stop_err('Failed to integrate files.')
+            os.system( 'cat %s >> %s' % ( output_tempfile, output_file ) )
+        except Exception, e:
+            stop_err( str( e ) )
         
         try:
             os.remove( output_tempfile )

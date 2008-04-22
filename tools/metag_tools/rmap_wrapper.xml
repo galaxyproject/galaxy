@@ -1,15 +1,33 @@
 <tool id="rmap_wrapper" name="RMAP" version="1.0.0">
     <description>for Solexa Short Reads Alignment</description>
-    <command interpreter="python">rmap_wrapper.py $database $input_seq $read_len $align_len $mismatch $output1
+    <command interpreter="python">
+    #if $trim.choice=="No": #rmap_wrapper.py $database $input_seq 0 $align_len $mismatch $output1
+    #else: #rmap_wrapper.py $database $input_seq $trim.read_len $align_len $mismatch $output1
+    #end if
     </command>
     <inputs>
         <param name="database" type="select" display="radio" label="Target database">
             <options from_file="faseq.loc" name_col="0" value_col="1"/>
         </param>
-        <param name="input_seq" type="data" format="fasta" label="Query Sequence"/>
-        <param name="read_len" type="integer" size="15" value="36" label="Length of the Reads"/>
-        <param name="align_len" type="integer" size="15" value="36" label="Length of an Alignment"/>
-        <param name="mismatch" type="integer" size="15" value="3" label="Number of Mismatches Allowed"/>
+        <param name="input_seq" type="data" format="fasta" label="Sequence file"/>
+        <param name="align_len" type="integer" size="15" value="11" label="Minimal length of a hit (-h)" help="seed" />
+        <param name="mismatch" type="select" label="Number of mismatches allowed (-m)">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="3">3</option>
+            <option value="5">5</option>
+        </param>
+        <conditional name="trim">
+            <param name="choice" type="select" label="To trim the reads">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="No">
+            </when>
+            <when value="Yes">
+                <param name="read_len" type="integer" size="15" value="36" label="Read length (-w)"/> 
+            </when>
+        </conditional>
     </inputs>
     <outputs>
         <data name="output1" format="bed"/>
@@ -18,7 +36,7 @@
     <tests>
         <test>
             <param name="database" value="/depot/data2/galaxy/faseq/test" />
-            <param name="input_seq" value="rmap_wrapper_test1.fa" ftype="fasta"/>
+            <param name="input_seq" value="rmap_wrapper_test1.fasta" ftype="fasta"/>
             <param name="read_len" value="36" />
             <param name="align_len" value="36" />
             <param name="mismatch" value="3" />
@@ -34,7 +52,7 @@
 
 .. class:: infomark
 
-**TIP**. Each read should have at least the minimal length specified as the *Length of the Reads* parameter. Reads with lengths longer than the expected value will be trimmed at the 3'end. 
+**TIP**. The tool will guess the length of the reads, however, if you select to trim the reads, the *Reads length* must be between 20 and 64. Reads with lengths longer than the specified value will be trimmed at the 3'end. 
 
 -----
 
@@ -46,9 +64,9 @@ This tool runs **rmap** (for more information, please see the reference below), 
 
 **Parameters**
 
-- *Length of the Reads* (**-w**) : the minimal length of the reads
-- *Length of an Alignment* (**-h**) : the minimal length of an alignment  
+- *Minimal Length of a Hit* (**-h**) : this is the seed length or the minimal exact match length   
 - *Number of Mismatches Allowed* (**-m**) : the maximal number of mismatches allowed in an alignment 
+- *Read Length* (**-w**) : maximal length of the reads; reads longer than the threshold will be truncated at 3' end.
 
 -----
 

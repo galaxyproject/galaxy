@@ -1,18 +1,36 @@
 <tool id="rmapq_wrapper" name="RMAPQ" version="1.0.0">
     <description>for Solexa Short Reads Alignment with Quality Scores</description>
-    <command interpreter="python">rmapq_wrapper.py $database $input_seq $input_score $high_score $high_len $read_len $align_len $mismatch $output1
+    <command interpreter="python">
+    #if $trim.choice=="No": #rmapq_wrapper.py $database $input_seq $input_score $high_score $high_len 0 $align_len $mismatch $output1
+    #else: #rmapq_wrapper.py $database $input_seq $input_score $high_score $high_len $trim.read_len $align_len $mismatch $output1
+    #end if
     </command>
     <inputs>
         <param name="database" type="select" display="radio" label="Target database">
             <options from_file="faseq.loc" name_col="0" value_col="1"/>
         </param>
-        <param name="input_seq" type="data" format="fasta" label="Query Sequence"/>
-        <param name="input_score" type="data" format="qualityscore" label="Query Quality Score"/>
-        <param name="high_score" type="float" size="15" value="40" label="Minimum Score for High-quality Base"/>
-        <param name="high_len" type="integer" size="15" value="36" label="Minimal High-quality Bases"/>
-        <param name="read_len" type="integer" size="15" value="36" label="Length of the Reads"/>
-        <param name="align_len" type="integer" size="15" value="36" label="Length of an Alignment"/>
-        <param name="mismatch" type="integer" size="15" value="3" label="Number of Mismatches Allowed"/>
+        <param name="input_seq" type="data" format="fasta" label="Sequence file"/>
+        <param name="input_score" type="data" format="qualityscore" label="Quality score file"/>
+        <param name="high_score" type="float" size="15" value="40" label="Minimum score for high-quality base (-q)"/>
+        <param name="high_len" type="integer" size="15" value="36" label="Minimal high-quality bases (-M)"/>
+        <param name="align_len" type="integer" size="15" value="11" label="Minimal length of a hit (-h)" help="seed"/>
+        <param name="mismatch" type="select" label="Number of mismatches allowed (-m)">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="3">3</option>
+            <option value="5">5</option>
+        </param>
+        <conditional name="trim">
+            <param name="choice" type="select" label="To trim the reads">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="No">
+            </when>
+            <when value="Yes">
+                <param name="read_len" type="integer" size="15" value="36" label="Read length (-w)" /> 
+            </when>
+        </conditional>
     </inputs>
     <outputs>
         <data name="output1" format="bed"/>
@@ -21,7 +39,7 @@
     <tests>
         <test>
             <param name="database" value="/depot/data2/galaxy/faseq/test" />
-            <param name="input_seq" value="rmapq_wrapper_test1.fa" ftype="fasta"/>
+            <param name="input_seq" value="rmapq_wrapper_test1.fasta" ftype="fasta"/>
             <param name="input_score" value="rmapq_wrapper_test1.qualityscore" ftype="qualityscore" />
             <param name="high_score" value="40" />
             <param name="high_len" value="36" />
@@ -36,11 +54,11 @@
     
 .. class:: warningmark
 
- RMAP was developed for **Solexa** reads. 
+ RMAPQ was developed for **Solexa** reads. 
 
 .. class:: infomark
 
-**TIP**. Each read should have at least the minimal length specified in the *Length of the Reads* parameter. Reads with lengths longer than the expected value will be trimmed at the 3'end. 
+**TIP**. The tool will guess the length of the reads, however, if you select to trim the reads, the *Maximal Length of the Reads* must be between 20 and 64. Reads with lengths longer than the specified value will be trimmed at the 3'end. 
 
 -----
 
@@ -54,9 +72,9 @@ This tool runs **rmapq** (for more information, please see the reference below),
 
 - *Minimal High-quality Bases* (**-M**): the minimal length of the high quality score bases
 - *Minimum Score for High-quality Base* (**-q**) : the minimal quality score 
-- *Length of the Reads* (**-w**) : the minimal length of the reads
-- *Length of an Alignment* (**-h**) : the minimal length of an exact match (rmapq) or an alignment (rmap)  
+- *Minimal Length of a Hit* (**-h**) : the minimal length of an exact match or seed  
 - *Number of Mismatches Allowed* (**-m**) : the maximal number of mismatches allowed in an alignment
+- *Read Length* (**-w**) : maximal length of the reads; reads longer than the threshold will be truncated at 3' end.
 
 -----
 
