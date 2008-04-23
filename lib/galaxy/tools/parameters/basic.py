@@ -858,7 +858,7 @@ class DataToolParameter( ToolParameter ):
         Both of these values indicate that no dataset is selected.  However, 'None' 
         indicates that the dataset is optional, while '' indicates that it is not.
         """
-        if value is None or value =='':
+        if value is None or value == '' or value == 'None':
             return value
         try:
             return app.model.Dataset.get( int( value ) )
