@@ -3,7 +3,7 @@ Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
 
-import sys, os, logging
+import operator, sys, os, logging
 import basic, validation
 
 log = logging.getLogger(__name__)
@@ -28,6 +28,8 @@ class DynamicOptions( object ):
         self.value_col = elem.get( 'value_col', None )
         if self.value_col is not None:
             self.value_col = int( self.value_col.strip() )
+        self.separator = elem.get( 'seperator', '\t' )
+        self.line_startswith = elem.get( 'line_startswith', None )
 
         # Parse the Validator tags
         for validator in elem.findall( 'validator' ):
@@ -170,7 +172,7 @@ class DynamicOptions( object ):
                 filters[ 'data_meta' ][ 'meta_value' ] = dataset.metadata.species
         except:
             pass
-        return self.generate_options( filters=filters, sep='\t' )
+        return self.generate_options( filters=filters, sep=self.separator )
     def generate_options( self, filters={}, sep='\t' ):
         try: 
             meta_key = filters[ 'data_meta' ][ 'meta_key' ]
@@ -183,20 +185,20 @@ class DynamicOptions( object ):
             return self.generate_for_species( filters[ 'data_meta' ][ 'meta_value' ] )
         elif meta_key == 'data_ref':
             dataset_file_name = filters[ 'data_meta' ][ 'meta_value' ]
-            return self.generate_from_dataset( dataset_file_name, self.value_col, sep )
+            return self.generate_from_dataset( dataset_file_name, self.value_col, sep=sep )
         elif meta_key == 'dbkey':
             dbkey = filters[ 'data_meta' ][ 'meta_value' ]
             if type( self.tool_param ) == basic.DataToolParameter:
                 return meta_key, dbkey
             meta_key_col = filters[ 'data_meta' ][ 'meta_key_col' ]
-            return self.generate_for_build( dbkey, meta_key_col, self.name_col, self.value_col, sep )
+            return self.generate_for_dbkey( dbkey, meta_key_col, self.name_col, self.value_col, sep=sep )
         else: # meta_key is None
             if self.data_file == 'datatypes_registry':
                 return self.generate_from_datatypes_registry()
             elif self.data_file == 'encode_datasets.loc':
                 encode_group = filters[ 'params' ][ 'encode_group' ]
                 dbkey = filters[ 'params' ][ 'dbkey' ]
-                return self.generate_for_encode( encode_group, dbkey, sep )
+                return self.generate_for_encode( encode_group, dbkey, sep=sep )
             elif self.data_file == 'microbial_data.loc':
                 if self.data_file_data is None: 
                     self.load_microbial_data()
@@ -214,7 +216,7 @@ class DynamicOptions( object ):
                     feature = None
                 return self.generate_for_microbial( kingdom, org, feature )
             else:
-                return self.generate( self.name_col, self.value_col, sep )
+                return self.generate( self.name_col, self.value_col, sep=sep )
     def generate_from_datatypes_registry( self ):
         from galaxy.datatypes import registry
         datatypes_registry = registry.Registry()
@@ -226,7 +228,7 @@ class DynamicOptions( object ):
             label = format.capitalize()
             options.append( ( label, format, False ) )
         return options
-    def generate_for_encode( self, encode_group, dbkey, sep ):
+    def generate_for_encode( self, encode_group, dbkey, sep='\t' ):
         options = []
         def generate():
             encode_sets = {}
@@ -425,7 +427,7 @@ class DynamicOptions( object ):
         for s in species:
             options.append( ( s, s, False ) )
         return options
-    def generate_for_maf( self, maf_uid, sep ):
+    def generate_for_maf( self, maf_uid, sep='\t' ):
         options = []
         d = {}
         for line in open( self.data_file_path ):
@@ -449,7 +451,7 @@ class DynamicOptions( object ):
         for key in d[ maf_uid ][ 'builds' ]:
             options.append( ( key, key, False ) )
         return options
-    def generate_from_dataset( self, file_name, value_col, sep ):
+    def generate_from_dataset( self, file_name, value_col, sep='\t' ):
         options = []
         elem_list = []
         try: 
@@ -471,67 +473,50 @@ class DynamicOptions( object ):
         for elem in elem_list:
             options.append( ( elem, elem, False ) )
         return options
-    def generate_for_build( self, build, build_col, name_col, value_col, sep ):
+    def generate_for_dbkey( self, dbkey, dbkey_col, name_col, value_col, sep='\t' ):
         options = []
         d = {}
         for line in open( self.data_file_path ):
             line = line.rstrip( '\r\n' )
-            if line and not line.startswith( '#' ):
-                fields = line.split( sep )
-                if self.data_file == 'alignseq.loc':
-                    if fields[ build_col ].strip() == 'align':
-                        try: 
-                            d[ fields[ name_col ] ].append( fields[ value_col ] )
-                        except: 
-                            d[ fields[ name_col ] ] = [ fields[ value_col ] ]
-                elif self.data_file == 'regions.loc' or self.data_file == 'phastOdds.loc' or self.data_file == 'binned_scores.loc' or self.data_file == 'liftOver.loc':
-                    if not fields[ build_col ] in d: 
-                        d[ fields[ build_col ] ] = []
-                    d[ fields[ build_col ] ].append( (fields[ name_col ], fields[ value_col ]) )
-                elif self.data_file == 'maf_index.loc' or self.data_file == 'maf_pairwise.loc':
-                    try:
-                        maf_desc = fields[ name_col ] # ENCODE TBA (hg17)
-                        maf_uid = fields[ value_col ] # ENCODE_TBA_hg17
-                        builds = fields[ build_col ] # armadillo=armadillo,baboon=baboon,galGal2=chicken,...
-                        build_list = []
-                        split_builds = builds.split( ',' )
-                        for b in split_builds:
-                            this_build = b.split( '=' )[0]
-                            build_list.append( this_build )
-                        d[ maf_uid ] = {}
-                        d[ maf_uid ][ 'description' ] = maf_desc
-                        d[ maf_uid ][ 'builds' ] = build_list
-                    except: 
-                        continue
-                else:
-                    if build not in d: d[ build ] = []
-                    if build == fields[ build_col ].strip():
-                        d[ build ].append( ( fields[ name_col ], fields[ value_col ] ) )
-        if self.data_file == 'alignseq.loc':
-            if build in d:
-                for val in d[ build ]:
-                    options.append( ( val, val, False ) )
-        elif self.data_file == 'regions.loc' or self.data_file == 'phastOdds.loc' or self.data_file == 'binned_scores.loc' or self.data_file == 'liftOver.loc':
-            if build in d:
-                for (key, val) in d[ build ]:
-                    options.append( ( key, val, False ) )
-        elif self.data_file == 'maf_index.loc' or self.data_file == 'maf_pairwise.loc':
+            if not line or line.startswith( '#' ) or ( self.line_startswith and not line.startswith ( self.line_startswith ) ):
+                continue
+            fields = line.split( sep )
+            if self.data_file == 'maf_index.loc' or self.data_file == 'maf_pairwise.loc':
+                try:
+                    maf_desc = fields[ name_col ] # ENCODE TBA (hg17)
+                    maf_uid = fields[ value_col ] # ENCODE_TBA_hg17
+                    dbkeys = fields[ dbkey_col ] # armadillo=armadillo,baboon=baboon,galGal2=chicken,...
+                    dbkey_list = []
+                    split_dbkeys = dbkeys.split( ',' )
+                    for b in split_dbkeys:
+                        this_dbkey = b.split( '=' )[0]
+                        dbkey_list.append( this_dbkey )
+                    d[ maf_uid ] = {}
+                    d[ maf_uid ][ 'description' ] = maf_desc
+                    d[ maf_uid ][ 'builds' ] = dbkey_list
+                except: 
+                    continue
+            else:
+                if dbkey not in d:
+                    d[ dbkey ] = []
+                if dbkey == fields[ dbkey_col ].strip():
+                    d[ dbkey ].append( ( fields[ name_col ], fields[ value_col ] ) )
+        if self.data_file == 'maf_index.loc' or self.data_file == 'maf_pairwise.loc':
             for key in d:
-                if build in d[ key ][ 'builds' ]:
+                if dbkey in d[ key ][ 'builds' ]:
                     options.append( ( d[ key ][ 'description' ], key, False ) )
         else:
-            if build in d:
-                for name, value in d[ build ]:
+            if dbkey in d:
+                for name, value in d[ dbkey ]:
                     options.append( ( name, value, False ) )
         return options
-    def generate( self, name_col, value_col, sep ):
+    def generate( self, name_col, value_col, sep='\t' ):
         options = []
         for line in open( self.data_file_path ):
             line = line.rstrip( '\r\n' )
             if line and not line.startswith( '#' ):
                 fields = line.split( sep )
-                # TODO: this option list should be sorted
                 options.append( ( fields[ name_col ], fields[ value_col ], False ) )
-        return options
+        return sorted( options, key=operator.itemgetter(0) )
 
 
