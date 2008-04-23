@@ -859,7 +859,7 @@ class DataToolParameter( ToolParameter ):
         indicates that the dataset is optional, while '' indicates that it is not.
         """
         if value is None or value == '' or value == 'None':
-            return NoneDataset()
+            return NoneDataset( datatypes_registry = app.datatypes_registry )
         try:
             return app.model.Dataset.get( int( value ) )
         except:
