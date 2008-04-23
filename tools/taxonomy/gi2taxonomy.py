@@ -2,6 +2,7 @@ import sys
 import string
 import tempfile
 import subprocess
+from os import path
 
 # -----------------------------------------------------------------------------------
 
@@ -135,6 +136,7 @@ try:
     gi_col        = int( sys.argv[2] ) - 1 # column in input containing GIs
     name_col      = int( sys.argv[3] ) - 1 # column containing sequence names
     out_f         = sys.argv[4]            # output file
+    tool_data     = sys.argv[5]
 except:
     stor_err('Check arguments\n')
 
@@ -145,14 +147,14 @@ except:
 #  a sorting using this command:
 #  sort -n -k 1
 
-GI2TAX = '/depot/data2/galaxy/taxonomy/gi_taxId_sorted.txt'
+GI2TAX = path.join( tool_data, 'taxonomy', 'gi_taxid_sorted.txt' )
 
 #  NAME_FILE and NODE_FILE point to names.dmg and nodes.dmg
 #  files contained within:
 #  ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
 
-NAME_FILE = '/depot/data2/galaxy/taxonomy/names.dmp'
-NODE_FILE = '/depot/data2/galaxy/taxonomy/nodes.dmp'
+NAME_FILE = path.join( tool_data, 'taxonomy', 'names.dmp' )
+NODE_FILE = path.join( tool_data, 'taxonomy', 'nodes.dmp' )
 
 g2n =  gi_name_to_sorted_list(in_f, gi_col, name_col)
 
