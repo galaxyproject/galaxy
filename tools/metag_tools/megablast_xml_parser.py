@@ -58,10 +58,12 @@ def __main__():
                    sLen = hit.findtext( "Hit_len" )
                    # for every <Hsp> within <Hit>
                    for hsp in hit.findall( "Hit_hsps/Hsp" ):
+                        outfile.write( "%s\t%s\t%s\t%s" % ( query, qLen, subject, sLen ) )
                         for tag in hspTags:
-                            hspData.append( hsp.findtext( tag ) )
-                        outfile.write( "%s\t%s\t%s\t%s\t%s\n" % ( query, qLen, subject, sLen, hspData ) )
-                        hspData = []
+                            outfile.write("\t%s" %(hsp.findtext( tag )))
+                            #hspData.append( hsp.findtext( tag ) )
+                        #hspData = []
+                        outfile.write('\n')
                # prevents ElementTree from growing large datastructure
                root.clear()
                elem.clear()

@@ -22,6 +22,7 @@ def unzip( filename ):
     return tmpfilename
 
 def append_to_outfile( outfile_name, seq_title, segments ):
+    segments = segments.split( ',' )
     if len( segments ) > 1:
         outfile = open( outfile_name, 'a' )
         for i in range( len( segments ) ):
@@ -43,6 +44,7 @@ def trim_seq( seq, score, arg, trim_score, threshold ):
             seq = seq[0:trim_pos]
     else:
         keep_homopolymers = arg=='yes'
+        
     new_trim_seq = ''
     max_segment = 0
 
@@ -75,19 +77,19 @@ def trim_seq( seq, score, arg, trim_score, threshold ):
     return max_segment[ 0:-1 ]
 
 def __main__():
-    seq_method = sys.argv[1].strip().lower()
+    
     try:
-        threshold_trim = int( sys.argv[2].strip() )
+        threshold_trim = int( sys.argv[1].strip() )
     except:
         stop_err( "Minimal quality score must be numeric." )
     try:
-        threshold_report = int( sys.argv[3].strip() )
+        threshold_report = int( sys.argv[2].strip() )
     except:
         stop_err( "Minimal length of trimmed reads must be numeric." )
-    outfile_seq_name = sys.argv[4].strip()
-    infile_seq_name = sys.argv[5].strip()
-    infile_score_name = sys.argv[6].strip()
-    arg = sys.argv[7].strip()
+    outfile_seq_name = sys.argv[3].strip()
+    infile_seq_name = sys.argv[4].strip()
+    infile_score_name = sys.argv[5].strip()
+    arg = sys.argv[6].strip()
 
     infile_seq_is_zipped = False
     if zipfile.is_zipfile( infile_seq_name ):
@@ -100,33 +102,70 @@ def __main__():
         score_infile_name = unzip(infile_score_name)
     else: score_infile_name = infile_score_name
     
+
+    # Determine quailty score format: tabular or fasta format within the first 100 lines
+    seq_method = None
+    data_type = None
+    for i, line in enumerate( file( score_infile_name ) ):
+        line = line.rstrip( '\r\n' )
+        if not line or line.startswith( '#' ):
+            continue
+        if data_type == None:
+            if line.startswith( '>' ):
+                data_type = 'fasta'
+                continue
+            elif len( line.split( '\t' ) ) > 0:
+                fields = line.split()
+                for score in fields:
+                    try:
+                        int( score )
+                        data_type = 'tabular'
+                        seq_method = 'solexa'
+                        break
+                    except:
+                        break
+        elif data_type == 'fasta':
+            fields = line.split()
+            for score in fields:
+                try: 
+                    int( score )
+                    seq_method = '454'
+                    break
+                except:
+                    break
+        if i == 100:
+            break
+
+    if data_type is None:
+        stop_err( 'This tool can only use fasta data or tabular data.' ) 
+    if seq_method is None:
+        stop_err( 'Invalid data for fasta format.')
+    
     if os.path.exists( seq_infile_name ) and os.path.exists( score_infile_name ):
-        # read one sequence
-        score_found = False
         seq = None
         score = None
+        score_found = False
+        
         score_file = open( score_infile_name, 'r' )
 
-        if seq_method == '454':
-            for i, line in enumerate( open( seq_infile_name ) ):
-                line = line.rstrip( '\r\n' )
-                if not line or line.startswith( '#' ):
-                    continue
-                if line.startswith( '>' ):
-                    if seq:
-                        score_found = False
+        for i, line in enumerate( open( seq_infile_name ) ):
+            line = line.rstrip( '\r\n' )
+            if not line or line.startswith( '#' ):
+                continue
+            if line.startswith( '>' ):
+                if seq:
+                    scores = []
+                    if data_type == 'fasta':
                         score = None
-                        while not score_found:
+                        score_found = False
+                        score_line = 'start'
+                        while not score_found and score_line:
                             score_line = score_file.readline().rstrip( '\r\n' )
                             if not score_line or score_line.startswith( '#' ):
                                 continue
                             if score_line.startswith( '>' ):
                                 if score:
-                                    score = score.split()
-                                    new_trim_seq_segments = trim_seq( seq, score, arg, threshold_trim, threshold_report )                                            
-                                    # output trimmed sequence to a fasta file
-                                    segments = new_trim_seq_segments.split( ',' )
-                                    append_to_outfile( outfile_seq_name, seq_title, segments )
+                                    scores = score.split()
                                     score_found = True    
                                 score = None
                             else:
@@ -139,15 +178,36 @@ def __main__():
                                 if not score:
                                     score = score_line
                                 else:
-                                    score = '%s %s' % ( score, score_line )
-                    seq_title = line
-                    seq = None
+                                    score = '%s %s' % ( score, score_line )                                        
+                    elif data_type == 'tabular':
+                        score = score_file.readline().rstrip('\r\n')
+                        loc = score.split( '\t' )
+                        for base in loc:
+                            nuc_error = base.split()
+                            try:
+                                nuc_error[0] = int( nuc_error[0] )
+                                nuc_error[1] = int( nuc_error[1] )
+                                nuc_error[2] = int( nuc_error[2] )
+                                nuc_error[3] = int( nuc_error[3] )
+                                big = max( nuc_error )
+                            except:
+                                score_file.close()
+                                stop_err( "Invalid characters in line %d: '%s'" % ( i, line ) )
+                            scores.append( big )
+                    if scores:
+                        new_trim_seq_segments = trim_seq( seq, scores, arg, threshold_trim, threshold_report )
+                        append_to_outfile( outfile_seq_name, seq_title, new_trim_seq_segments )  
+                                
+                seq_title = line
+                seq = None
+            else:
+                if not seq:
+                    seq = line
                 else:
-                    if not seq:
-                        seq = line
-                    else:
-                        seq = "%s%s" % ( seq, line )
-            if seq:
+                    seq = "%s%s" % ( seq, line )
+        if seq:
+            scores = []
+            if data_type == 'fasta':
                 score = None
                 while score_line:
                     score_line = score_file.readline().rstrip( '\r\n' )
@@ -162,35 +222,12 @@ def __main__():
                     if not score:
                         score = score_line
                     else:
-                        score = "%s %s" % ( score, score_line )
+                        score = "%s %s" % ( score, score_line ) 
                 if score: 
-                    score = score.split()       
-                    new_trim_seq_segments = trim_seq( seq, score, arg, threshold_trim, threshold_report )                                            
-                    # output trimmed sequence to a fasta file
-                    segments = new_trim_seq_segments.split( ',' )
-                    append_to_outfile( outfile_seq_name, seq_title, segments )
-
-        elif seq_method == 'solexa':
-            for i, line in enumerate( open( seq_infile_name ) ):
-                line = line.rstrip( '\r\n' )
-                if not line or line.startswith( '#' ):
-                    continue
-                seq_title = '>%d' % i
-                
-                # the last column of a solexa file is the sequence column
-                # TODO: this will be slow since the replace method creates a new copy of the string.
-                # Is there a better way to do this?
-                seq = line.split()[-1]
-                seq = seq.replace( '.', 'N' )
-                seq = seq.replace( '-', 'N' )
-                
-                if not seq.isalpha():
-                    score_file.close()
-                    stop_err( "Invalid characters in line %d: '%s'" % ( i, line ) )
-                                        
-                score = score_file.readline()
+                    scores = score.split()
+            elif data_type == 'tabular':
+                score = score_file.readline().rstrip('\r\n')
                 loc = score.split( '\t' )
-                scores = []
                 for base in loc:
                     nuc_error = base.split()
                     try:
@@ -203,10 +240,9 @@ def __main__():
                         score_file.close()
                         stop_err( "Invalid characters in line %d: '%s'" % ( i, line ) )
                     scores.append( big )
+            if scores:
                 new_trim_seq_segments = trim_seq( seq, scores, arg, threshold_trim, threshold_report )
-                # output trimmed sequence to a fasta file
-                segments = new_trim_seq_segments.split( ',' )
-                append_to_outfile( outfile_seq_name, seq_title, segments )    
+                append_to_outfile( outfile_seq_name, seq_title, new_trim_seq_segments )  
         score_file.close()
     else:
         stop_err( "Cannot locate sequence file '%s'or score file '%s'." % ( seq_infile_name, score_infile_name ) )    
