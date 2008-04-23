@@ -970,10 +970,11 @@ class Tool:
         #   $dataset.get_child( 'name' ).filename
         for name, data in input_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data )
-            for child_association in data.children:
-                child = child_association.child
-                key = "_CHILD___%s___%s" % ( name, child.designation ) 
-                param_dict[ key ] = DatasetFilenameWrapper( child )
+            if data:
+                for child_association in data.children:
+                    child = child_association.child
+                    key = "_CHILD___%s___%s" % ( name, child.designation ) 
+                    param_dict[ key ] = DatasetFilenameWrapper( child )
         for name, data in output_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data )
             # Provide access to a path to store additional files
