@@ -53,13 +53,12 @@ class LocalJobRunner( object ):
             return
         # If we were able to get a command line, run the job
         if command_line:
+            env = os.environ
             if job_wrapper.galaxy_lib_dir is not None:
                 if 'PYTHONPATH' in os.environ:
-                    env = { 'PYTHONPATH' : "%s:%s" % ( os.environ['PYTHONPATH'], job_wrapper.galaxy_lib_dir ) } 
+                    env['PYTHONPATH'] = "%s:%s" % ( os.environ['PYTHONPATH'], job_wrapper.galaxy_lib_dir )
                 else:
-                    env = { 'PYTHONPATH' : job_wrapper.galaxy_lib_dir }
-            else:
-                env = {}
+                    env['PYTHONPATH'] = job_wrapper.galaxy_lib_dir
             try:
                 log.debug( 'executing: %s' % command_line )
                 proc = subprocess.Popen( args = command_line, 
