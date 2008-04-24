@@ -21,6 +21,7 @@ class NoneDataset( RecursiveNone ):
         self.ext = self.extension = ext
         self.dbkey = dbkey
         self.datatype = datatypes_registry.get_datatype_by_extension( ext )
+        self._metadata = None
         self.metadata = MetadataCollection( self, self.datatype.metadata_spec )
     def __getattr__( self, name ):
         return "None"
