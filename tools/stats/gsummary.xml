@@ -1,9 +1,11 @@
 <tool id="Summary_Statistics1" name="Summary Statistics">
   <description>for any numerical column</description>
-  <command interpreter="python">gsummary.py $input $out_file1 "$cond" "none"</command>
+  <command interpreter="python">gsummary.py $input $out_file1 "$cond"</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Summary statistics on" help="Query missing? See TIP below"/>
-    <param name="cond" size="40" type="text" value="c5" label="Column or expression" help="See tool syntax below" />
+    <param name="cond" size="30" type="text" value="c5" label="Column or expression" help="See syntax below">
+      <validator type="empty_field" message="Enter a valid column or expression, see syntax below for examples"/>
+    </param>
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" />
@@ -11,7 +13,7 @@
   <tests>
     <test>
       <param name="input" value="1.bed"/>
-      <output name="out_file1" file="sta_summary.dat"/>
+      <output name="out_file1" file="gsummary_out1.tabular"/>
       <param name="cond" value="c2"/>
     </test>
   </tests>
@@ -23,7 +25,7 @@ This tool expects input datasets to consist of tab-delimited columns (blank or c
 
 .. class:: infomark
 
-**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert delimiters to TAB*
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert delimiters to TAB*
 
 .. class:: infomark
 

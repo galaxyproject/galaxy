@@ -205,6 +205,19 @@ class NoOptionsValidator( Validator ):
                 self.message = "No options available for selection"
             raise ValueError( self.message )
 
+class EmptyTextfieldValidator( Validator ):
+    """Validator that checks for empty text field"""
+    def __init__( self, message=None ):
+        self.message = message
+    @classmethod
+    def from_element( cls, param, elem ):
+        return cls( elem.get( 'message', None ) )
+    def validate( self, value, history=None ):
+        if value == '':
+            if self.message is None:
+                self.message = "Field requires a value"
+            raise ValueError( self.message )
+
 class MetadataInFileColumnValidator( Validator ):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
@@ -247,6 +260,7 @@ validator_types = dict( expression=ExpressionValidator,
                         metadata=MetadataValidator,
                         unspecified_build=UnspecifiedBuildValidator,
                         no_options=NoOptionsValidator,
+                        empty_field=EmptyTextfieldValidator,
                         dataset_metadata_in_file=MetadataInFileColumnValidator,
                         dataset_ok_validator=DatasetOkValidator )
                         
