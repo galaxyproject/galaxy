@@ -84,11 +84,11 @@ class Universe( BaseController ):
             return self.history_new(trans)
         if as_xml:
             trans.response.set_content_type('text/xml')
-            template = "history.xml"
+            return trans.fill_template_mako( "root/history_as_xml.mako", history=history )
         else:
             template = "root/history.mako"
-        mode = trans.get_cookie(name=self.pref_cookie_name)
-        return trans.fill_template(template, history=history, mode=mode )
+            mode = trans.get_cookie( name=self.pref_cookie_name )
+            return trans.fill_template( "root/history.mako", history=history, mode=mode )
 
     @web.expose
     def display(self, trans, id=None, hid=None, tofile=None, toext=".txt"):
