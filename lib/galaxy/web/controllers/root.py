@@ -27,7 +27,7 @@ class RootController( BaseController ):
     
     @web.expose
     def tool_menu( self, trans ):
-        return trans.fill_template('tool_menu.tmpl', toolbox=self.get_toolbox() )
+        return trans.fill_template('/root/tool_menu.mako', toolbox=self.get_toolbox() )
 
     @web.expose
     def tool_help( self, trans, id ):
@@ -265,7 +265,7 @@ class RootController( BaseController ):
         ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
         ldatatypes.sort()
         trans.log_event( "Opened edit view on dataset %s" % str(id) )
-        return trans.fill_template( "edit_data.tmpl", data=data, metadata=metadata,
+        return trans.fill_template( "/dataset/edit_attributes.mako", data=data, metadata=metadata,
                                     datatypes=ldatatypes, err=None )
 
     @web.expose
