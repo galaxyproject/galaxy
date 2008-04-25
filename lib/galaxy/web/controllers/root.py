@@ -187,15 +187,15 @@ class Universe( BaseController ):
         p = util.Params(kwd, safe=False)
         
         if p.change:
-            """The user clicked the Save button on the 'Change data type' form"""
+            # The user clicked the Save button on the 'Change data type' form
             trans.app.datatypes_registry.change_datatype( data, p.datatype )
             trans.app.model.flush()
         elif p.save:
-            """The user clicked the Save button on the 'Edit Attributes' form"""
+            # The user clicked the Save button on the 'Edit Attributes' form
             data.name  = p.name
             data.info  = p.info
             
-            """The following for loop will save all metadata_spec items"""
+            # The following for loop will save all metadata_spec items
             for name, spec in data.datatype.metadata_spec.items():
                 if spec.get("readonly"):
                     continue
@@ -208,9 +208,9 @@ class Universe( BaseController ):
 
             data.datatype.after_edit( data )
             trans.app.model.flush()
-            return trans.fill_template( "edit_complete.tmpl" )
+            return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
         elif p.detect:
-            """The user clicked the Auto-detect button on the 'Edit Attributes' form"""
+            # The user clicked the Auto-detect button on the 'Edit Attributes' form
             for name, spec in data.datatype.metadata_spec.items():
                 # We need to be careful about the attributes we are resetting
                 if name != 'name' and name != 'info' and name != 'dbkey':
@@ -219,14 +219,13 @@ class Universe( BaseController ):
             data.datatype.set_meta( data )
             data.datatype.after_edit( data )
             trans.app.model.flush()
-            return trans.fill_template( "edit_complete.tmpl" )
+            return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
         elif p.convert_data:
             """The user clicked the Convert button on the 'Convert to new format' form"""
             target_type = kwd.get("target_type", None)
             if target_type:
                 msg = data.datatype.convert_dataset(trans, data, target_type)
-                return trans.fill_template( "edit_complete.tmpl", msg=msg )
-        
+                return trans.show_ok_message( msg, refresh_frames=['history'] )
         data.datatype.before_edit( data )
         
         if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
