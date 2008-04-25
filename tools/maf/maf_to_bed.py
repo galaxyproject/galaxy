@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.3
+#!/usr/bin/env python
 
 """
 Read a maf and output intervals for specified list of species.
@@ -7,6 +7,8 @@ import sys, os, tempfile
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
         

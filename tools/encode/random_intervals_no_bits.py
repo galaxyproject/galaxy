@@ -3,7 +3,7 @@
 #%prog bounding_region_file mask_intervals_file intervals_to_mimic_file out_file mask_chr mask_start mask_end interval_chr interval_start interval_end interval_strand use_mask allow_strand_overlaps
 import sys, random
 from copy import deepcopy
-
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 import bx.intervals.io

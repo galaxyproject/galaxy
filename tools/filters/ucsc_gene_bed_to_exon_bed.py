@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.3
+#!/usr/bin/env python
 
 """
 Read a table dump in the UCSC gene table format and print a tab separated
@@ -16,6 +16,8 @@ options:
 """
 
 import optparse, string, sys
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
 

@@ -10,15 +10,14 @@ The application reads an AXT file from standard input and writes a LAV file to
 standard out;  some statistics are written to standard error.
 """
 
-import sys
-import copy
-
+import sys, copy
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
-
 import bx.align.axt
 import bx.align.lav
 
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def usage(s=None):
     message = """

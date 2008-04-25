@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.3
+#!/usr/bin/env python
 
 """
 Read a maf file and write out a new maf with only blocks having the 
@@ -12,6 +12,8 @@ from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 import sys
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
 

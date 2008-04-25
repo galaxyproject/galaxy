@@ -1,10 +1,10 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 #Dan Blankenberg
 #For a set of intervals, this tool returns the same set of intervals 
 #with 2 additional fields: the name of a Table/Feature and the number of
 #bases covered. The original intervals are repeated for each Table/Feature.
 
-import struct, optparse, os, random
+import sys, struct, optparse, os, random
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.intervals.io
@@ -13,6 +13,8 @@ try:
     psyco.full()
 except:
     pass
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 class CachedRangesInFile:
     fmt = 'I'

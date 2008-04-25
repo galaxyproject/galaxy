@@ -142,6 +142,8 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 [galaxy:tool_runners]
 
 biomart = local:///
+blat2wig = pbs:///blast
+blat_wrapper = pbs:///blast
 encode_db1 = local:///
 encode_import_all_latest_datasets1 = local:///
 encode_import_chromatin_and_chromosomes1 = local:///
@@ -149,8 +151,13 @@ encode_import_gencode1 = local:///
 encode_import_genes_and_transcripts1 = local:///
 encode_import_multi-species_sequence_analysis1 = local:///
 encode_import_transcription_regulation1 = local:///
+generate_coverage_report = pbs:///blast
 hbvar = local:///
+hist_high_quality_score = pbs:///blast
+megablast_wrapper = pbs:///blast
+megablast_xml_parser = pbs:///blast
 microbial_import1 = local:///
+quality_score_distribution = pbs:///blast
 ucsc_table_direct1 = local:///
 ucsc_table_direct_archaea1 = local:///
 ucsc_table_direct_test1 = local:///

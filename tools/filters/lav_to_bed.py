@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-
 #Reads a LAV file and writes two BED files.
 
-
 import sys
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
 import bx.align.lav
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
 

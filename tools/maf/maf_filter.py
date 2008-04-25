@@ -1,6 +1,7 @@
 #Dan Blankenberg
 #Filters a MAF file according to the provided code file, which is generated in maf_filter.xml <configfiles>
 import sys, os, shutil
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
 
