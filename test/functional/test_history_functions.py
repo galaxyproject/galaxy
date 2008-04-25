@@ -21,7 +21,7 @@ class TestHistory( TwillTestCase ):
         """Testing history options when logged in"""
         self.history_options()
         self.check_page_for_string( 'Rename</a> current history')
-        self.check_page_for_string( 'View</a> previously stored histories')
+        self.check_page_for_string( 'List</a> previously stored histories')
         self.check_page_for_string( 'Share</a> current history')
         self.check_page_for_string( 'Delete</a> current history')
     def test_10_history_rename( self ):
@@ -33,9 +33,9 @@ class TestHistory( TwillTestCase ):
         self.view_stored_histories()
         self.check_page_for_string( 'Stored Histories' )
         self.check_page_for_string( '<input type=checkbox name="id" value=' )
-        self.check_page_for_string( '<a href="history_rename?id' )
-        self.check_page_for_string( '<a href="history_switch?id' )
-        self.check_page_for_string( '<a href="/history_delete?id' )
+        self.check_page_for_string( 'history_rename?id' )
+        self.check_page_for_string( 'history_switch?id' )
+        self.check_page_for_string( 'history_delete?id' )
     def test_20_delete_history_item( self ):
         """Testing deleting history item"""
         self.upload_file('1.bed', dbkey='hg15')

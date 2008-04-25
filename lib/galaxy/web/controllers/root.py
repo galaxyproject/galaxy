@@ -372,7 +372,7 @@ class RootController( BaseController ):
 
     @web.expose
     @web.require_login( "share histories with other users" )
-    def history_share( self, trans, id=None, email=None, **kwd ):
+    def history_share( self, trans, id=None, email="", **kwd ):
         send_to_err = ""
         if not id:
             id = trans.get_history().id
@@ -385,7 +385,7 @@ class RootController( BaseController ):
             history_names.append(histories[-1].name) 
         if not email:
             return trans.fill_template("/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
-            
+        user = trans.get_user()  
         send_to_user = trans.app.model.User.get_by( email = email )
         if not send_to_user:
             send_to_err = "No such user"
