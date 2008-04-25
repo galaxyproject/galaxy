@@ -10,26 +10,17 @@ from random import choice
 log = logging.getLogger( __name__ )
 
 class User( BaseController ):
+    
     @web.expose
     def index( self, trans, **kwd ):
-        if trans.get_user():
-            trans.response.send_redirect("/user/account")
-        return trans.fill_template('user_main.tmpl')
+        return trans.fill_template( '/user/index.mako', user=trans.get_user() )
         
-    @web.expose
-    def account( self, trans, **kwd ):
-        msg = ''
-        user = trans.get_user()
-        if not user:
-            trans.response.send_redirect("/user/login")
-        return trans.fill_template('user_account.tmpl', user=user, history=trans.get_history(), msg=msg)
-
     @web.expose
     def change_password(self, trans, old_pass='', new_pass='', conf_pass='', **kwd):
         old_pass_err = new_pass_err = conf_pass_err = ''
         user = trans.get_user()
         if not user:
-            trans.response.send_redirect( "/user/login" )
+            trans.response.send_redirect( web.url_for( action='login' ) )
         if trans.request.method == 'POST':
             if not user.check_password( old_pass ):
                 old_pass_err = "Invalid password"
@@ -44,7 +35,7 @@ class User( BaseController ):
                 return trans.show_ok_message( "Password has been changed for " + user.email)
         # Generate input form        
         return trans.show_form( 
-            web.FormBuilder( "/user/change_password", "Change Password", submit_text="Submit" )
+            web.FormBuilder( web.url_for() , "Change Password", submit_text="Submit" )
                 .add_password( "old_pass", "Old Password", value='', error=old_pass_err )
                 .add_password( "new_pass", "New Password", value='', error=new_pass_err ) 
                 .add_password( "conf_pass", "Confirm Password", value='', error=conf_pass_err ) )
@@ -54,7 +45,7 @@ class User( BaseController ):
         email_err = conf_email_err = pass_err = ''
         user = trans.get_user()
         if not user:
-            trans.response.send_redirect("/user/login")
+            trans.response.send_redirect( web.url_for( action='login' ) )
         if trans.request.method == "POST":
             if not user.check_password( password ):
                 pass_err = "Invalid password"
@@ -72,7 +63,7 @@ class User( BaseController ):
                 trans.log_event( "User change email" )
                 return trans.show_ok_message( "Email has been changed to: " + user.email, refresh_frames=['masthead', 'history'] )        
         return trans.show_form( 
-            web.FormBuilder( "/user/change_email", "Change Email", submit_text="Submit" )
+            web.FormBuilder( web.url_for(), "Change Email", submit_text="Submit" )
                 .add_text( "email", "Email", value=email, error=email_err )
                 .add_text( "conf_email", "Confirm Email", value='', error=conf_email_err ) 
                 .add_password( "password", "Password", value='', error=pass_err ) )
@@ -95,10 +86,10 @@ class User( BaseController ):
                 trans.log_event( "User logged in" )
                 return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
         return trans.show_form( 
-            web.FormBuilder( "/user/login", "Login", submit_text="Login" )
+            web.FormBuilder( web.url_for(), "Login", submit_text="Login" )
                 .add_text( "email", "Email address", value=email, error=email_error )
                 .add_password( "password", "Password", value='', error=password_error, 
-                 help="<a href='" + web.url_for('/user/reset_password') + "'>Forgot password? Reset here</a>" ) )
+                                help="<a href='%s'>Forgot password? Reset here</a>" % web.url_for( action='reset_password' ) ) )
 
     @web.expose
     def logout( self, trans ):
@@ -144,7 +135,7 @@ class User( BaseController ):
                         return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=['masthead', 'history'] )
                 return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
         return trans.show_form( 
-            web.FormBuilder( "/user/create", "Create account", submit_text="Create" )
+            web.FormBuilder( web.url_for(), "Create account", submit_text="Create" )
                 .add_text( "email", "Email address", value=email, error=email_error )
                 .add_password( "password", "Password", value='', error=password_error ) 
                 .add_password( "confirm", "Confirm password", value='', error=confirm_error ) 
@@ -174,5 +165,5 @@ class User( BaseController ):
         elif email != None:
             error = "The specified user does not exist"
         return trans.show_form( 
-            web.FormBuilder( "/user/reset_password", "Reset Password", submit_text="Submit" )
+            web.FormBuilder( web.url_for(), "Reset Password", submit_text="Submit" )
                 .add_text( "email", "Email", value=email, error=error ) )
