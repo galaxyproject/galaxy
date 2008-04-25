@@ -21,10 +21,7 @@ class RootController( BaseController ):
     
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, **kwd):
-        if trans.app.config.get( "use_new_layout", "false" ) == "true":
-            return trans.fill_template( "root/index.tmpl", tool_id=tool_id )
-        else:
-            return trans.fill_template( "index_frames.tmpl" )
+        return trans.fill_template( "root/index.mako", tool_id=tool_id )
         
     ## ---- Tool related -----------------------------------------------------
     

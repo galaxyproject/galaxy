@@ -5,7 +5,7 @@
     <title>Galaxy</title>
     ## Stylesheets must get loaded early so iframes are in the right place 
     ## when the load (rendering stops until these are loaded)
-    <link rel="stylesheet" type="text/css" href="$h.url_for('/static/style/reset.css')"></link>
+    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/reset.css')}"></link>
     <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout.css')}"></link>
     <!--[if IE]>
     <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout_ie.css')}"></link>
@@ -17,7 +17,7 @@
     <div id="background"></div>
     ## Layer iframes over backgrounds
     <div id="masthead">
-        <iframe name="galaxy_masthead" src="$h.url_for( 'masthead' )" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
+        <iframe name="galaxy_masthead" src="${h.url_for( 'masthead' )}" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
     </div>
     <div id="left">
         <table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
@@ -30,7 +30,7 @@
             </tr>
             <tr>
                 <td height="100%" class="panel-body menu-bg">
-                    <iframe name="galaxy_tools" src="$h.url_for( 'tool_menu' )" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;"> </iframe>
+                    <iframe name="galaxy_tools" src="${h.url_for( 'tool_menu' )}" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;"> </iframe>
                 </td>
             </tr>
         </table>
@@ -40,11 +40,12 @@
 	<table class="column-layout" cellpadding="0" cellspacing="0" border="0" height="100%" width="100%">
             <tr height="100%" style="height: 100%">
                 <td height="100%" style="height: 100%;">
-		    #if $tool_id is not None:
-                    	<iframe name="galaxy_main" id="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( 'tool_runner', tool_id=$tool_id, from_noframe=True )}"> </iframe>
-		    #else
+		    ## If a specific tool id was specified, load it in the middle frame
+		    %if tool_id is not None:
+                    	<iframe name="galaxy_main" id="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( 'tool_runner', tool_id=tool_id, from_noframe=True )}"> </iframe>
+		    %else:
                     	<iframe name="galaxy_main" id="galaxy_main" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; width: 100%; height: 100%;" src="${h.url_for( '/static/welcome.html' )}"> </iframe>
-		    #end if
+		    %endif
                 </td>
             </tr>
 	</table>
@@ -55,23 +56,23 @@
             <tr class="panel-header">
                 <td class="panel-header">
                     <div class="panel-header" unselectable="on">
-                        <div class="panel-title">History (<a href="$h.url_for( action='history_options' )" target="galaxy_main">options</a>)</div>
+                        <div class="panel-title">History (<a href="${h.url_for( action='history_options' )}" target="galaxy_main">options</a>)</div>
                     </div>
                 </td>
             </tr>
             <tr height="100%">
                 <td height="100%" style="height: 100%;" class="panel-body menu-bg">
-                    <iframe name="galaxy_history" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;" src="$h.url_for( action='history' )"></iframe>
+                    <iframe name="galaxy_history" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;" src="${h.url_for( action='history' )}"></iframe>
                 </td>
             </tr>
         </table>
     </div>
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.dimensions.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/jquery.ui.js')"></script>
-    <script type="text/javascript" src="$h.url_for('/static/scripts/galaxy.panels.js')"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.dimensions.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.ui.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/galaxy.panels.js')}"></script>
     <script type="text/javascript">
         ensure_dd_helper();
         var lp = make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
