@@ -567,12 +567,14 @@ class RootController( BaseController ):
 
     @web.expose
     def masthead( self, trans ):
-        brand = trans.app.config.get( "brand", None )
-        wiki_url = trans.app.config.get( "wiki_url", None )
-        bugs_email = trans.app.config.get( "bugs_email", None )
-        blog_url = trans.app.config.get( "blog_url", None )
-        screencasts_url = trans.app.config.get( "screencasts_url", None )
-        return trans.fill_template( "masthead.tmpl", brand=brand, wiki_url=wiki_url, 
+        brand = trans.app.config.get( "brand", "" )
+        if brand:
+            brand ="<span class='brand'>/%s</span>"
+        wiki_url = trans.app.config.get( "wiki_url", "http://g2.trac.bx.psu.edu/" )
+        bugs_email = trans.app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )
+        blog_url = trans.app.config.get( "blog_url", "http://g2.trac.bx.psu.edu/blog"   )
+        screencasts_url = trans.app.config.get( "screencasts_url", "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )
+        return trans.fill_template( "/root/masthead.mako", brand=brand, wiki_url=wiki_url, 
           blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url )
 
     @web.expose
