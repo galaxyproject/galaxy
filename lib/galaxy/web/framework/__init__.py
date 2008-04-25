@@ -335,7 +335,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         `refresh_frames`: names of frames in the interface that should be 
                           refreshed when the message is displayed
         """
-        return self.fill_template( "message.tmpl", type=type, message=message, refresh_frames=refresh_frames )
+        return self.fill_template( "message.mako", message_type=type, message=message, refresh_frames=refresh_frames )
     def show_error_message( self, message, refresh_frames=[] ):
         """
         Convenience method for displaying an error message. See `show_message`.
@@ -356,7 +356,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Convenience method for displaying a simple page with a single HTML
         form.
         """    
-        return self.fill_template( "form.tmpl", form=form )
+        return self.fill_template( "form.mako", form=form )
     def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
