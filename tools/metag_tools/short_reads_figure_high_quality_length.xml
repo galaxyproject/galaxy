@@ -12,6 +12,9 @@
 <outputs>
   	<data name="output1" format="pdf" />
 </outputs>
+<requirements>
+	<requirement type="python-module">rpy</requirement>
+</requirements>
 <tests>
 	<test>
 		<param name="input1" value="solexa.qualityscore" ftype="qualityscore" />

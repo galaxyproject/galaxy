@@ -26,6 +26,9 @@
   <outputs>
     <data format="maf" name="out_file1" metadata_source="input"/>
   </outputs>
+  <requirements>
+    <requirement type="python-module">numpy</requirement>
+  </requirements>
   <tests>
     <test>
       <param name="input" value="6.maf"/>

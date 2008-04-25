@@ -7,6 +7,9 @@
 <outputs>
 	<data name="output1" format="tabular"/>
 </outputs>
+<requirements>
+	<requirement type="python-module">cElementTree</requirement>
+</requirements>
 <tests>
 	<test>
 		<param name="input1" value="megablast_xml_parser_test1.gz" />

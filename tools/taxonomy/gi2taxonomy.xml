@@ -9,6 +9,9 @@
   <outputs>
     <data format="taxonomy" name="out_file1" />
   </outputs>
+  <requirements>
+    <requirement type="binary">taxBuilder</requirement>
+  </requirements>
   <tests>
     <test>
       <param name="input" value="taxonomy2gi-input.txt"/>

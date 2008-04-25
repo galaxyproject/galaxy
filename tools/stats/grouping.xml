@@ -34,6 +34,9 @@
   <outputs>
     <data format="input" name="out_file1" metadata_source="input1" />
   </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
   <tests>
   	<!-- Test valid data -->
   	<!-- Testing this tool will not be possible unless / until the twill team inplements an

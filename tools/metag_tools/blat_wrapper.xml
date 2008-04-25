@@ -27,6 +27,9 @@
 	<outputs>
 		<data name="output1" format="tabular"/>
 	</outputs>
+	<requirements>
+	  <requirement type="binary">blat</requirement>
+	</requirements>
 	<tests>
 		<test>
 		<param name="source_select" value="database" />

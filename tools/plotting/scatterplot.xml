@@ -12,6 +12,9 @@
   <outputs>
     <data format="pdf" name="out_file1" />
   </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
   <!-- TODO: uncomment the following test when we have tools.update_state() working for 
        multiple dependents with the same dependency.
   <tests>

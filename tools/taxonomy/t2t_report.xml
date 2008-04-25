@@ -7,7 +7,10 @@
     <outputs>
         <data format="tabular" name="out_file1" />
     </outputs>
-      <tests>
+  <requirements>
+    <requirement type="binary">taxonomy2tree</requirement>
+  </requirements>
+  <tests>
     <test>
       <param name="input" value="taxonomyGI.dat" ftype="taxonomy"/>
       <output name="out_file1" file="t2t_report.dat"/>

@@ -13,6 +13,9 @@
   <outputs>
     <data format="txt" name="out_file1" />
   </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
   <tests>
     <!--
     Test a tabular input with the first line being a comment without a # character to start

@@ -15,6 +15,10 @@
   <outputs>
     <data format="interval" name="output" metadata_source="input"/>
   </outputs>
+  <requirements>
+    <requirement type="python-module">numpy</requirement>
+    <requirement type="python-module">tables</requirement>
+  </requirements>
   <tests>
     <test>
       <param name="input" value="4.bed" dbkey="hg17" ftype="bed"/>

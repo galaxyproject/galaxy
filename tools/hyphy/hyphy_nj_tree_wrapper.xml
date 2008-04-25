@@ -26,6 +26,9 @@
         <data name="out_file1" format="tabular" />
         <data name="out_file2" format="pdf" />
     </outputs>
+    <requirements>
+      <requirement type="binary">ps2pdf</requirement>
+    </requirements>
     <tests>
       <test>
         <param name="input1" value="cf_maf2fasta.dat"/>

@@ -11,6 +11,9 @@
   <outputs>
     <data format="tabular" name="out_file1" metadata_source="input1"/>
   </outputs>
+  <requirements>
+    <requirement type="python-module">numpy</requirement>
+  </requirements>
   <tests>
     <test>
       <param name="input1" value="6.maf"/>

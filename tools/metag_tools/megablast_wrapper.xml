@@ -26,6 +26,9 @@
 	<outputs>
 		<data name="output1" format="tabular"/>
 	</outputs>
+	<requirements>
+		<requirement type="binary">megablast</requirement>
+	</requirements>
 	<tests>
 		<test>
 			<param name="input_query" value="megablast_wrapper_test1.fa" ftype="fasta"/>

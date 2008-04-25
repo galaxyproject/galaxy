@@ -15,6 +15,9 @@
     <data format="bed" name="out_file1" />
     <data format="bed" name="out_file2" />
   </outputs>
+  <requirements>
+    <requirement type="binary">liftOver</requirement>
+  </requirements>
   <!--
   <tests>
     <test>

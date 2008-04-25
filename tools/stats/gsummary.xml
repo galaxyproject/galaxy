@@ -10,6 +10,9 @@
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
   <tests>
     <test>
       <param name="input" value="1.bed"/>

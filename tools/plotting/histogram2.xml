@@ -23,6 +23,9 @@
       <output name="out_file1" file="histogram_out1.pdf" />
     </test>
   </tests>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
   <help>
 
 .. class:: infomark

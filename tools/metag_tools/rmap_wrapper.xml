@@ -32,6 +32,9 @@
     <outputs>
         <data name="output1" format="bed"/>
     </outputs>
+    <requirements>
+      <requirement type="binary">rmap</requirement>
+    </requirements>
     <!--     
     <tests>
         <test>
