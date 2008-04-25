@@ -18,6 +18,8 @@ def __main__():
     sequence_count = 0
     for i, line in enumerate( open( infile ) ):
         line = line.rstrip( '\r\n' )
+        if not line or line.startswith( '#' ):
+            continue
         if line.startswith( '>' ):
             if sequence:
                 sequence_count += 1
@@ -25,19 +27,18 @@ def __main__():
             title = line
             sequence = ''
         else:
-            if line:
-                sequence += line
-                if line.split()[0].isdigit():
-                    sequence += ' '
+            sequence = "%s%s" % ( sequence, line )
+            if line.split()[0].isdigit():
+                sequence += ' '
     if sequence:
         seq_hash[( sequence_count, title )] = sequence
     # return only those lengths are in the range
-    out = open( outfile, 'w' )
     title_keys = seq_hash.keys()
     title_keys.sort()
+    out = open( outfile, 'w' )
     for i, fasta_title in title_keys:
         sequence = seq_hash[( i, fasta_title )]
-        print >> out, "%s\t%s" %( fasta_title, sequence )
+        out.write( "%s\t%s\n" %( fasta_title, sequence ) )
     out.close()
 
 if __name__ == "__main__" : __main__()

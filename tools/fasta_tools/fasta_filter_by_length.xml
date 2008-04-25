@@ -4,7 +4,7 @@
 	<inputs>
 		<param name="input" type="data" format="fasta" label="Fasta file"/>
 		<param name="min_length" type="integer" size="15" value="0" label="Minimal length of the return sequence" />
-		<param name="max_length" type="integer" size="15" value="0" label="Maximal length of the return sequence" help="no limitation if 0"/> 
+		<param name="max_length" type="integer" size="15" value="0" label="Maximum length of the return sequence" help="no limitation if 0"/> 
 	</inputs>
 	<outputs>
 		<data name="output" format="fasta"/>
@@ -21,13 +21,13 @@
 
 .. class:: infomark
 
-**TIP**. If only want to show sequences longer than a threshold, set *minimal length* to the threshold and leave *maximal length* to zero.
+**TIP**. If only want to show sequences longer than a threshold, set *minimal length* to the threshold and leave *maximum length* to zero.
 
 -----
 
 **What it does**
 	
- This tool accepts two parameters: *minimal length* and *maximal length*, and returns sequences of length within the two thresholds.
+ This tool accepts two parameters: *minimal length* and *maximum length*, and returns sequences of length within the two thresholds.
  
 -----
 
@@ -44,7 +44,7 @@
 	&gt;seq4
 	ATGGAAGC
 
-- return sequences with length longer than 10bp (set the *minimal length* to 10, and the *maximal length* to 0 (no limitation)):: 
+- return sequences with length longer than 10bp (set the *minimal length* to 10, and the *maximum length* to 0 (no limitation)):: 
 
  	&gt;seq1
 	TCATTTAATGAC
