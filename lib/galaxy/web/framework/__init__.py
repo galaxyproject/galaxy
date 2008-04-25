@@ -47,6 +47,18 @@ def json( func ):
         decorator._orig = func
     decorator.exposed = True
     return decorator
+
+def require_login( verb="perform this action" ):
+    def argcatcher( func ):
+        def decorator( self, trans, *args, **kwargs ):
+            if trans.get_user():
+                return func( self, trans, *args, **kwargs )
+            else:
+                return trans.show_error_message(
+                    "You must be <a target='galaxy_main' href='%s'>logged in</a> to %s</div>"
+                    % ( url_for( controller='user', action='login' ), verb ) )      
+        return decorator
+    return argcatcher
     
 NOT_SET = object()
 
@@ -338,7 +350,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         Convenience method for displaying an warn message. See `show_message`.
         """
-        return self.show_message( message, 'warn', refresh_frames )
+        return self.show_message( message, 'warning', refresh_frames )
     def show_form( self, form ):
         """
         Convenience method for displaying a simple page with a single HTML

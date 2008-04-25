@@ -13,12 +13,7 @@ import urllib
 
 log = logging.getLogger( __name__ )
 
-class Universe( BaseController ):
-    pref_cookie_name = 'universe_prefs'
-    
-    @web.expose
-    def generate_error( self, trans ):
-        raise Exception( "Fake error!" )
+class RootController( BaseController ):
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -26,50 +21,32 @@ class Universe( BaseController ):
     
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, **kwd):
-        # if mode:
-        #             trans.set_cookie(name=self.pref_cookie_name, value=mode)
-        #         else:
-        #             mode = trans.get_cookie(name=self.pref_cookie_name)
-        #         trans.ensure_valid_galaxy_session()
-        #         result = trans.fill_template('index_frames.tmpl', mode=mode)
-        #         return [ result ]
         if trans.app.config.get( "use_new_layout", "false" ) == "true":
             return trans.fill_template( "root/index.tmpl", tool_id=tool_id )
         else:
             return trans.fill_template( "index_frames.tmpl" )
         
+    ## ---- Tool related -----------------------------------------------------
+    
     @web.expose
     def tool_menu( self, trans ):
         return trans.fill_template('tool_menu.tmpl', toolbox=self.get_toolbox() )
 
     @web.expose
-    def last_hid( self, trans ):
-        """Returns the largest (last) history id"""
-        trans.response.set_content_type("text/plain")
-        history = trans.get_history()
-        # if history.datasets :
-        #     maxhid = max( [ data.hid for data in history.datasets ] )
-        # else:
-        #     maxhid = -1
-        if len( history.datasets ) > 0:
-            return len( history.datasets ) + 1
+    def tool_help( self, trans, id ):
+        """Return help page for tool identified by 'id' if available"""
+        toolbox = self.get_toolbox()
+        tool = toolbox.tools_by_id.get(id, '')
+        yield "<html><body>"
+        if not tool:
+            yield "Unknown tool id '%d'" % id
+        elif tool.help:
+            yield tool.help
         else:
-            return -1
-        return str(maxhid)
-        
-    @web.expose
-    def last_dataset_id( self, trans ):
-        """Returns the largest (last) dataset id"""
-        trans.response.set_content_type("text/plain")
-        history = trans.get_history()
-        # if history.datasets :
-        #     maxhid = max( [ data.hid for data in history.datasets ] )
-        # else:
-        #     maxhid = -1
-        if len( history.datasets ) > 0:
-            return history.datasets[-1].id
-        else:
-            return -1
+            yield "No additional help available for tool '%s'" % tool.name
+        yield "</body></html>"
+
+    ## ---- Root history display ---------------------------------------------
 
     @web.expose
     def history( self, trans, as_xml=False ):
@@ -87,8 +64,55 @@ class Universe( BaseController ):
             return trans.fill_template_mako( "root/history_as_xml.mako", history=history )
         else:
             template = "root/history.mako"
-            mode = trans.get_cookie( name=self.pref_cookie_name )
-            return trans.fill_template( "root/history.mako", history=history, mode=mode )
+            return trans.fill_template( "root/history.mako", history=history )
+
+    @web.expose
+    def dataset_state ( self, trans, id=None, stamp=None ):
+        if id is not None:
+            try: 
+                data = self.app.model.Dataset.get( id )
+            except: 
+                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
+            trans.response.headers['X-Dataset-State'] = data.state
+            trans.response.headers['Pragma'] = 'no-cache'
+            trans.response.headers['Expires'] = '0'
+            return data.state
+        else:
+            return trans.show_error_message( "Must specify a dataset id.")
+
+    @web.expose
+    def dataset_code( self, trans, id=None, hid=None, stamp=None ):
+        if id is not None:
+            try: 
+                data = self.app.model.Dataset.get( id )
+            except: 
+                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
+            trans.response.headers['Pragma'] = 'no-cache'
+            trans.response.headers['Expires'] = '0'
+            return trans.fill_template("root/history_item.mako", data=data, hid=hid)
+        else:
+            return trans.show_error_message( "Must specify a dataset id.")
+        
+    @web.json
+    def history_item_updates( self, trans, ids=None, states=None ):
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        # Create new HTML for any that have changed
+        rval = {}
+        if ids is not None and states is not None:
+            ids = map( int, ids.split( "," ) )
+            states = states.split( "," )
+            for id, state in zip( ids, states ):
+                data = self.app.model.Dataset.get( id )
+                if data.state != state:
+                    rval[id] = {
+                        "state": data.state,
+                        "html": trans.fill_template( "root/history_item.mako", data=data, hid=data.hid )
+                    }
+        return rval
+
+    ## ---- Dataset display / editing ----------------------------------------
 
     @web.expose
     def display(self, trans, id=None, hid=None, tofile=None, toext=".txt"):
@@ -298,10 +322,13 @@ class Universe( BaseController ):
                         pass    # upload tool will cause this since it doesn't have a job
         return "OK"
 
+    ## ---- History management -----------------------------------------------
+
     @web.expose
     def history_options( self, trans ):
-        """Displays a list of history related actions"""
-        return trans.fill_template( "history_options.tmpl", history = trans.get_history() )
+        """Displays a list of history related actions"""            
+        return trans.fill_template( "/history/options.mako",
+                                    user = trans.get_user(), history = trans.get_history() )
 
     @web.expose
     def history_delete( self, trans, id=None, **kwd):
@@ -344,45 +371,12 @@ class Universe( BaseController ):
             dataset.deleted = True
         self.app.model.flush()
         trans.log_event( "History id %s cleared" % (str(history.id)) )
-        trans.response.send_redirect("/index")
+        trans.response.send_redirect( url_for("/index" ) )
 
     @web.expose
-    def tool_help( self, trans, id ):
-        """Return help page for tool identified by 'id' if available"""
-        toolbox = self.get_toolbox()
-        tool = toolbox.tools_by_id.get(id, '')
-        yield "<html><body>"
-        if not tool:
-            yield "Unknown tool id '%d'" % id
-        elif tool.help:
-            yield tool.help
-        else:
-            yield "No additional help available for tool '%s'" % tool.name
-        yield "</body></html>"
-
-    # @web.expose
-    # def share_history( self, trans, id=None, create=None ):
-    #     """Shares the history"""
-    #     history = trans.get_history()
-    #     if create:
-    #         # create a new history
-    #         history = obj.History()
-    #         history.store()
-    #         history = trans.get_history(id=history.id)
-    #         trans.response.send_redirect("/index")
-    #     elif id:
-    #         # load a previous one
-    #         history = trans.get_history(id=id)
-    #         trans.response.send_redirect("/index") 
-    #     
-    #     url = '%s/share_history?id=%s' % (trans.request.base, history.id)
-    #     return trans.fill_template( "share.tmpl", url=url)
-
-
-    @web.expose
+    @web.require_login( "share histories with other users" )
     def history_share( self, trans, id=None, email=None, **kwd ):
         send_to_err = ""
-        user = trans.get_user()
         if not id:
             id = trans.get_history().id
         if not isinstance( id, list ):
@@ -393,7 +387,7 @@ class Universe( BaseController ):
             histories.append( trans.app.model.History.get( hid ) )
             history_names.append(histories[-1].name) 
         if not email:
-            return trans.fill_template("history_share.tmpl", histories=histories, user=user, email=email, send_to_err=send_to_err)
+            return trans.fill_template("/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
             
         send_to_user = trans.app.model.User.get_by( email = email )
         if not send_to_user:
@@ -409,20 +403,23 @@ class Universe( BaseController ):
                 trans.log_event( "History share, id: %s, name: '%s': to new id: %s" % (str(history.id), history.name, str(new_history.id)) )
             self.app.model.flush()
             return trans.show_message( "History (%s) has been shared with: %s" % (",".join(history_names),email) )
-        return trans.fill_template("history_share.tmpl", histories=histories, user=user, email=email, send_to_err=send_to_err)
+        return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
 
     @web.expose
+    @web.require_login( "work with multiple histories" )
     def history_available( self, trans, id=None, as_xml=False, **kwd ):
         """
         List all available histories
         """
         if as_xml:
             trans.response.set_content_type('text/xml')
-            return trans.fill_template( "history_ids.xml" )
+            return trans.fill_template( "/history/list_as_xml.mako" )
         if not isinstance( id, list ):
             id = [ id ]
         trans.log_event( "History id %s available" % str( id ) )
-        return trans.fill_template( "history_available.tmpl", ids=id )
+        return trans.fill_template( "/history/list.mako", ids=id,
+                                    user=trans.get_user(),
+                                    current_history=trans.get_history() )
         
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
@@ -445,7 +442,9 @@ class Universe( BaseController ):
             if not user_history.datasets:
                 trans.set_history( new_history )
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
-            return trans.fill_template("history_imported.tmpl", history=new_history)
+            return trans.show_ok_message( """
+                History "%s" has been imported. Click <a href="%s">here</a>
+                to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
         elif not user_history.datasets or confirm:
             new_history = import_history.copy()
             new_history.name = "imported: "+new_history.name
@@ -454,59 +453,19 @@ class Universe( BaseController ):
             new_history.flush()
             trans.set_history( new_history )
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
-            return trans.fill_template("history_imported.tmpl", history=new_history)
-        return trans.fill_template("history_import.tmpl", history=import_history)
+            return trans.show_ok_message( """
+                History "%s" has been imported. Click <a href="%s">here</a>
+                to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
+        return trans.show_warn_message( """
+            Warning! If you import this history, you will lose your current
+            history. Click <a href="%s">here</a> to confirm.
+            """ % web.url_for( id=id, confirm=True ) )
 
     @web.expose
-    def dataset_state ( self, trans, id=None, stamp=None ):
-        if id is not None:
-            try: 
-                data = self.app.model.Dataset.get( id )
-            except: 
-                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
-            trans.response.headers['X-Dataset-State'] = data.state
-            trans.response.headers['Pragma'] = 'no-cache'
-            trans.response.headers['Expires'] = '0'
-            return data.state
-        else:
-            return trans.show_error_message( "Must specify a dataset id.")
-
-    @web.expose
-    def dataset_code( self, trans, id=None, hid=None, stamp=None ):
-        if id is not None:
-            try: 
-                data = self.app.model.Dataset.get( id )
-            except: 
-                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
-            trans.response.headers['Pragma'] = 'no-cache'
-            trans.response.headers['Expires'] = '0'
-            return trans.fill_template("root/history_item.mako", data=data, hid=hid)
-        else:
-            return trans.show_error_message( "Must specify a dataset id.")
-        
-    @web.json
-    def history_item_updates( self, trans, ids=None, states=None ):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
-        # Create new HTML for any that have changed
-        rval = {}
-        if ids is not None and states is not None:
-            ids = map( int, ids.split( "," ) )
-            states = states.split( "," )
-            for id, state in zip( ids, states ):
-                data = self.app.model.Dataset.get( id )
-                if data.state != state:
-                    rval[id] = {
-                        "state": data.state,
-                        "html": trans.fill_template( "root/history_item.mako", data=data, hid=data.hid )
-                    }
-        return rval
-
-    @web.expose
+    @web.require_login( "switch histories" )
     def history_switch( self, trans, id=None ):
         if not id:
-            return trans.fill_template( "history_switch.tmpl" )
+            return trans.response.send_redirect( web.url_for( action='history_available' ) )
         else:
             new_history = trans.app.model.History.get( id )
             if new_history:
@@ -524,32 +483,12 @@ class Universe( BaseController ):
         trans.new_history()
         trans.log_event( "Created new History, id: %s." % str(trans.get_history().id) )
         return trans.show_message( "New history created", refresh_frames = ['history'] )
-        
-    @web.expose
-    def history_store( self, trans, name=None ):
-        user = trans.get_user()
-        if not user:
-            return trans.show_error_message( "Must be logged in to save history" )
-        history = trans.get_history()
-        if history.user:
-            if history.user == user:
-                return trans.show_error_message( "Current history already stored (name: %s)" % history.name )
-            else:
-                return trans.show_error_message( "Current history already associated with a different user" )
-        if not name:
-            return trans.fill_template( "history_store.tmpl" )
-        name = escape(name.replace("\n","").replace("\r",""))
-        history.name = name
-        history.user = user
-        trans.app.model.flush()
-        trans.log_event( "History stored, id: %s, name: '%s'" % (str(history.id), history.name ) )
-        return trans.show_message( "Current history stored as %s" % name, refresh_frames=['history']  )        
 
     @web.expose
+    @web.require_login( "renames histories" )
     def history_rename( self, trans, id=None, name=None, **kwd ):
         user = trans.get_user()
-        if not user:
-            return trans.show_error_message( "Must be logged in to rename your history" )
+
         if not isinstance( id, list ):
             if id != None:
                 id = [ id ]
@@ -568,7 +507,7 @@ class Universe( BaseController ):
                 histories.append(history)
                 cur_names.append(history.name)
         if not name or len(histories)!=len(name):
-            return trans.fill_template( "history_rename.tmpl",histories=histories )
+            return trans.fill_template( "/history/rename.mako",histories=histories )
         change_msg = ""
         for i in range(len(histories)):
             if histories[i].user_id == user.id:
@@ -584,7 +523,7 @@ class Universe( BaseController ):
                     change_msg = change_msg + "<p>You must specify a valid name for History: "+cur_names[i]+"</p>"
             else:
                 change_msg = change_msg + "<p>History: "+cur_names[i]+" does not appear to belong to you.</p>"
-        return trans.show_message( "<p><h2>Rename history</h2>%s" % change_msg, refresh_frames=['history'] ) 
+        return trans.show_message( "<p>%s" % change_msg, refresh_frames=['history'] ) 
 
     @web.expose
     def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="txt",dbkey="?",**kwd ):
@@ -676,3 +615,7 @@ class Universe( BaseController ):
             if isinstance( kwd[k], FieldStorage ):
                 rval += "-> %s" % kwd[k].file.read()
         return rval
+    
+    @web.expose
+    def generate_error( self, trans ):
+        raise Exception( "Fake error!" )
