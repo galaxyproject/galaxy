@@ -23,8 +23,8 @@ ${self.javascripts()}
 
 ## Default javascripts
 <%def name="javascripts()">
-  <!--[if IE lt 8]>
-  <script type='text/javascript' src="/static/scripts/IE8.js"> </script>
+  <!--[if lt IE 7]>
+  <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
   <![endif]-->
   <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
   <script type="text/javascript" src="${h.url_for('/static/scripts/galaxy.base.js')}"></script>

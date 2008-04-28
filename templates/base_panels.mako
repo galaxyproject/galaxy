@@ -12,7 +12,7 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-  <!--[if IE lt 7]>
+  <!--[if lt IE 7]>
   <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
   <script type='text/javascript' src="/static/scripts/ie7-recalc.js"> </script>
   <![endif]-->
