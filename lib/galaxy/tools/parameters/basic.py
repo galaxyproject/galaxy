@@ -840,7 +840,11 @@ class DataToolParameter( ToolParameter ):
         if not value:
             raise ValueError( "History does not include a dataset of the required format / build" ) 
         if value in [None, "None"]:
-            return NoneDataset( datatypes_registry = trans.app.datatypes_registry, ext = self.extensions[0] )
+            # 04/28/2008 - rolled back by Greg until corrections can be made
+            #return NoneDataset( datatypes_registry = trans.app.datatypes_registry, ext = self.extensions[0] )
+            temp_data = trans.app.model.Dataset( extension = 'data' )
+            temp_data.state = temp_data.states.OK
+            return temp_data
         if isinstance( value, list ):
             return [ trans.app.model.Dataset.get( v ) for v in value ]
         else:
@@ -859,7 +863,9 @@ class DataToolParameter( ToolParameter ):
         indicates that the dataset is optional, while '' indicates that it is not.
         """
         if value is None or value == '' or value == 'None':
-            return NoneDataset( datatypes_registry = app.datatypes_registry, ext = self.extensions[0] )
+            # 04/28/2008 - rolled back by Greg until corrections can be made
+            #return NoneDataset( datatypes_registry = app.datatypes_registry, ext = self.extensions[0] )
+            return value
         try:
             return app.model.Dataset.get( int( value ) )
         except:
