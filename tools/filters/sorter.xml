@@ -5,12 +5,12 @@
     <param format="tabular" name="input" type="data" label="Sort Query" />
     <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true" />
     <param name="order" type="select" label="in">
-      <option value="ASC">Ascending order</option>
       <option value="DESC">Descending order</option>
+      <option value="ASC">Ascending order</option>
     </param>
     <param name="style" type="select" label="Flavor">
-      <option value="alpha">Alphabetical sort</option>
       <option value="num">Numerical sort</option>
+      <option value="alpha">Alphabetical sort</option>
     </param>
   </inputs>
   <outputs>

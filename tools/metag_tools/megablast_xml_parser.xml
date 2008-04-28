@@ -1,5 +1,5 @@
-<tool id="megablast_xml_parser" name="Parse megablast xml output">
-<description> </description>
+<tool id="megablast_xml_parser" name="Parse">
+<description>XML output from blast programs</description>
 <command interpreter="python">megablast_xml_parser.py $input1 $output1</command>
 <inputs>
 	<param name="input1" type="data" format="txt" label="Megablast XML output" />
@@ -20,40 +20,49 @@
 
 .. class:: warningmark 
 
-**IMPORTANT**. Please **zip** your xml file and upload the zipped file. This will help speeding up the process. (hint: under shell command, try: gzip -c your_xml_file > your_xml_file.gz)
-
-.. class:: infomark 
-
-**TIP**. To get xml output from megablast, add option **-m 7** in the command line.
+Blast XML output **must** be uploaded to Galaxy in zipped form.
  
 -----
 	
 **What it does**
 
-This tool is for users to upload their own megablast xml output and converts to tabular format, showing all information for retrieving alignment blocks.
+This tool will process XML output of any NCBI blast tool (if you run your own blast jobs, the XML output can be generated with **-m 7** option).
  
 -----
 
-**Example**
+**Output fields**
 
-- Query sequence::
- 	
- 	&gt;seq1
-	CGGACAGCGCCGCCACCAACAAAGCCACCA
- 
-- Parsed output::
- 
-   +------+------+-----------------+----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-   |  Qid | Qlen |             Sid |     Slen |                                                                                         HSP                                                                                          |                                                                    
-   +------+------+-----------------+----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-   | seq1 |   30 | gnl|BL_ORD_ID|0 |  5528445 | 59.96 | 8.38112e-11 | 1 | 30 | 5436010 | 5436039 | 1 | 1 | 30 | 30 | CGGACAGCGCCGCCACCAACAAAGCCACCA | CGGACAGCGCCGCCACCAACAAAGCCACCA |         ||||||||||||||||||||||||||||||        |
-   +------+------+-----------------+----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+This tools returns tab-delimted output with the following fields::
 
------
+    Description                               Example
+    ----------------------------------------- ----------------- 
 
-**Reference**
+    1. Name of the query sequence             Seq1
+    2. Length of the query sequence           30
+    3. Name of target sequence                gnl|BL_ORD_ID|0
+    4. Length of target sequence              5528445
+    5. Alignment bit score                    59.96
+    6. E-value                                8.38112e-11
+    7. Start of alignment within query        1
+    8. End of alignment within query          30
+    9. Start of alignment within target       5436010
+   10. End of alignment within target         5436039
+   11. Query frame                            1
+   12. Target frame                           1
+   13. Number of identical bases within       29 
+       the alignment
+   14. Alignment length                       30 
+   15. Aligned portion (sequence) of query    CGGACAGCGCCGCCACCAACAAAGCCACCA
+   16. Aligned portion (sequence) of target   CGGACAGCGCCGCCACCAACAAAGCCATCA
+   17. Midline indicating positions of        ||||||||||||||||||||||||||| || 
+       matches within the alignment
 
- **Megablast**: Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
+------
+       
+.. class:: infomark
+
+Note that this form of output does not contain alignment identify value. However, it can be computed by dividing the number of identical bases wityh the alignment (Field 13) by the alignment length (Field 14) using *Text Manipulation->Compute* tool 
+
 
 
 </help>

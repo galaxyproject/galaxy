@@ -2,7 +2,7 @@
   <description>of a file</description>
   <command interpreter="perl">remove_beginning.pl $input $num_lines $out_file1</command>
   <inputs>
-    <param name="num_lines" size="5" type="integer" value="5" label="Remove first" help="lines"/>
+    <param name="num_lines" size="5" type="integer" value="1" label="Remove first" help="lines"/>
     <param format="txt" name="input" type="data" label="from"/>
   </inputs>
   <outputs>
