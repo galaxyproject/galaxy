@@ -3,15 +3,7 @@
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-<script type="text/javascript">
-    jQuery(document).ready( function() {
-	// Links with confirmation
-	jQuery( "a[@confirm]" ).click( function() {
-	    return confirm( jQuery(this).attr( "confirm"  ) )
-	})
-	
-    });
-  
+<script type="text/javascript">  
     ## FIXME: This depends on javascript, could be moved into controller
     function OnSubmitForm()
     {

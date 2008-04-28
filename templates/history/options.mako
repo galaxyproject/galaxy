@@ -1,18 +1,5 @@
 <%inherit file="/base.mako"/>
 <%def name="title()">Your saved histories</%def>
-
-<%def name="javascripts()">
-${parent.javascripts()}
-<script type="text/javascript">
-    jQuery(document).ready( function() {
-	// Links with confirmation
-	jQuery( "a[@confirm]" ).click( function() {
-	    return confirm( jQuery(this).attr( "confirm"  ) )
-	})
-	
-    });
-</script>
-</%def>
     
 <h1>History Options</h1>
 

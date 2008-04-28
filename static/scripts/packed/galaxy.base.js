@@ -1,0 +1,1 @@
+jQuery(document).ready(function(){jQuery("a[@confirm]").click(function(){return confirm(jQuery(this).attr("confirm"))})})
