@@ -39,20 +39,7 @@
             })
             var state = new CookieSet( "galaxy.history.expand_state" );
             state.removeAll().save();
-        }))
-        // Add footer show / hide 
-        q( "div.footerheader" ).each( function() {
-            var menu = q(this).next();
-            menu.hide();
-            q(this).append( q("<a href='#'>options...</a>").click( function() {
-                if ( menu.is( ":visible" ) ) { menu.slideUp( "fast" ) }
-                else { menu.slideDown( "fast" ) } 
-            }))
-        })
-        // Links with confirmation
-        q( "a[@confirm]" ).click( function() {
-            return confirm( q(this).attr( "confirm"  ) )
-        })
+        }));
     })
     // Functionized so AJAX'd datasets can call them
     // Get shown/hidden state from cookie
@@ -258,35 +245,4 @@ div#footer {
     </div>
 
 </body>
-
-## <div style="height: 20px"></div>
-## <div id="footer" >
-##     <div class="footerheader">
-##         <b>History</b> 
-##     </div>
-##     <div>
-##         <div class="footermenu">
-##             #if $t.user
-##                 <div style="padding-top: 5px;">
-##                     #if $history.user
-##                         <div class="footermenuitem">currently stored as "<a href="$h.url_for('/history_rename', id=$history.id )" target="galaxy_main">$history.name</a>"</div>
-##                     #else
-##                         <div class="footermenuitem"><a href="$h.url_for('/history_store')" target="galaxy_main">store</a> this history for later</div>
-##                     #end if
-##                     <div class="footermenuitem"><a href="$h.url_for('/history_available')" target="galaxy_main">view</a> previously stored histories</div>
-##                     #if $len( $history.active_datasets ) > 0 and $history.user not in [ None , "" ]:
-##                         <div class="footermenuitem"><a href="$h.url_for('/history_new')">create</a> a new empty history</div>
-##                     #end if
-##                 </div>
-##             #else
-##                 <div class="footermenumessage">
-##                     <div class="infomark">You must be <a target="galaxy_main" href="$h.url_for('/user/login')">logged in</a> to store or switch histories.</div>
-##                 </div>
-##             #end if
-##             <div class="footermenuitem"><a href="$h.url_for('/history_share')" target="galaxy_main">share</a> current history</div>
-##             <div class="footermenuitem"><a href="$h.url_for('/history_delete', id=$history.id )" confirm="Are you sure you want to delete the current history?">delete</a> current history</div>
-##         </div>
-##     </div>
-## </div>
-
 </html>
