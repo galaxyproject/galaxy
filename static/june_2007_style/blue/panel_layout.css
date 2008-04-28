@@ -8,9 +8,8 @@ body, html
 }
 body
 {
-    font-family: Verdana;
+    font: 75% verdana, "Bitstream Vera Sans", geneva, arial, helvetica, helve, sans-serif; 
     background: #eee;
-    font-size: 77%;
 }
 #background
 {
@@ -157,13 +156,19 @@ div.unified-panel-header {
     color: #333;
     font-weight: bold;
 }
-  
+
+div.unified-panel-header-inner {
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+}
+
 .menu-bg {
     background: #C1C9E5 url(menu_bg.png) top repeat-x;
 }
     
 div.unified-panel-body {
     position: absolute;
+    z-index: 1;
     top: 2em;
     bottom: 0;
     width: 100%;
@@ -201,18 +206,17 @@ div.unified-panel-body {
     font-weight: bold;
 }
 
-.center-block-outer {
-    display: table;
-    height: 100%;
-}
-
-.center-block-inner {
-    display: table-cell;
-    vertical-align: middle;
-}
-
 div.button {
     cursor: pointer;
+    margin: -1px; padding: 1px;
+    padding-right: 0.5em;
+    padding-left: 0.5em;
+    -moz-border-radius: 0.5em;
+}
+
+div.button:hover {
+    color: black;
+    background: gray;
 }
 
 div.popupmenu {

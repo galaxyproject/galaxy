@@ -1,5 +1,5 @@
 var hidden_width = 7;
-var border_tweak = jQuery.browser.msie ? 14 : 9;
+var border_tweak = 9;
 
 var jq = jQuery;
 
@@ -101,6 +101,7 @@ function make_right_panel( panel_el, center_el, border_el ) {
         jq( panel_el ).css( "width", x );
         jq( center_el ).css( "right", x+9 );
         jq( border_el ).css( "right", x ).css( "left", "" )
+        if ( document.recalc ) { document.recalc() };
     };
     var toggle = function() {
         if ( hidden ) {
@@ -117,6 +118,7 @@ function make_right_panel( panel_el, center_el, border_el ) {
             saved_size = jq(document).width() - jq( border_el ).position().left - border_tweak;
             // Move center
             jq( center_el ).css( "right", hidden_width + 1 );
+            if ( document.recalc ) { document.recalc() };
             // Hide border
             jq( border_el ).removeClass( "hover" );
             jq( panel_el ).animate( { right: - saved_size }, "fast" );
