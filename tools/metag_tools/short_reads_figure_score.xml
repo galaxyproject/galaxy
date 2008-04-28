@@ -1,5 +1,5 @@
-<tool id="quality_score_distribution" name="Show Quality Score Distribution">
-<description></description>
+<tool id="quality_score_distribution" name="Build">
+<description>quality score distribution</description>
 
 <command interpreter="python">short_reads_figure_score.py $input1 $output1 </command>
 
@@ -54,11 +54,11 @@ Illumina (Solexa) data::
 
 **Output example**
 
-Quality scores are summarized as boxplot:
+Quality scores are summarized as boxplot (Roche 454 FLX data):
 
 .. image:: ../static/images/short_reads_boxplot.png
 
-where the X-axis is coordiante along the read and the Y-axis is quality score adjusted to comply with the Phred score metric. Units on the X-axis depend on whether your data comes from Roche (454) or Illumina (Solexa) and ABI SOLiD machines:
+where the **X-axis** is coordiante along the read and the **Y-axis** is quality score adjusted to comply with the Phred score metric. Units on the X-axis depend on whether your data comes from Roche (454) or Illumina (Solexa) and ABI SOLiD machines:
 
   - For Roche (454) X-axis (shown above) indicates **relative** position (in %) within reads as this technology produces reads of different lengths;
   - For Illumina (Solexa) and ABI SOLiD X-axis shows **absolute** position in nucleotides within reads.
