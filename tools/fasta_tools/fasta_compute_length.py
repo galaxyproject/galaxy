@@ -12,13 +12,15 @@ assert sys.version_info[:2] >= ( 2, 4 )
 def __main__():
     input_filename = sys.argv[1]
     output_filename = sys.argv[2]
-    keep_first = int( sys.argv[3] ) + 1
+    keep_first = int( sys.argv[3] )
     tmp_title = tmp_seq = ''
     tmp_seq_count = 0
     seq_hash = {}
 
     if keep_first == 0:
         keep_first = None
+    else:
+        kepp_first += 1    
 
     for i, line in enumerate( file( input_filename ) ):
         line = line.rstrip( '\r\n' )

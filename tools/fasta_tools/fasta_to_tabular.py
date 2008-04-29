@@ -13,13 +13,15 @@ seq_hash = {}
 def __main__():
     infile = sys.argv[1]
     outfile = sys.argv[2]
-    keep_first = int( sys.argv[3] ) + 1
+    keep_first = int( sys.argv[3] )
     title = ''
     sequence = ''
     sequence_count = 0
     
     if keep_first == 0:
         keep_first = None
+    else:
+        keep_first += 1
 
     for i, line in enumerate( open( infile ) ):
         line = line.rstrip( '\r\n' )
