@@ -12,16 +12,16 @@ def stop_err( msg ):
     sys.exit()
 
 def __main__():
+    
     db_build = sys.argv[1]
     query_filename = sys.argv[2].strip()
     output_filename = sys.argv[3].strip()
     mega_word_size = sys.argv[4]        # -W
     mega_iden_cutoff = sys.argv[5]      # -p
-    mega_disc_word = sys.argv[6]        # -t
+    mega_evalue_cutoff = sys.argv[6]      # -e
     mega_temp_output = tempfile.NamedTemporaryFile().name
-    mega_disc_type = sys.argv[7]        # -N
-    mega_filter = sys.argv[8]           # -F
-    GALAXY_DATA_INDEX_DIR = sys.argv[9]
+    mega_filter = sys.argv[7]           # -F
+    GALAXY_DATA_INDEX_DIR = sys.argv[8]
     DB_LOC = "%s/blastdb.loc" % GALAXY_DATA_INDEX_DIR
 
     # megablast parameters
@@ -34,14 +34,10 @@ def __main__():
     except:
         stop_err('Invalid value for identity cut-off')
     try:
-        test = int(mega_disc_word)
-        if test > 0:
-            assert test in [16,18,21] and int(mega_word_size) == 12
-        else:
-            assert test == 0
+        float(mega_evalue_cutoff)
     except:
-        stop_err('Invalid value for discontiguous word template. Must be either 0, 16, 18, or 21. The last three choices would work only if word size is 12.')
-        
+        stop_err('Invalid value for Expectation value')
+
     # prepare the database
     db = {}
     for i, line in enumerate( file( DB_LOC ) ):
@@ -57,8 +53,8 @@ def __main__():
     
     # arguments for megablast    
     chunk = db[(db_build)]
-    megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -t %s -N %s -F %s 2>&1" \
-        % ( chunk, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_disc_word, mega_disc_type, mega_filter ) 
+    megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s 2>&1" \
+        % ( chunk, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, mega_filter ) 
         
     try:
         os.system( megablast_command )
