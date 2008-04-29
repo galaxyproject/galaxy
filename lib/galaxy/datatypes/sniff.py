@@ -37,14 +37,12 @@ def convert_newlines(fname):
     '1 2\\n3 4\\n'
     """
     fd, temp_name = tempfile.mkstemp()
-    os.close(fd)
-    shutil.copyfile(fname, temp_name)
-    fp = open(fname, "wt")
-    for line in file(temp_name, "U"):
+    fp = os.fdopen(fd, "wt")
+    for line in file(fname, "U"):
         line = line.rstrip() + '\n' 
         fp.write(line)
     fp.close()
-    os.remove(temp_name)
+    shutil.move(temp_name, fname)
 
 def sep2tabs(fname, patt="\\s+"):
     """
