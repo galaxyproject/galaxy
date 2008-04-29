@@ -12,9 +12,13 @@ assert sys.version_info[:2] >= ( 2, 4 )
 def __main__():
     input_filename = sys.argv[1]
     output_filename = sys.argv[2]
+    keep_first = int( sys.argv[3] ) + 1
     tmp_title = tmp_seq = ''
     tmp_seq_count = 0
     seq_hash = {}
+
+    if keep_first == 0:
+        keep_first = None
 
     for i, line in enumerate( file( input_filename ) ):
         line = line.rstrip( '\r\n' )
@@ -38,7 +42,7 @@ def __main__():
     output_handle = open( output_filename, 'w' )
     for i, fasta_title in title_keys:
         tmp_seq = seq_hash[ ( i, fasta_title ) ]
-        output_handle.write( "%s\t%d\n" % ( fasta_title[ 1: ], len( tmp_seq ) ) )
+        output_handle.write( "%s\t%d\n" % ( fasta_title[ 1:keep_first ], len( tmp_seq ) ) )
     output_handle.close()
 
 if __name__ == "__main__" : __main__()

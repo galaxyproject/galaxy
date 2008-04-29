@@ -1,8 +1,9 @@
-<tool id="fasta_compute_length" name="Count FASTA Length">
-	<description> </description>
-	<command interpreter="python">fasta_compute_length.py $input $output </command>
+<tool id="fasta_compute_length" name="Compute">
+	<description>sequence length</description>
+	<command interpreter="python">fasta_compute_length.py $input $output $keep_first</command>
 	<inputs>
-		<param name="input" type="data" format="fasta" label="Fasta file"/>
+		<param name="input" type="data" format="fasta" label="Compute length for these sequences"/>
+		<param name="keep_first" type="integer" size="5" value="0" label="How many title characters to keep?" help="'0' = keep the whole thing"/>
 	</inputs>
 	<outputs>
 		<data name="output" format="tabular"/>
@@ -10,10 +11,12 @@
 	<tests>
 		<test>
 			<param name="input" value="454.fasta" />
+			<param name="keep_first" value="0"/>
 			<output name="output" file="fasta_tool_compute_length_1.out" />
 		</test>
 		<test>
 			<param name="input" value="extract_genomic_dna_out1.fasta" />
+			<param name="keep_first" value="0"/>
 			<output name="output" file="fasta_tool_compute_length_2.out" />
 		</test>
 	</tests>
@@ -21,27 +24,21 @@
 
 **What it does**
 
- This tool counts the length of each fasta sequence in the file. The output file has two columns per line (separated by tab): fasta titles and lengths of the sequences. 
+This tool counts the length of each fasta sequence in the file. The output file has two columns per line (separated by tab): fasta titles and lengths of the sequences. The option *How many characters to keep?* allows to select a specified number of letters from the beginning of each FASTA entry. 
 
 -----	
 
 **Example**
 
-- assume the input file contains fasta sequences::
+Suppose you have the following FASTA formatted sequences from a Roche (454) FLX sequencing run::
 
-	&gt;seq1
-	TCATTTA
-	&gt;seq2
-	ATGGCGTCGGCC
-	&gt;seq3
-	TCACATGATG
+    &gt;EYKX4VC02EQLO5 length=108 xy=1826_0455 region=2 run=R_2007_11_07_16_15_57_    TCCGCGCCGAGCATGCCCATCTTGGATTCCGGCGCGATGACCATCGCCCGCTCCACCACG    TTCGGCCGGCCCTTCTCGTCGAGGAATGACACCAGCGCTTCGCCCACG    &gt;EYKX4VC02D4GS2 length=60 xy=1573_3972 region=2 run=R_2007_11_07_16_15_57_    AATAAAACTAAATCAGCAAAGACTGGCAAATACTCACAGGCTTATACAATACAAATGTAA
 
-- the tool will return(first column is the titles, second column is the length of the sequences)::
+Running this tool while setting **How many characters to keep?** to **14** will produce this::
 	
-	&gt;seq1	7
-	&gt;seq2	12
-	&gt;seq3	10
-	
+	EYKX4VC02EQLO5  108
+	EYKX4VC02D4GS2	 60
+
 
 	</help>
 </tool>

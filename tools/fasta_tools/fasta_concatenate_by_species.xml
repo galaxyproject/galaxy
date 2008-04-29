@@ -1,5 +1,5 @@
-<tool id="fasta_concatenate0" name="Concatenate FASTA" version="0.0.0">
-  <description>alignment by species</description>
+<tool id="fasta_concatenate0" name="Concatenate" version="0.0.0">
+  <description>FASTA alignment by species</description>
   <command interpreter="python">fasta_concatenate_by_species.py $input1 $out_file1</command>
   <inputs>
     <param name="input1" type="data" format="fasta" label="FASTA alignment"/>
@@ -14,8 +14,13 @@
     </test>
   </tests>
   <help>
+  
+**What it does**
+  
 This tools attempts to parse FASTA headers to determine the species for each sequence in a multiple FASTA alignment.
 It then linearly concatenates the sequences for each species in the file, creating one sequence per determined species.
+
+-------
 
 **Example**
 
@@ -45,7 +50,7 @@ Starting FASTA::
   
 
 
-Becomes::
+becomes::
   
   >hg18
   GTGT

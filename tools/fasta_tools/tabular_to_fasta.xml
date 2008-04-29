@@ -1,5 +1,5 @@
 <tool id="tab2fasta" name="Tabular-to-FASTA" version="1.1.0">
-	<description>Converts a tabular file to FASTA format</description>
+	<description>converts tabular file to FASTA format</description>
 	<command interpreter="python">tabular_to_fasta.py $input $title_col $seq_col $output </command>
 	<inputs>
 		<param name="input" type="data" format="tabular" label="Tab-delimited file"/>
@@ -19,14 +19,20 @@
 	</tests>
 	<help>
 	
+**What it does**
+
+Converts tab delimited data into FASTA formatted sequences.
+
+-----------
+	
 **Example**
 
-Solexa data::
+Suppose this is a sequence file produced by Illumina (Solexa) sequencer::
 
 	5	300	902	419	GACTCATGATTTCTTACCTATTAGTGGTTGAACATC
 	5	300	880	431	GTGATATGTATGTTGACGGCCATAAGGCTGCTTCTT
 	
-Selecting **c3 and c4** as the Title Columns and **c5** as the Sequence Column will result in::
+Selecting **c3** and **c4** as the **Title column(s)** and **c5** as the **Sequence column** will result in::
 
 	&gt;902_419
 	GACTCATGATTTCTTACCTATTAGTGGTTGAACATC

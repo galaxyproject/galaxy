@@ -56,6 +56,13 @@
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
   </section>
+  <section name="FASTA manipulation" id="fasta_manipulation">
+    <tool file="fasta_tools/fasta_compute_length.xml" />
+    <tool file="fasta_tools/fasta_filter_by_length.xml" />
+    <tool file="fasta_tools/fasta_concatenate_by_species.xml" />
+    <tool file="fasta_tools/fasta_to_tabular.xml" />
+    <tool file="fasta_tools/tabular_to_fasta.xml" />
+  </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
     <tool file="extract/extract_GFF_Features.xml" />

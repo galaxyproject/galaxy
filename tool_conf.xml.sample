@@ -264,6 +264,8 @@
     <tool file="fasta_tools/fasta_compute_length.xml" />
     <tool file="fasta_tools/fasta_filter_by_length.xml" />
     <tool file="fasta_tools/fasta_concatenate_by_species.xml" />
+    <tool file="fasta_tools/fasta_to_tabular.xml" />
+    <tool file="fasta_tools/tabular_to_fasta.xml" />
   </section>
   <section name="Short Read Analysis" id="short_read_analysis">
     <tool file="metag_tools/short_reads_figure_score.xml" />

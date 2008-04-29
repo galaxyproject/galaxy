@@ -1,8 +1,9 @@
 <tool id="fasta2tab" name="FASTA-to-Tabular" version="1.0.0">
-	<description>Converts a FASTA file to Tabular format</description>
-	<command interpreter="python">fasta_to_tabular.py $input $output</command>
+	<description>converts FASTA file to tabular format</description>
+	<command interpreter="python">fasta_to_tabular.py $input $output $keep_first</command>
 	<inputs>
-		<param name="input" type="data" format="fasta" label="Fasta file"/>
+		<param name="input" type="data" format="fasta" label="Convert these sequences"/>
+		<param name="keep_first" type="integer" size="5" value="0" label="How many title characters to keep?" help="'0' = keep the whole thing"/>
 	</inputs>
 	<outputs>
 		<data name="output" format="tabular"/>
@@ -10,28 +11,34 @@
 	<tests>
 		<test>
 			<param name="input" value="454.fasta" />
+			<param name="keep_first" value="0"/>
 			<output name="output" file="fasta_to_tabular_out1.tabular" />
 		</test>
 		<test>
 			<param name="input" value="4.fasta" />
+			<param name="keep_first" value="0"/>
 			<output name="output" file="fasta_to_tabular_out2.tabular" />
 		</test>
 	</tests>
 	<help>
 	
+**What it does**
+
+This tool converts FASTA formatted sequences to TAB-delimited format. The option *How many characters to keep?* allows to select a specified number of letters from the beginning of each FASTA entry. 
+
+-----	
+
 **Example**
 
-A fasta file with two sequences::
+Suppose you have the following FASTA formatted sequences from a Roche (454) FLX sequencing run::
 
-	&gt;seq1
-	CCGGTATCCG
-	&gt;seq2
-	CTTACC
+    &gt;EYKX4VC02EQLO5 length=108 xy=1826_0455 region=2 run=R_2007_11_07_16_15_57_    TCCGCGCCGAGCATGCCCATCTTGGATTCCGGCGCGATGACCATCGCCCGCTCCACCACG    TTCGGCCGGCCCTTCTCGTCGAGGAATGACACCAGCGCTTCGCCCACG    &gt;EYKX4VC02D4GS2 length=60 xy=1573_3972 region=2 run=R_2007_11_07_16_15_57_    AATAAAACTAAATCAGCAAAGACTGGCAAATACTCACAGGCTTATACAATACAAATGTAA
 
-Returns::
+Running this tool while setting **How many characters to keep?** to **14** will produce this::
+	
+	EYKX4VC02EQLO5  TCCGCGCCGAGCATGCCCATCTTGGATTCCGGCGCGATGACCATCGCCCGCTCCACCACGTTCGGCCGGCCCTTCTCGTCGAGGAATGACACCAGCGCTTCGCCCACG
+	EYKX4VC02D4GS2  AATAAAACTAAATCAGCAAAGACTGGCAAATACTCACAGGCTTATACAATACAAATGTAA
 
-	&gt;seq1	CCGGTATCCG
-	&gt;seq2	CTTACC
 
 	</help>
 </tool>
