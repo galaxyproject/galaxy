@@ -970,7 +970,7 @@ class Tool:
         # but this should be considered DEPRECATED, instead use:
         #   $dataset.get_child( 'name' ).filename
         for name, data in input_datasets.items():
-            param_dict[name] = DatasetFilenameWrapper( data, datatypes_registry = self.app.datatypes_registry, ext = self.inputs[name].extensions[0] )
+            param_dict[name] = DatasetFilenameWrapper( data, datatypes_registry = self.app.datatypes_registry, tool = self, name = name )
             if data:
                 for child_association in data.children:
                     child = child_association.child
@@ -1183,8 +1183,13 @@ class DatasetFilenameWrapper( object ):
     Wraps a dataset so that __str__ returns the filename, but all other
     attributes are accessible.
     """
-    def __init__( self, dataset, datatypes_registry = None, ext = 'data' ):
+    def __init__( self, dataset, datatypes_registry = None, tool = None, name = None ):
         if not dataset:
+            try:
+                #TODO: allow this to work when working with grouping
+                ext = tool.inputs[name].extensions[0]
+            except:
+                ext = 'data'
             self.dataset = NoneDataset( datatypes_registry = datatypes_registry, ext = ext )
         else:
             self.dataset = dataset
