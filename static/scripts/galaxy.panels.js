@@ -36,6 +36,7 @@ function make_left_panel( panel_el, center_el, border_el ) {
         jq( panel_el ).css( "width", x );
         jq( border_el ).css( "left", oldx );
         jq( center_el ).css( "left", x+7 );
+        if ( document.recalc ) { document.recalc() };
     };
     toggle = function() {
         if ( hidden ) {
@@ -50,6 +51,7 @@ function make_left_panel( panel_el, center_el, border_el ) {
             saved_size = jq( border_el ).position().left;
             // Move center
             jq( center_el ).css( "left", hidden_width );
+            if ( document.recalc ) { document.recalc() };
             jq( border_el).removeClass( "hover" );
             jq( panel_el ).animate( { left: - saved_size }, "fast" );
             jq( border_el ).animate( {left: -1 }, "fast", function() {

@@ -143,6 +143,7 @@ table.column-layout
 
 div.unified-panel-header {
     height: 2em;
+    overflow: hidden;
     z-index: 1000;
     background: #cccccc;
     background-image: url(panel_header_bg.png);
@@ -158,8 +159,7 @@ div.unified-panel-header {
 }
 
 div.unified-panel-header-inner {
-    padding-top: 0.5em;
-    padding-bottom: 0.5em;
+    padding-top: 0.45em;
 }
 
 .menu-bg {
@@ -206,17 +206,28 @@ div.unified-panel-body {
     font-weight: bold;
 }
 
-div.button {
+.panel-header-button {
+    color: #333;
+    text-decoration: none;
+    display: block;
     cursor: pointer;
     margin: -1px; padding: 1px;
+    border: 0px;
     padding-right: 0.5em;
     padding-left: 0.5em;
     -moz-border-radius: 0.5em;
+    -webkit-border-radius: 0.5em;
+    border-radius: 0.5em;
+    background: transparent;
 }
 
-div.button:hover {
+.panel-header-button:hover {
     color: black;
-    background: gray;
+    background: #aaaaaa;
+}
+.panel-header-button:active {
+    color: white;
+    background: #aaaaaa;
 }
 
 div.popupmenu {

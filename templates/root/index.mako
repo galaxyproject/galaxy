@@ -26,7 +26,12 @@
 
 <%def name="right_panel()">
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>History (<a href="${h.url_for( action='history_options' )}" target="galaxy_main">options</a>)</div>
+        <div class="unified-panel-header-inner">
+            <div style="float: right">
+                <a class='panel-header-button' href="${h.url_for( action='history_options' )}" target="galaxy_main"><span>Options</span></a>
+            </div>
+            <div class="panel-header-text">History</div>
+        </div>
     </div>
     <div class="unified-panel-body" style="overflow: hidden;">
         <iframe name="galaxy_history" width="100%" height="100%" frameborder="0" style="margin: 0; border: 0 none; height: 100%;" src="${h.url_for( action='history' )}"></iframe>
