@@ -36,14 +36,14 @@ def __main__():
     try: 
         context = cElementTree.iterparse( source, events=( "start", "end" ) )
     except:
-        stop_err( "The input data format is invalid for this tool, which requires megablast output option -m 7." )
+        stop_err( "Invalid data format." )
     # turn it into an iterator
     context = iter( context )
     # get the root element
     try:
         event, root = context.next()
     except:
-        stop_err( "The input data format is invalid for this tool, which requires megablast output option -m 7." )
+        stop_err( "Invalid data format." )
 
     outfile = open( sys.argv[2], 'w' )
     try:    
@@ -69,7 +69,7 @@ def __main__():
                elem.clear()
     except:
         outfile.close()
-        stop_err( "The input data contains tags not recognized by the parser, use data from megablast output option -m 7." )
+        stop_err( "The input data contains tags that are not recognizable by the tool." )
 
     outfile.close()
 

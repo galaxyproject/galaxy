@@ -70,13 +70,13 @@ def __main__():
             gi, gi_len = fields[1].split('_')
             new_line = "%s\t%s\t%s\t%s" % ( fields[0], gi, gi_len, '\t'.join( fields[2:] ) )
         except:
-            invalid_lines += 1
             new_line = line
+            invalid_lines += 1
         output.write( "%s\n" % new_line )
     output.close()
     
     if invalid_lines:
-        print "Skipped %d invalid lines. " % invalid_lines
+        print "Unable to parse %d lines. Keep the default format." % invalid_lines
         
     # megablast generates a file called error.log, if empty, delete it, if not, show the contents
     if os.path.exists( './error.log' ):
