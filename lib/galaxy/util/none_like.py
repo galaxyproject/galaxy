@@ -17,9 +17,10 @@ class RecursiveNone:
         return False
 
 class NoneDataset( RecursiveNone ):
-    def __init__( self, datatypes_registry = Registry(), ext = 'data', dbkey = '?' ):
+    def __init__( self, datatypes_registry = None, ext = 'data', dbkey = '?' ):
         self.ext = self.extension = ext
         self.dbkey = dbkey
+        if datatypes_registry is None: datatypes_registry = Registry()
         self.datatype = datatypes_registry.get_datatype_by_extension( ext )
         self._metadata = None
         self.metadata = MetadataCollection( self, self.datatype.metadata_spec )

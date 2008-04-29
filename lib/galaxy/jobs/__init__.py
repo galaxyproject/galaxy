@@ -367,6 +367,7 @@ class JobWrapper( object ):
         job.refresh()
         for dataset_assoc in job.input_datasets:
             idata = dataset_assoc.dataset
+            if not idata: continue
             idata.refresh()
             # don't run jobs for which the input dataset was deleted
             if idata.deleted == True:

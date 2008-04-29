@@ -11,8 +11,6 @@ from galaxy.web import form_builder
 
 import validation, dynamic_options
 
-from galaxy.util.none_like import NoneDataset
-
 # For BaseURLToolParameter
 from galaxy.web import url_for
 
@@ -840,20 +838,14 @@ class DataToolParameter( ToolParameter ):
         if not value:
             raise ValueError( "History does not include a dataset of the required format / build" ) 
         if value in [None, "None"]:
-            # 04/28/2008 - rolled back by Greg until corrections can be made
-            #return NoneDataset( datatypes_registry = trans.app.datatypes_registry, ext = self.extensions[0] )
-            temp_data = trans.app.model.Dataset( extension = 'data' )
-            temp_data.state = temp_data.states.OK
-            return temp_data
+            return None
         if isinstance( value, list ):
             return [ trans.app.model.Dataset.get( v ) for v in value ]
         else:
             return trans.app.model.Dataset.get( value )
 
     def value_to_basic( self, value, app ):
-        if value is None or isinstance( value, NoneDataset ):
-            return None
-        if isinstance( value, str ):
+        if value is None or isinstance( value, str ):
             return value
         return value.id
 
@@ -863,8 +855,6 @@ class DataToolParameter( ToolParameter ):
         indicates that the dataset is optional, while '' indicates that it is not.
         """
         if value is None or value == '' or value == 'None':
-            # 04/28/2008 - rolled back by Greg until corrections can be made
-            #return NoneDataset( datatypes_registry = app.datatypes_registry, ext = self.extensions[0] )
             return value
         try:
             return app.model.Dataset.get( int( value ) )

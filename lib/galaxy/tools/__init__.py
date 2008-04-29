@@ -22,6 +22,7 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.model import directory_hash_id
+from galaxy.util.none_like import NoneDataset
 
 log = logging.getLogger( __name__ )
 
@@ -969,7 +970,7 @@ class Tool:
         # but this should be considered DEPRECATED, instead use:
         #   $dataset.get_child( 'name' ).filename
         for name, data in input_datasets.items():
-            param_dict[name] = DatasetFilenameWrapper( data )
+            param_dict[name] = DatasetFilenameWrapper( data, datatypes_registry = self.app.datatypes_registry, ext = self.inputs[name].extensions[0] )
             if data:
                 for child_association in data.children:
                     child = child_association.child
@@ -1182,8 +1183,11 @@ class DatasetFilenameWrapper( object ):
     Wraps a dataset so that __str__ returns the filename, but all other
     attributes are accessible.
     """
-    def __init__( self, dataset ):
-        self.dataset = dataset
+    def __init__( self, dataset, datatypes_registry = None, ext = 'data' ):
+        if not dataset:
+            self.dataset = NoneDataset( datatypes_registry = datatypes_registry, ext = ext )
+        else:
+            self.dataset = dataset
     def __str__( self ):
         return self.dataset.file_name
     def __getattr__( self, key ):
