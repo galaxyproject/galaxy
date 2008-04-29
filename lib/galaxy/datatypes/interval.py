@@ -56,10 +56,13 @@ class Interval( Tabular ):
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
     
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, line_count=None ):
         """Set the peek and blurb text"""
         dataset.peek  = data.get_file_peek( dataset.file_name )
-        dataset.blurb = util.commaify( str( data.get_line_count( dataset.file_name ) ) ) + " regions"
+        if line_count is None:
+            dataset.blurb = "%s regions" % util.commaify( str( data.get_line_count( dataset.file_name ) ) )
+        else:
+            dataset.blurb = "%s regions" % util.commaify( str( line_count ) )
     
     def set_meta( self, dataset, first_line_is_header=False, **kwd ):
         Tabular.set_meta( self, dataset, skip=0 )

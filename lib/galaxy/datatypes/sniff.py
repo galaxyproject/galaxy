@@ -25,24 +25,26 @@ def stream_to_file(stream):
     os.close(fd)
     return temp_name
 
-def convert_newlines(fname):
+def convert_newlines( fname ):
     """
     Converts in place a file from universal line endings 
-    to line endings for the current platform
+    to Posix line endings.
 
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("1 2\\r3 4")
     >>> convert_newlines(fname)
+    2
     >>> file(fname).read()
     '1 2\\n3 4\\n'
     """
     fd, temp_name = tempfile.mkstemp()
-    fp = os.fdopen(fd, "wt")
-    for line in file(fname, "U"):
-        line = line.rstrip() + '\n' 
-        fp.write(line)
+    fp = os.fdopen( fd, "wt" )
+    for i, line in enumerate( file( fname, "U" ) ):
+        fp.write( "%s\n" % line.rstrip( "\r\n" ) )
     fp.close()
-    shutil.move(temp_name, fname)
+    shutil.move( temp_name, fname )
+    # Return number of lines in file.
+    return i + 1
 
 def sep2tabs(fname, patt="\\s+"):
     """
@@ -51,21 +53,45 @@ def sep2tabs(fname, patt="\\s+"):
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("1 2\\n3 4\\n")
     >>> sep2tabs(fname)
+    2
     >>> file(fname).read()
     '1\\t2\\n3\\t4\\n'
     """
+    regexp = re.compile( patt )
     fd, temp_name = tempfile.mkstemp()
-    os.close(fd)
-    shutil.copyfile(fname, temp_name)
-    
-    regexp = re.compile(patt)
-    fp = open(fname, 'wt')
-    for line in file(temp_name):
-        line  = line.rstrip('\r\n')
-        elems = regexp.split(line)
-        fp.write('\t'.join(elems) + '\n')
+    fp = os.fdopen( fd, "wt" )
+    for i, line in enumerate( file( fname ) ):
+        line  = line.rstrip( '\r\n' )
+        elems = regexp.split( line )
+        fp.write( "%s\n" % '\t'.join( elems ) )
     fp.close()
-    os.remove(temp_name)
+    shutil.move( temp_name, fname )
+    # Return number of lines in file.
+    return i + 1
+
+def convert_newlines_sep2tabs( fname, patt="\\s+" ):
+    """
+    Combines above methods: convert_newlines() and sep2tabs()
+    so that files do not need to be read twice
+
+    >>> fname = get_test_fname('temp.txt')
+    >>> file(fname, 'wt').write("1 2\\r3 4")
+    >>> convert_newlines_sep2tabs(fname)
+    2
+    >>> file(fname).read()
+    '1\\t2\\n3\\t4\\n'
+    """
+    regexp = re.compile( patt )
+    fd, temp_name = tempfile.mkstemp()
+    fp = os.fdopen( fd, "wt" )
+    for i, line in enumerate( file( fname, "U" ) ):
+        line  = line.rstrip( '\r\n' )
+        elems = regexp.split( line )
+        fp.write( "%s\n" % '\t'.join( elems ) )
+    fp.close()
+    shutil.move( temp_name, fname )
+    # Return number of lines in file.
+    return i + 1
 
 def get_headers(fname, sep, count=60):
     """

@@ -12,6 +12,7 @@ class UploadToolAction( object ):
     # Action for uploading files
     def __init__( self ):
         self.empty = False
+        self.line_count = None
     
     def execute( self, tool, trans, incoming={} ):
         data_file = incoming['file_data']
@@ -144,9 +145,10 @@ class UploadToolAction( object ):
                 raise BadFileException( "you attempted to upload an inappropriate file." )
 
         if data_type != 'binary' and data_type != 'zip':
-            sniff.convert_newlines( temp_name )
             if space_to_tab:
-                sniff.sep2tabs( temp_name )
+                self.line_count = sniff.convert_newlines_sep2tabs( temp_name )
+            else:
+                self.line_count = sniff.convert_newlines( temp_name )
             if file_type == 'auto':
                 ext = sniff.guess_ext( temp_name )    
             else:
@@ -165,7 +167,13 @@ class UploadToolAction( object ):
         shutil.move(temp_name, data.file_name)
         data.state = data.states.OK
         data.init_meta()
-        data.set_peek()
+        if self.line_count is not None:
+            try:
+                data.set_peek( line_count=self.line_count )
+            except:
+                data.set_peek()
+        else:
+            data.set_peek()
         data.set_size()
 
         # validate incomming data

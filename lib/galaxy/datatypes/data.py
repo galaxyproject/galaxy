@@ -254,9 +254,12 @@ class Text( Data ):
         """Returns the mime type of the datatype"""
         return 'text/plain'
    
-    def set_peek(self, dataset):
+    def set_peek( self, dataset, line_count=None ):
         dataset.peek  = get_file_peek( dataset.file_name )
-        dataset.blurb = util.commaify( str( get_line_count( dataset.file_name ) ) ) + " lines"
+        if line_count is None:
+            dataset.blurb = "%s lines" % util.commaify( str( get_line_count( dataset.file_name ) ) )
+        else:
+            dataset.blurb = "%s lines" % util.commaify( str( line_count ) )
 
 class Binary( Data ):
     """Binary data"""
