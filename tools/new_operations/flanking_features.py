@@ -1,159 +1,167 @@
-#! /usr/bin/python
-#by: Guruprasad Ananda
-
+#!/usr/bin/env python
+#By: Guruprasad Ananda
 """
-This tool finds the closest up- and/or down-stream feature in input2 for every interval in input1.
+Fetch closest up/downstream interval from features corresponding to every interval in primary
 
-usage: %prog input1 input2 out_file direction
-   -1, --cols1=N,N,N,N: Columns for chrom, start, end, strand in file1
-   -2, --cols2=N,N,N,N: Columns for chrom, start, end, strand in file2
+usage: %prog primary_file features_file out_file direction
+    -1, --cols1=N,N,N,N: Columns for start, end, strand in first file
+    -2, --cols2=N,N,N,N: Columns for start, end, strand in second file
 """
-
-import sys, os, tempfile, commands
 from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+import pkg_resources
+pkg_resources.require( "bx-python" )
+
+import sys
+import traceback
+import fileinput
+from warnings import warn
+
 from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *
 
-def stop_err( msg ):
-    sys.stderr.write( msg )
-    sys.exit()
+from bx.intervals.io import *
+from bx.intervals.operations import quicksect
 
-def main(): 
-    infile1_includes_strand = False
-    strand = "+"        #if strand is not defined, default it to +
+def get_closest_feature (node, direction, threshold_up, threshold_down, report_func_up, report_func_down):
+    #direction=1 for +ve strand upstream and -ve strand downstream cases; and it is 0 for +ve strand downstream and -ve strand upstream cases
+    #threhold_Up is equal to the interval start for +ve strand, and interval end for -ve strand
+    #threhold_down is equal to the interval end for +ve strand, and interval start for -ve strand
+    if direction == 1: 
+        if node.maxend < threshold_up:
+            if node.end == node.maxend:
+                report_func_up(node)
+            elif node.right and node.left:
+                if node.right.maxend == node.maxend:
+                    get_closest_feature(node.right, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+                elif node.left.maxend == node.maxend:
+                    get_closest_feature(node.left, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+            elif node.right and node.right.maxend == node.maxend:
+                get_closest_feature(node.right, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+            elif node.left and node.left.maxend == node.maxend:
+                get_closest_feature(node.left, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+        elif node.minend < threshold_up:
+            if node.end < threshold_up:
+                report_func_up(node)
+            if node.left and node.right:
+                if node.right.minend < threshold_up:
+                    get_closest_feature(node.right, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+                if node.left.minend < threshold_up:
+                    get_closest_feature(node.left, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+            elif node.left:
+                if node.left.minend < threshold_up:
+                    get_closest_feature(node.left, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+            elif node.right:
+                if node.right.minend < threshold_up:
+                    get_closest_feature(node.right, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+    elif direction == 0:
+        if node.start > threshold_down:
+            report_func_down(node)
+            if node.left:
+                get_closest_feature(node.left, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+        else:
+            if node.right:
+                get_closest_feature(node.right, direction, threshold_up, threshold_down, report_func_up, report_func_down)
+
+def proximal_region_finder(readers, region, comments=True):
+    primary = readers[0]
+    features = readers[1]
+    if region == 'Upstream':
+        up, down = True, False
+    elif region == 'Downstream':
+        up, down = False, True
+    else:
+        up, down = True, True
+    # Read features into memory:
+    rightTree = IntervalTree()
+    for item in features:
+        if type( item ) is GenomicInterval:
+            rightTree.insert( item, features.linenum, item.fields )
+            
+    for interval in primary:
+        if type( interval ) is Header:
+            yield interval
+        if type( interval ) is Comment and comments:
+            yield interval
+        elif type( interval ) == GenomicInterval:
+            chrom = interval.chrom
+            start = int(interval.start)
+            end = int(interval.end)
+            strand = interval.strand
+            if start > end: 
+                warn( "Interval start after end!" )
+            if chrom not in rightTree.chroms:
+                continue
+            else:
+                root = rightTree.chroms[chrom]    #root node for the chrom tree
+                result_up = []
+                result_down = []
+                if (strand == '+' and up) or (strand == '-' and down): 
+                    #upstream +ve strand and downstream -ve strand cases
+                    get_closest_feature (root, 1, start, None, lambda node: result_up.append( node ), None)
+                    
+                if (strand == '+' and down) or (strand == '-' and up):
+                    #downstream +ve strand and upstream -ve strand case
+                    get_closest_feature (root, 0, None, end, None, lambda node: result_down.append( node ))
+                
+                if result_up:
+                    outfields = list(interval)
+                    if len(result_up) > 1: #The results_up list has a list of intervals upstream to the given interval. 
+                        ends = []
+                        for n in result_up:
+                            ends.append(n.end)
+                        res_ind = ends.index(max(ends)) #fetch the index of the closest interval i.e. the interval with the max end from the results_up list
+                    else:
+                        res_ind = 0
+                    map(outfields.append, result_up[res_ind].other)
+                    yield outfields
+                
+                if result_down:    
+                    outfields = list(interval)
+                    map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
+                    yield outfields
+                
+def main():
     
-    # Parsing Command Line here
     options, args = doc_optparse.parse( __doc__ )
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols1 )
-        chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )
-        infile1, infile2, out_file, direction = args
-        if strand_col_1 >= 0:
-            infile1_includes_strand = True      
+        chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )      
+        in_fname, in2_fname, out_fname, direction = args
     except:
-        stop_err( "Metadata issue, correct the metadata attributes by clicking on the pencil icon in the history item." )
+        doc_optparse.exception()
+
+    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                                chrom_col=chr_col_1,
+                                start_col=start_col_1,
+                                end_col=end_col_1,
+                                strand_col=strand_col_1,
+                                fix_strand=True)
+    g2 = NiceReaderWrapper( fileinput.FileInput( in2_fname ),
+                                chrom_col=chr_col_2,
+                                start_col=start_col_2,
+                                end_col=end_col_2,
+                                strand_col=strand_col_2,
+                                fix_strand=True)
+    out_file = open( out_fname, "w" )
 
     try:
-        fo = open(out_file,'w')
-    except:
-        stop_err( "Unable to open output file" )
-    
-    tmpfile1 = tempfile.NamedTemporaryFile()
-    tmpfile2 = tempfile.NamedTemporaryFile()
-    
-    try:
-        #Sort the features file based on decreasing end positions 
-        command_line1 = "sort -f -n -r -k " + str( end_col_2 + 1 ) + " -o " + tmpfile1.name + " " + infile2
-        #Sort the features file based on increasing start positions
-        command_line2 = "sort -f -n -k " + str( start_col_2 + 1 ) + " -o " + tmpfile2.name + " " + infile2
-    except Exception, exc:
-        stop_err( 'Initialization error -> %s' %str(exc) )
-    
-    error_code1, stdout = commands.getstatusoutput(command_line1)
-    error_code2, stdout = commands.getstatusoutput(command_line2)
-    
-    if error_code1 != 0:
-        stop_err( "Sorting input dataset resulted in error: %s: %s" %( error_code1, stdout ))
-    if error_code2 != 0:
-        stop_err( "Sorting input dataset resulted in error: %s: %s" %( error_code2, stdout ))
+        for line in proximal_region_finder([g1,g2], direction):
+            if type( line ) is list:
+                linestr = "\t".join(line)
+                out_file.write("%s\n" %linestr)
+            else:
+                out_file.write("%s\n" %line)
+    except ParseError, exc:
+        print >> sys.stderr, "Invalid file format: ", str( exc )
 
-    if direction == 'Upstream' or direction == 'Both':
-        if strand == '+':
-            tmp_file_up = tmpfile1.name
-        elif strand == '-':
-            tmp_file_up = tmpfile2.name
-    if direction == 'Downstream' or direction == 'Both':
-        if strand == '-':
-            tmp_file_down = tmpfile1.name
-        elif strand == '+':
-            tmp_file_down = tmpfile2.name
-
-    skipped_lines = 0
-    first_invalid_line = 0
-    invalid_line = None
-    elems = []
-    i = 0
-
-    for i, line in enumerate( file( infile1 ) ):
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ):
-            try:
-                elems = line.split( '\t' )
-                chr = elems[chr_col_1]
-                start = int( elems[start_col_1] )
-                end = int( elems[end_col_1] )
-                if infile1_includes_strand:
-                    strand = elems[strand_col_1]
-                    assert strand in ['+', '-']
-            except:
-                skipped_lines += 1
-                if not invalid_line:
-                    first_invalid_line = i + 1
-                    invalid_line = line
-                    continue
-
-            if direction == 'Upstream' or direction == 'Both':
-                for fline in file( tmp_file_up ):
-                    fline = fline.rstrip( '\r\n' )
-                    if fline and not fline.startswith( '#' ):
-                        try:
-                            felems = fline.split( '\t' )
-                            if chr != felems[chr_col_2]:
-                                continue
-                            try:
-                                fstrand = felems[strand_col_2]
-                            except:
-                                fstrand = ""
-                            if fstrand and strand != fstrand:
-                                continue
-                            fstart = int( felems[start_col_2] )
-                            fend = int( felems[end_col_2] )
-                            if strand == '+' and fend < start:    
-                                #Highest feature end value encountered i.e. the closest upstream feature found
-                                fo.write( "%s\t%s\n" % ( line, fline ) )
-                                break
-                            elif strand == '-' and fstart > end:    
-                                #Lowest feature start value encountered i.e. the closest upstream feature found
-                                fo.write( "%s\t%s\n" % ( line, fline ) )
-                                break
-                        except:
-                            continue
-            if direction == 'Downstream' or direction == 'Both':
-                for fline in file( tmp_file_down ):
-                    fline = fline.rstrip( '\r\n' )
-                    if fline and not fline.startswith( '#' ):
-                        try:
-                            felems = fline.split( '\t' )
-                            if chr != felems[chr_col_2]:
-                                continue
-                            try:
-                                fstrand = felems[strand_col_2]
-                            except:
-                                fstrand = ""
-                            if fstrand and strand != fstrand:
-                                continue
-                            fstart = int( felems[start_col_2] )
-                            fend = int( felems[end_col_2] )
-                            if strand == '-' and fend < start:
-                                #Highest feature end value encountered i.e. the closest DOWNstream feature found
-                                fo.write( "%s\t%s\n" % ( line, fline ) )
-                                break
-                            elif strand == '+' and fstart > end:    
-                                #Lowest feature start value encountered i.e. the closest DOWNstream feature found
-                                fo.write( "%s\t%s\n"  % ( line, fline ) )
-                                break
-                        except:
-                            continue
-    fo.close()
+    print "Direction: %s" %(direction)
     
-    #If number of skipped lines = num of lines in the file, inform the user to check metadata attributes of the input file.
-    if skipped_lines and skipped_lines == i:
-        print 'All lines in input dataset invalid, check the metadata attributes by clicking on the pencil icon in the history item.'
-        sys.exit()
-    elif skipped_lines:
-        print 'Data issue: skipped %d invalid lines starting at line #%d" "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
-    print 'Location: %s' % ( direction )
-    
+    if g1.skipped > 0:
+        print skipped( g1, filedesc=" of 1st dataset" )
+
+    if g2.skipped > 0:
+        print skipped( g2, filedesc=" of 2nd dataset" )
+
+
 if __name__ == "__main__":
     main()

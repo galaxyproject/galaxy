@@ -1,6 +1,6 @@
-<tool id="flanking_features1" name="Fetch closest feature">
+<tool id="flanking_features_1" name="Fetch closest feature" version="2.0.0">
   <description>  for every interval</description>
-  <command interpreter="python">flanking_features.py $input1 $input2 $out_file1 $direction -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
+  <command interpreter="python">gops_fetch_closest_features.py $input1 $input2 $out_file1 $direction -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
   <inputs>
     <param format="interval" name="input1" type="data" label="For every interval in"/>
     <param format="interval" name="input2" type="data" label="Fetch features from"/>
@@ -15,11 +15,23 @@
   </outputs>
   <tests>
   	<test>
-  	  <param name="input1" value="flanks_inp.bed"/>
-      <param name="input2" value="11.bed"/>
+  	  <param name="input1" value="4_windows.bed"/>
+      <param name="input2" value="4_windows_2.bed"/>
       <param name="direction" value="Both"/>
       <output name="out_file1" file="closest_features.interval"/>
   	</test>
+  	<test>
+      <param name="input1" value="4_windows.bed"/>
+      <param name="input2" value="4_windows_2.bed"/>
+      <param name="direction" value="Upstream"/>
+      <output name="out_file1" file="closest_features_up.interval"/>
+    </test>
+    <test>
+      <param name="input1" value="4_windows.bed"/>
+      <param name="input2" value="4_windows_2.bed"/>
+      <param name="direction" value="Downstream"/>
+      <output name="out_file1" file="closest_features_down.interval"/>
+    </test>
   </tests>
  <help> 
 
