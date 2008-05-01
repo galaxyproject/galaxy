@@ -68,11 +68,6 @@
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
     <tool file="extract/extract_GFF_Features.xml" />
   </section>
-  <!--
-  <section name="Pattern-Matching" id="patmat">
-    <tool file="patmat/findcluster_mysql.xml" />
-  </section>
-  -->
   <section name="Fetch Sequences" id="fetchSeq">
     <tool file="extract/extract_genomic_dna.xml" />
   </section>
