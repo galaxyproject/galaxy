@@ -84,8 +84,8 @@ function make_left_panel( panel_el, center_el, border_el ) {
                 }
                 resize( x );
                 // Constrain helper position
-                ui.draggable.pos[0] = x;
-                ui.draggable.pos[1] = ui.options.co.top;
+                ui.position.left = x;
+                ui.position.top = ui.instance.originalPosition.top;
             },
             click: function() {
                 toggle();
@@ -151,7 +151,7 @@ function make_right_panel( panel_el, center_el, border_el ) {
         function() { jq( this ).removeClass( "hover" ) }
     ).draggable( {
             start: function( _, ui ) {
-              jq( '#DD-helper' ).show();
+                jq( '#DD-helper' ).show();
             },
             stop: function( _, ui ) {  
                 x = ui.position.left;
@@ -181,8 +181,8 @@ function make_right_panel( panel_el, center_el, border_el ) {
                 }
                 resize( w - x - border_tweak );
                 // Constrain helper position
-                ui.draggable.pos[0] = x;
-                ui.draggable.pos[1] = ui.options.co.top;
+                ui.position.left = x;
+                ui.position.top = ui.instance.originalPosition.top;
             }
         }
     ).find( "div" ).show();

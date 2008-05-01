@@ -1,30 +1,41 @@
 <%inherit file="/base_panels.mako"/>
 
 <%def name="late_javascripts()">
+    ## <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
+    ## <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.dimensions.js')}"></script>
+    ## <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.ui.js')}"></script>
+    <script type='text/javascript' src="/static/scripts/galaxy.panels.js"> </script>
+    <script type="text/javascript">
+        ensure_dd_helper();
+        var lp = make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
+        var rp = make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
+        ## handle_minwidth_hint = rp.handle_minwidth_hint;
+    </script>
+</%def>
+
+<%def name="javascripts()">
     
-    ## ${parent.late_javascripts()}
+    ## ${parent.javascripts()}
 
     <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.dimensions.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
-    <script type='text/javascript' src="/static/scripts/jquery.fx.js"> </script>
-    <script type='text/javascript' src="/static/scripts/jquery.fx.drop.js"> </script>
+    ## <script type='text/javascript' src="/static/scripts/jquery.fx.js"> </script>
+    ## <script type='text/javascript' src="/static/scripts/jquery.fx.drop.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.form.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.json.js"> </script>
-    <script type='text/javascript' src="/static/scripts/jquery.center.js"> </script>
-    <script type='text/javascript' src="/static/scripts/jquery.corner.js"> </script>
-    <script type='text/javascript' src="/static/scripts/galaxy.panels.js"> </script>
-    <script type='text/javascript' src="/static/firebug/firebug.js"> </script>
+    ## <script type='text/javascript' src="/static/scripts/jquery.center.js"> </script>
+    ## <script type='text/javascript' src="/static/scripts/jquery.corner.js"> </script>
     
     <script type='text/javascript'>
     /* Dialog and menu handling tools to be moved to galaxy.layout.js */
     
     function hide_modal() {
-        $("#overlay, .dialog-box" ).hide();
+        $(".dialog-box-container" ).fadeOut( function() { $("#overlay").hide(); } );
     };
     
     function show_modal( title, body, buttons ) {
-        $( ".dialog-box" ).find( ".title-content" ).html( title );
+        $( ".dialog-box" ).find( ".title" ).html( title );
         var b = $( ".dialog-box" ).find( ".buttons" ).html( "" );
         if ( buttons ) {
             $.each( buttons, function( name, value ) {
@@ -40,35 +51,46 @@
         }
         $( ".dialog-box" ).find( ".body" ).html( body );
         // $( "#overlay").show();
-        if ( ! $(".dialog-box").is( ":visible" ) ) {
-            $("#overlay, .dialog-box").show();
+        if ( ! $(".dialog-box-container").is( ":visible" ) ) {
+            $("#overlay").show();
+            $(".dialog-box-container").fadeIn()
         } else {
-            $(".dialog-box").center( "horizontal" );
+            // $(".dialog-box").center( "horizontal" );
         }
     };
     </script>
     
+    <script type='text/javascript' src="/static/scripts/galaxy.workflow_editor.canvas.js"> </script>
+    
     <script type='text/javascript'>
     
     $( function() {
-        if( $.browser.mozilla ) {
-            $("body").addClass( "mozilla" );
-        }
-        
-        // $.blockUI( "<b><img style='vertical-align: middle;' src='${h.url_for( '/static/style/data_running.gif' )}'/> Loading Galaxy Workflow Editor...</b>", 
-        //           { border: "solid #AAAA66 1px", background: "#FFFFCC", padding: "20px", width: "auto" } );
-                   
-        make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
-        make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
-    
-        // Insert helper divs for panels and popups
-        $("<div id='DD-helper' style='background: white; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 9000;'></div>")
-            .css("background", "transparent").appendTo("body").hide();
-        $("<div id='popup-helper' style='background: white; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 15000;'></div>")
-            .css("background", "transparent").appendTo("body").hide();
-          
-        // Center the loading indicator
-        $(".dialog-box" ).center( "horizontal" );
+        // Initialize workflow state
+        reset();
+        // Shim (the background of the editor area) causes loss of focus
+        // $("#shim").click( workflow.clear_active_node ).hoverIntent( {
+        //     over: function () { $("div.toolForm").fadeTo( "fast", 0.7 ) },
+        //     out: function () { $("div.toolForm").fadeTo( "fast", 1.0 ) },
+        //     interval: 300
+        // });
+        // Load the datatype info
+        $.getJSON( "${h.url_for( action='get_datatypes' )}", function( data ) {
+            populate_datatype_info( data );
+            // Load workflow definition
+            $.ajax( {
+                url: "${h.url_for( action='load_workflow' )}",
+                data: { id: "${trans.security.encode_id( workflow_id )}" },
+                dataType: 'json',
+                success: function( data ) {
+                     reset();
+                     workflow.from_simple( data );
+                     hide_modal();
+                 },
+                 beforeSubmit: function( data ) {
+                     show_modal( "Loading workflow", "progress" );
+                 }
+            });
+        });
         
         $(document).ajaxError( function ( e, x ) {
             // console.error( "AJAX:", e, ", ", x );
@@ -113,19 +135,38 @@
            });
         });
     });
+
+    var workflow = null;
     
-    function notify() {
+    // Global state for the whole workflow
+    function reset() {
+        if ( workflow ) {
+            workflow.remove_all();
+        }
+        workflow = new Workflow();
+        // Start at the middle of the canvas
+        $(window).scrollTop( 2500 );
+        $(window).scrollLeft( 2500 );
+    }
+    
+    // Add a new step to the workflow by tool id
+    function add_node_for_tool( id, title ) {
+        node = prebuild_node_for_tool( id, title );
+        workflow.add_node( node );
+        workflow.activate_node( node );
         $.ajax( {
-           url: "${h.url_for( action='load_workflow' )}",
-           data: { id: "${trans.security.encode_id( workflow_id )}" },
-           dataType: 'json',
-           success: function( data ) {
-                window.frames.canvas.reset();
-                workflow.from_simple( data );
-                hide_modal();
+            url: "${h.url_for( action='get_tool_info' )}", 
+            data: { tool_id: id }, 
+            dataType: "json",
+            success: function( data ) {
+                node.init_field_data( data );
             },
-            beforeSubmit: function( data ) {
-                show_modal( "Loading workflow", "progress" );
+            error: function( x, e ) {
+                var m = "error loading field data"
+                if ( x.status == 0 ) {
+                    m += ", server unavailable"
+                }
+                node.error( m );
             }
         });
     };
@@ -191,7 +232,7 @@
         var form = body.find( "form" ).ajaxForm( {
             dataType: 'json',
             success: function( data ) {
-                window.frames.canvas.reset();
+                reset();
                 workflow.from_simple( data );
                 show_modal( "Workflow loaded", "Workflow loaded.", {
                     "Ok" : function () { hide_modal(); }
@@ -211,7 +252,7 @@
     }
     
     var clear_workflow = function () {
-        window.frames.canvas.reset();
+        reset();
         hide_modal();
     }
     
@@ -227,10 +268,6 @@
         }
     }
     
-    function add_node_for_tool( id, title ) {
-       window.frames.canvas.add_node_for_tool( id, title );
-    }
-    
     </script>
 </%def>
 
@@ -242,6 +279,8 @@
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
 
     <style type="text/css">
+    body { margin: 0; padding: 0; overflow: hidden; }
+    
     /* Wider right panel */
     #center       { right: 309px; }
     #right-border { right: 300px; }
@@ -314,48 +353,105 @@
         overflow: auto;
     }
     
+    canvas { position: absolute; z-index: 10; } 
+    canvas.dragging { position: absolute; z-index: 1000; }
+    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; bottom: 0; left: -16px; }
+    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')});; position: absolute; bottom: 0; right: -16px; }
+    .drag-terminal {  position: absolute; z-index: 1500; width: 10px; height: 10px; background: red; }
+    .input-terminal-active { background: url(${h.url_for('/static/style/workflow_circle_green.png')}); }
+    ## .input-terminal-hover { background: yellow; border: solid black 1px; }
+    .unselectable { -moz-user-select: none; -khtml-user-select: none; user-select: none; }
+    img { border: 0; }
+    
+    div.buttons img {
+    width: 16px; height: 16px;
+    cursor: pointer;
+    }
+    
+    div.toolFormTitle {
+        cursor: move;
+        min-height: 16px;
+    }
+    
+    div.titleRow {
+        font-weight: bold;
+        border-bottom: dotted gray 1px;
+        margin-bottom: 0.5em;
+        padding-bottom: 0.25em;
+    }
+    div.form-row {
+      position: relative;
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+    }
+    div.toolForm {
+        margin: 6px;
+    }
+    
+    div.toolForm-active {
+        border: solid #8080FF 4px;
+        margin: 3px;
+    }
+    
+    div.tool-node {
+        position: absolute;
+    }
+    
+    div.tool-node-error div.toolFormTitle {
+        background: #FFCCCC;
+        border-color: #AA6666;
+    }
+    div.tool-node-error {
+        border-color: #AA6666;
+    }
+    
+    #canvas-area {
+        position: absolute;
+        top: 0; left: 305px; bottom: 0; right: 0;
+        border: solid red 1px;
+        overflow: none;
+    }
+    
+    .form-row {
+        
+    }
+    .form-row-body {
+    
+    }
+    .form-row-clear {
+        clear: both;
+    }
+    
+    div.rule {
+        height: 0;
+        border: none;
+        border-bottom: dotted black 1px;
+    }
+    
     </style>
 </%def>
         
 <div id="error-display"></div>
 
 <div id="overlay">
-    <div id="overlay-inner"></div>
-    <div class="dialog-box">
-        <div class="title">
-            <div class="center-block-outer">
-                <div class="center-block-inner">
-                    <div class="title-content">Loading workflow editor...</div>
-                </div>
+    ## Need a table here for centering in IE6
+    <table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"><tr><td>
+    <div style="position: relative;">
+        <div class="dialog-box">
+            <div class="unified-panel-header">
+                <div class="unified-panel-header-inner"><span class='title'>Loading workflow editor...</span></div>
             </div>
+            <div class="body"><img src="${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}" /></div>
+            <div class="buttons" style="display: none;"></div>
         </div>
-        <div class="body"><img src="${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}" /></div>
-        <div class="buttons" style="display: none;"></div>
-        <div class="underlay"></div>
+        <div class="dialog-box-underlay"></div>
     </div>
-</div>
-
-<div id="templates" style="display: none">
-    <div id="load-dialog-form">
-        <form id="load-dialog-form-form" action="${h.url_for( action='load_workflow' )}" method="post">
-            <div class="form-row">
-                <label>Workflow name:</label>
-                <input name="workflow_name" type="text" focus="true" />
-            </div>
-        </form>
-    </div>
-    <div id="save-dialog-form">
-        <form id="save-dialog-form-form" action="${h.url_for( action='save_workflow' )}" method="post">
-            <div class="form-row">
-                <label>Workflow name:</label>
-                <input name="workflow_name" type="text" focus="true" />
-            </div>
-        </form>
-    </div>
+    </td></tr></table>
+    ## <div id="overlay-inner"></div>
 </div>
 
 <%def name="masthead()">
-    <div style="float: right; color: black; padding: 3px;"><div class="warningmessagesmall" style="min-height: 15px;">Workflow support is currently in <b><i>beta</i></b></div></div>
+    <div style="float: right; color: black; padding: 3px;"><div class="warningmessagesmall" style="display: inline-block; min-height: 15px;">Workflow support is currently in <b><i>beta</i></b></div></div>
     <div class="title"><b>Galaxy workflow editor</b></div>
 </%def>
 
@@ -412,17 +508,22 @@
 </%def>
 
 <%def name="center_panel()">
+
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
-            <div id="savebutton" class="button">Save</div>
+            <a id="savebutton" class="panel-header-button">Save</a>
         </div>
         <div class="unified-panel-header-inner">
             Workflow canvas
         </div>
     </div>
-    <div class="unified-panel-body" style="">
-        <iframe name="canvas" width="100%" height="100%" frameborder="0" style="position: absolute;" src="${h.url_for( action='editor_canvas' )}"></iframe>
+
+    <div class="unified-panel-body">
+        <div id="canvas-container" style="width: 100%; height: 100%; position: absolute; overflow: scroll;">
+            <div style="height: 5000px; width: 5000px; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;"></div>
+        </div>
     </div>
+
 </%def>
 
 <%def name="right_panel()">

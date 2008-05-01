@@ -6,8 +6,8 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/reset.css')}"></link>
-    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout.css')}"></link>
+    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/reset.css')}" />
+    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout.css')}" />
 </%def>
 
 ## Default javascripts
@@ -65,8 +65,10 @@
 	<div id="right">
 	    ${self.right_panel()}
 	</div>
-	## Scripts can be loaded later since they progressively add features to
-	## the panels, but do not change layout
-	${self.late_javascripts()}
+        ## Allow other body level elements
+	${next.body()}
     </body>
+    ## Scripts can be loaded later since they progressively add features to
+    ## the panels, but do not change layout
+    ${self.late_javascripts()}
 </html>

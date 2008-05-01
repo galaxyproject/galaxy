@@ -81,18 +81,19 @@ $.extend( Connector.prototype, {
         $(this.canvas).remove();
     },
     redraw : function () {
+        var canvas_container = $("#canvas-container");
         if ( ! this.canvas ) {
             this.canvas = document.createElement( "canvas" );
-            $("body").append( this.canvas );
+            canvas_container.append( $(this.canvas) );
             if ( this.dragging ) { this.canvas.style.zIndex = "300" }
         }
+        var relativeLeft = function( e ) { return $(e).offset().left - canvas_container.offset().left + canvas_container.scrollLeft(); }
+        var relativeTop = function( e ) { return $(e).offset().top - canvas_container.offset().top + canvas_container.scrollTop(); }
         // Find the position of each handle
-        var o = $(this.handle1.element).offset();
-        var start_x = o.left + 5;
-        var start_y = o.top + 5;
-        var o = $(this.handle2.element).offset();
-        var end_x = o.left + 5;
-        var end_y = o.top + 5;
+        var start_x = relativeLeft( this.handle1.element ) + 5;
+        var start_y = relativeTop( this.handle1.element ) + 5;
+        var end_x = relativeLeft( this.handle2.element ) + 5;
+        var end_y = relativeTop( this.handle2.element ) + 5;
         // Calculate canvas area
         var canvas_extra = 100;
         var canvas_min_x = Math.min( start_x, end_x );
@@ -109,11 +110,6 @@ $.extend( Connector.prototype, {
         this.canvas.style.top = canvas_top + "px";
         this.canvas.setAttribute( "width", canvas_width );
         this.canvas.setAttribute( "height", canvas_height );
-        // HACK: Calling this again makes drawing work in Safari and I have 
-        //       no idea why. Need to figure out what this refreshes (some
-        //       sort of side effect)
-        var o = $(this.handle1.element).offset()
-        var o = $(this.handle2.element).offset() 
         // Adjust points to be relative to the canvas
         start_x -= canvas_left;
         start_y -= canvas_top;
@@ -149,24 +145,25 @@ $.extend( Node.prototype, {
         node = this;
         $(elements).each( function() {
             var terminal = this.terminal = new InputTerminal( this, types );
-			terminal.node = node;
-			terminal.name = name
+            terminal.node = node;
+            terminal.name = name
             $(this).droppable( {
                 tolerance: 'intersect',
                 accept: function( draggable ) {
+                    draggable = draggable.get( 0 );
                     return ( draggable.terminal ) && ( terminal.can_accept( draggable.terminal ) );
                 },
                 activeClass: 'input-terminal-active',
                 // hoverClass: 'input-terminal-active',
                 over: function( e, ui ) {
-                    ui.helper.terminal.connectors[0].inner_color = "#BBFFBB";
+                    ui.helper.get(0).terminal.connectors[0].inner_color = "#BBFFBB";
                 },
                 out: function( e, ui ) {
-                    ui.helper.terminal.connectors[0].inner_color = "#EEEEEE";
+                    ui.helper.get(0).terminal.connectors[0].inner_color = "#EEEEEE";
                 },
                 drop: function( e, ui ) {
-                    var source = ui.draggable.element.terminal;
-                    var target = ui.droppable.element.terminal;
+                    var source = ui.draggable.get(0).terminal;
+                    var target = ui.element.get(0).terminal;
                     var c = new Connector();
                     c.connect( source, target );
                     c.redraw();
@@ -187,7 +184,7 @@ $.extend( Node.prototype, {
                // appendTo: "body",
                // cursorAt: { top: 5, left: 5 },
                helper: function () { 
-                   var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' ).get(0);
+                   var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' ).appendTo( "#canvas-container" ).get(0);
                    h.terminal = new OutputTerminal( h );
                    // // Already a connector? Destroy... no wait, don't
                    // if ( this.terminal.connector ) {
@@ -200,7 +197,8 @@ $.extend( Node.prototype, {
                    return h;
                },
                drag: function ( e, options ) {
-                   options.helper.terminal.redraw();
+                    h = options.helper.get(0);
+                    h.terminal.redraw();
                },
                stop: function( e, options ) {
                    this.drag_temp_connector.destroy();
@@ -397,7 +395,7 @@ function prebuild_node_for_tool( id, title_text ) {
         function() { $(this).attr( 'src', "../images/delete_icon_dark.png" ) },
         function() { $(this).attr( 'src', "../images/delete_icon.png" ) }
     ) );
-    f.appendTo( "body" );
+    f.appendTo( "#canvas-container" );
     var width = f.width();
     buttons.prependTo( title );
     width += ( buttons.width() + 10 );
@@ -409,11 +407,10 @@ function prebuild_node_for_tool( id, title_text ) {
         scroll: true,
         scrollSensitivity: 10,
         scrollSpeed: 20,
-        containment: $("#shim"),
+        // containment: $("#shim"),
         // grow: true,
-        click: function() {
-            document.body.removeChild( this );
-            document.body.appendChild( this );
+        click: function( _, element ) {
+            (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode)
             workflow.activate_node( node );
         },
         start: function() {
@@ -425,9 +422,9 @@ function prebuild_node_for_tool( id, title_text ) {
                 this.terminal.redraw();
             })
         },
-        stop: function() { 
-            document.body.removeChild( this );
-            document.body.appendChild( this );
+        stop: function( _, ui  ) {
+            element = ui.element.get(0);
+            (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode)
             $(this).css( 'z-index', '100' );
             $(this).find( ".terminal" ).each( function() {
                 this.terminal.redraw();

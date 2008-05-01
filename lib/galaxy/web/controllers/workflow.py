@@ -79,13 +79,6 @@ class WorkflowController( BaseController ):
             return trans.show_error_message( "Must be logged in to create or modify workflows" )
         return trans.fill_template( "workflow/editor.mako",
                                     workflow_id=id )
-    
-    @web.expose
-    def editor_canvas( self, trans ):
-        """
-        Render the workflow editor canvas.
-        """
-        return trans.fill_template( "workflow/editor_canvas.mako" )
         
     @web.json
     def editor_tool_form( self, trans, tool_id=None, **incoming ):
