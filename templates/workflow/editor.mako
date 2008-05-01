@@ -103,7 +103,8 @@
         ##     "<b>Load</b> a stored workflow" : load_workflow
         ## });
         
-        $("#savebutton").click( save_current_workflow );
+        $("#save-button").click( save_current_workflow );
+        $("#close-button").click( close_editor );
         
         // Unload handler
         window.onbeforeunload = function() {
@@ -189,6 +190,22 @@
                 $(form).submit();
             });
         });
+    }
+    
+    var close_editor = function() {
+        if ( workflow && workflow.has_changes ) {
+            show_modal( "Close workflow editor",
+                        "There are unsaved changes to your workflow which will be lost.",
+                        {
+                            "Cancel" : hide_modal,
+                            "Close": function() {
+                                window.onbeforeunload = undefined;
+                                window.document.location = "${h.url_for( controller='root' )}"
+                            }
+                        } );
+        } else {
+            window.document.location = "${h.url_for( controller='root' )}"
+        }
     }
     
     var save_current_workflow = function () {
@@ -509,7 +526,8 @@
 
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
-            <a id="savebutton" class="panel-header-button">Save</a>
+            <a id="save-button" class="panel-header-button">Save</a>
+            <a id="close-button" class="panel-header-button">Close</a>
         </div>
         <div class="unified-panel-header-inner">
             Workflow canvas
