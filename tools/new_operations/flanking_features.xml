@@ -1,6 +1,6 @@
 <tool id="flanking_features_1" name="Fetch closest feature" version="2.0.0">
   <description>  for every interval</description>
-  <command interpreter="python">gops_fetch_closest_features.py $input1 $input2 $out_file1 $direction -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
+  <command interpreter="python">flanking_features.py $input1 $input2 $out_file1 $direction -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
   <inputs>
     <param format="interval" name="input1" type="data" label="For every interval in"/>
     <param format="interval" name="input2" type="data" label="Fetch features from"/>

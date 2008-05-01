@@ -72,7 +72,7 @@ def proximal_region_finder(readers, region, comments=True):
     else:
         up, down = True, True
     # Read features into memory:
-    rightTree = IntervalTree()
+    rightTree = quicksect.IntervalTree()
     for item in features:
         if type( item ) is GenomicInterval:
             rightTree.insert( item, features.linenum, item.fields )
