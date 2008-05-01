@@ -20,13 +20,9 @@
     <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.dimensions.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
-    ## <script type='text/javascript' src="/static/scripts/jquery.fx.js"> </script>
-    ## <script type='text/javascript' src="/static/scripts/jquery.fx.drop.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.form.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.json.js"> </script>
-    ## <script type='text/javascript' src="/static/scripts/jquery.center.js"> </script>
-    ## <script type='text/javascript' src="/static/scripts/jquery.corner.js"> </script>
-    
+
     <script type='text/javascript'>
     /* Dialog and menu handling tools to be moved to galaxy.layout.js */
     
@@ -368,6 +364,20 @@
     cursor: pointer;
     }
     
+    ## Extra styles for the representation of a tool on the canvas (looks like
+    ## a tiny tool form)
+    div.toolFormInCanvas {
+        z-index: 100;
+        position: absolute;
+        min-width: 130px;
+        margin: 6px;
+    }
+    
+    div.toolForm-active {
+        border: solid #8080FF 4px;
+        margin: 3px;
+    }
+    
     div.toolFormTitle {
         cursor: move;
         min-height: 16px;
@@ -383,18 +393,6 @@
       position: relative;
       margin-top: 0.5em;
       margin-bottom: 0.5em;
-    }
-    div.toolForm {
-        margin: 6px;
-    }
-    
-    div.toolForm-active {
-        border: solid #8080FF 4px;
-        margin: 3px;
-    }
-    
-    div.tool-node {
-        position: absolute;
     }
     
     div.tool-node-error div.toolFormTitle {

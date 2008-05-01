@@ -374,7 +374,7 @@ $.extend( Workflow.prototype, {
 });
 
 function prebuild_node_for_tool( id, title_text ) {
-    var f = $("<div class='toolForm' style='position: absolute; min-width: 130px'></div>");
+    var f = $("<div class='toolForm toolFormInCanvas'></div>");
     var node = new Node( f );
 	node.tool_id = id;
     var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" )
