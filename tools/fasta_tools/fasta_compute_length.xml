@@ -1,5 +1,5 @@
-<tool id="fasta_compute_length" name="Compute">
-	<description>sequence length</description>
+<tool id="fasta_compute_length" name="Compute sequence length">
+	<description></description>
 	<command interpreter="python">fasta_compute_length.py $input $output $keep_first</command>
 	<inputs>
 		<param name="input" type="data" format="fasta" label="Compute length for these sequences"/>
@@ -14,10 +14,17 @@
 			<param name="keep_first" value="0"/>
 			<output name="output" file="fasta_tool_compute_length_1.out" />
 		</test>
+		
 		<test>
 			<param name="input" value="extract_genomic_dna_out1.fasta" />
 			<param name="keep_first" value="0"/>
 			<output name="output" file="fasta_tool_compute_length_2.out" />
+		</test>
+		
+		<test>
+			<param name="input" value="454.fasta" />
+			<param name="keep_first" value="14"/>
+			<output name="output" file="fasta_tool_compute_length_3.out" />
 		</test>
 	</tests>
 	<help>
@@ -32,7 +39,7 @@ This tool counts the length of each fasta sequence in the file. The output file 
 
 Suppose you have the following FASTA formatted sequences from a Roche (454) FLX sequencing run::
 
-    &gt;EYKX4VC02EQLO5 length=108 xy=1826_0455 region=2 run=R_2007_11_07_16_15_57_    TCCGCGCCGAGCATGCCCATCTTGGATTCCGGCGCGATGACCATCGCCCGCTCCACCACG    TTCGGCCGGCCCTTCTCGTCGAGGAATGACACCAGCGCTTCGCCCACG    &gt;EYKX4VC02D4GS2 length=60 xy=1573_3972 region=2 run=R_2007_11_07_16_15_57_    AATAAAACTAAATCAGCAAAGACTGGCAAATACTCACAGGCTTATACAATACAAATGTAA
+    &gt;EYKX4VC02EQLO5 length=108 xy=1826_0455 region=2 run=R_2007_11_07_16_15_57_    TCCGCGCCGAGCATGCCCATCTTGGATTCCGGCGCGATGACCATCGCCCGCTCCACCACG    TTCGGCCGGCCCTTCTCGTCGAGGAATGACACCAGCGCTTCGCCCACG    &gt;EYKX4VC02D4GS2 length=60 xy=1573_3972 region=2 run=R_2007_11_07_16_15_57_    AATAAAACTAAATCAGCAAAGACTGGCAAATACTCACAGGCTTATACAATACAAATGTAAfa
 
 Running this tool while setting **How many characters to keep?** to **14** will produce this::
 	

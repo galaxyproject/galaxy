@@ -1,5 +1,5 @@
-<tool id="quality_score_distribution" name="Build">
-<description>quality score distribution</description>
+<tool id="quality_score_distribution" name="Build distribution of base quality">
+<description>values</description>
 
 <command interpreter="python">short_reads_figure_score.py $input1 $output1 </command>
 

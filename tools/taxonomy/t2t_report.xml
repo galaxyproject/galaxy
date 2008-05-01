@@ -1,5 +1,5 @@
-<tool id="t2t_report" name="Summarize" version="1.0.0">
-    <description>taxonomy</description>
+<tool id="t2t_report" name="Summarize taxonomy" version="1.0.0">
+    <description></description>
     <command>taxonomy2tree $input 0 /dev/null $out_file1 0 &amp;&gt; /dev/null</command>
     <inputs>
         <param format="taxonomy" name="input" type="data" label="Create taxonomic representation for"/>

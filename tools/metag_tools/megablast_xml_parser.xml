@@ -1,5 +1,5 @@
-<tool id="megablast_xml_parser" name="Parse">
-<description>XML output from blast programs</description>
+<tool id="megablast_xml_parser" name="Parse blast XML output">
+<description></description>
 <command interpreter="python">megablast_xml_parser.py $input1 $output1</command>
 <inputs>
 	<param name="input1" type="data" format="txt" label="Megablast XML output" />
@@ -61,7 +61,7 @@ This tools returns tab-delimted output with the following fields::
        
 .. class:: infomark
 
-Note that this form of output does not contain alignment identify value. However, it can be computed by dividing the number of identical bases wityh the alignment (Field 13) by the alignment length (Field 14) using *Text Manipulation->Compute* tool 
+Note that this form of output does not contain alignment identify value. However, it can be computed by dividing the number of identical bases within the alignment (Field 13) by the alignment length (Field 14) using *Text Manipulation->Compute* tool 
 
 
 

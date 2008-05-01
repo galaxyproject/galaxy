@@ -1,5 +1,5 @@
-<tool id="poisson2test" name="Poisson 2 test" version="1.0.0">
-  <description>on tab-delimited file</description>
+<tool id="poisson2test" name="Poisson two-sample test" version="1.0.0">
+  <description></description>
   <command interpreter="python">poisson2test.py $input1 $input2 $input3 $input4 $input5 > $output1 </command>
   <inputs>
     <param name="input1" format="tabular" type="data" label="Input File"/>

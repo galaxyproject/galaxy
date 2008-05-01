@@ -20,7 +20,7 @@ def __main__():
     if keep_first == 0:
         keep_first = None
     else:
-        kepp_first += 1    
+        keep_first += 1    
 
     for i, line in enumerate( file( input_filename ) ):
         line = line.rstrip( '\r\n' )

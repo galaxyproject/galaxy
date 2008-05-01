@@ -1,5 +1,5 @@
-<tool id="Draw_phylogram" name="Draw" version="1.0.0">
-  <description>phylogram</description>
+<tool id="Draw_phylogram" name="Draw phylogeny" version="1.0.0">
+  <description></description>
   <command interpreter="python">t2ps_wrapper.py $input $out_file1 $max_tree_level $font_size $max_leaves 1</command>
   <inputs>
     <param format="taxonomy" name="input" type="data" label="Draw phylogram for"></param>

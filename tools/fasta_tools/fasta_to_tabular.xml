@@ -14,10 +14,17 @@
 			<param name="keep_first" value="0"/>
 			<output name="output" file="fasta_to_tabular_out1.tabular" />
 		</test>
+		
 		<test>
 			<param name="input" value="4.fasta" />
 			<param name="keep_first" value="0"/>
 			<output name="output" file="fasta_to_tabular_out2.tabular" />
+		</test>
+		
+		<test>
+			<param name="input" value="454.fasta" />
+			<param name="keep_first" value="14"/>
+			<output name="output" file="fasta_to_tabular_out3.tabular" />
 		</test>
 	</tests>
 	<help>

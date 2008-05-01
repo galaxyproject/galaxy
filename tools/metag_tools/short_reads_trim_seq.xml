@@ -1,5 +1,5 @@
-<tool id="trim_reads" name="Select" version="1.0.0">
-<description>high quality segments from short reads</description>
+<tool id="trim_reads" name="Select high quality segments" version="1.0.0">
+<description>from short reads</description>
 
 <command interpreter="python">
  short_reads_trim_seq.py $trim $length $output1 $input1 $input2 $sequencing_method_choice.input3
@@ -12,8 +12,8 @@
     <param name="length" type="integer" size="5" value="100" label="Minimal length of contiguous segment" help="report all high quality segments above this length. Setting this option to '0' will cause the program to return a single longest run of high quality bases per read" />
     <conditional name="sequencing_method_choice">
         <param name="sequencer" type="select" label="Select technology">
-            <option value="454">Roche (454)</option>
-            <option value="Solexa">Illumina (Solexa) or ABI SOLiD</option>
+            <option value="454">Roche (454) or ABI SOLiD</option>
+            <option value="Solexa">Illumina (Solexa)</option>
         </param>
         <when value="454">
             <param name="input3" type="select" label="Low quality bases in homopolymers" help="if set to 'DO NOT trigger splitting' the program will not count low quality bases that are within or adjacent to homonucleotide runs.  This will significantly reduce fragmentation of 454 data">

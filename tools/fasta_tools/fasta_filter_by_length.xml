@@ -1,5 +1,5 @@
-<tool id="fasta_filter_by_length" name="Filter">
-	<description>sequences by length</description>
+<tool id="fasta_filter_by_length" name="Filter sequences by length">
+	<description></description>
 	<command interpreter="python">fasta_filter_by_length.py $input $min_length $max_length $output </command>
 	<inputs>
 		<param name="input" type="data" format="fasta" label="Fasta file"/>
