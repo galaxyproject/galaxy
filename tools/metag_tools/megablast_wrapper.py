@@ -53,7 +53,7 @@ def __main__():
     
     # arguments for megablast    
     chunk = db[(db_build)]
-    megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s 2>&1" \
+    megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s > /dev/null 2>&1 " \
         % ( chunk, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, mega_filter ) 
         
     try:
