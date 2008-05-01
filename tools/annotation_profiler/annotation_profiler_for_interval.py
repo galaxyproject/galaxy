@@ -8,6 +8,7 @@ import sys, struct, optparse, os, random
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.intervals.io
+import bx.bitset
 try:
     import psyco
     psyco.full()
@@ -95,6 +96,81 @@ class CachedCoverageReader:
                 chromosomes[chrom] = RegionCoverage( os.path.join ( self._base_file_path, tablename, chrom ) )
             yield tablename, chromosomes[chrom].get_coverage( start, end )
 
+class TableCoverageSummary:
+    def __init__( self, coverage_reader ):
+        self.coverage_reader = coverage_reader
+        self.chromosome_coverage = {}
+        self.total_region_size = 0
+        self.table_coverage = {}
+        self.table_size = {}
+        self._nr_region_size = None
+    def add_region( self, chrom, start, end ):
+        self.total_region_size += ( end - start )
+        if chrom not in self.chromosome_coverage:
+            #utilize lengths file here, if possible, if not use 250mb
+            #currently, no valid method to provide location of lengths file by framework:
+            #gops_complement has it hard coded as dbfile = fileinput.FileInput( "static/ucsc/chrom/"+db+".len" )
+            self.chromosome_coverage[chrom] = bx.bitset.BitSet( 250000000 )
+        self.chromosome_coverage[chrom].set_range( start, end - start )
+        for table_name, coverage in self.coverage_reader.iter_table_coverage_by_region( chrom, start, end ):
+            if table_name not in self.table_coverage:
+                self.table_coverage[table_name] = 0
+                self.table_size[table_name] = {}
+            if chrom not in self.table_size[table_name]:
+                self.table_size[table_name][chrom] = self.coverage_reader._coverage[table_name][chrom]._total_coverage
+            self.table_coverage[table_name] += coverage
+    def get_table_size( self, table_name ):
+        if table_name not in self.table_size: return 0
+        size = 0
+        for chrom, chrom_size in self.table_size[table_name].iteritems():
+            size += chrom_size
+        return size
+    def get_nr_coverage( self ):
+        table_coverage = {}
+        for chrom, chromosome_bitset in self.chromosome_coverage.iteritems():
+            end = 0
+            while True:
+                start = chromosome_bitset.next_set( end )
+                if start >= chromosome_bitset.size: break
+                end = chromosome_bitset.next_clear( start )
+                for table_name, coverage in self.coverage_reader.iter_table_coverage_by_region( chrom, start, end ):
+                    if table_name not in table_coverage:
+                        table_coverage[table_name] = 0
+                    table_coverage[table_name] += coverage
+        return table_coverage
+    def get_nr_region_size( self ):
+        if self._nr_region_size is None:
+            self._nr_region_size = 0
+            for chrom, chromosome_bitset in self.chromosome_coverage.iteritems():
+                self._nr_region_size += chromosome_bitset.count_range()
+        return self._nr_region_size
+    def iter_table_coverage( self ):
+        nr_table_coverage = self.get_nr_coverage()
+        for table_name in self.table_coverage:
+            #TODO: determine a type of statistic, then calculate and report here
+            yield table_name, self.get_table_size( table_name ), self.total_region_size, self.table_coverage[table_name], self.get_nr_region_size(), nr_table_coverage[table_name]
+
+def profile_per_interval( interval_filename, chrom_col, start_col, end_col, out_filename, keep_empty, coverage_reader ):
+    out = open( out_filename, 'wb' )
+    for region in bx.intervals.io.NiceReaderWrapper( open( interval_filename, 'rb' ), chrom_col = chrom_col, start_col = start_col, end_col = end_col, fix_strand = True, return_header = False, return_comments = False ):
+        for table_name, coverage in coverage_reader.iter_table_coverage_by_region( region.chrom, region.start, region.end ):
+            if keep_empty or coverage:
+                #only output regions that have atleast 1 base covered unless empty are requested
+                out.write( "%s\t%s\t%s\n" % ( "\t".join( region.fields ), table_name, coverage ) )
+    out.close()
+
+def profile_summary( interval_filename, chrom_col, start_col, end_col, out_filename, keep_empty, coverage_reader ):
+    out = open( out_filename, 'wb' )
+    out.write( "#tableName\ttableSize\ttotalRegionSize\ttotalCoverage\tnrRegionSize\tnrCoverage\n" )#\tstatistic\n" )
+    table_coverage_summary = TableCoverageSummary( coverage_reader )
+    for region in bx.intervals.io.NiceReaderWrapper( open( interval_filename, 'rb' ), chrom_col = chrom_col, start_col = start_col, end_col = end_col, fix_strand = True, return_header = False, return_comments = False ):
+        table_coverage_summary.add_region( region.chrom, region.start, region.end )
+    
+    for table_name, table_size, total_region_size, total_coverage, nr_region_size, nr_coverage in table_coverage_summary.iter_table_coverage():
+        if keep_empty or total_coverage:
+            #only output tables that have atleast 1 base covered unless empty are requested
+            out.write( "%s\t%s\t%s\t%s\t%s\t%s\n" % ( table_name, table_size, total_region_size, total_coverage, nr_region_size, nr_coverage ) )
+    out.close()
 
 def __main__():
     parser = optparse.OptionParser()
@@ -153,20 +229,24 @@ def __main__():
         type='str',
         help='Input Interval File'
     )
+    parser.add_option(
+        '-S','--summary',
+        action="store_true",
+        dest='summary',
+        default=False,
+        help='Display Summary Results'
+    )
     
     options, args = parser.parse_args()
     
     table_names = options.table_names.split( "," )
-    if "None" in table_names: table_names = None
+    if table_names == ['None']: table_names = None
     coverage_reader = CachedCoverageReader( options.path, buffer = options.buffer, table_names = table_names )
     
-    out = open( options.out_filename, 'wb' )
+    if options.summary:
+        profile_summary( options.interval_filename, options.chrom_col - 1, options.start_col - 1, options.end_col -1, options.out_filename, options.keep_empty, coverage_reader )
+    else:
+        profile_per_interval( options.interval_filename, options.chrom_col - 1, options.start_col - 1, options.end_col -1, options.out_filename, options.keep_empty, coverage_reader )
     
-    for region in bx.intervals.io.NiceReaderWrapper( open( options.interval_filename, 'rb' ), chrom_col = options.chrom_col - 1, start_col = options.start_col - 1, end_col = options.end_col -1 , fix_strand = True, return_header = False, return_comments = False ):
-        for tablename, coverage in coverage_reader.iter_table_coverage_by_region( region.chrom, region.start, region.end ):
-            if options.keep_empty or coverage:
-                #only output regions that have atleast 1 base covered unless empty are requested
-                out.write("%s\t%s\t%s\n" % ( "\t".join( region.fields ), tablename, coverage ) )
-    out.close()
 
 if __name__ == "__main__": __main__()

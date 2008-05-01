@@ -1,6 +1,6 @@
 <tool id="Annotation_Profiler_0" name="Profile Annotations" Version="1.0.0">
   <description>for a set of genomic intervals</description>
-  <command interpreter="python2.4">annotation_profiler_for_interval.py -i $input1 -c $input1_chromCol -s $input1_startCol -e $input1_endCol -o $out_file1 $keep_empty -p /depot/data2/galaxy/annotation_profiler/$dbkey -b 3
+  <command interpreter="python2.4">annotation_profiler_for_interval.py -i $input1 -c $input1_chromCol -s $input1_startCol -e $input1_endCol -o $out_file1 $keep_empty -p /depot/data2/galaxy/annotation_profiler/$dbkey $summary -b 3
 #if $select_tables.select_table == "some":#-t $select_tables.table_names
 #end if
   </command>
@@ -11,6 +11,10 @@
     <param name="keep_empty" type="select" label="Keep Region/Table Pairs with 0 Coverage">
       <option value="-k">Keep</option>
       <option value="" selected="true">Discard</option>
+    </param>
+    <param name="summary" type="select" label="Output per Region/Summary">
+      <option value="-S">Summary</option>
+      <option value="" selected="true">Per Region</option>
     </param>
     <conditional name="select_tables">
       <param name="select_table" type="select" label="Limit Tables">
@@ -31,14 +35,23 @@
    <outputs>
      <data format="input" name="out_file1"/>
    </outputs>
+   <code file="annotation_profiler_code.py" />  
    <tests>
      <test>
        <param name="input1" value="4.bed" dbkey="hg18"/>
        <param name="keep_empty" value=""/>
+       <param name="summary" value=""/>
        <param name="select_table" value="some"/>
        <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refFlat,refGene,snp126"/>
-       <param name="keep_empty" value=""/>
        <output name="out_file1" file="annotation_profiler_1.out" />
+     </test>
+     <test>
+       <param name="input1" value="4.bed" dbkey="hg18"/>
+       <param name="keep_empty" value=""/>
+       <param name="summary" value="-S"/>
+       <param name="select_table" value="some"/>
+       <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refFlat,refGene,snp126"/>
+       <output name="out_file1" file="annotation_profiler_2.out" />
      </test>
    </tests>
    <help>
@@ -49,6 +62,8 @@ Takes an input set of intervals and for each interval determines the base covera
 By default, this tool will check the coverage of your intervals against all available features; you may, however, choose to select only those tables that you want to include.
 
 In the listing of available tables, the number in parentheses **()** is the total number of bases covered by the feature across all chromosomes.
+
+You may alternatively choose to recieve a summary across all of the intervals that you provide.
 
 -----
 
@@ -77,6 +92,43 @@ results in::
  chr1 4558 14764 uc001aab.1 0 - genomicSuperDups 10206
  chr1 4558 14764 uc001aab.1 0 - netGalGal3 3686
  chr1 4558 14764 uc001aab.1 0 - phastCons28wayPlacMammal 10172
+
+Alternatively, requesting a summary, using the intervals below and selecting several tables::
+
+ chr1 4558 14764 uc001aab.1 0 -
+ chr1 4558 19346 uc001aac.1 0 -
+
+results in::
+
+ #tableName tableSize totalRegionSize totalCoverage nrRegionSize nrCoverage
+ snp126Exceptions 133601 24994 388 14788 237
+ genomicSuperDups 12268847 24994 24994 14788 14788
+ chainOryLat1 70337730 24994 7436 14788 3718
+ affyHuEx1 15703901 24994 7846 14788 4293
+ multiz28way 225928588 24994 24994 14788 14788
+ intronEst 135796064 24994 24994 14788 14788
+ xenoMrna 129031327 24994 20406 14788 10203
+ ctgPos 224999719 24994 24994 14788 14788
+ netXenTro2 111440392 24994 6100 14788 3050
+ clonePos 224999719 24994 24994 14788 14788
+ chainStrPur2Link 7948016 24994 2646 14788 1323
+ affyTxnPhase3HeLaNuclear 136797870 24994 22601 14788 13590
+ snp126orthoPanTro2RheMac2 700436 24994 124 14788 63
+ snp126 956976 24994 498 14788 293
+ chainEquCab1 246306414 24994 24994 14788 14788
+ netGalGal3 203351973 24994 7372 14788 3686
+ phastCons28wayPlacMammal 221017670 24994 24926 14788 14754
+
+Where::
+
+ tableSize is the number of positions existing in the table for only the chromosomes that were referenced by the interval file.
+ totalRegionSize is the sum of the lengths of the provided interval file.
+ totalCoverage is the sum of the coverage for each interval
+ nrRegionSize is the sum of the lengths of non-redundant intervals
+ nrCoverage is the sum of the coverage of non-redundant intervals
+   
+   where non-redundant indicates that input intervals have been collapsed to resolve overlaps
+
 
   </help>
 </tool>
