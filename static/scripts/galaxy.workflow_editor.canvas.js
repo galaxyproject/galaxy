@@ -62,7 +62,8 @@ $.extend( InputTerminal.prototype, {
 function Connector( handle1, handle2 ) {
     this.canvas = null;
     this.dragging = false;
-    this.inner_color = "#EEEEEE";
+    this.inner_color = "#FFFFFF";
+    this.outer_color = "#D8B365"
 }
 $.extend( Connector.prototype, {
     connect: function ( t1, t2 ) {
@@ -118,7 +119,7 @@ $.extend( Connector.prototype, {
         // Draw the line
         var c = this.canvas.getContext("2d");
         c.lineCap = "round";
-        c.strokeStyle = "#999";
+        c.strokeStyle = this.outer_color;
         c.lineWidth = 7;
         c.beginPath();
         c.moveTo( start_x, start_y );
@@ -168,7 +169,32 @@ $.extend( Node.prototype, {
                     c.connect( source, target );
                     c.redraw();
                 }
-            }); 
+            });
+            $(this).hoverIntent(
+                function() {
+                    // If connected, create a popup to allow disconnection
+                    if ( terminal.connectors.length > 0 ) {
+                        // Create callout
+                        var t = $("<div class='callout'></div>")
+                            .css( { display: 'none' } )
+                            .appendTo( "body" )
+                            .append(
+                                $("<div class='buttons'></div>").append(
+                                    $("<img src='../images/delete_icon.png' />").click( function() {
+                                        $.each( terminal.connectors, function( _, x ) { x.destroy() } );
+                                        t.remove();
+                                    })))
+                            .bind( "mouseleave", function() { $(this).fadeOut( "fast", function() { $(this).remove() } ) } );
+                        // Position it and show
+                        t.css( {
+                                top: $(this).offset().top - 2,
+                                left: $(this).offset().left - t.width(),
+                                'padding-right': $(this).width() }
+                            ).fadeIn( "fast" );
+                    }
+                },
+                function() {}
+            );
             node.input_terminals[name] = terminal;
         })
     },
@@ -211,13 +237,13 @@ $.extend( Node.prototype, {
     destroy : function () {
         $.each( this.input_terminals, function( k, t ) {
             t.destroy();
-            $(t.element).droppableDestroy();
+            $(t.element).droppable('destroy');
         });
         $.each( this.output_terminals, function( k, t ) {
             t.destroy();
-            $(t.element).draggableDestroy();
+            $(t.element).draggable('destroy');
         });
-        $(this.element).draggableDestroy().remove();
+        $(this.element).draggable('destroy').remove();
 	workflow.remove_node( this );
     },
     make_active : function () {

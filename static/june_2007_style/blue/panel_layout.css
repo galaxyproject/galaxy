@@ -282,3 +282,7 @@ div.popupmenu-item:hover {
 .dialog-box .body, .dialog-box .buttons {
     padding: 5px;
 }
+
+.dialog-box body {
+    overflow: scroll;
+}

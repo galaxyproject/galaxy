@@ -20,6 +20,7 @@
     <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.dimensions.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
+    <script type='text/javascript' src="/static/scripts/jquery.hoverIntent.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.form.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.json.js"> </script>
 
@@ -89,11 +90,11 @@
         });
         
         $(document).ajaxError( function ( e, x ) {
-            // console.error( "AJAX:", e, ", ", x );
-            $("#error-display").empty()
-                .append( $("<div/>").html( x.responseText ) )
-                .append( $("<div><a>close</a></div>" ).click( function() { $("#error-display").hide(); } ) )
-                .show();
+            // $("#error-display").empty()
+            //     .append( $("<div/>").html( x.responseText ) )
+            //     .append( $("<div><a>close</a></div>" ).click( function() { $("#error-display").hide(); } ) )
+            //     .show(); 
+            show_modal( "Server error", x.responseText, { "Ignore error" : hide_modal } );
             return false;
         });
         
@@ -153,7 +154,7 @@
         workflow.activate_node( node );
         $.ajax( {
             url: "${h.url_for( action='get_tool_info' )}", 
-            data: { tool_id: id }, 
+            data: { tool_id: id, "_": "true" }, 
             dataType: "json",
             success: function( data ) {
                 node.init_field_data( data );
@@ -370,7 +371,7 @@
     canvas.dragging { position: absolute; z-index: 1000; }
     .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; bottom: 0; left: -16px; }
     .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')});; position: absolute; bottom: 0; right: -16px; }
-    .drag-terminal {  position: absolute; z-index: 1500; width: 10px; height: 10px; background: red; }
+    .drag-terminal {  position: absolute; z-index: 1500; width: 10px; height: 10px; }
     .input-terminal-active { background: url(${h.url_for('/static/style/workflow_circle_green.png')}); }
     ## .input-terminal-hover { background: yellow; border: solid black 1px; }
     .unselectable { -moz-user-select: none; -khtml-user-select: none; user-select: none; }
@@ -443,6 +444,11 @@
         border-bottom: dotted black 1px;
     }
     
+    .callout {
+        position: absolute;
+        z-index: 10000;
+    }
+    
     </style>
 </%def>
         
@@ -456,13 +462,12 @@
             <div class="unified-panel-header">
                 <div class="unified-panel-header-inner"><span class='title'>Loading workflow editor...</span></div>
             </div>
-            <div class="body"><img src="${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}" /></div>
+            <div class="body" style="max-height: 500px; overflow: auto;"><img src="${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}" /></div>
             <div class="buttons" style="display: none;"></div>
         </div>
         <div class="dialog-box-underlay"></div>
     </div>
     </td></tr></table>
-    ## <div id="overlay-inner"></div>
 </div>
 
 <%def name="masthead()">

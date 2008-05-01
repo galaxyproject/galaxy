@@ -119,6 +119,8 @@ class WebApplication( object ):
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update( map )
+        # Special key for AJAX debugging, remove to avoid confusing methods
+        kwargs.pop( '_', None )
         try:
             body = method( trans, **kwargs )
         except Exception, e:
