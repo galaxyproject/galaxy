@@ -23,6 +23,8 @@ class EggNotFetchable( Exception ):
 class PlatformNotSupported( Exception ):
     pass
 
+# TODO: we should really be using exceptions instead of returns for everything
+
 # need the options to remain case sensitive
 class CSConfigParser( ConfigParser.SafeConfigParser ):
     def optionxform( self, optionstr ):
@@ -48,6 +50,15 @@ class Egg( object ):
         self.path = None
         self.doppelgangers = []
         self.buildpath = None
+        self.dir = None
+        self.build_host = None
+        self.python = sys.executable
+    def set_dir( self ):
+        if self.build_host is not None:
+            self.dir = os.path.join( galaxy_dir, "dist-eggs", self.platform['galaxy'] )
+        else:
+            self.dir = os.path.join( galaxy_dir, "eggs", self.platform['galaxy'] )
+        print "set dir to %s" % self.dir
     def get_namever( self ):
         return( "%s-%s" %( self.name, self.version ) )
     def get_namevertag( self ):
@@ -67,8 +78,10 @@ class Egg( object ):
             return( "%s-%s%s-%s.egg" %( self.name, self.version, self.tag, self.platform['peak'] ) )
     def find( self ):
         # TODO: should be able to set a search path in eggs.ini
-        self.path = os.path.join( galaxy_dir, "eggs", self.platform['galaxy'], self.get_filename() )
-        self.doppelgangers = glob.glob( os.path.join( galaxy_dir, "eggs", self.platform['galaxy'], "%s-*-%s.egg" % (self.name, self.platform['peak'] ) ) )
+        if self.dir is None:
+            self.set_dir()
+        self.path = os.path.join( self.dir, self.get_filename() )
+        self.doppelgangers = glob.glob( os.path.join( self.dir, "%s-*-%s.egg" % (self.name, self.platform['peak'] ) ) )
         if os.access( self.path, os.F_OK ):
             self.have = True
             self.doppelgangers.remove( self.path )
@@ -114,7 +127,10 @@ class Egg( object ):
         shutil.copyfile( Egg.ez_setup, os.path.join( self.buildpath, "ez_setup.py" ) )
         log.warning( "scramble(): Beginning build" )
         # subprocessed to sterilize the env
-        cmd = "%s -ES %s" % ( sys.executable, "scramble.py" )
+        if self.build_host is not None:
+            cmd = "ssh %s 'cd %s; %s -ES %s'" % ( self.build_host, self.buildpath, self.python, "scramble.py" )
+        else:
+            cmd = "%s -ES %s" % ( self.python, "scramble.py" )
         p = subprocess.Popen( args = cmd, shell = True, cwd = self.buildpath )
         r = p.wait()
         if r != 0:
@@ -335,6 +351,89 @@ class Crate( object ):
         for key in self.eggs.keys():
             if key.lower() == name.lower().replace( '-', '_' ):
                 return self.eggs[key]
+
+class DistCrate( Crate ):
+    """
+    A subclass of Crate that holds eggs with info on how to build them for distribution.
+    """
+    dist_config_file = os.path.join( galaxy_dir, "dist-eggs.ini" )
+    def __init__( self, build_on="all" ):
+        self.eggs = {}
+        self.config = CSConfigParser()
+        self.repo = None
+        self.build_on = build_on
+        self.platform = 'platform'
+        self.noplatform = 'noplatform'
+    def parse( self ):
+        if self.config.read( DistCrate.dist_config_file ) == []:
+            raise Exception( "unable to read dist egg config from %s" % DistCrate.dist_config_file )
+        try:
+            self.hosts = self.dictize_list_of_tuples( self.config.items( "hosts" ) )
+            self.groups = self.dictize_list_of_tuples( self.config.items( "groups" ) )
+        except ConfigParser.NoSectionError, e:
+            raise Exception( "eggs.ini is missing required section: %s" % e )
+        self.platforms = self.get_platforms( self.build_on )
+        self.noplatforms = self.get_platforms( 'noplatform' )
+        Crate.parse( self )
+    def dictize_list_of_tuples( self, lot ):
+        """
+	Makes a list of 2-value tuples into a dict.
+        """
+        d = {}
+        for k, v in lot:
+            d[k] = v
+        return d
+    def get_platforms( self, wanted ):
+        # find all the members of a group and process them
+        if self.groups.has_key( wanted ):
+            platforms = []
+            for name in self.groups[wanted].split():
+                for platform in self.get_platforms( name ):
+                    if platform not in platforms:
+                        platforms.append( platform )
+            return platforms
+        elif self.hosts.has_key( wanted ):
+            return [ wanted ]
+        else:
+            raise Exception( "unknown platform: %s" % wanted )
+    def parse_egg_section( self, eggs, type ):
+        """
+	Overrides the base class's method.  Here we use the third arg
+	to find out what type of egg we'll be building.
+        """
+        if type == "platform":
+            platforms = self.platforms
+        elif type == "noplatform":
+            platforms = self.noplatforms
+        for name, version in eggs:
+            for platform in platforms:
+		# can't use the regular methods here because we're not
+		# actually ON the target platform
+                if type == "platform":
+                    gplat = platform
+                    pplat = platform.rsplit('-', 1)[0]
+                elif type == "noplatform":
+                    gplat = "%s-noplatform" % platform.split('-', 1)[0]
+                    pplat = platform.split('-', 1)[0]
+                egg = Egg()
+                try:
+                    egg.tag = self.config.get( "tags", name )
+                except:
+                    egg.tag = None
+                try:
+                    egg.sources = self.config.get( "source", name ).split()
+                except:
+                    egg.sources = None
+                egg.name = name
+                egg.version = version
+                egg.platform['galaxy'] = gplat
+                egg.platform['peak'] = pplat
+                egg.url = "%s/%s/%s" %( self.repo, gplat, egg.get_filename() )
+                egg.build_host, egg.python = self.hosts[platform].split()
+                if not self.eggs.has_key( name ):
+                    self.eggs[name] = [ egg ]
+                else:
+                    self.eggs[name].append( egg )
 
 class GalaxyConfig:
     config_file = os.path.join( galaxy_dir, "universe_wsgi.ini" )
