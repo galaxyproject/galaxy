@@ -45,10 +45,11 @@ c.stroke()
 
 t = size / 4.0
 
-c.move_to( t + 1, t )
-c.line_to( 3*t - 1, 2*t )
-c.line_to( t + 1, 3*t )
-
-c.stroke()
+arrow = sys.argv[4]
+if arrow == 'right':
+    c.move_to( t + 1, t )
+    c.line_to( 3*t - 1, 2*t )
+    c.line_to( t + 1, 3*t )
+    c.stroke()
 
 surface.write_to_png( "/dev/stdout" )

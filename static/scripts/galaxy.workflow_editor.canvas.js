@@ -88,8 +88,8 @@ $.extend( Connector.prototype, {
             canvas_container.append( $(this.canvas) );
             if ( this.dragging ) { this.canvas.style.zIndex = "300" }
         }
-        var relativeLeft = function( e ) { return $(e).offset().left - canvas_container.offset().left + canvas_container.scrollLeft(); }
-        var relativeTop = function( e ) { return $(e).offset().top - canvas_container.offset().top + canvas_container.scrollTop(); }
+        var relativeLeft = function( e ) { return $(e).offset().left - canvas_container.offset().left }
+        var relativeTop = function( e ) { return $(e).offset().top - canvas_container.offset().top }
         // Find the position of each handle
         var start_x = relativeLeft( this.handle1.element ) + 5;
         var start_y = relativeTop( this.handle1.element ) + 5;
@@ -160,7 +160,7 @@ $.extend( Node.prototype, {
                     ui.helper.get(0).terminal.connectors[0].inner_color = "#BBFFBB";
                 },
                 out: function( e, ui ) {
-                    ui.helper.get(0).terminal.connectors[0].inner_color = "#EEEEEE";
+                    ui.helper.get(0).terminal.connectors[0].inner_color = "#FFFFFF";
                 },
                 drop: function( e, ui ) {
                     var source = ui.draggable.get(0).terminal;
@@ -205,7 +205,8 @@ $.extend( Node.prototype, {
 		   terminal.node = node;
 		   terminal.name = name;
            $(this).draggable( { 
-               scroll: true,
+               scrollPanel: true,
+               panel: $("#canvas-container"),
                // containment: 'document',
                // appendTo: "body",
                // cursorAt: { top: 5, left: 5 },
@@ -430,7 +431,8 @@ function prebuild_node_for_tool( id, title_text ) {
     $(f).draggable( {
         cursor: 'move',
         // handle: title,
-        scroll: true,
+        scrollPanel: true,
+        panel: $("#canvas-container"),
         scrollSensitivity: 10,
         scrollSpeed: 20,
         // containment: $("#shim"),

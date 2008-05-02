@@ -114,6 +114,22 @@
             }
         }
         
+        // Drag/scroll canvas
+        $("#canvas-container").draggable({
+            drag: function( _, ui ) {
+                x = ui.position.left;
+                y = ui.position.top;
+                // Limit range
+                x = Math.min( x, 0 );
+                y = Math.min( y, 0 );
+                x = Math.max( x, - ( $(this).width() - $(this).parent().width() ) )
+                y = Math.max( y, - ( $(this).width() - $(this).parent().width() ) )
+                // Constrain position
+                ui.position.left = x;
+                ui.position.top = y;
+            }
+        });
+        
         // Tool menu
         $( "div.toolSectionBody" ).hide();
         $( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" );
@@ -132,6 +148,66 @@
                }
            });
         });
+        
+        // Scrolling
+        $.ui.plugin.add("draggable", "scrollPanel", {
+            drag: function(e, ui) {
+                var o = ui.options,
+                    i = ui.instance,
+                    panel = o.panel,
+                    panel_pos = panel.position(),
+                    viewport = panel.parent();
+                    moved = false;
+                    nudge = 23;
+                // Legal panel range
+                var p_min_x = - ( panel.width() - viewport.width() ),
+                    p_min_y = - ( panel.height() - viewport.height() ),
+                    p_max_x = 0,
+                    p_max_y = 0;
+                var min_vis_x = - panel_pos.left,
+                    max_vis_x = min_vis_x + viewport.width(),
+                    min_vis_y = - panel_pos.top,
+                    max_vis_y = min_vis_y + viewport.height();
+                // Move it
+                if ( ( panel_pos.left < p_max_x ) && ( ui.position.left < min_vis_x ) ) {
+                    var t = Math.min( nudge, p_max_x - panel_pos.left );
+                    panel.css( "left", panel_pos.left + t );
+                    moved = true;
+                    ui.instance.offset.left += t;
+                    ui.position.left = min_vis_x - t
+                }
+                if ( ( panel_pos.left > p_min_x ) && ( ( ui.position.left + ui.element.width() ) > max_vis_x ) ) {
+                    var t = Math.min( nudge, panel_pos.left  - p_min_x );
+                    panel.css( "left", panel_pos.left - t );
+                    moved = true;
+                    ui.instance.offset.left -= t
+                    ui.position.left = max_vis_x + t - ui.element.width();
+                }
+                if ( ( panel_pos.top < p_max_y ) && ( ui.position.top < min_vis_y ) ) {
+                    var t = Math.min( nudge, p_max_y - panel_pos.top );
+                    panel.css( "top", panel_pos.top + t );
+                    moved = true;
+                    ui.instance.offset.top += t;
+                    ui.position.top = min_vis_y - t;
+                }
+                if ( ( panel_pos.top > p_min_y ) && ( ( ui.position.top + ui.element.height() ) > max_vis_y ) ) {
+                    var t = Math.min( nudge, panel_pos.top  - p_min_x );
+                    panel.css( "top", panel_pos.top - t );
+                    moved = true;
+                    ui.instance.offset.top -= t
+                    ui.position.top = max_vis_y + t - ui.element.height();
+                }
+                // Update offsets
+                if ( moved ) {
+                    $.ui.ddmanager.prepareOffsets( ui.instance, e );
+                }
+                // Still contain in panel
+                ui.position.left = Math.max( ui.position.left, 0 );
+                ui.position.top = Math.max( ui.position.top, 0 );
+                ui.position.left = Math.min( ui.position.left, panel.width() - ui.element.width() );
+                ui.position.top = Math.min( ui.position.top, panel.height() - ui.element.height() );
+            } 
+        });
     });
 
     var workflow = null;
@@ -143,8 +219,8 @@
         }
         workflow = new Workflow();
         // Start at the middle of the canvas
-        $(window).scrollTop( 2500 );
-        $(window).scrollLeft( 2500 );
+        // $(window).scrollTop( 2500 );
+        // $(window).scrollLeft( 2500 );
     }
     
     // Add a new step to the workflow by tool id
@@ -369,9 +445,9 @@
     
     canvas { position: absolute; z-index: 10; } 
     canvas.dragging { position: absolute; z-index: 1000; }
-    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; bottom: 0; left: -16px; }
-    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')});; position: absolute; bottom: 0; right: -16px; }
-    .drag-terminal {  position: absolute; z-index: 1500; width: 10px; height: 10px; }
+    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; bottom: 0; left: -16px; z-index: 1500; }
+    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; bottom: 0; right: -16px; z-index: 1500; }
+    .drag-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_drag.png')}); position: absolute; z-index: 1500; }
     .input-terminal-active { background: url(${h.url_for('/static/style/workflow_circle_green.png')}); }
     ## .input-terminal-hover { background: yellow; border: solid black 1px; }
     .unselectable { -moz-user-select: none; -khtml-user-select: none; user-select: none; }
@@ -540,8 +616,8 @@
     </div>
 
     <div class="unified-panel-body">
-        <div id="canvas-container" style="width: 100%; height: 100%; position: absolute; overflow: scroll;">
-            <div style="height: 5000px; width: 5000px; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;"></div>
+        <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden;">
+            <div id="canvas-container" style="height: 5000px; width: 5000px; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;"></div>
         </div>
     </div>
 

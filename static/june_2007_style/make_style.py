@@ -33,6 +33,9 @@ images = [
            ( "./gradient.py 9 200 $history_running_bg - FFFFFF 0 0.5 FFFFFF 0.5 1", "warn_bg.png" ),
            ( "./gradient.py 9 200 $history_queued_bg - FFFFFF 0 0.5 FFFFFF 0.5 1", "gray_bg.png" ),
            ( "./callout_top.py 20 10 $panel_header_bg_top $layout_border", "popupmenu_callout_top.png" ),
+           ( "./circle.py 12 #FFFFFF #D8B365 right > workflow_circle_open.png" ),
+           ( "./circle.py 12 #BBFFBB #D8B365 right > workflow_circle_green.png" ),
+           ( "./circle.py 12 #FFFFFF #D8B365 none> workflow_circle_drag.png" ),
            ]
 
 shared_images = [ 
