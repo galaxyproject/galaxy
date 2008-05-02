@@ -1,54 +1,35 @@
-INTRO
-=====
+GALAXY
+======
+http://g2.bx.psu.edu/
 
-This program requires python 2.4 or later. To check your python version type:
+The latest information about Galaxy is always available via the Galaxy
+website above.
 
-python -V.
+HOW TO START
+============
+Galaxy requires Python 2.4 or 2.5. To check your python version, run:
 
-To start a server you need to do run the server as:
+% python -V
+Python 2.4.4
 
-python universe.py
+Before starting Galaxy for the first time, please run the setup script:
 
-This will start a server on localhost port 8080. 
-In your browser go to: http://localhost:8080 and you should see the 
-Galaxy environment with some default tools. To customize the tools that 
-are loaded see tool.conf.sample To customize the way your server is ran edit 
-universe.conf 
+% sh setup.sh
 
-*Note* certain tools may require certain libraries to be present.
-(See run.sh for more details)
+If setup.sh finishes successfully, you can then proceed to starting Galaxy:
 
+% sh run.sh
 
-RUNTIME ENVIRONMENT
-===================
+Once Galaxy completes startup, you should be able to view Galaxy in your
+browser at:
 
-The default server home will be the directory where the program starts.
-You can use the UNIVERSE_HOME environment variable to point to a different
-server home. The path that the UNIVERSE_HOME variable points to must be 
-a directory with the following subdirectories:
+http://localhost:8080
 
-database
-database/files
-database/import
-tools
+You may wish to make changes from the default configuration.  This can be done
+in the universe_wsgi.ini file.  Tools are configured in tool_conf.xml.  Details
+on adding tools can be found on the Galaxy website (linked above).
 
-OPTIMIZED LIBRARIES
-===================
+Not all dependencies are included for the tools provided in the sample
+tool_conf.xml.  A full list of external dependencies is available at:
 
-To allow python to load optimized libraries the path to these must be listed 
-in the python path. See the previous section or run.sh for an example. Loading 
-the optimized Cheetah templating libraries can lead to significant 
-performance gains. 
-
-At startup you the log message: 
-
-Optimized  Namemapper: True|False
-
-will tell you whether the optimized Cheetah template was loaded (or not).
-
-TOOL DEVELOPMENT
-================
-
-See the wiki pages for more details:
-
-http://g2.bx.psu.edu
+http://g2.trac.bx.psu.edu/wiki/ToolDependencies
