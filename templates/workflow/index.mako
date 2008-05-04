@@ -51,10 +51,11 @@
 
     %if workflows:
         <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-            <tr class="header"><td>Name</td><td>Last Updated</td><td>Actions</td></tr>
+            <tr class="header"><td>Name</td><td># of Steps<td>Last Updated</td><td>Actions</td></tr>
             %for workflow in workflows:
                 <tr>
                     <td>${workflow.name}</td>
+                    <td>${len(workflow.latest_workflow.steps)}
                     <td>${str(workflow.update_time)[:19]}</td>
                     <td>
                         <a href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">run</a>

@@ -47,12 +47,9 @@
             body = $( "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>" );
         }
         $( ".dialog-box" ).find( ".body" ).html( body );
-        // $( "#overlay").show();
         if ( ! $(".dialog-box-container").is( ":visible" ) ) {
             $("#overlay").show();
             $(".dialog-box-container").fadeIn()
-        } else {
-            // $(".dialog-box").center( "horizontal" );
         }
     };
     </script>
@@ -81,6 +78,8 @@
                 success: function( data ) {
                      reset();
                      workflow.from_simple( data );
+                     workflow.has_changes = false;
+                     scroll_to_nodes();
                      hide_modal();
                  },
                  beforeSubmit: function( data ) {
@@ -218,9 +217,18 @@
             workflow.remove_all();
         }
         workflow = new Workflow();
-        // Start at the middle of the canvas
-        // $(window).scrollTop( 2500 );
-        // $(window).scrollLeft( 2500 );
+    }
+    
+    function scroll_to_nodes() {
+        // Scroll to the top left node
+        if ( $("div.toolFormInCanvas").length > 0 ) {
+            var x = 5000, y = 5000;
+            $("div.toolFormInCanvas").each( function() {
+                x = Math.min( x, $(this).position().left );
+                y = Math.min( x, $(this).position().left );
+            });            
+            $("#canvas-container").css( { left: - x + 20, top: - y + 20 } );
+        }
     }
     
     // Add a new step to the workflow by tool id
@@ -255,12 +263,15 @@
         // });
         $("#right-content").html( text );
         $("#right-content").find( "form" ).ajaxForm( {
-            method: 'POST',
+            type: 'POST',
             dataType: 'json',
             success: function( data ) { 
                 node.update_field_data( data );
             },
-            beforeSubmit: function( data ) { data.push( { name: 'tool_state', value: node.tool_state } ); }
+            beforeSubmit: function( data ) {
+                data.push( { name: 'tool_state', value: node.tool_state } );
+                data.push( { name: '_', value: "true" } );
+            }
         }).each( function() {
             form = this;
             $(this).find( "select[refresh_on_change='true']").change( function() {
@@ -324,6 +335,7 @@
             success: function( data ) {
                 reset();
                 workflow.from_simple( data );
+                workflow.has_changes = false;
                 show_modal( "Workflow loaded", "Workflow loaded.", {
                     "Ok" : function () { hide_modal(); }
                 });

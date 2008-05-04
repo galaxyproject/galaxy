@@ -689,20 +689,28 @@ class Tool:
                 group_errors = []
                 group_old_errors = old_errors.get( input.name, None )
                 any_group_errors = False
-                # Check any removals before updating state
-                for i in range( len( group_state ) ):                    
-                    if key + "_" + str(i) + "_remove" in incoming:
+                # Check any removals before updating state -- only one
+                # removal can be performed, others will be ignored
+                for i, rep_state in enumerate( group_state ):
+                    rep_index = rep_state['__index__']
+                    if key + "_" + str(rep_index) + "_remove" in incoming:
                         del group_state[i]
+                        if group_old_errors:
+                            del group_old_errors[i]
+                        break
                 # Update state
-                for i in range( len( group_state ) ):
-                    prefix = "%s_%d|" % ( key, i )
+                max_index = -1
+                for i, rep_state in enumerate( group_state ):
+                    rep_index = rep_state['__index__']
+                    max_index = max( max_index, rep_index )
+                    prefix = "%s_%d|" % ( key, rep_index )
                     if group_old_errors:
                         rep_old_errors = group_old_errors[i]
                     else:
                         rep_old_errors = {}
                     rep_errors = self.update_state( trans,
                                                     input.inputs, 
-                                                    group_state[i], 
+                                                    rep_state, 
                                                     incoming, 
                                                     prefix=prefix,
                                                     context=context,
@@ -717,6 +725,7 @@ class Tool:
                 # Check for addition
                 if key + "_add" in incoming:
                     new_state = {}
+                    new_state['__index__'] = max_index + 1
                     self.fill_in_new_state( trans, input.inputs, new_state, context )
                     group_state.append( new_state )
                     if any_group_errors:

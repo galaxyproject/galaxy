@@ -5,15 +5,17 @@
           <div class="form-title-row"><b>${input.title_plural}</b></div>
           <% repeat_values = values[input.name] %>
           %for i in range( len( repeat_values ) ):
-            %if input.name in errors:
-                <% rep_errors = errors[input.name][i] %>
-            %else:
-                <% rep_errors = dict() %>
-            %endif
+            <%
+            if input.name in errors:
+                rep_errors = errors[input.name][i]
+            else:
+                rep_errors = dict()
+            index = repeat_values[i]['__index__']
+            %>
             <div class="repeat-group-item">
             <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
-            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(i) + "|" )}
-            <div class="form-row"><input type="submit" name="${prefix}${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}"></div>
+            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(index) + "|" )}
+            <div class="form-row"><input type="submit" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
             </div>
           %endfor
           <div class="form-row"><input type="submit" name="${prefix}${input.name}_add" value="Add new ${input.title}"></div>
@@ -24,7 +26,7 @@
       <% prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, prefix )}
-      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, prefix + input.name + "|" )}
+      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, prefix )}
     %else:
       ${row_for_param( input, values[ input.name ], errors, prefix )}
     %endif

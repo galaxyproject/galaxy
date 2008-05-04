@@ -1,14 +1,19 @@
-function OutputTerminal( element, datatype ) {
+function Terminal( element ) {
     this.element = element;
     this.connectors = [];
-    this.datatype = datatype
 }
-$.extend( OutputTerminal.prototype, {
+Terminal.prototype = {
     connect: function ( connector ) {
         this.connectors.push( connector );
+        if ( this.node ) {
+            this.node.changed();
+        }
     },
     disconnect: function ( connector ) {
         this.connectors.splice( $.inArray( connector, this.connectors ), 1 );
+        if ( this.node ) {
+            this.node.changed();
+        }
     },
     redraw: function () {
         $.each( this.connectors, function( _, c ) {
@@ -20,23 +25,24 @@ $.extend( OutputTerminal.prototype, {
             c.destroy();
         });
     }
-} )
+}
+
+function OutputTerminal( element, datatype ) {
+    Terminal.call( this, element );
+    this.datatype = datatype;
+}
+
+OutputTerminal.prototype.__proto__ = Terminal.prototype;
 
 function InputTerminal( element, datatypes ) {
-    this.element = element;
-    this.connectors = [];
-    this.max_connections = 1;
+    Terminal.call( this, element );
     this.datatypes = datatypes;
 }
-$.extend( InputTerminal.prototype, {
-    connect: function ( connector ) {
-        this.connectors.push( connector );
-    },
-    disconnect: function ( connector ) {
-        this.connectors.splice( $.inArray( connector, this.connectors ), 1 );
-    },
+
+InputTerminal.prototype = {
+    __proto__: Terminal.prototype,
     can_accept: function ( other ) {
-        if ( this.connectors.length < this.max_connections ) {
+        if ( this.connectors.length < 1 ) {
             for ( t in this.datatypes ) {
                 // FIXME: No idea what to do about this case
                 if ( other.datatype == "input" ) { return true; }
@@ -46,18 +52,8 @@ $.extend( InputTerminal.prototype, {
             }
         }
         return false;
-    },
-    redraw: function () {
-        $.each( this.connectors, function( _, c ) {
-            c.redraw();  
-        })
-    },
-    destroy: function () {
-        $.each( this.connectors.slice(), function( _, c ) {
-            c.destroy();
-        });
     }
-} );
+}
 
 function Connector( handle1, handle2 ) {
     this.canvas = null;
@@ -147,7 +143,7 @@ $.extend( Node.prototype, {
         $(elements).each( function() {
             var terminal = this.terminal = new InputTerminal( this, types );
             terminal.node = node;
-            terminal.name = name
+            terminal.name = name;
             $(this).droppable( {
                 tolerance: 'intersect',
                 accept: function( draggable ) {
@@ -184,7 +180,9 @@ $.extend( Node.prototype, {
                                         $.each( terminal.connectors, function( _, x ) { x.destroy() } );
                                         t.remove();
                                     })))
-                            .bind( "mouseleave", function() { $(this).fadeOut( "fast", function() { $(this).remove() } ) } );
+                            .bind( "mouseleave", function() {
+                                $(this).fadeOut( "fast", function() { $(this).remove() } )
+                            });
                         // Position it and show
                         t.css( {
                                 top: $(this).offset().top - 2,
@@ -235,6 +233,10 @@ $.extend( Node.prototype, {
            node.output_terminals[name] = terminal;
        });
     },
+    redraw : function () {
+        $.each( this.input_terminals, function( _, t ) { t.redraw() } );
+        $.each( this.output_terminals, function( _, t ) { t.redraw() } );
+    },
     destroy : function () {
         $.each( this.input_terminals, function( k, t ) {
             t.destroy();
@@ -257,13 +259,20 @@ $.extend( Node.prototype, {
         var f = this.element;
         this.form_html = data.form_html;
         this.tool_state = data.tool_state;
+        this.tool_errors = data.tool_errors;
+        if ( this.tool_errors ) {
+            f.addClass( "tool-node-error" );
+        } else {
+            f.removeClass( "tool-node-error" );
+        }
         var node = this;
-        b = f.find( ".toolFormBody" );
+        var b = f.find( ".toolFormBody" );
         b.find( "div" ).remove();
+        var ibox = $("<div class='inputs'/>").appendTo( b );
         $.each( data.data_inputs, function( i, input ) {
             t = $("<div class='terminal input-terminal'></div>")
             node.enable_input_terminal( t, input.name, input.extensions );
-            b.append( $("<div class='form-row dataRow'>" + input.name + "</div></div>" ).prepend( t ) );
+            ibox.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div></div>" ).prepend( t ) );
         });
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
             b.append( $( "<div class='rule'></div>" ) );
@@ -276,18 +285,45 @@ $.extend( Node.prototype, {
         workflow.node_changed( this );
     },
     update_field_data : function( data ) {
+        var el = $(this.element),
+            node = this;
         this.tool_state = data.state;
         this.form_html = data.form_html;
 	this.tool_errors = data.tool_errors;
         if ( this.tool_errors ) {
-                $(this.element).addClass( "tool-node-error" );
+                el.addClass( "tool-node-error" );
         } else {
-                $(this.element).removeClass( "tool-node-error" );
+                el.removeClass( "tool-node-error" );
         }
-        if ( workflow.active_node == this ) {
-            // Reactive with new form_html
-           workflow.activate_node( this );
-        }
+        // Update input rows
+        var old_body = el.find( "div.inputs" );
+        var new_body = $("<div class='inputs'/>");
+        old = old_body.find( "div.input-data-row")
+        $.each( data.data_inputs, function( i, input ) {
+            var t = $("<div class='terminal input-terminal'></div>");
+            node.enable_input_terminal( t, input.name, input.extensions );
+            // If already connected save old connection
+            old_body.find( "div[name=" + input.name + "]" ).each( function() {
+                $(this).find( ".input-terminal" ).each( function() {
+                    var c = this.terminal.connectors[0];
+                    if ( c ) {
+                        t[0].terminal.connectors[0] = c;
+                        c.handle2 = t[0].terminal;
+                    }
+                });
+                $(this).remove();
+            });
+            // Append to new body
+            new_body.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div></div>" ).prepend( t ) );
+        });
+        old_body.replaceWith( new_body );
+        // Cleanup any leftover terminals
+        old_body.find( "div.input-data-row > .terminal" ).each( function() {
+            this.terminal.destroy();
+        })
+        // If active, reactivate with new form_html
+        this.changed();
+        this.redraw();
     },
     error : function ( text ) {
         var b = $(this.element).find( ".toolFormBody" );
@@ -295,6 +331,9 @@ $.extend( Node.prototype, {
         var tmp = "<div style='color: red; text-style: italic;'>" + text + "</div>";
         this.form_html = tmp;
         b.html( tmp );
+        workflow.node_changed( this );
+    },
+    changed: function() {
         workflow.node_changed( this );
     }
 } );
@@ -311,6 +350,7 @@ $.extend( Workflow.prototype, {
         this.id_counter++;
         this.nodes[ node.id ] = node;
         this.has_changes = true;
+        node.workflow = this;
     },
     remove_node : function( node ) {
         if ( this.active_node == node ) {
@@ -393,6 +433,7 @@ $.extend( Workflow.prototype, {
         this.active_node = node;
     },
     node_changed : function ( node ) {
+        this.has_changes = true;
         if ( this.active_node == node ) {
             // Reactive with new form_html
             this.activate_node( node );

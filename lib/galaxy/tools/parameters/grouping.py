@@ -14,7 +14,7 @@ class Group( object ):
         types (dict, list, tuple, str, unicode, int, long, float, bool, None)
         """
         return value
-    def value_from_basic( self, value, app ):
+    def value_from_basic( self, value, app, ignore_errors=False ):
         """
         Convert a basic representation as produced by `value_to_basic` back
         into the preferred value form.
@@ -37,14 +37,21 @@ class Repeat( Group ):
         rval = []
         for d in value:
             rval_dict = {}
+            # Propogate __index__
+            if '__index__' in d:
+                rval_dict['__index__'] = d['__index__']
             for input in self.inputs.itervalues():
                 rval_dict[ input.name ] = input.value_to_basic( d[input.name], app )
             rval.append( rval_dict )
         return rval
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = []
-        for d in value:
+        for i, d in enumerate( value ):
             rval_dict = {}
+            # If the special __index__ key is not set, create it (for backward
+            # compatibility)
+            rval_dict['__index__'] = d.get( '__index__', i )
+            # Restore child inputs
             for input in self.inputs.itervalues():
                 rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
             rval.append( rval_dict )
@@ -82,9 +89,9 @@ class Conditional( Group ):
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = dict()
         current_case = rval['__current_case__'] = value['__current_case__']
-        rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app )
+        rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
         for input in self.cases[current_case].inputs.itervalues():
-            rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors=False )
+            rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
         return rval
     def visit_inputs( self, prefix, value, callback ):
         current_case = value['__current_case__']

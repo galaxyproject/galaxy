@@ -100,6 +100,8 @@ class WorkflowController( BaseController ):
             rval['tool_errors'] = errors
         else:
             rval['tool_errors'] = None
+        # Updated data_inputs
+        rval['data_inputs'] = get_data_inputs( tool.inputs, state.inputs )
         rval['state'] = state.encode( tool, trans.app )
         return rval
         
@@ -116,11 +118,6 @@ class WorkflowController( BaseController ):
         rval = {}
         rval['name'] = tool.name
         rval['tool_id'] = tool.id
-        data_inputs = []
-        for name, input in tool.inputs.iteritems():
-            if isinstance( input, DataToolParameter ):
-                data_inputs.append( dict( name=input.name, label=input.label, extensions=input.extensions ) )
-        rval['data_inputs'] = data_inputs
         data_outputs = []
         for name, ( format, metadata_source, parent ) in tool.outputs.iteritems():
             data_outputs.append( dict( name=name, extension=format ) )
@@ -129,6 +126,7 @@ class WorkflowController( BaseController ):
         rval['form_html'] = trans.fill_template( "workflow/editor_tool_form.mako", 
             tool=tool, as_html=as_html, values=state.inputs, errors={} )
         rval['tool_state'] = state.encode( tool, trans.app )
+        rval['data_inputs'] = get_data_inputs( tool.inputs, state.inputs )
         return rval
                 
     @web.json
@@ -158,8 +156,10 @@ class WorkflowController( BaseController ):
             tool = trans.app.toolbox.tools_by_id[tool_id]
             # Build a state from the tool_inputs dict
             state = DefaultToolState()
-            state.inputs = tool.params_from_strings( step.tool_inputs, trans.app )
+            state.inputs = tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
             step_dict['tool_state'] = state.encode( tool, trans.app )
+            # Error messages for the tool
+            step_dict['tool_errors'] = ( step.tool_errors or None )
             # Connections
             input_conn_dict = {}
             for conn in step.input_connections:
@@ -169,11 +169,7 @@ class WorkflowController( BaseController ):
             # Position
             step_dict['position'] = step.position
             # Input and output specs
-            data_inputs = []
-            for name, input in tool.inputs.iteritems():
-                if isinstance( input, DataToolParameter ):
-                    data_inputs.append( dict( name=input.name, label=input.label, extensions=input.extensions ) )
-            step_dict['data_inputs'] = data_inputs
+            step_dict['data_inputs'] = get_data_inputs( tool.inputs, state.inputs )
             data_outputs = []
             for name, ( format, metadata_source, parent ) in tool.outputs.iteritems():
                 data_outputs.append( dict( name=name, extension=format ) )
@@ -181,7 +177,7 @@ class WorkflowController( BaseController ):
             # Build the tool form html
             errors = step.tool_errors
             step_dict['form_html'] = trans.fill_template( "workflow/editor_tool_form.mako", 
-                tool=tool, as_html=as_html, values=state.inputs, errors={} )
+                tool=tool, as_html=as_html, values=state.inputs, errors=( step.tool_errors or {} ) )
             step_dict['name'] = tool.name
             data['steps'][step.order_index] = step_dict
         return data
@@ -329,6 +325,7 @@ class WorkflowController( BaseController ):
                 for other_hid, input_name in associations:
                     if other_hid in hid_to_output_pair:
                         other_job_id, other_name = hid_to_output_pair[ other_hid ]
+                        print "!!!", input_name, other_job_id, other_name, other_hid
                         # Only create association if the associated output dataset
                         # is being included in this workflow
                         if other_job_id in job_id_to_step_index:
@@ -550,8 +547,8 @@ def cleanup_param_values( inputs, values ):
                 values[key] = None
                 # HACK: Nested associations are not yet working, but we
                 #       still need to clean them up so we can serialize
-                if not( prefix ):
-                    associations.append( ( tmp.hid, prefix + key ) )
+                # if not( prefix ):
+                associations.append( ( tmp.hid, prefix + key ) )
                 # Cleanup the other deprecated crap associated with datasets
                 # as well. Worse, for nested datasets all the metadata is
                 # being pushed into the root. FIXME: MUST REMOVE SOON
@@ -561,8 +558,9 @@ def cleanup_param_values( inputs, values ):
                         del root_values[k]            
             elif isinstance( input, Repeat ):
                 group_values = values[key]
-                for i in range( len( group_values ) ):
-                    prefix = "%s_%d|" % ( key, i )
+                for i, rep_values in enumerate( group_values ):
+                    rep_index = rep_values['__index__']
+                    prefix = "%s_%d|" % ( key, rep_index )
                     cleanup( prefix, input.inputs, group_values[i] )
             elif isinstance( input, Conditional ):
                 group_values = values[input.name]
@@ -571,3 +569,31 @@ def cleanup_param_values( inputs, values ):
                 cleanup( prefix, input.cases[current_case].inputs, group_values )
     cleanup( "", inputs, values )
     return associations
+
+def get_data_inputs( inputs, input_values ):
+    """
+    For a set of input definitions and a tool state, find all of the dataset
+    inputs
+    """
+    data_inputs = []
+    def visitor( inputs, input_values, name_prefix, label_prefix ):
+        for input in inputs.itervalues():
+            if isinstance( input, Repeat ):  
+                for i, d in enumerate( input_values[ input.name ] ):
+                    index = d['__index__']
+                    new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
+                    new_label_prefix = label_prefix + "%s %d > " % ( input.title, i + 1 )
+                    visitor( input.inputs, d, new_name_prefix, new_label_prefix )
+            elif isinstance( input, Conditional ):
+                values = input_values[ input.name ]
+                current = values["__current_case__"]
+                label_prefix = label_prefix
+                name_prefix = name_prefix + "|" + input.name
+                visitor( input.cases[current].inputs, values, name_prefix, label_prefix )
+            else:
+                if isinstance( input, DataToolParameter ):
+                    data_inputs.append( dict( name=name_prefix+input.name, label=label_prefix+input.label, extensions=input.extensions ) )
+    visitor( inputs, input_values, "", "" )
+    return data_inputs
+    
+    
