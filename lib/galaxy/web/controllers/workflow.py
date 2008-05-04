@@ -325,7 +325,6 @@ class WorkflowController( BaseController ):
                 for other_hid, input_name in associations:
                     if other_hid in hid_to_output_pair:
                         other_job_id, other_name = hid_to_output_pair[ other_hid ]
-                        print "!!!", input_name, other_job_id, other_name, other_hid
                         # Only create association if the associated output dataset
                         # is being included in this workflow
                         if other_job_id in job_id_to_step_index:
