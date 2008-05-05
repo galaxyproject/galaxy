@@ -10,6 +10,7 @@ STAGGER=0
 INTERVAL=3
 MAIL=
 PAGE=
+NEWHIST=
 BARDARG=0
 # get commandline opts
 while getopts dsi:l:m:p: optname
@@ -21,6 +22,7 @@ do
         l)  SLEEP=$OPTARG ;;
         m)  MAIL="$MAIL $OPTARG" ;;
         p)  PAGE="$PAGE $OPTARG" ;;
+        n)  NEWHIST="-n" ;;
         *)  BADARG=1 ;;
     esac
 done
@@ -49,6 +51,7 @@ usage: `basename $0` [-ds] [-i interval] [-m email_address]+ [-p pager_address]+
                 -p options are present, the first -m address and the first -p
                 address are mailed simultaneously, followed by the second -m
                 and second -p, and so on.
+  -n            Create a new history (passes the -n option to check_galaxy.py).
   <galaxy_host> The hostname of the Galaxy server to check.  Use a : if running
                 on a non-80 port (e.g. galaxy.example.com:8080).
 EOF
@@ -145,7 +148,7 @@ rm -f $COUNT
 echo $$ > $MUTEX
 
 [ $DEBUG = 1 ] && echo "running first check"
-first_try=`$CHECK_GALAXY $1 2>&1`
+first_try=`$CHECK_GALAXY $NEWHIST $1 2>&1`
 
 if [ $? -ne 0 ]; then
     # if failure, wait and try again
@@ -167,7 +170,7 @@ else
 fi
 
 [ $DEBUG = 1 ] && echo "running second check"
-second_try=`$CHECK_GALAXY $1 2>&1`
+second_try=`$CHECK_GALAXY $NEWHIST $1 2>&1`
 
 if [ $? -ne 0 ]; then
     [ $DEBUG = 1 ] && echo "second check failed"
