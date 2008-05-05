@@ -463,11 +463,13 @@ class Workflow( object ):
 class WorkflowStep( object ):
     def __init__( self ):
         self.id = None
+        self.type = None
         self.tool_id = None
         self.tool_inputs = None
         self.tool_errors = None
         self.position = None
         self.input_connections = None
+        self.config = None
         
 class WorkflowStepConnection( object ):
     def __init__( self ):

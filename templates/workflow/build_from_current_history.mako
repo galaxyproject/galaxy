@@ -33,7 +33,7 @@ if ( window.parent && window.parent.handle_minwidth_hint ) {
 
 <body>
 
-<%def name="history_item( data )">
+<%def name="history_item( data, creator_disabled=False )">
     %if data.state in [ "no state", "", None ]:
         <% data_state = "queued" %>
     %else:
@@ -54,6 +54,10 @@ if ( window.parent && window.parent.handle_minwidth_hint ) {
                 </td>
             </tr>
         </table>
+        %if disabled:
+            <hr>
+            <div><input type="checkbox" name="dataset_ids" value="${data.hid}" checked="true" />Treat as input dataset</div>
+        %endif
     </div>
 </%def>
 
@@ -114,7 +118,7 @@ into a workflow will be shown in gray.</p>
         </td>
         <td>
             %for _, data in datasets:
-                <div>${history_item( data )}</div>     
+                <div>${history_item( data, disabled )}</div>     
             %endfor
         </td>
     </tr>

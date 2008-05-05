@@ -384,7 +384,7 @@ class FormBuilder( object ):
     """
     Simple class describing an HTML form
     """
-    def __init__( self, action, title, name="form", submit_text="submit" ):
+    def __init__( self, action="", title="", name="form", submit_text="submit" ):
         self.title = title
         self.name = name
         self.action = action

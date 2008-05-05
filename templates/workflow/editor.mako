@@ -233,7 +233,7 @@
     
     // Add a new step to the workflow by tool id
     function add_node_for_tool( id, title ) {
-        node = prebuild_node_for_tool( id, title );
+        node = prebuild_node( 'tool', title, id );
         workflow.add_node( node );
         workflow.activate_node( node );
         $.ajax( {
@@ -253,6 +253,27 @@
         });
     };
     
+    function add_node_for_module( type, title ) {
+        node = prebuild_node( type, title );
+        workflow.add_node( node );
+        workflow.activate_node( node );
+        $.ajax( {
+            url: "${h.url_for( action='get_module_info' )}", 
+            data: { type: type, "_": "true" }, 
+            dataType: "json",
+            success: function( data ) {
+                node.init_field_data( data );
+            },
+            error: function( x, e ) {
+                var m = "error loading field data"
+                if ( x.status == 0 ) {
+                    m += ", server unavailable"
+                }
+                node.error( m );
+            }
+        });
+    };
+
     function show_form_for_tool( text, node ) {
         // $("#overlay, #modalwrapper" ).show();
         //$("#modal iframe").attr( 'src', "${h.url_for( action='tool_form' )}?tool_id=" + tool_id ).load( function () {
@@ -418,6 +439,16 @@
         padding-bottom: 0px;
         font-weight: bold;
     }
+    div.toolMenuGroupHeader {
+        font-weight: bold;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+        color: #333;
+        font-style: italic;
+        border-bottom: dotted #333 1px;
+        margin-bottom: 0.5em;
+    }
+    
     div.toolTitle {
         padding-top: 5px;
         padding-bottom: 5px;
@@ -611,6 +642,18 @@
                </div>
             %endfor
             </div>
+            <div>&nbsp;</div>
+            <div class="toolMenuGroupHeader">Workflow control</div>
+            <div class="toolSectionTitle" id="title___workflow__input__">
+                <span>Inputs</span>
+            </div>
+            <div id="__workflow__input__" class="toolSectionBody">
+                <div class="toolSectionBg">
+                    <div class="toolTitle">
+                        <a href="javascript:add_node_for_module( 'data_input', 'Input Dataset' )">Input dataset</a>
+                    </div>
+                </div>
+            </div>                    
         </div>
     </div>
 </%def>

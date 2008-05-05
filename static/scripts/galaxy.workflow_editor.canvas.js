@@ -257,6 +257,7 @@ $.extend( Node.prototype, {
     },
     init_field_data : function ( data ) {
         var f = this.element;
+        this.type = data.type
         this.form_html = data.form_html;
         this.tool_state = data.tool_state;
         this.tool_errors = data.tool_errors;
@@ -273,7 +274,7 @@ $.extend( Node.prototype, {
             t = $("<div class='terminal input-terminal'></div>")
             node.enable_input_terminal( t, input.name, input.extensions );
             ibox.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div></div>" ).prepend( t ) );
-        });
+        });        
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
             b.append( $( "<div class='rule'></div>" ) );
         }
@@ -380,6 +381,7 @@ $.extend( Workflow.prototype, {
             });
             var node_data = {
                 id : node.id,
+                type : node.type,
                 tool_id : node.tool_id,
                 tool_state : node.tool_state,
                 tool_errors : node.tool_errors,
@@ -396,7 +398,7 @@ $.extend( Workflow.prototype, {
         wf.name = data.name;
         // First pass, nodes
         $.each( data.steps, function( id, step ) {
-            var node = prebuild_node_for_tool( step.tool_id, step.name );
+            var node = prebuild_node( "tool", step.name, step.tool_id );
             node.init_field_data( step );
             if ( step.position ) {
                 node.element.css( { top: step.position.top, left: step.position.left } );
@@ -441,10 +443,13 @@ $.extend( Workflow.prototype, {
     }
 });
 
-function prebuild_node_for_tool( id, title_text ) {
+function prebuild_node( type, title_text, tool_id ) {
     var f = $("<div class='toolForm toolFormInCanvas'></div>");
     var node = new Node( f );
-	node.tool_id = id;
+    node.type = type
+    if ( type == 'tool' ) {
+        node.tool_id = tool_id;
+    }
     var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" )
     f.append( title );
     f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );
@@ -464,6 +469,9 @@ function prebuild_node_for_tool( id, title_text ) {
         function() { $(this).attr( 'src', "../images/delete_icon.png" ) }
     ) );
     f.appendTo( "#canvas-container" );
+    // Position in container
+    var o = $("#canvas-container").position();
+    f.css( { left: ( - o.left ) + 10, top: ( - o.top ) + 10 } );
     var width = f.width();
     buttons.prependTo( title );
     width += ( buttons.width() + 10 );
