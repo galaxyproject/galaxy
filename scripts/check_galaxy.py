@@ -54,7 +54,7 @@ server = args[0]
 if server.endswith(".g2.bx.psu.edu"):
     if debug:
         print "Checking a PSU Galaxy server, using maint file"
-    maint = "/errordocument/502/%s/maint" % sys.argv[1]
+    maint = "/errordocument/502/%s/maint" % args[0].split('.', 1)[0]
 else:
     maint = None
 new_history = False
@@ -142,6 +142,7 @@ class Browser:
             raise Exception, "History still contains datasets after attempting to delete them"
         if new_history:
             self.get("/root/history_new")
+            tc.save_cookies(self.cookie_jar)
 
     def check_redir(self, url):
         try:
