@@ -4,7 +4,7 @@ check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
 
-import socket, sys, os, time, tempfile, filecmp, htmllib, formatter
+import socket, sys, os, time, tempfile, filecmp, htmllib, formatter, getopt
 from user import home
 
 # options
@@ -39,17 +39,32 @@ tools = {
 }
 
 # handle arg(s)
-if len(sys.argv) < 2:
+def usage():
     print "usage: check_galaxy.py <server>"
     sys.exit(1)
 
-server = sys.argv[1]
+try:
+    opts, args = getopt.getopt( sys.argv[1:], 'n' )
+except getopt.GetoptError, e:
+    print str(e)
+    usage()
+if len( args ) < 1:
+    usage()
+server = args[0]
 if server.endswith(".g2.bx.psu.edu"):
     if debug:
         print "Checking a PSU Galaxy server, using maint file"
     maint = "/errordocument/502/%s/maint" % sys.argv[1]
 else:
     maint = None
+new_history = False
+for o, a in opts:
+    if o == "-n":
+        if debug:
+            print "Specified -n, will create a new history"
+        new_history = True
+    else:
+        usage()
 
 # state information
 var_dir = os.path.join( home, ".check_galaxy", server )
@@ -88,6 +103,7 @@ socket.setdefaulttimeout(300)
 
 # user-agent
 tc.agent("Mozilla/5.0 (compatible; check_galaxy/0.1)")
+tc.config('use_tidy', 0)
 
 class Browser:
 
@@ -124,6 +140,8 @@ class Browser:
         if len(p.dids) > 0:
             print "Remaining datasets ids:", " ".join( p.dids )
             raise Exception, "History still contains datasets after attempting to delete them"
+        if new_history:
+            self.get("/root/history_new")
 
     def check_redir(self, url):
         try:
@@ -164,7 +182,7 @@ class Browser:
         tc.fv("1", "password", pw)
         tc.submit("Login")
         tc.code(200)
-        if len(tc.browser.get_all_forms()) > 0:
+        if len(tc.get_browser()._browser.forms()) > 0:
             # uh ohs, fail
             p = userParser()
             p.feed(tc.browser.get_html())
@@ -184,7 +202,7 @@ class Browser:
         tc.fv("1", "confirm", pw)
         tc.submit("Create")
         tc.code(200)
-        if len(tc.browser.get_all_forms()) > 0:
+        if len(tc.get_browser()._browser.forms()) > 0:
             p = userParser()
             p.feed(tc.browser.get_html())
             if p.already_exists:
@@ -255,6 +273,12 @@ class Browser:
         for did in dids:
             self.get("/root/delete?id=%s" % did)
 
+    def check_if_logged_in(self):
+        self.get("/user")
+        p = loggedinParser()
+        p.feed(tc.browser.get_html())
+        return p.logged_in
+
 class userParser(htmllib.HTMLParser):
     def __init__(self):
         htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
@@ -302,6 +326,22 @@ class didParser(htmllib.HTMLParser):
                 self.dids.append( i[1].rsplit("historyItemContainer-", 1)[1] )
                 dprint("got a dataset id: %s" % self.dids[-1])
 
+class loggedinParser(htmllib.HTMLParser):
+    def __init__(self):
+        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
+        self.in_p = False
+        self.logged_in = False
+    def start_p(self, attrs):
+        self.in_p = True
+    def end_p(self):
+        self.in_p = False
+    def handle_data(self, data):
+        if self.in_p:
+            if data == "You are currently not logged in.":
+                self.logged_in = False
+            elif data.startswith( "You are currently logged in as " ):
+                self.logged_in = True
+
 def dprint(str):
     if debug:
         print str
@@ -314,13 +354,11 @@ if __name__ == "__main__":
     b = Browser()
 
     # login (or not)
-    if b.check_redir("http://%s/user/account" % server):
-        # if the account page redirects, we need to login
+    if b.check_if_logged_in():
+        dprint("we are already logged in (via cookies), hooray!")
+    else:
         dprint("not logged in... logging in")
         b.login(username, password)
-    else:
-        # we are logged in
-        dprint("we are already logged in (via cookies), hooray!")
 
     for tool, params in tools.iteritems():
 
