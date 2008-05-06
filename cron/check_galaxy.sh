@@ -13,7 +13,7 @@ PAGE=
 NEWHIST=
 BARDARG=0
 # get commandline opts
-while getopts dsi:l:m:p: optname
+while getopts dsi:l:m:p:n optname
 do
     case $optname in
         d)  DEBUG=1 ;;
