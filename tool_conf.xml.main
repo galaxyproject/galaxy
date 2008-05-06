@@ -135,6 +135,13 @@
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
     <tool file="hyphy/hyphy_dnds_wrapper.xml" />
  </section>
+ <section name="Taxonomy manipulation" id="tax_manipulation">
+    <tool file="taxonomy/gi2taxonomy.xml" />
+    <tool file="taxonomy/t2t_report.xml" />
+    <tool file="taxonomy/t2ps_wrapper.xml" />
+    <tool file="taxonomy/find_diag_hits.xml" />
+    <tool file="taxonomy/poisson2test.xml" />
+  </section>
   <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss_5/emboss_antigenic.xml" />
     <tool file="emboss_5/emboss_backtranseq.xml" />
