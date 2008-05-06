@@ -138,7 +138,7 @@ try:
     out_f         = sys.argv[4]            # output file
     tool_data     = sys.argv[5]
 except:
-    stor_err('Check arguments\n')
+    stop_err('Check arguments\n')
 
 #  GI2TAX point to a file produced by concatenation of:
 #  ftp://ftp.ncbi.nih.gov/pub/taxonomy/gi_taxid_nucl.zip
