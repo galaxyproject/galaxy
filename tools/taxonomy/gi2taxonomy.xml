@@ -2,7 +2,7 @@
   <description></description>
   <command interpreter="python">gi2taxonomy.py $input $giField $idField $out_file1 ${GALAXY_DATA_INDEX_DIR}</command>
   <inputs>
-    <param format="tabular" name="input" type="data" label="Fetch sequences corresponding to Query"></param>
+    <param format="tabular" name="input" type="data" label="Show taxonomic representation for"></param>
     <param name="giField" label="GIs column" type="data_column" data_ref="input" numerical="True" help="select column containing GI numbers"/>
     <param name="idField" label="Name column" type="data_column" data_ref="input" help="select column containing identifiers you want to include into output"/>
   </inputs>
