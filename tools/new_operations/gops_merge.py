@@ -39,12 +39,13 @@ def main():
     except:
         doc_optparse.exception()
 
-    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
-                                chrom_col=chr_col_1,
-                                start_col=start_col_1,
-                                end_col=end_col_1,
-                                strand_col = strand_col_1,
-                                fix_strand=True)
+    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                                                         chrom_col=chr_col_1,
+                                                         start_col=start_col_1,
+                                                         end_col=end_col_1,
+                                                         strand_col = strand_col_1,
+                                                         fix_strand=True )
+                                     )
 
     out_file = open( out_fname, "w" )
 
@@ -52,21 +53,20 @@ def main():
         for line in merge(g1,mincols=mincols):
             if options.threecol:
                 if type( line ) is GenomicInterval:
-                    print >> out_file, line.chrom + "\t" + str(line.startCol) + "\t" + str(line.endCol)
+                    out_file.write( "%s\t%s\t%s\n" % ( line.chrom, str( line.startCol ), str( line.endCol ) ) )
                 elif type( line ) is list:
-                    print >> out_file, \
-                          line[chr_col_1] + "\t" + str(line[start_col_1]) + "\t" + str(line[end_col_1])
+                    out_file.write( "%s\t%s\t%s\n" % ( line[chr_col_1], str( line[start_col_1] ), str( line[end_col_1] ) ) )
                 else:
-                    print out_file, line
+                    out_file.write( "%s\n" % line )
             else:
                 if type( line ) is GenomicInterval:
-                    print >> out_file, "\t".join( line.fields )
+                    out_file.write( "%s\n" % "\t".join( line.fields ) )
                 elif type( line ) is list:
-                    print >> out_file, "\t".join( line )
+                    out_file.write( "%s\n" % "\t".join( line ) )
                 else:
-                    print >> out_file, line
+                    out_file.write( "%s\n" % line )
     except ParseError, exc:
-        print >> sys.stderr, "Invalid file format: ", str( exc )
+        fail( "Invalid file format: ", str( exc ) )
 
     if g1.skipped > 0:
         print skipped( g1, filedesc=" of 1st dataset" )

@@ -48,37 +48,38 @@ def main():
     except:
         doc_optparse.exception()
 
-    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
-                                chrom_col=chr_col_1,
-                                start_col=start_col_1,
-                                end_col=end_col_1,
-                                strand_col=strand_col_1,
-                                fix_strand=True)
-    g2 = NiceReaderWrapper( fileinput.FileInput( in2_fname ),
-                                chrom_col=chr_col_2,
-                                start_col=start_col_2,
-                                end_col=end_col_2,
-                                strand_col=strand_col_2,
-                                fix_strand=True)
+    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                                                         chrom_col=chr_col_1,
+                                                         start_col=start_col_1,
+                                                         end_col=end_col_1,
+                                                         strand_col=strand_col_1,
+                                                         fix_strand=True )
+                                     )
+    g2 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in2_fname ),
+                                                         chrom_col=chr_col_2,
+                                                         start_col=start_col_2,
+                                                         end_col=end_col_2,
+                                                         strand_col=strand_col_2,
+                                                         fix_strand=True )
+                                     )
+
     out_file = open( out_fname, "w" )
 
     try:
         for outfields in join(g1, g2, mincols=mincols, rightfill=rightfill, leftfill=leftfill):
             if type( outfields ) is list:
-                print >> out_file, "\t".join(outfields)
+                out_file.write( "%s\n" % "\t".join( outfields ) )
             else:
-                print >> out_file, outfields
+                out_file.write( "%s\n" % outfields )
     except ParseError, exc:
-        print >> sys.stderr, "Invalid file format: ", str( exc )
+        fail( "Invalid file format: ", str( exc ) )
     except MemoryError:
-        print >> sys.stderr, "Input datasets were too large to complete the join operation."
+        fail( "Input datasets were too large to complete the join operation." )
 
     if g1.skipped > 0:
         print skipped( g1, filedesc=" of 1st dataset" )
-
     if g2.skipped > 0:
         print skipped( g2, filedesc=" of 2nd dataset" )
-
 
 if __name__ == "__main__":
     main()

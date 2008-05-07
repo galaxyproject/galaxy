@@ -41,36 +41,37 @@ def main():
         in_fname, in2_fname, out_fname = args
     except:
         doc_optparse.exception()
-
-    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
-                                chrom_col=chr_col_1,
-                                start_col=start_col_1,
-                                end_col=end_col_1,
-                                strand_col=strand_col_1,
-                                fix_strand=True)
-    g2 = NiceReaderWrapper( fileinput.FileInput( in2_fname ),
-                                chrom_col=chr_col_2,
-                                start_col=start_col_2,
-                                end_col=end_col_2,
-                                strand_col=strand_col_2,
-                                fix_strand=True)
+    
+    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                                                         chrom_col=chr_col_1,
+                                                         start_col=start_col_1,
+                                                         end_col=end_col_1,
+                                                         strand_col=strand_col_1,
+                                                         fix_strand=True )
+                                     )
+    g2 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in2_fname ),
+                                                         chrom_col=chr_col_2,
+                                                         start_col=start_col_2,
+                                                         end_col=end_col_2,
+                                                         strand_col=strand_col_2,
+                                                         fix_strand=True )
+                                     )
 
     out_file = open( out_fname, "w" )
 
     try:
-        for line in intersect([g1,g2], pieces=pieces, mincols=mincols):
-            if type( line ) is GenomicInterval:
-                print >> out_file, "\t".join( line.fields )
+        for line in intersect( [g1,g2], pieces=pieces, mincols=mincols ):
+            if type( line ) == GenomicInterval:
+                out_file.write( "%s\n" % "\t".join( line.fields ) )
             else:
-                print >> out_file, line
-    except ParseError, exc:
-        print >> sys.stderr, "Invalid file format: ", str( exc )
+                out_file.write( "%s\n" % line )
+    except ParseError, e:
+        fail( "Invalid file format: %s" % str( e ) )
 
     if g1.skipped > 0:
-        print skipped( g1, filedesc=" of 1st dataset" )
-
+        print skipped( g1, filedesc=" of 1st dataset." )
     if g2.skipped > 0:
-        print skipped( g2, filedesc=" of 2nd dataset" )
+        print skipped( g2, filedesc=" of 2nd dataset." )
 
 if __name__ == "__main__":
     main()

@@ -25,7 +25,7 @@ tools = {
                 os.path.join( test_data_dir, "2.bed" )
             )
         },
-        { "check_file" : os.path.join( test_data_dir, "gops-intersect.dat" ) },
+        { "check_file" : os.path.join( test_data_dir, "gops_intersect_out.bed" ) },
         {
             "tool_run_options" :
             {

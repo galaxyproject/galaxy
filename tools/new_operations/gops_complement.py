@@ -40,12 +40,13 @@ def main():
     except:
         doc_optparse.exception()
 
-    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
-                                chrom_col=chr_col_1,
-                                start_col=start_col_1,
-                                end_col=end_col_1,
-                                strand_col=strand_col_1,
-                                fix_strand=True)
+    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                                                         chrom_col=chr_col_1,
+                                                         start_col=start_col_1,
+                                                         end_col=end_col_1,
+                                                         strand_col=strand_col_1,
+                                                         fix_strand=True )
+                                     )
         
     out_file = open( out_fname, "w" )
     lens = dict()
@@ -84,15 +85,14 @@ def main():
     try:
         for interval in generator:
             if type( interval ) is GenomicInterval:
-                print >> out_file, "\t".join( interval )
+                out_file.write( "%s\n" % "\t".join( interval ) )
             else:
-                print >> out_file, interval
+                out_file.write( "%s\n" % interval )
     except ParseError, exc:
-        print >> sys.stderr, "Invalid file format: ", str( exc )
+        fail( "Invalid file format: ", str( exc ) )
 
     if g1.skipped > 0:
-        first_line, line_contents = g1.skipped_lines[0]
-        print 'Condition/data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( g1.skipped, first_line, line_contents )
+        print skipped( g1, filedesc="" )
 
 if __name__ == "__main__":
     main()

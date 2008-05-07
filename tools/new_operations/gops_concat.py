@@ -45,35 +45,36 @@ def main():
     except:
         doc_optparse.exception()
 
-    g1 = NiceReaderWrapper( fileinput.FileInput( in_file_1 ),
-                                chrom_col=chr_col_1,
-                                start_col=start_col_1,
-                                end_col=end_col_1,
-                                fix_strand=True)
+    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_file_1 ),
+                                                         chrom_col=chr_col_1,
+                                                         start_col=start_col_1,
+                                                         end_col=end_col_1,
+                                                         fix_strand=True )
+                                     )
     if strand_col_1 >= 0:
         g1.strand_col=strand_col_1
         
-    g2 = NiceReaderWrapper( fileinput.FileInput( in_file_2 ),
-                                chrom_col=chr_col_2,
-                                start_col=start_col_2,
-                                end_col=end_col_2,
-                                strand_col=strand_col_2,
-                                fix_strand=True)
+    g2 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_file_2 ),
+                                                         chrom_col=chr_col_2,
+                                                         start_col=start_col_2,
+                                                         end_col=end_col_2,
+                                                         strand_col=strand_col_2,
+                                                         fix_strand=True )
+                                     )
     
     out_file = open( out_fname, "w" )
 
     try:
-        for line in concat([g1, g2], sameformat=sameformat):
+        for line in concat( [g1, g2], sameformat=sameformat ):
             if type( line ) is GenomicInterval:
-                print >> out_file, "\t".join( line.fields )
+                out_file.write( "%s\n" % "\t".join( line.fields ) )
             else:
-                print >> out_file, line
+                out_file.write( "%s\n" % line )
     except ParseError, exc:
-        print >> sys.stderr, "Invalid file format: ", str( exc )
+        fail( "Invalid file format: ", str( exc ) )
         
     if g1.skipped > 0:
         print skipped( g1, filedesc=" of 1st dataset" )
-
     if g2.skipped > 0:
         print skipped( g2, filedesc=" of 2nd dataset" )
         

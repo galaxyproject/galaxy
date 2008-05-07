@@ -130,29 +130,30 @@ def main():
     except:
         doc_optparse.exception()
 
-    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
-                                chrom_col=chr_col_1,
-                                start_col=start_col_1,
-                                end_col=end_col_1,
-                                strand_col=strand_col_1,
-                                fix_strand=True)
-    g2 = NiceReaderWrapper( fileinput.FileInput( in2_fname ),
-                                chrom_col=chr_col_2,
-                                start_col=start_col_2,
-                                end_col=end_col_2,
-                                strand_col=strand_col_2,
-                                fix_strand=True)
+    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                                                         chrom_col=chr_col_1,
+                                                         start_col=start_col_1,
+                                                         end_col=end_col_1,
+                                                         strand_col=strand_col_1,
+                                                         fix_strand=True )
+                                     )
+    g2 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in2_fname ),
+                                                         chrom_col=chr_col_2,
+                                                         start_col=start_col_2,
+                                                         end_col=end_col_2,
+                                                         strand_col=strand_col_2,
+                                                         fix_strand=True )
+                                     )
     out_file = open( out_fname, "w" )
 
     try:
         for line in proximal_region_finder([g1,g2], direction):
             if type( line ) is list:
-                linestr = "\t".join(line)
-                out_file.write("%s\n" %linestr)
+                out_file.write( "%s\n" % "\t".join( line ) )
             else:
-                out_file.write("%s\n" %line)
+                out_file.write( "%s\n" % line )
     except ParseError, exc:
-        print >> sys.stderr, "Invalid file format: ", str( exc )
+        fail( "Invalid file format: ", str( exc ) )
 
     print "Direction: %s" %(direction)
     

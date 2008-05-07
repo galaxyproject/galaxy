@@ -45,21 +45,20 @@ def main():
     except:
         doc_optparse.exception()
 
-    f1 = fileinput.FileInput( in_fname )
-    g1 = NiceReaderWrapper( f1,
-                            chrom_col=chr_col_1,
-                            start_col=start_col_1,
-                            end_col=end_col_1,
-                            strand_col=strand_col_1,
-                            fix_strand=True )
+    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                                                         chrom_col=chr_col_1,
+                                                         start_col=start_col_1,
+                                                         end_col=end_col_1,
+                                                         strand_col=strand_col_1,
+                                                         fix_strand=True )
+                                     )
     out_file = open( out_fname, "w" )
 
     # Get the cluster tree
     try:
         clusters, extra = find_clusters( g1, mincols=distance, minregions=minregions)
     except ParseError, exc:
-        print >> sys.stderr, "Invalid file format: ", str( exc )
-    f1.close()
+        fail( "Invalid file format: ", str( exc ) )
 
     f1 = open( in_fname, "r" )
     
@@ -71,7 +70,7 @@ def main():
                 fields[g1.chrom_col] = chrom
                 fields[g1.start_col] = str(start)
                 fields[g1.end_col] = str(end)
-                print >> out_file, "\t".join( fields )
+                out_file.write( "%s\n" % "\t".join( fields ) )
 
     # If "filtered" we preserve order of file and comments, etc.
     if output == 2:
@@ -84,7 +83,7 @@ def main():
         for line in f1.readlines():
             linenum += 1
             if linenum in linenums or linenum in extra:
-                print >> out_file, line.rstrip("\n\r")
+                out_file.write( "%s\n" % line.rstrip( "\n\r" ) )
 
     # If "clustered" we output original intervals, but near each other (i.e. clustered)
     if output == 3:
@@ -93,7 +92,7 @@ def main():
         fileLines = f1.readlines()
         for chrom, tree in clusters.items():
             for linenum in tree.getlines():
-                print >> out_file, fileLines[linenum].rstrip("\n\r")
+                out_file.write( "%s\n" % fileLines[linenum].rstrip( "\n\r" ) )
 
     # If "minimum" we output the smallest interval in each cluster
     if output == 4 or output == 5:
@@ -127,12 +126,12 @@ def main():
                        ( outsize < interval_size and output == 5 ) :
                         outinterval = cluster_interval
                         outsize = interval_size
-                print >> out_file, outinterval
+                out_file.write( "%s\n" % outinterval )
 
     f1.close()
     
     if g1.skipped > 0:
-        first_line, line_contents = g1.skipped_lines[0]
-        print 'Condition/data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( g1.skipped, first_line, line_contents )
+        print skipped( g1, filedesc="" )
+
 if __name__ == "__main__":
     main()

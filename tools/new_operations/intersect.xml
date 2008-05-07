@@ -27,14 +27,28 @@
       <param name="input2" value="2.bed" />
       <param name="min" value="1" />
       <param name="returntype" value="" />
-      <output name="output" file="gops-intersect.dat" />
+      <output name="output" file="gops_intersect_out.bed" />
     </test>
     <test>
       <param name="input1" value="1.bed" />
       <param name="input2" value="2.bed" />
       <param name="min" value="10" />
       <param name="returntype" value="-p" />
-      <output name="output" file="gops-intersect-p.dat" />     
+      <output name="output" file="gops_intersect_p_out.bed" />     
+    </test>
+    <test>
+      <param name="input1" value="gops_bigint.interval" ftype="interval" />
+      <param name="input2" value="gops_bigint2.interval" ftype="interval" />
+      <param name="min" value="1" />
+      <param name="returntype" value="" />
+      <output name="output" file="gops_intersect_bigint_out.interval" />     
+    </test>
+    <test>
+      <param name="input1" value="gops_bigint2.interval" ftype="interval" />
+      <param name="input2" value="gops_bigint.interval" ftype="interval" />
+      <param name="min" value="1" />
+      <param name="returntype" value="" />
+      <output name="output" file="gops_intersect_bigint_out.interval" />     
     </test>
   </tests>
   <help>
