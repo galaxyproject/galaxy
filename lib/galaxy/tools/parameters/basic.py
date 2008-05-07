@@ -2,7 +2,7 @@
 Basic tool parameters.
 """
 
-import logging, string, sys
+import logging, string, sys, os
 
 from elementtree.ElementTree import XML, Element
 
@@ -116,7 +116,7 @@ class ToolParameter( object ):
         """
         return value
         
-    def to_param_dict_string( self, value ):
+    def to_param_dict_string( self, value, other_values={} ):
         return str( value )
         
     def validate( self, value, history=None ):
@@ -269,7 +269,7 @@ class BooleanToolParameter( ToolParameter ):
         return ( value == 'True' )
     def get_initial_value( self, trans, context ):
         return self.checked
-    def to_param_dict_string( self, value ):
+    def to_param_dict_string( self, value, other_values={} ):
         if value:
             return self.truevalue
         else:
@@ -515,7 +515,7 @@ class SelectToolParameter( ToolParameter ):
             if value not in legal_values:
                 raise ValueError( "An invalid option was selected, please verify" )
             return value    
-    def to_param_dict_string( self, value ):
+    def to_param_dict_string( self, value, other_values={} ):
         if value is None:
             return "None"
         if isinstance( value, list ):
@@ -704,6 +704,266 @@ class ColumnListParameter( SelectToolParameter ):
     def get_dependencies( self ):
         return [ self.data_ref ]
 
+
+class DrillDownSelectToolParameter( ToolParameter ):
+    """
+    Parameter that takes on one (or many) of a specific set of values.
+    Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
+    
+    >>> p = DrillDownSelectToolParameter( None, XML( 
+    ... '''
+    ... <param name="some_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
+    ...   <options>
+    ...    <option name="Heading 1" value="heading1">
+    ...        <option name="Option 1" value="option1"/>
+    ...        <option name="Option 2" value="option2"/>
+    ...        <option name="Heading 1" value="heading1">
+    ...          <option name="Option 3" value="option3"/>
+    ...          <option name="Option 4" value="option4"/>
+    ...        </option>
+    ...    </option>
+    ...    <option name="Option 5" value="option5"/>
+    ...   </options>
+    ... </param>
+    ... ''' ) )
+    >>> print p.get_html()
+    <div><ul class="tool_parameter_expandable_collapsable">
+    <li><span>[+/-]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
+    <ul class="tool_parameter_expandable_collapsable">
+    <li><input type="checkbox" name="some_name" value="option1"">Option 1
+    </li>
+    <li><input type="checkbox" name="some_name" value="option2"">Option 2
+    </li>
+    <li><span>[+/-]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
+    <ul class="tool_parameter_expandable_collapsable">
+    <li><input type="checkbox" name="some_name" value="option3"">Option 3
+    </li>
+    <li><input type="checkbox" name="some_name" value="option4"">Option 4
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    <li><input type="checkbox" name="some_name" value="option5"">Option 5
+    </li>
+    </ul></div>
+    >>> p = DrillDownSelectToolParameter( None, XML( 
+    ... '''
+    ... <param name="some_name" type="drill_down" display="radio" hierarchy="recurse" multiple="false">
+    ...   <options>
+    ...    <option name="Heading 1" value="heading1">
+    ...        <option name="Option 1" value="option1"/>
+    ...        <option name="Option 2" value="option2"/>
+    ...        <option name="Heading 1" value="heading1">
+    ...          <option name="Option 3" value="option3"/>
+    ...          <option name="Option 4" value="option4"/>
+    ...        </option>
+    ...    </option>
+    ...    <option name="Option 5" value="option5"/>
+    ...   </options>
+    ... </param>
+    ... ''' ) )
+    >>> print p.get_html()
+    <div><ul class="tool_parameter_expandable_collapsable">
+    <li><span>[+/-]</span><input type="radio" name="some_name" value="heading1"">Heading 1
+    <ul class="tool_parameter_expandable_collapsable">
+    <li><input type="radio" name="some_name" value="option1"">Option 1
+    </li>
+    <li><input type="radio" name="some_name" value="option2"">Option 2
+    </li>
+    <li><span>[+/-]</span><input type="radio" name="some_name" value="heading1"">Heading 1
+    <ul class="tool_parameter_expandable_collapsable">
+    <li><input type="radio" name="some_name" value="option3"">Option 3
+    </li>
+    <li><input type="radio" name="some_name" value="option4"">Option 4
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    <li><input type="radio" name="some_name" value="option5"">Option 5
+    </li>
+    </ul></div>
+    >>> print p.options
+    [{'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 1', 'value': 'option1', 'options': []}, {'selected': False, 'name': 'Option 2', 'value': 'option2', 'options': []}, {'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 3', 'value': 'option3', 'options': []}, {'selected': False, 'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'selected': False, 'name': 'Option 5', 'value': 'option5', 'options': []}]
+    """
+    def __init__( self, tool, elem, context=None ):
+        def recurse_option_elems( cur_options, option_elems ):
+            for option_elem in option_elems:
+                selected = str_bool( option_elem.get( 'selected', False ) )
+                cur_options.append( { 'name':option_elem.get( 'name' ), 'value': option_elem.get( 'value'), 'options':[], 'selected':selected  } )
+                recurse_option_elems( cur_options[-1]['options'], option_elem.findall( 'option' ) )
+        ToolParameter.__init__( self, tool, elem )
+        self.multiple = str_bool( elem.get( 'multiple', False ) )
+        self.display = elem.get( 'display', None )
+        self.hierarchy = elem.get( 'hierarchy', 'exact' ) #exact or recurse
+        self.separator = elem.get( 'separator', ',' )
+        from_file = elem.get( 'from_file', None )
+        if from_file:
+            if not os.path.isabs( from_file ):
+                from_file = os.path.join( tool.app.config.tool_data_path, from_file )
+            elem = XML( "<root>%s</root>" % open( from_file ).read() )
+        self.is_dynamic = False
+        self.options = []
+        self.filtered = {}
+        if elem.find( 'filter' ):
+            self.is_dynamic = True
+            for filter in elem.findall( 'filter' ):
+                #currently only filtering by metadata key matching input file is allowed
+                if filter.get( 'type' ) == 'data_meta':
+                    if filter.get( 'data_ref' ) not in self.filtered:
+                        self.filtered[filter.get( 'data_ref' )] = {}
+                    self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )] = { 'value': filter.get( 'value' ), 'options':[] }
+                    recurse_option_elems( self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )]['options'], filter.find( 'options' ).findall( 'option' ) )
+        else:
+            recurse_option_elems( self.options, elem.find( 'options' ).findall( 'option' ) )
+    
+    def get_options( self, trans=None, value=None, other_values={} ):
+        if self.is_dynamic:
+            options = []
+            for filter_key, filter_value in self.filtered.iteritems():
+                dataset = other_values[filter_key]
+                for meta_key, meta_dict in filter_value.iteritems():
+                    if ",".join( dataset.metadata.get( meta_key ) ) == meta_dict['value']:
+                        options.extend( meta_dict['options'] )
+            return options
+        return self.options
+    
+    def get_legal_values( self, trans, other_values ):
+        def recurse_options( legal_values, options ):
+            for option in options:
+                legal_values.append( option['value'] )
+                recurse_options( legal_values, option['options'] )
+        legal_values = []
+        recurse_options( legal_values, self.get_options( trans=trans, other_values=other_values ) )
+        return legal_values
+    
+    def get_html( self, trans=None, value=None, other_values={} ):
+        """
+        Returns the html widget corresponding to the paramter. 
+        Optionally attempt to retain the current value specific by 'value'
+        """        
+        return self.get_html_field( trans, value, other_values ).get_html()
+    
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        # Dynamic options are not yet supported in workflow, allow 
+        # specifying the value as text for now.
+        if self.is_dynamic and trans.workflow_building_mode:
+            assert isinstance( value, UnvalidatedValue )
+            value = value.value
+            if self.multiple:
+                if value is None:
+                    value = ""
+                else:
+                    value = "\n".join( value )
+                return form_builder.TextArea( self.name, value=value )
+            else:
+                return form_builder.TextField( self.name, value=(value or "") )
+        return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, self.get_options( trans, value, other_values ), value )
+    
+    def from_html( self, value, trans=None, other_values={} ):
+        if self.is_dynamic and ( trans and trans.workflow_building_mode ):
+            if self.multiple:
+                value = value.split( "\n" )
+            return UnvalidatedValue( value )
+        if not value: return None
+        if not isinstance( value, list ):
+            value = [value]
+        if not( self.repeat ) and len( value ) > 1:
+            assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+        rval = []
+        for val in value:
+            if val not in self.get_legal_values( trans, other_values ): raise ValueError( "An invalid option was selected, please verify" )
+            rval.append( util.restore_text( val ) )
+        return rval
+    
+    def to_param_dict_string( self, value, other_values={} ):
+        def get_options_list( value ):
+            def get_base_option( value, options ):
+                for option in options:
+                    if value == option['value']:
+                        return option
+                    rval = get_base_option( value, option['options'] )
+                    if rval: return rval
+                return None #not found
+            def recurse_option( option_list, option ):
+                if not option['options']:
+                    option_list.append( option['value'] )
+                else:
+                    for opt in option['options']:
+                        recurse_option( option_list, opt )
+            rval = []
+            recurse_option( rval, get_base_option( value, self.get_options( other_values = other_values ) ) )
+            return rval or [value]
+        
+        if value is None: return "None"
+        rval = []
+        if self.hierarchy == "exact":
+            rval = value
+        else:
+            for val in value:
+                options = get_options_list( val )
+                rval.extend( options )
+        if len( rval ) > 1:
+            if not( self.repeat ):
+                assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+        return self.separator.join( rval )
+    
+    def value_to_basic( self, value, app ):
+        if isinstance( value, UnvalidatedValue ):
+            return { "__class__": "UnvalidatedValue", "value": value.value }
+        return value
+    def value_from_basic( self, value, app, ignore_errors=False ):
+        if isinstance( value, dict ):
+            assert value["__class__"] == "UnvalidatedValue"
+            return UnvalidatedValue( value["value"] )
+        return value
+    def get_initial_value( self, trans, context ):
+        def recurse_options( initial_values, options ):
+            for option in options:
+                if option['selected']:
+                    initial_values.append( option['value'] )
+                recurse_options( initial_values, option['options'] )
+        # More working around dynamic options for workflow
+        if self.is_dynamic and trans.workflow_building_mode:
+            # Really the best we can do?
+            return UnvalidatedValue( None )
+        initial_values = []
+        recurse_options( initial_values, self.get_options( trans=trans, other_values=context ) )
+        return initial_values
+
+    def value_to_display_text( self, value, app ):
+        def get_option_display( value, options ):
+            for option in options:
+                if value == option['value']:
+                    return option['name']
+                rval = get_option_display( value, option['options'] )
+                if rval: return rval
+            return None #not found
+        
+        if isinstance( value, UnvalidatedValue ):
+            suffix = "\n(value not yet validated)"
+            value = value.value
+        else:
+            suffix = ""
+        if not isinstance( value, list ):
+            value = [ value ]
+        # FIXME: Currently only translating values back to labels if they
+        #        are not dynamic
+        if self.is_dynamic:
+            rval = [ value ]
+        else:
+            rval = []
+            for val in value:
+                rval.append( get_option_display( val, self.options ) or val )
+        return "\n".join( rval ) + suffix
+    def get_dependencies( self ):
+        """
+        Get the *names* of the other params this param depends on.
+        """
+        return self.filtered.keys()
+
+
 class DataToolParameter( ToolParameter ):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -864,7 +1124,7 @@ class DataToolParameter( ToolParameter ):
             else:
                 raise
 
-    def to_param_dict_string( self, value ):
+    def to_param_dict_string( self, value, other_values={} ):
         if value is None: return "None"
         return value.file_name
         
@@ -942,7 +1202,8 @@ parameter_types = dict( text        = TextToolParameter,
                         hidden      = HiddenToolParameter,
                         baseurl     = BaseURLToolParameter,
                         file        = FileToolParameter,
-                        data        = DataToolParameter )
+                        data        = DataToolParameter,
+                        drill_down = DrillDownSelectToolParameter )
 
 class UnvalidatedValue( object ):
     """

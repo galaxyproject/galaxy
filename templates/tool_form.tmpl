@@ -163,4 +163,26 @@ jQuery( function() {
 
 </body>
 
+<script type="text/javascript">
+   \$(function() {
+       \$('li > ul').each(function(i) {
+           if ( \$(this)[0].className == 'tool_parameter_expandable_collapsable' )
+           {
+               var parent_li = \$(this).parent('li');
+               var sub_ul = \$(this).remove();
+               parent_li.find('span').wrapInner('<a/>').find('a').click(function() {
+                 sub_ul.toggle();
+               });
+               parent_li.append(sub_ul);
+           }
+       });
+       \$('ul ul').each( function(i) {
+           if ( \$(this)[0].className == 'tool_parameter_expandable_collapsable' )
+           {
+               \$(this).hide();
+           }
+       });
+   });
+</script>
+
 </html>

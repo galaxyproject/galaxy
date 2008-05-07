@@ -194,6 +194,97 @@ class SelectField(BaseField):
         rval.append( '</select>' )
         return "\n".join( rval )
 
+
+class DrillDownField( BaseField ):
+    """
+    A hierarchical select field, which allows users to 'drill down' a tree-like set of options.
+    
+    >>> t = DrillDownField( "foo", multiple=True, display="checkbox", options=[{'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 1', 'value': 'option1', 'options': []}, {'name': 'Option 2', 'value': 'option2', 'options': []}, {'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 3', 'value': 'option3', 'options': []}, {'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'name': 'Option 5', 'value': 'option5', 'options': []}] )
+    >>> print t.get_html()
+    <div><ul class="tool_parameter_expandable_collapsable">
+    <li><span>[+/-]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
+    <ul class="tool_parameter_expandable_collapsable">
+    <li><input type="checkbox" name="foo" value="option1"">Option 1
+    </li>
+    <li><input type="checkbox" name="foo" value="option2"">Option 2
+    </li>
+    <li><span>[+/-]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
+    <ul class="tool_parameter_expandable_collapsable">
+    <li><input type="checkbox" name="foo" value="option3"">Option 3
+    </li>
+    <li><input type="checkbox" name="foo" value="option4"">Option 4
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    <li><input type="checkbox" name="foo" value="option5"">Option 5
+    </li>
+    </ul></div>
+    >>> t = DrillDownField( "foo", multiple=False, display="radio", options=[{'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 1', 'value': 'option1', 'options': []}, {'name': 'Option 2', 'value': 'option2', 'options': []}, {'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 3', 'value': 'option3', 'options': []}, {'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'name': 'Option 5', 'value': 'option5', 'options': []}] )
+    >>> print t.get_html()
+    <div><ul class="tool_parameter_expandable_collapsable">
+    <li><span>[+/-]</span><input type="radio" name="foo" value="heading1"">Heading 1
+    <ul class="tool_parameter_expandable_collapsable">
+    <li><input type="radio" name="foo" value="option1"">Option 1
+    </li>
+    <li><input type="radio" name="foo" value="option2"">Option 2
+    </li>
+    <li><span>[+/-]</span><input type="radio" name="foo" value="heading1"">Heading 1
+    <ul class="tool_parameter_expandable_collapsable">
+    <li><input type="radio" name="foo" value="option3"">Option 3
+    </li>
+    <li><input type="radio" name="foo" value="option4"">Option 4
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    <li><input type="radio" name="foo" value="option5"">Option 5
+    </li>
+    </ul></div>
+    """
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, options = [], value = [] ):
+        self.name = name
+        self.multiple = multiple or False
+        self.options = options
+        if value is not None:
+            if not isinstance( value, list ): value = [ value ]
+        else:
+            value = []
+        self.value = value
+        if display == "checkbox":
+            assert multiple, "Checkbox display only supported for multiple select"
+        elif display == "radio":
+            assert not( multiple ), "Radio display only supported for single select"
+        else:
+            raise Exception, "Unknown display type: %s" % display
+        self.display = display
+        self.refresh_on_change = refresh_on_change
+        if self.refresh_on_change: 
+            self.refresh_on_change_text = ' refresh_on_change="true"'
+        else:
+            self.refresh_on_change_text = ''
+    def get_html( self, prefix="" ):
+        def recurse_options( html, options ):
+            for option in options:
+                selected = ( option['value'] in self.value )
+                if selected: selected = ' checked'
+                else: selected = ''
+                if option['options']:
+                    html.append( '<li><span>[+/-]</span><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, option['value'], selected, option['name']) )
+                    html.append( '<ul class="tool_parameter_expandable_collapsable">')
+                    recurse_options( html, option['options'] )
+                    html.append( '</ul>')
+                else:
+                    html.append( '<li><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, option['value'], selected, option['name']) )
+                html.append( '</li>' )
+        rval = []
+        rval.append( '<div><ul class="tool_parameter_expandable_collapsable">' )
+        recurse_options( rval, self.options )
+        rval.append( '</ul></div>' )
+        return '\n'.join( rval )
+
 def get_suite():
     """Get unittest suite for this module"""
     import doctest, sys

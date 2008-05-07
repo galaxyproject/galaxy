@@ -965,7 +965,7 @@ class Tool:
                     wrap_values( input.cases[current].inputs, values )
                 else:
                     input_values[ input.name ] = \
-                        InputValueWrapper( input, input_values[ input.name ] )
+                        InputValueWrapper( input, input_values[ input.name ], param_dict )
         # HACK: only wrap if check_values is false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
@@ -1179,11 +1179,12 @@ class InputValueWrapper( object ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
-    def __init__( self, input, value ):
+    def __init__( self, input, value, other_values={} ):
         self.input = input
         self.value = value
+        self._other_values = other_values
     def __str__( self ):
-        return self.input.to_param_dict_string( self.value )
+        return self.input.to_param_dict_string( self.value, self._other_values )
     def __getattr__( self, key ):
         return getattr( self.value, key )
         

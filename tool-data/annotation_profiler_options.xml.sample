@@ -1,0 +1,1101 @@
+<filter type="meta_key" name="dbkey" value="hg18">
+  <options>
+    <option name="Mapping and Sequencing Tracks" value="group-map">
+        <option name="STS Markers" value="stsMap"/>
+        <option name="Fosmid End Pairs" value="fosEndPairs"/>
+        <option name="Chromosome Band" value="cytoBand"/>
+        <option name="BAC End Pairs" value="bacEndPairs"/>
+        <option name="FISH Clones" value="fishClones"/>
+        <option name="GC Percent" value="gc5Base"/>
+        <option name="Coverage" value="clonePos"/>
+        <option name="Recomb Rate" value="recombRate"/>
+        <option name="Map Contigs" value="ctgPos"/>
+        <option name="Assembly" value="gold"/>
+        <option name="Gap" value="gap"/>
+        <option name="Chromosome Band (Ideogram)" value="cytoBandIdeo"/>
+    </option>
+    <option name="Comparative Genomics" value="group-compGeno">
+        <option name="chainRn4" value="chainRn4"/>
+        <option name="chainOryLat1" value="chainOryLat1"/>
+        <option name="chainTetNig1" value="chainTetNig1"/>
+        <option name="netDanRer5" value="netDanRer5"/>
+        <option name="netPanTro2" value="netPanTro2"/>
+        <option name="chainCanFam2" value="chainCanFam2"/>
+        <option name="netPonAbe2" value="netPonAbe2"/>
+        <option name="netGasAcu1" value="netGasAcu1"/>
+        <option name="netStrPur2" value="netStrPur2"/>
+        <option name="chainDanRer5" value="chainDanRer5"/>
+        <option name="netGalGal3" value="netGalGal3"/>
+        <option name="netMonDom4" value="netMonDom4"/>
+        <option name="netOryLat1" value="netOryLat1"/>
+        <option name="netMm9" value="netMm9"/>
+        <option name="chainRheMac2" value="chainRheMac2"/>
+        <option name="netOrnAna1" value="netOrnAna1"/>
+        <option name="chainFr2" value="chainFr2"/>
+        <option name="netXenTro2" value="netXenTro2"/>
+        <option name="Cons Indels MmCf" value="consIndelsHgMmCanFam"/>
+        <option name="Tetraodon Ecores" value="ecoresTetNig1"/>
+        <option name="netTetNig1" value="netTetNig1"/>
+        <option name="chainGalGal3" value="chainGalGal3"/>
+        <option name="chainStrPur2" value="chainStrPur2"/>
+        <option name="chainOrnAna1" value="chainOrnAna1"/>
+        <option name="netFelCat3" value="netFelCat3"/>
+        <option name="chainEquCab1" value="chainEquCab1"/>
+        <option name="chainPonAbe2" value="chainPonAbe2"/>
+        <option name="chainFelCat3" value="chainFelCat3"/>
+      <option name="mostConserved28way" value="subtracks-mostConserved28way">
+        <option name="Most Conserved" value="mostConserved28way"/>
+        <option name="Vertebrate" value="phastConsElements28way"/>
+        <option name="Mammal" value="phastConsElements28wayPlacMammal"/>
+      </option>
+        <option name="chainAnoCar1" value="chainAnoCar1"/>
+        <option name="17-Way Cons" value="multiz17way"/>
+        <option name="chainXenTro2" value="chainXenTro2"/>
+        <option name="17-Way Most Cons" value="phastConsElements17way"/>
+        <option name="chainGasAcu1" value="chainGasAcu1"/>
+        <option name="Conservation" value="multiz28way"/>
+        <option name="chainCalJac1" value="chainCalJac1"/>
+        <option name="netCanFam2" value="netCanFam2"/>
+        <option name="chainMm9" value="chainMm9"/>
+        <option name="chainMonDom4" value="chainMonDom4"/>
+        <option name="netCalJac1" value="netCalJac1"/>
+        <option name="netRheMac2" value="netRheMac2"/>
+        <option name="chainPanTro2" value="chainPanTro2"/>
+        <option name="netEquCab1" value="netEquCab1"/>
+        <option name="netFr2" value="netFr2"/>
+        <option name="netAnoCar1" value="netAnoCar1"/>
+        <option name="netBosTau4" value="netBosTau4"/>
+        <option name="chainBosTau4" value="chainBosTau4"/>
+        <option name="netRn4" value="netRn4"/>
+    </option>
+    <option name="Phenotype and Disease Associations" value="group-phenDis">
+      <option name="caseControl" value="subtracks-caseControl">
+        <option name="Case Control" value="caseControl"/>
+        <option name="CCC Bipolar Dis" value="cccTrendPvalBd"/>
+        <option name="CCC Coronary Art" value="cccTrendPvalCad"/>
+        <option name="CCC Crohns Dis" value="cccTrendPvalCd"/>
+        <option name="CCC Hypertension" value="cccTrendPvalHt"/>
+        <option name="CCC Rheum Arth" value="cccTrendPvalRa"/>
+        <option name="CCC T1 Diabetes" value="cccTrendPvalT1d"/>
+        <option name="CCC T2 Diabetes" value="cccTrendPvalT2d"/>
+      </option>
+        <option name="GAD View" value="gad"/>
+        <option name="RGD Human QTL" value="rgdQtl"/>
+        <option name="RGD Rat QTL" value="rgdRatQtl"/>
+      <option name="nimhBipolar" value="subtracks-nimhBipolar">
+        <option name="NIMH Bipolar" value="nimhBipolar"/>
+        <option name="NIMH Bipolar De" value="nimhBipolarDe"/>
+        <option name="NIMH Bipolar Us" value="nimhBipolarUs"/>
+      </option>
+      <option name="jaxQtlMapped" value="subtracks-jaxQtlMapped">
+        <option name="MGI Mouse QTL" value="jaxQtlAsIs"/>
+        <option name="MGI Mouse QTL" value="jaxQtlMapped"/>
+        <option name="MGI Mouse QTL Padded" value="jaxQtlPadded"/>
+      </option>
+    </option>
+    <option name="mRNA and EST Tracks" value="group-rna">
+        <option name="CGAP SAGE" value="cgapSage"/>
+        <option name="est" value="est"/>
+        <option name="UniGene" value="uniGene_3"/>
+        <option name="Gene Bounds" value="rnaCluster"/>
+        <option name="SIB Alt-Splicing" value="sibTxGraph"/>
+        <option name="Spliced ESTs" value="intronEst"/>
+        <option name="Other mRNAs" value="xenoMrna"/>
+        <option name="H-Inv" value="HInvGeneMrna"/>
+        <option name="mrna" value="mrna"/>
+      <option name="polyA" value="subtracks-polyA">
+        <option name="Poly(A)" value="polyA"/>
+        <option name="PolyA_DB" value="polyaDb"/>
+        <option name="Poly(A) SVM" value="polyaPredict"/>
+      </option>
+        <option name="Other ESTs" value="xenoEst"/>
+    </option>
+    <option name="Genes and Gene Prediction Tracks" value="group-genes">
+        <option name="CCDS" value="ccdsGene"/>
+      <option name="augustus" value="subtracks-augustus">
+        <option name="Augustus" value="augustus"/>
+        <option name="Augustus Ab Initio" value="augustusAbinitio"/>
+        <option name="Augustus Hints" value="augustusHints"/>
+        <option name="Augustus De Novo" value="augustusXRA"/>
+      </option>
+        <option name="sno/miRNA" value="wgRna"/>
+        <option name="Geneid Genes" value="geneid"/>
+        <option name="SIB Genes" value="sibGene"/>
+        <option name="Old Known Genes" value="knownGeneOld2"/>
+        <option name="EvoFold" value="evofold"/>
+        <option name="CONTRAST" value="contrastGene"/>
+        <option name="Exoniphy" value="exoniphy"/>
+        <option name="AceView Genes" value="acembly"/>
+      <option name="nscan" value="subtracks-nscan">
+        <option name="N-SCAN" value="nscan"/>
+        <option name="N-SCAN" value="nscanGene"/>
+        <option name="N-SCAN PASA-EST" value="nscanPasaGene"/>
+      </option>
+        <option name="Ensembl Genes" value="ensGene"/>
+        <option name="SGP Genes" value="sgpGene"/>
+        <option name="RefSeq Genes" value="refGene"/>
+        <option name="Genscan Genes" value="genscan"/>
+        <option name="RNA Genes" value="rnaGene"/>
+        <option name="UCSC Genes" value="knownGene"/>
+        <option name="ACEScan" value="acescan"/>
+        <option name="Other RefSeq" value="xenoRefGene"/>
+        <option name="Alt Events" value="knownAlt"/>
+        <option name="ORFeome Clones" value="orfeomeGenes"/>
+        <option name="MGC Genes" value="mgcGenes"/>
+    </option>
+    <option name="Variation and Repeats" value="group-varRep">
+        <option name="Segmental Dups" value="genomicSuperDups"/>
+        <option name="Structural Var" value="cnp"/>
+      <option name="tajdSnp" value="subtracks-tajdSnp">
+        <option name="Tajima's D SNPs" value="tajdSnp"/>
+        <option name="SNPs AD" value="tajdSnpAd"/>
+        <option name="SNPs ED" value="tajdSnpEd"/>
+        <option name="SNPs XD" value="tajdSnpXd"/>
+      </option>
+        <option name="Self Chain" value="chainSelf"/>
+        <option name="RepeatMasker" value="rmsk"/>
+      <option name="snpArray" value="subtracks-snpArray">
+        <option name="SNP Arrays" value="snpArray"/>
+        <option name="Affy 250KNsp" value="snpArrayAffy250Nsp"/>
+        <option name="Affy 250KSty" value="snpArrayAffy250Sty"/>
+        <option name="Affy SNP 5.0" value="snpArrayAffy5"/>
+        <option name="Affy SNP 6.0" value="snpArrayAffy6"/>
+        <option name="Affy SNP 6.0 SV" value="snpArrayAffy6SV"/>
+        <option name="Illumina 300" value="snpArrayIllumina300"/>
+        <option name="Illumina 550" value="snpArrayIllumina550"/>
+        <option name="Illumina 650" value="snpArrayIllumina650"/>
+      </option>
+      <option name="hapmapLdPh" value="subtracks-hapmapLdPh">
+        <option name="HapMap LD Phased" value="hapmapLdPh"/>
+        <option name="Phased CEU" value="hapmapLdPhCeu"/>
+        <option name="Ph JPT+CHB" value="hapmapLdPhChbJpt"/>
+        <option name="Phased YRI" value="hapmapLdPhYri"/>
+      </option>
+        <option name="SNPs (126)" value="snp126"/>
+        <option name="Interrupted Rpts" value="nestedRepeats"/>
+        <option name="Exapted Repeats" value="exaptedRepeats"/>
+        <option name="SNPs (128)" value="snp128"/>
+      <option name="tajD" value="subtracks-tajD">
+        <option name="Tajima's D" value="tajD"/>
+        <option name="Tajima's D AD" value="tajdAd"/>
+        <option name="Tajima's D ED" value="tajdEd"/>
+        <option name="Tajima's D XD" value="tajdXd"/>
+      </option>
+        <option name="Microsatellite" value="microsat"/>
+        <option name="Simple Repeats" value="simpleRepeat"/>
+      <option name="hapmapSnps" value="subtracks-hapmapSnps">
+        <option name="Chimp Alleles" value="hapmapAllelesChimp"/>
+        <option name="Macaque Alleles" value="hapmapAllelesMacaque"/>
+        <option name="HapMap SNPs" value="hapmapSnps"/>
+        <option name="SNPs CEU" value="hapmapSnpsCEU"/>
+        <option name="SNPs CHB" value="hapmapSnpsCHB"/>
+        <option name="SNPs JPT" value="hapmapSnpsJPT"/>
+        <option name="SNPs YRI" value="hapmapSnpsYRI"/>
+      </option>
+    </option>
+    <option name="Expression and Regulation" value="group-regulation">
+        <option name="FirstEF" value="firstEF"/>
+        <option name="Affy GNF1H" value="affyGnf1h"/>
+        <option name="Affy All Exon" value="affyHumanExon"/>
+      <option name="wgEncodeUcsdNgTaf1Sites" value="subtracks-wgEncodeUcsdNgTaf1Sites">
+        <option name="TAF1 Known Sites" value="wgEncodeUcsdNgTaf1KnownSites"/>
+        <option name="TAF1 Novel Sites" value="wgEncodeUcsdNgTaf1NovelSites"/>
+        <option name="LI TAF1 Sites" value="wgEncodeUcsdNgTaf1Sites"/>
+      </option>
+      <option name="wgEncodeUcsdNgTaf1Valid" value="subtracks-wgEncodeUcsdNgTaf1Valid">
+        <option name="LI TAF1 Valid" value="wgEncodeUcsdNgTaf1Valid"/>
+        <option name="LI Valid H3K4m2" value="wgEncodeUcsdNgTaf1ValidH3K4me"/>
+        <option name="LI Valid H3ac" value="wgEncodeUcsdNgTaf1ValidH3ac"/>
+        <option name="LI Valid Pol2" value="wgEncodeUcsdNgTaf1ValidRnap"/>
+        <option name="LI Valid TAF1" value="wgEncodeUcsdNgTaf1ValidTaf"/>
+      </option>
+        <option name="LI TAF1 Signal" value="wgEncodeUcsdNgTaf1Signal"/>
+        <option name="Affy Txn" value="affyTxnPhase3Super"/>
+      <option name="affyTxnPhase3L" value="subtracks-affyTxnPhase3L">
+        <option name="HDF lRNA" value="affyTxnPhase3HDF"/>
+        <option name="HeLa Cyto lRNA" value="affyTxnPhase3HeLaCyto"/>
+        <option name="HeLa Nucl lRNA" value="affyTxnPhase3HeLaNuclear"/>
+        <option name="HepG2 Cyto lRNA" value="affyTxnPhase3HepG2Cyto"/>
+        <option name="HepG2 Nucl lRNA" value="affyTxnPhase3HepG2Nuclear"/>
+        <option name="Jurkat lRNA" value="affyTxnPhase3Jurkat"/>
+        <option name="Affy Tx lRNA Sig" value="affyTxnPhase3L"/>
+        <option name="NCCIT lRNA" value="affyTxnPhase3NCCIT"/>
+        <option name="PC3 lRNA" value="affyTxnPhase3PC3"/>
+        <option name="SK-N-AS lRNA" value="affyTxnPhase3SK_N_AS"/>
+        <option name="U87MG lRNA" value="affyTxnPhase3U87MG"/>
+      </option>
+        <option name="SwitchGear TSS" value="switchDbTss"/>
+        <option name="LI/UCSD TAF1" value="wgEncodeUcsdNgTaf1Super"/>
+        <option name="Affy U133Plus2" value="affyU133Plus2"/>
+        <option name="GNF Ratio" value="affyRatio"/>
+        <option name="Affy HuEx 1.0" value="affyHuEx1"/>
+      <option name="affyTxnPhase3FragsS" value="subtracks-affyTxnPhase3FragsS">
+        <option name="HeLa - sRNA" value="affyTxnPhase3FragsHeLaBottomStrand"/>
+        <option name="HeLa + sRNA" value="affyTxnPhase3FragsHeLaTopStrand"/>
+        <option name="HepG2 - sRNA" value="affyTxnPhase3FragsHepG2BottomStrand"/>
+        <option name="HepG2 + sRNA" value="affyTxnPhase3FragsHepG2TopStrand"/>
+        <option name="Affy Tx sRNA Reg" value="affyTxnPhase3FragsS"/>
+      </option>
+        <option name="7X Reg Potential" value="regPotential7X"/>
+      <option name="uppsalaChipSites" value="subtracks-uppsalaChipSites">
+        <option name="UU H3ac Sites" value="uppsalaChipH3acSites"/>
+        <option name="UU ChIP Sites" value="uppsalaChipSites"/>
+        <option name="UU Usf1 Sites" value="uppsalaChipUsf1Sites"/>
+        <option name="UU Usf2 Sites" value="uppsalaChipUsf2Sites"/>
+      </option>
+        <option name="CpG Islands" value="cpgIslandExt"/>
+        <option name="GIS PET" value="wgEncodeGisSuper"/>
+        <option name="GNF Atlas 2" value="gnfAtlas2"/>
+        <option name="Vista Enhancers" value="vistaEnhancers"/>
+      <option name="affyTxnPhase3S" value="subtracks-affyTxnPhase3S">
+        <option name="HeLa - sRNA" value="affyTxnPhase3HeLaBottomStrand"/>
+        <option name="HeLa + sRNA" value="affyTxnPhase3HeLaTopStrand"/>
+        <option name="HepG2 - sRNA" value="affyTxnPhase3HepG2BottomStrand"/>
+        <option name="HepG2 + sRNA" value="affyTxnPhase3HepG2TopStrand"/>
+        <option name="Affy Tx sRNA Sig" value="affyTxnPhase3S"/>
+      </option>
+      <option name="wgEncodeGisRnaPet" value="subtracks-wgEncodeGisRnaPet">
+        <option name="GIS PET RNA" value="wgEncodeGisRnaPet"/>
+        <option name="GIS RNA HCT116" value="wgEncodeGisRnaPetHCT116"/>
+        <option name="GIS RNA hES3" value="wgEncodeGisRnaPetHes3"/>
+        <option name="GIS RNA MCF7" value="wgEncodeGisRnaPetMCF7"/>
+        <option name="GIS RNA MCF7 Est" value="wgEncodeGisRnaPetMCF7Estr"/>
+      </option>
+        <option name="TFBS Conserved" value="tfbsConsSites"/>
+      <option name="affyTxnPhase3FragsL" value="subtracks-affyTxnPhase3FragsL">
+        <option name="HDF lRNA" value="affyTxnPhase3FragsHDF"/>
+        <option name="HeLa Cyto lRNA" value="affyTxnPhase3FragsHeLaCyto"/>
+        <option name="HeLa Nucl lRNA" value="affyTxnPhase3FragsHeLaNuclear"/>
+        <option name="HepG2 Cyto lRNA" value="affyTxnPhase3FragsHepG2Cyto"/>
+        <option name="HepG2 Nucl lRNA" value="affyTxnPhase3FragsHepG2Nuclear"/>
+        <option name="Jurkat lRNA" value="affyTxnPhase3FragsJurkat"/>
+        <option name="Affy Tx lRNA Reg" value="affyTxnPhase3FragsL"/>
+        <option name="NCCIT lRNA" value="affyTxnPhase3FragsNCCIT"/>
+        <option name="PC3 lRNA" value="affyTxnPhase3FragsPC3"/>
+        <option name="SK-N-AS lRNA" value="affyTxnPhase3FragsSK_N_AS"/>
+        <option name="U87MG lRNA" value="affyTxnPhase3FragsU87MG"/>
+      </option>
+        <option name="ORegAnno" value="oreganno"/>
+        <option name="Affy U133" value="affyU133"/>
+        <option name="Eponine TSS" value="eponine"/>
+        <option name="Allen Brain" value="allenBrainAli"/>
+        <option name="TS miRNA sites" value="targetScanS"/>
+        <option name="Bertone Yale TAR" value="yaleBertoneTars"/>
+      <option name="uppsalaChipSignal" value="subtracks-uppsalaChipSignal">
+        <option name="UU H3ac Signal" value="uppsalaChipH3acSignal"/>
+        <option name="UU ChIP Signal" value="uppsalaChipSignal"/>
+        <option name="UU Usf1 Signal" value="uppsalaChipUsf1Signal"/>
+        <option name="UU Usf2 Signal" value="uppsalaChipUsf2Signal"/>
+      </option>
+        <option name="Affy U95" value="affyU95"/>
+        <option name="Uppsala ChIP" value="uppsalaChipSuper"/>
+      <option name="wgEncodeGisChipPetAll" value="subtracks-wgEncodeGisChipPetAll">
+        <option name="p53 HCT116 +5FU" value="wgEncodeGisChipPet"/>
+        <option name="GIS ChIP-PET" value="wgEncodeGisChipPetAll"/>
+        <option name="H3K27me3 hES3" value="wgEncodeGisChipPetHes3H3K27me3"/>
+        <option name="H3K4me3 hES3" value="wgEncodeGisChipPetHes3H3K4me3"/>
+        <option name="cMyc P493" value="wgEncodeGisChipPetMycP493"/>
+        <option name="STAT1 HeLa +gIF" value="wgEncodeGisChipPetStat1Gif"/>
+        <option name="STAT1 HeLa -gIF" value="wgEncodeGisChipPetStat1NoGif"/>
+      </option>
+    </option>
+    <option name="ENCODE Comparative Genomics and Variation" value="group-encodeCompAndVar">
+        <option name="NHGRI DIPs" value="encodeIndels"/>
+    </option>
+    <option name="Experimental Tracks" value="group-x">
+        <option name="Uppsala ChIP" value="encodeUppsalaChip"/>
+      <option name="cnp" value="subtracks-cnp">
+        <option name="Iafrate CNPs" value="cnpIafrate2"/>
+        <option name="Locke CNPs" value="cnpLocke"/>
+        <option name="Redon CNPs" value="cnpRedon"/>
+        <option name="Sebat CNPs" value="cnpSebat2"/>
+        <option name="Sharp CNPs" value="cnpSharp2"/>
+        <option name="Tuzun Fosmids" value="cnpTuzun"/>
+        <option name="Conrad Dels" value="delConrad2"/>
+        <option name="Hinds Dels" value="delHinds2"/>
+        <option name="McCarroll Dels" value="delMccarroll"/>
+      </option>
+      <option name="encodeUncFaire" value="subtracks-encodeUncFaire">
+        <option name="FAIRE PeakFinder" value="encodeUncFairePeaks"/>
+        <option name="FAIRE ChIPOTle" value="encodeUncFairePeaksChipotle"/>
+      </option>
+      <option name="encodeUppsalaChipBut" value="subtracks-encodeUppsalaChipBut">
+        <option name="UU H3ac 0h vs 12h" value="encodeUppsalaChipH3acBut0vs12"/>
+        <option name="UU H4ac 0h vs 12h" value="encodeUppsalaChipH4acBut0vs12"/>
+      </option>
+        <option name="UT-Austin STAGE" value="encodeUtexStage"/>
+        <option name="UW DNase-array" value="encodeRegulomeDnaseArray"/>
+      <option name="encodeSangerChipHits" value="subtracks-encodeSangerChipHits">
+        <option name="SI H3K4m1 GM6990" value="encodeSangerChipCenterH3K4me1GM06990"/>
+        <option name="SI H3K4me1 HeLa" value="encodeSangerChipCenterH3K4me1HeLa"/>
+        <option name="SI H3K4m2 GM6990" value="encodeSangerChipCenterH3K4me2GM06990"/>
+        <option name="SI H3K4me2 HeLa" value="encodeSangerChipCenterH3K4me2HeLa"/>
+        <option name="SI H3K4me2 K562" value="encodeSangerChipCenterH3K4me2K562"/>
+        <option name="SI H3K4m3 GM6990" value="encodeSangerChipCenterH3K4me3GM06990"/>
+        <option name="SI H3K4me3 HeLa" value="encodeSangerChipCenterH3K4me3HeLa"/>
+        <option name="SI H3K4me3 K562" value="encodeSangerChipCenterH3K4me3K562"/>
+        <option name="SI H3ac GM06990" value="encodeSangerChipCenterH3acGM06990"/>
+        <option name="SI H3ac HeLa" value="encodeSangerChipCenterH3acHeLa"/>
+        <option name="SI H3ac K562" value="encodeSangerChipCenterH3acK562"/>
+        <option name="SI H4ac GM06990" value="encodeSangerChipCenterH4acGM06990"/>
+        <option name="SI H4ac HeLa" value="encodeSangerChipCenterH4acHeLa"/>
+        <option name="SI H4ac K562" value="encodeSangerChipCenterH4acK562"/>
+      </option>
+        <option name="Gencode Genes Mar07" value="encodeGencodeGeneMar07"/>
+      <option name="encodeNhgriDukeDnaseHs off" value="subtracks-encodeNhgriDukeDnaseHs off">
+        <option name="DNase CD4 MS" value="encodeNhgriDnaseHsMpssCd4"/>
+        <option name="DNase CD4-act MS" value="encodeNhgriDnaseHsMpssCd4Act"/>
+      </option>
+      <option name="encodeNhgriDukeDnaseHs" value="subtracks-encodeNhgriDukeDnaseHs">
+        <option name="DNase CD4 Pval" value="encodeNhgriDnaseHsChipPvalCd4"/>
+        <option name="DNase GM069 Pval" value="encodeNhgriDnaseHsChipPvalGm06990"/>
+        <option name="DNase H9 Pval" value="encodeNhgriDnaseHsChipPvalH9"/>
+        <option name="DNase HeLa Pval" value="encodeNhgriDnaseHsChipPvalHela"/>
+        <option name="DNase HepG2 Pval" value="encodeNhgriDnaseHsChipPvalHepG2"/>
+        <option name="DNase IMR90 Pval" value="encodeNhgriDnaseHsChipPvalImr90"/>
+        <option name="DNase K562 Pval" value="encodeNhgriDnaseHsChipPvalK562"/>
+      </option>
+    </option>
+    <option name="ENCODE Transcript Levels" value="group-encodeTxLevels">
+      <option name="encodeYaleAffyRNATars" value="subtracks-encodeYaleAffyRNATars">
+        <option name="Yale TAR NB4 RA" value="encodeYaleAffyNB4RARNATars"/>
+        <option name="Yale TAR NB4 TPA" value="encodeYaleAffyNB4TPARNATars"/>
+        <option name="Yale TAR NB4 Un" value="encodeYaleAffyNB4UntrRNATars"/>
+        <option name="Yale TAR Neutro" value="encodeYaleAffyNeutRNATars"/>
+        <option name="Yale TAR Plcnta" value="encodeYaleAffyPlacRNATars"/>
+        <option name="Yale TAR" value="encodeYaleAffyRNATars"/>
+      </option>
+      <option name="encodeYaleAffyRNATransMap" value="subtracks-encodeYaleAffyRNATransMap">
+        <option name="Yale RNA NB4 RA" value="encodeYaleAffyNB4RARNATransMap"/>
+        <option name="Yale RNA NB4 TPA" value="encodeYaleAffyNB4TPARNATransMap"/>
+        <option name="Yale RNA NB4 Un" value="encodeYaleAffyNB4UntrRNATransMap"/>
+        <option name="Yale RNA Neutro" value="encodeYaleAffyNeutRNATransMap"/>
+        <option name="Yale RNA Plcnta" value="encodeYaleAffyPlacRNATransMap"/>
+        <option name="Yale RNA" value="encodeYaleAffyRNATransMap"/>
+      </option>
+      <option name="encodeAffyRnaSignal" value="subtracks-encodeAffyRnaSignal">
+        <option name="Affy RNA GM06990" value="encodeAffyRnaGm06990Signal"/>
+        <option name="Affy RNA HeLa" value="encodeAffyRnaHeLaSignal"/>
+        <option name="Affy RNA RA 0h" value="encodeAffyRnaHl60SignalHr00"/>
+        <option name="Affy RNA RA 2h" value="encodeAffyRnaHl60SignalHr02"/>
+        <option name="Affy RNA RA 8h" value="encodeAffyRnaHl60SignalHr08"/>
+        <option name="Affy RNA RA 32h" value="encodeAffyRnaHl60SignalHr32"/>
+        <option name="Affy RNA Signal" value="encodeAffyRnaSignal"/>
+      </option>
+      <option name="encodeYaleMASPlacRNATransMap" value="subtracks-encodeYaleMASPlacRNATransMap">
+        <option name="Yale NB4 NgF RNA" value="encodeYaleMASNB4RNANprotTMFWDMless36mer36bp"/>
+        <option name="Yale NB4 NgR RNA" value="encodeYaleMASNB4RNANprotTMREVMless36mer36bp"/>
+        <option name="Yale Plc NgF RNA" value="encodeYaleMASPlacRNANprotTMFWDMless36mer36bp"/>
+        <option name="Yale Plc NgR RNA" value="encodeYaleMASPlacRNANprotTMREVMless36mer36bp"/>
+        <option name="Yale MAS RNA" value="encodeYaleMASPlacRNATransMap"/>
+        <option name="Yale Plc BtF RNA" value="encodeYaleMASPlacRNATransMapFwdMless36mer36bp"/>
+        <option name="Yale Plc BtR RNA" value="encodeYaleMASPlacRNATransMapRevMless36mer36bp"/>
+      </option>
+      <option name="encodeBuFirstExon" value="subtracks-encodeBuFirstExon">
+        <option name="BU First Exon" value="encodeBuFirstExon"/>
+        <option name="BU Cere. Cortex" value="encodeBuFirstExonCerebrum"/>
+        <option name="BU Colon" value="encodeBuFirstExonColon"/>
+        <option name="BU Heart" value="encodeBuFirstExonHeart"/>
+        <option name="BU Kidney" value="encodeBuFirstExonKidney"/>
+        <option name="BU Liver" value="encodeBuFirstExonLiver"/>
+        <option name="BU Lung" value="encodeBuFirstExonLung"/>
+        <option name="BU Skel. Muscle" value="encodeBuFirstExonSkMuscle"/>
+        <option name="BU Spleen" value="encodeBuFirstExonSpleen"/>
+        <option name="BU Stomach" value="encodeBuFirstExonStomach"/>
+        <option name="BU Testis" value="encodeBuFirstExonTestis"/>
+      </option>
+      <option name="encodeAffyEcSites" value="subtracks-encodeAffyEcSites">
+        <option name="EC1 Sites BrainC" value="encodeAffyEc1BrainCerebellumSites"/>
+        <option name="EC1 Sites BrainF" value="encodeAffyEc1BrainFrontalLobeSites"/>
+        <option name="EC1 Sites Hippoc" value="encodeAffyEc1BrainHippocampusSites"/>
+        <option name="EC1 Sites BrainH" value="encodeAffyEc1BrainHypothalamusSites"/>
+        <option name="EC1 Sites FetalK" value="encodeAffyEc1FetalKidneySites"/>
+        <option name="EC1 Sites Spleen" value="encodeAffyEc1FetalSpleenSites"/>
+        <option name="EC1 Sites FetalT" value="encodeAffyEc1FetalTestisSites"/>
+        <option name="EC1 Sites GM0699" value="encodeAffyEc1GM06990Sites"/>
+        <option name="EC1 Sites HeLa" value="encodeAffyEc1HeLaC1S3Sites"/>
+        <option name="EC1 Sites HepG2" value="encodeAffyEc1HepG2Sites"/>
+        <option name="EC1 Sites K562" value="encodeAffyEc1K562Sites"/>
+        <option name="EC1 Sites Ovary" value="encodeAffyEc1OvarySites"/>
+        <option name="EC1 Sites Placen" value="encodeAffyEc1PlacentaSites"/>
+        <option name="EC1 Sites Prost" value="encodeAffyEc1ProstateSites"/>
+        <option name="EC1 Sites TertBJ" value="encodeAffyEc1TertBJSites"/>
+        <option name="EC1 Sites Testis" value="encodeAffyEc1TestisSites"/>
+        <option name="EC51 Sites BrainC" value="encodeAffyEc51BrainCerebellumSites"/>
+        <option name="EC51 Site BrainF" value="encodeAffyEc51BrainFrontalLobeSites"/>
+        <option name="EC51 Site Hippoc" value="encodeAffyEc51BrainHippocampusSites"/>
+        <option name="EC51 Sites BrainH" value="encodeAffyEc51BrainHypothalamusSites"/>
+        <option name="EC51 Site FetalK" value="encodeAffyEc51FetalKidneySites"/>
+        <option name="EC51 Site Spleen" value="encodeAffyEc51FetalSpleenSites"/>
+        <option name="EC51 Site FetalT" value="encodeAffyEc51FetalTestisSites"/>
+        <option name="EC51 Site GM0699" value="encodeAffyEc51GM06990Sites"/>
+        <option name="EC51 Site HeLa" value="encodeAffyEc51HeLaC1S3Sites"/>
+        <option name="EC51 Site HepG2" value="encodeAffyEc51HepG2Sites"/>
+        <option name="EC51 Site K562" value="encodeAffyEc51K562Sites"/>
+        <option name="EC51 Site Ovary" value="encodeAffyEc51OvarySites"/>
+        <option name="EC51 Site Placen" value="encodeAffyEc51PlacentaSites"/>
+        <option name="EC51 Site Prost" value="encodeAffyEc51ProstateSites"/>
+        <option name="EC51 Site TertBJ" value="encodeAffyEc51TertBJSites"/>
+        <option name="EC51 Site Testis" value="encodeAffyEc51TestisSites"/>
+        <option name="Affy EC Sites" value="encodeAffyEcSites"/>
+      </option>
+      <option name="encodeStanfordPromoters" value="subtracks-encodeStanfordPromoters">
+        <option name="Stanf Promoter" value="encodeStanfordPromoters"/>
+        <option name="Stan Pro AGS" value="encodeStanfordPromotersAGS"/>
+        <option name="Stan Pro Average" value="encodeStanfordPromotersAverage"/>
+        <option name="Stan Pro Be2c" value="encodeStanfordPromotersBe2C"/>
+        <option name="Stan Pro CRL1690" value="encodeStanfordPromotersCRL1690"/>
+        <option name="Stan Pro G402" value="encodeStanfordPromotersG402"/>
+        <option name="Stan Pro HCT116" value="encodeStanfordPromotersHCT116"/>
+        <option name="Stan Pro HMCB" value="encodeStanfordPromotersHMCB"/>
+        <option name="Stan Pro HT1080" value="encodeStanfordPromotersHT1080"/>
+        <option name="Stan Pro HTB11" value="encodeStanfordPromotersHTB11"/>
+        <option name="Stan Pro Hela" value="encodeStanfordPromotersHela"/>
+        <option name="Stan Pro HepG2" value="encodeStanfordPromotersHepG2"/>
+        <option name="Stan Pro JEG3" value="encodeStanfordPromotersJEG3"/>
+        <option name="Stan Pro MG63" value="encodeStanfordPromotersMG63"/>
+        <option name="Stan Pro MRC5" value="encodeStanfordPromotersMRC5"/>
+        <option name="Stan Pro Panc1" value="encodeStanfordPromotersPanc1"/>
+        <option name="Stan Pro Snu182" value="encodeStanfordPromotersSnu182"/>
+        <option name="Stan Pro U87" value="encodeStanfordPromotersU87"/>
+      </option>
+        <option name="Affy RNA" value="encodeAffyRnaSuper"/>
+        <option name="Yale RNA" value="encodeYaleRnaSuper"/>
+      <option name="encodeAffyEcSignal" value="subtracks-encodeAffyEcSignal">
+        <option name="EC1 Sgnl BrainC" value="encodeAffyEc1BrainCerebellumSignal"/>
+        <option name="EC1 Sgnl BrainF" value="encodeAffyEc1BrainFrontalLobeSignal"/>
+        <option name="EC1 Sgnl Hippoc" value="encodeAffyEc1BrainHippocampusSignal"/>
+        <option name="EC1 Sgnl BrainH" value="encodeAffyEc1BrainHypothalamusSignal"/>
+        <option name="EC1 Sgnl FetalK" value="encodeAffyEc1FetalKidneySignal"/>
+        <option name="EC1 Sgnl Spleen" value="encodeAffyEc1FetalSpleenSignal"/>
+        <option name="EC1 Sgnl FetalT" value="encodeAffyEc1FetalTestisSignal"/>
+        <option name="EC1 Sgnl GM0699" value="encodeAffyEc1GM06990Signal"/>
+        <option name="EC1 Sgnl HeLa" value="encodeAffyEc1HeLaC1S3Signal"/>
+        <option name="EC1 Sgnl HepG2" value="encodeAffyEc1HepG2Signal"/>
+        <option name="EC1 Sgnl K562" value="encodeAffyEc1K562Signal"/>
+        <option name="EC1 Sgnl Ovary" value="encodeAffyEc1OvarySignal"/>
+        <option name="EC1 Sgnl Placen" value="encodeAffyEc1PlacentaSignal"/>
+        <option name="EC1 Sgnl Prost" value="encodeAffyEc1ProstateSignal"/>
+        <option name="EC1 Sgnl TertBJ" value="encodeAffyEc1TertBJSignal"/>
+        <option name="EC1 Sgnl Testis" value="encodeAffyEc1TestisSignal"/>
+        <option name="EC51 Sgnl BrainC" value="encodeAffyEc51BrainCerebellumSignal"/>
+        <option name="EC51 Sgnl BrainF" value="encodeAffyEc51BrainFrontalLobeSignal"/>
+        <option name="EC51 Sgnl Hippoc" value="encodeAffyEc51BrainHippocampusSignal"/>
+        <option name="EC51 Sgnl BrainH" value="encodeAffyEc51BrainHypothalamusSignal"/>
+        <option name="EC51 Sgnl FetalK" value="encodeAffyEc51FetalKidneySignal"/>
+        <option name="EC51 Sgnl Spleen" value="encodeAffyEc51FetalSpleenSignal"/>
+        <option name="EC51 Sgnl FetalT" value="encodeAffyEc51FetalTestisSignal"/>
+        <option name="EC51 Sgnl GM0699" value="encodeAffyEc51GM06990Signal"/>
+        <option name="EC51 Sgnl HeLa" value="encodeAffyEc51HeLaC1S3Signal"/>
+        <option name="EC51 Sgnl HepG2" value="encodeAffyEc51HepG2Signal"/>
+        <option name="EC51 Sgnl K562" value="encodeAffyEc51K562Signal"/>
+        <option name="EC51 Sgnl Ovary" value="encodeAffyEc51OvarySignal"/>
+        <option name="EC51 Sgnl Placen" value="encodeAffyEc51PlacentaSignal"/>
+        <option name="EC51 Sgnl Prost" value="encodeAffyEc51ProstateSignal"/>
+        <option name="EC51 Sgnl TertBJ" value="encodeAffyEc51TertBJSignal"/>
+        <option name="EC51 Sgnl Testis" value="encodeAffyEc51TestisSignal"/>
+        <option name="Affy EC Signal" value="encodeAffyEcSignal"/>
+      </option>
+        <option name="Stanf RTPCR" value="encodeStanfordRtPcr"/>
+      <option name="encodeAffyRnaTransfrags" value="subtracks-encodeAffyRnaTransfrags">
+        <option name="Affy RNA GM06990" value="encodeAffyRnaGm06990Sites"/>
+        <option name="Affy RNA HeLa" value="encodeAffyRnaHeLaSites"/>
+        <option name="Affy RNA RA 0h" value="encodeAffyRnaHl60SitesHr00"/>
+        <option name="Affy RNA RA 2h" value="encodeAffyRnaHl60SitesHr02"/>
+        <option name="Affy RNA RA 8h" value="encodeAffyRnaHl60SitesHr08"/>
+        <option name="Affy RNA RA 32h" value="encodeAffyRnaHl60SitesHr32"/>
+        <option name="Affy Transfrags" value="encodeAffyRnaTransfrags"/>
+      </option>
+      <option name="encodeYaleMASPlacRNATars" value="subtracks-encodeYaleMASPlacRNATars">
+        <option name="Yale NB4 NgF TAR" value="encodeYaleMASNB4RNANProtTarsFWDMless36mer36bp"/>
+        <option name="Yale NB4 NgR TAR" value="encodeYaleMASNB4RNANProtTarsREVMless36mer36bp"/>
+        <option name="Yale Plc NgF TAR" value="encodeYaleMASPlacRNANprotTarsFWDMless36mer36bp"/>
+        <option name="Yale Plc NgR TAR" value="encodeYaleMASPlacRNANprotTarsREVMless36mer36bp"/>
+        <option name="Yale MAS TAR" value="encodeYaleMASPlacRNATars"/>
+        <option name="Yale Plc BtF TAR" value="encodeYaleMASPlacRNATarsFwdMless36mer36bp"/>
+        <option name="Yale Plc BtR TAR" value="encodeYaleMASPlacRNATarsRevMless36mer36bp"/>
+      </option>
+        <option name="Affy EC" value="encodeAffyEcSuper"/>
+      <option name="encodeRikenCage" value="subtracks-encodeRikenCage">
+        <option name="Riken CAGE" value="encodeRikenCage"/>
+        <option name="Riken CAGE -" value="encodeRikenCageMinus"/>
+        <option name="Riken CAGE +" value="encodeRikenCagePlus"/>
+      </option>
+    </option>
+    <option name="ENCODE Chromatin Immunoprecipitation" value="group-encodeChip">
+      <option name="encodeAffyChIpHl60SignalStrict" value="subtracks-encodeAffyChIpHl60SignalStrict">
+        <option name="Affy Strict Sig" value="encodeAffyChIpHl60SignalStrict"/>
+        <option name="Affy H3K9ac2 0h" value="encodeAffyChIpHl60SignalStrictH3K9K14DHr00"/>
+        <option name="Affy H3K9ac2 2h" value="encodeAffyChIpHl60SignalStrictH3K9K14DHr02"/>
+        <option name="Affy H3K9ac2 8h" value="encodeAffyChIpHl60SignalStrictH3K9K14DHr08"/>
+        <option name="Affy H3K9ac2 32h" value="encodeAffyChIpHl60SignalStrictH3K9K14DHr32"/>
+        <option name="Affy H4Kac4 0h" value="encodeAffyChIpHl60SignalStrictHisH4Hr00"/>
+        <option name="Affy H4Kac4 2h" value="encodeAffyChIpHl60SignalStrictHisH4Hr02"/>
+        <option name="Affy H4Kac4 8h" value="encodeAffyChIpHl60SignalStrictHisH4Hr08"/>
+        <option name="Affy H4Kac4 32h" value="encodeAffyChIpHl60SignalStrictHisH4Hr32"/>
+        <option name="Affy Pol2 0h" value="encodeAffyChIpHl60SignalStrictPol2Hr00"/>
+        <option name="Affy Pol2 2h" value="encodeAffyChIpHl60SignalStrictPol2Hr02"/>
+        <option name="Affy Pol2 8h" value="encodeAffyChIpHl60SignalStrictPol2Hr08"/>
+        <option name="Affy Pol2 32h" value="encodeAffyChIpHl60SignalStrictPol2Hr32"/>
+        <option name="Affy p63 ME-180+" value="encodeAffyChIpHl60SignalStrictp63_ActD"/>
+        <option name="Affy p63 ME-180" value="encodeAffyChIpHl60SignalStrictp63_mActD"/>
+      </option>
+        <option name="Stanf ChIP" value="encodeStanfordChipSuper"/>
+      <option name="encodeYaleChIPSTAT1Pval" value="subtracks-encodeYaleChIPSTAT1Pval">
+        <option name="Yale LI PVal" value="encodeYaleChIPSTAT1HeLaBingRenPval"/>
+        <option name="Yale 36-36 PVal" value="encodeYaleChIPSTAT1HeLaMaskLess36mer36bpPval"/>
+        <option name="Yale 50-38 PVal" value="encodeYaleChIPSTAT1HeLaMaskLess50mer38bpPval"/>
+        <option name="Yale 50-50 PVal" value="encodeYaleChIPSTAT1HeLaMaskLess50mer50bpPval"/>
+        <option name="Yale STAT1 pVal" value="encodeYaleChIPSTAT1Pval"/>
+      </option>
+      <option name="encodeUtexStage" value="subtracks-encodeUtexStage">
+        <option name="UT-Austin STAGE" value="encodeUtexStage"/>
+        <option name="UT Myc HeLa Tags" value="encodeUtexStageCMycHelaTags"/>
+        <option name="UT STAT1 HeLa Tags" value="encodeUtexStageStat1HelaTags"/>
+      </option>
+        <option name="Sanger ChIP-chip" value="encodeSangerChipSuper"/>
+      <option name="encodeLIChIP" value="subtracks-encodeLIChIP">
+        <option name="LI ChIP Various" value="encodeLIChIP"/>
+        <option name="LI H3ac IMR90" value="encodeUcsdChipAch3Imr90_f"/>
+        <option name="LI H3K27me3 HeLa" value="encodeUcsdChipH3K27me3"/>
+        <option name="LI SUZ12 HeLa" value="encodeUcsdChipH3K27me3Suz12"/>
+        <option name="LI H3K4me2 IMR90" value="encodeUcsdChipMeh3k4Imr90_f"/>
+        <option name="LI Pol2 HCT116" value="encodeUcsdChipRnapHct116_f"/>
+        <option name="LI Pol2 HeLa" value="encodeUcsdChipRnapHela_f"/>
+        <option name="LI Pol2 IMR90" value="encodeUcsdChipRnapImr90_f"/>
+        <option name="LI Pol2 THP1" value="encodeUcsdChipRnapThp1_f"/>
+        <option name="LI TAF1 HCT116" value="encodeUcsdChipTaf250Hct116_f"/>
+        <option name="LI TAF1 HeLa" value="encodeUcsdChipTaf250Hela_f"/>
+        <option name="LI TAF1 IMR90" value="encodeUcsdChipTaf250Imr90_f"/>
+        <option name="LI TAF1 THP1" value="encodeUcsdChipTaf250Thp1_f"/>
+      </option>
+      <option name="encodeUtexChip" value="subtracks-encodeUtexChip">
+        <option name="UT-Austin ChIP" value="encodeUtexChip"/>
+        <option name="UT E2F4 st-Fb Pk" value="encodeUtexChip2091fibE2F4Peaks"/>
+        <option name="UT E2F4 Fb" value="encodeUtexChip2091fibE2F4Raw"/>
+        <option name="UT Myc Fb Pk" value="encodeUtexChip2091fibMycPeaks"/>
+        <option name="UT Myc Fb" value="encodeUtexChip2091fibMycRaw"/>
+        <option name="UT Myc st-Fb Pk" value="encodeUtexChip2091fibMycStimPeaks"/>
+        <option name="UT Myc st-Fb" value="encodeUtexChip2091fibMycStimRaw"/>
+        <option name="UT Myc HeLa Pk" value="encodeUtexChipHeLaMycPeaks"/>
+        <option name="UT Myc HeLa" value="encodeUtexChipHeLaMycRaw"/>
+      </option>
+      <option name="encodeYaleChipSig" value="subtracks-encodeYaleChipSig">
+        <option name="Yale ChIP Signal" value="encodeYaleChipSig"/>
+        <option name="YU BAF155 HeLa S" value="encodeYaleChipSignalBaf155"/>
+        <option name="YU BAF155 K562 S" value="encodeYaleChipSignalBaf155K562"/>
+        <option name="YU BAF170 HeLa S" value="encodeYaleChipSignalBaf170"/>
+        <option name="YU BAF170 K562 S" value="encodeYaleChipSignalBaf170K562"/>
+        <option name="YU BAF47 K562 S" value="encodeYaleChipSignalBaf47K562"/>
+        <option name="YU c-Fos HeLa S" value="encodeYaleChipSignalFos"/>
+        <option name="YU H3K27me3 HeLa S" value="encodeYaleChipSignalH3k27me3Hela"/>
+        <option name="YU H4Kac4 GM S" value="encodeYaleChipSignalH4kac4Gm06990"/>
+        <option name="YU H4Kac4 HeLa S" value="encodeYaleChipSignalH4kac4Hela"/>
+        <option name="YU c-Jun HeLa S" value="encodeYaleChipSignalJun"/>
+        <option name="YU NRSF HeLa S" value="encodeYaleChipSignalNrsfHela"/>
+        <option name="YU P65-C HeLa TNF S" value="encodeYaleChipSignalP65cHelaTnfa"/>
+        <option name="YU P65-N HeLa TNF S" value="encodeYaleChipSignalP65nHelaTnfa"/>
+        <option name="YU Pol2 GM S" value="encodeYaleChipSignalPol2Gm06990"/>
+        <option name="YU Pol2 HeLa S" value="encodeYaleChipSignalPol2Hela"/>
+        <option name="YU Pol2N GM S" value="encodeYaleChipSignalPol2nGm06990"/>
+        <option name="YU Pol2N HeLa S" value="encodeYaleChipSignalPol2nHela"/>
+        <option name="YU SMARCA4 HeLa S" value="encodeYaleChipSignalSmarca4Hela"/>
+        <option name="YU SMARCA6 HeLa S" value="encodeYaleChipSignalSmarca6Hela"/>
+        <option name="YU STAT1 HeLa IF S" value="encodeYaleChipSignalStat1HelaIfna"/>
+        <option name="YU TAF1 HeLa S" value="encodeYaleChipSignalTaf"/>
+      </option>
+        <option name="Uppsala ChIP" value="encodeUppsalaChipSuper"/>
+      <option name="encodeUppsalaChip" value="subtracks-encodeUppsalaChip">
+        <option name="Uppsala ChIP" value="encodeUppsalaChip"/>
+        <option name="UU H3ac HepG2" value="encodeUppsalaChipAch3"/>
+        <option name="UU HNF-3b HepG2" value="encodeUppsalaChipHnf3b"/>
+        <option name="UU HNF-4a HepG2" value="encodeUppsalaChipHnf4a"/>
+        <option name="UU USF-1 HepG2" value="encodeUppsalaChipUsf1"/>
+      </option>
+      <option name="encodeUcDavisChipHits" value="subtracks-encodeUcDavisChipHits">
+        <option name="UCD Ng ChIP Hits" value="encodeUcDavisChipHits"/>
+        <option name="UCD E2F1 Hits" value="encodeUcDavisChipHitsE2F1"/>
+        <option name="UCD c-Myc Hits" value="encodeUcDavisChipHitsMyc"/>
+      </option>
+      <option name="encodeUppsalaChipBut" value="subtracks-encodeUppsalaChipBut">
+        <option name="Uppsala ChIP Buty" value="encodeUppsalaChipBut"/>
+        <option name="UU H3ac HepG2 0h" value="encodeUppsalaChipH3acBut0h"/>
+        <option name="UU H3ac HepG2 12h" value="encodeUppsalaChipH3acBut12h"/>
+        <option name="UU H4ac HepG2 0h" value="encodeUppsalaChipH4acBut0h"/>
+        <option name="UU H4ac HepG2 12h" value="encodeUppsalaChipH4acBut12h"/>
+      </option>
+      <option name="encodeYaleChipSites" value="subtracks-encodeYaleChipSites">
+        <option name="Yale ChIP Sites" value="encodeYaleChipSites"/>
+        <option name="YU BAF155 HeLa" value="encodeYaleChipSitesBaf155"/>
+        <option name="YU BAF155 K562" value="encodeYaleChipSitesBaf155K562"/>
+        <option name="YU BAF170 HeLa" value="encodeYaleChipSitesBaf170"/>
+        <option name="YU BAF170 K562" value="encodeYaleChipSitesBaf170K562"/>
+        <option name="YU BAF47 K562" value="encodeYaleChipSitesBaf47K562"/>
+        <option name="YU c-Fos HeLa" value="encodeYaleChipSitesFos"/>
+        <option name="YU H3K27me3 HeLa" value="encodeYaleChipSitesH3k27me3Hela"/>
+        <option name="YU H4Kac4 GM" value="encodeYaleChipSitesH4kac4Gm06990"/>
+        <option name="YU H4Kac4 HeLa" value="encodeYaleChipSitesH4kac4Hela"/>
+        <option name="YU c-Jun HeLa" value="encodeYaleChipSitesJun"/>
+        <option name="YU NRSF HeLa" value="encodeYaleChipSitesNrsfHela"/>
+        <option name="YU P65-C HeLa TNF" value="encodeYaleChipSitesP65cHelaTnfa"/>
+        <option name="YU P65-N HeLa TNF" value="encodeYaleChipSitesP65nHelaTnfa"/>
+        <option name="YU Pol2 GM" value="encodeYaleChipSitesPol2Gm06990"/>
+        <option name="YU Pol2 HeLa" value="encodeYaleChipSitesPol2Hela"/>
+        <option name="YU Pol2N GM" value="encodeYaleChipSitesPol2nGm06990"/>
+        <option name="YU Pol2N HeLa" value="encodeYaleChipSitesPol2nHela"/>
+        <option name="YU SMARCA4 HeLa" value="encodeYaleChipSitesSmarca4Hela"/>
+        <option name="YU SMARCA6 HeLa" value="encodeYaleChipSitesSmarca6Hela"/>
+        <option name="YU STAT1 HeLa IF" value="encodeYaleChipSitesStat1HelaIfna"/>
+        <option name="YU TAF1 HeLa" value="encodeYaleChipSitesTaf"/>
+      </option>
+      <option name="encodeLIChIPgIF" value="subtracks-encodeLIChIPgIF">
+        <option name="LI gIF ChIP" value="encodeLIChIPgIF"/>
+        <option name="LI Pol2 -gIF" value="encodeUcsdChipHeLaH3H4RNAP_p0"/>
+        <option name="LI Pol2 +gIF" value="encodeUcsdChipHeLaH3H4RNAP_p30"/>
+        <option name="LI TAF1 -gIF" value="encodeUcsdChipHeLaH3H4TAF250_p0"/>
+        <option name="LI TAF1 +gIF" value="encodeUcsdChipHeLaH3H4TAF250_p30"/>
+        <option name="LI H3ac -gIF" value="encodeUcsdChipHeLaH3H4acH3_p0"/>
+        <option name="LI H3ac +gIF" value="encodeUcsdChipHeLaH3H4acH3_p30"/>
+        <option name="LI H4ac -gIF" value="encodeUcsdChipHeLaH3H4acH4_p0"/>
+        <option name="LI H4ac +gIF" value="encodeUcsdChipHeLaH3H4acH4_p30"/>
+        <option name="LI H3K4me2 -gIF" value="encodeUcsdChipHeLaH3H4dmH3K4_p0"/>
+        <option name="LI H3K4me2 +gIF" value="encodeUcsdChipHeLaH3H4dmH3K4_p30"/>
+        <option name="LI STAT1 -gIF" value="encodeUcsdChipHeLaH3H4stat1_p0"/>
+        <option name="LI STAT1 +gIF" value="encodeUcsdChipHeLaH3H4stat1_p30"/>
+        <option name="LI H3K4me3 -gIF" value="encodeUcsdChipHeLaH3H4tmH3K4_p0"/>
+        <option name="LI H3K4me3 +gIF" value="encodeUcsdChipHeLaH3H4tmH3K4_p30"/>
+      </option>
+        <option name="Yale WG ChIP-seq" value="wgEncodeYaleChipSeqSuper"/>
+      <option name="encodeStanfordChipSmoothed" value="subtracks-encodeStanfordChipSmoothed">
+        <option name="Stanf ChIP Score" value="encodeStanfordChipSmoothed"/>
+        <option name="Stan Sc HCT116 Sp1" value="encodeStanfordChipSmoothedHCT116Sp1"/>
+        <option name="Stan Sc HCT116 Sp3" value="encodeStanfordChipSmoothedHCT116Sp3"/>
+        <option name="Stan Sc Jurkat Sp1" value="encodeStanfordChipSmoothedJurkatSp1"/>
+        <option name="Stan Sc Jurkat Sp3" value="encodeStanfordChipSmoothedJurkatSp3"/>
+        <option name="Stan Sc K562 Sp1" value="encodeStanfordChipSmoothedK562Sp1"/>
+        <option name="Stan Sc K562 Sp3" value="encodeStanfordChipSmoothedK562Sp3"/>
+      </option>
+      <option name="encodeYaleChIPSTAT1Sites" value="subtracks-encodeYaleChIPSTAT1Sites">
+        <option name="Yale LI Sites" value="encodeYaleChIPSTAT1HeLaBingRenSites"/>
+        <option name="Yale 36-36 Sites" value="encodeYaleChIPSTAT1HeLaMaskLess36mer36bpSite"/>
+        <option name="Yale 50-38 Sites" value="encodeYaleChIPSTAT1HeLaMaskLess50mer38bpSite"/>
+        <option name="Yale 50-50 Sites" value="encodeYaleChIPSTAT1HeLaMaskLess50mer50bpSite"/>
+        <option name="Yale STAT1 Sites" value="encodeYaleChIPSTAT1Sites"/>
+      </option>
+        <option name="Affy ChIP" value="encodeAffyChipSuper"/>
+      <option name="encodeStanfordChip" value="subtracks-encodeStanfordChip">
+        <option name="Stanf ChIP" value="encodeStanfordChip"/>
+        <option name="Stan HCT116 Sp1" value="encodeStanfordChipHCT116Sp1"/>
+        <option name="Stan HCT116 Sp3" value="encodeStanfordChipHCT116Sp3"/>
+        <option name="Stan Jurkat Sp1" value="encodeStanfordChipJurkatSp1"/>
+        <option name="Stan Jurkat Sp3" value="encodeStanfordChipJurkatSp3"/>
+        <option name="Stan K562 Sp1" value="encodeStanfordChipK562Sp1"/>
+        <option name="Stan K562 Sp3" value="encodeStanfordChipK562Sp3"/>
+      </option>
+      <option name="encodeAffyChIpHl60SitesStrict" value="subtracks-encodeAffyChIpHl60SitesStrict">
+        <option name="Affy Strict Sites" value="encodeAffyChIpHl60SitesStrict"/>
+        <option name="Affy H3K9ac2 0h" value="encodeAffyChIpHl60SitesStrictH3K9K14DHr00"/>
+        <option name="Affy H3K9ac2 2h" value="encodeAffyChIpHl60SitesStrictH3K9K14DHr02"/>
+        <option name="Affy H3K9ac2 8h" value="encodeAffyChIpHl60SitesStrictH3K9K14DHr08"/>
+        <option name="Affy H3K9ac2 32h" value="encodeAffyChIpHl60SitesStrictH3K9K14DHr32"/>
+        <option name="Affy H4Kac4 0h" value="encodeAffyChIpHl60SitesStrictHisH4Hr00"/>
+        <option name="Affy H4Kac4 2h" value="encodeAffyChIpHl60SitesStrictHisH4Hr02"/>
+        <option name="Affy H4Kac4 8h" value="encodeAffyChIpHl60SitesStrictHisH4Hr08"/>
+        <option name="Affy H4Kac4 32h" value="encodeAffyChIpHl60SitesStrictHisH4Hr32"/>
+        <option name="Affy p63 ME-180+" value="encodeAffyChIpHl60SitesStrictP63_ActD"/>
+        <option name="Affy p63 ME-180" value="encodeAffyChIpHl60SitesStrictP63_mActD"/>
+        <option name="Affy Pol2 0h" value="encodeAffyChIpHl60SitesStrictRnapHr00"/>
+        <option name="Affy Pol2 2h" value="encodeAffyChIpHl60SitesStrictRnapHr02"/>
+        <option name="Affy Pol2 8h" value="encodeAffyChIpHl60SitesStrictRnapHr08"/>
+        <option name="Affy Pol2 32h" value="encodeAffyChIpHl60SitesStrictRnapHr32"/>
+      </option>
+      <option name="encodeAffyChIpHl60Pval" value="subtracks-encodeAffyChIpHl60Pval">
+        <option name="Affy pVal" value="encodeAffyChIpHl60Pval"/>
+        <option name="Affy Brg1 RA 0h" value="encodeAffyChIpHl60PvalBrg1Hr00"/>
+        <option name="Affy Brg1 RA 2h" value="encodeAffyChIpHl60PvalBrg1Hr02"/>
+        <option name="Affy Brg1 RA 8h" value="encodeAffyChIpHl60PvalBrg1Hr08"/>
+        <option name="Affy Brg1 RA 32h" value="encodeAffyChIpHl60PvalBrg1Hr32"/>
+        <option name="Affy CEBPe RA 0h" value="encodeAffyChIpHl60PvalCebpeHr00"/>
+        <option name="Affy CEBPe RA 2h" value="encodeAffyChIpHl60PvalCebpeHr02"/>
+        <option name="Affy CEBPe RA 8h" value="encodeAffyChIpHl60PvalCebpeHr08"/>
+        <option name="Affy CEBPe RA 32h" value="encodeAffyChIpHl60PvalCebpeHr32"/>
+        <option name="Affy CTCF RA 0h" value="encodeAffyChIpHl60PvalCtcfHr00"/>
+        <option name="Affy CTCF RA 2h" value="encodeAffyChIpHl60PvalCtcfHr02"/>
+        <option name="Affy CTCF RA 8h" value="encodeAffyChIpHl60PvalCtcfHr08"/>
+        <option name="Affy CTCF RA 32h" value="encodeAffyChIpHl60PvalCtcfHr32"/>
+        <option name="Affy H3K27me3 RA 0h" value="encodeAffyChIpHl60PvalH3K27me3Hr00"/>
+        <option name="Affy H3K27me3 RA 2h" value="encodeAffyChIpHl60PvalH3K27me3Hr02"/>
+        <option name="Affy H3K27me3 RA 8h" value="encodeAffyChIpHl60PvalH3K27me3Hr08"/>
+        <option name="Affy H3K27me3 RA 32h" value="encodeAffyChIpHl60PvalH3K27me3Hr32"/>
+        <option name="Affy H4Kac4 RA 0h" value="encodeAffyChIpHl60PvalH4Kac4Hr00"/>
+        <option name="Affy H4Kac4 RA 2h" value="encodeAffyChIpHl60PvalH4Kac4Hr02"/>
+        <option name="Affy H4Kac4 RA 8h" value="encodeAffyChIpHl60PvalH4Kac4Hr08"/>
+        <option name="Affy H4Kac4 RA 32h" value="encodeAffyChIpHl60PvalH4Kac4Hr32"/>
+        <option name="Affy P300 RA 0h" value="encodeAffyChIpHl60PvalP300Hr00"/>
+        <option name="Affy P300 RA 2h" value="encodeAffyChIpHl60PvalP300Hr02"/>
+        <option name="Affy P300 RA 8h" value="encodeAffyChIpHl60PvalP300Hr08"/>
+        <option name="Affy P300 RA 32h" value="encodeAffyChIpHl60PvalP300Hr32"/>
+        <option name="Affy PU1 RA 0h" value="encodeAffyChIpHl60PvalPu1Hr00"/>
+        <option name="Affy PU1 RA 2h" value="encodeAffyChIpHl60PvalPu1Hr02"/>
+        <option name="Affy PU1 RA 8h" value="encodeAffyChIpHl60PvalPu1Hr08"/>
+        <option name="Affy PU1 RA 32h" value="encodeAffyChIpHl60PvalPu1Hr32"/>
+        <option name="Affy RARA RA 0h" value="encodeAffyChIpHl60PvalRaraHr00"/>
+        <option name="Affy RARA RA 2h" value="encodeAffyChIpHl60PvalRaraHr02"/>
+        <option name="Affy RARA RA 8h" value="encodeAffyChIpHl60PvalRaraHr08"/>
+        <option name="Affy RARA RA 32h" value="encodeAffyChIpHl60PvalRaraHr32"/>
+        <option name="Affy Pol2 RA 0h" value="encodeAffyChIpHl60PvalRnapHr00"/>
+        <option name="Affy Pol2 RA 2h" value="encodeAffyChIpHl60PvalRnapHr02"/>
+        <option name="Affy Pol2 RA 8h" value="encodeAffyChIpHl60PvalRnapHr08"/>
+        <option name="Affy Pol2 RA 32h" value="encodeAffyChIpHl60PvalRnapHr32"/>
+        <option name="Affy SIRT1 RA 0h" value="encodeAffyChIpHl60PvalSirt1Hr00"/>
+        <option name="Affy SIRT1 RA 2h" value="encodeAffyChIpHl60PvalSirt1Hr02"/>
+        <option name="Affy SIRT1 RA 8h" value="encodeAffyChIpHl60PvalSirt1Hr08"/>
+        <option name="Affy SIRT1 RA 32h" value="encodeAffyChIpHl60PvalSirt1Hr32"/>
+        <option name="Affy TFIIB RA 32h" value="encodeAffyChIpHl60PvalTfiibHr32"/>
+      </option>
+      <option name="encodeYaleChipRfbr" value="subtracks-encodeYaleChipRfbr">
+        <option name="Yale ChIP RFBR" value="encodeYaleChipRfbr"/>
+        <option name="Yale RFBR Clusters" value="encodeYaleChipRfbrClusters"/>
+        <option name="Yale RFBR Deserts" value="encodeYaleChipRfbrDeserts"/>
+      </option>
+      <option name="encodeSangerChip" value="subtracks-encodeSangerChip">
+        <option name="Sanger ChIP" value="encodeSangerChip"/>
+        <option name="SI CTCF GM06990" value="encodeSangerChipCTCF"/>
+        <option name="SI H3K27me3 GM06990" value="encodeSangerChipH3K27me3"/>
+        <option name="SI H3K36me3 GM06990" value="encodeSangerChipH3K36me3"/>
+        <option name="SI H3K4m1 GM6990" value="encodeSangerChipH3K4me1"/>
+        <option name="SI H3K4me1 HFL-1" value="encodeSangerChipH3K4me1HFL1"/>
+        <option name="SI H3K4me1 HeLa" value="encodeSangerChipH3K4me1HeLa"/>
+        <option name="SI H3K4me1 MOLT4" value="encodeSangerChipH3K4me1Molt4"/>
+        <option name="SI H3K4me1 PTR8" value="encodeSangerChipH3K4me1Ptr8"/>
+        <option name="SI H3K4m2 GM6990" value="encodeSangerChipH3K4me2"/>
+        <option name="SI H3K4me2 HFL-1" value="encodeSangerChipH3K4me2HFL1"/>
+        <option name="SI H3K4me2 HeLa" value="encodeSangerChipH3K4me2HeLa"/>
+        <option name="SI H3K4me2 K562" value="encodeSangerChipH3K4me2K562"/>
+        <option name="SI H3K4me2 MOLT4" value="encodeSangerChipH3K4me2Molt4"/>
+        <option name="SI H3K4me2 PTR8" value="encodeSangerChipH3K4me2Ptr8"/>
+        <option name="SI H3K4m3 GM6990" value="encodeSangerChipH3K4me3"/>
+        <option name="SI H3K4me3 HFL-1" value="encodeSangerChipH3K4me3HFL1"/>
+        <option name="SI H3K4me3 HeLa" value="encodeSangerChipH3K4me3HeLa"/>
+        <option name="SI H3K4me3 K562" value="encodeSangerChipH3K4me3K562"/>
+        <option name="SI H3K4me3 MOLT4" value="encodeSangerChipH3K4me3Molt4"/>
+        <option name="SI H3K4me3 PTR8" value="encodeSangerChipH3K4me3Ptr8"/>
+        <option name="SI H3K79me3 GM06990" value="encodeSangerChipH3K79me3"/>
+        <option name="SI H3K9me3 GM06990" value="encodeSangerChipH3K9me3"/>
+        <option name="SI H3ac GM06990" value="encodeSangerChipH3ac"/>
+        <option name="SI H3ac HFL-1" value="encodeSangerChipH3acHFL1"/>
+        <option name="SI H3ac HeLa" value="encodeSangerChipH3acHeLa"/>
+        <option name="SI H3ac K562" value="encodeSangerChipH3acK562"/>
+        <option name="SI H3ac MOLT4" value="encodeSangerChipH3acMolt4"/>
+        <option name="SI H4ac GM06990" value="encodeSangerChipH4ac"/>
+        <option name="SI H4ac HFL-1" value="encodeSangerChipH4acHFL1"/>
+        <option name="SI H4ac HeLa" value="encodeSangerChipH4acHeLa"/>
+        <option name="SI H4ac K562" value="encodeSangerChipH4acK562"/>
+        <option name="SI H4ac MOLT4" value="encodeSangerChipH4acMolt4"/>
+      </option>
+      <option name="encodeAffyChIpHl60Sites" value="subtracks-encodeAffyChIpHl60Sites">
+        <option name="Affy Sites" value="encodeAffyChIpHl60Sites"/>
+        <option name="Affy Brg1 RA 0h" value="encodeAffyChIpHl60SitesBrg1Hr00"/>
+        <option name="Affy Brg1 RA 2h" value="encodeAffyChIpHl60SitesBrg1Hr02"/>
+        <option name="Affy Brg1 RA 8h" value="encodeAffyChIpHl60SitesBrg1Hr08"/>
+        <option name="Affy Brg1 RA 32h" value="encodeAffyChIpHl60SitesBrg1Hr32"/>
+        <option name="Affy CEBPe RA 0h" value="encodeAffyChIpHl60SitesCebpeHr00"/>
+        <option name="Affy CEBPe RA 2h" value="encodeAffyChIpHl60SitesCebpeHr02"/>
+        <option name="Affy CEBPe RA 8h" value="encodeAffyChIpHl60SitesCebpeHr08"/>
+        <option name="Affy CEBPe RA 32h" value="encodeAffyChIpHl60SitesCebpeHr32"/>
+        <option name="Affy CTCF RA 0h" value="encodeAffyChIpHl60SitesCtcfHr00"/>
+        <option name="Affy CTCF RA 2h" value="encodeAffyChIpHl60SitesCtcfHr02"/>
+        <option name="Affy CTCF RA 8h" value="encodeAffyChIpHl60SitesCtcfHr08"/>
+        <option name="Affy CTCF RA 32h" value="encodeAffyChIpHl60SitesCtcfHr32"/>
+        <option name="Affy H3K27me3 RA 0h" value="encodeAffyChIpHl60SitesH3K27me3Hr00"/>
+        <option name="Affy H3K27me3 RA 2h" value="encodeAffyChIpHl60SitesH3K27me3Hr02"/>
+        <option name="Affy H3K27me3 RA 8h" value="encodeAffyChIpHl60SitesH3K27me3Hr08"/>
+        <option name="Affy H3K27me3 RA 32h" value="encodeAffyChIpHl60SitesH3K27me3Hr32"/>
+        <option name="Affy H4Kac4 RA 0h" value="encodeAffyChIpHl60SitesH4Kac4Hr00"/>
+        <option name="Affy H4Kac4 RA 2h" value="encodeAffyChIpHl60SitesH4Kac4Hr02"/>
+        <option name="Affy H4Kac4 RA 8h" value="encodeAffyChIpHl60SitesH4Kac4Hr08"/>
+        <option name="Affy H4Kac4 RA 32h" value="encodeAffyChIpHl60SitesH4Kac4Hr32"/>
+        <option name="Affy P300 RA 0h" value="encodeAffyChIpHl60SitesP300Hr00"/>
+        <option name="Affy P300 RA 2h" value="encodeAffyChIpHl60SitesP300Hr02"/>
+        <option name="Affy P300 RA 8h" value="encodeAffyChIpHl60SitesP300Hr08"/>
+        <option name="Affy P300 RA 32h" value="encodeAffyChIpHl60SitesP300Hr32"/>
+        <option name="Affy PU1 RA 0h" value="encodeAffyChIpHl60SitesPu1Hr00"/>
+        <option name="Affy PU1 RA 2h" value="encodeAffyChIpHl60SitesPu1Hr02"/>
+        <option name="Affy PU1 RA 8h" value="encodeAffyChIpHl60SitesPu1Hr08"/>
+        <option name="Affy PU1 RA 32h" value="encodeAffyChIpHl60SitesPu1Hr32"/>
+        <option name="Affy RARA RA 0h" value="encodeAffyChIpHl60SitesRaraHr00"/>
+        <option name="Affy RARA RA 2h" value="encodeAffyChIpHl60SitesRaraHr02"/>
+        <option name="Affy RARA RA 8h" value="encodeAffyChIpHl60SitesRaraHr08"/>
+        <option name="Affy RARA RA 32h" value="encodeAffyChIpHl60SitesRaraHr32"/>
+        <option name="Affy Pol2 RA 0h" value="encodeAffyChIpHl60SitesRnapHr00"/>
+        <option name="Affy Pol2 RA 2h" value="encodeAffyChIpHl60SitesRnapHr02"/>
+        <option name="Affy Pol2 RA 8h" value="encodeAffyChIpHl60SitesRnapHr08"/>
+        <option name="Affy Pol2 RA 32h" value="encodeAffyChIpHl60SitesRnapHr32"/>
+        <option name="Affy SIRT1 RA 0h" value="encodeAffyChIpHl60SitesSirt1Hr00"/>
+        <option name="Affy SIRT1 RA 2h" value="encodeAffyChIpHl60SitesSirt1Hr02"/>
+        <option name="Affy SIRT1 RA 8h" value="encodeAffyChIpHl60SitesSirt1Hr08"/>
+        <option name="Affy SIRT1 RA 32h" value="encodeAffyChIpHl60SitesSirt1Hr32"/>
+        <option name="Affy TFIIB RA 32h" value="encodeAffyChIpHl60SitesTfiibHr32"/>
+      </option>
+        <option name="Yale ChIP" value="encodeYaleChipSuper"/>
+      <option name="encodeUcsdNgGif" value="subtracks-encodeUcsdNgGif">
+        <option name="LI Ng gIF ChIP" value="encodeUcsdNgGif"/>
+        <option name="LI H3ac -gIF" value="encodeUcsdNgHeLaAcH3_p0"/>
+        <option name="LI H3ac -gIF Pk" value="encodeUcsdNgHeLaAcH3_p0_peak"/>
+        <option name="LI H3ac +gIF" value="encodeUcsdNgHeLaAcH3_p30"/>
+        <option name="LI H3ac +gIF Pk" value="encodeUcsdNgHeLaAcH3_p30_peak"/>
+        <option name="LI H4ac -gIF" value="encodeUcsdNgHeLaAcH4_p0"/>
+        <option name="LI H4ac -gIF Pk" value="encodeUcsdNgHeLaAcH4_p0_peak"/>
+        <option name="LI H3K4me2 -gIF" value="encodeUcsdNgHeLaDmH3K4_p0"/>
+        <option name="LI H3K4m2 -IF Pk" value="encodeUcsdNgHeLaDmH3K4_p0_peak"/>
+        <option name="LI H3K4me2 +gIF" value="encodeUcsdNgHeLaDmH3K4_p30"/>
+        <option name="LI H3K4m2 +IF Pk" value="encodeUcsdNgHeLaDmH3K4_p30_peak"/>
+        <option name="LI H3K4me3 -gIF" value="encodeUcsdNgHeLaH3K4me3_p0"/>
+        <option name="LI H3K4m3 +gIF" value="encodeUcsdNgHeLaH3K4me3_p30"/>
+        <option name="LI Pol2 -gIF" value="encodeUcsdNgHeLaRnap_p0"/>
+        <option name="LI Pol2 +gIF" value="encodeUcsdNgHeLaRnap_p30"/>
+        <option name="LI STAT1 +gIF" value="encodeUcsdNgHeLaStat1_p30"/>
+        <option name="LI STAT1 +gIF Pk" value="encodeUcsdNgHeLaStat1_p30_peak"/>
+      </option>
+      <option name="encodeYaleChipPval" value="subtracks-encodeYaleChipPval">
+        <option name="Yale ChIP pVal" value="encodeYaleChipPval"/>
+        <option name="YU BAF155 HeLa P" value="encodeYaleChipPvalBaf155"/>
+        <option name="YU BAF155 K562 P" value="encodeYaleChipPvalBaf155K562"/>
+        <option name="YU BAF170 HeLa P" value="encodeYaleChipPvalBaf170"/>
+        <option name="YU BAF170 K562 P" value="encodeYaleChipPvalBaf170K562"/>
+        <option name="YU BAF47 K562 P" value="encodeYaleChipPvalBaf47K562"/>
+        <option name="YU c-Fos HeLa P" value="encodeYaleChipPvalFos"/>
+        <option name="YU H3K27me3 HeLa P" value="encodeYaleChipPvalH3k27me3Hela"/>
+        <option name="YU H4Kac4 GM P" value="encodeYaleChipPvalH4kac4Gm06990"/>
+        <option name="YU H4Kac4 HeLa P" value="encodeYaleChipPvalH4kac4Hela"/>
+        <option name="YU c-Jun HeLa P" value="encodeYaleChipPvalJun"/>
+        <option name="YU NRSF HeLa P" value="encodeYaleChipPvalNrsfHela"/>
+        <option name="YU P65-C HeLa TNF P" value="encodeYaleChipPvalP65cHelaTnfa"/>
+        <option name="YU P65-N HeLa TNF P" value="encodeYaleChipPvalP65nHelaTnfa"/>
+        <option name="YU Pol2 GM P" value="encodeYaleChipPvalPol2Gm06990"/>
+        <option name="YU Pol2 HeLa P" value="encodeYaleChipPvalPol2Hela"/>
+        <option name="YU Pol2N GM P" value="encodeYaleChipPvalPol2nGm06990"/>
+        <option name="YU Pol2N HeLa P" value="encodeYaleChipPvalPol2nHela"/>
+        <option name="YU SMARCA4 HeLa P" value="encodeYaleChipPvalSmarca4Hela"/>
+        <option name="YU SMARCA6 HeLa P" value="encodeYaleChipPvalSmarca6Hela"/>
+        <option name="YU STAT1 HeLa IF P" value="encodeYaleChipPvalStat1HelaIfna"/>
+        <option name="YU TAF1 HeLa P" value="encodeYaleChipPvalTaf"/>
+      </option>
+        <option name="UT-Austin ChIP" value="encodeUtexChipSuper"/>
+      <option name="encodeAffyChIpHl60PvalStrict" value="subtracks-encodeAffyChIpHl60PvalStrict">
+        <option name="Affy Strict pVal" value="encodeAffyChIpHl60PvalStrict"/>
+        <option name="Affy H3K9ac2 0h" value="encodeAffyChIpHl60PvalStrictH3K9K14DHr00"/>
+        <option name="Affy H3K9ac2 2h" value="encodeAffyChIpHl60PvalStrictH3K9K14DHr02"/>
+        <option name="Affy H3K9ac2 8h" value="encodeAffyChIpHl60PvalStrictH3K9K14DHr08"/>
+        <option name="Affy H3K9ac2 32h" value="encodeAffyChIpHl60PvalStrictH3K9K14DHr32"/>
+        <option name="Affy H4Kac4 0h" value="encodeAffyChIpHl60PvalStrictHisH4Hr00"/>
+        <option name="Affy H4Kac4 2h" value="encodeAffyChIpHl60PvalStrictHisH4Hr02"/>
+        <option name="Affy H4Kac4 8h" value="encodeAffyChIpHl60PvalStrictHisH4Hr08"/>
+        <option name="Affy H4Kac4 32h" value="encodeAffyChIpHl60PvalStrictHisH4Hr32"/>
+        <option name="Affy Pol2 0h" value="encodeAffyChIpHl60PvalStrictPol2Hr00"/>
+        <option name="Affy Pol2 2h" value="encodeAffyChIpHl60PvalStrictPol2Hr02"/>
+        <option name="Affy Pol2 8h" value="encodeAffyChIpHl60PvalStrictPol2Hr08"/>
+        <option name="Affy Pol2 32h" value="encodeAffyChIpHl60PvalStrictPol2Hr32"/>
+        <option name="Affy p63 ME-180+" value="encodeAffyChIpHl60PvalStrictp63_ActD"/>
+        <option name="Affy p63 ME-180" value="encodeAffyChIpHl60PvalStrictp63_mActD"/>
+      </option>
+        <option name="UC Davis ChIP" value="encodeUcDavisChipSuper"/>
+      <option name="encodeYaleChIPSTAT1Sig" value="subtracks-encodeYaleChIPSTAT1Sig">
+        <option name="Yale LI Sig" value="encodeYaleChIPSTAT1HeLaBingRenSig"/>
+        <option name="Yale 36-36 Sig" value="encodeYaleChIPSTAT1HeLaMaskLess36mer36bpSig"/>
+        <option name="Yale 50-38 Sig" value="encodeYaleChIPSTAT1HeLaMaskLess50mer38bpSig"/>
+        <option name="Yale 50-50 Sig" value="encodeYaleChIPSTAT1HeLaMaskLess50mer50bpSig"/>
+        <option name="Yale STAT1 Sig" value="encodeYaleChIPSTAT1Sig"/>
+      </option>
+      <option name="encodeUCDavisChip" value="subtracks-encodeUCDavisChip">
+        <option name="UCD Ng ChIP" value="encodeUCDavisChip"/>
+        <option name="UCD C-Myc" value="encodeUCDavisChipMyc"/>
+        <option name="UCD E2F1" value="encodeUCDavisE2F1Median"/>
+        <option name="UCD PolII_GM" value="encodeUCDavisPolIIGM"/>
+        <option name="UCD PolII_HelaS3" value="encodeUCDavisPolIIHelaS3"/>
+        <option name="UCD Taf_GM" value="encodeUCDavisTafGM"/>
+        <option name="UCD Taf_HelaS3" value="encodeUCDavisTafHelaS3"/>
+      </option>
+      <option name="encodeSangerChipHits" value="subtracks-encodeSangerChipHits">
+        <option name="SI H3K4m1 GM6990" value="encodeSangerChipHitH3K4me1GM06990"/>
+        <option name="SI H3K4me1 HeLa" value="encodeSangerChipHitH3K4me1HeLa"/>
+        <option name="SI H3K4m2 GM6990" value="encodeSangerChipHitH3K4me2GM06990"/>
+        <option name="SI H3K4me2 HeLa" value="encodeSangerChipHitH3K4me2HeLa"/>
+        <option name="SI H3K4me2 K562" value="encodeSangerChipHitH3K4me2K562"/>
+        <option name="SI H3K4m3 GM6990" value="encodeSangerChipHitH3K4me3GM06990"/>
+        <option name="SI H3K4me3 HeLa" value="encodeSangerChipHitH3K4me3HeLa"/>
+        <option name="SI H3K4me3 K562" value="encodeSangerChipHitH3K4me3K562"/>
+        <option name="SI H3ac GM06990" value="encodeSangerChipHitH3acGM06990"/>
+        <option name="SI H3ac HeLa" value="encodeSangerChipHitH3acHeLa"/>
+        <option name="SI H3ac K562" value="encodeSangerChipHitH3acK562"/>
+        <option name="SI H4ac GM06990" value="encodeSangerChipHitH4acGM06990"/>
+        <option name="SI H4ac HeLa" value="encodeSangerChipHitH4acHeLa"/>
+        <option name="SI H4ac K562" value="encodeSangerChipHitH4acK562"/>
+        <option name="Sanger ChIP Hits" value="encodeSangerChipHits"/>
+      </option>
+        <option name="LI/UCSD ChIP" value="encodeUcsdChipSuper"/>
+    </option>
+    <option name="ENCODE Chromosome, Chromatin and DNA Structure" value="group-encodeChrom">
+        <option name="BU ORChID" value="encodeBUORChID"/>
+      <option name="encodeUncFaire" value="subtracks-encodeUncFaire">
+        <option name="UNC FAIRE" value="encodeUncFaire"/>
+        <option name="FAIRE Signal" value="encodeUncFaireSignal"/>
+      </option>
+      <option name="encodeUvaDnaRepOrigins" value="subtracks-encodeUvaDnaRepOrigins">
+        <option name="UVa DNA Rep Ori" value="encodeUvaDnaRepOrigins"/>
+        <option name="UVa Ori-Bubble HeLa" value="encodeUvaDnaRepOriginsBubbleHela"/>
+        <option name="UVa Ori-NS GM" value="encodeUvaDnaRepOriginsNSGM"/>
+        <option name="UVa Ori-NS HeLa" value="encodeUvaDnaRepOriginsNSHela"/>
+        <option name="UVa Ori-TR50 HeLa" value="encodeUvaDnaRepOriginsTR50Hela"/>
+      </option>
+        <option name="UVa DNA Rep TR50" value="encodeUvaDnaRepTr50"/>
+        <option name="UVa DNA Rep" value="encodeUvaDnaRepSuper"/>
+      <option name="encodeUvaDnaRepSeg" value="subtracks-encodeUvaDnaRepSeg">
+        <option name="UVa DNA Rep Early" value="encodeUvaDnaRepEarly"/>
+        <option name="UVa DNA Rep Late" value="encodeUvaDnaRepLate"/>
+        <option name="UVa DNA Rep Mid" value="encodeUvaDnaRepMid"/>
+        <option name="UVa DNA Rep PanS" value="encodeUvaDnaRepPanS"/>
+        <option name="UVa DNA Rep Seg" value="encodeUvaDnaRepSeg"/>
+      </option>
+      <option name="encodeRegulomeDnaseArray" value="subtracks-encodeRegulomeDnaseArray">
+        <option name="UW DNase-array" value="encodeRegulomeDnaseArray"/>
+        <option name="DnaseI Sens" value="encodeRegulomeDnaseGM06990Sens"/>
+      </option>
+        <option name="UW DNase" value="encodeUwDnaseSuper"/>
+      <option name="encodeUWRegulomeBase" value="subtracks-encodeUWRegulomeBase">
+        <option name="UW DNase-QCP" value="encodeUWRegulomeBase"/>
+        <option name="CD4" value="encodeUWRegulomeBaseCD4"/>
+        <option name="CaCo2" value="encodeUWRegulomeBaseCaCo2"/>
+        <option name="CaLU3" value="encodeUWRegulomeBaseCaLU3"/>
+        <option name="EryAdult" value="encodeUWRegulomeBaseEryAdult"/>
+        <option name="EryFetal" value="encodeUWRegulomeBaseEryFetal"/>
+        <option name="GM" value="encodeUWRegulomeBaseGM"/>
+        <option name="HMEC" value="encodeUWRegulomeBaseHMEC"/>
+        <option name="HRE" value="encodeUWRegulomeBaseHRE"/>
+        <option name="HeLa" value="encodeUWRegulomeBaseHeLa"/>
+        <option name="HepG2" value="encodeUWRegulomeBaseHepG2"/>
+        <option name="Huh7" value="encodeUWRegulomeBaseHuh7"/>
+        <option name="K562" value="encodeUWRegulomeBaseK562"/>
+        <option name="NHBE" value="encodeUWRegulomeBaseNHBE"/>
+        <option name="PANC" value="encodeUWRegulomeBasePANC"/>
+        <option name="SAEC" value="encodeUWRegulomeBaseSAEC"/>
+        <option name="SKnSH" value="encodeUWRegulomeBaseSKnSH"/>
+      </option>
+      <option name="encodeNhgriDukeDnaseHs" value="subtracks-encodeNhgriDukeDnaseHs">
+        <option name="DNase CD4 Raw" value="encodeNhgriDnaseHsChipRawCd4"/>
+        <option name="DNase GM069 Raw" value="encodeNhgriDnaseHsChipRawGm06990"/>
+        <option name="DNase H9 Raw" value="encodeNhgriDnaseHsChipRawH9"/>
+        <option name="DNase HeLa Raw" value="encodeNhgriDnaseHsChipRawHela"/>
+        <option name="DNase HepG2 Raw" value="encodeNhgriDnaseHsChipRawHepG2"/>
+        <option name="DNase IMR90 Raw" value="encodeNhgriDnaseHsChipRawImr90"/>
+        <option name="DNase K562 Raw" value="encodeNhgriDnaseHsChipRawK562"/>
+        <option name="Duke/NHGRI DNase" value="encodeNhgriDukeDnaseHs"/>
+      </option>
+      <option name="encodeUvaDnaRep" value="subtracks-encodeUvaDnaRep">
+        <option name="UVa DNA Rep" value="encodeUvaDnaRep"/>
+        <option name="UVa DNA Rep 0h" value="encodeUvaDnaRep0"/>
+        <option name="UVa DNA Rep 2h" value="encodeUvaDnaRep2"/>
+        <option name="UVa DNA Rep 4h" value="encodeUvaDnaRep4"/>
+        <option name="UVa DNA Rep 6h" value="encodeUvaDnaRep6"/>
+        <option name="UVa DNA Rep 8h" value="encodeUvaDnaRep8"/>
+      </option>
+    </option>
+    <option name="ENCODE Regions and Genes" value="group-encodeGenes">
+      <option name="encodeGencodeGeneMar07" value="subtracks-encodeGencodeGeneMar07">
+        <option name="Gencode Ref" value="encodeGencodeGeneKnownMar07"/>
+        <option name="Gencode Genes Mar07" value="encodeGencodeGeneMar07"/>
+        <option name="Gencode Polymorph" value="encodeGencodeGenePolymorphicMar07"/>
+        <option name="Gencode Pseudo" value="encodeGencodeGenePseudoMar07"/>
+        <option name="Gencode Putative" value="encodeGencodeGenePutativeMar07"/>
+      </option>
+        <option name="Vienna RNAz" value="encodeUViennaRnaz"/>
+        <option name="Gencode Genes" value="encodeGencodeSuper"/>
+        <option name="EGASP" value="encodeEgaspSuper"/>
+      <option name="encodeGencodeRaceFrags" value="subtracks-encodeGencodeRaceFrags">
+        <option name="Gencode RACEfrags" value="encodeGencodeRaceFrags"/>
+        <option name="RACEfrags Brain" value="encodeGencodeRaceFragsBrain"/>
+        <option name="RACEfrags Colon" value="encodeGencodeRaceFragsColon"/>
+        <option name="RACEfrags GM06990" value="encodeGencodeRaceFragsGM06990"/>
+        <option name="RACEfrags HL60" value="encodeGencodeRaceFragsHL60"/>
+        <option name="RACEfrags Heart" value="encodeGencodeRaceFragsHeart"/>
+        <option name="RACEfrags HeLaS3" value="encodeGencodeRaceFragsHela"/>
+        <option name="RACEfrags Kidney" value="encodeGencodeRaceFragsKidney"/>
+        <option name="RACEfrags Liver" value="encodeGencodeRaceFragsLiver"/>
+        <option name="RACEfrags Lung" value="encodeGencodeRaceFragsLung"/>
+        <option name="RACEfrags Muscle" value="encodeGencodeRaceFragsMuscle"/>
+        <option name="RACEfrags Placenta" value="encodeGencodeRaceFragsPlacenta"/>
+        <option name="RACEfrags Primer" value="encodeGencodeRaceFragsPrimer"/>
+        <option name="RACEfrags Sm Int" value="encodeGencodeRaceFragsSmallIntest"/>
+        <option name="RACEfrags Spleen" value="encodeGencodeRaceFragsSpleen"/>
+        <option name="RACEfrags Stomach" value="encodeGencodeRaceFragsStomach"/>
+        <option name="RACEfrags Testis" value="encodeGencodeRaceFragsTestis"/>
+      </option>
+        <option name="Known+Pred RNA" value="encodeRna"/>
+      <option name="encodeEgaspFull" value="subtracks-encodeEgaspFull">
+        <option name="EGASP Full" value="encodeEgaspFull"/>
+        <option name="AceView" value="encodeEgaspFullAceview"/>
+        <option name="DOGFISH-C" value="encodeEgaspFullDogfish"/>
+        <option name="Ensembl" value="encodeEgaspFullEnsembl"/>
+        <option name="Ensembl Pseudo" value="encodeEgaspFullEnsemblPseudo"/>
+        <option name="Exogean" value="encodeEgaspFullExogean"/>
+        <option name="ExonHunter" value="encodeEgaspFullExonhunter"/>
+        <option name="Fgenesh++" value="encodeEgaspFullFgenesh"/>
+        <option name="GeneID" value="encodeEgaspFullGeneId"/>
+        <option name="GeneID U12" value="encodeEgaspFullGeneIdU12"/>
+        <option name="GeneMark" value="encodeEgaspFullGenemark"/>
+        <option name="Jigsaw" value="encodeEgaspFullJigsaw"/>
+        <option name="Pairgn/NSCAN-E/+" value="encodeEgaspFullPairagonAny"/>
+        <option name="Pairgn/NSCAN-E" value="encodeEgaspFullPairagonMrna"/>
+        <option name="NSCAN" value="encodeEgaspFullPairagonMultiple"/>
+        <option name="SGP2" value="encodeEgaspFullSgp2"/>
+        <option name="SGP2 U12" value="encodeEgaspFullSgp2U12"/>
+        <option name="Fgenesh Pseudo" value="encodeEgaspFullSoftberryPseudo"/>
+        <option name="SPIDA Exons" value="encodeEgaspFullSpida"/>
+        <option name="Twinscan" value="encodeEgaspFullTwinscan"/>
+      </option>
+      <option name="encodeGencodeGeneOct05" value="subtracks-encodeGencodeGeneOct05">
+        <option name="Gencode Ref" value="encodeGencodeGeneKnownOct05"/>
+        <option name="Gencode Genes Oct05" value="encodeGencodeGeneOct05"/>
+        <option name="Gencode Pseudo" value="encodeGencodeGenePseudoOct05"/>
+        <option name="Gencode Putative" value="encodeGencodeGenePutativeOct05"/>
+      </option>
+        <option name="Gencode Introns Oct05" value="encodeGencodeIntronOct05"/>
+      <option name="encodePseudogene" value="subtracks-encodePseudogene">
+        <option name="Pseudogenes" value="encodePseudogene"/>
+        <option name="Consensus Pseudogenes" value="encodePseudogeneConsensus"/>
+        <option name="GIS Pseudogenes" value="encodePseudogeneGIS"/>
+        <option name="Havana-Gencode Pseudogenes" value="encodePseudogeneHavana"/>
+        <option name="UCSC Retrogenes" value="encodePseudogeneUcsc"/>
+        <option name="UCSC Pseudogenes" value="encodePseudogeneUcsc2"/>
+        <option name="Yale Pseudogenes" value="encodePseudogeneYale"/>
+      </option>
+        <option name="ENCODE Regions" value="encodeRegions"/>
+      <option name="encodeEgaspUpdate" value="subtracks-encodeEgaspUpdate">
+        <option name="Augustus Update" value="encodeEgaspUpdAugustusAbinitio"/>
+        <option name="August/EST/Ms Upd" value="encodeEgaspUpdAugustusAny"/>
+        <option name="August/Mouse Upd" value="encodeEgaspUpdAugustusDual"/>
+        <option name="Augustus/EST Upd" value="encodeEgaspUpdAugustusEst"/>
+        <option name="Exogean Update" value="encodeEgaspUpdExogean"/>
+        <option name="FGenesh++ Upd" value="encodeEgaspUpdFgenesh"/>
+        <option name="GeneID Update" value="encodeEgaspUpdGeneId"/>
+        <option name="GeneID U12 Upd" value="encodeEgaspUpdGeneIdU12"/>
+        <option name="Jigsaw Update" value="encodeEgaspUpdJigsaw"/>
+        <option name="SGP2 Update" value="encodeEgaspUpdSgp2"/>
+        <option name="SGP2 U12 Update" value="encodeEgaspUpdSgp2U12"/>
+        <option name="Yale Pseudo Upd" value="encodeEgaspUpdYalePseudo"/>
+        <option name="EGASP Update" value="encodeEgaspUpdate"/>
+      </option>
+      <option name="encodeEgaspPartial" value="subtracks-encodeEgaspPartial">
+        <option name="ACEScan Cons Alt" value="encodeEgaspPartAceCons"/>
+        <option name="ACEScan Other" value="encodeEgaspPartAceOther"/>
+        <option name="Augustus" value="encodeEgaspPartAugustusAbinitio"/>
+        <option name="Augustus/EST/Mouse" value="encodeEgaspPartAugustusAny"/>
+        <option name="Augustus/Mouse" value="encodeEgaspPartAugustusDual"/>
+        <option name="Augustus/EST" value="encodeEgaspPartAugustusEst"/>
+        <option name="GeneZilla" value="encodeEgaspPartGenezilla"/>
+        <option name="SAGA" value="encodeEgaspPartSaga"/>
+        <option name="EGASP Partial" value="encodeEgaspPartial"/>
+      </option>
+    </option>
+  </options>
+</filter>

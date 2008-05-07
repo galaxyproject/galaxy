@@ -1,12 +1,9 @@
 <tool id="Annotation_Profiler_0" name="Profile Annotations" Version="1.0.0">
   <description>for a set of genomic intervals</description>
-  <command interpreter="python2.4">annotation_profiler_for_interval.py -i $input1 -c $input1_chromCol -s $input1_startCol -e $input1_endCol -o $out_file1 $keep_empty -p /depot/data2/galaxy/annotation_profiler/$dbkey $summary -b 3
-#if $select_tables.select_table == "some":#-t $select_tables.table_names
-#end if
-  </command>
+  <command interpreter="python2.4">annotation_profiler_for_interval.py -i $input1 -c $input1_chromCol -s $input1_startCol -e $input1_endCol -o $out_file1 $keep_empty -p /depot/data2/galaxy/annotation_profiler/$dbkey $summary -b 3 -t $table_names</command>
   <inputs>
     <param format="interval" name="input1" type="data" label="Choose Intervals">
-      <validator type="dataset_metadata_in_file" filename="annotation_profiler.loc" metadata_name="dbkey" metadata_column="0" message="Profiling is not currently available for this species."/>
+      <validator type="dataset_metadata_in_file" filename="annotation_profiler_valid_builds.txt" metadata_name="dbkey" metadata_column="0" message="Profiling is not currently available for this species."/>
     </param>
     <param name="keep_empty" type="select" label="Keep Region/Table Pairs with 0 Coverage">
       <option value="-k">Keep</option>
@@ -16,21 +13,7 @@
       <option value="-S">Summary</option>
       <option value="" selected="true">Per Region</option>
     </param>
-    <conditional name="select_tables">
-      <param name="select_table" type="select" label="Limit Tables">
-        <option value="all" selected="true">Use all tables</option>
-        <option value="some">Select desired tables</option>
-      </param>
-      <when value="all">
-      </when>
-      <when value="some">
-     <param name="table_names" type="select" display="checkboxes" multiple="true" label="Choose Tables to Use" help="Selecting no tables will result in using all tables.">
-       <options from_file="annotation_profiler.loc" name_col="2" value_col="1">
-         <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="0"/>
-       </options>
-     </param> 
-      </when>
-    </conditional>
+    <param name="table_names" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true" label="Choose Tables to Use" help="Selecting no tables will result in using all tables." from_file="annotation_profiler_options.xml"/>
    </inputs>
    <outputs>
      <data format="input" name="out_file1"/>
@@ -41,16 +24,14 @@
        <param name="input1" value="4.bed" dbkey="hg18"/>
        <param name="keep_empty" value=""/>
        <param name="summary" value=""/>
-       <param name="select_table" value="some"/>
-       <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refFlat,refGene,snp126"/>
+       <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refGene,snp126"/>
        <output name="out_file1" file="annotation_profiler_1.out" />
      </test>
      <test>
        <param name="input1" value="4.bed" dbkey="hg18"/>
        <param name="keep_empty" value=""/>
        <param name="summary" value="-S"/>
-       <param name="select_table" value="some"/>
-       <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refFlat,refGene,snp126"/>
+       <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refGene,snp126"/>
        <output name="out_file1" file="annotation_profiler_2.out" />
      </test>
    </tests>
@@ -59,9 +40,7 @@
 
 Takes an input set of intervals and for each interval determines the base coverage of the interval by a set of features (tables) available from UCSC.
 
-By default, this tool will check the coverage of your intervals against all available features; you may, however, choose to select only those tables that you want to include.
-
-In the listing of available tables, the number in parentheses **()** is the total number of bases covered by the feature across all chromosomes.
+By default, this tool will check the coverage of your intervals against all available features; you may, however, choose to select only those tables that you want to include. Selecting a section heading will effectively cause all of it's children to be selected.
 
 You may alternatively choose to recieve a summary across all of the intervals that you provide.
 
