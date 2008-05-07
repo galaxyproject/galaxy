@@ -569,7 +569,7 @@ class RootController( BaseController ):
     def masthead( self, trans ):
         brand = trans.app.config.get( "brand", "" )
         if brand:
-            brand ="<span class='brand'>/%s</span>"
+            brand ="<span class='brand'>/%s</span>" % brand
         wiki_url = trans.app.config.get( "wiki_url", "http://g2.trac.bx.psu.edu/" )
         bugs_email = trans.app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )
         blog_url = trans.app.config.get( "blog_url", "http://g2.trac.bx.psu.edu/blog"   )
