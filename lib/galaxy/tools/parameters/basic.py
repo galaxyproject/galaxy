@@ -1101,6 +1101,8 @@ class DataToolParameter( ToolParameter ):
             return None
         if isinstance( value, list ):
             return [ trans.app.model.Dataset.get( v ) for v in value ]
+        elif isinstance( value, trans.app.model.Dataset ):
+            return value
         else:
             return trans.app.model.Dataset.get( value )
 
