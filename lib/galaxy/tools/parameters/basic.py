@@ -1038,7 +1038,7 @@ class DataToolParameter( ToolParameter ):
                 else:
                     hid = str( data.hid )
                 if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.ERROR]:
-                    if self.options and filter_key == 'build' and data.get_dbkey() != filter_value:
+                    if self.options and filter_key == 'dbkey' and data.get_dbkey() != filter_value:
                         continue
                     selected = ( value and ( data in value ) )
                     field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
