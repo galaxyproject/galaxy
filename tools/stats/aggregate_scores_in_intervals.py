@@ -4,6 +4,7 @@
 usage: %prog score_file interval_file chrom start stop [out_file] [options] 
     -b, --binned: 'score_file' is actually a directory of binned array files
     -m, --mask=FILE: bed file containing regions not to consider valid
+    -c, --chrom_buffer=INT: number of chromosomes (default is 3) to keep in memory when using a user supplied score file
 """
 
 from __future__ import division
@@ -90,14 +91,12 @@ def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
     
-def load_scores_wiggle( fname ):
+def load_scores_wiggle( fname, chrom_buffer_size = 3 ):
     """
     Read a wiggle file and return a dict of BinnedArray objects keyed 
     by chromosome.
     """ 
     scores_by_chrom = dict()
-    chrom_buffer_size = 3 #use BinnedArray() for this number of chroms, otherwise, use PositionalScoresOnDisk()
-    #TODO: allow this value to be specified in the command line
     try:
         for chrom, pos, val in bx.wiggle.Reader( UCSCOutWrapper( open( fname ) ) ):
             if chrom not in scores_by_chrom:
@@ -159,7 +158,11 @@ def main():
     if binned:
         scores_by_chrom = load_scores_ba_dir( score_fname )
     else:
-        scores_by_chrom = load_scores_wiggle( score_fname )
+        try:
+            chrom_buffer = int( options.chrom_buffer )
+        except:
+            chrom_buffer = 3
+        scores_by_chrom = load_scores_wiggle( score_fname, chrom_buffer )
 
     if mask_fname:
         masks = binned_bitsets_from_file( open( mask_fname ) )
