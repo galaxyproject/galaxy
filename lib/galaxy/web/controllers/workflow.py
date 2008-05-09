@@ -242,7 +242,7 @@ class WorkflowController( BaseController ):
                 # Convert back to strings for database
                 tool_inputs = tool.params_to_strings( state.inputs, trans.app )
                 step.tool_inputs = tool_inputs
-                step.tool_errors = step_dict['tool_errors']
+                step.tool_errors = step_dict.get( 'tool_errors', None )
                 if step.tool_errors:
                     workflow.has_errors = True
             else:
