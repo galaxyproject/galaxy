@@ -464,7 +464,6 @@ class WorkflowController( BaseController ):
                                 elif isinstance( input, Conditional ):
                                     values = input_values[ input.name ]
                                     current = values["__current_case__"]
-                                    label_prefix = label_prefix
                                     prefix = prefix + "|" + input.name
                                     visitor( input.cases[current].inputs, values, prefix )
                                 else:
