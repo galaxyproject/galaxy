@@ -7,8 +7,8 @@
     <script type='text/javascript' src="/static/scripts/galaxy.panels.js"> </script>
     <script type="text/javascript">
         ensure_dd_helper();
-        var lp = make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
-        var rp = make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
+        make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
+        make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
         ## handle_minwidth_hint = rp.handle_minwidth_hint;
     </script>
 </%def>
@@ -20,6 +20,7 @@
     <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.dimensions.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
+    <script type='text/javascript' src="/static/scripts/galaxy.ui.scrollPanel.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.hoverIntent.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.form.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.json.js"> </script>
@@ -73,7 +74,7 @@
             // Load workflow definition
             $.ajax( {
                 url: "${h.url_for( action='load_workflow' )}",
-                data: { id: "${trans.security.encode_id( workflow_id )}" },
+                data: { id: "${trans.security.encode_id( workflow_id )}", "_": "true" },
                 dataType: 'json',
                 success: function( data ) {
                      reset();
@@ -147,66 +148,6 @@
                }
            });
         });
-        
-        // Scrolling
-        $.ui.plugin.add("draggable", "scrollPanel", {
-            drag: function(e, ui) {
-                var o = ui.options,
-                    i = ui.instance,
-                    panel = o.panel,
-                    panel_pos = panel.position(),
-                    viewport = panel.parent();
-                    moved = false;
-                    nudge = 23;
-                // Legal panel range
-                var p_min_x = - ( panel.width() - viewport.width() ),
-                    p_min_y = - ( panel.height() - viewport.height() ),
-                    p_max_x = 0,
-                    p_max_y = 0;
-                var min_vis_x = - panel_pos.left,
-                    max_vis_x = min_vis_x + viewport.width(),
-                    min_vis_y = - panel_pos.top,
-                    max_vis_y = min_vis_y + viewport.height();
-                // Move it
-                if ( ( panel_pos.left < p_max_x ) && ( ui.position.left < min_vis_x ) ) {
-                    var t = Math.min( nudge, p_max_x - panel_pos.left );
-                    panel.css( "left", panel_pos.left + t );
-                    moved = true;
-                    ui.instance.offset.left += t;
-                    ui.position.left = min_vis_x - t
-                }
-                if ( ( panel_pos.left > p_min_x ) && ( ( ui.position.left + ui.element.width() ) > max_vis_x ) ) {
-                    var t = Math.min( nudge, panel_pos.left  - p_min_x );
-                    panel.css( "left", panel_pos.left - t );
-                    moved = true;
-                    ui.instance.offset.left -= t
-                    ui.position.left = max_vis_x + t - ui.element.width();
-                }
-                if ( ( panel_pos.top < p_max_y ) && ( ui.position.top < min_vis_y ) ) {
-                    var t = Math.min( nudge, p_max_y - panel_pos.top );
-                    panel.css( "top", panel_pos.top + t );
-                    moved = true;
-                    ui.instance.offset.top += t;
-                    ui.position.top = min_vis_y - t;
-                }
-                if ( ( panel_pos.top > p_min_y ) && ( ( ui.position.top + ui.element.height() ) > max_vis_y ) ) {
-                    var t = Math.min( nudge, panel_pos.top  - p_min_x );
-                    panel.css( "top", panel_pos.top - t );
-                    moved = true;
-                    ui.instance.offset.top -= t
-                    ui.position.top = max_vis_y + t - ui.element.height();
-                }
-                // Update offsets
-                if ( moved ) {
-                    $.ui.ddmanager.prepareOffsets( ui.instance, e );
-                }
-                // Still contain in panel
-                ui.position.left = Math.max( ui.position.left, 0 );
-                ui.position.top = Math.max( ui.position.top, 0 );
-                ui.position.left = Math.min( ui.position.left, panel.width() - ui.element.width() );
-                ui.position.top = Math.min( ui.position.top, panel.height() - ui.element.height() );
-            } 
-        });
     });
 
     var workflow = null;
@@ -226,8 +167,10 @@
             $("div.toolFormInCanvas").each( function() {
                 x = Math.min( x, $(this).position().left );
                 y = Math.min( x, $(this).position().left );
-            });            
-            $("#canvas-container").css( { left: - x + 20, top: - y + 20 } );
+            });
+            x = Math.min( - x + 20, 0 );
+            y = Math.min( - y + 20, 0 );
+            $("#canvas-container").css( { left: x, top: y } );
         }
     }
     
@@ -238,7 +181,8 @@
         workflow.activate_node( node );
         $.ajax( {
             url: "${h.url_for( action='get_tool_info' )}", 
-            data: { tool_id: id, "_": "true" }, 
+            data: { tool_id: id, "_": "true" },
+            global: false,
             dataType: "json",
             success: function( data ) {
                 node.init_field_data( data );
@@ -292,6 +236,10 @@
             beforeSubmit: function( data ) {
                 data.push( { name: 'tool_state', value: node.tool_state } );
                 data.push( { name: '_', value: "true" } );
+                $("#tool-form-save-button").each( function() {
+                    this.value = "Saving...";
+                    this.disabled = true;
+                });
             }
         }).each( function() {
             form = this;
@@ -324,7 +272,8 @@
             type: "POST",
             data: {
                 id: "${trans.security.encode_id( workflow_id )}",
-                workflow_data: $.toJSON( workflow.to_simple() )
+                workflow_data: $.toJSON( workflow.to_simple() ),
+                "_": "true"
             },
             dataType: 'json',
             success: function( data ) { 
@@ -347,48 +296,6 @@
                 });
             }
         });
-    }
-    
-    var load_workflow = function () {
-        var body = $("#load-dialog-form").clone();
-        var form = body.find( "form" ).ajaxForm( {
-            dataType: 'json',
-            success: function( data ) {
-                reset();
-                workflow.from_simple( data );
-                workflow.has_changes = false;
-                show_modal( "Workflow loaded", "Workflow loaded.", {
-                    "Ok" : function () { hide_modal(); }
-                });
-            },
-            beforeSubmit: function( data ) {
-                show_modal( "Loading workflow", "progress" );
-            }
-        });
-        if ( workflow.has_changes ) {
-            body.prepend( "<div class='warningmark'>Your unsaved changes will be lost!</div>" );
-        }
-        show_modal( "Load workflow", body, {
-            "Cancel" : hide_modal,
-            "Load": function() { form.submit() }
-        } );
-    }
-    
-    var clear_workflow = function () {
-        reset();
-        hide_modal();
-    }
-    
-    var create_new_workflow_dialog = function () {
-        if ( workflow.has_changes ) {
-            show_modal( "Create new workflow",
-                        "Your workflow has unsaved changes which will be lost", {
-                "Cancel" : hide_modal,
-                "Continue": clear_workflow
-            });
-        } else {
-            clear_workflow();
-        }
     }
     
     </script>

@@ -142,7 +142,7 @@ class DefaultToolState( object ):
         """
         # Convert parameters to a dictionary of strings, and save curent
         # page in that dict
-        value = tool.params_to_strings( self.inputs, app )
+        value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
         value = simplejson.dumps( value )
         # Make it secure
@@ -161,7 +161,7 @@ class DefaultToolState( object ):
         # Restore from string
         values = json_fix( simplejson.loads( value ) )
         self.page = values.pop( "__page__" )
-        self.inputs = tool.params_from_strings( values, app, ignore_errors=True )
+        self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
 class Tool:
     """
@@ -740,6 +740,7 @@ class Tool:
                 prefix = "%s|" % ( key )
                 # Deal with the 'test' element and see if it's value changed
                 test_param_key = prefix + input.test_param.name
+                test_param_error = None
                 if test_param_key not in incoming and update_only:
                     # Update only, keep previous value and state, but still
                     # recurse in case there are nested changes
@@ -751,7 +752,7 @@ class Tool:
                     # Get value of test param and determine current case
                     test_incoming = incoming.get( prefix + input.test_param.name, None )
                     value, test_param_error = \
-                        self.check_param( trans, input.test_param, test_incoming, context )
+                        check_param( trans, input.test_param, test_incoming, context )
                     current_case = input.get_current_case( value, trans )
                 if current_case != old_current_case:
                     # Current case has changed, throw away old state
@@ -786,73 +787,47 @@ class Tool:
                     # preserve the old error message.
                     if input.name in old_errors:
                         errors[ input.name ] = old_errors[ input.name ]
-                # SelectToolParameters and DataToolParameters whose options are dynamically
-                # generated based on the current value of a dependency parameter require special
-                # handling.  When the dependency parameter's value is changed, the form is
-                # submitted ( due to the refresh_on_change behavior ).  When this occurs, the 
-                # "dependent" parameter's value has not been reset ( dynamically generated based 
-                # on the new value of its dependency ) prior to reaching this point, so we need 
-                # to regenerate it before it is validated in check_param().
-                incoming_value_generated = False
-                if not( 'runtool_btn' in incoming or 'URL' in incoming ):
-                    # Form must have been refreshed, probably due to a refresh_on_change
-                    try:
-                        if input.is_dynamic:
-                            dependencies = input.get_dependencies()
-                            for dependency_name in dependencies:
-                                dependency_value = changed_dependencies.get( dependency_name, None )
-                                if dependency_value:
-                                    # We need to dynamically generate the current input based on 
-                                    # the changed dependency parameter
-                                    changed_params = {}
-                                    changed_params[dependency_name] = dependency_value
-                                    changed_params[input.name] = input
-                                    incoming_value = input.get_initial_value( trans, changed_params )
-                                    incoming_value_generated = True
-                                    # Delete the dependency_param from chagned_dependencies since its
-                                    # dependent param has been generated based its new value.
-                                    del changed_dependencies[dependency_name]
-                                    break
-                    except:
-                        pass
-                if not incoming_value_generated:
-                    incoming_value = incoming.get( key, None )
-                value, error = self.check_param( trans, input, incoming_value, context )
-                if input.dependent_params and state[ input.name ] != value:
-                    # We need to keep track of changed dependency parametrs ( parameters
-                    # that have dependent parameters whose options are dynamically generated )
-                    changed_dependencies[ input.name ] = value
-                if error:
-                    errors[ input.name ] = error
-                state[ input.name ] = value
+                else:
+                    # SelectToolParameters and DataToolParameters whose options are dynamically
+                    # generated based on the current value of a dependency parameter require special
+                    # handling.  When the dependency parameter's value is changed, the form is
+                    # submitted ( due to the refresh_on_change behavior ).  When this occurs, the 
+                    # "dependent" parameter's value has not been reset ( dynamically generated based 
+                    # on the new value of its dependency ) prior to reaching this point, so we need 
+                    # to regenerate it before it is validated in check_param().
+                    incoming_value_generated = False
+                    if not( 'runtool_btn' in incoming or 'URL' in incoming ):
+                        # Form must have been refreshed, probably due to a refresh_on_change
+                        try:
+                            if input.is_dynamic:
+                                dependencies = input.get_dependencies()
+                                for dependency_name in dependencies:
+                                    dependency_value = changed_dependencies.get( dependency_name, None )
+                                    if dependency_value:
+                                        # We need to dynamically generate the current input based on 
+                                        # the changed dependency parameter
+                                        changed_params = {}
+                                        changed_params[dependency_name] = dependency_value
+                                        changed_params[input.name] = input
+                                        incoming_value = input.get_initial_value( trans, changed_params )
+                                        incoming_value_generated = True
+                                        # Delete the dependency_param from chagned_dependencies since its
+                                        # dependent param has been generated based its new value.
+                                        del changed_dependencies[dependency_name]
+                                        break
+                        except:
+                            pass
+                    if not incoming_value_generated:
+                        incoming_value = incoming.get( key, None )
+                    value, error = check_param( trans, input, incoming_value, context )
+                    if input.dependent_params and state[ input.name ] != value:
+                        # We need to keep track of changed dependency parametrs ( parameters
+                        # that have dependent parameters whose options are dynamically generated )
+                        changed_dependencies[ input.name ] = value
+                    if error:
+                        errors[ input.name ] = error
+                    state[ input.name ] = value
         return errors
-            
-    def check_param( self, trans, param, incoming_value, param_values ):
-        """
-        Check the value of a single parameter `param`. The value in 
-        `incoming_value` is converted from its HTML encoding and validated.
-        The `param_values` argument contains the processed values of 
-        previous parameters (this may actually be an ExpressionContext 
-        when dealing with grouping scenarios).
-        """
-        value = incoming_value
-        error = None
-        try:
-            if param.name == 'file_data':
-                pass
-            elif value is not None or isinstance(param, DataToolParameter):
-                # Convert value from HTML representation
-                value = param.from_html( value, trans, param_values )
-                # Allow the value to be converted if neccesary
-                filtered_value = param.filter_value( value, trans, param_values )
-                # Then do any further validation on the value
-                param.validate( filtered_value, trans.history )
-            elif value is None and isinstance( param, SelectToolParameter ):
-               # An empty select list or column list
-               param.validate( value, trans.history ) 
-        except ValueError, e:
-            error = str( e )
-        return value, error
             
     def get_static_param_values( self, trans ):
         """
@@ -880,34 +855,10 @@ class Tool:
         return self.tool_action.execute( self, trans, incoming )
         
     def params_to_strings( self, params, app ):
-        """
-        Convert a dictionary of parameter values to a dictionary of strings
-        suitable for persisting. The `value_to_basic` method of each parameter
-        is called to convert its value to basic types, the result of which
-        is then json encoded (this allowing complex nested parameters and 
-        such).
-        """
-        rval = dict()
-        for key, value in params.iteritems():
-            if key in self.inputs:
-                value = self.inputs[ key ].value_to_basic( value, app )
-            rval[ key ] = str( simplejson.dumps( value ) )
-        return rval
+        return params_to_strings( self.inputs, params, app )
         
     def params_from_strings( self, params, app, ignore_errors=False ):
-        """
-        Convert a dictionary of strings as produced by `params_to_strings`
-        back into parameter values (decode the json representation and then
-        allow each parameter to convert the basic types into the parameters
-        preferred form).
-        """
-        rval = dict()
-        for key, value in params.iteritems():
-            value = json_fix( simplejson.loads( value ) )
-            if key in self.inputs:
-                value = self.inputs[key].value_from_basic( value, app, ignore_errors )
-            rval[ key ] = value 
-        return rval
+        return params_from_strings( self.inputs, params, app, ignore_errors )
     
     def handle_unvalidated_param_values( self, input_values, app ):
         """

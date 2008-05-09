@@ -257,7 +257,9 @@ $.extend( Node.prototype, {
     },
     init_field_data : function ( data ) {
         var f = this.element;
-        this.type = data.type
+        if ( data.type ) {
+            this.type = data.type;
+        }
         this.form_html = data.form_html;
         this.tool_state = data.tool_state;
         this.tool_errors = data.tool_errors;
@@ -281,7 +283,11 @@ $.extend( Node.prototype, {
         $.each( data.data_outputs, function( i, output ) {
             var t = $( "<div class='terminal output-terminal'></div>" );
             node.enable_output_terminal( t, output.name, output.extension );
-            b.append( $("<div class='form-row dataRow'>" + output.name + "</div>" ).append( t ) );
+            var label = output.name
+            if ( output.extension != 'input' ) {
+                label = label + " (" + output.extension + ")";
+            }
+            b.append( $("<div class='form-row dataRow'>" + label + "</div>" ).append( t ) );
         });
         workflow.node_changed( this );
     },

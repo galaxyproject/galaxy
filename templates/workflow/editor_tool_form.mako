@@ -65,7 +65,7 @@
                 ${do_inputs( inputs, values, errors, "" )}
             %endfor
             <div class="form-row">
-                <input type="submit" value="Save"></input>
+                <input type="submit" id="tool-form-save-button" value="Save"></input>
             </div>
         </form>
     </div>

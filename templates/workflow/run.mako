@@ -31,10 +31,10 @@ from galaxy.tools.parameters import DataToolParameter
             <div class="repeat-group-item">
             <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
             ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(i) + "|", step )}
-            <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}" /></div>
-            </div>
+            ## <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}" /></div>
+            </div> 
           %endfor
-          <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_add" value="Add new ${input.title}" /></div>
+          ## <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_add" value="Add new ${input.title}" /></div>
       </div>
     %elif input.type == "conditional":
       <% group_values = values[input.name] %>
@@ -50,6 +50,7 @@ from galaxy.tools.parameters import DataToolParameter
 </%def>
 
 <%def name="row_for_param( param, value, error_dict, prefix, step )">
+    ## -- ${param.name} -- ${step.state.inputs} --
     %if error_dict.has_key( param.name ):
         <% cls = "form-row form-row-error" %>
     %else:
@@ -86,15 +87,25 @@ from galaxy.tools.parameters import DataToolParameter
     ## <input type="hidden" name="workflow_name" value="${workflow.name | h}" />
     <input type="submit" value="Run workflow" />
     %for i, step in enumerate( steps ):
-        <% tool = app.toolbox.tools_by_id[step.tool_id] %>
-        <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
-        <div class="toolForm">
-            <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
-            <div class="toolFormBody">
-                ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
-            </div>
-        </div>
-        
+        %if step.type == 'tool' or step.type is None:
+          <% tool = app.toolbox.tools_by_id[step.tool_id] %>
+          <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
+          <div class="toolForm">
+              <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
+              <div class="toolFormBody">
+                  ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
+              </div>
+          </div>
+        %else:
+        <% module = step.module %>
+          <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
+          <div class="toolForm">
+              <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${module.name}</div>
+              <div class="toolFormBody">
+                  ${do_inputs( module.get_runtime_inputs(), step.state.inputs, errors.get( step.id, dict() ), "", step )}
+              </div>
+          </div>
+        %endif
     %endfor
     </form>
 </body>
