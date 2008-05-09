@@ -257,3 +257,11 @@ class ColumnParameter( RangeParameter ):
     def marshal( cls, value ):
         return int(value)
 
+class ColumnTypesParameter( MetadataParameter ):
+    def __init__( self, spec, value, context ):
+        MetadataParameter.__init__( self, spec, value, context )
+
+    def __str__(self):
+        return ",".join( map( str, self.value ) )
+
+

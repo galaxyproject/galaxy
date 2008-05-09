@@ -433,7 +433,7 @@ class Gff( Tabular ):
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
-    MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], desc="Column types", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
     
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
@@ -553,7 +553,7 @@ class Gff3( Gff ):
     valid_gff3_phase = ['.', '0', '1', '2']
         
     """Add metadata elements"""
-    MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], desc="Column types", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
     
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""

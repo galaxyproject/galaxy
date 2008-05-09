@@ -20,7 +20,7 @@ class Tabular( data.Text ):
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False )
-    MetadataElement( name="column_types", default=[], desc="Column types", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
