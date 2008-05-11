@@ -1,4 +1,4 @@
-<tool id="featureCoverage1" name="Feature coverage" version="1.0.0">
+<tool id="featureCoverage1" name="Feature coverage" version="2.0.0">
   <description></description>
   <command interpreter="python">featureCounter.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol</command>
   <inputs>
@@ -19,6 +19,11 @@
       <param name="input2" value="2.bed" />
       <output name="output" file="6_feature_coverage.bed" />
     </test>
+    <test>
+      <param name="input1" value="chrY1.bed" />
+      <param name="input2" value="chrY2.bed" />
+      <output name="output" file="chrY_Coverage.bed" />
+    </test>
   </tests>
   <help>
 
@@ -26,7 +31,7 @@
 
 **What it does**
 
-This tool finds the coverage of intervals in the first query on intervals in the second query. The count and coverage are added as 3 new columns in the resulting dataset.
+This tool finds the coverage of intervals in the first query on intervals in the second query. The coverage and count are appended as 4 new columns in the resulting dataset.
 
 -----
 
@@ -49,21 +54,22 @@ This tool finds the coverage of intervals in the first query on intervals in the
       
 - the **Result** is the coverage of exons of the second query in each of the windows contained in first query::
 
-    chrX 1     10001 seg 0 - 2 1 30.01
-    chrX 10001 20001 seg 0 - 1 0 100.00
-    chrX 20001 30001 seg 0 - 0 2 80.00
-    chrX 30001 40001 seg 0 - 1 1 59.99
+    chrX 1     10001 seg 0 - 3001  0.3001 2 1
+    chrX 10001 20001 seg 0 - 10000 1.0    1 0
+    chrX 20001 30001 seg 0 - 8000  0.8    0 2
+    chrX 30001 40001 seg 0 - 5999  0.5999 1 1
 	  
 - To clarify, the following line of output ( added columns are indexed by a, b and c )::
 
-                         a b c
-    chrX 1 10001 seg 0 - 2 1 30.01
+                         a    b      c d
+    chrX 1 10001 seg 0 - 3001 0.3001 2 1
                                   
-  implies that 2 exons (a) fall into this window ( chrX:1-10001 ), 1 exon (b) partially overlaps this window, and these 3 exons cover 30.01% of the window size (c).
+  implies that 2 exons (c) fall fully in this window (chrX:1-10001), 1 exon (d) partially overlaps this window, and these 3 exons cover 30.01% (c) of the window size, spanning 3001 nucleotides (a).
 
-  * a: number of features in the 2nd query that fall **completely** within this window
-  * b: number of features in the 2nd query that partially overlap this window
-  * c: % of window size covered by features in (a) and (b) - features overlapping with each other will be merged to calculate (c)
-	 
+  * a: number of nucleotides in this window covered by the features in (c) and (d) - features overlapping with each other will be merged to calculate (a)
+  * b: fraction of window size covered by features in (c) and (d) - features overlapping with each other will be merged to calculate (b)
+  * c: number of features in the 2nd query that fall **completely** within this window
+  * d: number of features in the 2nd query that **partially** overlap this window
+  	 
 </help>
 </tool>
