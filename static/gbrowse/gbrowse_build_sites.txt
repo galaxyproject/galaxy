@@ -1,7 +1,8 @@
 #Harvested from http://www.wormbase.org/db/seq/gbrowse/wormbase/
 # TODO: Uncomment the 1st lines and eliminate the 2nd test lines when the prototype is completed.
 #wormbase	http://gvk.bx.psu.edu/cgi-bin/gbrowse/volvox?	briggsae,briggsae_cb25,brugia,elegans,elegans_gmap,elegans_pmap,fly,fly31,nGASP,nGASP_submissions,remanei,wormbase,ws77,yeast_chr1
-wormbase	http://gvk.bx.psu.edu/cgi-bin/gbrowse/volvox?	ctgA,tmpfiller1,tmpfiller2
+# 2nd test line: wormbase	http://gvk.bx.psu.edu/cgi-bin/gbrowse/volvox?	ctgA,tmpfiller1,tmpfiller2
 #Harvested from http://flybase.bio.indiana.edu/cgi-bin/gbrowse/dmel/
 #flybase	http://flybase.bio.indiana.edu/cgi-bin/gbrowse/dmel/	dana,dere,dgri,dmel,dmoj,dper,dpse,dsec,dsim,dvir,dwil,dyak,dmelstocks
-flybase	http://flybase.bio.indiana.edu/cgi-bin/gbrowse/dmel/	tmpfiller1,tmpfiller2
+# 2nd test line: flybase	http://flybase.bio.indiana.edu/cgi-bin/gbrowse/dmel/	tmpfiller1,tmpfiller2
+elegans	http://brie3.cshl.edu:9000/cgi-bin/gbrowse/elegans/	brugia,briggsae_cb25,briggsae,elegans,wormbase,elegans_gmap,elegans_pmap,nGASP,ws77,remanei,mouse,nGASP_submissions,Gbrowse_karyotype,yeast_chr1,yeast_chr1
