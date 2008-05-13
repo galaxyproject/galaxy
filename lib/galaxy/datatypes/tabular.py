@@ -44,45 +44,49 @@ class Tabular( data.Text ):
                 line = line.rstrip('\r\n')
                 if line and not line.startswith( '#' ):
                     elems = line.split( '\t' )
-                    elems_len = len(elems)
-
+                    elems_len = len( elems )
                     if elems_len > 0:
-                        """Set the columns metadata attribute"""
+                        # Set the columns metadata attribute
                         if elems_len != dataset.metadata.columns:
                             dataset.metadata.columns = elems_len
-
-                        """Set the column_types metadata attribute"""
-                        for col in range(0, elems_len):
+                        # Set the column_types metadata attribute
+                        for col in range( 0, elems_len ):
                             col_type = None
-                            val = elems[col]
-                            if not col_type:
-                                """See if val is an int"""
+                            val = elems[ col ]
+                            if not val:
+                                # Missing a column value, so go to the next line
+                                column_types = []
+                                break
+                            if val.find( '.' ) < 0:
                                 try:
                                     int( val )
                                     col_type = 'int'
                                 except: 
                                     pass
                             if not col_type:
-                                """See if val is a float"""
                                 try:
                                     float( val )
                                     col_type = 'float'
                                 except:
-                                    if val and val.strip().lower() == 'na':
+                                    if val.strip().lower() == 'na':
                                         col_type = 'float'
                             if not col_type:
-                                """See if val is a list"""
-                                val_elems = val.split(',')
+                                val_elems = val.split( ',' )
                                 if len( val_elems ) > 1:
                                     col_type = 'list'
                             if not col_type:
-                                """All parameters are strings, so this will be the default"""
+                                # All parameters are strings, so this will be the default
                                 col_type = 'str'
-
-                            column_types.append(col_type)
-                        if len(column_types) > 0: break
-
-                if i > 100: break # Hopefully we never get here...
+                            if col_type:
+                                column_types.append( col_type )
+                            else:
+                                # Couldn't determine column type, so go to the next line
+                                column_types = []
+                                break
+                        if column_types:
+                            break
+                if i > 100:
+                    break # Hopefully we never get here...
             dataset.metadata.column_types = column_types
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""

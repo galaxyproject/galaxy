@@ -107,6 +107,9 @@ except Exception, e:
 out.close()
 valid_lines = total_lines - skipped_lines
 print 'Filtering with %s, ' % cond_text
-print 'kept %4.2f%% of %d lines.' % ( 100.0*lines_kept/valid_lines, total_lines )
+if valid_lines > 0:
+    print 'kept %4.2f%% of %d lines.' % ( 100.0*lines_kept/valid_lines, total_lines )
+else:
+    print 'All %d lines invalid for filter condition, see tool tips, syntax and examples for valid filtering conditions.' % total_lines
 if skipped_lines > 0:
     print 'Skipped %d invalid lines starting at line #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
