@@ -39,6 +39,7 @@
             })
             var state = new CookieSet( "galaxy.history.expand_state" );
             state.removeAll().save();
+	    return false;
         }));
     })
     // Functionized so AJAX'd datasets can call them
@@ -79,6 +80,7 @@
                     state.add( id ); state.save();
                     delete state;
                 }
+		return false;
             });
             // Delete link
             q(this).find( "a.historyItemDelete" ).each( function() {

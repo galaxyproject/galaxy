@@ -27,6 +27,7 @@
                    body.slideUp( "fast" );
                    last_expanded = null;
                }
+               return false;
            });
         });
         q( "a[@minsizehint]" ).click( function() {
