@@ -103,6 +103,9 @@ class LocalJobRunner( object ):
             return False
 
     def stop_job( self, job ):
+        if job.job_runner_external_id is None:
+            log.warning( "stop_job(): %s: no PID in database for job, unable to stop" % job.id )
+            return
         pid = int( job.job_runner_external_id )
         if not self.check_pid( pid ):
             log.warning( "stop_job(): %s: PID %d was already dead or can't be signaled" %job.id )
