@@ -13,7 +13,7 @@ $(function(){
 <div class="toolForm">
     <div class="toolFormTitle">${form.title}</div>
     <div class="toolFormBody">
-    <form name="$form.name" action="${h.url_for(form.action)}" method="post" >
+    <form name="${form.name}" action="${form.action}" method="post" >
         %for input in form.inputs:
             <%
             cls = "form-row"
