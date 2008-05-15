@@ -86,6 +86,18 @@ Dataset.table = Table( "dataset", metadata,
     Column( 'file_size', Numeric( 15, 0 ) ),
     ForeignKeyConstraint(['parent_id'],['dataset.id'], ondelete="CASCADE") )
 
+DatasetAssociatedFile.table = Table( "dataset_associated_file", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True, nullable=True ),
+    Column( "parent_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "filename", TEXT ),
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "purged", Boolean, index=True, default=False ),
+    Column( "metadata_safe", Boolean, index=True, default=True ),
+    Column( "type", TrimmedString( 255 ) ) )
+
 DatasetFileName.table = Table( "dataset_filename", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -233,13 +245,25 @@ assign_mapper( context, Dataset, Dataset.table,
             backref="parent" ),
         dataset_file=relation( 
             DatasetFileName, 
-            primaryjoin=( DatasetFileName.table.c.id == Dataset.table.c.filename_id ) )
+            primaryjoin=( DatasetFileName.table.c.id == Dataset.table.c.filename_id ) ),
+        associated_files=relation( 
+            DatasetAssociatedFile, 
+            primaryjoin=( DatasetAssociatedFile.table.c.parent_id == Dataset.table.c.id ) )
             ) )
 
 assign_mapper( context, DatasetFileName, DatasetFileName.table )
 
 assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
     properties=dict( child=relation( Dataset, primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
+
+assign_mapper( context, DatasetAssociatedFile, DatasetAssociatedFile.table, 
+    properties=dict( parent=relation( 
+                     Dataset, 
+                     primaryjoin=( DatasetAssociatedFile.table.c.parent_id == Dataset.table.c.id ) ),
+                     
+                     dataset=relation( 
+                     Dataset, 
+                     primaryjoin=( DatasetAssociatedFile.table.c.dataset_id == Dataset.table.c.id ) ) ) )
 
 # assign_mapper( model.Query, model.Query.table,
 #     properties=dict( datasets=relation( model.Dataset.mapper, backref="query") ) )

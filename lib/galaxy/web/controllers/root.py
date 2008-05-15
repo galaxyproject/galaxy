@@ -287,6 +287,7 @@ class RootController( BaseController ):
                     # assert data.parent == None, "You must delete the primary dataset first."
                     # history.datasets.remove( data )
                     data.deleted = True
+                    data.clear_associated_files()
                     data.flush()
                     trans.log_event( "Dataset id %s marked as deleted" % str(id) )
                     if data.parent_id is None:
@@ -310,6 +311,7 @@ class RootController( BaseController ):
                 # assert data.parent == None, "You must delete the primary dataset first."
                 # history.datasets.remove( data )
                 data.deleted = True
+                data.clear_associated_files()
                 data.flush()
                 trans.log_event( "Dataset id %s marked as deleted async" % str(id) )
                 if data.parent_id is None:
@@ -366,6 +368,7 @@ class RootController( BaseController ):
         history = trans.get_history()
         for dataset in history.datasets:
             dataset.deleted = True
+            dataset.clear_associated_files()
         self.app.model.flush()
         trans.log_event( "History id %s cleared" % (str(history.id)) )
         trans.response.send_redirect( url_for("/index" ) )

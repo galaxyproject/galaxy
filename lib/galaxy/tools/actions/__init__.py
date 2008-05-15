@@ -16,7 +16,7 @@ class ToolAction( object ):
 class DefaultToolAction( object ):
     """Default tool action is to run an external command"""
     
-    def collect_input_datasets( self, tool, param_values ):
+    def collect_input_datasets( self, tool, param_values, trans ):
         """
         Collect any dataset inputs from incoming. Returns a mapping from 
         parameter name to Dataset instance for each tool parameter that is
@@ -24,22 +24,38 @@ class DefaultToolAction( object ):
         """
         input_datasets = dict()
         def visitor( prefix, input, value ):
+            def converted_dataset( data ):
+                if data and not isinstance( data.datatype, input.formats ):
+                    for target_ext in input.extensions:
+                        if target_ext in data.get_converter_types():
+                            assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
+                            if assoc: data = assoc[0].dataset
+                            else:
+                                #run converter here
+                                assoc = trans.app.model.DatasetAssociatedFile( parent_id = data.id, file_type = "CONVERTED_%s" % target_ext, metadata_safe = False )
+                                new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
+                                new_data.hid = data.hid
+                                new_data.name = data.name
+                                assoc.dataset_id = new_data.id
+                                data = new_data
+                            break
+                return data
             if isinstance( input, DataToolParameter ):
                 if isinstance( value, list ):
                     # If there are multiple inputs with the same name, they
                     # are stored as name1, name2, ...
                     for i, v in enumerate( value ):
-                        input_datasets[ prefix + input.name + str( i + 1 ) ] = v
+                        input_datasets[ prefix + input.name + str( i + 1 ) ] = converted_dataset( v )
                 else:
-                    input_datasets[ prefix + input.name ] = value
+                    input_datasets[ prefix + input.name ] = converted_dataset( value )
         tool.visit_inputs( param_values, visitor )
         return input_datasets
     
-    def execute(self, tool, trans, incoming={} ):
+    def execute(self, tool, trans, incoming={}, set_output_hid = True ):
         out_data   = {}
         
         # Collect any input datasets from the incoming parameters
-        inp_data = self.collect_input_datasets( tool, incoming )
+        inp_data = self.collect_input_datasets( tool, incoming, trans )
         
         # Deal with input metadata, 'dbkey', names, and types
         
@@ -133,7 +149,7 @@ class DefaultToolAction( object ):
         for name in out_data.keys():
             if name not in child_dataset_names:
                 data = out_data[ name ]
-                trans.history.add_dataset( data )
+                trans.history.add_dataset( data, set_hid = set_output_hid )
                 data.flush()
                 
         # Add all the children to their parents

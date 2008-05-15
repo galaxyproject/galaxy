@@ -106,6 +106,7 @@ def delete_userless_histories( h, cutoff_time ):
         for dataset in history.datasets:
             if not dataset.deleted:
                 dataset.deleted = True
+                dataset.clear_associated_files()
                 dataset.flush()
                 print "dataset_%d" %dataset.id
                 dataset_count += 1
@@ -258,6 +259,7 @@ def purge_dataset( dataset ):
                 os.unlink( dataset.file_name )
                 dataset.purged = True
                 dataset.file_size = 0
+                dataset.clear_associated_files( purge = True )
                 dataset.flush()
             except Exception, exc:
                 return "# Error, exception: %s caught attempting to purge %s\n" %( str( exc ), dataset.file_name )

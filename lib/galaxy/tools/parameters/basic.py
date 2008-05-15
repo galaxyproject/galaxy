@@ -1037,11 +1037,21 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( data.hid )
-                if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.ERROR]:
+                if not data.deleted and data.state not in [data.states.ERROR] and data.visible:
                     if self.options and filter_key == 'dbkey' and data.get_dbkey() != filter_value:
                         continue
-                    selected = ( value and ( data in value ) )
-                    field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+                    if isinstance( data.datatype, self.formats):
+                        selected = ( value and ( data in value ) )
+                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+                    else:
+                        for target_ext in self.extensions:
+                            if target_ext in data.get_converter_types():
+                                assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
+                                if assoc:
+                                    data = assoc[0].dataset
+                                selected = ( value and ( data in value ) )
+                                field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
+                                break #we only report the first valid converter, assume self.extensions is a priority list
                 # Also collect children via association object
                 dataset_collector( [ assoc.child for assoc in data.children ], hid )
         dataset_collector( history.datasets, None )

@@ -124,16 +124,16 @@ class History( object ):
     def add_galaxy_session( self, galaxy_session ):
         self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
     
-    def add_dataset( self, dataset, parent_id=None, genome_build=None ):
+    def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
         if parent_id:
             for data in self.datasets:
                 if data.id == parent_id:
                     dataset.hid = data.hid
                     break
             else:
-                dataset.hid = self._next_hid()
+                if set_hid: dataset.hid = self._next_hid()
         else:
-            dataset.hid = self._next_hid()
+            if set_hid: dataset.hid = self._next_hid()
         self.genome_build = genome_build
         self.datasets.append( dataset )
 
@@ -289,6 +289,7 @@ class Dataset( object ):
     dbkey = property( get_dbkey, set_dbkey )
 
     def change_datatype( self, new_ext ):
+        self.clear_associated_files()
         datatypes_registry.change_datatype( self, new_ext )
     def get_size( self ):
         """Returns the size of the data on disk"""
@@ -325,6 +326,7 @@ class Dataset( object ):
     def init_meta( self, copy_from=None ):
         return self.datatype.init_meta( self, copy_from=copy_from )
     def set_meta( self, **kwd ):
+        self.clear_associated_files( metadata_safe = True )
         return self.datatype.set_meta( self, **kwd )
     def set_readonly_meta( self, **kwd ):
         return self.datatype.set_readonly_meta( self, **kwd )
@@ -338,6 +340,17 @@ class Dataset( object ):
         return self.datatype.display_name( self )
     def display_info( self ):
         return self.datatype.display_info( self )
+    def get_associated_files_by_type( self, file_type ):
+        valid = []
+        for assoc in self.associated_files:
+            if not assoc.deleted and assoc.type == file_type:
+                valid.append( assoc )
+        return valid
+    def clear_associated_files( self, metadata_safe = False, purge = False ):
+        #metadata_safe = True means to only clear when assoc.metadata_safe == False
+        for assoc in self.associated_files:
+            if not metadata_safe or not assoc.metadata_safe:
+                assoc.clear( purge = purge )
     def get_child_by_designation(self, designation):
         # if self.history:
         #     for data in self.history.datasets:
@@ -418,7 +431,46 @@ class DatasetChildAssociation( object ):
         self.designation = designation
         self.parent = None
         self.child = None
-            
+
+class DatasetAssociatedFile( object ):
+    def __init__( self, id = None, dataset_id = None, file_type = None, parent_id = None, filename = None, deleted = False, purged = False, metadata_safe = True ):
+        self.id = id
+        self.dataset_id = dataset_id
+        self.type = file_type
+        self.parent_id = parent_id
+        self.filename = filename
+        self.deleted = deleted
+        self.purged = purged
+        self.metadata_safe = metadata_safe
+
+    def get_file_name( self ):
+        #return absolute path of the filename
+        if self.filename:
+            return os.path.abspath( self.filename )
+        if self.dataset_id is not None:
+            return self.dataset.file_name
+        else:
+            assert self.id is not None, "ID must be set before filename used (commit the object)"
+            assert self.parent_id is not None, "Parent ID must be set before filename used"
+            return os.path.abspath( "%s_accociated_%s" % ( self.parent.file_name, self.id ) )
+    def set_file_name ( self, filename ):
+        self.filename = filename
+        if self.dataset:
+            self.dataset.deleted = True
+            self.dataset = None
+            self.dataset_id = None
+    file_name = property( get_file_name, set_file_name )
+
+    def clear( self, purge = False ):
+        self.deleted = True
+        if self.dataset:
+            self.dataset.deleted = True
+            self.dataset.purged = purge
+        if purge:
+            self.purged = True
+            try: os.unlink( self.file_name )
+            except Exception, e: print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
+
 class Event( object ):
     def __init__( self, message=None, history=None, user=None, galaxy_session=None ):
         self.history = history

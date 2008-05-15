@@ -14,7 +14,7 @@ class UploadToolAction( object ):
         self.empty = False
         self.line_count = None
     
-    def execute( self, tool, trans, incoming={} ):
+    def execute( self, tool, trans, incoming={}, set_output_hid = True ):
         data_file = incoming['file_data']
         file_type = incoming['file_type']
         dbkey = incoming['dbkey']
