@@ -1,11 +1,8 @@
 """
 rgenetics datatypes 
 Use at your peril
-all rights reserved
-copyright
 Ross Lazarus
-released under the LGPL
- 
+for the rgenetics and galaxy projects 
 
 genome graphs datatypes derived from Interval datatypes
 genome graphs datasets have a header row with appropriate columnames
