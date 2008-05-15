@@ -499,7 +499,7 @@ class Gff( Tabular ):
                 stop = viewport_tuple[2]
                 for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
                     if site_name in app.config.gbrowse_display_sites:
-                        link = "%sstart=%s;stop=%s;ref=%s" % ( site_url, start, stop, dataset.dbkey )
+                        link = "%s?start=%s&stop=%s&ref=%s" % ( site_url, start, stop, dataset.dbkey )
                         ret_val.append( ( site_name, link ) )
         return ret_val
 
@@ -620,8 +620,11 @@ class Gff3( Gff ):
             if len(headers) < 2:
                 return False
             for hdr in headers:
-                if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '3' ) < 0:
+                if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '3' ) >= 0:
+                    return True
+                elif hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '3' ) < 0:
                     return False
+                # Header comments may have been stripped, so inspect the data
                 if hdr and hdr[0] and not hdr[0].startswith( '#' ):
                     if len(hdr) != 9: 
                         return False

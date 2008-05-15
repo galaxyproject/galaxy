@@ -9,13 +9,14 @@ log = logging.getLogger( __name__ )
 
 def exec_before_job( app, inp_data, out_data, param_dict, tool=None ):
     """Sets the name of the data"""
-    data_name = param_dict.get( 'name', 'GBrowse query' )
+    data_name = urllib.unquote( param_dict.get( 't', 'GBrowse query' ) ).replace( '+', ' ' )
+    data_region = param_dict.get( 'q', '' )
     data_type = param_dict.get( 'type', 'txt' )
     name, data = out_data.items()[0]
     if data_type == 'txt': 
         data_type = sniff.guess_ext( data.file_name )
     data = app.datatypes_registry.change_datatype( data, data_type )
-    data.name = data_name
+    data.name = '%s %s' % ( data_name, data_region )
     out_data[name] = data
 
 def exec_after_process( app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None ):
