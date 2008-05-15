@@ -248,11 +248,15 @@ def purge_datasets( d, cutoff_time, remove_from_disk ):
 def purge_dataset( dataset ):
     # Removes the file from disk and updates the database accordingly.
     if dataset.dataset_file is None or not dataset.dataset_file.readonly:
-        #Check to see if another dataset is using this file
+        # Check to see if another dataset is using this file.  This happens when a user shares 
+        # their history with another user.  In this case, a new record is created in the dataset
+        # table for each dataset, but the dataset records point to the same data file on disk.  So
+        # if 1 of the 2 users deletes the dataset from their history but the other doesn't, we need
+        # to keep the dataset on disk for the 2nd user.
         if dataset.dataset_file:
             for data in dataset.select_by( purged=False, filename_id=dataset.dataset_file.id ):
                 if data.id != dataset.id:
-                    return "# Error: the dataset id for deletion is %s, while the dataset id retrieved is %s\n" %( str( dataset.id ), str( data.id ) )
+                    return "# Dataset for deletion ( id %s ) points to a file on disk being shared by another user's history ( dataset id %s )\n" %( str( dataset.id ), str( data.id ) )
         elif dataset.deleted:
             # Remove files from disk and update the database
             try:
