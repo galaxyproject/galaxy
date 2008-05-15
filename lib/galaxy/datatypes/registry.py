@@ -4,6 +4,7 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 import os
 import logging
 import data, tabular, interval, images, sequence, qualityscore
+import genetics # needed for rgenetics tools	
 import galaxy.util
 from galaxy.util.odict import odict
 
