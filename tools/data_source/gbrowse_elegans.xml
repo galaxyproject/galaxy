@@ -4,7 +4,7 @@
 	<command interpreter="python">gbrowse_datasource.py $output</command>
 	<inputs action="http://brie3.cshl.edu:9000/cgi-bin/gbrowse/elegans/" check_values="false" method="get" target="_top">
 		<display>go to C. Elegans server $GALAXY_URL</display>
-		<param name="GALAXY_URL" type="baseurl" value="/tool_runner/gbrowse_elegans" />
+		<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=gbrowse_elegans" />
 	</inputs>
 	<uihints minwidth="800"/>
 	<code file="gbrowse_filter_code.py"/>

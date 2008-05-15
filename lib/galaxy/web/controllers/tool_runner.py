@@ -22,11 +22,6 @@ class ToolRunner( BaseController ):
         return self.index(trans, tool_id=tool_id, **kwd)
 
     @web.expose
-    def gbrowse_elegans(self, trans, tool_id='gbrowse_elegans', **kwd):
-        """Catches the tool id and redirects as needed"""
-        return self.index(trans, tool_id=tool_id, **kwd)
-
-    @web.expose
     def default(self, trans, tool_id=None, **kwd):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
