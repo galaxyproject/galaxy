@@ -430,6 +430,7 @@ class Bed( Interval ):
 class Gff( Tabular ):
     """Tab delimited data in Gff format"""
     file_ext = "gff"
+    column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
@@ -455,8 +456,21 @@ class Gff( Tabular ):
                         pass
         Tabular.set_meta( self, dataset, skip=i )
 
-    def make_html_table( self, dataset ):
-        return Tabular.make_html_table( self, dataset, skipchars=['#'] )
+    def make_html_table( self, dataset, skipchars=[] ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        comments = []
+        try:
+            # Generate column header
+            out.append( '<tr>' )
+            for i, name in enumerate( self.column_names ):
+                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
+            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % exc
+        return out
     
     def as_gbrowse_display_file( self, dataset, **kwd ):
         """Returns file contents that can be displayed in GBrowse apps."""
@@ -465,26 +479,40 @@ class Gff( Tabular ):
 
     def get_estimated_display_viewport( self, dataset ):
         """
-        Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff and gff version 3
+        Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
         formats.  This function should correctly handle both...
         """
         if dataset.has_data() and dataset.state == dataset.states.OK:
             try:
-                seqid_col = 0
-                start_col = 3
-                stop_col = 4
-                peek = []
+                seqid = None
+                start = None
+                stop = None
                 for idx, line in enumerate( file( dataset.file_name ) ):
-                    if line[0] != '#':
-                        peek.append( line.split() )
-                        if idx > 10:
-                            break
-                seqid, start, stop = peek[0][seqid_col], int( peek[0][start_col] ), int( peek[0][stop_col] )
-                for p in peek[1:]:
-                    if p[0] == seqid:
-                        start = min( start, int( p[start_col] ) )
-                        stop = max( stop, int( p[stop_col] ) )
-            except Exception, exc:
+                    line = line.rstrip( '\r\n' )
+                    if line and line.startswith( '##sequence-region' ): # ##sequence-region IV 6000000 6030000
+                        elems = line.split()
+                        seqid = elems[1] # IV
+                        start = elems[2] # 6000000
+                        stop = elems[3] # 6030000
+                    if idx > 10:
+                        break
+                if not seqid or not start or not stop:
+                    # Perhaps the data is missing the gff3 comments fields.  This is not good
+                    # because we need to parse the entire dataset to find the stop / start
+                    for idx, line in enumerate( file( dataset.file_name ) ):
+                        line = line.rstrip( '\r\n' )
+                        if line and not line.startswith( '#' ):
+                            elems = line.split( '\t' )
+                            if len( elems ) != 9:
+                                continue # Invalid line
+                            if not seqid:
+                                seqid = elems[0]
+                            # Assume all Sequence IDs are the same.Is this true for GFF3?
+                            if not start or start < int( elems[3] ):
+                                start = int( elems[3] )
+                            if not end or end > int( elems[4] ):
+                                end = int( elems[4] )
+            except:
                 seqid, start, stop = ( '', '', '' ) 
             return ( seqid, str( start ), str( stop ) )
         else:
@@ -494,12 +522,13 @@ class Gff( Tabular ):
         ret_val = []
         if dataset.has_data:
             viewport_tuple = self.get_estimated_display_viewport( dataset )
-            if viewport_tuple:
-                start = viewport_tuple[1]
-                stop = viewport_tuple[2]
+            seqid = viewport_tuple[0]
+            start = viewport_tuple[1]
+            stop = viewport_tuple[2]
+            if seqid and start and stop:
                 for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
                     if site_name in app.config.gbrowse_display_sites:
-                        link = "%s?start=%s&stop=%s&ref=%s" % ( site_url, start, stop, dataset.dbkey )
+                        link = "%s?start=%s&stop=%s&ref=%s&dbkey=%s" % ( site_url, start, stop, seqid, dataset.dbkey )
                         ret_val.append( ( site_name, link ) )
         return ret_val
 
@@ -551,6 +580,7 @@ class Gff3( Gff ):
     file_ext = "gff3"
     valid_gff3_strand = ['+', '-', '.', '?']
     valid_gff3_phase = ['.', '0', '1', '2']
+    column_names = [ 'Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes' ]
         
     """Add metadata elements"""
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )

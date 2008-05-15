@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <tool name="C. Elegans" id="gbrowse_elegans">
 	<description>server</description>
-	<command/>
+	<command interpreter="python">gbrowse_datasource.py $output</command>
 	<inputs action="http://brie3.cshl.edu:9000/cgi-bin/gbrowse/elegans/" check_values="false" method="get" target="_top">
 		<display>go to C. Elegans server $GALAXY_URL</display>
 		<param name="GALAXY_URL" type="baseurl" value="/tool_runner/gbrowse_elegans" />
 	</inputs>
 	<uihints minwidth="800"/>
-	<code file="gbrowse_filter.py"/>
+	<code file="gbrowse_filter_code.py"/>
 	<outputs>
 		<data name="output" format="txt" />
 	</outputs>
