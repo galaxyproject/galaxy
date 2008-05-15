@@ -45,9 +45,11 @@ Double equal signs, ==, must be used as *"equal to"* (e.g., **c1 == 'chr22'**)
 The filter tool allows you to restrict the datset using simple conditional statements 
 
 - Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
-- When using 'equal-to' operator **double equal sign (==) must be used** (e.g., **c1 == 'chr1'**)
-- Non-numerical values must be included in single or double quotes (e.g., **c6 == '+'**)
-- Filtering condition can include logical operators, but **make sure operators are all lower case** (e.g., **(c1 != 'chrX' and c1 != 'chrY') or not c6 == '+'**)
+- Make sure that multi-character operators contain no white space ( e.g., **&lt;=** is valid while **&lt; =** is not valid )
+- Make sure white space separates column references from operators ( e.g., **c8 != 0** is valid while **c8!=0** is not valid )
+- When using 'equal-to' operator **double equal sign '==' must be used** ( e.g., **c1 == 'chr1'** )
+- Non-numerical values must be included in single or double quotes ( e.g., **c6 == '+'** )
+- Filtering condition can include logical operators, but **make sure operators are all lower case** ( e.g., **(c1 != 'chrX' and c1 != 'chrY') or not c6 == '+'** )
 
 -----
 
@@ -58,7 +60,7 @@ The filter tool allows you to restrict the datset using simple conditional state
 - **len(c2.split(',')) &lt; 4** will select lines where the second column has less than four comma separated elements
 - **c2 >= 1** selects lines in which the value of column 2 is greater than or equal to 1
 - Numbers should not contain commas - **c2 &lt;= 44,554,350** will not work, but **c2 &lt;= 44554350** will
-- Some words in the data can be used, but must be single or double quoted (e.g., **c3 == 'exon'**)
+- Some words in the data can be used, but must be single or double quoted ( e.g., **c3 == 'exon'** )
 
 </help>
 </tool>
