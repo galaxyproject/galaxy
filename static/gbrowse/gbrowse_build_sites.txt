@@ -2,4 +2,4 @@
 #wormbase	http://gvk.bx.psu.edu/cgi-bin/gbrowse/volvox?	briggsae,briggsae_cb25,brugia,elegans,elegans_gmap,elegans_pmap,fly,fly31,nGASP,nGASP_submissions,remanei,wormbase,ws77,yeast_chr1
 #Harvested from http://flybase.bio.indiana.edu/cgi-bin/gbrowse/dmel/
 #flybase	http://flybase.bio.indiana.edu/cgi-bin/gbrowse/dmel/	dana,dere,dgri,dmel,dmoj,dper,dpse,dsec,dsim,dvir,dwil,dyak,dmelstocks
-elegans	http://brie3.cshl.edu:9000/cgi-bin/gbrowse/elegans/	cb1,cb2,cb3,ce1,ce2,ce3,ce4
+elegans	http://brie3.cshl.edu:9000/db/seq/gbrowse/elegans/	cb1,cb2,cb3,ce1,ce2,ce3,ce4
