@@ -53,8 +53,7 @@ offset = $annotation['offset']
 #end for
 </configfile>
     <configfile name="filenames_file">
-#set $seq_count = 0
-#for $annotation in $annotations:
+#for $seq_count, $annotation in $enumerate( $annotations ):
 #if $annotation['exons_file'].value:
 $annotation['exons_file'] = ${seq_count}.exons.bed
 #end if
