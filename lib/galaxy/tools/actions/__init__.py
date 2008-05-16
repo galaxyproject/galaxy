@@ -24,8 +24,10 @@ class DefaultToolAction( object ):
         """
         input_datasets = dict()
         def visitor( prefix, input, value ):
-            def converted_dataset( data ):
-                if data and not isinstance( data.datatype, input.formats ):
+            def process_dataset( data ):
+                if not data:
+                    return NoneDataset( datatypes_registry = trans.app.datatypes_registry, ext = input.extensions[0] )
+                if not isinstance( data.datatype, input.formats ):
                     for target_ext in input.extensions:
                         if target_ext in data.get_converter_types():
                             assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
@@ -45,9 +47,9 @@ class DefaultToolAction( object ):
                     # If there are multiple inputs with the same name, they
                     # are stored as name1, name2, ...
                     for i, v in enumerate( value ):
-                        input_datasets[ prefix + input.name + str( i + 1 ) ] = converted_dataset( v )
+                        input_datasets[ prefix + input.name + str( i + 1 ) ] = process_dataset( v )
                 else:
-                    input_datasets[ prefix + input.name ] = converted_dataset( value )
+                    input_datasets[ prefix + input.name ] = process_dataset( value )
         tool.visit_inputs( param_values, visitor )
         return input_datasets
     
@@ -68,9 +70,7 @@ class DefaultToolAction( object ):
         input_dbkey = incoming.get( "dbkey", "?" )
         input_meta = Bunch()
         for name, data in inp_data.items():
-            if not data:
-                data = NoneDataset( datatypes_registry = trans.app.datatypes_registry, ext = tool.inputs[name].extensions[0] )
-            else:
+            if data:
                 input_names.append( 'data %s' % data.hid )
                 input_ext = data.ext
             if data.dbkey not in [None, '?']:
@@ -184,7 +184,8 @@ class DefaultToolAction( object ):
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
         for name, dataset in inp_data.iteritems():
-            job.add_input_dataset( name, dataset )
+            if dataset:
+                job.add_input_dataset( name, dataset )
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
         trans.app.model.flush()

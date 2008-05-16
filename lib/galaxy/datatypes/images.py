@@ -110,6 +110,7 @@ class Gmaj( data.Data ):
         "nobutton": "false",
         "urlpause" :"100",
         "debug": "false",
+        "posturl": "history_add_to?%s" % urlencode( { 'history_id': dataset.history_id, 'ext': 'maf', 'name': 'GMAJ Output', 'info': 'Added by GMAJ', 'dbkey': dataset.dbkey } )
         }
         class_name = "edu.psu.bx.gmaj.MajApplet.class"
         archive = "/static/gmaj/gmaj.jar"

@@ -1,14 +1,78 @@
-<tool id="gmaj_1" name="GMAJ">
+<tool id="gmaj_1" name="GMAJ" Version="2.0.0">
 <description>Multiple Alignment Viewer</description>
-  <command interpreter="python">GMAJ.py $out_file1 $maf_input $dbkey $exons_file $highlights_file $underlays_file $repeats_file $links_file</command>
+  <command interpreter="python">GMAJ.py $out_file1 $maf_input $gmaj_file $filenames_file</command>
   <inputs>
       <param name="maf_input" type="data" format="maf" label="Alignment File" optional="False"/>
-      <param name="exons_file" type="data" format="bed" label="Exons File" optional="True"/>
-      <param name="highlights_file" type="data" format="bed" label="Highlights File" optional="True"/>
-      <param name="underlays_file" type="data" format="bed" label="Underlays File" optional="True"/>
-      <param name="repeats_file" type="data" format="bed" label="Repeats File" optional="True"/>
-      <param name="links_file" type="data" format="bed" label="Links File" optional="True"/>
+      <repeat name="annotations" title="Annotations">
+        <param name="species" type="select" label="Species of Annotation" multiple="False">
+          <options>
+            <filter type="data_meta" data_ref="maf_input" meta_key="species" />
+          </options>
+        </param>
+        <param name="chromosome" label="Chromosome" value="" type="text"/>
+        <param name="exons_file" type="data" format="bed" label="Exons File" optional="True"/>
+        <param name="highlights_file" type="data" format="bed" label="Highlights File" optional="True"/>
+        <param name="underlays_file" type="data" format="bed" label="Underlays File" optional="True"/>
+        <param name="repeats_file" type="data" format="bed" label="Repeats File" optional="True"/>
+        <param name="links_file" type="data" format="bed" label="Links File" optional="True"/>
+        <param name="offset" label="Offset" value="0" type="integer"/>
+      </repeat>
   </inputs>
+  <configfiles>
+    <configfile name="gmaj_file">#:gmaj
+
+title = "Galaxy: $maf_input.name"
+alignfile = input.maf
+refseq = any
+tabext = .bed
+
+#for $seq_count, $annotation in $enumerate( $annotations ):
+seq ${seq_count}:
+#if $annotation['chromosome']:
+seqname = $annotation['species'].$annotation['chromosome']
+#else:
+seqname = $annotation['species']
+#end if
+#if $annotation['exons_file'].value:
+exons = ${seq_count}.exons.bed
+#end if
+#if $annotation['repeats_file'].value:
+exons = ${seq_count}.repeats.bed
+#end if
+#if $annotation['links_file'].value:
+exons = ${seq_count}.links.bed
+#end if
+#if $annotation['underlays_file'].value:
+exons = ${seq_count}.underlays.bed
+#end if
+#if $annotation['highlights_file'].value:
+exons = ${seq_count}.highlights.bed
+#end if
+offset = $annotation['offset']
+
+#end for
+</configfile>
+    <configfile name="filenames_file">
+#set $seq_count = 0
+#for $annotation in $annotations:
+#if $annotation['exons_file'].value:
+$annotation['exons_file'] = ${seq_count}.exons.bed
+#end if
+#if $annotation['repeats_file'].value:
+$annotation['repeats_file'] = ${seq_count}.repeats.bed
+#end if
+#if $annotation['links_file'].value:
+$annotation['links_file'] = ${seq_count}.links.bed
+#end if
+#if $annotation['underlays_file'].value:
+$annotation['underlays_file'] = ${seq_count}.underlays.bed
+#end if
+#if $annotation['highlights_file'].value:
+$annotation['highlights_file'] = ${seq_count}.highlights.bed
+#end if
+#end for
+</configfile>
+  </configfiles>
   <outputs>
     <data name="out_file1" format="gmaj.zip"/>
   </outputs>
