@@ -439,7 +439,7 @@ class Gff( Tabular ):
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app ('gbrowse', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
+        self.add_display_app ( 'elegans', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
     def set_meta( self, dataset, **kwd ):
         i = 0
@@ -474,8 +474,7 @@ class Gff( Tabular ):
     
     def as_gbrowse_display_file( self, dataset, **kwd ):
         """Returns file contents that can be displayed in GBrowse apps."""
-        #TODO: fix me...
-        return open(dataset.file_name)
+        return open( dataset.file_name )
 
     def get_estimated_display_viewport( self, dataset ):
         """
@@ -484,34 +483,33 @@ class Gff( Tabular ):
         """
         if dataset.has_data() and dataset.state == dataset.states.OK:
             try:
-                seqid = None
-                start = None
-                stop = None
-                for idx, line in enumerate( file( dataset.file_name ) ):
+                seqid = ''
+                start = 2147483647  # Maximum value of a signed 32 bit integer ( 2**31 - 1 )
+                stop = 0
+                for i, line in enumerate( file( dataset.file_name ) ):
                     line = line.rstrip( '\r\n' )
-                    if line and line.startswith( '##sequence-region' ): # ##sequence-region IV 6000000 6030000
+                    if not line:
+                        continue
+                    if line.startswith( '##sequence-region' ): # ##sequence-region IV 6000000 6030000
                         elems = line.split()
                         seqid = elems[1] # IV
                         start = elems[2] # 6000000
                         stop = elems[3] # 6030000
-                    if idx > 10:
                         break
-                if not seqid or not start or not stop:
-                    # Perhaps the data is missing the gff3 comments fields.  This is not good
-                    # because we need to parse the entire dataset to find the stop / start
-                    for idx, line in enumerate( file( dataset.file_name ) ):
-                        line = line.rstrip( '\r\n' )
-                        if line and not line.startswith( '#' ):
-                            elems = line.split( '\t' )
-                            if len( elems ) != 9:
-                                continue # Invalid line
-                            if not seqid:
-                                seqid = elems[0]
-                            # Assume all Sequence IDs are the same.Is this true for GFF3?
-                            if not start or start < int( elems[3] ):
-                                start = int( elems[3] )
-                            if not end or end > int( elems[4] ):
-                                end = int( elems[4] )
+                    if not line.startswith( '#' ):
+                        elems = line.split( '\t' )
+                        if not seqid:
+                            # We can only set the viewport for a single chromosome
+                            seqid = elems[0]
+                        if seqid == elems[0]:
+                            # Make sure we have not spanned chromosomes
+                            start = min( start, int( elems[3] ) )
+                            stop = max( stop, int( elems[4] ) )
+                        else:
+                            # We've spanned a chromosome
+                            break
+                    if i > 10:
+                        break
             except:
                 seqid, start, stop = ( '', '', '' ) 
             return ( seqid, str( start ), str( stop ) )
@@ -856,7 +854,7 @@ class GBrowseTrack ( Tabular ):
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app ('gbrowse', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
+        self.add_display_app ('elegans', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
     def set_meta( self, dataset, **kwd ):
         Tabular.set_meta( self, dataset, skip=1 )
