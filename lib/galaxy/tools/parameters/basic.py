@@ -1049,6 +1049,8 @@ class DataToolParameter( ToolParameter ):
                                 assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
                                 if assoc:
                                     data = assoc[0].dataset
+                                elif self.tool.config_files:
+                                    continue #dataset conversion and configuration files currently only work with datasets that have already been converted
                                 selected = ( value and ( data in value ) )
                                 field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
                                 break #we only report the first valid converter, assume self.extensions is a priority list
@@ -1065,7 +1067,10 @@ class DataToolParameter( ToolParameter ):
                 else:
                     field.options[-1] = a, b, True
         if self.optional:
-            field.add_option( "Selection is Optional", 'None', True )
+            if not value:
+                field.add_option( "Selection is Optional", 'None', True )
+            else:
+                field.add_option( "Selection is Optional", 'None', False )
         return field
 
     def get_initial_value( self, trans, context ):
@@ -1079,14 +1084,21 @@ class DataToolParameter( ToolParameter ):
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.history
         assert history is not None, "DataToolParameter requires a history"
+        if self.optional:
+            return None
         history = trans.history
         most_recent_dataset = [None]
         filter_key = filter_value = None
         if self.options:
             filter_key, filter_value = self.options.get_options( trans, context )
         def dataset_collector( datasets ):
+            def is_convertable( dataset ):
+                for target_ext in self.extensions:
+                    if target_ext in data.get_converter_types():
+                        return True
+                return False
             for i, data in enumerate( datasets ):
-                if isinstance( data.datatype, self.formats) and not data.deleted and data.state not in [data.states.ERROR]:
+                if data.visible and not data.deleted and data.state not in [data.states.ERROR] and ( isinstance( data.datatype, self.formats) or is_convertable( data ) ):
                     if self.options and filter_key == 'build' and data.get_dbkey() != filter_value:
                         continue
                     most_recent_dataset[0] = data
@@ -1096,8 +1108,6 @@ class DataToolParameter( ToolParameter ):
         most_recent_dataset = most_recent_dataset.pop()
         if most_recent_dataset is not None:
             return most_recent_dataset
-        elif self.optional:
-            return None
         else:
             return ''
 

@@ -32,7 +32,7 @@ class DefaultToolAction( object ):
                         if target_ext in data.get_converter_types():
                             assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
                             if assoc: data = assoc[0].dataset
-                            else:
+                            elif not tool.config_files:
                                 #run converter here
                                 assoc = trans.app.model.DatasetAssociatedFile( parent_id = data.id, file_type = "CONVERTED_%s" % target_ext, metadata_safe = False )
                                 new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
@@ -40,7 +40,7 @@ class DefaultToolAction( object ):
                                 new_data.name = data.name
                                 assoc.dataset_id = new_data.id
                                 data = new_data
-                            break
+                                break
                 return data
             if isinstance( input, DataToolParameter ):
                 if isinstance( value, list ):

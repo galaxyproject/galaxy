@@ -530,20 +530,17 @@ class RootController( BaseController ):
         """Adds a POSTed file to a History"""
         try:
             history = trans.app.model.History.get( history_id )
-            data = trans.app.model.Dataset()
-            data.name = name
-            data.extension = ext
-            data.dbkey = dbkey
-            data.info = info
+            data = trans.app.model.Dataset( name = name, info = info, extension = ext, dbkey = dbkey )
             data.flush()
-            data_file = open(data.file_name, "w")
-            file_data.file.seek(0)
-            data_file.writelines(file_data.file.readlines())
+            data_file = open( data.file_name, "wb" )
+            file_data.file.seek( 0 )
+            data_file.write( file_data.file.read() )
             data_file.close()
             data.state = data.states.OK
             data.init_meta()
+            data.set_meta()
             data.flush()
-            history.add_dataset( data)
+            history.add_dataset( data )
             history.flush()
             data.set_peek()
             data.set_size()
