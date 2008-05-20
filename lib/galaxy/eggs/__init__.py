@@ -58,7 +58,6 @@ class Egg( object ):
             self.dir = os.path.join( galaxy_dir, "dist-eggs", self.platform['galaxy'] )
         else:
             self.dir = os.path.join( galaxy_dir, "eggs", self.platform['galaxy'] )
-        print "set dir to %s" % self.dir
     def get_namever( self ):
         return( "%s-%s" %( self.name, self.version ) )
     def get_namevertag( self ):
