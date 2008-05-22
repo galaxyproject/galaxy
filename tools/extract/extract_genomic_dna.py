@@ -28,32 +28,29 @@ def reverse_complement( s ):
 def check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR ):
     nib_file = "%s/alignseq.loc" % GALAXY_DATA_INDEX_DIR
     nib_path = ''
-    nibs = {}
     for line in open( nib_file ):
         line = line.rstrip( '\r\n' )
-        if line and not line.startswith( "#" ):
+        if line and not line.startswith( "#" ) and line.startswith( 'seq' ):
             fields = line.split()
             if len( fields ) < 3:
                 continue
-            if ( fields[0] == 'seq' ):
-                nibs[( fields[1] )] = fields[2]
-    if nibs.has_key( dbkey ):
-        nib_path = nibs[( dbkey )]
+            if fields[1] == dbkey:
+                nib_path = fields[2].strip()
+                break
     return nib_path
 
 def check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR ):
     twobit_file = "%s/twobit.loc" % GALAXY_DATA_INDEX_DIR
     twobit_path = ''
-    twobits = {}
     for line in open( twobit_file ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ): 
             fields = line.split()
             if len( fields ) < 2:
                 continue
-            twobits[( fields[0] )] = fields[1]
-    if twobits.has_key( dbkey ):
-        twobit_path = twobits[( dbkey )]
+            if fields[0] == dbkey:
+                twobit_path = fields[1].strip()
+                break
     return twobit_path
         
 def __main__():
@@ -129,7 +126,7 @@ def __main__():
                 strand = '+'
             sequence = ''
 
-            if os.path.exists( "%s/%s.nib" % ( nib_path, chrom ) ):
+            if nib_path and os.path.exists( "%s/%s.nib" % ( nib_path, chrom ) ):
                 if chrom in nibs:
                     nib = nibs[chrom]
                 else:
@@ -144,7 +141,7 @@ def __main__():
                         first_invalid_line = i + 1
                         invalid_line = line
                     continue
-            elif os.path.exists( twobit_path ):
+            elif twobit_path and os.path.exists( twobit_path ):
                 if chrom in twobits:
                     t = twobits[chrom]
                 else:
