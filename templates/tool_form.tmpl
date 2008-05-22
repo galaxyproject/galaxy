@@ -164,22 +164,23 @@ jQuery( function() {
 </body>
 
 <script type="text/javascript">
-   \$(function() {
-       \$('li > ul').each(function(i) {
-           if ( \$(this)[0].className == 'tool_parameter_expandable_collapsable' )
+   \$( function() {
+       \$( 'li > ul' ).each( function( i ) {
+           if ( \$( this )[0].className == 'toolParameterExpandableCollapsable' )
            {
-               var parent_li = \$(this).parent('li');
-               var sub_ul = \$(this).remove();
-               parent_li.find('span').wrapInner('<a/>').find('a').click(function() {
+               var parent_li = \$( this ).parent( 'li' );
+               var sub_ul = \$( this ).remove();
+               parent_li.find( 'span' ).wrapInner( '<a/>' ).find( 'a' ).click( function() {
                  sub_ul.toggle();
+                 \$( this )[0].innerHTML = ( sub_ul[0].style.display=='none' ) ? '[+]' : '[-]';
                });
-               parent_li.append(sub_ul);
+               parent_li.append( sub_ul );
            }
        });
-       \$('ul ul').each( function(i) {
-           if ( \$(this)[0].className == 'tool_parameter_expandable_collapsable' )
+       \$( 'ul ul' ).each( function(i) {
+           if ( \$( this )[0].className == 'toolParameterExpandableCollapsable' )
            {
-               \$(this).hide();
+               \$( this ).hide();
            }
        });
    });

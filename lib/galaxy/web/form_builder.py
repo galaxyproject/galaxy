@@ -272,15 +272,15 @@ class DrillDownField( BaseField ):
                 if selected: selected = ' checked'
                 else: selected = ''
                 if option['options']:
-                    html.append( '<li><span>[+/-]</span><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, option['value'], selected, option['name']) )
-                    html.append( '<ul class="tool_parameter_expandable_collapsable">')
+                    html.append( '<li><span class="toolParameterExpandableCollapsable">[+]</span><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, option['value'], selected, option['name']) )
+                    html.append( '<ul class="toolParameterExpandableCollapsable">')
                     recurse_options( html, option['options'] )
                     html.append( '</ul>')
                 else:
                     html.append( '<li><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, option['value'], selected, option['name']) )
                 html.append( '</li>' )
         rval = []
-        rval.append( '<div><ul class="tool_parameter_expandable_collapsable">' )
+        rval.append( '<div><ul class="toolParameterExpandableCollapsable">' )
         recurse_options( rval, self.options )
         rval.append( '</ul></div>' )
         return '\n'.join( rval )
