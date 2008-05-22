@@ -28,7 +28,7 @@
        <output name="out_file1" file="annotation_profiler_1.out" />
      </test>
      <test>
-       <param name="input1" value="4.bed" dbkey="hg18"/>
+       <param name="input1" value="3.bed" dbkey="hg18"/>
        <param name="keep_empty" value=""/>
        <param name="summary" value="-S"/>
        <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refGene,snp126"/>
@@ -46,7 +46,7 @@ You may alternatively choose to recieve a summary across all of the intervals th
 
 -----
 
-**Example** 
+**Example**
 
 Using the interval below and selecting several tables::
 
@@ -54,23 +54,29 @@ Using the interval below and selecting several tables::
 
 results in::
 
- chr1 4558 14764 uc001aab.1 0 - xenoMrna 10203
- chr1 4558 14764 uc001aab.1 0 - snp126 205
- chr1 4558 14764 uc001aab.1 0 - chainStrPur2Link 1323
- chr1 4558 14764 uc001aab.1 0 - netXenTro2 3050
- chr1 4558 14764 uc001aab.1 0 - intronEst 10206
- chr1 4558 14764 uc001aab.1 0 - snp126orthoPanTro2RheMac2 61
- chr1 4558 14764 uc001aab.1 0 - multiz28way 10206
- chr1 4558 14764 uc001aab.1 0 - chainEquCab1 10206
- chr1 4558 14764 uc001aab.1 0 - affyTxnPhase3HeLaNuclear 9011
- chr1 4558 14764 uc001aab.1 0 - affyHuEx1 3553
- chr1 4558 14764 uc001aab.1 0 - clonePos 10206
- chr1 4558 14764 uc001aab.1 0 - ctgPos 10206
- chr1 4558 14764 uc001aab.1 0 - snp126Exceptions 151
- chr1 4558 14764 uc001aab.1 0 - chainOryLat1 3718
- chr1 4558 14764 uc001aab.1 0 - genomicSuperDups 10206
- chr1 4558 14764 uc001aab.1 0 - netGalGal3 3686
- chr1 4558 14764 uc001aab.1 0 - phastCons28wayPlacMammal 10172
+ chr1 4558 14764 uc001aab.1 0 - snp126Exceptions 151 142
+ chr1 4558 14764 uc001aab.1 0 - genomicSuperDups 10206 1
+ chr1 4558 14764 uc001aab.1 0 - chainOryLat1 3718 1
+ chr1 4558 14764 uc001aab.1 0 - multiz28way 10206 1
+ chr1 4558 14764 uc001aab.1 0 - affyHuEx1 3553 32
+ chr1 4558 14764 uc001aab.1 0 - netXenTro2 3050 1
+ chr1 4558 14764 uc001aab.1 0 - intronEst 10206 1
+ chr1 4558 14764 uc001aab.1 0 - xenoMrna 10203 1
+ chr1 4558 14764 uc001aab.1 0 - ctgPos 10206 1
+ chr1 4558 14764 uc001aab.1 0 - clonePos 10206 1
+ chr1 4558 14764 uc001aab.1 0 - chainStrPur2Link 1323 29
+ chr1 4558 14764 uc001aab.1 0 - affyTxnPhase3HeLaNuclear 9011 8
+ chr1 4558 14764 uc001aab.1 0 - snp126orthoPanTro2RheMac2 61 58
+ chr1 4558 14764 uc001aab.1 0 - snp126 205 192
+ chr1 4558 14764 uc001aab.1 0 - chainEquCab1 10206 1
+ chr1 4558 14764 uc001aab.1 0 - netGalGal3 3686 1
+ chr1 4558 14764 uc001aab.1 0 - phastCons28wayPlacMammal 10172 3
+
+Where::
+
+ The first added column is the table name.
+ The second added column is the number of bases covered by the table.
+ The third added column is the number of regions from the table that is covered by the interval.
 
 Alternatively, requesting a summary, using the intervals below and selecting several tables::
 
@@ -79,35 +85,47 @@ Alternatively, requesting a summary, using the intervals below and selecting sev
 
 results in::
 
- #tableName tableSize totalRegionSize totalCoverage nrRegionSize nrCoverage
- snp126Exceptions 133601 24994 388 14788 237
- genomicSuperDups 12268847 24994 24994 14788 14788
- chainOryLat1 70337730 24994 7436 14788 3718
- affyHuEx1 15703901 24994 7846 14788 4293
- multiz28way 225928588 24994 24994 14788 14788
- intronEst 135796064 24994 24994 14788 14788
- xenoMrna 129031327 24994 20406 14788 10203
- ctgPos 224999719 24994 24994 14788 14788
- netXenTro2 111440392 24994 6100 14788 3050
- clonePos 224999719 24994 24994 14788 14788
- chainStrPur2Link 7948016 24994 2646 14788 1323
- affyTxnPhase3HeLaNuclear 136797870 24994 22601 14788 13590
- snp126orthoPanTro2RheMac2 700436 24994 124 14788 63
- snp126 956976 24994 498 14788 293
- chainEquCab1 246306414 24994 24994 14788 14788
- netGalGal3 203351973 24994 7372 14788 3686
- phastCons28wayPlacMammal 221017670 24994 24926 14788 14754
+ #tableName tableSize tableRegionCount allIntervalCount allIntervalSize allCoverage allTableRegionsOverlaped allIntervalsOverlapingTable nrIntervalCount nrIntervalSize nrCoverage nrTableRegionsOverlaped nrIntervalsOverlapingTable
+ snp126Exceptions 133601 92469 2 24994 388 359 2 1 14788 237 217 1
+ genomicSuperDups 12268847 657 2 24994 24994 2 2 1 14788 14788 1 1
+ chainOryLat1 70337730 2542 2 24994 7436 2 2 1 14788 3718 1 1
+ affyHuEx1 15703901 112274 2 24994 7846 70 2 1 14788 4293 38 1
+ netXenTro2 111440392 1877 2 24994 6100 2 2 1 14788 3050 1 1
+ snp126orthoPanTro2RheMac2 700436 690674 2 24994 124 118 2 1 14788 63 60 1
+ intronEst 135796064 2332 2 24994 24994 2 2 1 14788 14788 1 1
+ xenoMrna 129031327 1586 2 24994 20406 2 2 1 14788 10203 1 1
+ snp126 956976 838091 2 24994 498 461 2 1 14788 293 269 1
+ clonePos 224999719 39 2 24994 24994 2 2 1 14788 14788 1 1
+ chainStrPur2Link 7948016 119841 2 24994 2646 58 2 1 14788 1323 29 1
+ affyTxnPhase3HeLaNuclear 136797870 140244 2 24994 22601 17 2 1 14788 13590 9 1
+ multiz28way 225928588 38 2 24994 24994 2 2 1 14788 14788 1 1
+ ctgPos 224999719 39 2 24994 24994 2 2 1 14788 14788 1 1
+ chainEquCab1 246306414 141 2 24994 24994 2 2 1 14788 14788 1 1
+ netGalGal3 203351973 461 2 24994 7372 2 2 1 14788 3686 1 1
+ phastCons28wayPlacMammal 221017670 22803 2 24994 24926 6 2 1 14788 14754 3 1
 
 Where::
-
- tableSize is the number of positions existing in the table for only the chromosomes that were referenced by the interval file.
- totalRegionSize is the sum of the lengths of the provided interval file.
- totalCoverage is the sum of the coverage for each interval
- nrRegionSize is the sum of the lengths of non-redundant intervals
+ 
+ tableName is the name of the table
+ tableChromosomeCoverage is the number of positions existing in the table (only the chromosomes that were referenced by the interval file are included)
+ tableChromosomeCount is the number of regions existing in the table (only the chromosomes that were referenced by the interval file are included)
+ 
+ allIntervalCount is the number of provided intervals
+ allIntervalSize is the sum of the lengths of the provided interval file
+ allCoverage is the sum of the coverage for each provided interval
+ allTableRegionsOverlaped is the sum of the number of regions of the table that were overlaped for each interval
+ allIntervalsOverlapingTable is the number of provided intervals which overlap the table
+ 
+ nrIntervalCount is the number of non-redundant intervals
+ nrIntervalSize is the sum of the lengths of non-redundant intervals
  nrCoverage is the sum of the coverage of non-redundant intervals
-   
-   where non-redundant indicates that input intervals have been collapsed to resolve overlaps
+ nrTableRegionsOverlaped is the sum of the number of regions of the table that were overlaped for each non-redundant interval
+ nrIntervalsOverlapingTable is the number of non-redundant intervals which overlap the table
+ 
 
+.. class:: infomark
+
+**TIP:** non-redundant (nr) refers to the set of intervals that remains after the intervals provided have been merged to resolve overlaps
 
   </help>
 </tool>
