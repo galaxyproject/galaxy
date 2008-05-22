@@ -3,15 +3,52 @@
   <command interpreter="python">GMAJ.py $out_file1 $maf_input $gmaj_file $filenames_file</command>
   <inputs>
       <param name="maf_input" type="data" format="maf" label="Alignment File" optional="False"/>
-      <param name="nowarn" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true" label="Choose Warnings to suppress" separator=" ">
+      <param name="nowarn" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true" label="Choose Warnings to Suppress" separator=" " help="These do not affect behavior, only suppress warning messages.">
         <options>    
-          <option name="All" value="all" selected="True">
-            <option name="seqname_mismatch" value="seqname_mismatch"/>
-            <option name="bed_blocks" value="bed_blocks"/>
-            <option name="bed_thick" value="bed_thick"/>
-            <option name="bed_name" value="bed_name"/>
-            <option name="repeat_type_missing" value="repeat_type_missing"/>
-            <option name="bed_name_prefix" value="bed_name_prefix"/>
+          <option name="All" value="all">
+            <option name="MAF File" value="maf">
+              <option name="Invalid Version (maf_version)" value="maf_version"/>
+              <option name="Invalid Paragraph (maf_paragraph)" value="maf_paragraph"/>
+              <option name="Reconstruction Annotations Missing Sequence (recon_noseq)" value="recon_noseq"/>
+              <option name="Reconstruction Annotations Missing Row (recon_missing)" value="recon_missing"/>
+              <option name="Missing MAF File (unused_maf)" value="unused_maf"/>
+            </option>
+            <option name="Annotation Files" value="annotations">
+              <option name="Semantic Assumptions" value="semantics">
+                <option name="BED Format" value = "bed">
+                  <option name="BED12 Blocks are exons (bed_blocks)" value="bed_blocks"/>
+                  <option name="BED ThickStart/End are CDS (bed_thick)" value="bed_thick"/>
+                  <option name="BED name is Gene Name when loading exons for gene BED (bed_name)" value="bed_name"/>
+                  <option name="BED name used as prefix when loading exons for exon BED (bed_name_prefix)" value="bed_name_prefix"/>
+                  <option name="Using full BED name as gene when loading exons using entire region (bed_name_full)" value="bed_name_full"/>
+                </option>
+                <option name="Using GFF group as gene name (gff_group)" value="gff_group"/>
+              </option>
+              <option name="Skipped Annotations" value="skipped">
+                <option name="Unrecognized Format (annot_format)" value="annot_format"/>
+                <option name="Skip lines with no gene name (gene_missing)" value="gene_missing"/>
+                <option name="Skip lone start/stop codons when strand is unknown (ambiguous_codon)" value="ambiguous_codon"/>
+                <option name="Ignore unrecognized repeats (unrec_repeat)" value="unrec_repeat"/>
+                <option name="Use 'other' for repeat type when unavailable (repeat_type_missing)" value="repeat_type_missing"/>
+                <option name="Ignore invalid strands (bad_strand)" value="bad_strand"/>
+                <option name="Ignore Invalid scores (bad_score)" value="bad_score"/>
+                <option name="Bad color specification (color_format)" value="color_format"/>
+                <option name="use Score shading is not yet supported (score_shading)" value="score_shading"/>
+                <option name="Ignoring malformed URLs (bad_url)" value="bad_url"/>
+              </option>
+              <option name="Red Flags" value="red">
+                <option name="Sequence name in annotation file does not match (seqname_mismatch)" value="seqname_mismatch"/>
+                <option name="Start or end &lt; 1" value="lessthanone">
+                  <option name="BED (bed_coord)" value="bed_coord"/>
+                  <option name="GFF (gff_coord)" value="gff_coord"/>
+                </option>
+                <option name="Missing item name for URL substitution (url_subst)" value="url_subst"/>
+              </option>
+            </option>
+            <option name="Miscellaneous" value="miscellaneous">
+              <option name="Tokens end with an escaped quote (escaped_quote)" value="escaped_quote"/>
+              <option name="Draggable panel dividers cannot be made sticky (no_sticky)" value="no_sticky"/>
+            </option>
           </option>
         </options>
       </param>
