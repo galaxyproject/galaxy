@@ -727,15 +727,15 @@ class DrillDownSelectToolParameter( ToolParameter ):
     ... </param>
     ... ''' ) )
     >>> print p.get_html()
-    <div><ul class="tool_parameter_expandable_collapsable">
-    <li><span>[+/-]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
-    <ul class="tool_parameter_expandable_collapsable">
+    <div><ul class="toolParameterExpandableCollapsable">
+    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
+    <ul class="toolParameterExpandableCollapsable">
     <li><input type="checkbox" name="some_name" value="option1"">Option 1
     </li>
     <li><input type="checkbox" name="some_name" value="option2"">Option 2
     </li>
-    <li><span>[+/-]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
-    <ul class="tool_parameter_expandable_collapsable">
+    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
+    <ul class="toolParameterExpandableCollapsable">
     <li><input type="checkbox" name="some_name" value="option3"">Option 3
     </li>
     <li><input type="checkbox" name="some_name" value="option4"">Option 4
@@ -764,15 +764,15 @@ class DrillDownSelectToolParameter( ToolParameter ):
     ... </param>
     ... ''' ) )
     >>> print p.get_html()
-    <div><ul class="tool_parameter_expandable_collapsable">
-    <li><span>[+/-]</span><input type="radio" name="some_name" value="heading1"">Heading 1
-    <ul class="tool_parameter_expandable_collapsable">
+    <div><ul class="toolParameterExpandableCollapsable">
+    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="some_name" value="heading1"">Heading 1
+    <ul class="toolParameterExpandableCollapsable">
     <li><input type="radio" name="some_name" value="option1"">Option 1
     </li>
     <li><input type="radio" name="some_name" value="option2"">Option 2
     </li>
-    <li><span>[+/-]</span><input type="radio" name="some_name" value="heading1"">Heading 1
-    <ul class="tool_parameter_expandable_collapsable">
+    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="some_name" value="heading1"">Heading 1
+    <ul class="toolParameterExpandableCollapsable">
     <li><input type="radio" name="some_name" value="option3"">Option 3
     </li>
     <li><input type="radio" name="some_name" value="option4"">Option 4

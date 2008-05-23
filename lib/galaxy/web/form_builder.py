@@ -201,15 +201,15 @@ class DrillDownField( BaseField ):
     
     >>> t = DrillDownField( "foo", multiple=True, display="checkbox", options=[{'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 1', 'value': 'option1', 'options': []}, {'name': 'Option 2', 'value': 'option2', 'options': []}, {'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 3', 'value': 'option3', 'options': []}, {'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'name': 'Option 5', 'value': 'option5', 'options': []}] )
     >>> print t.get_html()
-    <div><ul class="tool_parameter_expandable_collapsable">
-    <li><span>[+/-]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
-    <ul class="tool_parameter_expandable_collapsable">
+    <div><ul class="toolParameterExpandableCollapsable">
+    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
+    <ul class="toolParameterExpandableCollapsable">
     <li><input type="checkbox" name="foo" value="option1"">Option 1
     </li>
     <li><input type="checkbox" name="foo" value="option2"">Option 2
     </li>
-    <li><span>[+/-]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
-    <ul class="tool_parameter_expandable_collapsable">
+    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
+    <ul class="toolParameterExpandableCollapsable">
     <li><input type="checkbox" name="foo" value="option3"">Option 3
     </li>
     <li><input type="checkbox" name="foo" value="option4"">Option 4
@@ -223,15 +223,15 @@ class DrillDownField( BaseField ):
     </ul></div>
     >>> t = DrillDownField( "foo", multiple=False, display="radio", options=[{'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 1', 'value': 'option1', 'options': []}, {'name': 'Option 2', 'value': 'option2', 'options': []}, {'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 3', 'value': 'option3', 'options': []}, {'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'name': 'Option 5', 'value': 'option5', 'options': []}] )
     >>> print t.get_html()
-    <div><ul class="tool_parameter_expandable_collapsable">
-    <li><span>[+/-]</span><input type="radio" name="foo" value="heading1"">Heading 1
-    <ul class="tool_parameter_expandable_collapsable">
+    <div><ul class="toolParameterExpandableCollapsable">
+    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="foo" value="heading1"">Heading 1
+    <ul class="toolParameterExpandableCollapsable">
     <li><input type="radio" name="foo" value="option1"">Option 1
     </li>
     <li><input type="radio" name="foo" value="option2"">Option 2
     </li>
-    <li><span>[+/-]</span><input type="radio" name="foo" value="heading1"">Heading 1
-    <ul class="tool_parameter_expandable_collapsable">
+    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="foo" value="heading1"">Heading 1
+    <ul class="toolParameterExpandableCollapsable">
     <li><input type="radio" name="foo" value="option3"">Option 3
     </li>
     <li><input type="radio" name="foo" value="option4"">Option 4
