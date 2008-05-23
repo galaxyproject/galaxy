@@ -107,19 +107,21 @@ results in::
 Where::
  
  tableName is the name of the table
- tableChromosomeCoverage is the number of positions existing in the table (only the chromosomes that were referenced by the interval file are included)
- tableChromosomeCount is the number of regions existing in the table (only the chromosomes that were referenced by the interval file are included)
+ tableChromosomeCoverage is the number of positions existing in the table for only the chromosomes that were referenced by the interval file
+ tableChromosomeCount is the number of regions existing in the table for only the chromosomes that were referenced by the interval file
+ tableRegionCoverage is the number of positions existing in the table between the minimal and maximal bounding regions that were referenced by the interval file
+ tableRegionCount is the number of regions existing in the table between the minimal and maximal bounding regions that were referenced by the interval file
  
  allIntervalCount is the number of provided intervals
  allIntervalSize is the sum of the lengths of the provided interval file
  allCoverage is the sum of the coverage for each provided interval
- allTableRegionsOverlaped is the sum of the number of regions of the table that were overlaped for each interval
+ allTableRegionsOverlaped is the sum of the number of regions of the table (non-unique) that were overlaped for each interval
  allIntervalsOverlapingTable is the number of provided intervals which overlap the table
  
  nrIntervalCount is the number of non-redundant intervals
  nrIntervalSize is the sum of the lengths of non-redundant intervals
  nrCoverage is the sum of the coverage of non-redundant intervals
- nrTableRegionsOverlaped is the sum of the number of regions of the table that were overlaped for each non-redundant interval
+ nrTableRegionsOverlaped is the number of regions of the table (unique) that were overlaped by the non-redundant intervals
  nrIntervalsOverlapingTable is the number of non-redundant intervals which overlap the table
  
 
