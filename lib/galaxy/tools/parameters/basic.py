@@ -823,9 +823,10 @@ class DrillDownSelectToolParameter( ToolParameter ):
             options = []
             for filter_key, filter_value in self.filtered.iteritems():
                 dataset = other_values[filter_key]
-                for meta_key, meta_dict in filter_value.iteritems():
-                    if ",".join( dataset.metadata.get( meta_key ) ) == meta_dict['value']:
-                        options.extend( meta_dict['options'] )
+                if dataset:
+                    for meta_key, meta_dict in filter_value.iteritems():
+                        if ",".join( dataset.metadata.get( meta_key ) ) == meta_dict['value']:
+                            options.extend( meta_dict['options'] )
             return options
         return self.options
     
