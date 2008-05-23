@@ -13,7 +13,11 @@
   <tests>
     <test>
       <param name="input1" value="1.bed" />
-      <output name="output" file="gops-basecoverage.dat" />     
+      <output name="output" file="gops_basecoverage_out.txt" />     
+    </test>
+    <test>
+      <param name="input1" value="gops_bigint.interval" />
+      <output name="output" file="gops_basecoverage_out2.txt" />     
     </test>
   </tests>
   <help>

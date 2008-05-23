@@ -8,21 +8,17 @@ usage: %prog bed_file_1 bed_file_2 out_file
     -1, --cols1=N,N,N,N: Columns for chr, start, end, strand in first file
     -2, --cols2=N,N,N,N: Columns for chr, start, end, strand in second file
 """
-
 from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
-
-import sys
-import traceback
-import fileinput
+import sys, traceback, fileinput
 from warnings import warn
-
 from bx.intervals.io import *
 from bx.cookbook import doc_optparse
 from bx.intervals.operations import quicksect
-
 from galaxy.tools.util.galaxyops import *
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err(msg):
     sys.stderr.write(msg)
@@ -99,7 +95,6 @@ def count_coverage(readers):
             yield interval
     
 def main():
-
     options, args = doc_optparse.parse( __doc__ )
     
     try:
@@ -108,32 +103,29 @@ def main():
         in1_fname, in2_fname, out_fname = args
     except:
         stop_err( "Data issue: click the pencil icon in the history item to correct the metadata attributes." )
-        
-    try:
-        out_file = open( out_fname, "w" )
-    except:
-        stop_err( "Unable to open output file." )
     
     g1 = NiceReaderWrapper( fileinput.FileInput( in1_fname ),
-                                chrom_col=chr_col_1,
-                                start_col=start_col_1,
-                                end_col=end_col_1,
-                                strand_col=strand_col_1,
-                                fix_strand=True)
+                            chrom_col=chr_col_1,
+                            start_col=start_col_1,
+                            end_col=end_col_1,
+                            strand_col=strand_col_1,
+                            fix_strand=True )
     g2 = NiceReaderWrapper( fileinput.FileInput( in2_fname ),
-                                chrom_col=chr_col_2,
-                                start_col=start_col_2,
-                                end_col=end_col_2,
-                                strand_col=strand_col_2,
-                                fix_strand=True)
-    g2_copy = BitsetSafeNiceReaderWrapper ( NiceReaderWrapper( fileinput.FileInput( in2_fname ),
-                                chrom_col=chr_col_2,
-                                start_col=start_col_2,
-                                end_col=end_col_2,
-                                strand_col=strand_col_2,
-                                fix_strand=True) )
+                            chrom_col=chr_col_2,
+                            start_col=start_col_2,
+                            end_col=end_col_2,
+                            strand_col=strand_col_2,
+                            fix_strand=True )
+    g2_copy = NiceReaderWrapper( fileinput.FileInput( in2_fname ),
+                                 chrom_col=chr_col_2,
+                                 start_col=start_col_2,
+                                 end_col=end_col_2,
+                                 strand_col=strand_col_2,
+                                 fix_strand=True )
     
-    
+
+    out_file = open( out_fname, "w" )
+
     try:
         for line in count_coverage([g1,g2,g2_copy]):
             if type( line ) is GenomicInterval:
@@ -141,11 +133,13 @@ def main():
             else:
                 print >> out_file, line
     except ParseError, exc:
-        print >> sys.stderr, "Invalid file format: ", str( exc )
-          
+        out_file.close()
+        fail( str( exc ) )
+
+    out_file.close()
+
     if g1.skipped > 0:
         print skipped( g1, filedesc=" of 1st dataset" )
-
     if g2.skipped > 0:
         print skipped( g2, filedesc=" of 2nd dataset" )
     elif g2_copy.skipped > 0:

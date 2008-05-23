@@ -10,17 +10,14 @@ usage: %prog primary_file features_file out_file direction
 from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
-
-import sys
-import traceback
-import fileinput
+import sys, traceback, fileinput
 from warnings import warn
-
 from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *
-
 from bx.intervals.io import *
 from bx.intervals.operations import quicksect
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def get_closest_feature (node, direction, threshold_up, threshold_down, report_func_up, report_func_down):
     #direction=1 for +ve strand upstream and -ve strand downstream cases; and it is 0 for +ve strand downstream and -ve strand upstream cases
@@ -121,7 +118,6 @@ def proximal_region_finder(readers, region, comments=True):
                     yield outfields
                 
 def main():
-    
     options, args = doc_optparse.parse( __doc__ )
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols1 )
@@ -130,22 +126,19 @@ def main():
     except:
         doc_optparse.exception()
 
-    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_fname ),
-                                                         chrom_col=chr_col_1,
-                                                         start_col=start_col_1,
-                                                         end_col=end_col_1,
-                                                         strand_col=strand_col_1,
-                                                         fix_strand=True )
-                                     )
-    g2 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in2_fname ),
-                                                         chrom_col=chr_col_2,
-                                                         start_col=start_col_2,
-                                                         end_col=end_col_2,
-                                                         strand_col=strand_col_2,
-                                                         fix_strand=True )
-                                     )
+    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                            chrom_col=chr_col_1,
+                            start_col=start_col_1,
+                            end_col=end_col_1,
+                            strand_col=strand_col_1,
+                            fix_strand=True )
+    g2 = NiceReaderWrapper( fileinput.FileInput( in2_fname ),
+                            chrom_col=chr_col_2,
+                            start_col=start_col_2,
+                            end_col=end_col_2,
+                            strand_col=strand_col_2,
+                            fix_strand=True )
     out_file = open( out_fname, "w" )
-
     try:
         for line in proximal_region_finder([g1,g2], direction):
             if type( line ) is list:
@@ -153,16 +146,13 @@ def main():
             else:
                 out_file.write( "%s\n" % line )
     except ParseError, exc:
-        fail( "Invalid file format: ", str( exc ) )
+        fail( "Invalid file format: %s" % str( exc ) )
 
     print "Direction: %s" %(direction)
-    
     if g1.skipped > 0:
         print skipped( g1, filedesc=" of 1st dataset" )
-
     if g2.skipped > 0:
         print skipped( g2, filedesc=" of 2nd dataset" )
-
 
 if __name__ == "__main__":
     main()

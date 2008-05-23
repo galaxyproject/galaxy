@@ -33,6 +33,13 @@
       <output name="output" file="gops-subtract.dat" />
     </test>
     <test>
+      <param name="input1" value="gops_subtract_bigint.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="min" value="1" />
+      <param name="returntype" value="" />
+      <output name="output" file="gops-subtract.dat" />
+    </test>
+    <test>
       <param name="input1" value="1.bed" />
       <param name="input2" value="2.bed" />
       <param name="min" value="10" />

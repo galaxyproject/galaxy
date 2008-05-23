@@ -16,7 +16,12 @@
     <test>
       <param name="input1" value="1.bed" />
       <param name="allchroms" value="true" />
-      <output name="output" file="gops-complement.dat" />
+      <output name="output" file="gops_complement_out.bed" />
+    </test>
+    <test>
+      <param name="input1" value="gops_bigint.interval" />
+      <param name="allchroms" value="true" />
+      <output name="output" file="gops_complement_out2.bed" />
     </test>
   </tests>
   <help>

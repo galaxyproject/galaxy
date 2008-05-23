@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Cluster regions of intervals.
 
@@ -10,22 +9,18 @@ usage: %prog in_file out_file
     -m, --minregions=N: Minimum regions per cluster
     -o, --output=N: 1)merged 2)filtered 3)clustered 4) minimum 5) maximum
 """
-
 from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
-
-import sys
-import traceback
-import fileinput
+import sys, traceback, fileinput
 from warnings import warn
-
 from bx.intervals import *
 from bx.intervals.io import *
 from bx.intervals.operations.find_clusters import *
 from bx.cookbook import doc_optparse
-
 from galaxy.tools.util.galaxyops import *
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
     distance = 0
@@ -45,22 +40,21 @@ def main():
     except:
         doc_optparse.exception()
 
-    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_fname ),
-                                                         chrom_col=chr_col_1,
-                                                         start_col=start_col_1,
-                                                         end_col=end_col_1,
-                                                         strand_col=strand_col_1,
-                                                         fix_strand=True )
-                                     )
-    out_file = open( out_fname, "w" )
+    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                            chrom_col=chr_col_1,
+                            start_col=start_col_1,
+                            end_col=end_col_1,
+                            strand_col=strand_col_1,
+                            fix_strand=True )
 
     # Get the cluster tree
     try:
         clusters, extra = find_clusters( g1, mincols=distance, minregions=minregions)
     except ParseError, exc:
-        fail( "Invalid file format: ", str( exc ) )
+        fail( "Invalid file format: %s" % str( exc ) )
 
     f1 = open( in_fname, "r" )
+    out_file = open( out_fname, "w" )
     
     # If "merge"
     if output == 1:
@@ -129,6 +123,7 @@ def main():
                 out_file.write( "%s\n" % outinterval )
 
     f1.close()
+    out_file.close()
     
     if g1.skipped > 0:
         print skipped( g1, filedesc="" )

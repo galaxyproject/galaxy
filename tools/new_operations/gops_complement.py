@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Complement regions.
 
@@ -8,23 +7,19 @@ usage: %prog in_file out_file
     -d, --db=N: Database name (for determining chromosome lengths)
     -a, --all: Complement all chromosomes (Genome-wide complement)
 """
-
 from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
-
-import sys
-import traceback
-import fileinput
+import sys, traceback, fileinput
 from warnings import warn
-
 from bx.intervals import *
 from bx.intervals.io import *
 from bx.intervals.operations.complement import complement
 from bx.intervals.operations.subtract import subtract
 from bx.cookbook import doc_optparse
-
 from galaxy.tools.util.galaxyops import *
+
+assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
     allchroms = False
@@ -40,17 +35,17 @@ def main():
     except:
         doc_optparse.exception()
 
-    g1 = BitsetSafeNiceReaderWrapper( NiceReaderWrapper( fileinput.FileInput( in_fname ),
-                                                         chrom_col=chr_col_1,
-                                                         start_col=start_col_1,
-                                                         end_col=end_col_1,
-                                                         strand_col=strand_col_1,
-                                                         fix_strand=True )
-                                     )
-        
-    out_file = open( out_fname, "w" )
+    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
+                            chrom_col=chr_col_1,
+                            start_col=start_col_1,
+                            end_col=end_col_1,
+                            strand_col=strand_col_1,
+                            fix_strand=True )
+
     lens = dict()
     chroms = list()
+    # dbfile is used to determine the length of each chromosome.  The lengths
+    # are added to the lens dict and passed copmlement operation code in bx.
     dbfile = fileinput.FileInput( "static/ucsc/chrom/"+db+".len" )
     
     if dbfile:
@@ -82,6 +77,8 @@ def main():
     else:
         generator = complement(g1, lens)
 
+    out_file = open( out_fname, "w" )
+
     try:
         for interval in generator:
             if type( interval ) is GenomicInterval:
@@ -89,7 +86,10 @@ def main():
             else:
                 out_file.write( "%s\n" % interval )
     except ParseError, exc:
-        fail( "Invalid file format: ", str( exc ) )
+        out_file.close()
+        fail( "Invalid file format: %s" % str( exc ) )
+
+    out_file.close()
 
     if g1.skipped > 0:
         print skipped( g1, filedesc="" )
