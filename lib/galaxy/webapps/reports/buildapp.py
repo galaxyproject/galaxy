@@ -30,7 +30,7 @@ def add_controllers( webapp, app ):
     import galaxy.webapps.reports.controllers
     controller_dir = galaxy.webapps.reports.controllers.__path__[0]
     for fname in os.listdir( controller_dir ):
-        if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
+        if not fname.startswith( "_" ) and fname.endswith( ".py" ):
             name = fname[:-3]
             module_name = "galaxy.webapps.reports.controllers." + name
             module = __import__( module_name )

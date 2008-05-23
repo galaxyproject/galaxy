@@ -20,13 +20,5 @@ class UniverseApplication( object ):
                                                 db_url,
                                                 self.config.database_engine_options,
                                                 create_tables = True )
-        self.heartbeat = None
-        # Start the heartbeat process if configured and available
-        if self.config.use_heartbeat:
-            from galaxy.util import heartbeat
-            if heartbeat.Heartbeat:
-                self.heartbeat = heartbeat.Heartbeat()
-                self.heartbeat.start()
     def shutdown( self ):
-        if self.heartbeat:
-            self.heartbeat.shutdown()
+        pass
