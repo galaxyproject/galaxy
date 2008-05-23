@@ -13,15 +13,16 @@
       </table>
     %endif
     <table align="center" width="60%" class="colored">
-      <tr><td colspan="4"><div class="reportTitle">Jobs for Current Month</div></td></tr>
+      <tr><td colspan="5"><div class="reportTitle">Jobs for Current Month</div></td></tr>
       %if len( jobs ) == 0:
-        <tr class="header"><td colspan="4">There are no jobs for the current month</td></tr>
+        <tr class="header"><td colspan="5">There are no jobs for the current month</td></tr>
       %else:
         <tr class="header">
           <td>Day</td>
           <td>Date</td>
           <td>User Jobs</td>
           <td>Monitor Jobs</td>
+          <td>Total</td>
         </tr>
         <%
           ctr = 0
@@ -36,6 +37,7 @@
             <td>${job[1]}</td>
             <td>${job[2]}</td>
             <td>${job[3]}</td>
+            <td>${job[4]}</td>
           </tr>
           <%
             ctr += 1

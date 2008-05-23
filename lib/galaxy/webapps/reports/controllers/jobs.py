@@ -92,6 +92,10 @@ class Jobs( BaseController ):
         
         job_rows = engine.text( s ).execute().fetchall()
         for job in job_rows:
-            jobs.append( ( job.day_label, job.year_month_day, job.num_jobs, job.num_monitor_jobs ) )
+            try:
+                num_user_jobs = job.num_jobs - job.num_monitor_jobs
+            except:
+                num_user_jobs = job.num_jobs
+            jobs.append( ( job.day_label, job.year_month_day, num_user_jobs, job.num_monitor_jobs, job.num_jobs ) )
         return jobs
 
