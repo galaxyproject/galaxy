@@ -20,7 +20,7 @@
   
 **Auto-detect**
 
-The system will attempt to detect AXT, FASTA, Gff, HTML, LAV, Maf, Tabular, Wiggle, BED and Interval (BED with headers) formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be (please send us a note if you see a case when a valid format is not detected).  You can also upload valid files that are compressed (gzipped), which will automatically be decompressed upon upload. 
+The system will attempt to detect AXT, BED, FASTA, Gff, Gff3, Interval (BED with headers), LAV, Maf, Tabular and Wiggle formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be (please send us a note if you see a case when a valid format is not detected).  You can also upload valid files that are compressed (gzipped), which will automatically be decompressed upon upload. 
 
 -----
 
@@ -33,12 +33,6 @@ A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must m
 **AXT**
 
 blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields.
-
------
-
-**Binseq.zip**
-
-A zipped archive consisting of binary sequence files in either 'ab1' or 'scf' format.  All files in this archive must have the same file extension which is one of '.ab1' or '.scf'.  You must manually select this 'File Format' when uploading the file.
 
 -----
 
@@ -71,6 +65,12 @@ A zipped archive consisting of binary sequence files in either 'ab1' or 'scf' fo
 
 -----
 
+**Binseq.zip**
+
+A zipped archive consisting of binary sequence files in either 'ab1' or 'scf' format.  All files in this archive must have the same file extension which is one of '.ab1' or '.scf'.  You must manually select this 'File Format' when uploading the file.
+
+-----
+
 **FASTA**
 
 A sequence in FASTA format consists of a single-line description, followed by lines of sequence data.  The first character of the description line is a greater-than (">") symbol in the first column.  All lines should be shorter than 80 charcters::
@@ -81,6 +81,25 @@ A sequence in FASTA format consists of a single-line description, followed by li
     >sequence2
     tttcgtgcgtatag
     tggcgcggtga
+
+-----
+
+**FASTQ**
+
+FASTQ format stores sequences and Phred qualities in a single file. FASTQ is first widely used in the Sanger Institute and therefore we usually take the Sanger specification and the standard FASTQ format, or simply FASTQ format.  You must manually select this 'File Format' when uploading the file::
+
+	@EAS54_6_R1_2_1_413_324
+	CCCTTCTTGTCTTCAGCGTTTCTCC
+	+
+	;;3;;;;;;;;;;;;7;;;;;;;88
+	@EAS54_6_R1_2_1_540_792
+	TTGGCAGGCCAAGGCCGATGGATCA
+	+
+	;;;;;;;;;;;7;;;;;-;;;3;83
+	@EAS54_6_R1_2_1_443_348
+	GTTGCTTCTGGCGTGGGTGGGGGGG
+	+EAS54_6_R1_2_1_443_348
+	;;;;;;;;;;;9;7;;.7;393333
 
 -----
 
@@ -128,6 +147,20 @@ TBA and multiz multiple alignment format.  The first line of a .maf file begins 
 
 -----
 
+**Qual**
+
+The qual sequence format is a FASTA-like format which stores numerical quality values for each nucleotide or amino acid. It is used by CAP3 and Phrap.  You must manually select this 'File Format' when uploading the file::
+
+	>HSMETOO 134bp
+	10 20 30 40 50 50 50 50 50 20 25 25 30 30 20 15 20 35 50 50 50 50 50 50 
+	50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 
+	50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 
+	50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 
+	50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 
+	50 50 50 20 30 20 10 10
+
+-----
+
 **Scf**
 
 A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file.
@@ -137,6 +170,18 @@ A binary sequence file in 'scf' format with a '.scf' file extension.  You must m
 **Tabular (tab delimited)**
 
 Any data in tab delimited format (tabular)
+
+-----
+
+**Taxonomy**
+
+Tabular data containing at least 24 columns.  You must manually select this 'File Format' when uploading the file.
+
+-----
+
+**Txt**
+
+Any text file.
 
 -----
 
@@ -150,11 +195,6 @@ A zipped archive consisting of flat text sequence files.  All files in this arch
 
 The wiggle format is line-oriented.  Wiggle data is preceeded by a track definition line, which adds a number of options for controlling the default display of this track.
 
------
-
-**Other text type**
-
-Any text file
 
   </help>
 </tool>

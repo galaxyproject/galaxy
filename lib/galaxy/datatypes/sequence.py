@@ -88,6 +88,26 @@ class Fasta( Sequence ):
         except:
             return False
 
+class Fastq( Sequence ):
+    """Class representing a FASTQ sequence"""
+    # FASTQ format stores sequences and Phred qualities in a single file. It is concise and compact. 
+    # FASTQ is first widely used in the Sanger Institute and therefore we usually take the Sanger 
+    # specification and the standard FASTQ format, or simply FASTQ format. Although Solexa/Illumina 
+    # read file looks pretty much like FASTQ, they are different in that the qualities are scaled 
+    # differently. In the quality string, if you can see a character with its ASCII code higher than 
+    # 90, probably your file is in the Solexa/Illumina format.
+    #
+    # For details, see http://maq.sourceforge.net/fastq.shtml
+    file_ext = "fastq"
+
+    def set_peek( self, dataset ):
+        Sequence.set_peek( self, dataset )
+        sequences = 0
+        for line in file( dataset.file_name ):
+            if line and line.startswith( "@" ):
+                sequences += 1
+        dataset.blurb = '%d sequences' % sequences
+
 try:
     import pkg_resources; pkg_resources.require( "bx-python" )
     import bx.align.maf
