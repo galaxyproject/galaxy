@@ -48,7 +48,7 @@ def counter(node, start, end):
         if node.left: 
             counter(node.left, start, end)
 
-def count_coverage(readers):
+def count_coverage( readers, comments=True ):
     primary = readers[0]
     secondary = readers[1]
     secondary_copy = readers[2]
@@ -71,7 +71,6 @@ def count_coverage(readers):
             chrom = interval.chrom
             start = int(interval.start)
             end = int(interval.end)
-            if start > end: warn( "Interval start after end!" )
             full = 0
             partial = 0
             if chrom not in bitsets:
@@ -129,9 +128,9 @@ def main():
     try:
         for line in count_coverage([g1,g2,g2_copy]):
             if type( line ) is GenomicInterval:
-                print >> out_file, "\t".join( line.fields )
+                out_file.write( "%s\n" % "\t".join( line.fields ) )
             else:
-                print >> out_file, line
+                out_file.write( "%s\n" % line )
     except ParseError, exc:
         out_file.close()
         fail( str( exc ) )

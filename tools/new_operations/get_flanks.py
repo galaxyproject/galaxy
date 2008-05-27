@@ -40,21 +40,15 @@ def main():
         size = int(size)
     except:    
         stop_err( "Invalid offset or length entered. Try again by entering valid integer values." )
-    try:
-        fi = open(inp_file,'r')
-    except:
-        stop_err( "Unable to open input file" )
-    try:
-        fo = open(out_file,'w')
-    except:
-        stop_err( "Unable to open output file" )
+
+    fo = open(out_file,'w')
     
     skipped_lines = 0
     first_invalid_line = 0
     invalid_line = None
     elems = []
     j=0
-    for i, line in enumerate( fi ):
+    for i, line in enumerate( file( inp_file ) ):
         line = line.strip()
         if line and (not line.startswith( '#' )) and line != '':
             j+=1
@@ -83,7 +77,7 @@ def main():
                             elems[start_col_1] = str(int(elems[end_col_1]) - offset)
                             elems[end_col_1] = str(int(elems[start_col_1]) + size)
                     assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                    print >>fo, '\t'.join(elems)
+                    fo.write( "%s\n" % '\t'.join( elems ) )
                                 
                 elif direction == 'Downstream':
                     if strand == '-':
@@ -101,7 +95,7 @@ def main():
                             elems[start_col_1] = str(int(elems[end_col_1]) + offset)
                             elems[end_col_1] = str(int(elems[start_col_1]) + size)
                     assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                    print >>fo, '\t'.join(elems)
+                    fo.write( "%s\n" % '\t'.join( elems ) )
                     
                 elif direction == 'Both':
                     if strand == '-':
@@ -112,11 +106,11 @@ def main():
                             elems[start_col_1]=start
                             elems[end_col_1]=end1
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                             elems[start_col_1]=end2
                             elems[end_col_1]=start
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                         elif region == 'end':
                             start = str(int(elems[start_col_1]) - offset)
                             end1 = str(int(start) + size)
@@ -124,11 +118,11 @@ def main():
                             elems[start_col_1]=start
                             elems[end_col_1]=end1
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                             elems[start_col_1]=end2
                             elems[end_col_1]=start
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                         else:
                             start1 = str(int(elems[end_col_1]) - offset)
                             end1 = str(int(start1) + size)
@@ -137,11 +131,11 @@ def main():
                             elems[start_col_1]=start1
                             elems[end_col_1]=end1
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                             elems[start_col_1]=end2
                             elems[end_col_1]=start2
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                     elif strand == '+':
                         if region == 'start':
                             start = str(int(elems[start_col_1]) + offset)
@@ -150,11 +144,11 @@ def main():
                             elems[start_col_1]=end1
                             elems[end_col_1]=start
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                             elems[start_col_1]=start
                             elems[end_col_1]=end2
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                         elif region == 'end':
                             start = str(int(elems[end_col_1]) + offset)
                             end1 = str(int(start) - size)
@@ -162,11 +156,11 @@ def main():
                             elems[start_col_1]=end1
                             elems[end_col_1]=start
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                             elems[start_col_1]=start
                             elems[end_col_1]=end2
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                         else:
                             start1 = str(int(elems[start_col_1]) + offset)
                             end1 = str(int(start1) - size)
@@ -175,27 +169,23 @@ def main():
                             elems[start_col_1]=end1
                             elems[end_col_1]=start1
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
+                            fo.write( "%s\n" % '\t'.join( elems ) )
                             elems[start_col_1]=start2
                             elems[end_col_1]=end2
                             assert int(elems[start_col_1]) > 0 and int(elems[end_col_1]) > 0
-                            print >>fo, '\t'.join(elems)
-                
+                            fo.write( "%s\n" % '\t'.join( elems ) )
             except:
                 skipped_lines += 1
                 if not invalid_line:
                     first_invalid_line = i + 1
                     invalid_line = line
     fo.close()
-    fi.close()
-    
-    #If number of skipped lines = num of lines in the file, inform the user to check metadata attributes of the input file.
+
     if skipped_lines == j:
-        print 'Data issue: Skipped all lines in your input. Check the metadata attributes of the chosen input by clicking on the pencil icon next to it.'
-        sys.exit()
-    elif skipped_lines > 0:
-        print '(Data issue: skipped %d invalid lines starting at line #%d which is "%s")' % ( skipped_lines, first_invalid_line, invalid_line )
-    print 'Location : %s, Region : %s, Flank-length : %d, Offset : %d ' %(direction, region, size, offset)
+        stop_err( "Data issue: click the pencil icon in the history item to correct the metadata attributes." )
+    if skipped_lines > 0:
+        print 'Skipped %d invalid lines starting with #%dL "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+    print 'Location: %s, Region: %s, Flank-length: %d, Offset: %d ' %( direction, region, size, offset )
     
 if __name__ == "__main__":
     main()

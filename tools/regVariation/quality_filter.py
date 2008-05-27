@@ -93,32 +93,17 @@ def main():
             mask_length_r = int(mask_length.split(',')[0])
             mask_length_l = int(mask_length.split(',')[1])
     except:
-        print >> sys.stderr, "Data issue: Please check the metadata attributes of the chosen input by clicking on the pencil icon next to it."
-        sys.exit()
-    
-    try:
-        fi = open(inp_file,'r')
-    except:
-        print >> sys.stderr, "Unable to open input file"
-        sys.exit()
-    try:
-        fo = open(out_file,'w')
-    except:
-        print >> sys.stderr, "Unable to open output file"
-        sys.exit()
+        stop_err( "Data issue, click the pencil icon in the history item to correct the metadata attributes of the input dataset." )
     
     if pri_species == 'None':
-        print >>sys.stderr, "No primary species selected. Try again by selecting at least one primary species." 
-        sys.exit()
-        
+        stop_err( "No primary species selected, try again by selecting at least one primary species." )
     if mask_species == 'None':
-        print >>sys.stderr, "No mask species selected. Try again by selecting at least one species to mask." 
-        sys.exit()
-        
+        stop_err( "No mask species selected, try again by selecting at least one species to mask." )
+
     mask_chr_count = 0
     mask_chr_dict = {0:'#', 1:'$', 2:'^', 3:'*', 4:'?'}
     mask_reg_dict = {0:'Current pos', 1:'Current+Downstream', 2:'Current+Upstream', 3:'Current+Both sides'}
-    
+
     #ensure dbkey is present in the twobit loc file
     filepath = None
     try:
@@ -144,13 +129,12 @@ def main():
             except:
                 pass
     except Exception, exc:
-        print >>sys.stdout, 'quality_filter.py initialization error -> %s' % exc 
+        stop_err( 'Initialization errorL %s' % str( exc ) )
     
     if len(pspecies) == 0:
-        print >>sys.stderr, "Quality scores are not available for the following genome builds: %s" %(pspecies_all2)
-        sys.exit()
+        stop_err( "Quality scores are not available for the following genome builds: %s" % ( pspecies_all2 ) )
     if len(pspecies) < len(pspecies_all):
-        print >>sys.stdout, "Quality scores are not available for the following genome builds: %s" %(pspecies_all2)
+        print "Quality scores are not available for the following genome builds: %s" %(pspecies_all2)
     
     scores_by_chrom = []
     #Get scores for all the primary species
@@ -160,9 +144,8 @@ def main():
     try:
         maf_reader = bx.align.maf.Reader( open(inp_file, 'r') )
         maf_writer = bx.align.maf.Writer( open(out_file,'w') )
-    except:
-        print >>sys.stderr, "Your MAF file appears to be malformed."
-        sys.exit()
+    except Exception, e:
+        stop_err( "Your MAF file appears to be malformed: %s" % str( e ) )
     
     maf_count = 0
     for block in maf_reader:

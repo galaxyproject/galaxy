@@ -84,8 +84,6 @@ def proximal_region_finder(readers, region, comments=True):
             start = int(interval.start)
             end = int(interval.end)
             strand = interval.strand
-            if start > end: 
-                warn( "Interval start after end!" )
             if chrom not in rightTree.chroms:
                 continue
             else:

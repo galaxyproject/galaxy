@@ -14,6 +14,10 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *
 
+def stop_err( msg ):
+    sys.stderr.write( msg )
+    sys.exit()
+
 def main():   
     # Parsing Command Line here
     options, args = doc_optparse.parse( __doc__ )
@@ -27,27 +31,17 @@ def main():
         if strand_col_1 <= 0:
             strand = "+"        #if strand is not defined, default it to +
     except:
-        print >> sys.stderr, "Data issue: Please check the metadata attributes of the chosen input by clicking on the pencil icon next to it."
-        sys.exit()
+        stop_err( "Data issue, click the pencil icon in the history item to correct the metadata attributes of the input dataset." )
     
-    try:
-        fi = open(inp_file,'r')
-    except:
-        print >> sys.stderr, "Unable to open input file"
-        sys.exit()
-    try:
-        fo = open(out_file,'w')
-    except:
-        print >> sys.stderr, "Unable to open output file"
-        sys.exit()
+    fo = open(out_file,'w')
 
     skipped_lines = 0
     first_invalid_line = 0
     invalid_line = None
-    
     if offset == 0:
         makesliding = 0
-    for i, line in enumerate( fi ):
+
+    for i, line in enumerate( file( inp_file ) ):
         line = line.strip()
         if line and line[0:1] != "#":
             try:
@@ -65,27 +59,27 @@ def main():
                         elems_1 = elems
                         elems_1[start_col_1] = str(start)
                         elems_1[end_col_1] = str(start + winsize)
-                        print >>fo, '\t'.join(elems_1)
+                        fo.write( "%s\n" % '\t'.join( elems_1 ) )
                         if makesliding == 0:
                             start = start + winsize
                         else:
                             start = start + offset
                             if start+winsize > end:
                                 break
-            except Exception, exc:
-                print exc
+            except:
                 skipped_lines += 1
                 if not invalid_line:
                     first_invalid_line = i + 1
                     invalid_line = line
     
+    fo.close()
+
     if makesliding == 1:                
-        print 'Window size = %d, Sliding = Yes, Offset = %d' %(winsize, offset)
+        print 'Window size=%d, Sliding=Yes, Offset=%d' %(winsize, offset)
     else:
-        print 'Window size = %d, Sliding = No' %(winsize)
-        
+        print 'Window size=%d, Sliding=No' %(winsize)
     if skipped_lines > 0:
-        print '(Data issue: skipped %d invalid lines starting at line #%d which is "%s")' % ( skipped_lines, first_invalid_line, invalid_line )             
+        print 'Skipped %d invalid lines starting with #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line )             
     
 if __name__ == "__main__":
     main()
