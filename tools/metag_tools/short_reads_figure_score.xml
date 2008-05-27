@@ -10,7 +10,7 @@
 </inputs>
 
 <outputs>
-  	<data name="output1" format="pdf" />
+  	<data name="output1" format="png" />
 </outputs> 
 <requirements>
 	<requirement type="python-module">rpy</requirement>
@@ -18,11 +18,11 @@
 <tests>
 	<test>
 		<param name="input1" value="solexa.qualityscore" ftype="qualityscore" />
-  		<output name="output1" file="solexaScore.pdf" ftype="pdf" />
+  		<output name="output1" file="solexaScore.png" ftype="png" />
 	</test>
 	<test>
 		<param name="input1" value="454.qualityscore" ftype="qualityscore" />
-		<output name="output1" file="454Score.pdf" ftype="pdf" />
+		<output name="output1" file="454Score.png" ftype="png" />
 	</test>
 </tests>
 <help>

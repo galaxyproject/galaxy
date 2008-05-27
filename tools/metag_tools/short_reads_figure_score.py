@@ -237,8 +237,10 @@ def __main__():
         tmp_array = []
 
     # generate pdf figures
-    outfile_R_pdf = outfile_R_name 
-    r.pdf( outfile_R_pdf )
+    #outfile_R_pdf = outfile_R_name 
+    #r.pdf( outfile_R_pdf )
+    outfile_R_png = outfile_R_name
+    r.bitmap( outfile_R_png )
     
     title = "boxplot of quality scores"
     empty_score_matrix_columns = 0
