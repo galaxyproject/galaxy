@@ -59,6 +59,7 @@
     <tool file="filters/axt_to_lav.xml" />
     <tool file="filters/bed2gff.xml" />
     <tool file="fasta_tools/fasta_to_tabular.xml" />
+    <tool file="metag_tools/convert_fastq2fasta.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="filters/lav_to_bed.xml" />
     <tool file="maf/maf_to_bed.xml" />
@@ -117,6 +118,7 @@
     <tool file="visualization/GMAJ.xml" />
     <tool file="visualization/LAJ.xml" />
     <tool file="visualization/build_ucsc_custom_track.xml" />
+    <tool file="visualization/build_gbrowse_custom_track.xml" />
   </section>
   <section name="Regional Variation" id="regVar">
     <tool file="regVariation/windowSplitter.xml" />

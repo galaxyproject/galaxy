@@ -103,10 +103,14 @@ class Fastq( Sequence ):
     def set_peek( self, dataset ):
         Sequence.set_peek( self, dataset )
         sequences = 0
+        scores = 0
         for line in file( dataset.file_name ):
-            if line and line.startswith( "@" ):
-                sequences += 1
-        dataset.blurb = '%d sequences' % sequences
+            if line:
+                if line.startswith( "@" ):
+                    sequences += 1
+                elif line.startswith( '+' ):
+                    scores += 1
+        dataset.blurb = '%d sequences, %d quality scores' % ( sequences, scores )
 
 try:
     import pkg_resources; pkg_resources.require( "bx-python" )

@@ -1,8 +1,6 @@
-<tool id="convert_fastq2fasta" name="Convert fastq" version="1.0.0">
-    <description></description>
-    <command interpreter="python">
-    convert_fastq2fasta.py $input1 $output1 $output2 
-    </command>
+<tool id="convert_fastq2fasta" name="FASTQ-to-FASTA" version="1.0.0">
+    <description>converts FASTQ file to FASTA format</description>
+    <command interpreter="python">convert_fastq2fasta.py $input1 $output1 $output2</command>
     <inputs>
         <param name="input1" type="data" format="fastq" label="Fastq file"/>
     </inputs>
@@ -15,13 +13,13 @@
     
 **What it does**
 
-This tool converts Solexa fastq files and returns two files: reads and quality scores, both in fasta-like format.   
+This tool converts Solexa FASTQ data to FASTA format by generating 2 files, reads and quality scores.   
 
 -----
 
 **Example1**
 
-- Solexa fastq format::
+- Converting the following Solexa fastq data::
 
     @seq1  
     GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT  
@@ -32,7 +30,7 @@ This tool converts Solexa fastq files and returns two files: reads and quality s
     +seq2  
     hhhhhhhhhhhhhhYhhahhhhWhAhFhSIJGChO
 
-- Extract the sequences::
+- will extract the following sequences::
 
     &gt;seq1
     GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT
@@ -49,7 +47,7 @@ This tool converts Solexa fastq files and returns two files: reads and quality s
 
 **Example2**
 
-- Solexa fastq format::
+- Converting the following Solexa fastq data::
 
     @seq1
     GAATTGATCAGGACATAGGACAACTGTAGGCACCAT
@@ -60,7 +58,7 @@ This tool converts Solexa fastq files and returns two files: reads and quality s
     +seq2
     40 15 40 17 6 36 40 40 40 25 40 9 35 33 40 14 14 18 15 17 19 28 31 4 24 18 27 14 15 18 2 8 12 8 11 9
 
-- Extract the sequences::
+- will extract the following sequences::
 
     &gt;seq1
     GAATTGATCAGGACATAGGACAACTGTAGGCACCAT
