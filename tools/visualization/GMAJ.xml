@@ -52,8 +52,8 @@
               </option>
               <option name="Red Flags" value="red">
                 <option name="Sequence name in annotation file does not match name in MAF (seqname_mismatch)" value="seqname_mismatch"/>
-                <option name="BED Start or end &lt; (bed_coord)" value="bed_coord"/>
-                <option name="GFF Start or end &lt; (gff_coord)" value="gff_coord"/>
+                <option name="BED Start or end &lt; 0 (bed_coord)" value="bed_coord"/>
+                <option name="GFF Start or end &lt; 1 (gff_coord)" value="gff_coord"/>
                 <option name="Missing item name for URL substitution (url_subst)" value="url_subst"/>
               </option>
             </option>
