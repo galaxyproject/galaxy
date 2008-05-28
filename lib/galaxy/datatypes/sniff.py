@@ -155,7 +155,7 @@ def is_column_based(fname, sep='\t', skip=0):
                 return False
     return True
 
-def guess_ext( fname ):
+def guess_ext( fname, sniff_order=None ):
     """
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
@@ -198,9 +198,11 @@ def guess_ext( fname ):
     >>> fname = get_test_fname('alignment.lav')
     >>> guess_ext(fname)
     'lav'
-    """ 
-    datatypes_registry = registry.Registry()
-    for datatype in datatypes_registry.sniff_order:
+    """
+    if sniff_order is None:
+        datatypes_registry = registry.Registry()
+        sniff_order = datatypes_registry.sniff_order
+    for datatype in sniff_order:
         """
         Some classes may not have a sniff function, which is ok.  In fact, the
         Tabular and Text classes are 2 examples of classes that should never have

@@ -27,7 +27,7 @@ def exec_after_process( app, inp_data, out_data, param_dict, tool=None, stdout=N
     if data.state == data.states.OK:
         data.info = data.name
     if data.extension == 'txt':
-        data_type = sniff.guess_ext( data.file_name )
+        data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order )
         data = app.datatypes_registry.change_datatype( data, data_type ) 
     data.set_peek()
     data.set_size()

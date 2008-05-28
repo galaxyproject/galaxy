@@ -11,7 +11,7 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     data_type = param_dict.get( 'type', 'txt' )
     name, data = out_data.items()[0]
     if data_type == 'txt':
-        data_type = sniff.guess_ext(data.file_name)
+        data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order )
     data = app.datatypes_registry.change_datatype(data, data_type)
     data.name = data_name
     out_data[name] = data

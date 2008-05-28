@@ -150,7 +150,7 @@ class UploadToolAction( object ):
             else:
                 self.line_count = sniff.convert_newlines( temp_name )
             if file_type == 'auto':
-                ext = sniff.guess_ext( temp_name )    
+                ext = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
             else:
                 ext = file_type
             data_type = ext
