@@ -1,35 +1,29 @@
 <tool id="lav_to_bed1" name="LAV to BED">
-<description>Converts a LAV formated file to BED format</description>
-<command interpreter="python">lav_to_bed.py $lav_file $bed_file1 $bed_file2</command>
-
+  <description>Converts a LAV formated file to BED format</description>
+  <command interpreter="python">lav_to_bed.py $lav_file $bed_file1 $bed_file2</command>
   <inputs>
-      <page>
-      <param name="lav_file" type="data" format="lav" label="LAV File" optional="False"/>
-      </page>
+    <param name="lav_file" type="data" format="lav" label="LAV File" optional="False"/>
   </inputs>
   <outputs>
     <data name="bed_file1" format="bed"/>
     <data name="bed_file2" format="bed"/>
   </outputs>
-    <help>
+  <tests>
+    <!-- NOTE: this tool generates 2 output files, but our functional tests currently only handle the last one generated -->
+    <test>
+      <param name="lav_file" value="2.lav" ftype="lav" />
+      <output name="bed_file2" file="lav_to_bed_out2.bed" />
+    </test>
+  </tests>
+  <help>
 
 **Syntax**
 
 This tool converts a LAV formated file to the BED format.
 
-- **LAV format** LAV is an alignment format developed by Webb Miller's group. It is the primary output format for BLASTZ.
+- **LAV format** LAV is an alignment format developed by Webb Miller's group at Penn State University. It is the primary output format for BLASTZ.
 
-- **BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser. It has three required fields and twelve additional optional ones::
-
-    The first three BED fields (required) are:
-    1. chrom - The name of the chromosome (e.g. chr1, chrY_random).
-    2. chromStart - The starting position in the chromosome. (The first base in a chromosome is numbered 0.)
-    3. chromEnd - The ending position in the chromosome, plus 1 (i.e., a half-open interval).
-
-    Additional (optional) fields are:
-    4. name - The name of the BED line.
-    5. score - A score between 0 and 1000.
-    6. strand - Defines the strand - either '+' or '-'.
+- **BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser.
 
 -----
 
@@ -40,7 +34,7 @@ This tool converts a LAV formated file to the BED format.
     #:lav
     s {
       &quot;/depot/data2/galaxy/hg16/seq/chr19.nib&quot; 1 63811651 0 1
-      &quot;/depot/data2/galaxy/mm5/seq/chr11.nib-&quot; 1 121648857 0 1
+      &quot;/depot/data2/galaxy/mm5/seq/chr11.nib&quot; 1 121648857 0 1
     }
     h {
       &quot;> hg16.chr19&quot;
@@ -69,6 +63,6 @@ This tool converts a LAV formated file to the BED format.
     
     chr11	70568379	70568443	mm5_0	0	+
     chr11	70573975	70574054	mm5_1	0	+
-    </help>
-    <code file="lav_to_bed_code.py"/>
+  </help>
+  <code file="lav_to_bed_code.py"/>
 </tool>
