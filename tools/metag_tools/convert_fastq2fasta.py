@@ -2,6 +2,15 @@
 
 """
 convert fastq file to separated sequence and quality files.
+
+assume each sequence and quality score are contained in one line
+the order should be:
+1st line: @title_of_seq
+2nd line: nucleotides
+3rd line: +title_of_qualityscore (might be skipped)
+4th line: quality scores 
+(in three forms: a. digits, b. ASCII codes, the first char as the coding base, c. ASCII codes without the first char.)
+
 Usage:
 %python convert_fastq2fasta.py <your_fastq_filename> <output_seq_filename> <output_score_filename>
 """
@@ -20,12 +29,15 @@ def stop_err( msg ):
 
 if __name__ == '__main__':
 
+    # file I/O
     infile = sys.argv[1]
     outfile_seq = open(sys.argv[2], 'w')
     outfile_score = open(sys.argv[3], 'w')    
-        
+    
+    # guessing the first char used in title lines
     leading_char_seq_title = ''
     leading_char_quality_title = ''
+    default_coding_value = 64
     
     every_four_lines = 0
     
@@ -43,20 +55,28 @@ if __name__ == '__main__':
                 leading_char_seq_title = leading_char
             if leading_char != leading_char_seq_title:
                 stop_err('Invalid fastq format at line %d.' %(i))
-            outfile_seq.write('>%s\n' %(line[1:]))
             read_title = line[1:]
+            outfile_seq.write('>%s\n' %(line[1:]))
+            
         elif every_four_lines == 2: # second line is expected to be read
-            outfile_seq.write('%s\n' %(line))
             read_length = len(line)
+            outfile_seq.write('%s\n' %(line))
+            
         elif every_four_lines == 3: # third line is expected to be quality title
             if not leading_char_quality_title:
                 leading_char_quality_title = leading_char
             if leading_char != leading_char_quality_title:
-                stop_err('Invalid fastq format at line %d.' %(i))
-            outfile_score.write('>%s\n' %(line[1:]))
+                stop_err('Invalid fastq format at line %d.' %(i))    
             quality_title = line[1:]
-            if read_title != quality_title:
+            
+            if (quality_title and (read_title != quality_title)):
                 stop_err('Invalid fastq format: titles for sequence and quality score are different.')
+
+            if not quality_title:
+                outfile_score.write('>%s\n' %(read_title))
+            else:
+                outfile_score.write('>%s\n' %(line[1:]))
+                
         else:   # fourth line is expected to be the ASCII-coded quality scores 
             qual = ''
             
@@ -74,7 +94,7 @@ if __name__ == '__main__':
                     leading_char_score = ord(line[0:1])
                     line = line[1:]
                 elif quality_score_length == read_length:
-                    leading_char_score = 64                 # default
+                    leading_char_score = default_coding_value                 # default
                 else:
                     stop_err('Invalid fastq format: the number of quality scores is not the same as bases.')
                         
