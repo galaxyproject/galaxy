@@ -94,6 +94,8 @@ class DefaultToolAction( object ):
             on_text = '%s, %s, and %s' % tuple(input_names[0:3])
         elif len( input_names ) > 3:
             on_text = '%s, %s, and others' % tuple(input_names[0:2])
+        else:
+            on_text = ""
         
         # Add the dbkey to the incoming parameters
         incoming[ "dbkey" ] = input_dbkey
@@ -145,7 +147,9 @@ class DefaultToolAction( object ):
                 params['on_string'] = on_text
                 data.name = fill_template( output.label, context=params )
             else:
-                data.name = tool.name + " on " + on_text
+                data.name = tool.name 
+                if on_text:
+                    data.name += ( " on " + on_text )
             # Store output 
             out_data[ name ] = data
             # Store all changes to database
