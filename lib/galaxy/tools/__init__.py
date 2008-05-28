@@ -3,7 +3,7 @@ Classes encapsulating galaxy tools and tool configuration.
 """
 
 import pkg_resources; 
-pkg_resources.require( "Cheetah" )
+
 pkg_resources.require( "simplejson" )
 
 import logging, os, string, sys, tempfile, glob, shutil
@@ -11,9 +11,9 @@ import simplejson
 import sha, hmac, binascii
 
 from UserDict import DictMixin
-from Cheetah.Template import Template
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
+from galaxy.util.template import fill_template
 from galaxy import util, jobs, model
 from elementtree import ElementTree
 from parameters import *
@@ -163,6 +163,36 @@ class DefaultToolState( object ):
         self.page = values.pop( "__page__" )
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
+class ToolOutput( object ):
+    """
+    Represents an output datasets produced by a tool. For backward
+    compatibility this behaves as if it were the tuple:
+      (format, metadata_source, parent)  
+    """
+    def __init__( self, name, format=None, metadata_source=None, 
+                  parent=None, label=None ):
+        self.name = name
+        self.format = format
+        self.metadata_source = metadata_source
+        self.parent = parent
+        self.label = label
+
+    # Tuple emulation
+
+    def __len__( self ): 
+        return 3
+    def __getitem__( self, index ):
+        if index == 0: 
+            return self.format
+        elif index == 1:
+            return self.metadata_source
+        elif index == 2:
+            return self.parent
+        else:
+            raise IndexError( index )
+    def __iter__( self ):
+        return iter( ( self.format, self.metadata_source, self.parent ) )
+
 class Tool:
     """
     Represents a computational tool that can be executed through Galaxy. 
@@ -260,11 +290,12 @@ class Tool:
         out_elem = root.find("outputs")
         if out_elem:
             for data_elem in out_elem.findall("data"):
-                name = data_elem.get("name")
-                format = data_elem.get("format", "data")
-                metadata_source = data_elem.get("metadata_source", "")
-                parent = data_elem.get("parent", None)
-                self.outputs[name] = (format, metadata_source, parent)
+                output = ToolOutput( data_elem.get("name") )
+                output.format = data_elem.get("format", "data")
+                output.metadata_source = data_elem.get("metadata_source", "")
+                output.parent = data_elem.get("parent", None)
+                output.label = util.xml_text( data_elem, "label" )
+                self.outputs[ output.name ] = output
         # Any extra generated config files for the tool
         self.config_files = []
         conf_parent_elem = root.find("configfiles")
@@ -992,8 +1023,7 @@ class Tool:
                 fd, config_filename = tempfile.mkstemp( dir=directory )
                 os.close( fd )
             f = open( config_filename, "wt" )
-            template = Template( source=template_text, searchList=[param_dict] )
-            f.write( str( template ) )
+            f.write( fill_template( template_text, context=param_dict ) )
             f.close()
             param_dict[name] = config_filename
             config_filenames.append( config_filename )
@@ -1008,8 +1038,7 @@ class Tool:
             return
         try:                
             # Substituting parameters into the command
-            template = Template( source=self.command, searchList=[param_dict] )
-            command_line = str( template )  
+            command_line = fill_template( self.command, context=param_dict ) 
             # Remove newlines from command line
             command_line = command_line.replace( "\n", " " ).replace( "\r", " " )
         except Exception, e:

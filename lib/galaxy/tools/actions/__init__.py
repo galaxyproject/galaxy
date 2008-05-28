@@ -1,5 +1,6 @@
 from galaxy.util.bunch import Bunch
 from galaxy.tools.parameters import *
+from galaxy.util.template import fill_template
 from galaxy.util.none_like import NoneDataset
 
 import logging
@@ -85,15 +86,14 @@ class DefaultToolAction( object ):
                     incoming[incoming_key] = data.datatype.metadata_spec[meta_key].no_value
 
         # Build name for output datasets based on tool name and input names
-        output_base_name = tool.name
         if len( input_names ) == 1:
-            output_base_name += ' on ' + input_names[0]
+            on_text = input_names[0]
         elif len( input_names ) == 2:
-            output_base_name += ' on %s and %s' % tuple(input_names[0:2])
+            on_text = '%s and %s' % tuple(input_names[0:2])
         elif len( input_names ) == 3:
-            output_base_name += ' on %s, %s, and %s' % tuple(input_names[0:3])
+            on_text = '%s, %s, and %s' % tuple(input_names[0:3])
         elif len( input_names ) > 3:
-            output_base_name += ' on %s, %s, and others' % tuple(input_names[0:2])
+            on_text = '%s, %s, and others' % tuple(input_names[0:2])
         
         # Add the dbkey to the incoming parameters
         incoming[ "dbkey" ] = input_dbkey
@@ -103,10 +103,9 @@ class DefaultToolAction( object ):
         parent_to_child_pairs = []
         child_dataset_names = set()
         
-        for name, elems in tool.outputs.items():
-            ( ext, metadata_source, parent ) = elems
-            if parent:
-                parent_to_child_pairs.append( ( parent, name ) )
+        for name, output in tool.outputs.items():
+            if output.parent:
+                parent_to_child_pairs.append( ( output.parent, name ) )
                 child_dataset_names.add( name )
             ## What is the following hack for? Need to document under what 
             ## conditions can the following occur? (james@bx.psu.edu)
@@ -118,6 +117,7 @@ class DefaultToolAction( object ):
                 out_data[name] = data
                 continue 
             # the type should match the input
+            ext = output.format
             if ext == "input":
                 ext = input_ext
             data = trans.app.model.Dataset(extension=ext)
@@ -127,20 +127,26 @@ class DefaultToolAction( object ):
             open( data.file_name, "w" ).close()
             # This may not be neccesary with the new parent/child associations
             data.designation = name
-            # Set the extension / datatype
-            # FIXME: Datatypes -- this propertype has a lot of hidden logic
-            #data.extension = ext
             # Copy metadata from one of the inputs if requested. 
-            if metadata_source:
-                data.init_meta( copy_from=inp_data[metadata_source] )
+            if output.metadata_source:
+                data.init_meta( copy_from=inp_data[output.metadata_source] )
             else:
                 data.init_meta()
             # Take dbkey from LAST input
             data.dbkey = str(input_dbkey)
-            # Default attributes
+            # Set state 
+            # FIXME: shouldn't this be NEW until the job runner changes it?
             data.state = data.states.QUEUED
             data.blurb = "queued"
-            data.name  = output_base_name
+            # Set output label
+            if output.label:
+                params = dict( incoming )
+                params['tool'] = tool
+                params['on_string'] = on_text
+                data.name = fill_template( output.label, context=params )
+            else:
+                data.name = tool.name + " on " + on_text
+            # Store output 
             out_data[ name ] = data
             # Store all changes to database
             trans.app.model.flush()
