@@ -14,27 +14,50 @@ class Registry( object ):
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
         self.datatype_converters = odict()
+        self.upload_file_formats = []
         self.sniff_order = []
         for ext, kind in datatypes:
+            # Data types are defined in the config like this:
+            # #<file extension> = <data type class>,<mime type (optional)>,<display in upload select list (optional)>
             try:
-                mime_type = None
                 fields = kind.split(",")
-                if len(fields)>1:
-                    kind = fields[0].strip()
-                    mime_type = fields[1].strip()
+                kind = fields[0].strip()
+                mime_type = None
+                display_in_upload = False
+                # See if we have a mime type or a display_in_upload
+                try:
+                    ele = fields[1].strip()
+                    if ele:
+                        if ele == 'display_in_upload':
+                            display_in_upload = True
+                        else:
+                            mime_type = ele
+                except:
+                    pass
+                # See if we have a display_in_upload
+                if not display_in_upload:
+                    try:
+                        ele = fields[2].strip()
+                        if ele == 'display_in_upload':
+                            display_in_upload = True
+                    except:
+                        pass
+                if display_in_upload:
+                    self.upload_file_formats.append( ext )
                 fields = kind.split(":")
                 datatype_module = fields[0]
                 datatype_class = fields[1]
                 fields = datatype_module.split(".")
-                module = __import__(fields.pop(0))
-                for mod in fields: module = getattr(module,mod)
+                module = __import__( fields.pop(0) )
+                for mod in fields:
+                    module = getattr(module,mod)
                 self.datatypes_by_extension[ext] = getattr(module, datatype_class)()
                 if mime_type is None:
                     # Use default mime type as per datatype spec
                     mime_type = self.datatypes_by_extension[ext].get_mime()
                 self.mimetypes_by_extension[ext] = mime_type
-            except:
-                self.log.warning('error loading datatype: %s' % ext)
+            except Exception, e:
+                self.log.warning('error loading datatype "%s", problem: %s' % ( ext, str( e ) ) )
         #default values
         if len(self.datatypes_by_extension) < 1:
             self.datatypes_by_extension = { 
@@ -51,7 +74,7 @@ class Registry( object ):
                 'laj'         : images.Laj(),
                 'lav'         : sequence.Lav(),
                 'maf'         : sequence.Maf(),
-                'qualityscore': qualityscore.QualityScore(),
+                'qual'        : qualityscore.QualityScore(),
                 'scf'         : images.Scf(),
                 'tabular'     : tabular.Tabular(),
                 'taxonomy'    : tabular.Taxonomy(),
@@ -73,7 +96,7 @@ class Registry( object ):
                 'laj'         : 'text/plain',
                 'lav'         : 'text/plain',
                 'maf'         : 'text/plain',
-                'qualityscore': 'text/plain',
+                'qual'        : 'text/plain',
                 'scf'         : 'application/octet-stream',
                 'tabular'     : 'text/plain',
                 'taxonomy'    : 'text/plain',

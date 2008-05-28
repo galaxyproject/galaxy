@@ -1,15 +1,21 @@
 <tool id="convert_fastq2fasta" name="FASTQ-to-FASTA" version="1.0.0">
-    <description>converts FASTQ file to FASTA format</description>
-    <command interpreter="python">convert_fastq2fasta.py $input1 $output1 $output2</command>
-    <inputs>
-        <param name="input1" type="data" format="fastq" label="Fastq file"/>
-    </inputs>
-    <outputs>
-        <data name="output1" format="fasta"/>
-        <data name="output2" format="qualityscore"/>
-    </outputs>
-
-    <help>
+  <description>converts FASTQ file to FASTA format</description>
+  <command interpreter="python">convert_fastq2fasta.py $input1 $output1 $output2</command>
+  <inputs>
+    <param name="input1" type="data" format="fastq" label="Fastq file"/>
+  </inputs>
+  <outputs>
+    <data name="output1" format="qual"/>
+    <data name="output2" format="fasta"/>
+  </outputs>
+  <tests>
+    <!-- NOTE: this tool generates 2 output files, but our functional tests currently only handle the last one generated -->
+    <test>
+      <param name="input1" value="1.fastq" ftype="fastq" />
+      <output name="output2" file="convert_fastq2fasta_out2.fasta" />
+    </test>
+  </tests>
+  <help>
     
 **What it does**
 

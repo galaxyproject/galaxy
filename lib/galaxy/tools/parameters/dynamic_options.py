@@ -172,8 +172,8 @@ class DynamicOptions( object ):
                 filters[ 'data_meta' ][ 'meta_value' ] = dataset.metadata.species
         except:
             pass
-        return self.generate_options( filters=filters, sep=self.separator )
-    def generate_options( self, filters={}, sep='\t' ):
+        return self.generate_options( trans, filters=filters, sep=self.separator )
+    def generate_options( self, trans, filters={}, sep='\t' ):
         try: 
             meta_key = filters[ 'data_meta' ][ 'meta_key' ]
         except:
@@ -194,7 +194,8 @@ class DynamicOptions( object ):
             return self.generate_for_dbkey( dbkey, meta_key_col, self.name_col, self.value_col, sep=sep )
         else: # meta_key is None
             if self.data_file == 'datatypes_registry':
-                return self.generate_from_datatypes_registry()
+                upload_file_formats = trans.app.datatypes_registry.upload_file_formats
+                return self.generate_from_datatypes_registry( upload_file_formats )
             elif self.data_file == 'encode_datasets.loc':
                 encode_group = filters[ 'params' ][ 'encode_group' ]
                 dbkey = filters[ 'params' ][ 'dbkey' ]
@@ -217,11 +218,9 @@ class DynamicOptions( object ):
                 return self.generate_for_microbial( kingdom, org, feature )
             else:
                 return self.generate( self.name_col, self.value_col, sep=sep )
-    def generate_from_datatypes_registry( self ):
-        from galaxy.datatypes import registry
-        datatypes_registry = registry.Registry()
+    def generate_from_datatypes_registry( self, upload_file_formats ):
         options = []
-        formats = datatypes_registry.datatypes_by_extension.keys()
+        formats = upload_file_formats
         formats.sort()
         options.append( ( 'Auto-detect', 'auto', True ) )
         for format in formats:
