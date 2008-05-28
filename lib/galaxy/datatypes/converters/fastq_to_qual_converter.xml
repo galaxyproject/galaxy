@@ -1,0 +1,11 @@
+<tool id="CONVERTER_fastq_to_qual_0" name="FASTQ-to-FASTA">
+  <command interpreter="python">fastq_to_qual_converter.py $input1 $output1 </command>
+  <inputs>
+    <param format="fastq" name="input1" type="data" label="Fastq file"/>
+  </inputs>
+  <outputs>
+    <data format="qual" name="output1" />
+  </outputs>
+  <help>
+  </help>
+</tool>
