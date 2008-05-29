@@ -240,7 +240,7 @@ class DynamicOptions( object ):
                     data_file = os.path.join( self.tool_param.tool.app.config.tool_data_path, data_file )
                 self.file_fields = self.parse_file_fields( open( data_file ) )
             elif dataset_file is not None:
-                self.from_parameter = dataset_file
+                self.dataset_ref_name = dataset_file
             elif from_parameter is not None:
                 transform_lines = elem.get( 'transform_lines', None )
                 self.file_fields = list( load_from_parameter( from_parameter, transform_lines ) )
@@ -259,9 +259,11 @@ class DynamicOptions( object ):
         for line in reader:
             if line.startswith( '#' ) or ( self.line_startswith and not line.startswith( self.line_startswith ) ):
                 continue
-            fields = line.rstrip("\n\r").split( self.separator )
-            if self.largest_index < len( fields ):
-                rval.append( fields )
+            line = line.rstrip( "\n\r" )
+            if line:
+                fields = line.split( self.separator )
+                if self.largest_index < len( fields ):
+                    rval.append( fields )
         return rval
     
     def get_dependency_names( self ):
