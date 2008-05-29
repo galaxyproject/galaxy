@@ -1,84 +1,84 @@
 <tool id="microbial_import1" name="Get Microbial Data">
   <command interpreter="python">microbial_import.py $CDS,$tRNA,$rRNA,$sequence,$GeneMark,$GeneMarkHMM,$Glimmer3 $output ${GALAXY_DATA_INDEX_DIR}/microbial_data.loc</command>
   <inputs>
-    <page>
-      <display>
-        <p><div class="toolFormTitle">Select the Desired Kingdom</div>$kingdom</p>
-      </display>
-      <param name="kingdom" type="select" display="radio">
-        <options from_file="microbial_data.loc" />
-      </param>
-    </page>
-    <page>
-      <display>
-        <p><div class="toolFormTitle">Select the Desired Organism</div>$org</p>
-      </display>
-      <param name="org" type="select" display="radio">
-        <options from_file="microbial_data.loc">
-          <filter type="param_value" name="kingdom" value="kingdom" />
+      <param name="kingdom" type="select" label="Select the Desired Kingdom">
+        <options from_file="microbial_data.loc" startswith="ORG">
+          <column name="name" index="3"/>
+          <column name="value" index="3"/>
+          <filter type="unique_value" name="unique" column="3"/>
         </options>
       </param>
-    </page>
-    <page>
-      <display>
-        <p><div class="toolFormTitle">Select Desired Coding Sequences</div>$CDS</p>
-        <p><div class="toolFormTitle">Select Desired tRNA</div>$tRNA</p>
-        <p><div class="toolFormTitle">Select Desired rRNA</div>$rRNA</p>
-        <p><div class="toolFormTitle">Select Desired DNA Sequences</div>$sequence</p>
-        <p><div class="toolFormTitle">Select Desired GeneMark Annotations</div>$GeneMark</p>
-        <p><div class="toolFormTitle">Select Desired GeneMarkHMM Annotations</div>$GeneMarkHMM</p>
-        <p><div class="toolFormTitle">Select Desired Glimmer3 Annotations</div>$Glimmer3</p>
-      </display>
-      <param name="CDS" type="select" display="checkboxes" multiple="True">
-        <options from_file="microbial_data.loc">
-          <filter type="param_value" name="kingdom" value="kingdom" />
-          <filter type="param_value" name="org" value="org" />
-          <filter type="param" name="feature" value="CDS" />
+      <param name="org" type="select" label="Select the Desired Organism">
+        <options from_file="microbial_data.loc" startswith="ORG">
+          <column name="name" index="2"/>
+          <column name="value" index="1"/>
+          <filter type="param_value" ref="kingdom" name="kingdom" column="3"/>
+          <filter type="sort_by" column="2"/>
         </options>
       </param>
-      <param name="tRNA" type="select" display="checkboxes" multiple="True">
-        <options from_file="microbial_data.loc">
-          <filter type="param_value" name="kingdom" value="kingdom" />
-          <filter type="param_value" name="org" value="org" />
-          <filter type="param" name="feature" value="tRNA" />
+      <param name="CDS" type="select" label="Select Desired Coding Sequences" display="checkboxes" multiple="True">
+        <options from_file="microbial_data.loc" startswith="DATA">
+          <column name="name" index="3"/>
+          <column name="value" index="1"/>
+          <column name="feature" index="4"/>
+          <filter type="param_value" ref="org" name="kingdom" column="2"/>
+          <filter type="static_value" name="feature" value="CDS" column="4"/>
         </options>
       </param>
-      <param name="rRNA" type="select" display="checkboxes" multiple="True">
-        <options from_file="microbial_data.loc">
-          <filter type="param_value" name="kingdom" value="kingdom" />
-          <filter type="param_value" name="org" value="org" />
-          <filter type="param" name="feature" value="rRNA" />
+      <param name="tRNA" type="select" label="Select Desired tRNA" display="checkboxes" multiple="True">
+        <options from_file="microbial_data.loc" startswith="DATA">
+          <column name="name" index="3"/>
+          <column name="value" index="1"/>
+          <column name="feature" index="4"/>
+          <filter type="param_value" ref="org" name="kingdom" column="2"/>
+          <filter type="static_value" name="feature" value="tRNA" column="4"/>
         </options>
       </param>
-      <param name="sequence" type="select" display="checkboxes" multiple="True">
-        <options from_file="microbial_data.loc">
-          <filter type="param_value" name="kingdom" value="kingdom" />
-          <filter type="param_value" name="org" value="org" />
-          <filter type="param" name="feature" value="sequence" />
+      <param name="rRNA" type="select" label="Select Desired rRNA" display="checkboxes" multiple="True">
+        <options from_file="microbial_data.loc" startswith="DATA">
+          <column name="name" index="3"/>
+          <column name="value" index="1"/>
+          <column name="feature" index="4"/>
+          <filter type="param_value" ref="org" name="kingdom" column="2"/>
+          <filter type="static_value" name="feature" value="rRNA" column="4"/>
         </options>
       </param>
-      <param name="GeneMark" type="select" display="checkboxes" multiple="True">
-        <options from_file="microbial_data.loc">
-          <filter type="param_value" name="kingdom" value="kingdom" />
-          <filter type="param_value" name="org" value="org" />
-          <filter type="param" name="feature" value="GeneMark" />
+      <param name="sequence" type="select" label="Select Desired DNA Sequences" display="checkboxes" multiple="True">
+        <options from_file="microbial_data.loc" startswith="DATA">
+          <column name="name" index="3"/>
+          <column name="value" index="1"/>
+          <column name="feature" index="4"/>
+          <filter type="param_value" ref="org" name="kingdom" column="2"/>
+          <filter type="static_value" name="feature" value="sequence" column="4"/>
         </options>
       </param>
-      <param name="GeneMarkHMM" type="select" display="checkboxes" multiple="True">
-        <options from_file="microbial_data.loc">
-          <filter type="param_value" name="kingdom" value="kingdom" />
-          <filter type="param_value" name="org" value="org" />
-          <filter type="param" name="feature" value="GeneMarkHMM" />
+      <param name="GeneMark" type="select" label="Select Desired GeneMark Annotations" display="checkboxes" multiple="True">
+        <options from_file="microbial_data.loc" startswith="DATA">
+          <column name="name" index="3"/>
+          <column name="value" index="1"/>
+          <column name="feature" index="4"/>
+          <filter type="param_value" ref="org" name="kingdom" column="2"/>
+          <filter type="static_value" name="feature" value="GeneMark" column="4"/>
         </options>
       </param>
-      <param name="Glimmer3" type="select" display="checkboxes" multiple="True">
-        <options from_file="microbial_data.loc">
-          <filter type="param_value" name="kingdom" value="kingdom" />
-          <filter type="param_value" name="org" value="org" />
-          <filter type="param" name="feature" value="Glimmer3" />
+      <param name="GeneMarkHMM" type="select" label="Select Desired GeneMarkHMM Annotations" display="checkboxes" multiple="True">
+        <options from_file="microbial_data.loc" startswith="DATA">
+          <column name="name" index="3"/>
+          <column name="value" index="1"/>
+          <column name="feature" index="4"/>
+          <filter type="param_value" ref="org" name="kingdom" column="2"/>
+          <filter type="static_value" name="feature" value="GeneMarkHMM" column="4"/>
         </options>
       </param>
-    </page>
+      <param name="Glimmer3" type="select" label="Select Desired Glimmer3 Annotations" display="checkboxes" multiple="True">
+        <options from_file="microbial_data.loc" startswith="DATA">
+          <column name="name" index="3"/>
+          <column name="value" index="1"/>
+          <column name="feature" index="4"/>
+          <filter type="param_value" ref="org" name="kingdom" column="2"/>
+          <filter type="static_value" name="feature" value="Glimmer3" column="4"/>
+        </options>
+      </param>
   </inputs>
   <outputs>
     <data format="bed" name="output"/>

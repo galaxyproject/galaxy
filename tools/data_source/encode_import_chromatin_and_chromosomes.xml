@@ -7,14 +7,24 @@
     </display>
     <param name="hg17" type="select" display="checkboxes" multiple="true">
       <options from_file="encode_datasets.loc">
-        <filter type="param" name="encode_group" value="CC" />
-        <filter type="param" name="dbkey" value="hg17" />
+        <column name="name" index="2"/>
+        <column name="value" index="3"/>
+        <column name="dbkey" index="1"/>
+        <column name="encode_group" index="0"/>
+        <column name="uid" index="3"/>
+        <filter type="static_value" name="encode_group" value="CC" column="0"/>
+        <filter type="static_value" name="dbkey" value="hg17" column="1"/>
       </options>
     </param> 
     <param name="hg16" type="select" display="checkboxes" multiple="true">
       <options from_file="encode_datasets.loc">
-        <filter type="param" name="encode_group" value="CC" />
-        <filter type="param" name="dbkey" value="hg16" />
+        <column name="name" index="2"/>
+        <column name="value" index="3"/>
+        <column name="dbkey" index="1"/>
+        <column name="encode_group" index="0"/>
+        <column name="uid" index="3"/>
+        <filter type="static_value" name="encode_group" value="CC" column="0"/>
+        <filter type="static_value" name="dbkey" value="hg16" column="1"/>
       </options>
     </param> 
   </inputs>

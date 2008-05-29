@@ -4,10 +4,16 @@
   <inputs>
     <param name="align_input" type="data" format="axt" label="Alignment File" optional="False"/>
     <param name="dbkey_1" type="select" label="Genome">
-      <options from_file="static/ucsc/builds.txt" name_col="1" value_col="0" />
+      <options from_file="static/ucsc/builds.txt">
+        <column name="name" index="1"/>
+        <column name="value" index="0"/>
+      </options>
     </param> 
     <param name="dbkey_2" type="select" label="Genome">
-      <options from_file="static/ucsc/builds.txt" name_col="1" value_col="0" />
+      <options from_file="static/ucsc/builds.txt">
+        <column name="name" index="1"/>
+        <column name="value" index="0"/>
+      </options>
     </param> 
   </inputs>
   <outputs>

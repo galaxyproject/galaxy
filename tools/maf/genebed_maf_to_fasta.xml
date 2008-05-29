@@ -16,25 +16,34 @@
       <when value="user">
         <param name="maf_file" type="data" format="maf" label="MAF File">
           <validator type="dataset_ok_validator" />
+          <options>
+            <filter type="data_meta" ref="input1" key="dbkey" />
+          </options>
         </param>
         <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
           <options>
-            <filter type="data_meta" data_ref="maf_file" />
-            <filter type="param" name="maf_source" value="user" />
+            <filter type="data_meta" ref="maf_file" key="species" />
           </options>
         </param>
       </when>
       <when value="cached">
         <param name="maf_identifier" type="select" label="MAF Type" >
-          <options from_file="maf_index.loc" name_col="0" value_col="1">
-            <validator type="no_options" message="No alignments are available for the build associated with the selected gene bed file"/>
-            <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="2"/>
+          <options from_file="maf_index.loc">
+	        <column name="name" index="0"/>
+	        <column name="value" index="1"/>
+	        <column name="dbkey" index="2"/>
+	        <column name="species" index="3"/>
+	        <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
+	        <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
           </options>
         </param> 
         <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
           <options from_file="maf_index.loc">
-            <filter type="param_meta" param_ref="maf_identifier" />
-            <filter type="param" name="maf_source" value="cached" />
+	        <column name="uid" index="1"/>
+	        <column name="value" index="3"/>
+	        <column name="name" index="3"/>
+	        <filter type="param_value" ref="maf_identifier" name="uid" column="1"/>
+	        <filter type="multiple_splitter" column="3" separator=","/>
           </options>
         </param>
       </when>

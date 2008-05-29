@@ -20,14 +20,20 @@
       </param>
       <when value="user">
         <param format="maf" name="input2" label="MAF File" type="data">
+          <options>
+            <filter type="data_meta" ref="input1" key="dbkey" />
+          </options>
           <validator type="dataset_ok_validator" />
         </param>
       </when>
       <when value="cached">
         <param name="mafType" type="select" label="MAF Type">
-          <options from_file="maf_index.loc" name_col="0" value_col="1">
+          <options from_file="maf_index.loc">
+            <column name="name" index="0"/>
+            <column name="value" index="1"/>
+            <column name="dbkey" index="2"/>
+            <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
             <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
-            <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="2"/>
           </options>
         </param> 
       </when>

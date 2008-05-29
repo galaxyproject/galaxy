@@ -16,15 +16,18 @@
       </param>
       <when value="cached">
         <param name="datasets" type="select" label="Available datasets" display="radio">
-          <options from_file="binned_scores.loc" name_col="1" value_col="2">
-            <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="0"/>
+          <options from_file="binned_scores.loc">
+            <column name="name" index="1"/>
+            <column name="value" index="2"/>
+            <column name="dbkey" index="0"/>
+            <filter type="data_meta" ref="input1" key="dbkey" column="0" />
           </options>
         </param>
       </when>
       <when value="user">
         <param format="wig" name="input2" type="data" label="Score file">
           <options>
-            <filter type="data_meta" data_ref="input1" meta_key="dbkey" />
+            <filter type="data_meta" ref="input1" key="dbkey" />
           </options>
         </param>
       </when>

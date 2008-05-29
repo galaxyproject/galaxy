@@ -1021,9 +1021,9 @@ class DataToolParameter( ToolParameter ):
         self.is_dynamic = self.options is not None
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
-        filter_key = filter_value = None
+        filter_value = None
         if self.options:
-            filter_key, filter_value = self.options.get_options( trans, other_values )
+            filter_value = self.options.get_options( trans, other_values )[0][0]
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.history
         assert history is not None, "DataToolParameter requires a history"
@@ -1039,7 +1039,7 @@ class DataToolParameter( ToolParameter ):
                 else:
                     hid = str( data.hid )
                 if not data.deleted and data.state not in [data.states.ERROR] and data.visible:
-                    if self.options and filter_key == 'dbkey' and data.get_dbkey() != filter_value:
+                    if self.options and data.get_dbkey() != filter_value:
                         continue
                     if isinstance( data.datatype, self.formats):
                         selected = ( value and ( data in value ) )
@@ -1089,9 +1089,9 @@ class DataToolParameter( ToolParameter ):
             return None
         history = trans.history
         most_recent_dataset = [None]
-        filter_key = filter_value = None
+        filter_value = None
         if self.options:
-            filter_key, filter_value = self.options.get_options( trans, context )
+            filter_value = self.options.get_options( trans, context )[0][0]
         def dataset_collector( datasets ):
             def is_convertable( dataset ):
                 for target_ext in self.extensions:
@@ -1100,7 +1100,7 @@ class DataToolParameter( ToolParameter ):
                 return False
             for i, data in enumerate( datasets ):
                 if data.visible and not data.deleted and data.state not in [data.states.ERROR] and ( isinstance( data.datatype, self.formats) or is_convertable( data ) ):
-                    if self.options and filter_key == 'build' and data.get_dbkey() != filter_value:
+                    if self.options and data.get_dbkey() != filter_value:
                         continue
                     most_recent_dataset[0] = data
                 # Also collect children via association object

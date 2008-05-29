@@ -7,7 +7,10 @@
     </command>
     <inputs>
         <param name="database" type="select" display="radio" label="Target database">
-            <options from_file="faseq.loc" name_col="0" value_col="1"/>
+			<options from_file="faseq.loc">
+			  <column name="name" index="0"/>
+			  <column name="value" index="0"/>
+			</options>
         </param>
         <param name="input_seq" type="data" format="fasta" label="Sequence file"/>
         <param name="input_score" type="data" format="qual" label="Quality score file"/>

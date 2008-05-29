@@ -6,9 +6,13 @@
       <validator type="unspecified_build" />
     </param>
     <param name="mafType" type="select" label="Choose MAF source">
-      <options from_file="maf_pairwise.loc" name_col="0" value_col="1">
+      <options from_file="maf_pairwise.loc">
+        <column name="name" index="0"/>
+        <column name="value" index="1"/>
+        <column name="dbkey" index="2"/>
+        <column name="species" index="3"/>
+        <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
         <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
-        <filter type="data_meta" data_ref="input1" meta_key="dbkey" meta_key_col="2"/>
       </options>
     </param> 
    </inputs>

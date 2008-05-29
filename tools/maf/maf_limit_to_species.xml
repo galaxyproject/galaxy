@@ -13,7 +13,7 @@
     </param>
     <param name="species" type="select" label="Species to keep" display="checkboxes" multiple="true">
       <options>
-        <filter type="data_meta" data_ref="input1" meta_key="species" />
+        <filter type="data_meta" ref="input1" key="species" />
       </options>
     </param>
   </inputs>

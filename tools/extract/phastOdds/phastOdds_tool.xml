@@ -6,10 +6,13 @@
       <validator type="unspecified_build" message="Unspecified build, this tool works with data from genome builds hg17. Click the pencil icon in your history item to set the genome build."/>
     </param>
     <param name="score_file" type="select" label="Available datasets">
-      <options from_file="phastOdds.loc" name_col="1" value_col="2">
-        <filter type="data_meta" data_ref="input" meta_key="dbkey" meta_key_col="0"/>
+      <options from_file="phastOdds.loc">
+        <column name="name" index="1"/>
+        <column name="value" index="2"/>
+        <column name="dbkey" index="0"/>
+        <filter type="data_meta" ref="input" key="dbkey" column="0" />
       </options>
-    </param> 
+    </param>
 	<param name="per_col" type="boolean" label="Standardize" help="Standardizes the score to be per alignment column" checked="yes" truevalue="-p" falsevalue=""/>
   </inputs>
   <outputs>

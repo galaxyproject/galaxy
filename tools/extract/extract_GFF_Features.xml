@@ -13,36 +13,46 @@
       </param>
       <when value="0">
         <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
-          <options from_file="data_ref" value_col="0">
-            <filter type="data_meta" data_ref="input1" />
+          <options from_dataset="input1">
+            <column name="name" index="0"/>
+            <column name="value" index="0"/>
+            <filter type="unique_value" name="unique" column="0"/>
           </options>
         </param> 
       </when>
       <when value="1">
         <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
-          <options from_file="data_ref" value_col="1">
-            <filter type="data_meta" data_ref="input1" />
+          <options from_dataset="input1">
+            <column name="name" index="1"/>
+            <column name="value" index="1"/>
+            <filter type="unique_value" name="unique" column="1"/>
           </options>
         </param>        	
       </when>
       <when value="2">
         <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
-          <options from_file="data_ref" value_col="2">
-            <filter type="data_meta" data_ref="input1" />
+          <options from_dataset="input1">
+            <column name="name" index="2"/>
+            <column name="value" index="2"/>
+            <filter type="unique_value" name="unique" column="2"/>
           </options>
         </param> 
       </when>
       <when value="6">
         <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
-          <options from_file="data_ref" value_col="6">
-            <filter type="data_meta" data_ref="input1" />
+          <options from_dataset="input1">
+            <column name="name" index="6"/>
+            <column name="value" index="6"/>
+            <filter type="unique_value" name="unique" column="6"/>
           </options>
         </param>         	
       </when>
       <when value="7">
         <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
-          <options from_file="data_ref" value_col="7">
-            <filter type="data_meta" data_ref="input1" />
+          <options from_dataset="input1">
+            <column name="name" index="7"/>
+            <column name="value" index="7"/>
+            <filter type="unique_value" name="unique" column="7"/>
           </options>
         </param>            	
       </when>

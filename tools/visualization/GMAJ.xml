@@ -6,7 +6,7 @@
       <repeat name="annotations" title="Annotations">
         <param name="species" type="select" label="Species of Annotation" multiple="False">
           <options>
-            <filter type="data_meta" data_ref="maf_input" meta_key="species" />
+            <filter type="data_meta" ref="maf_input" key="species" />
           </options>
         </param>
         <param name="chromosome" label="Chromosome" value="" type="text"/>
