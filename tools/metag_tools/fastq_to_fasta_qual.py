@@ -25,11 +25,11 @@ def stop_err( msg ):
     sys.exit()
 
 def __main__():
-    # TODO: This tool currently only works for Standard Fastq or Solexa Fastq where the 
+    # This tool currently only works for Standard Fastq or Solexa Fastq where the 
     # quality scores are integers.  This tool will not produce the correct result if the 
     # input format is fastqsolexa and the data includes quality scores that are ASCII..  Our
     # fastqsolexa sniffer currently will not sniff data as fastqsolexa when the scores are ASCII,
-    # but a user can manually change the data type in whcih case this tool will break.
+    # but a user can manually change the data type in whcih case this tool will result in a job error.
     infile_name = sys.argv[1]
     outfile_seq = open( sys.argv[2], 'w' )
     outfile_score = open( sys.argv[3], 'w' )
