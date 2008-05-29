@@ -1,8 +1,8 @@
-<tool id="convert_fastq2fasta" name="FASTQ-to-FASTA" version="1.0.0">
-  <description>converts FASTQ file to FASTA format</description>
-  <command interpreter="python">convert_fastq2fasta.py $input1 $output1 $output2</command>
+<tool id="fastq_to_fasta_qual" name="FASTQ-to-FASTA-QUAL" version="1.0.0">
+  <description>extracts sequences and quality scores from FASTQ data</description>
+  <command interpreter="python">fastq_to_fasta_qual.py $input1 $output1 $output2</command>
   <inputs>
-    <param name="input1" type="data" format="fastq" label="Fastq file"/>
+    <param name="input1" type="data" format="fastq,fastqsolexa" label="Fastq file"/>
   </inputs>
   <outputs>
     <data name="output1" format="fasta"/>
@@ -12,20 +12,24 @@
     <!-- NOTE: this tool generates 2 output files, but our functional tests currently only handle the last one generated -->
     <test>
       <param name="input1" value="1.fastq" ftype="fastq" />
-      <output name="output1" file="convert_fastq2fasta_out2.fasta" />
+      <output name="output1" file="fastq_to_fasta_qual_out2.fasta" />
+    </test>
+    <test>
+      <param name="input1" value="1.fastqsolexa" ftype="fastq" />
+      <output name="output1" file="fastq_to_fasta_qual_out4.fasta" />
     </test>
   </tests>
   <help>
     
 **What it does**
 
-This tool converts Solexa FASTQ data to FASTA format by generating 2 files, reads and quality scores.   
+This tool extracts sequences and quality scores from FASTQ data ( both Sanger/Standard and Solexa variants ), producing a FASTA dataset and a QUAL dataset.   
 
 -----
 
 **Example1**
 
-- Converting the following Solexa fastq data::
+- Converting the following Sanger/Standard fastq data::
 
     @seq1  
     GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT  
@@ -50,33 +54,32 @@ This tool converts Solexa FASTQ data to FASTA format by generating 2 files, read
     &gt;seq2
     40 40 40 40 40 40 40 40 40 40 40 40 40 40 25 40 40 33 40 40 40 40 23 40 1 40 6 40 19 9 10 7 3 40 15 
 
-
 **Example2**
 
 - Converting the following Solexa fastq data::
 
-    @seq1
+    @HANNIBAL_1_FC302VTAAXX:2:1:228:167
     GAATTGATCAGGACATAGGACAACTGTAGGCACCAT
-    +seq1
+    +HANNIBAL_1_FC302VTAAXX:2:1:228:167
     40 40 40 40 35 40 40 40 25 40 40 26 40 9 33 11 40 35 17 40 40 33 40 7 9 15 3 22 15 30 11 17 9 4 9 4
-    @seq2
+    @HANNIBAL_1_FC302VTAAXX:2:1:156:340
     GAGTTCTCGTCGCCTGTAGGCACCATCAATCGTATG
-    +seq2
+    +HANNIBAL_1_FC302VTAAXX:2:1:156:340
     40 15 40 17 6 36 40 40 40 25 40 9 35 33 40 14 14 18 15 17 19 28 31 4 24 18 27 14 15 18 2 8 12 8 11 9
 
 - will extract the following sequences::
 
-    &gt;seq1
+    >HANNIBAL_1_FC302VTAAXX:2:1:228:167
     GAATTGATCAGGACATAGGACAACTGTAGGCACCAT
-    &gt;seq2
+    >HANNIBAL_1_FC302VTAAXX:2:1:156:340
     GAGTTCTCGTCGCCTGTAGGCACCATCAATCGTATG
 
 - and quality scores::
 
-    &gt;seq1
-    40 40 40 40 35 40 40 40 25 40 40 26 40 9 33 11 40 35 17 40 40 33 40 7 9 15 3 22 15 30 11 17 9 4 9 4 
-    &gt;seq2
-    40 15 40 17 6 36 40 40 40 25 40 9 35 33 40 14 14 18 15 17 19 28 31 4 24 18 27 14 15 18 2 8 12 8 11 9 
+    >HANNIBAL_1_FC302VTAAXX:2:1:228:167
+    40 40 40 40 35 40 40 40 25 40 40 26 40 9 33 11 40 35 17 40 40 33 40 7 9 15 3 22 15 30 11 17 9 4 9 4
+    >HANNIBAL_1_FC302VTAAXX:2:1:156:340
+    40 15 40 17 6 36 40 40 40 25 40 9 35 33 40 14 14 18 15 17 19 28 31 4 24 18 27 14 15 18 2 8 12 8 11 9
 
     </help>
 </tool>

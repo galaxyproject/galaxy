@@ -1,5 +1,4 @@
 #! /usr/bin/python
-
 """
 convert fastq file to separated sequence and quality files.
 
@@ -20,50 +19,37 @@ from math import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
-
 def stop_err( msg ):
-    
-    sys.stderr.write( "%s\n" % msg )
+    sys.stderr.write( "%s" % msg )
     sys.exit()
 
+def __main__():
+    infile_name = sys.argv[1]
+    outfile = open( sys.argv[2], 'w' )
+    fastq_block_lines = 0
+    seq_title_startswith = ''
 
-if __name__ == '__main__':
-
-    # file I/O
-    infile = sys.argv[1]
-    outfile_seq = open(sys.argv[2], 'w')
-    
-    
-    # guessing the first char used in title lines
-    leading_char_seq_title = ''
-    
-    every_four_lines = 0
-    
-    for i, line in enumerate(file(infile)):
-        
-        line = line.rstrip()    # get rid of the newline and spaces
-        
-        if ((not line) or (line.startswith('#'))): continue               # comments
-        
-        every_four_lines = (every_four_lines + 1) % 4
-        leading_char = line[0:1]
-        
-        if every_four_lines == 1:   # first line is expected to be read title
-            if not leading_char_seq_title:
-                leading_char_seq_title = leading_char
-            if leading_char != leading_char_seq_title:
-                stop_err('Invalid fastq format at line %d.' %(i))
-            read_title = line[1:]
-            outfile_seq.write('>%s\n' %(line[1:]))
-            
-        elif every_four_lines == 2: # second line is expected to be read
-            read_length = len(line)
-            outfile_seq.write('%s\n' %(line))
-        
+    for i, line in enumerate( file( infile_name ) ):
+        line = line.rstrip() # eliminate trailing space and new line characters
+        if not line or line.startswith( '#' ):
+            continue
+        fastq_block_lines = ( fastq_block_lines + 1 ) % 4
+        line_startswith = line[0:1]
+        if fastq_block_lines == 1:
+            # line 1 is sequence title
+            if not seq_title_startswith:
+                seq_title_startswith = line_startswith
+            if seq_title_startswith != line_startswith:
+                stop_err( 'Invalid fastq format at line %d: %s.' %( i + 1, line ) )
+            read_title = line[ 1: ]
+            outfile.write( '>%s\n' % line[1:] )
+        elif fastq_block_lines == 2:
+            # line 2 is nucleotides
+            read_length = len( line )
+            outfile.write( '%s\n' % line )
         else:
             pass
 
-    outfile_seq.close()
+    outfile.close()
 
-    
-    
+if __name__ == "__main__": __main__() 

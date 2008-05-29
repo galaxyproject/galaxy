@@ -1,7 +1,7 @@
-<tool id="CONVERTER_fastq_to_qual_0" name="FASTQ-to-FASTA">
-  <command interpreter="python">fastq_to_qual_converter.py $input1 $output1 </command>
+<tool id="CONVERTER_fastq_to_qual_0" name="Convert Fastq to Qual">
+  <command interpreter="python">fastq_to_qual_converter.py $input1 $output1</command>
   <inputs>
-    <param format="fastq" name="input1" type="data" label="Fastq file"/>
+    <param format="fastq" name="input1" type="data" label="Choose Fastq file"/>
   </inputs>
   <outputs>
     <data format="qual" name="output1" />

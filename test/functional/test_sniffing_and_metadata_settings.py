@@ -35,6 +35,18 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_history_for_string('1.fasta format: <span class="fasta">fasta</span>, database: \? Info: uploaded file')
         self.check_metadata_for_string('value="1.fasta" value="\?" Change data type selected value="fasta" selected="yes"')
         self.delete_history_item( 1 )
+    def test_17_fastq_datatype( self ):
+        """Testing correctly sniffing fastq ( the Sanger/Standard variant ) data type upon upload"""
+        self.upload_file('1.fastq')
+        self.verify_dataset_correctness('1.fastq')
+        self.check_history_for_string('1.fastq format: <span class="fastq">fastq</span>, database: \? Info: uploaded fastq file')
+        self.delete_history_item( 1 )
+    def test_18_fastq_datatype( self ):
+        """Testing correctly sniffing fastq ( the Solexa variant ) data type upon upload"""
+        self.upload_file('1.fastqsolexa')
+        self.verify_dataset_correctness('1.fastqsolexa')
+        self.check_history_for_string('1.fastqsolexa format: <span class="fastqsolexa">fastqsolexa</span>, database: \? Info: uploaded fastqsolexa file')
+        self.delete_history_item( 1 )
     def test_20_gff_datatype( self ):
         """Testing correctly sniffing gff data type upon upload"""
         self.upload_file('5.gff')

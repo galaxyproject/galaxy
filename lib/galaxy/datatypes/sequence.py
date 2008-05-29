@@ -4,6 +4,7 @@ Image classes
 
 import data
 import logging
+import re
 from cgi import escape
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
@@ -89,30 +90,120 @@ class Fasta( Sequence ):
             return False
 
 class Fastq( Sequence ):
-    """Class representing a FASTQ sequence"""
-    # FASTQ format stores sequences and Phred qualities in a single file. It is concise and compact. 
-    # FASTQ is first widely used in the Sanger Institute and therefore we usually take the Sanger 
-    # specification and the standard FASTQ format, or simply FASTQ format. Although Solexa/Illumina 
-    # read file looks pretty much like FASTQ, they are different in that the qualities are scaled 
-    # differently. In the quality string, if you can see a character with its ASCII code higher than 
-    # 90, probably your file is in the Solexa/Illumina format.
-    #
-    # For details, see http://maq.sourceforge.net/fastq.shtml
+    """Class representing a FASTQ sequence ( the Sanger/Standard variant )"""
     file_ext = "fastq"
 
     def set_peek( self, dataset ):
         Sequence.set_peek( self, dataset )
-        sequences = 0
-        scores = 0
+        count = 0
+        size = 0
+        bases_regexp = re.compile("^[NGTAC]*$")
         for line in file( dataset.file_name ):
-            if line:
-                if line.startswith( "@" ):
-                    sequences += 1
-                elif line.startswith( '+' ):
-                    scores += 1
-        dataset.blurb = '%d sequences, %d quality scores' % ( sequences, scores )
+            if line and line.startswith( ">" ):
+                count += 1
+            elif bases_regexp.match( line ):
+                line = line.strip()
+                size += len( line )
+        if count == 1:
+            dataset.blurb = '%d bases' % size
+        else:
+            dataset.blurb = '%d sequences' % count
+
+    def sniff(self, filename):
+        """
+        Determines whether the file is in fastq format ( the Sanger/Standard variant )
+        For details, see http://maq.sourceforge.net/fastq.shtml
+
+        Note: There are two kinds of FASTQ files, known as "Sanger" (sometimes called "Standard") and Solexa
+              These differ in the representation of the quality scores
+
+        >>> fname = get_test_fname( '1.fastq' )
+        >>> Fastq().sniff( fname )
+        True
+        >>> fname = get_test_fname( '1.fastqsolexa' )
+        >>> Fastq().sniff( fname )
+        False
+        """
+        headers = get_headers( filename, None )
+        bases_regexp = re.compile( "^[NGTAC]*$" )
+        try:
+            if len( headers ) >= 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0] and headers[3][0]:
+                # Check the sequence line, make sure it contains only G/C/A/T/N
+                if not bases_regexp.match( headers[1][0] ):
+                    return False
+                # The quality score line
+                qscore = headers[3][0]
+                # In Standard/Sanger format, the quality score is a single string, whose length should be equal to the length of the sequence
+                if len( qscore ) != len( headers[1][0] ):
+                    return False 
+                #Check the quality score values - in Sanger/Standard these should be ASCII characters between "!" (0x21) and "~" (0x7E)
+                for x in qscore:
+                    if ord( x ) < 0x21 or ord( x ) > 0x7e:
+                        return False
+                return True
+            return False
+        except:
+            return False
+
+class FastqSolexa( Sequence ):
+    """Class representing a FASTQ sequence ( the Solexa variant )"""
+    file_ext = "fastqsolexa"
+
+    def set_peek( self, dataset ):
+        Sequence.set_peek( self, dataset )
+        count = size = 0
+        bases_regexp = re.compile("^[NGTAC]*$")
+        for line in file( dataset.file_name ):
+            if line and line[0] == ">":
+                count += 1
+            elif bases_regexp.match(line):
+                line = line.strip()
+                size += len(line)
+        if count == 1:
+            dataset.blurb = '%d bases' % size
+        else:
+            dataset.blurb = '%d sequences' % count
+
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in fastq format (Solexa Variant)
+        For details, see http://maq.sourceforge.net/fastq.shtml
+
+        Note: There are two kinds of FASTQ files, known as "Sanger" (sometimes called "Standard") and Solexa
+              These differ in the representation of the quality scores
+
+        >>> fname = get_test_fname( '1.fastq' )
+        >>> SolexaFastq().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.fastqsolexa' )
+        >>> SolexaFastq().sniff( fname )
+        True
+        """
+        headers = get_headers( filename, None )
+        bases_regexp = re.compile( "^[NGTAC]*$" )
+        try:
+            if len( headers ) >= 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
+                # Check the sequence line, make sure it contains only G/C/A/T/N
+                if not bases_regexp.match( headers[1][0] ):
+                    return False
+                qscore = headers[3]
+                # In Solexa format, the quality score is a list of numbers, whose length should be equal to the length of the sequence
+                if len( qscore ) != len( headers[1][0] ):
+                    return False
+                # Check the quality score values - in Solexa/FASTQ these should be valid decimal numbers
+                # (if "x" is not a valid number, "int" will raise an exception)
+                for x in qscore:
+                    try:
+                        check = int( x )
+                    except:
+                        return False
+                return True 
+            return False
+        except:
+            return False
 
 try:
+    from galaxy import eggs
     import pkg_resources; pkg_resources.require( "bx-python" )
     import bx.align.maf
 except:
@@ -279,5 +370,3 @@ class Lav( Sequence ):
                 return False
         except:
             return False
-
-

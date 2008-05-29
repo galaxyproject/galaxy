@@ -1,4 +1,5 @@
 #! /usr/bin/python
+
 """
 convert fastq file to separated sequence and quality files.
 
@@ -13,6 +14,7 @@ the order should be:
 Usage:
 %python convert_fastq2fasta.py <your_fastq_filename> <output_seq_filename> <output_score_filename>
 """
+
 import sys, os
 from math import *
 
@@ -24,9 +26,10 @@ def stop_err( msg ):
 
 def __main__():
     infile_name = sys.argv[1]
-    outfile_score = open( sys.argv[2], 'w' )    
-    qual_title_startswith = ''
+    outfile_seq = open( sys.argv[2], 'w' )
+    outfile_score = open( sys.argv[3], 'w' )    
     seq_title_startswith = ''
+    qual_title_startswith = ''
     default_coding_value = 64
     fastq_block_lines = 0
     
@@ -43,11 +46,13 @@ def __main__():
             if line_startswith != seq_title_startswith:
                 stop_err( 'Invalid fastq format at line %d: %s.' % ( i + 1, line ) )
             read_title = line[1:]
+            outfile_seq.write( '>%s\n' % line[1:] )
         elif fastq_block_lines == 2:
             # second line is nucleotides
             read_length = len( line )
+            outfile_seq.write( '%s\n' % line )
         elif fastq_block_lines == 3:
-            # third line is +title_of_qualityscore (might be skipped)
+            # third line is +title_of_qualityscore ( might be skipped )
             if not qual_title_startswith:
                 qual_title_startswith = line_startswith
             if line_startswith != qual_title_startswith:
@@ -71,18 +76,20 @@ def __main__():
                 # ascii
                 quality_score_length = len( line )
                 if quality_score_length == read_length + 1:
-                    quality_score_startswith = ord( line[0:1] )
+                    # first char is qual_score_startswith
+                    qual_score_startswith = ord( line[0:1] )
                     line = line[1:]
                 elif quality_score_length == read_length:
-                    quality_score_startswith = default_coding_value
+                    qual_score_startswith = default_coding_value
                 else:
                     stop_err( 'Invalid fastq format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % ( i + 1, quality_score_length, read_length ) )
                 for j, char in enumerate( line ):
-                    score = ord( char ) - quality_score_startswith    # 64
+                    score = ord( char ) - qual_score_startswith    # 64
                     qual = "%s%s " % ( qual, str( score ) )
             outfile_score.write( '%s\n' % qual )
-                            
+              
+    outfile_seq.close()
     outfile_score.close()
 
-if __name__ == "__main__": __main__()  
+if __name__ == "__main__": __main__() 
     

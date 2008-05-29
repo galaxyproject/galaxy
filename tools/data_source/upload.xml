@@ -25,7 +25,7 @@
   
 **Auto-detect**
 
-The system will attempt to detect AXT, FASTA, Gff, HTML, LAV, Maf, Tabular, Wiggle, BED and Interval (BED with headers) formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be (please send us a note if you see a case when a valid format is not detected).  You can also upload valid files that are compressed (gzipped), which will automatically be decompressed upon upload. 
+The system will attempt to detect Axt, Fasta, Fastq, Gff, Gff3, Html, Lav, Maf, Tabular, Wiggle, Bed and Interval (Bed with headers) formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed. 
 
 -----
 
@@ -35,7 +35,7 @@ A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must m
 
 -----
 
-**AXT**
+**Axt**
 
 blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields.
 
@@ -47,7 +47,7 @@ A zipped archive consisting of binary sequence files in either 'ab1' or 'scf' fo
 
 -----
 
-**BED**
+**Bed**
 
 * Tab delimited format (tabular)
 * Does not require header line
@@ -76,7 +76,7 @@ A zipped archive consisting of binary sequence files in either 'ab1' or 'scf' fo
 
 -----
 
-**FASTA**
+**Fasta**
 
 A sequence in FASTA format consists of a single-line description, followed by lines of sequence data.  The first character of the description line is a greater-than (">") symbol in the first column.  All lines should be shorter than 80 charcters::
 
@@ -86,6 +86,25 @@ A sequence in FASTA format consists of a single-line description, followed by li
     >sequence2
     tttcgtgcgtatag
     tggcgcggtga
+
+-----
+
+**Fastq**
+
+Fastq format stores sequences and Phred qualities in a single file. We define Fastq as the Sanger/Standard variant::
+
+	@EAS54_6_R1_2_1_413_324
+	CCCTTCTTGTCTTCAGCGTTTCTCC
+	+
+	;;3;;;;;;;;;;;;7;;;;;;;88
+	@EAS54_6_R1_2_1_540_792
+	TTGGCAGGCCAAGGCCGATGGATCA
+	+
+	;;;;;;;;;;;7;;;;;-;;;3;83
+	@EAS54_6_R1_2_1_443_348
+	GTTGCTTCTGGCGTGGGTGGGGGGG
+	+EAS54_6_R1_2_1_443_348
+	;;;;;;;;;;;9;7;;.7;393333
 
 -----
 

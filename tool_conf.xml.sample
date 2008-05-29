@@ -59,7 +59,7 @@
     <tool file="filters/axt_to_lav.xml" />
     <tool file="filters/bed2gff.xml" />
     <tool file="fasta_tools/fasta_to_tabular.xml" />
-    <tool file="metag_tools/convert_fastq2fasta.xml" />
+    <tool file="metag_tools/fastq_to_fasta_qual.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="filters/lav_to_bed.xml" />
     <tool file="maf/maf_to_bed.xml" />
