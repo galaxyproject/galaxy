@@ -109,24 +109,27 @@ class Registry( object ):
         because some formats are much more flexibly defined than others.
         """
         sniff_order.sort()
-        for ord, kind in sniff_order:
+        for ele in sniff_order:
             try:
-                fields = kind.split(":")
+                ord = ele[0]
+                kind = ele[1]
+                fields = kind.split( ":" )
                 datatype_module = fields[0]
                 datatype_class = fields[1]
-                fields = datatype_module.split(".")
-                module = __import__(fields.pop(0))
-                for mod in fields: module = getattr(module,mod)
-                aclass = getattr(module, datatype_class)() 
+                fields = datatype_module.split( "." )
+                module = __import__( fields.pop(0) )
+                for mod in fields:
+                    module = getattr( module, mod )
+                aclass = getattr( module, datatype_class )() 
                 included = False
                 for atype in self.sniff_order:
-                    if isinstance(atype, aclass.__class__):
+                    if not issubclass( atype.__class__, aclass.__class__ ) and isinstance( atype, aclass.__class__ ):
                         included = True
                         break
                 if not included:
-                    self.sniff_order.append(aclass)
+                    self.sniff_order.append( aclass )
             except Exception, exc:
-                self.log.warning('error appending datatype: %s to sniff_order, error: %s' %(str(kind), str(exc)))
+                self.log.warning( 'error appending datatype: %s to sniff_order, error: %s' % ( str( kind ), str( exc ) ) )
         #default values
         if len(self.sniff_order) < 1:
             self.sniff_order = [
