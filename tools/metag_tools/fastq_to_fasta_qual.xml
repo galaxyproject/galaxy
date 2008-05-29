@@ -1,6 +1,6 @@
 <tool id="fastq_to_fasta_qual" name="FASTQ-to-FASTA-QUAL" version="1.0.0">
   <description>extracts sequences and quality scores from FASTQ data</description>
-  <command interpreter="python">fastq_to_fasta_qual.py $input1 $output1 $output2</command>
+  <command interpreter="python">fastq_to_fasta_qual.py $input1 $output1 $output2 $input1.extension</command>
   <inputs>
     <param name="input1" type="data" format="fastq,fastqsolexa" label="Fastq file"/>
   </inputs>
@@ -20,10 +20,16 @@
     </test>
   </tests>
   <help>
-    
+
+.. class:: warningmark
+
+IMPORTANT: With the Fastq Solexa variant, this tool currently only works with data where the quality scores are integers, ASCII quality scores are not supported.
+
+-----
+
 **What it does**
 
-This tool extracts sequences and quality scores from FASTQ data ( both Sanger/Standard and Solexa variants ), producing a FASTA dataset and a QUAL dataset.   
+This tool extracts sequences and quality scores from FASTQ data ( both Sanger/Standard and Solexa variants ), producing a FASTA dataset and a QUAL dataset.  With the Solexa variant, this tool currently only works with data where the quality scores are integers, ASCII quality scores are not supported.
 
 -----
 
@@ -31,28 +37,38 @@ This tool extracts sequences and quality scores from FASTQ data ( both Sanger/St
 
 - Converting the following Sanger/Standard fastq data::
 
-    @seq1  
-    GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT  
-    +seq1  
-    hhhhhhhhhhhhhhhhhhhhhhhhhhPW@hhhhhh  
-    @seq2  
-    GCAATGACGGCAGCAATAAACTCAACAGGTGCTGG  
-    +seq2  
-    hhhhhhhhhhhhhhYhhahhhhWhAhFhSIJGChO
+    @EAS54_6_R1_2_1_413_324
+    CCCTTCTTGTCTTCAGCGTTTCTCC
+    +
+    ;;3;;;;;;;;;;;;7;;;;;;;88
+    @EAS54_6_R1_2_1_540_792
+    TTGGCAGGCCAAGGCCGATGGATCA
+    +
+    ;;;;;;;;;;;7;;;;;-;;;3;83
+    @EAS54_6_R1_2_1_443_348
+    GTTGCTTCTGGCGTGGGTGGGGGGG
+    +EAS54_6_R1_2_1_443_348
+    ;;;;;;;;;;;9;7;;.7;393333
+
 
 - will extract the following sequences::
 
-    &gt;seq1
-    GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT
-    &gt;seq2
-    GCAATGACGGCAGCAATAAACTCAACAGGTGCTGG
+    >EAS54_6_R1_2_1_413_324
+    CCCTTCTTGTCTTCAGCGTTTCTCC
+    >EAS54_6_R1_2_1_540_792
+    TTGGCAGGCCAAGGCCGATGGATCA
+    >EAS54_6_R1_2_1_443_348
+    GTTGCTTCTGGCGTGGGTGGGGGGG
 
 - and quality scores::
 
-    &gt;seq1
-    40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 16 23 0 40 40 40 40 40 40 
-    &gt;seq2
-    40 40 40 40 40 40 40 40 40 40 40 40 40 40 25 40 40 33 40 40 40 40 23 40 1 40 6 40 19 9 10 7 3 40 15 
+    >EAS54_6_R1_2_1_413_324
+    26 26 18 26 26 26 26 26 26 26 26 26 26 26 26 22 26 26 26 26 26 26 26 23 23 
+    >EAS54_6_R1_2_1_540_792
+    26 26 26 26 26 26 26 26 26 26 26 22 26 26 26 26 26 12 26 26 26 18 26 23 18 
+    >EAS54_6_R1_2_1_443_348
+    26 26 26 26 26 26 26 26 26 26 26 24 26 22 26 26 13 22 26 18 24 18 18 18 18 
+
 
 **Example2**
 
