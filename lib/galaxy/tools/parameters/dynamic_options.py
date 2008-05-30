@@ -290,6 +290,7 @@ class DynamicOptions( object ):
         self.largest_index = 0
         self.dataset_ref_name = None
         self.validators = []
+        self.converter_safe = True
         
         # Parse the <options> tag
         self.separator = elem.get( 'separator', '\t' )
@@ -318,6 +319,7 @@ class DynamicOptions( object ):
                 self.file_fields = self.parse_file_fields( open( data_file ) )
             elif dataset_file is not None:
                 self.dataset_ref_name = dataset_file
+                self.converter_safe = False
             elif from_parameter is not None:
                 transform_lines = elem.get( 'transform_lines', None )
                 self.file_fields = list( load_from_parameter( from_parameter, transform_lines ) )

@@ -1050,8 +1050,8 @@ class DataToolParameter( ToolParameter ):
                                 assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
                                 if assoc:
                                     data = assoc[0].dataset
-                                elif self.tool.config_files:
-                                    continue #dataset conversion and configuration files currently only work with datasets that have already been converted
+                                elif not self.converter_safe( other_values ):
+                                    continue
                                 selected = ( value and ( data in value ) )
                                 field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
                                 break #we only report the first valid converter, assume self.extensions is a priority list
@@ -1165,6 +1165,17 @@ class DataToolParameter( ToolParameter ):
             return self.options.get_dependency_names()
         else:
             return []
+
+    def converter_safe( self, other_values ):
+        if self.tool.config_files:
+            return False #dataset conversion and configuration files currently only work with datasets that have already been converted
+        converter_safe = [True]
+        def visitor( prefix, input, value ):
+            if isinstance( input, SelectToolParameter ) and self.name in input.get_dependencies():
+                if input.is_dynamic and not input.options.converter_safe:
+                    converter_safe[0] = False #This option does not allow for conversion, i.e. uses contents of dataset file to generate options
+        self.tool.visit_inputs( other_values, visitor )
+        return False not in converter_safe
 
 # class RawToolParameter( ToolParameter ):
 #     """
