@@ -27,6 +27,32 @@ for dir in [ "build", "dist", "gridengine" ]:
         print "scramble_it.py: removing dir:", dir
         shutil.rmtree( dir )
 
+# if our python is 64 bit, use 64 bit sge...
+if sys.maxint < ( 2048 * 1024 * 1024 ):
+    if sys.byteorder == 'big':
+        arch = "sparc"
+    else:
+        arch = "x86"
+else:
+    if sys.byteorder == 'big':
+        arch = "sparc64"
+    else:
+        arch = "amd64"
+    if not "CFLAGS" in os.environ:
+        os.environ["CFLAGS"] = ""
+    os.environ["CFLAGS"] += " -m64"
+
+# if we're using sun cc, drop the gcc -Wno-unused option
+import distutils.sysconfig
+cc = distutils.sysconfig.get_config_var('CC')
+if os.popen( cc + ' --version 2>&1' ).read().strip().split('\n')[0].startswith('gcc'):
+    compiler = 'gcc'
+elif os.popen( cc + ' -V 2>&1' ).read().strip().split('\n')[0].startswith('cc: Sun C'):
+    compiler = 'sun'
+else:
+    print "scramble(): Unable to determine compiler"
+    sys.exit(1)
+
 # patch
 file = "setup.py"
 print "scramble(): Patching", file
@@ -37,8 +63,13 @@ o = open( file, "w" )
 for line in i.readlines():
     if line == 'SGE6_ROOT="/scratch_test02/SGE6"\n':
         line = 'SGE6_ROOT="%s"\n' % os.environ["SGE_ROOT"]
-    if line.startswith('link_args ='):
+    elif line.startswith('SGE6_ARCH='):
+        line = 'SGE6_ARCH="sol-%s"\n' % arch
+    elif line.startswith('link_args ='):
         line = 'link_args = [ "-L%s" % os.path.join(SGE6_ROOT, "lib", SGE6_ARCH), "-Wl,-R%s" % os.path.join(SGE6_ROOT, "lib", SGE6_ARCH),  "-ldrmaa"  ]\n'
+    if line == "                   + [ '-Wno-unused' ]\n":
+        if compiler == 'sun':
+            line = "                   #+ [ '-Wno-unused' ]\n"
     print >>o, line,
 i.close()
 o.close()
