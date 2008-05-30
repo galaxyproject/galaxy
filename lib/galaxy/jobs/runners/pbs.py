@@ -351,6 +351,7 @@ class PBSJobRunner( object ):
             pbs_job_state.job_wrapper.finish( stdout, stderr )
         except:
             log.exception("Job wrapper finish method failed")
+            job_wrapper.fail("Unable to finish job", exception=True)
 
         # clean up the pbs files
         self.cleanup( ( ofile, efile, job_file ) )

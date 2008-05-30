@@ -78,7 +78,11 @@ class LocalJobRunner( object ):
                 log.exception("failure running job %d" % job_wrapper.job_id)
                 return
         # Finish the job                
-        job_wrapper.finish( stdout, stderr )
+        try:
+            job_wrapper.finish( stdout, stderr )
+        except:
+            log.exception("Job wrapper finish method failed")
+            job_wrapper.fail("Unable to finish job", exception=True)
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
