@@ -256,6 +256,7 @@ class Crate( object ):
         self.eggs = {}
         self.config = CSConfigParser()
         self.repo = None
+        self.no_download = []
         self.platform = { 'peak' : get_platform( platform=True, peak=True ), 'galaxy' : get_platform( platform=True, peak=False ) }
         self.noplatform = { 'peak' : get_platform( platform=False, peak=True ), 'galaxy' : get_platform( platform=False, peak=False ) }
     def parse( self ):
@@ -263,10 +264,11 @@ class Crate( object ):
             raise Exception( "unable to read egg config from %s" % Crate.config_file )
         try:
             self.repo = self.config.get( "general", "repository" )
+            self.no_download = self.config.get( "general", "no_download" ).split()
         except ConfigParser.NoSectionError:
             raise Exception( "eggs.ini is missing required section [general]" )
-        except ConfigParser.NoOptionError:
-            raise Exception( "eggs.ini is missing required [general] option 'repository'" )
+        #except ConfigParser.NoOptionError:
+        #    raise Exception( "eggs.ini is missing required [general] option 'repository'" )
         try:
             platform_eggs = self.config.items( "eggs:platform" )
             noplatform_eggs = self.config.items( "eggs:noplatform" )
@@ -303,13 +305,14 @@ class Crate( object ):
         if len( missing ):
             return False
         return True
-    def fetch( self, ignore=None ):
+    def fetch( self, ignore=[] ):
         """
 	Fetch all eggs in the crate (ignoring any that you want to
 	ignore).  If your platform isn't available, it'll attempt to
 	download all the noplatform eggs before failing.
         """
         skip_platform = False
+        ignore.extend( self.no_download )
         try:
             f = urllib2.urlopen( "%s/%s" % ( self.repo, self.platform['galaxy'] ) )
             f.close()
