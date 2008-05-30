@@ -3,18 +3,8 @@
   <command interpreter="python">axt_to_concat_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1</command>
   <inputs>
     <param format="axt" name="axt_input" type="data" label="AXT file"/>
-    <param name="dbkey_1" type="select" label="Genome">
-      <options from_file="static/ucsc/builds.txt">
-        <column name="name" index="1"/>
-        <column name="value" index="0"/>
-      </options>
-    </param> 
-    <param name="dbkey_2" type="select" label="Genome">
-      <options from_file="static/ucsc/builds.txt">
-        <column name="name" index="1"/>
-        <column name="value" index="0"/>
-      </options>
-    </param> 
+    <param name="dbkey_1" type="genomebuild" label="Genome"/>
+    <param name="dbkey_2" type="genomebuild" label="Genome"/>
   </inputs>
   <outputs>
     <data format="fasta" name="out_file1" />

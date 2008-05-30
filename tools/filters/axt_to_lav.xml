@@ -3,18 +3,8 @@
   <command interpreter="python">axt_to_lav.py ${GALAXY_DATA_INDEX_DIR}/$dbkey_1/seq/%s.nib:$dbkey_1:./static/ucsc/chrom/${dbkey_1}.len ${GALAXY_DATA_INDEX_DIR}/$dbkey_2/seq/%s.nib:$dbkey_2:./static/ucsc/chrom/${dbkey_2}.len $align_input $lav_file $seq_file1 $seq_file2</command>
   <inputs>
     <param name="align_input" type="data" format="axt" label="Alignment File" optional="False"/>
-    <param name="dbkey_1" type="select" label="Genome">
-      <options from_file="static/ucsc/builds.txt">
-        <column name="name" index="1"/>
-        <column name="value" index="0"/>
-      </options>
-    </param> 
-    <param name="dbkey_2" type="select" label="Genome">
-      <options from_file="static/ucsc/builds.txt">
-        <column name="name" index="1"/>
-        <column name="value" index="0"/>
-      </options>
-    </param> 
+    <param name="dbkey_1" type="genomebuild" label="Genome"/>
+    <param name="dbkey_2" type="genomebuild" label="Genome"/>
   </inputs>
   <outputs>
     <data name="lav_file" format="lav"/>

@@ -10,12 +10,12 @@ from galaxy.util import string_as_bool
 log = logging.getLogger(__name__)
 
 class Filter( object ):
-    
     """
     A filter takes the current options list and modifies it.
     """
     @classmethod
     def from_element( cls, d_option, elem ):
+        """Loads the proper filter by the type attribute of elem"""
         type = elem.get( 'type', None )
         assert type is not None, "Required 'type' attribute missing from filter"
         return filter_types[type.strip()]( d_option, elem )
@@ -23,29 +23,57 @@ class Filter( object ):
         self.dynamic_option = d_option
         self.elem = elem
     def get_dependency_name( self ):
+        """Returns the name of any depedencies, otherwise None"""
         return None
     def filter_options( self, trans, other_values ):
+        """Returns a list of options after the filter is applied"""
         raise TypeError( "Abstract Method" )
 
 class StaticValueFilter( Filter ):
+    """
+    Filters a list of options on a column by a static value.
+    
+    Type: static_value
+    
+    Required Attributes:
+        value: static value to compare to
+        column: column in options to compare with
+    Optional Attributes:
+        keep: Keep columns matching value (True)
+              Discard columns matching value (False)
+    """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
         self.value = elem.get( "value", None )
         assert self.value is not None, "Required 'value' attribute missing from filter"
-        self.name = elem.get( "name", None )
-        if self.name is None:
-            self.name = self.value
         self.column = elem.get( "column", None )
         assert self.column is not None, "Required 'column' attribute missing from filter, when loading from file"
         self.column = int ( self.column )
+        self.keep = string_as_bool( elem.get( "keep", 'True' ) )
     def filter_options( self, options, trans, other_values ):
         rval = []
         for fields in options:
-            if fields[self.column] == self.value:
+            if ( self.keep and fields[self.column] == self.value ) or ( not self.keep and fields[self.column] != self.value ):
                 rval.append( fields )
         return rval
 
 class DataMetaFilter( Filter ):
+    """
+    Filters a list of options on a column by a dataset metadata value.
+    
+    Type: data_meta
+    
+    When no 'from_' source has been specified in the <options> tag, this will populate the options list with (meta_value, meta_value, False).
+    Otherwise, options which do not match the metadata value in the column are discarded.
+    
+    Required Attributes:
+        ref: Name of input dataset
+        key: Metadata key to use for comparison
+        column: column in options to compare with (not required when not associated with input options)
+    Optional Attributes:
+        multiple: Option values are multiple, split column by separator (True)
+        separator: When multiple split by this (,)
+    """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
         self.ref_name = elem.get( "ref", None )
@@ -54,11 +82,10 @@ class DataMetaFilter( Filter ):
         assert self.key is not None, "Required 'key' attribute missing from filter"
         self.column = elem.get( "column", None )
         if self.column is None:
-            assert self.dynamic_option.file_fields is None or self.dynamic_option.dataset_ref_name is None, "Required 'column' attribute missing from filter, when loading from file"
+            assert self.dynamic_option.file_fields is None and self.dynamic_option.dataset_ref_name is None, "Required 'column' attribute missing from filter, when loading from file"
         else:
             self.column = int ( self.column )
-        self.multiple = elem.get( "multiple", "False" )
-        self.multiple = string_as_bool( self.multiple )
+        self.multiple = string_as_bool( elem.get( "multiple", "False" ) )
         self.separator = elem.get( "separator", "," )
     def get_dependency_name( self ):
         return self.ref_name
@@ -96,6 +123,18 @@ class DataMetaFilter( Filter ):
             return options
 
 class ParamValueFilter( Filter ):
+    """
+    Filters a list of options on a column by the value of another input.
+    
+    Type: param_value
+    
+    Required Attributes:
+        ref: Name of input value
+        column: column in options to compare with
+    Optional Attributes:
+        keep: Keep columns matching value (True)
+              Discard columns matching value (False)
+    """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
         self.ref_name = elem.get( "ref", None )
@@ -103,18 +142,27 @@ class ParamValueFilter( Filter ):
         self.column = elem.get( "column", None )
         assert self.column is not None, "Required 'column' attribute missing from filter"
         self.column = int ( self.column )
+        self.keep = string_as_bool( elem.get( "keep", 'True' ) )
     def get_dependency_name( self ):
         return self.ref_name
     def filter_options( self, options, trans, other_values ):
-        ref = other_values.get( self.ref_name, None )
+        ref = str( other_values.get( self.ref_name, None ) )
         assert ref is not None, "Required dependency '%s' not found in incoming values" % ref
         rval = []
         for fields in options:
-            if fields[self.column] == str( ref ):
+            if ( self.keep and fields[self.column] == ref ) or ( not self.keep and fields[self.column] != ref ):
                 rval.append( fields )
         return rval
 
 class UniqueValueFilter( Filter ):
+    """
+    Filters a list of options to be unique by a column value.
+    
+    Type: unique_value
+    
+    Required Attributes:
+        column: column in options to compare with
+    """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
         self.column = elem.get( "column", None )
@@ -132,6 +180,16 @@ class UniqueValueFilter( Filter ):
         return rval
 
 class MultipleSplitterFilter( Filter ):
+    """
+    Turns a single line of options into multiple lines, by splitting a column and creating a line for each item.
+    
+    Type: multiple_splitter
+    
+    Required Attributes:
+        column: column in options to compare with
+    Optional Attributes:
+        separator: Split column by this (,)
+    """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
         self.separator = elem.get( "separator", "," )
@@ -147,6 +205,17 @@ class MultipleSplitterFilter( Filter ):
         return rval
 
 class AdditionalValueFilter( Filter ):
+    """
+    Adds a single static value to an options list.
+    
+    Type: add_value
+    
+    Required Attributes:
+        value: value to appear in select list
+    Optional Attributes:
+        name: Display name to appear in select list (value)
+        index: Index of option list to add value (APPEND)
+    """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
         self.value = elem.get( "value", None )
@@ -171,6 +240,14 @@ class AdditionalValueFilter( Filter ):
         return rval
 
 class SortByColumnFilter( Filter ):
+    """
+    Sorts an options list by a column
+    
+    Type: sort_by
+    
+    Required Attributes:
+        column: column to sort by
+    """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
         self.column = elem.get( "column", None )
@@ -236,7 +313,7 @@ class DynamicOptions( object ):
             
             if data_file is not None:
                 data_file = data_file.strip()
-                if not data_file.startswith( 'static' ) and not os.path.isabs( data_file ):
+                if not os.path.isabs( data_file ):
                     data_file = os.path.join( self.tool_param.tool.app.config.tool_data_path, data_file )
                 self.file_fields = self.parse_file_fields( open( data_file ) )
             elif dataset_file is not None:
