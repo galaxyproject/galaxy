@@ -173,10 +173,10 @@ class FastqSolexa( Sequence ):
               These differ in the representation of the quality scores
 
         >>> fname = get_test_fname( '1.fastq' )
-        >>> SolexaFastq().sniff( fname )
+        >>> FastqSolexa().sniff( fname )
         False
         >>> fname = get_test_fname( '1.fastqsolexa' )
-        >>> SolexaFastq().sniff( fname )
+        >>> FastqSolexa().sniff( fname )
         True
         """
         headers = get_headers( filename, None )
