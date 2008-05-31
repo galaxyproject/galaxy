@@ -62,9 +62,17 @@ def __main__():
         else:
             # fourth line is quality scores
             qual = ''
+            fastq_integer = True
             # peek: ascii or digits?
             val = line.split()[0]
-            if val.isdigit():
+
+            try: 
+                int(val)
+                fastq_integer = True
+            except:
+                fastq_integer = False
+                
+            if fastq_integer:
                 # digits
                 qual = line
             else:
