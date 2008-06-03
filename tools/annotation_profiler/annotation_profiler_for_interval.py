@@ -111,8 +111,9 @@ class CachedCoverageReader:
             yield tablename, coverage, regions, index
 
 class TableCoverageSummary:
-    def __init__( self, coverage_reader ):
+    def __init__( self, coverage_reader, chrom_lengths ):
         self.coverage_reader = coverage_reader
+        self.chrom_lengths = chrom_lengths
         self.chromosome_coverage = {}
         self.total_interval_size = 0
         self.total_interval_count = 0
@@ -126,10 +127,7 @@ class TableCoverageSummary:
         self.total_interval_size += ( end - start )
         self.total_interval_count += 1
         if chrom not in self.chromosome_coverage:
-            #utilize lengths file here, if possible, if not use 250mb
-            #currently, no valid method to provide location of lengths file by framework:
-            #gops_complement has it hard coded as dbfile = fileinput.FileInput( "static/ucsc/chrom/"+db+".len" )
-            self.chromosome_coverage[chrom] = bx.bitset.BitSet( 250000000 )
+            self.chromosome_coverage[chrom] = bx.bitset.BitSet( self.chrom_lengths.get( chrom ) )
         self.chromosome_coverage[chrom].set_range( start, end - start )
         for table_name, coverage, regions in self.coverage_reader.iter_table_coverage_regions_by_region( chrom, start, end ):
             if table_name not in self.table_coverage:
@@ -207,18 +205,33 @@ def profile_per_interval( interval_filename, chrom_col, start_col, end_col, out_
                 out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), table_name, coverage, region_count ) )
     out.close()
 
-def profile_summary( interval_filename, chrom_col, start_col, end_col, out_filename, keep_empty, coverage_reader ):
+def profile_summary( interval_filename, chrom_col, start_col, end_col, out_filename, keep_empty, coverage_reader, chrom_lengths ):
     out = open( out_filename, 'wb' )
-    table_coverage_summary = TableCoverageSummary( coverage_reader )
+    table_coverage_summary = TableCoverageSummary( coverage_reader, chrom_lengths )
     for region in bx.intervals.io.NiceReaderWrapper( open( interval_filename, 'rb' ), chrom_col = chrom_col, start_col = start_col, end_col = end_col, fix_strand = True, return_header = False, return_comments = False ):
         table_coverage_summary.add_region( region.chrom, region.start, region.end )
     
-    out.write( "#tableName\ttableChromosomeCoverage\ttableChromosomeCount\ttableRegionCoverage\ttableRegionCount\tallIntervalCount\tallIntervalSize\tallCoverage\tallTableRegionsOverlaped\tallIntervalsOverlapingTable\tnrIntervalCount\tnrIntervalSize\tnrCoverage\tnrTableRegionsOverlaped\tnrIntervalsOverlapingTable\n" )#\tstatistic\n" )
+    out.write( "#tableName\ttableChromosomeCoverage\ttableChromosomeCount\ttableRegionCoverage\ttableRegionCount\tallIntervalCount\tallIntervalSize\tallCoverage\tallTableRegionsOverlaped\tallIntervalsOverlapingTable\tnrIntervalCount\tnrIntervalSize\tnrCoverage\tnrTableRegionsOverlaped\tnrIntervalsOverlapingTable\n" )
     for table_name, table_chromosome_size, table_chromosome_count, table_region_coverage, table_region_count, total_interval_count, total_interval_size, total_coverage, table_regions_overlaped_count, interval_region_overlap_count, nr_interval_count, nr_region_size, nr_coverage, nr_table_regions_overlaped_count, nr_interval_table_overlap_count in table_coverage_summary.iter_table_coverage():
         if keep_empty or total_coverage:
             #only output tables that have atleast 1 base covered unless empty are requested
             out.write( "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ( table_name, table_chromosome_size, table_chromosome_count, table_region_coverage, table_region_count, total_interval_count, total_interval_size, total_coverage, table_regions_overlaped_count, interval_region_overlap_count, nr_interval_count, nr_region_size, nr_coverage, nr_table_regions_overlaped_count, nr_interval_table_overlap_count ) )
     out.close()
+
+class ChromosomeLengths:
+    def __init__( self, filename ):
+        self.chroms = {}
+        try:
+            for line in open( filename ):
+                try:
+                    fields = line.strip().split( "\t" )
+                    self.chroms[fields[0]] = int( fields[1] )
+                except:
+                    continue
+        except:
+            pass
+    def get( self, name ):
+        return self.chroms.get( name, bx.bitset.MAX )
 
 def __main__():
     parser = optparse.OptionParser()
@@ -260,6 +273,12 @@ def __main__():
         help='Path to profiled data for this organism'
     )
     parser.add_option(
+        '-l','--lengths',
+        dest='lengths',
+        type='str',default='test-data/shared/ucsc/hg18.len',
+        help='Path to chromosome lengths data for this organism'
+    )
+    parser.add_option(
         '-t','--table_names',
         dest='table_names',
         type='str',default='None',
@@ -292,7 +311,7 @@ def __main__():
     coverage_reader = CachedCoverageReader( options.path, buffer = options.buffer, table_names = table_names )
     
     if options.summary:
-        profile_summary( options.interval_filename, options.chrom_col - 1, options.start_col - 1, options.end_col -1, options.out_filename, options.keep_empty, coverage_reader )
+        profile_summary( options.interval_filename, options.chrom_col - 1, options.start_col - 1, options.end_col -1, options.out_filename, options.keep_empty, coverage_reader, ChromosomeLengths( options.lengths ) )
     else:
         profile_per_interval( options.interval_filename, options.chrom_col - 1, options.start_col - 1, options.end_col -1, options.out_filename, options.keep_empty, coverage_reader )
     

@@ -242,7 +242,10 @@ def get_gbrowse_sites_by_build(build):
 
 def read_dbnames(filename):
     """ Read build names from file """
-    db_names = []
+    class DBNames( list ):
+        default_value = "?"
+        default_name = "unspecified (?)"
+    db_names = DBNames()
     try:
         ucsc_builds = {}
         man_builds = [] #assume these are integers
@@ -276,15 +279,15 @@ def read_dbnames(filename):
             ucsc_builds[db_base].sort()
             ucsc_builds[db_base].reverse()
             ucsc_builds[db_base] = [(build, name) for build_rev, build, name in ucsc_builds[db_base]]
-            db_names = db_names + ucsc_builds[db_base]
-        if len(db_names)>1 and len(man_builds)>0: db_names.append(('?', '----- Additional Species Are Below -----'))
+            db_names = DBNames( db_names + ucsc_builds[db_base] )
+        if len( db_names ) > 1 and len( man_builds ) > 0: db_names.append( ( db_names.default_value, '----- Additional Species Are Below -----' ) )
         man_builds.sort()
         man_builds = [(build, name) for name, build  in man_builds]
-        db_names = db_names + man_builds
+        db_names = DBNames( db_names + man_builds )
     except Exception, e:
         print "ERROR: Unable to read builds file:", e
     if len(db_names)<1:
-        db_names = [('?', 'unspecified (?)')]
+        db_names = DBNames( [( db_names.default_value,  db_names.default_name )] )
     return db_names
 
 def read_build_sites(filename):
@@ -306,9 +309,9 @@ def read_build_sites(filename):
     return build_sites
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
-dbnames = read_dbnames(os.path.join(galaxy_root_path,"static","ucsc","builds.txt")) #this list is used in edit attributes and the upload tool
-ucsc_build_sites = read_build_sites(os.path.join(galaxy_root_path,"static","ucsc","ucsc_build_sites.txt")) #this list is used in history.tmpl
-gbrowse_build_sites = read_build_sites(os.path.join(galaxy_root_path,"static","gbrowse","gbrowse_build_sites.txt")) #this list is used in history.tmpl
+dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) ) #this list is used in edit attributes and the upload tool
+ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) ) #this list is used in history.tmpl
+gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) ) #this list is used in history.tmpl
 
 if __name__ == '__main__':
     import doctest, sys

@@ -4,7 +4,7 @@ Complement regions.
 
 usage: %prog in_file out_file
     -1, --cols1=N,N,N,N: Columns for chrom, start, end, strand in file
-    -d, --db=N: Database name (for determining chromosome lengths)
+    -l, --lengths=N: Filename of .len file for species (chromosome lengths)
     -a, --all: Complement all chromosomes (Genome-wide complement)
 """
 from galaxy import eggs
@@ -29,7 +29,7 @@ def main():
     options, args = doc_optparse.parse( __doc__ )
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols1 )
-        db = options.db
+        lengths = options.lengths
         if options.all: allchroms = True
         in_fname, out_fname = args
     except:
@@ -46,7 +46,7 @@ def main():
     chroms = list()
     # dbfile is used to determine the length of each chromosome.  The lengths
     # are added to the lens dict and passed copmlement operation code in bx.
-    dbfile = fileinput.FileInput( "static/ucsc/chrom/"+db+".len" )
+    dbfile = fileinput.FileInput( lengths )
     
     if dbfile:
         if not allchroms:

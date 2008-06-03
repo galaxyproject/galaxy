@@ -187,7 +187,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         initialize a new history with the first dbkey in util.dbnames which is currently
         ?    unspecified (?)
         """
-        history.genome_build = util.dbnames[0][0]
+        history.genome_build = util.dbnames.default_value
         if history.user_id is None and self.user is not None:
             history.user_id = self.user.id
         if self.galaxy_session_is_valid():
