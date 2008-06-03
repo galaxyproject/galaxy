@@ -33,10 +33,11 @@ sge_template = """#!/bin/sh
 GALAXY_LIB="%s"
 if [ "$GALAXY_LIB" != "None" ]; then
     if [ -n "$PYTHONPATH" ]; then
-        export PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
+        PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
     else
-        export PYTHONPATH="$GALAXY_LIB"
+        PYTHONPATH="$GALAXY_LIB"
     fi
+    export PYTHONPATH
 fi
 cd %s
 %s
