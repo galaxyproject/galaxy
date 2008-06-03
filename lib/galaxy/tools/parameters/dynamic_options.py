@@ -25,7 +25,7 @@ class Filter( object ):
     def get_dependency_name( self ):
         """Returns the name of any depedencies, otherwise None"""
         return None
-    def filter_options( self, trans, other_values ):
+    def filter_options( self, options, trans, other_values ):
         """Returns a list of options after the filter is applied"""
         raise TypeError( "Abstract Method" )
 
@@ -323,14 +323,13 @@ class DynamicOptions( object ):
             elif from_parameter is not None:
                 transform_lines = elem.get( 'transform_lines', None )
                 self.file_fields = list( load_from_parameter( from_parameter, transform_lines ) )
+        
         # Load filters
         for filter_elem in elem.findall( 'filter' ):
             self.filters.append( Filter.from_element( self, filter_elem ) )
         
         # Load Validators
         for validator in elem.findall( 'validator' ):
-            validator_type = validator.get( 'type', None )
-            assert validator_type is not None, "Required 'type' attribute missing from validator"
             self.validators.append( validation.Validator.from_element( self.tool_param, validator ) )
     
     def parse_file_fields( self, reader ):
@@ -357,7 +356,7 @@ class DynamicOptions( object ):
             depend = filter.get_dependency_name()
             if depend:
                 rval.append( depend )
-        return rval        
+        return rval
     
     def get_fields( self, trans, other_values ):
         if self.dataset_ref_name:

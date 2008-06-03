@@ -14,7 +14,8 @@ class Validator( object ):
     """
     @classmethod
     def from_element( cls, param, elem ):
-        type = elem.get( 'type' )
+        type = elem.get( 'type', None )
+        assert type is not None, "Required 'type' attribute missing from validator"
         return validator_types[type].from_element( param, elem )
     def validate( self, value, history=None ):
         raise TypeError( "Abstract Method" )
