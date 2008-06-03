@@ -19,10 +19,11 @@ def __main__():
     mega_word_size = sys.argv[4]        # -W
     mega_iden_cutoff = sys.argv[5]      # -p
     mega_evalue_cutoff = sys.argv[6]      # -e
-    mega_temp_output = tempfile.NamedTemporaryFile().name
     mega_filter = sys.argv[7]           # -F
     GALAXY_DATA_INDEX_DIR = sys.argv[8]
+    GALAXY_TMP_FILE_DIR = sys.argv[9]
     DB_LOC = "%s/blastdb.loc" % GALAXY_DATA_INDEX_DIR
+    mega_temp_output = tempfile.NamedTemporaryFile( dir=GALAXY_TMP_FILE_DIR ).name
 
     # megablast parameters
     try:

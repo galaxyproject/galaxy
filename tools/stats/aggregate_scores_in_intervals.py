@@ -37,8 +37,8 @@ class PositionalScoresOnDisk:
     fmt_size = struct.calcsize( fmt )
     default_value = float( 'nan' )
     
-    def __init__( self ):
-        self.file = tempfile.TemporaryFile( 'w+b' )
+    def __init__( self, directory=None ):
+        self.file = tempfile.TemporaryFile( mode='w+b', dir=directory )
         self.length = 0
     def __getitem__( self, i ):
         if i < 0: i = self.length + i
@@ -91,7 +91,7 @@ def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
     
-def load_scores_wiggle( fname, chrom_buffer_size = 3 ):
+def load_scores_wiggle( fname, chrom_buffer_size=3, directory=None ):
     """
     Read a wiggle file and return a dict of BinnedArray objects keyed 
     by chromosome.
@@ -104,7 +104,7 @@ def load_scores_wiggle( fname, chrom_buffer_size = 3 ):
                     scores_by_chrom[chrom] = BinnedArray()
                     chrom_buffer_size -= 1
                 else:
-                    scores_by_chrom[chrom] = PositionalScoresOnDisk()
+                    scores_by_chrom[chrom] = PositionalScoresOnDisk( directory=directory )
             scores_by_chrom[chrom][pos] = val
     except UCSCLimitException:
         # Wiggle data was truncated, at the very least need to warn the user.
@@ -137,6 +137,7 @@ def main():
             out_file = open( args[5], 'w' )
         else:
             out_file = sys.stdout
+        GALAXY_TMP_FILE_DIR = sys.argv[6]
         binned = bool( options.binned )
         mask_fname = options.mask
     except:
@@ -162,7 +163,7 @@ def main():
             chrom_buffer = int( options.chrom_buffer )
         except:
             chrom_buffer = 3
-        scores_by_chrom = load_scores_wiggle( score_fname, chrom_buffer )
+        scores_by_chrom = load_scores_wiggle( score_fname, chrom_buffer_size=chrom_buffer, directory=GALAXY_TMP_FILE_DIR )
 
     if mask_fname:
         masks = binned_bitsets_from_file( open( mask_fname ) )

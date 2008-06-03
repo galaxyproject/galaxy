@@ -14,13 +14,14 @@ from galaxy.util.odict import odict
 def __main__():
     input_filename = sys.argv[1]
     output_filename = sys.argv[2]
+    tmp_file_dir = sys.argv[3]
     species = odict()
     cur_size = 0
     for components in iter_fasta_alignment( input_filename ):
         species_not_written = species.keys()
         for component in components:
             if component.species not in species:
-                species[component.species] = tempfile.TemporaryFile()
+                species[component.species] = tempfile.TemporaryFile( dir=tmp_file_dir )
                 species[component.species].write( "-" * cur_size )
             species[component.species].write( component.text )
             try:

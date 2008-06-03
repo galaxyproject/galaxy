@@ -1,8 +1,8 @@
 <tool id="aggregate_scores_in_intervals2" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints" version="1.1.1">
   <description>Appends the average, min, max of datapoints per interval</description>
   <command interpreter="python">
-    #if $score_source_type.score_source == "user":#aggregate_scores_in_intervals.py $score_source_type.input2 $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1 --chrom_buffer=3
-    #else:#aggregate_scores_in_intervals.py $score_source_type.datasets $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1 -b
+    #if $score_source_type.score_source == "user":#aggregate_scores_in_intervals.py $score_source_type.input2 $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1 ${GALAXY_TMP_FILE_DIR} --chrom_buffer=3
+    #else:#aggregate_scores_in_intervals.py $score_source_type.datasets $input1 $input1_chromCol $input1_startCol $input1_endCol $out_file1 ${GALAXY_TMP_FILE_DIR} -b
     #end if
   </command>
   <inputs>

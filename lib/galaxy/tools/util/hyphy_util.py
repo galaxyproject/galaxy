@@ -2,8 +2,8 @@
 #Contains file contents and helper methods for HYPHY configurations
 import tempfile, os
 
-def get_filled_temp_filename(contents):
-    fh = tempfile.NamedTemporaryFile('w')
+def get_filled_temp_filename( contents, directory=None ):
+    fh = tempfile.NamedTemporaryFile( mode='w', dir=directory )
     filename = fh.name
     fh.close()
     fh = open(filename, 'w')

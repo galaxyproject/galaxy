@@ -50,6 +50,7 @@ def rate_estimator(win, blk_lines, wstart, wend, wspecies):
     print >>fout, "%s\t%s\t%s\t%s\t%.2e\t%.2e" %(win, wspecies, wstart, wend, irate , drate)
     
 def main():
+    GALAXY_TMP_FILE_DIR = sys.argv.pop()
     infile = sys.argv[1]
     for i, line in enumerate( file ( infile )):
         line = line.rstrip('\r\n')
@@ -68,7 +69,7 @@ def main():
     blk=0
     win=0
     linestr=""
-    sorted_infile = tempfile.NamedTemporaryFile()
+    sorted_infile = tempfile.NamedTemporaryFile( dir=GALAXY_TMP_FILE_DIR )
     cmdline = "sort -n -k"+str(species_ind+2)+" -o "+sorted_infile.name+" "+infile
     try:
         os.system(cmdline)

@@ -139,6 +139,7 @@ def main(tmpFileName):
 if __name__ == "__main__":
     # The tempfile initialization is here because while inside the main() it seems to create a condition
     # when the file is removed before gnuplot has a chance of accessing it
-    gp_data_file = tempfile.NamedTemporaryFile('w')
+    GALAXY_TMP_FILE_DIR = sys.argv.pop()
+    gp_data_file = tempfile.NamedTemporaryFile( mode='w', dir=GALAXY_TMP_FILE_DIR )
     main(gp_data_file.name)
     

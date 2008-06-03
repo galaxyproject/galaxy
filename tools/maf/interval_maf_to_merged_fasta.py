@@ -18,9 +18,10 @@ usage: %prog maf_file [options]
    -i, --interval_file=i:       Input interval file
    -o, --output_file=o:      Output MAF file
    -p, --species=p: Species to include in output
-   -z, --mafIndexFileDir=z: Directory of local maf_index.loc file
+   -y, --mafIndexFileDir=y: Directory of local maf_index.loc file
+   -z, --mafTmpFileDir=z: Directory to be used when creating temporary files
 
-usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract comma_separated_list_of_indexed_maf_files input_gene_bed_file output_fasta_file cached|user GALAXY_DATA_INDEX_DIR
+usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract comma_separated_list_of_indexed_maf_files input_gene_bed_file output_fasta_file cached|user GALAXY_DATA_INDEX_DIR GALAXY_TMP_FILE_DIR
 """
 
 #Dan Blankenberg
@@ -87,6 +88,7 @@ def __main__():
             print >>sys.stderr, "Strand column has not been specified."
             sys.exit()
     mafIndexFile = "%s/maf_index.loc" % options.mafIndexFileDir
+    tmpFileDir = options.mafTmpFileDir
     #Finish parsing command line
         
     #get index for mafs based on type 
@@ -99,7 +101,7 @@ def __main__():
             sys.exit()
     elif options.mafSourceType.lower() in ["user"]:
         #index maf for use here, need to remove index_file when finished
-        index, index_filename = maf_utilities.build_maf_index( options.mafSource, species = [primary_species] )
+        index, index_filename = maf_utilities.build_maf_index( options.mafSource, species=[primary_species], directory=tmpFileDir )
         if index is None:
             print >> sys.stderr, "Your MAF file appears to be malformed."
             sys.exit()

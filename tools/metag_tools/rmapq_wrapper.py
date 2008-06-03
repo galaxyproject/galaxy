@@ -22,6 +22,7 @@ def __main__():
     align_len = sys.argv[7]             # -h
     mismatch = sys.argv[8]              # -m
     output_file = sys.argv[9]
+    GALAXY_TMP_FILE_DIR = sys.argv[10]
     
     try: 
         float(high_score)
@@ -78,7 +79,7 @@ def __main__():
         stop_err("No sequences for %s are available for search, please report this error." %(target_path))
    
     for detail_file_path in all_files:
-        output_tempfile = tempfile.NamedTemporaryFile().name
+        output_tempfile = tempfile.NamedTemporaryFile( dir=GALAXY_TMP_FILE_DIR ).name
         command = "rmapq -q %s -M %s -h %s -w %s -m %s -Q %s -c %s %s -o %s 2>&1" % ( high_score, high_len, align_len, read_len, mismatch, scorefile, detail_file_path, infile, output_tempfile )
         #print command
         try:

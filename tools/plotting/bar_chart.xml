@@ -1,8 +1,8 @@
 <tool id="barchart_gnuplot" name="Bar chart">
   <description>for multiple columns</description>
   <command interpreter="python">
-    #if $xtic.userSpecified == "Yes": #bar_chart.py $input $xtic.xticColumn $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size"
-    #else:                            #bar_chart.py $input 0 $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size"
+    #if $xtic.userSpecified == "Yes": #bar_chart.py $input $xtic.xticColumn $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size" ${GALAXY_TMP_FILE_DIR}
+    #else:                            #bar_chart.py $input 0 $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size" ${GALAXY_TMP_FILE_DIR}
     #end if
   </command>
   <inputs>

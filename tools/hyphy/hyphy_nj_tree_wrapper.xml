@@ -3,7 +3,7 @@
     
     <description>Builder</description>
     
-    <command interpreter="python">hyphy_nj_tree_wrapper.py $input1 $out_file1 $out_file2 $distance_metric ${GALAXY_DATA_INDEX_DIR}</command>
+    <command interpreter="python">hyphy_nj_tree_wrapper.py $input1 $out_file1 $out_file2 $distance_metric ${GALAXY_DATA_INDEX_DIR} ${GALAXY_TMP_FILE_DIR}</command>
     
     <inputs>
         <page>

@@ -143,7 +143,7 @@ def maf_index_by_uid( maf_uid, index_location_file ):
     return None
 
 #builds and returns (index, index_filename) for specified maf_file
-def build_maf_index( maf_file, species = None ):
+def build_maf_index( maf_file, species=None, directory=None ):
     indexes = bx.interval_index_file.Indexes()
     try:
         maf_reader = bx.align.maf.Reader( open( maf_file ) )
@@ -156,7 +156,7 @@ def build_maf_index( maf_file, species = None ):
                 if species is not None and c.src.split( "." )[0] not in species:
                     continue
                 indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
-        fd, index_filename = tempfile.mkstemp()
+        fd, index_filename = tempfile.mkstemp( dir=directory )
         out = os.fdopen( fd, 'w' )
         indexes.write( out )
         out.close()

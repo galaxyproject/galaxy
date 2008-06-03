@@ -223,10 +223,10 @@ class Data( object ):
 
 class Text( Data ):
 
-    def write_from_stream(self, dataset, stream):
+    def write_from_stream( self, dataset, stream, directory=None ):
         """Writes data from a stream"""
         # write it twice for now 
-        fd, temp_name = tempfile.mkstemp()
+        fd, temp_name = tempfile.mkstemp( dir=directory )
         while 1:
             chunk = stream.read(1048576)
             if not chunk:
@@ -241,9 +241,9 @@ class Text( Data ):
             fp.write(line)
         fp.close()
 
-    def set_raw_data(self, dataset, data):
+    def set_raw_data( self, dataset, data, directory=None ):
         """Saves the data on the disc"""
-        fd, temp_name = tempfile.mkstemp()
+        fd, temp_name = tempfile.mkstemp( dir=directory )
         os.write(fd, data)
         os.close(fd)
 

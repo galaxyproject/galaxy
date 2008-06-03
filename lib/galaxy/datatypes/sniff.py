@@ -12,11 +12,11 @@ def get_test_fname(fname):
     full_path = os.path.join(path, 'test', fname)
     return full_path
 
-def stream_to_file(stream):
+def stream_to_file( stream, directory=None ):
     """
     Writes a stream to a temporary file, returns the temporary file's name
     """
-    fd, temp_name = tempfile.mkstemp()
+    fd, temp_name = tempfile.mkstemp( dir=directory )
     while 1:
         chunk = stream.read(1048576)
         if not chunk:
@@ -25,7 +25,7 @@ def stream_to_file(stream):
     os.close(fd)
     return temp_name
 
-def convert_newlines( fname ):
+def convert_newlines( fname, directory=None ):
     """
     Converts in place a file from universal line endings 
     to Posix line endings.
@@ -37,7 +37,7 @@ def convert_newlines( fname ):
     >>> file(fname).read()
     '1 2\\n3 4\\n'
     """
-    fd, temp_name = tempfile.mkstemp()
+    fd, temp_name = tempfile.mkstemp( dir=directory )
     fp = os.fdopen( fd, "wt" )
     for i, line in enumerate( file( fname, "U" ) ):
         fp.write( "%s\n" % line.rstrip( "\r\n" ) )
@@ -46,7 +46,7 @@ def convert_newlines( fname ):
     # Return number of lines in file.
     return i + 1
 
-def sep2tabs(fname, patt="\\s+"):
+def sep2tabs( fname, patt="\\s+", directory=None ):
     """
     Transforms in place a 'sep' separated file to a tab separated one
 
@@ -58,7 +58,7 @@ def sep2tabs(fname, patt="\\s+"):
     '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile( patt )
-    fd, temp_name = tempfile.mkstemp()
+    fd, temp_name = tempfile.mkstemp( dir=directory )
     fp = os.fdopen( fd, "wt" )
     for i, line in enumerate( file( fname ) ):
         line  = line.rstrip( '\r\n' )
@@ -69,7 +69,7 @@ def sep2tabs(fname, patt="\\s+"):
     # Return number of lines in file.
     return i + 1
 
-def convert_newlines_sep2tabs( fname, patt="\\s+" ):
+def convert_newlines_sep2tabs( fname, patt="\\s+", directory=None ):
     """
     Combines above methods: convert_newlines() and sep2tabs()
     so that files do not need to be read twice
@@ -82,7 +82,7 @@ def convert_newlines_sep2tabs( fname, patt="\\s+" ):
     '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile( patt )
-    fd, temp_name = tempfile.mkstemp()
+    fd, temp_name = tempfile.mkstemp( dir=directory )
     fp = os.fdopen( fd, "wt" )
     for i, line in enumerate( file( fname, "U" ) ):
         line  = line.rstrip( '\r\n' )

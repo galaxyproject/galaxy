@@ -78,15 +78,6 @@ taxRank = {
 def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
-
-
-db = tempfile.NamedTemporaryFile('w')
-
-try:
-    con = sqlite.connect(db.name)
-    cur = con.cursor()
-except:
-    stop_err('Cannot connect to %s\n') % db.name
     
 try:
     tax_file   = open(sys.argv[1], 'r')
@@ -100,10 +91,18 @@ try:
     else:
         stop_err('Please specify "reads" or "counts" for output format\n')
     out_file = open(sys.argv[5], 'w')
-    
+    GALAXY_TMP_FILE_DIR = sys.argv[6]
 except:
-    stop_err('Check arguments\n')
-    
+    stop_err('Check arguments')
+
+db = tempfile.NamedTemporaryFile( mode='w', dir=GALAXY_TMP_FILE_DIR )
+
+try:
+    con = sqlite.connect(db.name)
+    cur = con.cursor()
+except:
+    stop_err('Cannot connect to %s\n') % db.name
+
 if taxa[0] == 'None': stop_err('Please, use checkboxes to specify taxonomic ranks.\n')
 
 sql = ""

@@ -4,6 +4,8 @@ import os, sys
 from galaxy import eggs
 from galaxy.tools.util import hyphy_util
 
+# Directory to be used when creating temporary files
+tmp_file_dir = sys.argv.pop()
 #Retrieve hyphy path, this will need to be the same across the cluster
 tool_data = sys.argv.pop()
 HYPHY_PATH = os.path.join( tool_data, "HYPHY" )
@@ -19,7 +21,7 @@ model_options = sys.argv[6].strip()
 
 #Set up Temporary files for hyphy run
 #set up tree file
-tree_filename = hyphy_util.get_filled_temp_filename(tree_contents)
+tree_filename = hyphy_util.get_filled_temp_filename( tree_contents, directory=tmp_file_dir )
 
 #Guess if this is a single or multiple FASTA input file
 found_blank = False
@@ -33,10 +35,10 @@ for line in open(input_filename):
     else: found_blank = False
 
 #set up BranchLengths file
-BranchLengths_filename = hyphy_util.get_filled_temp_filename(hyphy_util.BranchLengths)
+BranchLengths_filename = hyphy_util.get_filled_temp_filename( hyphy_util.BranchLengths, directory=tmp_file_dir )
 if is_multiple: 
     os.unlink(BranchLengths_filename)
-    BranchLengths_filename = hyphy_util.get_filled_temp_filename(hyphy_util.BranchLengthsMF)
+    BranchLengths_filename = hyphy_util.get_filled_temp_filename( hyphy_util.BranchLengthsMF, directory=tmp_file_dir )
     print "Multiple Alignment Analyses"
 else: print "Single Alignment Analyses"
 

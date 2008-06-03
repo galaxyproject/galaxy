@@ -19,6 +19,7 @@ def __main__():
     align_len = sys.argv[4]             # -h
     mismatch = sys.argv[5]              # -m
     output_file = sys.argv[6]
+    GALAXY_TMP_FILE_DIR = sys.argv[7]
     
     # first guess the read length
     guess_read_len = 0
@@ -66,7 +67,7 @@ def __main__():
         stop_err("No sequences for %s are available for search, please report this error." %(target_path))
    
     for detail_file_path in all_files:
-        output_tempfile = tempfile.NamedTemporaryFile().name
+        output_tempfile = tempfile.NamedTemporaryFile( dir=GALAXY_TMP_FILE_DIR ).name
         command = "rmap -h %s -w %s -m %s -c %s %s -o %s 2>&1" % ( align_len, read_len, mismatch, detail_file_path, infile, output_tempfile )
         #print command
         try:

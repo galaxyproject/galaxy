@@ -44,6 +44,8 @@ database_file = database/universe.sqlite
 file_path = database/files
 # Temporary storage for additional datasets, this should be shared through the cluster
 new_file_path = database/tmp
+# Directory to be used when creating temporary files ( generally from tools )
+tmp_file_path = /tmp
 
 # Tools
 tool_config_file = tool_conf.xml

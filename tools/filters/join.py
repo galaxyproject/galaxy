@@ -12,8 +12,8 @@ import  optparse, os, sys, tempfile, struct
 import psyco_full
 
 class OffsetList:
-    def __init__( self, filesize = 0, fmt = None ):
-        self.file = tempfile.NamedTemporaryFile( 'w+b' )
+    def __init__( self, filesize=0, fmt=None, directory=None ):
+        self.file = tempfile.NamedTemporaryFile( mode='w+b', dir=directory )
         if fmt:
             self.fmt = fmt
         elif filesize and filesize <= sys.maxint * 2:
@@ -59,11 +59,12 @@ class OffsetList:
             self.file = temp_file
 
 class SortedOffsets( OffsetList ):
-    def __init__( self, indexed_filename, column, split = None ):
-        OffsetList.__init__( self, os.stat( indexed_filename ).st_size )
+    def __init__( self, indexed_filename, column, tmp_file_dir, split = None ):
+        OffsetList.__init__( self, filesize=os.stat( indexed_filename ).st_size, directory=tmp_file_dir )
         self.indexed_filename = indexed_filename
         self.indexed_file = open( indexed_filename, 'rb' )
         self.column = column
+        self.tmp_file_dir = tmp_file_dir
         self.split = split
         self.last_identifier = None
         self.last_identifier_merged = None
@@ -74,7 +75,7 @@ class SortedOffsets( OffsetList ):
         keys.sort()
         identifier2 = keys.pop( 0 )
         
-        result_offsets = OffsetList( fmt = self.fmt )
+        result_offsets = OffsetList( fmt=self.fmt, directory=self.tmp_file_dir )
         offsets1 = enumerate( self.get_offsets() )
         try:
             index1, offset1 = offsets1.next()
@@ -124,10 +125,11 @@ class SortedOffsets( OffsetList ):
 
 #indexed set of offsets, index is built on demand
 class OffsetIndex:
-    def __init__( self, filename, column, split = None, index_depth = 3 ):
+    def __init__( self, filename, column, tmp_file_dir, split = None, index_depth = 3 ):
         self.filename = filename
         self.file = open( filename, 'rb' )
         self.column = column
+        self.tmp_file_dir = tmp_file_dir
         self.split = split
         self._offsets = {}
         self._index = None
@@ -192,7 +194,7 @@ class OffsetIndex:
         while True:
             if not keys:
                 if first_char not in self._offsets:
-                    self._offsets[first_char] = SortedOffsets( self.filename, self.column, self.split )
+                    self._offsets[first_char] = SortedOffsets( self.filename, self.column, self.tmp_file_dir, split=self.split )
                 self._offsets[first_char].merge_with_dict( temp )
                 return
             identifier = keys.pop( 0 )
@@ -200,14 +202,14 @@ class OffsetIndex:
                 temp[identifier] = d[identifier]
             else:
                 if first_char not in self._offsets:
-                    self._offsets[first_char] = SortedOffsets( self.filename, self.column, self.split )
+                    self._offsets[first_char] = SortedOffsets( self.filename, self.column, self.tmp_file_dir, split=self.split )
                 self._offsets[first_char].merge_with_dict( temp )
                 temp = { identifier: d[identifier] }
                 first_char = identifier[0]
 
 class BufferedIndex:
-    def __init__( self, filename, column, split = None, buffer = 1000000, index_depth = 3 ):
-        self.index = OffsetIndex( filename, column, split, index_depth )
+    def __init__( self, filename, column, tmp_file_dir, split = None, buffer = 1000000, index_depth = 3 ):
+        self.index = OffsetIndex( filename, column, tmp_file_dir, split=split, index_depth=index_depth )
         self.buffered_offsets = {}
         f = open( filename, 'rb' )
         offset = f.tell()
@@ -235,7 +237,7 @@ class BufferedIndex:
             for offset in self.buffered_offsets[identifier]:
                 yield self.index.get_line_by_offset( offset )
 
-def join_files( filename1, column1, filename2, column2, out_filename, split = None, buffer = 1000000, keep_unmatched = False, keep_partial = False, index_depth = 3 ):
+def join_files( filename1, column1, filename2, column2, out_filename, tmp_file_dir, split = None, buffer = 1000000, keep_unmatched = False, keep_partial = False, index_depth = 3 ):
     #return identifier based upon line
     def get_identifier_by_line( line, column, split = None ):
         if isinstance( line, str ):
@@ -244,7 +246,7 @@ def join_files( filename1, column1, filename2, column2, out_filename, split = No
                 return fields[column]
         return None
     out = open( out_filename, 'w+b' )
-    index = BufferedIndex( filename2, column2, split, buffer, index_depth )
+    index = BufferedIndex( filename2, column2, tmp_file_dir, split=split, buffer=buffer, index_depth=index_depth )
     for line1 in open( filename1, 'rb' ):
         identifier = get_identifier_by_line( line1, column1, split )
         if identifier:
@@ -293,6 +295,7 @@ def main():
         column1 = int( args[2] ) - 1
         column2 = int( args[3] ) - 1
         out_filename = args[4]
+        tmp_file_dir = args[5]
     except:
         print >> sys.stderr, "Error parsing command line."
         sys.exit()
@@ -300,6 +303,6 @@ def main():
     #Character for splitting fields and joining lines
     split = "\t"
     
-    return join_files( filename1, column1, filename2, column2, out_filename, split, options.buffer, options.keep_unmatched, options.keep_partial, options.index_depth )
+    return join_files( filename1, column1, filename2, column2, out_filename, tmp_file_dir, split, options.buffer, options.keep_unmatched, options.keep_partial, options.index_depth )
 
 if __name__ == "__main__": main()

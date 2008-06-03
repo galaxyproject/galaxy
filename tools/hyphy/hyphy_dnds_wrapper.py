@@ -4,6 +4,8 @@ import os, sys
 from galaxy import eggs
 from galaxy.tools.util import hyphy_util
 
+# Directory to be used when creating temporary files
+tmp_file_dir = sys.argv.pop()
 #Retrieve hyphy path, this will need to be the same across the cluster
 tool_data = sys.argv.pop()
 HYPHY_PATH = os.path.join( tool_data, "HYPHY" )
@@ -20,15 +22,15 @@ if tree_contents == "":
     print >> sys.stderr, "Please specify a valid tree definition."
     sys.exit()
         
-tree_filename = hyphy_util.get_filled_temp_filename(tree_contents)
+tree_filename = hyphy_util.get_filled_temp_filename( tree_contents, directory=tmp_file_dir )
 
 if analysis == "local":
-    fitter_filename = hyphy_util.get_filled_temp_filename(hyphy_util.SimpleLocalFitter)
+    fitter_filename = hyphy_util.get_filled_temp_filename( hyphy_util.SimpleLocalFitter, directory=tmp_file_dir )
 else:
-    fitter_filename = hyphy_util.get_filled_temp_filename(hyphy_util.SimpleGlobalFitter)
+    fitter_filename = hyphy_util.get_filled_temp_filename( hyphy_util.SimpleGlobalFitter, directory=tmp_file_dir )
 
-tabwriter_filename = hyphy_util.get_filled_temp_filename(hyphy_util.TabWriter)
-FastaReader_filename = hyphy_util.get_filled_temp_filename(hyphy_util.FastaReader)
+tabwriter_filename = hyphy_util.get_filled_temp_filename( hyphy_util.TabWriter, directory=tmp_file_dir )
+FastaReader_filename = hyphy_util.get_filled_temp_filename( hyphy_util.FastaReader, directory=tmp_file_dir )
 #setup Config file
 config_filename = hyphy_util.get_dnds_config_filename(fitter_filename, tabwriter_filename, "Universal", tree_filename, input_filename, nuc_model, output_filename, FastaReader_filename)
 

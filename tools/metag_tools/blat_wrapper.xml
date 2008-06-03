@@ -5,6 +5,7 @@
     #else:#blat_wrapper.py 1 $source.input_target $input_query $output1 $iden $tile_size $one_off
     #end if
     ${GALAXY_DATA_INDEX_DIR}
+    ${GALAXY_TMP_FILE_DIR}
   </command>
 	<inputs>
 	<conditional name="source">

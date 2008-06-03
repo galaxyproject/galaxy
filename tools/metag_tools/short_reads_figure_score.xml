@@ -1,7 +1,7 @@
 <tool id="quality_score_distribution" name="Build distribution of base quality">
 <description>values</description>
 
-<command interpreter="python">short_reads_figure_score.py $input1 $output1 </command>
+<command interpreter="python">short_reads_figure_score.py $input1 $output1 ${GALAXY_TMP_FILE_DIR}</command>
 
 <inputs>
 <page>

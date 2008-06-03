@@ -29,11 +29,12 @@ try:
     font_size = sys.argv[4]
     max_leaves = sys.argv[5]
     dups = sys.argv[6]
+    GALAXY_TMP_FILE_DIR = sys.argv[7]
 except:
     stop_err('Check arguments\n')
 
-newick_file = tempfile.NamedTemporaryFile('w')    
-ps_file = tempfile.NamedTemporaryFile('w')
+newick_file = tempfile.NamedTemporaryFile( mode='w', dir=GALAXY_TMP_FILE_DIR )    
+ps_file = tempfile.NamedTemporaryFile( mode='w', dir=GALAXY_TMP_FILE_DIR )
 
 # Execute taxonomy2tree
     

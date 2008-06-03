@@ -1,6 +1,6 @@
 <tool id="Summary_Statistics1" name="Summary Statistics">
   <description>for any numerical column</description>
-  <command interpreter="python">gsummary.py $input $out_file1 "$cond"</command>
+  <command interpreter="python">gsummary.py $input $out_file1 "$cond" ${GALAXY_TMP_FILE_DIR}</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Summary statistics on" help="Query missing? See TIP below"/>
     <param name="cond" size="30" type="text" value="c5" label="Column or expression" help="See syntax below">

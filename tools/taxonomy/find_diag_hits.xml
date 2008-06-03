@@ -1,6 +1,6 @@
 <tool id="find_diag_hits" name="Find diagnostic hits" version="1.0.0">
     <description></description>
-    <command interpreter="python">find_diag_hits.py $input1 $id_col $rank_list $out_format $out_file1</command>
+    <command interpreter="python">find_diag_hits.py $input1 $id_col $rank_list $out_format $out_file1 ${GALAXY_TMP_FILE_DIR}</command>
     <inputs>
         <param format="taxonomy" name="input1" type="data" label="Find diagnostic hits in"/>
         <param name="id_col" type="data_column" data_ref="input1" numerical="False" label="Select column with sequence id" />

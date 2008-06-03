@@ -2,7 +2,7 @@
 <description>from short reads</description>
 
 <command interpreter="python">
- short_reads_trim_seq.py $trim $length $output1 $input1 $input2 $sequencing_method_choice.input3
+ short_reads_trim_seq.py $trim $length $output1 $input1 $input2 $sequencing_method_choice.input3 ${GALAXY_TMP_FILE_DIR}
 </command>
 <inputs>
 <page>

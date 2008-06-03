@@ -13,9 +13,9 @@ def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
 
-def unzip( filename ):
+def unzip( filename, directory=None ):
     zip_file = zipfile.ZipFile( filename, 'r' )
-    tmpfilename = tempfile.NamedTemporaryFile().name
+    tmpfilename = tempfile.NamedTemporaryFile( dir=directory ).name
     for name in zip_file.namelist():
         file( tmpfilename, 'a' ).write( zip_file.read( name ) )
     zip_file.close()
@@ -90,16 +90,17 @@ def __main__():
     infile_seq_name = sys.argv[4].strip()
     infile_score_name = sys.argv[5].strip()
     arg = sys.argv[6].strip()
+    GALAXY_TMP_FILE_DIR = sys.argv[7]
 
     infile_seq_is_zipped = False
     if zipfile.is_zipfile( infile_seq_name ):
         infile_seq_is_zipped = True
-        seq_infile_name = unzip( infile_seq_name ) 
+        seq_infile_name = unzip( infile_seq_name, directory=GALAXY_TMP_FILE_DIR ) 
     else: seq_infile_name = infile_seq_name
     infile_score_is_zipped = False
     if zipfile.is_zipfile( infile_score_name ):
         infile_score_is_zipped = True 
-        score_infile_name = unzip(infile_score_name)
+        score_infile_name = unzip( infile_score_name, directory=GALAXY_TMP_FILE_DIR )
     else: score_infile_name = infile_score_name
     
 

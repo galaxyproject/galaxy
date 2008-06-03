@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #Retreives data from GMOD and stores in a file. GBrowse parameters are provided in the input/output file.
-import urllib, sys, os, gzip, tempfile, shutil
+import urllib, sys
 from galaxy import eggs
 from galaxy.datatypes import data
 

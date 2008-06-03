@@ -79,7 +79,8 @@ class UploadToolAction( object ):
 
     def add_file( self, trans, file_obj, file_name, file_type, dbkey, info=None, space_to_tab=False ):
         data_type = None
-        temp_name = sniff.stream_to_file( file_obj )
+        tmp_file_path = trans.app.config.tmp_file_path
+        temp_name = sniff.stream_to_file( file_obj, directory=tmp_file_path )
         
         # See if we have an empty file
         if not os.path.getsize( temp_name ) > 0:
@@ -92,7 +93,7 @@ class UploadToolAction( object ):
         elif is_gzipped and is_valid:
             #We need to decompress the temp_name file
             CHUNK_SIZE = 2**20 # 1Mb   
-            fd, uncompressed = tempfile.mkstemp()   
+            fd, uncompressed = tempfile.mkstemp( dir=tmp_file_path )   
             gzipped_file = gzip.GzipFile( temp_name )
             while 1:
                 try:
@@ -146,7 +147,7 @@ class UploadToolAction( object ):
 
         if data_type != 'binary' and data_type != 'zip':
             if space_to_tab:
-                self.line_count = sniff.convert_newlines_sep2tabs( temp_name )
+                self.line_count = sniff.convert_newlines_sep2tabs( temp_name, directory=tmp_file_path )
             else:
                 self.line_count = sniff.convert_newlines( temp_name )
             if file_type == 'auto':
