@@ -850,8 +850,9 @@ class DrillDownSelectToolParameter( ToolParameter ):
         # Dynamic options are not yet supported in workflow, allow 
         # specifying the value as text for now.
         if self.is_dynamic and trans.workflow_building_mode:
-            assert isinstance( value, UnvalidatedValue )
-            value = value.value
+            if value is not None:
+                assert isinstance( value, UnvalidatedValue )
+                value = value.value
             if self.multiple:
                 if value is None:
                     value = ""
@@ -947,12 +948,17 @@ class DrillDownSelectToolParameter( ToolParameter ):
             value = value.value
         else:
             suffix = ""
-        if not isinstance( value, list ):
+        if not value:
+            value = []
+        elif not isinstance( value, list ):
             value = [ value ]
         # FIXME: Currently only translating values back to labels if they
         #        are not dynamic
         if self.is_dynamic:
-            rval = [ value ]
+            if value:
+                rval = [ value ]
+            else:
+                rval = []
         else:
             rval = []
             for val in value:

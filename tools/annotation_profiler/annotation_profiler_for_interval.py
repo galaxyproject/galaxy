@@ -153,6 +153,7 @@ class TableCoverageSummary:
             end = 0
             last_end_index = {}
             while True:
+                if end >= chromosome_bitset.size: break
                 start = chromosome_bitset.next_set( end )
                 if start >= chromosome_bitset.size: break
                 end = chromosome_bitset.next_clear( start )
