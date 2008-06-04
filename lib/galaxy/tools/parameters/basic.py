@@ -1178,7 +1178,7 @@ class DataToolParameter( ToolParameter ):
         converter_safe = [True]
         def visitor( prefix, input, value ):
             if isinstance( input, SelectToolParameter ) and self.name in input.get_dependencies():
-                if input.is_dynamic and ( self.dynamic_options or ( not self.dynamic_options and not self.options ) or not input.options.converter_safe ):
+                if input.is_dynamic and ( input.dynamic_options or ( not input.dynamic_options and not input.options ) or not input.options.converter_safe ):
                     converter_safe[0] = False #This option does not allow for conversion, i.e. uses contents of dataset file to generate options
         self.tool.visit_inputs( other_values, visitor )
         return False not in converter_safe
