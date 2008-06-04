@@ -8,7 +8,6 @@
       $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary
     #end if
     ${GALAXY_DATA_INDEX_DIR}
-    ${GALAXY_TMP_FILE_DIR}
   </command>
   <inputs>
     <param format="interval" name="input1" label="Interval File" type="data">

@@ -31,11 +31,10 @@ def __main__():
     else: summary = False
 
     mafIndexFile = "%s/maf_index.loc" % sys.argv[9]
-    tmpFileDir = sys.argv[10]
     index = index_filename = None
     if maf_source_type == "user":
         #index maf for use here
-        index, index_filename = maf_utilities.build_maf_index( input_maf_filename, species=[dbkey], directory=tmpFileDir )
+        index, index_filename = maf_utilities.build_maf_index( input_maf_filename, species = [dbkey] )
         if index is None:
             print >>sys.stderr, "Your MAF file appears to be malformed."
             sys.exit()

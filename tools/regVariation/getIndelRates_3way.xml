@@ -1,7 +1,7 @@
 <tool id="getIndelRates_3way" name="Estimate Indel Rates" version="1.0.0">
   <description> for 3-way alignments</description>
   <command interpreter="python">
-  	getIndelRates_3way.py $input1 $out_file1 $winsize $species ${GALAXY_TMP_FILE_DIR}
+  	getIndelRates_3way.py $input1 $out_file1 $winsize $species
   </command>
   <inputs>
     <page>

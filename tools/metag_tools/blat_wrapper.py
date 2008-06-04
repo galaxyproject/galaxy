@@ -67,7 +67,6 @@ def __main__():
         stop_err('Invalid value for mismatch numbers in the word')
         
     GALAXY_DATA_INDEX_DIR = sys.argv[8]
-    GALAXY_TMP_FILE_DIR = sys.argv[9]
 
     all_files = []
     if source_format == '0':
@@ -96,7 +95,7 @@ def __main__():
         all_files = [target_file]
         
     for detail_file_path in all_files:
-        output_tempfile = tempfile.NamedTemporaryFile( dir=GALAXY_TMP_FILE_DIR ).name
+        output_tempfile = tempfile.NamedTemporaryFile().name
         command = "blat %s %s %s -oneOff=%s -tileSize=%s -minIdentity=%s -mask=lower -noHead -out=pslx 2>&1" % ( detail_file_path, query_file, output_tempfile, one_off, tile_size, min_iden )
         os.system( command )
         os.system( 'cat %s >> %s' % ( output_tempfile, output_file ) )

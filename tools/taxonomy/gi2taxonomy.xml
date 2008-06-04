@@ -1,6 +1,6 @@
 <tool id="Fetch Taxonomic Ranks" name="Fetch taxonomic representation" version="1.1.0">
   <description></description>
-  <command interpreter="python">gi2taxonomy.py $input $giField $idField $out_file1 ${GALAXY_DATA_INDEX_DIR} ${GALAXY_TMP_FILE_DIR}</command>
+  <command interpreter="python">gi2taxonomy.py $input $giField $idField $out_file1 ${GALAXY_DATA_INDEX_DIR}</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Show taxonomic representation for"></param>
     <param name="giField" label="GIs column" type="data_column" data_ref="input" numerical="True" help="select column containing GI numbers"/>

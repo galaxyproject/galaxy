@@ -1,7 +1,7 @@
 <tool id="hist_high_quality_score" name="Histogram">
 <description> of high quality score reads </description>
 
-<command interpreter="python">short_reads_figure_high_quality_length.py $input1 $output1 $input2 ${GALAXY_TMP_FILE_DIR}</command>
+<command interpreter="python">short_reads_figure_high_quality_length.py $input1 $output1 $input2</command>
 
 <inputs>
 <page>

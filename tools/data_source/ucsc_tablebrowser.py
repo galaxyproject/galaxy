@@ -20,7 +20,6 @@ def check_gzip( filename ):
 
 def __main__():
     filename = sys.argv[1]
-    GALAXY_TMP_FILE_DIR = sys.argv[2]
     params = {}
     
     for line in open(filename, 'r'):
@@ -50,7 +49,7 @@ def __main__():
         out.write( chunk )
     out.close()
     if check_gzip( filename ):
-        fd, uncompressed = tempfile.mkstemp( dir=GALAXY_TMP_FILE_DIR )
+        fd, uncompressed = tempfile.mkstemp()
         gzipped_file = gzip.GzipFile( filename )
         while 1:
             try:

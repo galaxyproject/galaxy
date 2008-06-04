@@ -1,6 +1,6 @@
 <tool id="megablast_wrapper" name="Run megablast" version="1.0.0">
 	<description></description>
-	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $evalue_cutoff $filter_query ${GALAXY_DATA_INDEX_DIR} ${GALAXY_TMP_FILE_DIR}</command>
+	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $evalue_cutoff $filter_query ${GALAXY_DATA_INDEX_DIR}</command>
 	<inputs>
 		<param name="source_select" type="select" display="radio" label="Choose target database">
 			<options from_file="blastdb.loc">

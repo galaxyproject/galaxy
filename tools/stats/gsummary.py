@@ -23,7 +23,6 @@ def main():
         datafile = sys.argv[1]
         outfile_name = sys.argv[2]
         expression = sys.argv[3]
-        GALAXY_TMP_FILE_DIR = sys.argv[4]
     except: 
         stop_err( 'Usage: python gsummary.py input_file ouput_file expression' )
 
@@ -52,7 +51,7 @@ def main():
         except:
             pass
  
-    tmp_file = tempfile.NamedTemporaryFile( mode='w+b', dir=GALAXY_TMP_FILE_DIR )
+    tmp_file = tempfile.NamedTemporaryFile( 'w+b' )
     # Write the R header row to the temporary file
     hdr_str = "\t".join( "c%s" % str( col+1 ) for col in cols )
     tmp_file.write( "%s\n" % hdr_str )

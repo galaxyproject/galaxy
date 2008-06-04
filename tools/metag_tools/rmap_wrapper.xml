@@ -1,8 +1,8 @@
 <tool id="rmap_wrapper" name="RMAP" version="1.0.0">
     <description>for Solexa Short Reads Alignment</description>
     <command interpreter="python">
-    #if $trim.choice=="No": #rmap_wrapper.py $database $input_seq 0 $align_len $mismatch $output1 ${GALAXY_TMP_FILE_DIR}
-    #else: #rmap_wrapper.py $database $input_seq $trim.read_len $align_len $mismatch $output1 ${GALAXY_TMP_FILE_DIR}
+    #if $trim.choice=="No": #rmap_wrapper.py $database $input_seq 0 $align_len $mismatch $output1
+    #else: #rmap_wrapper.py $database $input_seq $trim.read_len $align_len $mismatch $output1
     #end if
     </command>
     <inputs>

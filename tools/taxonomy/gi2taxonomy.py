@@ -137,7 +137,6 @@ try:
     name_col      = int( sys.argv[3] ) - 1 # column containing sequence names
     out_f         = sys.argv[4]            # output file
     tool_data     = sys.argv[5]
-    GALAXY_TMP_FILE_DIR = sys.argv[6]
 except:
     stop_err('Check arguments\n')
 
@@ -162,7 +161,7 @@ g2n =  gi_name_to_sorted_list(in_f, gi_col, name_col)
 if len(g2n) == 0:
     stop_err('No valid GI-containing fields. Please, check your column assignments.\n')
 
-tb_F = tempfile.NamedTemporaryFile( mode='w', dir=GALAXY_TMP_FILE_DIR )
+tb_F = tempfile.NamedTemporaryFile('w')
 
 get_taxId( GI2TAX, collapse_repeating_gis( g2n ), tb_F.name )
 

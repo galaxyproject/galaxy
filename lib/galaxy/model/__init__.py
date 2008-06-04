@@ -174,7 +174,6 @@ class Dataset( object ):
                     EMPTY = 'empty',
                     ERROR = 'error',
                     DELETED = 'deleted')
-    # The following is used for functional tests
     file_path = "/tmp/"
     engine = None
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 

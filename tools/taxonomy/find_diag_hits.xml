@@ -1,6 +1,6 @@
 <tool id="find_diag_hits" name="Find diagnostic hits" version="1.0.0">
     <description></description>
-    <command interpreter="python">find_diag_hits.py $input1 $id_col $rank_list $out_format $out_file1 ${GALAXY_TMP_FILE_DIR}</command>
+    <command interpreter="python">find_diag_hits.py $input1 $id_col $rank_list $out_format $out_file1</command>
     <inputs>
         <param format="taxonomy" name="input1" type="data" label="Find diagnostic hits in"/>
         <param name="id_col" type="data_column" data_ref="input1" numerical="False" label="Select column with sequence id" />
@@ -58,7 +58,8 @@ When performing metagenomic analyses it is often necessary to identify sequence 
 
 Suppose the *Taxonomy manipulation->Fetch Taxonomic Ranks* generated the following taxonomy representation::
 
-    read1 2      root Eukaryota Metazoa n n Chordata   Craniata Gnathostomata Mammalia n        Laurasiatheria   n           Ruminantia  n             Bovidae     Bovinae      n          n          Bos        n Bos taurus        n    read2 12585	 root Eukaryota Metazoa n n Chordata   Craniata Gnathostomata Mammalia n        Euarchontoglires Primates	 Haplorrhini Hominoidea    Hominidae   n            n          n          Homo       n Homo sapiens      n 
+    read1 2      root Eukaryota Metazoa n n Chordata   Craniata Gnathostomata Mammalia n        Laurasiatheria   n           Ruminantia  n             Bovidae     Bovinae      n          n          Bos        n Bos taurus        n
+    read2 12585	 root Eukaryota Metazoa n n Chordata   Craniata Gnathostomata Mammalia n        Euarchontoglires Primates	 Haplorrhini Hominoidea    Hominidae   n            n          n          Homo       n Homo sapiens      n 
     read1 58615  root Eukaryota Metazoa n n Arthropoda n        Hexapoda      Insecta  Neoptera Amphiesmenoptera Lepidoptera Glossata    Papilionoidea Nymphalidae Nymphalinae  Melitaeini Phyciodina Anthanassa n Anthanassa otanes n 
     read3 56785	 root Eukaryota Metazoa n n Chordata   Craniata Gnathostomata Mammalia n        Euarchontoglires Primates	 Haplorrhini Hominoidea    Hominidae   n            n          n          Homo       n Homo sapiens      n   
 

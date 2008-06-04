@@ -1,6 +1,6 @@
 <tool id="Interval2Maf_pairwise1" name="Extract Pairwise MAF blocks">
   <description>given a set of genomic intervals</description>
-  <command interpreter="python">interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafType=$mafType --interval_file=$input1 --output_file=$out_file1 --indexLocation=${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc --mafTmpFileDir=${GALAXY_TMP_FILE_DIR}</command>
+  <command interpreter="python">interval2maf.py --dbkey=$input1_dbkey --chromCol=$input1_chromCol --startCol=$input1_startCol --endCol=$input1_endCol --strandCol=$input1_strandCol --mafType=$mafType --interval_file=$input1 --output_file=$out_file1 --indexLocation=${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc</command>
   <inputs>
     <param name="input1" type="data" format="interval" label="Interval File">
       <validator type="unspecified_build" />

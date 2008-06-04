@@ -1,8 +1,8 @@
 <tool id="barchart_gnuplot" name="Bar chart">
   <description>for multiple columns</description>
   <command interpreter="python">
-    #if $xtic.userSpecified == "Yes": #bar_chart.py $input $xtic.xticColumn $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size" ${GALAXY_TMP_FILE_DIR}
-    #else:                            #bar_chart.py $input 0 $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size" ${GALAXY_TMP_FILE_DIR}
+    #if $xtic.userSpecified == "Yes": #bar_chart.py $input $xtic.xticColumn $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size"
+    #else:                            #bar_chart.py $input 0 $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size"
     #end if
   </command>
   <inputs>
@@ -45,7 +45,10 @@
 
 This tool builds a bar chart on one or more columns. Suppose you have dataset like this one::
 
-  Gene1	10	15  Gene2	20	14  Gene3	67	45  Gene4	55	12
+  Gene1	10	15
+  Gene2	20	14
+  Gene3	67	45
+  Gene4	55	12
 
 Graphing columns 2 and 3 while using column 1 for X Tick Labels will produce the following plot:
 

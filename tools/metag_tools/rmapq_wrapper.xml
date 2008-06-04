@@ -1,8 +1,8 @@
 <tool id="rmapq_wrapper" name="RMAPQ" version="1.0.0">
     <description>for Solexa Short Reads Alignment with Quality Scores</description>
     <command interpreter="python">
-    #if $trim.choice=="No": #rmapq_wrapper.py $database $input_seq $input_score $high_score $high_len 0 $align_len $mismatch $output1 ${GALAXY_TMP_FILE_DIR}
-    #else: #rmapq_wrapper.py $database $input_seq $input_score $high_score $high_len $trim.read_len $align_len $mismatch $output1 ${GALAXY_TMP_FILE_DIR}
+    #if $trim.choice=="No": #rmapq_wrapper.py $database $input_seq $input_score $high_score $high_len 0 $align_len $mismatch $output1
+    #else: #rmapq_wrapper.py $database $input_seq $input_score $high_score $high_len $trim.read_len $align_len $mismatch $output1
     #end if
     </command>
     <inputs>

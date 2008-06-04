@@ -11,15 +11,14 @@ def stop_err(msg):
     sys.exit()
 
 def main():
-    GALAXY_TMP_FILE_DIR = sys.argv[1]
-    inputfile = sys.argv[3]
+    inputfile = sys.argv[2]
     
     ops = []
     cols = []
     rounds = []
     elems = []
     
-    for var in sys.argv[5:]:
+    for var in sys.argv[4:]:
         ops.append(var.split()[0])
         cols.append(var.split()[1])
         rounds.append(var.split()[2])
@@ -43,7 +42,7 @@ def main():
         stop_err( "The data in your input dataset is either missing or not formatted properly." )
     
     try:
-        group_col = int( sys.argv[4] )-1
+        group_col = int( sys.argv[3] )-1
     except:
         stop_err( "Group column not specified." )
     
@@ -61,7 +60,7 @@ def main():
                     msg = "Operation '%s' cannot be performed on non-numeric data." %ops[k]
                 stop_err( msg )
     
-    tmpfile = tempfile.NamedTemporaryFile( dir=GALAXY_TMP_FILE_DIR )
+    tmpfile = tempfile.NamedTemporaryFile()
     
     try:
         """
@@ -87,7 +86,7 @@ def main():
     invalid_line = ''
     invalid_value = ''
     invalid_column = 0
-    fout = open(sys.argv[2], "w")
+    fout = open(sys.argv[1], "w")
     
     for ii, line in enumerate( file( tmpfile.name )):
         if line and not line.startswith( '#' ):

@@ -55,7 +55,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
         #check for missing meta data, if all there, comment first line and process file
         if not data.missing_meta():
             line_ctr = -1
-            temp = tempfile.NamedTemporaryFile( mode='w', dir=app.config.tmp_file_path )
+            temp = tempfile.NamedTemporaryFile('w')
             temp_filename = temp.name
             temp.close()
             temp = open(temp_filename,'w')

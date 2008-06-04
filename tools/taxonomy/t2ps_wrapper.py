@@ -29,27 +29,39 @@ try:
     font_size = sys.argv[4]
     max_leaves = sys.argv[5]
     dups = sys.argv[6]
-    GALAXY_TMP_FILE_DIR = sys.argv[7]
 except:
     stop_err('Check arguments\n')
 
-newick_file = tempfile.NamedTemporaryFile( mode='w', dir=GALAXY_TMP_FILE_DIR )    
-ps_file = tempfile.NamedTemporaryFile( mode='w', dir=GALAXY_TMP_FILE_DIR )
+newick_file = tempfile.NamedTemporaryFile('w')    
+ps_file = tempfile.NamedTemporaryFile('w')
 
 # Execute taxonomy2tree
     
 try:
     t2t_cmd = 'taxonomy2tree %s %s %s /dev/null 1 &> /dev/null' % ( tree_file, max_tree_level, newick_file.name )
-    retcode = subprocess.call( t2t_cmd, shell=True )    if retcode < 0:        print >>sys.stderr, "Execution of taxonomy2tree terminated by signal", -retcodeexcept OSError, e:    print >>sys.stderr, "Execution of taxonomy2tree failed:", e
+    retcode = subprocess.call( t2t_cmd, shell=True )
+    if retcode < 0:
+        print >>sys.stderr, "Execution of taxonomy2tree terminated by signal", -retcode
+except OSError, e:
+    print >>sys.stderr, "Execution of taxonomy2tree failed:", e
 
 
 # Execute tree2PS-fast
     
 try:
     t2ps_cmd = 'tree2PS-fast %s %s %s %s %s %s' % ( newick_file.name, ps_file.name, max_tree_level, font_size, max_leaves, dups )
-    retcode = subprocess.call( t2ps_cmd, shell=True )    if retcode < 0:        print >>sys.stderr, "Execution of tree2PS-fast terminated by signal", -retcodeexcept OSError, e:    print >>sys.stderr, "Execution of tree2PS-fast failed:", e
+    retcode = subprocess.call( t2ps_cmd, shell=True )
+    if retcode < 0:
+        print >>sys.stderr, "Execution of tree2PS-fast terminated by signal", -retcode
+except OSError, e:
+    print >>sys.stderr, "Execution of tree2PS-fast failed:", e
     
 # Convert PS to PDF
 
 try:
-    ps2pdf_cmd = 'ps2pdf %s %s' % ( ps_file.name, pdf_file )    retcode = subprocess.call( ps2pdf_cmd, shell=True )    if retcode < 0:        print >>sys.stderr, "Execution of ps2pdf terminated by signal", -retcodeexcept OSError, e:    print >>sys.stderr, "Execution of ps2pdf failed:", e
+    ps2pdf_cmd = 'ps2pdf %s %s' % ( ps_file.name, pdf_file )
+    retcode = subprocess.call( ps2pdf_cmd, shell=True )
+    if retcode < 0:
+        print >>sys.stderr, "Execution of ps2pdf terminated by signal", -retcode
+except OSError, e:
+    print >>sys.stderr, "Execution of ps2pdf failed:", e

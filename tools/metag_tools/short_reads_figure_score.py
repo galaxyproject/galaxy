@@ -17,9 +17,9 @@ def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
 
-def unzip( filename, directory=None ):
+def unzip( filename ):
     zip_file = zipfile.ZipFile( filename, 'r' )
-    tmpfilename = tempfile.NamedTemporaryFile( dir=directory ).name
+    tmpfilename = tempfile.NamedTemporaryFile().name
     for name in zip_file.namelist():
         file( tmpfilename, 'a' ).write( zip_file.read( name ) )
     zip_file.close()
@@ -64,12 +64,11 @@ def merge_to_20_datapoints( score ):
 def __main__():
     infile_score_name = sys.argv[1].strip()
     outfile_R_name = sys.argv[2].strip()
-    GALAXY_TMP_FILE_DIR = sys.argv[3]
 
     infile_is_zipped = False
     if zipfile.is_zipfile( infile_score_name ):
         infile_is_zipped = True
-        infile_name = unzip( infile_score_name, directory=GALAXY_TMP_FILE_DIR )
+        infile_name = unzip( infile_score_name )
     else:
         infile_name = infile_score_name
 
