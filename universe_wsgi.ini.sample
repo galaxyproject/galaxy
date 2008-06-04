@@ -69,7 +69,7 @@ use_lint = false
 use_interactive = true
 
 # Admin Password
-admin_pass = "galaxy"
+admin_pass = galaxy
 
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
