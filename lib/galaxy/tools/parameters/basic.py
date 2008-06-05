@@ -471,7 +471,7 @@ class SelectToolParameter( ToolParameter ):
         # Dynamic options are not yet supported in workflow, allow 
         # specifying the value as text for now.
         if self.is_dynamic and trans.workflow_building_mode \
-           and ( self.options is None or self.options.data_ref is not None ):
+           and ( self.options is None or self.options.dataset_ref_name is not None ):
             assert isinstance( value, UnvalidatedValue )
             value = value.value
             if self.multiple:
@@ -495,7 +495,7 @@ class SelectToolParameter( ToolParameter ):
         # HACK: trans may be None here if doing late validation, this is
         # treated the same as not being in workflow mode
         if self.is_dynamic and ( trans and trans.workflow_building_mode ) \
-           and ( self.options is None or self.options.data_ref is not None ):
+           and ( self.options is None or self.options.dataset_ref_name is not None ):
             if self.multiple:
                 value = value.split( "\n" )
             return UnvalidatedValue( value )
@@ -536,7 +536,7 @@ class SelectToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context ):
         # More working around dynamic options for workflow
         if self.is_dynamic and trans.workflow_building_mode \
-           and ( self.options is None or self.options.data_ref is not None ):
+           and ( self.options is None or self.options.dataset_ref_name is not None ):
             # Really the best we can do?
             return UnvalidatedValue( None )
         options = list( self.get_options( trans, context ) )
@@ -1056,7 +1056,7 @@ class DataToolParameter( ToolParameter ):
                                 assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
                                 if assoc:
                                     data = assoc[0].dataset
-                                elif not self.converter_safe( other_values ):
+                                elif not self.converter_safe( other_values, trans ):
                                     continue
                                 selected = ( value and ( data in value ) )
                                 field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
@@ -1172,7 +1172,9 @@ class DataToolParameter( ToolParameter ):
         else:
             return []
 
-    def converter_safe( self, other_values ):
+    def converter_safe( self, other_values, trans ):
+        if trans.workflow_building_mode:
+            return False
         if self.tool.config_files:
             return False #dataset conversion and configuration files currently only work with datasets that have already been converted
         converter_safe = [True]

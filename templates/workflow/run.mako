@@ -41,15 +41,15 @@ from galaxy.tools.parameters import DataToolParameter
       <% current_case = group_values['__current_case__'] %>
       <% prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
-      ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, prefix, step )}
+      ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_values, group_errors, prefix, step )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, prefix + input.name + "|", step )}
     %else:
-      ${row_for_param( input, values[ input.name ], errors, prefix, step )}
+      ${row_for_param( input, values[ input.name ], values, errors, prefix, step )}
     %endif
   %endfor  
 </%def>
 
-<%def name="row_for_param( param, value, error_dict, prefix, step )">
+<%def name="row_for_param( param, value, values, error_dict, prefix, step )">
     ## -- ${param.name} -- ${step.state.inputs} --
     %if error_dict.has_key( param.name ):
         <% cls = "form-row form-row-error" %>
@@ -66,7 +66,7 @@ from galaxy.tools.parameters import DataToolParameter
                     %>
                     Output dataset '${conn.output_name}' from step ${int(conn.output_step.order_index)+1}
                 %else:
-                    ${param.get_html_field( t, dict(), dict() ).get_html( str(step.id) + "|" + prefix )}
+                    ${param.get_html_field( t, dict(), values ).get_html( str(step.id) + "|" + prefix )}
                 %endif
             %else:
                 ${param.value_to_display_text( value, app )}

@@ -103,7 +103,7 @@ class DataMetaFilter( Filter ):
                 return dataset_value in file_value.split( self.separator )
             return file_value == dataset_value
         ref = other_values.get( self.ref_name, None )
-        assert ref is not None, "Required dependency '%s' not found in incoming values" % ref
+        assert ref is not None or trans.workflow_building_mode, "Required dependency '%s' not found in incoming values" % ref
         if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.Dataset ):
             return [] #not a valid dataset
         meta_value = ref.metadata.get( self.key, None )
@@ -146,6 +146,7 @@ class ParamValueFilter( Filter ):
     def get_dependency_name( self ):
         return self.ref_name
     def filter_options( self, options, trans, other_values ):
+        if trans.workflow_building_mode: return []
         ref = str( other_values.get( self.ref_name, None ) )
         assert ref is not None, "Required dependency '%s' not found in incoming values" % ref
         rval = []
