@@ -196,6 +196,8 @@ class DefaultToolAction( object ):
         for name, dataset in inp_data.iteritems():
             if dataset:
                 job.add_input_dataset( name, dataset )
+            else:
+                job.add_input_dataset( name, None )
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
         trans.app.model.flush()

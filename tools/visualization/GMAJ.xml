@@ -83,19 +83,19 @@ seqname = $annotation['species'].$annotation['chromosome']
 #else:
 seqname = $annotation['species']
 #end if
-#if $annotation['exons_file'].value:
+#if $annotation['exons_file'].dataset:
 exons = ${seq_count}.exons.${annotation['exons_file'].extension}
 #end if
-#if $annotation['repeats_file'].value:
+#if $annotation['repeats_file'].dataset:
 repeats = ${seq_count}.repeats.${annotation['repeats_file'].extension}
 #end if
-#if $annotation['links_file'].value:
+#if $annotation['links_file'].dataset:
 links = ${seq_count}.links.${annotation['links_file'].extension}
 #end if
-#if $annotation['underlays_file'].value:
+#if $annotation['underlays_file'].dataset:
 underlays = ${seq_count}.underlays.${annotation['underlays_file'].extension}
 #end if
-#if $annotation['highlights_file'].value:
+#if $annotation['highlights_file'].dataset:
 highlights = ${seq_count}.highlights.${annotation['highlights_file'].extension}
 #end if
 offset = $annotation['offset']
@@ -104,19 +104,19 @@ offset = $annotation['offset']
 </configfile>
     <configfile name="filenames_file">
 #for $seq_count, $annotation in $enumerate( $annotations ):
-#if $annotation['exons_file'].value:
+#if $annotation['exons_file'].dataset:
 $annotation['exons_file'] = ${seq_count}.exons.${annotation['exons_file'].extension}
 #end if
-#if $annotation['repeats_file'].value:
+#if $annotation['repeats_file'].dataset:
 $annotation['repeats_file'] = ${seq_count}.repeats.${annotation['repeats_file'].extension}
 #end if
-#if $annotation['links_file'].value:
+#if $annotation['links_file'].dataset:
 $annotation['links_file'] = ${seq_count}.links.${annotation['links_file'].extension}
 #end if
-#if $annotation['underlays_file'].value:
+#if $annotation['underlays_file'].dataset:
 $annotation['underlays_file'] = ${seq_count}.underlays.${annotation['underlays_file'].extension}
 #end if
-#if $annotation['highlights_file'].value:
+#if $annotation['highlights_file'].dataset:
 $annotation['highlights_file'] = ${seq_count}.highlights.${annotation['highlights_file'].extension}
 #end if
 #end for

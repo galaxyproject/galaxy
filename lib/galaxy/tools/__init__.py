@@ -945,6 +945,9 @@ class Tool:
                     values = input_values[ input.name ]
                     current = values["__current_case__"]
                     wrap_values( input.cases[current].inputs, values )
+                elif isinstance( input, DataToolParameter ):
+                    input_values[ input.name ] = \
+                        DatasetFilenameWrapper( input_values[ input.name ], datatypes_registry = self.app.datatypes_registry, tool = self, name = input.name )
                 else:
                     input_values[ input.name ] = \
                         InputValueWrapper( input, input_values[ input.name ], param_dict )
