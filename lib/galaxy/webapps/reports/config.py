@@ -27,7 +27,7 @@ class Configuration( object ):
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
-        self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
+        self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/reports/compiled_templates" ), self.root )
         self.admin_pass = kwargs.get('admin_pass',"galaxy")
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
