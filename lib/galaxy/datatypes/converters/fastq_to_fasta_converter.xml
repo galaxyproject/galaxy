@@ -2,7 +2,7 @@
   <description>converts Fastq file to Fasta format</description>
   <command interpreter="python">fastq_to_fasta_converter.py $input $output</command>
   <inputs>
-    <param name="input" type="data" format="fastq" label="Choose Fastq file"/>
+    <param name="input" type="data" format="fastq,fastqsolexa" label="Choose Fastq file"/>
   </inputs>
   <outputs>
     <data name="output" format="fasta"/>

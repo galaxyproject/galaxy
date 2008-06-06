@@ -83,7 +83,7 @@ def __main__():
             # peek: ascii or digits?
             val = line.split()[0]
             try: 
-                int(val)
+                check = int( val )
                 fastq_integer = True
             except:
                 fastq_integer = False
@@ -107,7 +107,7 @@ def __main__():
                 else:
                     stop_err( 'Invalid fastq format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % ( i + 1, quality_score_length, read_length ) )
                 for j, char in enumerate( line ):
-                    score = ord( char ) - qual_score_startswith    # 64
+                    score = ord( char ) - qual_score_startswith    # 33
                     qual = "%s%s " % ( qual, str( score ) )
             outfile_score.write( '%s\n' % qual )
               
