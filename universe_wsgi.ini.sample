@@ -175,7 +175,6 @@ binseq.zip = galaxy.datatypes.images:Binseq,application/zip,display_in_upload
 customtrack = galaxy.datatypes.interval:CustomTrack
 data = galaxy.datatypes.data:Data,application/octet-stream
 fasta = galaxy.datatypes.sequence:Fasta,display_in_upload
-fastq = galaxy.datatypes.sequence:Fastq,display_in_upload
 fastqsolexa = galaxy.datatypes.sequence:FastqSolexa,display_in_upload
 gff = galaxy.datatypes.interval:Gff,display_in_upload
 gff3 = galaxy.datatypes.interval:Gff3,display_in_upload

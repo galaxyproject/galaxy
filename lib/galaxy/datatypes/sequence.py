@@ -89,61 +89,6 @@ class Fasta( Sequence ):
         except:
             return False
 
-class Fastq( Sequence ):
-    """Class representing a FASTQ sequence ( the Sanger/Standard variant )"""
-    file_ext = "fastq"
-
-    def set_peek( self, dataset ):
-        Sequence.set_peek( self, dataset )
-        count = 0
-        size = 0
-        bases_regexp = re.compile("^[NGTAC]*$")
-        for line in file( dataset.file_name ):
-            if line and line.startswith( ">" ):
-                count += 1
-            elif bases_regexp.match( line ):
-                line = line.strip()
-                size += len( line )
-        if count == 1:
-            dataset.blurb = '%d bases' % size
-        else:
-            dataset.blurb = '%d sequences' % count
-
-    def sniff(self, filename):
-        """
-        Determines whether the file is in fastq format ( the Sanger/Standard variant )
-        For details, see http://maq.sourceforge.net/fastq.shtml
-
-        Note: There are two kinds of FASTQ files, known as "Sanger" (sometimes called "Standard") and Solexa
-              These differ in the representation of the quality scores
-
-        >>> fname = get_test_fname( '1.fastq' )
-        >>> Fastq().sniff( fname )
-        True
-        >>> fname = get_test_fname( '1.fastqsolexa' )
-        >>> Fastq().sniff( fname )
-        False
-        """
-        headers = get_headers( filename, None )
-        bases_regexp = re.compile( "^[NGTAC]*$" )
-        try:
-            if len( headers ) >= 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0] and headers[3][0]:
-                # Check the sequence line, make sure it contains only G/C/A/T/N
-                if not bases_regexp.match( headers[1][0] ):
-                    return False
-                # The quality score line
-                qscore = headers[3][0]
-                # In Standard/Sanger format, the quality score is a single string, whose length should be equal to the length of the sequence
-                if len( qscore ) != len( headers[1][0] ):
-                    return False 
-                #Check the quality score values - in Sanger/Standard these should be ASCII characters between "!" (0x21) and "~" (0x7E)
-                for x in qscore:
-                    if ord( x ) < 0x21 or ord( x ) > 0x7e:
-                        return False
-                return True
-            return False
-        except:
-            return False
 
 class FastqSolexa( Sequence ):
     """Class representing a FASTQ sequence ( the Solexa variant )"""
@@ -154,7 +99,7 @@ class FastqSolexa( Sequence ):
         count = size = 0
         bases_regexp = re.compile("^[NGTAC]*$")
         for line in file( dataset.file_name ):
-            if line and line[0] == ">":
+            if line and line[0] == "@":
                 count += 1
             elif bases_regexp.match(line):
                 line = line.strip()
@@ -174,7 +119,7 @@ class FastqSolexa( Sequence ):
 
         >>> fname = get_test_fname( '1.fastq' )
         >>> FastqSolexa().sniff( fname )
-        False
+        True
         >>> fname = get_test_fname( '1.fastqsolexa' )
         >>> FastqSolexa().sniff( fname )
         True
@@ -186,17 +131,20 @@ class FastqSolexa( Sequence ):
                 # Check the sequence line, make sure it contains only G/C/A/T/N
                 if not bases_regexp.match( headers[1][0] ):
                     return False
-                qscore = headers[3]
-                # In Solexa format, the quality score is a list of numbers, whose length should be equal to the length of the sequence
-                if len( qscore ) != len( headers[1][0] ):
-                    return False
-                # Check the quality score values - in Solexa/FASTQ these should be valid decimal numbers
-                # (if "x" is not a valid number, "int" will raise an exception)
-                for x in qscore:
-                    try:
-                        check = int( x )
-                    except:
+                
+                # Check quality score: integer or ascii char.
+                try:
+                    check = int(headers[3][0])
+                    qscore_int = True
+                except:
+                    qscore_int = False
+                
+                if qscore_int:
+                    if len( headers[3] ) != len( headers[1][0] ):
                         return False
+                else:
+                    if len( headers[3][0] ) != len( headers[1][0] ):
+                        return False                
                 return True 
             return False
         except:

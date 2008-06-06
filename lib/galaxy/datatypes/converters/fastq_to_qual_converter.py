@@ -28,7 +28,7 @@ def __main__():
     datatype = sys.argv[3]
     qual_title_startswith = ''
     seq_title_startswith = ''
-    default_coding_value = 33
+    default_coding_value = 64
     fastq_block_lines = 0
     
     for i, line in enumerate( file( infile_name ) ):
@@ -75,10 +75,8 @@ def __main__():
                 
             if fastq_integer: # digits
                 qual = line
-            else: # ascii
-                if datatype == 'fastqsolexa':
-                    outfile_score.close()
-                    stop_err( "This tool currently only works with the fastq solexa variant if the socres are integers, not ascii." )
+            else: 
+                # ascii
                 quality_score_length = len( line )
                 if quality_score_length == read_length + 1:
                     quality_score_startswith = ord( line[0:1] )
@@ -88,7 +86,7 @@ def __main__():
                 else:
                     stop_err( 'Invalid fastq format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % ( i + 1, quality_score_length, read_length ) )
                 for j, char in enumerate( line ):
-                    score = ord( char ) - quality_score_startswith    # 33
+                    score = ord( char ) - quality_score_startswith    # 64
                     qual = "%s%s " % ( qual, str( score ) )
             outfile_score.write( '%s\n' % qual )
                             

@@ -2,7 +2,7 @@
   <description>extracts sequences and quality scores from FASTQ data</description>
   <command interpreter="python">fastq_to_fasta_qual.py $input1 $output1 $output2 $input1.extension</command>
   <inputs>
-    <param name="input1" type="data" format="fastq,fastqsolexa" label="Fastq file"/>
+    <param name="input1" type="data" format="fastqsolexa" label="Fastq file"/>
   </inputs>
   <outputs>
     <data name="output1" format="fasta"/>
@@ -11,11 +11,11 @@
   <tests>
     <!-- NOTE: this tool generates 2 output files, but our functional tests currently only handle the last one generated -->
     <test>
-      <param name="input1" value="1.fastq" ftype="fastq" />
+      <param name="input1" value="1.fastq" ftype="fastqsolexa" />
       <output name="output1" file="fastq_to_fasta_qual_out2.fasta" />
     </test>
     <test>
-      <param name="input1" value="1.fastqsolexa" ftype="fastq" />
+      <param name="input1" value="1.fastqsolexa" ftype="fastqsolexa" />
       <output name="output1" file="fastq_to_fasta_qual_out4.fasta" />
     </test>
   </tests>
@@ -23,13 +23,13 @@
 
 .. class:: warningmark
 
-IMPORTANT: With the Fastq Solexa variant, this tool currently only works with data where the quality scores are integers, ASCII quality scores are not supported.
+IMPORTANT: This tool currently only support data where the quality scores are integers or ASCII quality scores with base 64.  
 
 -----
 
 **What it does**
 
-This tool extracts sequences and quality scores from FASTQ data ( both Sanger/Standard and Solexa variants ), producing a FASTA dataset and a QUAL dataset.  With the Solexa variant, this tool currently only works with data where the quality scores are integers, ASCII quality scores are not supported.
+This tool extracts sequences and quality scores from FASTQ data ( Solexa variants ), producing a FASTA dataset and a QUAL dataset.
 
 -----
 
@@ -37,38 +37,28 @@ This tool extracts sequences and quality scores from FASTQ data ( both Sanger/St
 
 - Converting the following Sanger/Standard fastq data::
 
-    @EAS54_6_R1_2_1_413_324
-    CCCTTCTTGTCTTCAGCGTTTCTCC
-    +
-    ;;3;;;;;;;;;;;;7;;;;;;;88
-    @EAS54_6_R1_2_1_540_792
-    TTGGCAGGCCAAGGCCGATGGATCA
-    +
-    ;;;;;;;;;;;7;;;;;-;;;3;83
-    @EAS54_6_R1_2_1_443_348
-    GTTGCTTCTGGCGTGGGTGGGGGGG
-    +EAS54_6_R1_2_1_443_348
-    ;;;;;;;;;;;9;7;;.7;393333
-
+    @seq1  
+    GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT  
+    +seq1  
+    hhhhhhhhhhhhhhhhhhhhhhhhhhPW@hhhhhh  
+    @seq2  
+    GCAATGACGGCAGCAATAAACTCAACAGGTGCTGG  
+    +seq2  
+    hhhhhhhhhhhhhhYhhahhhhWhAhFhSIJGChO
 
 - will extract the following sequences::
 
-    >EAS54_6_R1_2_1_413_324
-    CCCTTCTTGTCTTCAGCGTTTCTCC
-    >EAS54_6_R1_2_1_540_792
-    TTGGCAGGCCAAGGCCGATGGATCA
-    >EAS54_6_R1_2_1_443_348
-    GTTGCTTCTGGCGTGGGTGGGGGGG
-
+    >seq1
+    GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT
+    >seq2
+    GCAATGACGGCAGCAATAAACTCAACAGGTGCTGG
+    
 - and quality scores::
 
-    >EAS54_6_R1_2_1_413_324
-    26 26 18 26 26 26 26 26 26 26 26 26 26 26 26 22 26 26 26 26 26 26 26 23 23 
-    >EAS54_6_R1_2_1_540_792
-    26 26 26 26 26 26 26 26 26 26 26 22 26 26 26 26 26 12 26 26 26 18 26 23 18 
-    >EAS54_6_R1_2_1_443_348
-    26 26 26 26 26 26 26 26 26 26 26 24 26 22 26 26 13 22 26 18 24 18 18 18 18 
-
+    >seq1
+    40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 16 23 0 40 40 40 40 40 40 
+    >seq2
+    40 40 40 40 40 40 40 40 40 40 40 40 40 40 25 40 40 33 40 40 40 40 23 40 1 40 6 40 19 9 10 7 3 40 15 
 
 **Example2**
 

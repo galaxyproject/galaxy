@@ -89,23 +89,30 @@ A sequence in FASTA format consists of a single-line description, followed by li
 
 -----
 
-**Fastq**
+**FastqSolexa**
 
-Fastq format stores sequences and Phred qualities in a single file. We define Fastq as the Sanger/Standard variant::
+Fastq format stores sequences and quality scores in a single file. We define FastqSolexa as the Illumina (Solexa) variant::
 
-	@EAS54_6_R1_2_1_413_324
-	CCCTTCTTGTCTTCAGCGTTTCTCC
-	+
-	;;3;;;;;;;;;;;;7;;;;;;;88
-	@EAS54_6_R1_2_1_540_792
-	TTGGCAGGCCAAGGCCGATGGATCA
-	+
-	;;;;;;;;;;;7;;;;;-;;;3;83
-	@EAS54_6_R1_2_1_443_348
-	GTTGCTTCTGGCGTGGGTGGGGGGG
-	+EAS54_6_R1_2_1_443_348
-	;;;;;;;;;;;9;7;;.7;393333
+    @seq1  
+    GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT  
+    +seq1  
+    hhhhhhhhhhhhhhhhhhhhhhhhhhPW@hhhhhh  
+    @seq2  
+    GCAATGACGGCAGCAATAAACTCAACAGGTGCTGG  
+    +seq2  
+    hhhhhhhhhhhhhhYhhahhhhWhAhFhSIJGChO
+    
+Or:: 
 
+    @seq1
+    GAATTGATCAGGACATAGGACAACTGTAGGCACCAT
+    +seq1
+    40 40 40 40 35 40 40 40 25 40 40 26 40 9 33 11 40 35 17 40 40 33 40 7 9 15 3 22 15 30 11 17 9 4 9 4
+    @seq2
+    GAGTTCTCGTCGCCTGTAGGCACCATCAATCGTATG
+    +seq2
+    40 15 40 17 6 36 40 40 40 25 40 9 35 33 40 14 14 18 15 17 19 28 31 4 24 18 27 14 15 18 2 8 12 8 11 9
+    
 -----
 
 **Gff**
