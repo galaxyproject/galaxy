@@ -398,6 +398,13 @@ class Dataset( object ):
     def extend_validation_errors( self, validation_errors ):
         self.validation_errors.extend(validation_errors)
 
+    def mark_deleted( self, include_children=True ):
+        self.deleted = True
+        if include_children:
+            for child_assoc in self.children:
+                child_assoc.child.mark_deleted()
+            
+
     # FIXME: sqlalchemy will replace this
     def _delete(self):
         """Remove the file that corresponds to this data"""

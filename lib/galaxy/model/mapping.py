@@ -254,7 +254,7 @@ assign_mapper( context, Dataset, Dataset.table,
 assign_mapper( context, DatasetFileName, DatasetFileName.table )
 
 assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
-    properties=dict( child=relation( Dataset, primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
+    properties=dict( child=relation( Dataset, backref="parent", primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
 
 assign_mapper( context, DatasetAssociatedFile, DatasetAssociatedFile.table, 
     properties=dict( parent=relation( 

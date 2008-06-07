@@ -283,12 +283,18 @@ class RootController( BaseController ):
                     continue
                 data = self.app.model.Dataset.get( id )
                 if data:
-                    assert data in history.datasets, "Data does not belong to current history"
-                    # assert data.parent == None, "You must delete the primary dataset first."
-                    # history.datasets.remove( data )
-                    data.deleted = True
+                    # Walk up parent datasets to find the containing history
+                    topmost_parent = data
+                    while topmost_parent.parent:
+                        # data.parent is a list of associations, data.parent.parent 
+                        # is the actual dataset
+                        assert len( data.parent ) == 1, "Dataset should only have one parent"
+                        topmost_parent = data.parent[0].parent
+                    assert topmost_parent in history.datasets, "Data does not belong to current history"
+                    # Mark deleted and cleanup
+                    data.mark_deleted()
                     data.clear_associated_files()
-                    data.flush()
+                    self.app.model.flush()
                     trans.log_event( "Dataset id %s marked as deleted" % str(id) )
                     if data.parent_id is None:
                         try:
@@ -307,12 +313,18 @@ class RootController( BaseController ):
             history = trans.get_history()
             data = self.app.model.Dataset.get( id )
             if data:
-                assert data in history.datasets, "Data does not belong to current history"
-                # assert data.parent == None, "You must delete the primary dataset first."
-                # history.datasets.remove( data )
-                data.deleted = True
+                # Walk up parent datasets to find the containing history
+                topmost_parent = data
+                while topmost_parent.parent:
+                    # data.parent is a list of associations, data.parent.parent 
+                    # is the actual dataset
+                    assert len( data.parent ) == 1, "Dataset should only have one parent"
+                    topmost_parent = data.parent[0].parent
+                assert topmost_parent in history.datasets, "Data does not belong to current history"
+                # Mark deleted and cleanup
+                data.mark_deleted()
                 data.clear_associated_files()
-                data.flush()
+                self.app.model.flush()
                 trans.log_event( "Dataset id %s marked as deleted async" % str(id) )
                 if data.parent_id is None:
                     try:
