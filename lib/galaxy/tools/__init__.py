@@ -1096,6 +1096,7 @@ class Tool:
                 child_data.name = "Secondary Dataset (%s)" % (designation)
                 child_data.state = child_data.states.OK
                 child_data.init_meta()
+                child_data.set_meta()
                 child_data.set_peek()
                 child_data.set_size()
                 child_data.flush()
