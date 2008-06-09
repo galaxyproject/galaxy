@@ -111,16 +111,16 @@ class FastqSolexa( Sequence ):
 
     def sniff( self, filename ):
         """
-        Determines whether the file is in fastq format (Solexa Variant)
+        Determines whether the file is in fastqsolexa format (Solexa Variant)
         For details, see http://maq.sourceforge.net/fastq.shtml
 
         Note: There are two kinds of FASTQ files, known as "Sanger" (sometimes called "Standard") and Solexa
               These differ in the representation of the quality scores
 
-        >>> fname = get_test_fname( '1.fastq' )
+        >>> fname = get_test_fname( '1.fastqsolexa' )
         >>> FastqSolexa().sniff( fname )
         True
-        >>> fname = get_test_fname( '1.fastqsolexa' )
+        >>> fname = get_test_fname( '2.fastqsolexa' )
         >>> FastqSolexa().sniff( fname )
         True
         """

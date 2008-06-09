@@ -1,6 +1,6 @@
 #! /usr/bin/python
 """
-convert fastq file to separated sequence and quality files.
+convert fastqsolexa file to separated sequence and quality files.
 
 assume each sequence and quality score are contained in one line
 the order should be:
@@ -11,7 +11,7 @@ the order should be:
 (in three forms: a. digits, b. ASCII codes, the first char as the coding base, c. ASCII codes without the first char.)
 
 Usage:
-%python convert_fastq2fasta.py <your_fastq_filename> <output_seq_filename> <output_score_filename>
+%python fastqsolexa_to_fasta_converter.py <your_fastqsolexa_filename> <output_seq_filename> <output_score_filename>
 """
 
 import sys, os
@@ -40,7 +40,7 @@ def __main__():
             if not seq_title_startswith:
                 seq_title_startswith = line_startswith
             if seq_title_startswith != line_startswith:
-                stop_err( 'Invalid fastq format at line %d: %s.' %( i + 1, line ) )
+                stop_err( 'Invalid fastqsolexa format at line %d: %s.' %( i + 1, line ) )
             read_title = line[ 1: ]
             outfile.write( '>%s\n' % line[1:] )
         elif fastq_block_lines == 2:

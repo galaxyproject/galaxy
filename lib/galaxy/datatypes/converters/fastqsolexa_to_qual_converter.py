@@ -1,6 +1,6 @@
 #! /usr/bin/python
 """
-convert fastq file to separated sequence and quality files.
+convert fastqsolexa file to separated sequence and quality files.
 
 assume each sequence and quality score are contained in one line
 the order should be:
@@ -11,7 +11,7 @@ the order should be:
 (in three forms: a. digits, b. ASCII codes, the first char as the coding base, c. ASCII codes without the first char.)
 
 Usage:
-%python convert_fastq2fasta.py <your_fastq_filename> <output_seq_filename> <output_score_filename>
+%python fastqsolexa_to_qual_converter.py <your_fastqsolexa_filename> <output_seq_filename> <output_score_filename>
 """
 import sys, os
 from math import *
@@ -42,7 +42,7 @@ def __main__():
             if not seq_title_startswith:
                 seq_title_startswith = line_startswith
             if line_startswith != seq_title_startswith:
-                stop_err( 'Invalid fastq format at line %d: %s.' % ( i + 1, line ) )
+                stop_err( 'Invalid fastqsolexa format at line %d: %s.' % ( i + 1, line ) )
             read_title = line[1:]
         elif fastq_block_lines == 2:
             # second line is nucleotides
@@ -52,10 +52,10 @@ def __main__():
             if not qual_title_startswith:
                 qual_title_startswith = line_startswith
             if line_startswith != qual_title_startswith:
-                stop_err( 'Invalid fastq format at line %d: %s.' % ( i + 1, line ) )    
+                stop_err( 'Invalid fastqsolexa format at line %d: %s.' % ( i + 1, line ) )    
             quality_title = line[1:]
             if quality_title and read_title != quality_title:
-                stop_err( 'Invalid fastq format at line %d: sequence title "%s" differes from score title "%s".' % ( i + 1, read_title, quality_title ) )
+                stop_err( 'Invalid fastqsolexa format at line %d: sequence title "%s" differes from score title "%s".' % ( i + 1, read_title, quality_title ) )
             if not quality_title:
                 outfile_score.write( '>%s\n' % read_title )
             else:
@@ -84,7 +84,7 @@ def __main__():
                 elif quality_score_length == read_length:
                     quality_score_startswith = default_coding_value
                 else:
-                    stop_err( 'Invalid fastq format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % ( i + 1, quality_score_length, read_length ) )
+                    stop_err( 'Invalid fastqsolexa format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % ( i + 1, quality_score_length, read_length ) )
                 for j, char in enumerate( line ):
                     score = ord( char ) - quality_score_startswith    # 64
                     qual = "%s%s " % ( qual, str( score ) )

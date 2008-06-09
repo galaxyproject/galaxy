@@ -1,8 +1,8 @@
-<tool id="fastq_to_fasta_qual" name="FASTQ-to-FASTA-QUAL" version="1.0.0">
-  <description>extracts sequences and quality scores from FASTQ data</description>
-  <command interpreter="python">fastq_to_fasta_qual.py $input1 $output1 $output2 $input1.extension</command>
+<tool id="fastqsolexa_to_fasta_qual" name="FASTQSOLEXA-to-FASTA-QUAL" version="1.0.0">
+  <description>extracts sequences and quality scores from FASTQSOLEXA data</description>
+  <command interpreter="python">fastqsolexa_to_fasta_qual.py $input1 $output1 $output2 $input1.extension</command>
   <inputs>
-    <param name="input1" type="data" format="fastqsolexa" label="Fastq file"/>
+    <param name="input1" type="data" format="fastqsolexa" label="Fastqsolexa file"/>
   </inputs>
   <outputs>
     <data name="output1" format="fasta"/>
@@ -11,31 +11,31 @@
   <tests>
     <!-- NOTE: this tool generates 2 output files, but our functional tests currently only handle the last one generated -->
     <test>
-      <param name="input1" value="1.fastq" ftype="fastqsolexa" />
-      <output name="output1" file="fastq_to_fasta_qual_out2.fasta" />
+      <param name="input1" value="1.fastqsolexa" ftype="fastqsolexa" />
+      <output name="output1" file="fastqsolexa_to_fasta_qual_out4.fasta" />
     </test>
     <test>
-      <param name="input1" value="1.fastqsolexa" ftype="fastqsolexa" />
-      <output name="output1" file="fastq_to_fasta_qual_out4.fasta" />
+      <param name="input1" value="2.fastqsolexa" ftype="fastqsolexa" />
+      <output name="output1" file="fastqsolexa_to_fasta_qual_out2.fasta" />
     </test>
   </tests>
   <help>
 
 .. class:: warningmark
 
-IMPORTANT: This tool currently only support data where the quality scores are integers or ASCII quality scores with base 64.  
+IMPORTANT: This tool currently only supports data where the quality scores are integers or ASCII quality scores with base 64.  
 
 -----
 
 **What it does**
 
-This tool extracts sequences and quality scores from FASTQ data ( Solexa variants ), producing a FASTA dataset and a QUAL dataset.
+This tool extracts sequences and quality scores from FASTQ data ( Solexa variant ), producing a FASTA dataset and a QUAL dataset.
 
 -----
 
 **Example1**
 
-- Converting the following Sanger/Standard fastq data::
+- Converting the following Solexa fastq data::
 
     @seq1  
     GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT  

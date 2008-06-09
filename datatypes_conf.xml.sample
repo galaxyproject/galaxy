@@ -13,8 +13,8 @@
       <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
     </datatype>
     <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true">
-      <converter file="fastq_to_fasta_converter.xml" target_datatype="fasta"/>
-      <converter file="fastq_to_qual_converter.xml" target_datatype="qual"/>
+      <converter file="fastqsolexa_to_fasta_converter.xml" target_datatype="fasta"/>
+      <converter file="fastqsolexa_to_qual_converter.xml" target_datatype="qual"/>
     </datatype>
     <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true">
       <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>

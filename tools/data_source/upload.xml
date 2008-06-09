@@ -25,7 +25,7 @@
   
 **Auto-detect**
 
-The system will attempt to detect Axt, Fasta, Fastq, Gff, Gff3, Html, Lav, Maf, Tabular, Wiggle, Bed and Interval (Bed with headers) formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed. 
+The system will attempt to detect Axt, Fasta, Fastqsolexa, Gff, Gff3, Html, Lav, Maf, Tabular, Wiggle, Bed and Interval (Bed with headers) formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed. 
 
 -----
 
@@ -91,7 +91,7 @@ A sequence in FASTA format consists of a single-line description, followed by li
 
 **FastqSolexa**
 
-Fastq format stores sequences and quality scores in a single file. We define FastqSolexa as the Illumina (Solexa) variant::
+FastqSolexa is the Illumina (Solexa) variant of the Fastq format, which stores sequences and quality scores in a single file::
 
     @seq1  
     GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT  

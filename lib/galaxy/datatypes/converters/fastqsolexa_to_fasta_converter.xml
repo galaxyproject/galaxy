@@ -1,0 +1,12 @@
+<tool id="CONVERTER_fastqsolexa_to_fasta_0" name="Convert Fastqsolexa to Fasta" version="1.0.0">
+  <description>converts Fastqsolexa file to Fasta format</description>
+  <command interpreter="python">fastqsolexa_to_fasta_converter.py $input $output</command>
+  <inputs>
+    <param name="input" type="data" format="fastqsolexa" label="Choose Fastqsolexa file"/>
+  </inputs>
+  <outputs>
+    <data name="output" format="fasta"/>
+  </outputs>
+  <help>
+  </help>
+</tool>
