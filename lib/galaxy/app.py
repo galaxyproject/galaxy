@@ -13,9 +13,9 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
-        #Set up datatypes registry
-        self.datatypes_registry = galaxy.datatypes.registry.Registry(datatypes=self.config.datatypes, sniff_order=self.config.sniff_order)
-        galaxy.model.set_datatypes_registry(self.datatypes_registry)
+        # Set up datatypes registry
+        self.datatypes_registry = galaxy.datatypes.registry.Registry( self.config.root, self.config.datatypes_config )
+        galaxy.model.set_datatypes_registry( self.datatypes_registry )
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection
@@ -29,7 +29,7 @@ class UniverseApplication( object ):
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         #Load datatype converters
-        self.datatypes_registry.load_datatype_converters(self.config.datatype_converters_config, self.config.datatype_converters_path, self.toolbox)
+        self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Start the job queue
         job_dispatcher = jobs.DefaultJobDispatcher( self )
         self.job_queue = jobs.JobQueue( self, job_dispatcher )

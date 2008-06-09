@@ -92,7 +92,7 @@ use_new_layout = true
 
 # Comma separated list of UCSC / gbrowse browsers to use for viewing
 ucsc_display_sites = main,test,archaea
-gbrowse_display_sites = wormbase,flybase,elegans
+gbrowse_display_sites = elegans,flybase
 
 # Serving static files (needed if running standalone)
 static_enabled = True
@@ -117,7 +117,7 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 # ---- Job Runners ----------------------------------------------------------
 
 # Clustering Galaxy is not a straightforward process and requires a lot of
-# pre-configuration.  Please see the Galaxy Wiki before attempting to set any
+# pre-configuration.  See the ClusteringGalaxy Wiki before attempting to set any
 # of these options.  If running normally (without a cluster), do not change
 # anything in this section.
 
@@ -129,10 +129,11 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 
 # default_cluster_job_runner: The URL for the default runner to use when a tool
 # doesn't explicity define a runner below.  For help on the cluster URL format,
-# see the Galaxy Wiki.  Leave commented if not using a cluster job runner.
+# see the ClusteringGalaxy Wiki.  Leave commented if not using a cluster job runner.
 #default_cluster_job_runner = pbs:///
 
-# The PBS options are described in detail on the Galaxy Wiki
+# The PBS options are described in detail in the Galaxy Configuration section of
+# the ClusteringGalaxy Wiki
 #pbs_application_server = 
 #pbs_stage_path = 
 #pbs_dataset_server = 
@@ -162,151 +163,3 @@ ucsc_table_direct1 = local:///
 ucsc_table_direct_archaea1 = local:///
 ucsc_table_direct_test1 = local:///
 upload1 = local:///
-
-# ---- Datatypes ------------------------------------------------------------
-
-[galaxy:datatypes]
-
-#<file extension> = <data type class>,<mime type (optional)>,<display in upload select list (optional)>
-ab1 = galaxy.datatypes.images:Ab1,application/octet-stream,display_in_upload
-axt = galaxy.datatypes.sequence:Axt,display_in_upload
-bed = galaxy.datatypes.interval:Bed,display_in_upload
-binseq.zip = galaxy.datatypes.images:Binseq,application/zip,display_in_upload
-customtrack = galaxy.datatypes.interval:CustomTrack
-data = galaxy.datatypes.data:Data,application/octet-stream
-fasta = galaxy.datatypes.sequence:Fasta,display_in_upload
-fastqsolexa = galaxy.datatypes.sequence:FastqSolexa,display_in_upload
-gff = galaxy.datatypes.interval:Gff,display_in_upload
-gff3 = galaxy.datatypes.interval:Gff3,display_in_upload
-gif = galaxy.datatypes.images:Image,image/gif
-gmaj.zip = galaxy.datatypes.images:Gmaj,application/zip
-html = galaxy.datatypes.images:Html,text/html
-interval = galaxy.datatypes.interval:Interval,display_in_upload
-jpg = galaxy.datatypes.images:Image,image/jpeg
-laj = galaxy.datatypes.images:Laj
-lav = galaxy.datatypes.sequence:Lav,display_in_upload
-maf = galaxy.datatypes.sequence:Maf,display_in_upload
-pdf = galaxy.datatypes.images:Image,application/pdf
-png = galaxy.datatypes.images:Image,image/png
-qual = galaxy.datatypes.qualityscore:QualityScore,display_in_upload
-scf = galaxy.datatypes.images:Scf,application/octet-stream,display_in_upload
-taxonomy = galaxy.datatypes.tabular:Taxonomy,display_in_upload
-tabular = galaxy.datatypes.tabular:Tabular,display_in_upload
-txt = galaxy.datatypes.data:Text,display_in_upload
-txtseq.zip = galaxy.datatypes.images:Txtseq,application/zip,display_in_upload
-wig = galaxy.datatypes.interval:Wiggle,display_in_upload
-#EMBOSS TOOLS
-acedb = galaxy.datatypes.data:Text
-asn1 = galaxy.datatypes.data:Text
-btwisted = galaxy.datatypes.data:Text
-cai =  galaxy.datatypes.data:Text
-charge = galaxy.datatypes.data:Text
-checktrans = galaxy.datatypes.data:Text
-chips = galaxy.datatypes.data:Text
-clustal = galaxy.datatypes.data:Text
-codata = galaxy.datatypes.data:Text
-codcmp = galaxy.datatypes.data:Text
-coderet = galaxy.datatypes.data:Text
-compseq = galaxy.datatypes.data:Text
-cpgplot = galaxy.datatypes.data:Text
-cpgreport = galaxy.datatypes.data:Text
-cusp = galaxy.datatypes.data:Text
-cut = galaxy.datatypes.data:Text
-dan = galaxy.datatypes.data:Text
-dbmotif = galaxy.datatypes.data:Text
-diffseq = galaxy.datatypes.data:Text
-digest = galaxy.datatypes.data:Text
-dreg = galaxy.datatypes.data:Text
-einverted = galaxy.datatypes.data:Text
-embl = galaxy.datatypes.data:Text
-epestfind = galaxy.datatypes.data:Text
-equicktandem = galaxy.datatypes.data:Text
-est2genome = galaxy.datatypes.data:Text
-etandem = galaxy.datatypes.data:Text
-excel = galaxy.datatypes.data:Text
-feattable = galaxy.datatypes.data:Text
-fitch = galaxy.datatypes.data:Text
-freak = galaxy.datatypes.data:Text
-fuzznuc = galaxy.datatypes.data:Text
-fuzzpro = galaxy.datatypes.data:Text
-fuzztran = galaxy.datatypes.data:Text
-garnier = galaxy.datatypes.data:Text
-gcg = galaxy.datatypes.data:Text
-geecee = galaxy.datatypes.data:Text
-genbank = galaxy.datatypes.data:Text
-helixturnhelix = galaxy.datatypes.data:Text
-hennig86 = galaxy.datatypes.data:Text
-hmoment = galaxy.datatypes.data:Text
-ig = galaxy.datatypes.data:Text
-isochore = galaxy.datatypes.data:Text
-jackknifer = galaxy.datatypes.data:Text
-jackknifernon = galaxy.datatypes.data:Text
-markx10 = galaxy.datatypes.data:Text
-markx1 = galaxy.datatypes.data:Text
-markx0 = galaxy.datatypes.data:Text
-markx3 = galaxy.datatypes.data:Text
-markx2 = galaxy.datatypes.data:Text
-match = galaxy.datatypes.data:Text
-mega = galaxy.datatypes.data:Text
-meganon = galaxy.datatypes.data:Text
-motif = galaxy.datatypes.data:Text
-msf = galaxy.datatypes.data:Text
-nametable = galaxy.datatypes.data:Text
-ncbi = galaxy.datatypes.data:Text
-needle = galaxy.datatypes.data:Text
-newcpgreport = galaxy.datatypes.data:Text
-newcpgseek = galaxy.datatypes.data:Text
-nexus = galaxy.datatypes.data:Text
-nexusnon = galaxy.datatypes.data:Text
-noreturn = galaxy.datatypes.data:Text
-pair = galaxy.datatypes.data:Text
-palindrome = galaxy.datatypes.data:Text
-pepcoil = galaxy.datatypes.data:Text
-pepinfo = galaxy.datatypes.data:Text
-pepstats = galaxy.datatypes.data:Text
-phylip = galaxy.datatypes.data:Text
-phylipnon = galaxy.datatypes.data:Text
-pir = galaxy.datatypes.data:Text
-polydot = galaxy.datatypes.data:Text
-preg = galaxy.datatypes.data:Text
-prettyseq = galaxy.datatypes.data:Text
-primersearch = galaxy.datatypes.data:Text
-regions = galaxy.datatypes.data:Text
-score = galaxy.datatypes.data:Text
-selex = galaxy.datatypes.data:Text
-seqtable = galaxy.datatypes.data:Text
-showfeat = galaxy.datatypes.data:Text
-showorf = galaxy.datatypes.data:Text 
-simple = galaxy.datatypes.data:Text
-sixpack = galaxy.datatypes.data:Text
-srs = galaxy.datatypes.data:Text
-srspair = galaxy.datatypes.data:Text
-staden = galaxy.datatypes.data:Text
-strider = galaxy.datatypes.data:Text
-supermatcher = galaxy.datatypes.data:Text
-swiss = galaxy.datatypes.data:Text
-syco = galaxy.datatypes.data:Text
-table = galaxy.datatypes.data:Text
-textsearch = galaxy.datatypes.data:Text
-vectorstrip = galaxy.datatypes.data:Text
-wobble = galaxy.datatypes.data:Text
-wordcount = galaxy.datatypes.data:Text
-tagseq = galaxy.datatypes.data:Text
-
-# ---- Data Type Sniff Order --------------------------------------------------
-
-[galaxy:sniff_order]
-
-05 = galaxy.datatypes.sequence:Maf
-10 = galaxy.datatypes.sequence:Lav
-15 = galaxy.datatypes.sequence:Fasta
-20 = galaxy.datatypes.sequence:Fastq
-25 = galaxy.datatypes.sequence:FastqSolexa
-30 = galaxy.datatypes.interval:Wiggle
-35 = galaxy.datatypes.images:Html
-40 = galaxy.datatypes.sequence:Axt
-45 = galaxy.datatypes.interval:Bed
-50 = galaxy.datatypes.interval:CustomTrack
-55 = galaxy.datatypes.interval:Gff
-60 = galaxy.datatypes.interval:Gff3
-65 = galaxy.datatypes.interval:Interval

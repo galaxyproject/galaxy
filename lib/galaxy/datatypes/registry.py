@@ -3,61 +3,92 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 """
 import os
 import logging
-import data, tabular, interval, images, sequence, qualityscore
-import genetics # needed for rgenetics tools	
+import data, tabular, interval, images, sequence, qualityscore, genetics	
 import galaxy.util
 from galaxy.util.odict import odict
 
+class ConfigurationError( Exception ):
+    pass
+
 class Registry( object ):
-    def __init__( self, datatypes=[], sniff_order=[] ):
+    def __init__( self, root_dir=None, config=None ):
         self.log = logging.getLogger(__name__)
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
         self.datatype_converters = odict()
-        self.upload_file_formats = []
+        self.converters = []
         self.sniff_order = []
-        for ext, kind in datatypes:
-            # Data types are defined in the config like this:
-            # #<file extension> = <data type class>,<mime type (optional)>,<display in upload select list (optional)>
-            try:
-                fields = kind.split(",")
-                kind = fields[0].strip()
-                mime_type = None
-                display_in_upload = False
-                # See if we have a mime type or a display_in_upload
+        self.upload_file_formats = []
+        if root_dir and config:
+            # Parse datatypes_conf.xml
+            tree = galaxy.util.parse_xml( config )
+            root = tree.getroot()
+            # Load datatypes and converters from config
+            self.log.debug( 'Loading datatypes from %s' % config )
+            registration = root.find( 'registration' )
+            self.datatype_converters_path = os.path.join( root_dir, registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' ) )
+            if not os.path.isdir( self.datatype_converters_path ):
+                raise ConfigurationError( "Directory does not exist: %s" % self.datatype_converters_path )
+            for elem in registration.findall( 'datatype' ):
                 try:
-                    ele = fields[1].strip()
-                    if ele:
-                        if ele == 'display_in_upload':
-                            display_in_upload = True
-                        else:
-                            mime_type = ele
-                except:
-                    pass
-                # See if we have a display_in_upload
-                if not display_in_upload:
-                    try:
-                        ele = fields[2].strip()
-                        if ele == 'display_in_upload':
-                            display_in_upload = True
-                    except:
-                        pass
-                if display_in_upload:
-                    self.upload_file_formats.append( ext )
-                fields = kind.split(":")
-                datatype_module = fields[0]
-                datatype_class = fields[1]
-                fields = datatype_module.split(".")
-                module = __import__( fields.pop(0) )
-                for mod in fields:
-                    module = getattr(module,mod)
-                self.datatypes_by_extension[ext] = getattr(module, datatype_class)()
-                if mime_type is None:
-                    # Use default mime type as per datatype spec
-                    mime_type = self.datatypes_by_extension[ext].get_mime()
-                self.mimetypes_by_extension[ext] = mime_type
-            except Exception, e:
-                self.log.warning('error loading datatype "%s", problem: %s' % ( ext, str( e ) ) )
+                    extension = elem.get( 'extension', None ) 
+                    type = elem.get( 'type', None )
+                    mimetype = elem.get( 'mimetype', None )
+                    display_in_upload = elem.get( 'display_in_upload', False )
+                    if extension and type:
+                        fields = type.split( ':' )
+                        datatype_module = fields[0]
+                        datatype_class = fields[1]
+                        fields = datatype_module.split( '.' )
+                        module = __import__( fields.pop(0) )
+                        for mod in fields:
+                            module = getattr( module, mod )
+                        self.datatypes_by_extension[extension] = getattr( module, datatype_class )()
+                        if mimetype is None:
+                            # Use default mime type as per datatype spec
+                            mimetype = self.datatypes_by_extension[extension].get_mime()
+                        self.mimetypes_by_extension[extension] = mimetype
+                        if display_in_upload:
+                            self.upload_file_formats.append( extension )
+                        for converter in elem.findall( 'converter' ):
+                            # Build the list of datatype converters which will later be loaded 
+                            # into the calling app's toolbox.
+                            converter_config = converter.get( 'file', None )
+                            target_datatype = converter.get( 'target_datatype', None )
+                            if converter_config and target_datatype:
+                                self.converters.append( ( converter_config, extension, target_datatype ) )
+                except Exception, e:
+                    self.log.warning( 'Error loading datatype "%s", problem: %s' % ( extension, str( e ) ) )
+            # Load datatype sniffers from config
+            sniff_order = []
+            sniffers = root.find( 'sniffers' )
+            for elem in sniffers.findall( 'sniffer' ):
+                order = elem.get( 'order', None ) 
+                type = elem.get( 'type', None )
+                if order and type:
+                    sniff_order.append( ( order, type ) )
+            sniff_order.sort()
+            for ele in sniff_order:
+                try:
+                    type = ele[1]
+                    fields = type.split( ":" )
+                    datatype_module = fields[0]
+                    datatype_class = fields[1]
+                    fields = datatype_module.split( "." )
+                    module = __import__( fields.pop(0) )
+                    for mod in fields:
+                        module = getattr( module, mod )
+                    aclass = getattr( module, datatype_class )() 
+                    included = False
+                    for atype in self.sniff_order:
+                        if not issubclass( atype.__class__, aclass.__class__ ) and isinstance( atype, aclass.__class__ ):
+                            included = True
+                            break
+                    if not included:
+                        self.sniff_order.append( aclass )
+                        self.log.debug( 'Loaded sniffer for datatype: %s' % type )
+                except Exception, exc:
+                    self.log.warning( 'Error appending datatype %s to sniff_order, problem: %s' % ( type, str( exc ) ) )
         #default values
         if len(self.datatypes_by_extension) < 1:
             self.datatypes_by_extension = { 
@@ -104,33 +135,8 @@ class Registry( object ):
                 'txtseq.zip'  : 'application/zip',
                 'wig'         : 'text/plain'
             }
-        """
-        The order in which we attempt to determine data types is critical
-        because some formats are much more flexibly defined than others.
-        """
-        sniff_order.sort()
-        for ele in sniff_order:
-            try:
-                ord = ele[0]
-                kind = ele[1]
-                fields = kind.split( ":" )
-                datatype_module = fields[0]
-                datatype_class = fields[1]
-                fields = datatype_module.split( "." )
-                module = __import__( fields.pop(0) )
-                for mod in fields:
-                    module = getattr( module, mod )
-                aclass = getattr( module, datatype_class )() 
-                included = False
-                for atype in self.sniff_order:
-                    if not issubclass( atype.__class__, aclass.__class__ ) and isinstance( atype, aclass.__class__ ):
-                        included = True
-                        break
-                if not included:
-                    self.sniff_order.append( aclass )
-            except Exception, exc:
-                self.log.warning( 'error appending datatype: %s to sniff_order, error: %s' % ( str( kind ), str( exc ) ) )
-        #default values
+        # Default values - the order in which we attempt to determine data types is critical
+        # because some formats are much more flexibly defined than others.
         if len(self.sniff_order) < 1:
             self.sniff_order = [
                 sequence.Maf(),
@@ -146,7 +152,7 @@ class Registry( object ):
                 interval.Interval()
             ]
         def append_to_sniff_order():
-            """Just in case any supported data types are not included in the config's sniff_order section."""
+            # Just in case any supported data types are not included in the config's sniff_order section.
             for ext in self.datatypes_by_extension:
                 datatype = self.datatypes_by_extension[ext]
                 included = False
@@ -157,7 +163,7 @@ class Registry( object ):
                 if not included:
                     self.sniff_order.append(datatype)
         append_to_sniff_order()
-    
+
     def get_mimetype_by_extension(self, ext ):
         """Returns a mimetype based on an extension"""
         try:
@@ -196,24 +202,20 @@ class Registry( object ):
             setattr(newdata, key, value)
         newdata.ext = ext
         return newdata
-        
-    def load_datatype_converters(self, datatype_converters_config, datatype_converters_path, toolbox):
-        """Loads datatype converters from a file, and adds to the toolbox"""
-        self.datatype_converters = odict()        
-        tree = galaxy.util.parse_xml( datatype_converters_config )
-        root = tree.getroot()
-        self.log.debug( "Loading converters from %s" % (datatype_converters_config) )
-        for elem in root.findall("converter"):
-            path = elem.get("file")
-            source_datatype = elem.get("source_datatype").split(",")
-            target_datatype = elem.get("target_datatype")
-            converter = toolbox.load_tool( os.path.join( datatype_converters_path, path ) )
-            self.log.debug( "Loaded converter: %s", converter.id )
+
+    def load_datatype_converters( self, toolbox ):
+        """Adds datatype converters from self.converters to the calling app's toolbox"""     
+        for elem in self.converters:
+            tool_config = elem[0]
+            source_datatype = elem[1]
+            target_datatype = elem[2]
+            converter = toolbox.load_tool( os.path.join( self.datatype_converters_path, tool_config ) )
             toolbox.tools_by_id[converter.id] = converter
-            for source_d in source_datatype:
-                if source_d not in self.datatype_converters:
-                    self.datatype_converters[source_d] = odict()
-                self.datatype_converters[source_d][target_datatype] = converter
+            if source_datatype not in self.datatype_converters:
+                self.datatype_converters[source_datatype] = odict()
+            self.datatype_converters[source_datatype][target_datatype] = converter
+            self.log.debug( "Loaded converter: %s", converter.id )
+
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
         converters = odict()
