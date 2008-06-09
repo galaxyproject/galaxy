@@ -48,5 +48,5 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.dbkey = dbkey
             newdata.set_meta()
             newdata.set_peek()
-            new_data.set_size()
+            newdata.set_size()
             app.model.flush()
