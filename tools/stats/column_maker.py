@@ -1,42 +1,29 @@
 #!/usr/bin/env python
-# Greg Von Kuster
-"""
-This tool takes a tab-delimited textfile as input and creates another column in the file which is the result of
-a computation performed on every row in the original file.  The tool will skip over invalid lines within the file,
-informing the user about the number of lines skipped.  Invalid lines are those that do not follow the standard 
-defined when the get_wrap_func function (immediately below) is applied to the first uncommented line in the input file.
-"""
+# This tool takes a tab-delimited textfile as input and creates another column in the file which is the result of
+# a computation performed on every row in the original file.  The tool will skip over invalid lines within the file,
+# informing the user about the number of lines skipped.  
 import sys, sets, re, os.path
 from galaxy import eggs
 from galaxy.tools import validation
+from galaxy.datatypes import metadata
 
-def get_wrap_func(value, round):
-    # Determine the data type of each column in the input file
-    try:
-        if round == 'no':
-            check = float(value)
-            return 'float(%s)'
-        else:
-            check = int(value)
-            return 'int(%s)'
-    except:
-        return 'str(%s)'
+assert sys.version_info[:2] >= ( 2, 4 )
 
-def stop_err(msg):
-    sys.stderr.write(msg)
+def stop_err( msg ):
+    sys.stderr.write( msg )
     sys.exit()
-
-# we expect 4 parameters
-if len(sys.argv) != 5:
-    print sys.argv
-    stop_err('Usage: python column_maker.py input_file ouput_file condition round')
 
 inp_file = sys.argv[1]
 out_file = sys.argv[2]
-cond_text = sys.argv[3]
+expr = sys.argv[3]
 round = sys.argv[4] 
+try:
+    in_columns = int( sys.argv[5] )
+    in_column_types = sys.argv[6].split( ',' )
+except:
+    stop_err( "Data does not appear to be tabular.  This tool can only be used with tab-delimited data." )
 
-# replace if input has been escaped
+# Unescape if input has been escaped
 mapped_str = {
     '__lt__': '<',
     '__le__': '<=',
@@ -48,99 +35,72 @@ mapped_str = {
     '__dq__': '"',
 }
 for key, value in mapped_str.items():
-    cond_text = cond_text.replace(key, value)
-
-# Attempt to ensure the expression is valid Python
-validator_msg = 'Invalid syntax in "%s". See tool tips and warnings for examples of proper expression syntax.' %cond_text
-try:
-    validator = validation.ExpressionValidator(validator_msg, cond_text)
-except:
-    stop_err( validator_msg )
-
-# safety measures
-safe_words = sets.Set( "c chr str float int split map lambda and or len type".split() )
-try:
-    # filter on words
-    patt = re.compile('[a-z]+')
-    for word in patt.findall(cond_text):
-        if word not in safe_words:
-            raise Exception, word
-except Exception, e:
-    stop_err("Cannot recognize the word %s in condition %s" % (e, cond_text) )
-
-# Determine the number of columns in the input file and the data type for each
-elems = []
-if os.path.exists( inp_file ):
-    for line in open( inp_file ):
-        line = line.strip()
-        if line and not line.startswith( '#' ):
-            elems = line.split( '\t' )
-            break
-else:
-    stop_err('The input data file "%s" does not exist' % inp_file)
-
-if not elems:
-    stop_err('No non-blank or non-comment lines in input data file "%s"' % inp_file)    
-
-if len(elems) == 1:
-    if len(line.split()) != 1:
-        stop_err('This tool can only be run on tab delimited files')
+    expr = expr.replace( key, value )
 
 # Prepare the column variable names and wrappers for column data types
-cols, funcs = [], []
-for ind, elem in enumerate(elems):
-    name = 'c%d' % ( ind + 1 )
-    cols.append(name)
-    funcs.append(get_wrap_func(elem, round) % name)
+cols, type_casts = [], []
+for col in range( 1, in_columns + 1 ):
+    col_name = "c%d" % col
+    cols.append( col_name )
+    col_type = in_column_types[ col - 1 ]
+    if round == 'no' and col_type == 'int':
+        col_type = 'float'
+    type_cast = "%s(%s)" % ( col_type, col_name )
+    type_casts.append( type_cast )
         
-col = ', '.join(cols)
-func = ', '.join(funcs)
-assign = "%s = line.split('\\t')" % col
-wrap = "%s = %s" % (col, func)
+col_str = ', '.join( cols )    # 'c1, c2, c3, c4'
+type_cast_str = ', '.join( type_casts )  # 'str(c1), int(c2), int(c3), str(c4)'
+assign = "%s = line.split( '\\t' )" % col_str
+wrap = "%s = %s" % ( col_str, type_cast_str )
 skipped_lines = 0
 first_invalid_line = 0
 invalid_line = None
-flags = []
-cols = []
+lines_kept = 0
+total_lines = 0
+out = open( out_file, 'wt' )
 
 # Read input file, skipping invalid lines, and perform computation that will result in a new column
 code = '''
-for i, line in enumerate( open( inp_file )):
-    line = line.strip()
-    if line and not line.startswith( '#' ):
-        try:
-            %s
-            %s
-            cols.append(%s)
-            flags.append(True)
-        except:
-            skipped_lines += 1
-            cols.append('')
-            flags.append(False)
-            if not invalid_line:
-                first_invalid_line = i + 1
-                invalid_line = line
+for i, line in enumerate( file( inp_file ) ):
+    total_lines += 1
+    line = line.rstrip( '\\r\\n' )
+    if not line or line.startswith( '#' ):
+        skipped_lines += 1
+        if not invalid_line:
+            first_invalid_line = i + 1
+            invalid_line = line
+        continue
+    try:
+        %s
+        %s
+        new_line = line + '\\t' + str( %s )
+        print >> out, new_line
+        lines_kept += 1
+    except:
+        skipped_lines += 1
+        if not invalid_line:
+            first_invalid_line = i + 1
+            invalid_line = line
+''' % ( assign, wrap, expr )
+
+valid_expr = True
+try:
+    exec code
+except Exception, e:
+    out.close()
+    if str( e ).startswith( 'invalid syntax' ):
+        valid_expr = False
+        stop_err( 'Expression "%s" likely invalid. See tool tips, syntax and examples.' % expr )
     else:
-        cols.append('')
-        flags.append(False)
-''' % (assign, wrap, cond_text)
+        stop_err( str( e ) )
 
-exec code
-
-# Write output file
-fp = open(out_file, 'wt')
-keep = 0
-total = 0
-for flag, value, line in zip(flags, cols, file(inp_file)):
-    total += 1
-    if flag:
-        line = line.strip()
-        line = '%s\t%s\n' % (line, value)
-        fp.write(line)
-        keep += 1
-fp.close()
-
-print 'Creating column %d with expression %s' % (len(elems)+1, cond_text)
-if skipped_lines > 0:
-    print ', kept %d of %d original lines.  ' % ( keep, total )
-    print 'Skipped %d invalid lines in file starting with line # %d, data: %s' % ( skipped_lines, first_invalid_line, invalid_line )
+if valid_expr:
+    out.close()
+    valid_lines = total_lines - skipped_lines
+    print 'Creating column %d with expression %s' % ( in_columns + 1, expr )
+    if valid_lines > 0:
+        print 'kept %4.2f%% of %d lines.' % ( 100.0*lines_kept/valid_lines, total_lines )
+    else:
+        print 'Possible invalid expression "%s" or non-existent column referenced. See tool tips, syntax and examples.' % expr
+    if skipped_lines > 0:
+        print 'Skipped %d invalid lines starting at line #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line )

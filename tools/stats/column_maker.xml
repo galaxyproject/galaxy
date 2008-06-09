@@ -1,13 +1,11 @@
 <tool id="Add a column1" name="Compute">
   <description>an expression on every row</description>
   <command interpreter="python">
-    column_maker.py $input $out_file1 "$cond" $round
+    column_maker.py $input $out_file1 "$cond" $round $input_columns $input_column_types
   </command>
   <inputs>
-    <param name="cond" size="40" type="text" value="c3-c2" 
-           label="Add expression"/>
-    <param format="tabular" name="input" type="data" 
-           label="as a new column to" help="Query missing? See TIP below"/>
+    <param name="cond" size="40" type="text" value="c3-c2" label="Add expression"/>
+    <param format="tabular" name="input" type="data" label="as a new column to" help="Query missing? See TIP below"/>
     <param name="round" type="select" label="Round result?">
       <option value="no">NO</option>
       <option value="yes">YES</option>
