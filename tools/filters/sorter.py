@@ -87,7 +87,6 @@ def main():
     if column > len( open(inputfile).readline().split('\t') ):
 	print "Column "+str(column)+" does not exist."
 	return -9
-    column = column-1
 
     # Everything is kosher.
 
@@ -104,7 +103,7 @@ def main():
     # Launch sort.
     
     environ['LC_ALL'] = 'POSIX'
-    commandline = "sort -f"+style+"+"+str(column)+" -o "+outputfile+" "+inputfile+order
+    commandline = "sort -f"+style+"-k "+str(column)+" -o "+outputfile+" "+inputfile+order
 
     errorcode, stdout = commands.getstatusoutput(commandline)
 
