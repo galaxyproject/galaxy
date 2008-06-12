@@ -30,7 +30,7 @@ class Fasta( Sequence ):
     file_ext = "fasta"
 
     def set_peek( self, dataset ):
-        Sequence.set_peek( self, dataset )
+        dataset.peek = data.get_file_peek( dataset.file_name )
         count = size = 0
         for line in file( dataset.file_name ):
             if line and line[0] == ">":
@@ -89,13 +89,12 @@ class Fasta( Sequence ):
         except:
             return False
 
-
 class FastqSolexa( Sequence ):
     """Class representing a FASTQ sequence ( the Solexa variant )"""
     file_ext = "fastqsolexa"
 
     def set_peek( self, dataset ):
-        Sequence.set_peek( self, dataset )
+        dataset.peek = data.get_file_peek( dataset.file_name )
         count = size = 0
         bases_regexp = re.compile("^[NGTAC]*$")
         for line in file( dataset.file_name ):
