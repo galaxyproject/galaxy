@@ -24,13 +24,12 @@ class DefaultToolAction( object ):
         of the DataToolParameter type.
         """
         input_datasets = dict()
-        def visitor( prefix, input, value ):
+        def visitor( prefix, input, value, parent = None ):
             def process_dataset( data ):
-                if not data:
-                    return NoneDataset( datatypes_registry = trans.app.datatypes_registry, ext = input.extensions[0] )
-                if not isinstance( data.datatype, input.formats ):
+                if data and not isinstance( data.datatype, input.formats ):
                     for target_ext in input.extensions:
                         if target_ext in data.get_converter_types():
+                            data.refresh() #need to refresh incase this conversion just took place, i.e. input above in tool performed the same conversion
                             assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
                             if assoc: data = assoc[0].dataset
                             elif input.converter_safe( param_values, trans ):
@@ -41,7 +40,8 @@ class DefaultToolAction( object ):
                                 new_data.name = data.name
                                 assoc.dataset_id = new_data.id
                                 data = new_data
-                                break
+                                data.flush()
+                            break
                 return data
             if isinstance( input, DataToolParameter ):
                 if isinstance( value, list ):
@@ -49,8 +49,16 @@ class DefaultToolAction( object ):
                     # are stored as name1, name2, ...
                     for i, v in enumerate( value ):
                         input_datasets[ prefix + input.name + str( i + 1 ) ] = process_dataset( v )
+                        if parent:
+                            parent[input.name] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                        else:
+                            param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                 else:
                     input_datasets[ prefix + input.name ] = process_dataset( value )
+                    if parent:
+                        parent[input.name] = input_datasets[ prefix + input.name ]
+                    else:
+                        param_values[input.name] = input_datasets[ prefix + input.name ]
         tool.visit_inputs( param_values, visitor )
         return input_datasets
     
@@ -74,6 +82,8 @@ class DefaultToolAction( object ):
             if data:
                 input_names.append( 'data %s' % data.hid )
                 input_ext = data.ext
+            else:
+                data = NoneDataset( datatypes_registry = trans.app.datatypes_registry )
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
             for meta_key, meta_value in data.metadata.items():

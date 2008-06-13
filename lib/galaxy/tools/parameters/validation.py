@@ -179,19 +179,21 @@ class UnspecifiedBuildValidator( Validator ):
     Validator that checks for missing metadata
     """
     def __init__( self, message=None ):
-        self.message = message
+        if message is None:
+            self.message = "Unspecified genome build, click the pencil icon in the history item to set the genome build"
+        else:
+            self.message = message
     @classmethod
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ) )
     def validate( self, value, history=None ):
+        #if value is None, we cannot validate
         if value:
             dbkey = value.metadata.dbkey
             if isinstance( dbkey, list ):
                 dbkey = dbkey[0]
-        if dbkey == '?':
-            if self.message is None:
-                self.message = "Unspecified genome build, click the pencil icon in the history item to set the genome build"
-            raise ValueError( self.message )
+            if dbkey == '?':
+                raise ValueError( self.message )
 
 class NoOptionsValidator( Validator ):
     """Validator that checks for empty select list"""

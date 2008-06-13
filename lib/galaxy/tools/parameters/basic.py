@@ -1029,7 +1029,10 @@ class DataToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={} ):
         filter_value = None
         if self.options:
-            filter_value = self.options.get_options( trans, other_values )[0][0]
+            try:
+                filter_value = self.options.get_options( trans, other_values )[0][0]
+            except IndexError:
+                pass #no valid options
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.history
         assert history is not None, "DataToolParameter requires a history"
@@ -1175,10 +1178,8 @@ class DataToolParameter( ToolParameter ):
     def converter_safe( self, other_values, trans ):
         if trans.workflow_building_mode:
             return False
-        if self.tool.config_files:
-            return False #dataset conversion and configuration files currently only work with datasets that have already been converted
         converter_safe = [True]
-        def visitor( prefix, input, value ):
+        def visitor( prefix, input, value, parent = None ):
             if isinstance( input, SelectToolParameter ) and self.name in input.get_dependencies():
                 if input.is_dynamic and ( input.dynamic_options or ( not input.dynamic_options and not input.options ) or not input.options.converter_safe ):
                     converter_safe[0] = False #This option does not allow for conversion, i.e. uses contents of dataset file to generate options

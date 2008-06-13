@@ -7,7 +7,6 @@ from basic import ToolParameter
 class Group( object ):
     def __init__( self ):
         self.name = None
-        self.inputs = None
     def value_to_basic( self, value, app ):
         """
         Convert value to a (possibly nested) representation using only basic
@@ -24,7 +23,7 @@ class Group( object ):
 class Repeat( Group ):
     type = "repeat"
     def __init__( self ):
-        self.name = None
+        Group.__init__( self )
         self.title = None
         self.inputs = None
     @property
@@ -61,14 +60,14 @@ class Repeat( Group ):
             for input in self.inputs.itervalues():
                 new_prefix = prefix + "%s_%d|" % ( self.name, i )
                 if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name] )
+                    callback( new_prefix, input, d[input.name], parent = d )
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )  
         
 class Conditional( Group ):
     type = "conditional"
     def __init__( self ):
-        self.name = None
+        Group.__init__( self )
         self.test_param = None
         self.cases = []
     def get_current_case( self, value, trans ):
@@ -98,7 +97,7 @@ class Conditional( Group ):
         new_prefix = prefix + "%s|" % ( self.name )
         for input in self.cases[current_case].inputs.itervalues():
             if isinstance( input, ToolParameter ):
-                callback( prefix, input, value[input.name] )
+                callback( prefix, input, value[input.name], parent = value )
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
                          

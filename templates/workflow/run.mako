@@ -16,7 +16,10 @@ div.toolForm{
 from galaxy.tools.parameters import DataToolParameter
 %>
 
-<%def name="do_inputs( inputs, values, errors, prefix, step )">
+<%def name="do_inputs( inputs, values, errors, prefix, step, other_values = None )">
+  %if other_values is None:
+      <% other_values = values %>
+  %endif
   %for input_index, input in enumerate( inputs.itervalues() ):
     %if input.type == "repeat":
       <div class="repeat-group">
@@ -30,7 +33,7 @@ from galaxy.tools.parameters import DataToolParameter
             %endif
             <div class="repeat-group-item">
             <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
-            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(i) + "|", step )}
+            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(i) + "|", step, other_values )}
             ## <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}" /></div>
             </div> 
           %endfor
@@ -41,15 +44,15 @@ from galaxy.tools.parameters import DataToolParameter
       <% current_case = group_values['__current_case__'] %>
       <% prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
-      ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_values, group_errors, prefix, step )}
-      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, prefix + input.name + "|", step )}
+      ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step )}
+      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, prefix + input.name + "|", step, other_values )}
     %else:
-      ${row_for_param( input, values[ input.name ], values, errors, prefix, step )}
+      ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step )}
     %endif
   %endfor  
 </%def>
 
-<%def name="row_for_param( param, value, values, error_dict, prefix, step )">
+<%def name="row_for_param( param, value, other_values, error_dict, prefix, step )">
     ## -- ${param.name} -- ${step.state.inputs} --
     %if error_dict.has_key( param.name ):
         <% cls = "form-row form-row-error" %>
@@ -66,7 +69,7 @@ from galaxy.tools.parameters import DataToolParameter
                     %>
                     Output dataset '${conn.output_name}' from step ${int(conn.output_step.order_index)+1}
                 %else:
-                    ${param.get_html_field( t, dict(), values ).get_html( str(step.id) + "|" + prefix )}
+                    ${param.get_html_field( t, dict(), other_values ).get_html( str(step.id) + "|" + prefix )}
                 %endif
             %else:
                 ${param.value_to_display_text( value, app )}

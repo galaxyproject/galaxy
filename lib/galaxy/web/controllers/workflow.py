@@ -679,7 +679,8 @@ def cleanup_param_values( inputs, values ):
                 # HACK: Nested associations are not yet working, but we
                 #       still need to clean them up so we can serialize
                 # if not( prefix ):
-                associations.append( ( tmp.hid, prefix + key ) )
+                if tmp: #this is false for a non-set optional dataset
+                    associations.append( ( tmp.hid, prefix + key ) )
                 # Cleanup the other deprecated crap associated with datasets
                 # as well. Worse, for nested datasets all the metadata is
                 # being pushed into the root. FIXME: MUST REMOVE SOON
