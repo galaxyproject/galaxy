@@ -61,6 +61,9 @@ session_data_dir = %(here)s/database/beaker_sessions
 session_key = galaxysessions
 session_secret = changethisinproduction
 
+# Galaxy session security
+id_secret = changethisinproductiontoo
+
 # Configuration for debugging middleware
 debug = true
 use_lint = false

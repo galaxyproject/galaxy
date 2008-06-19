@@ -14,6 +14,9 @@ import tempfile
 import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import MetadataCollection
 
+import logging
+log = logging.getLogger( __name__ )
+
 datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
 
 def set_datatypes_registry( d_registry ):
@@ -121,9 +124,12 @@ class History( object ):
                     last_hid = dataset.hid
             return last_hid + 1
 
-    def add_galaxy_session( self, galaxy_session ):
-        self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
-    
+    def add_galaxy_session( self, galaxy_session, association=None ):
+        if association is None:
+            self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
+        else:
+            self.galaxy_sessions.append( association )
+
     def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
         if parent_id:
             for data in self.datasets:
@@ -487,16 +493,23 @@ class Event( object ):
         self.message = message
 
 class GalaxySession( object ):
-    def __init__( self, id=None, user=None, remote_host=None, remote_addr=None, referer=None ):
+    def __init__( self, id=None, user=None, remote_host=None, remote_addr=None, referer=None, current_history_id=None, session_key=None, is_valid=False, prev_session_id=None ):
         self.id = id
         self.user = user
         self.remote_host = remote_host
         self.remote_addr = remote_addr
         self.referer = referer
+        self.current_history_id = current_history_id
+        self.session_key = session_key
+        self.is_valid = is_valid
+        self.prev_session_id = prev_session_id
         self.histories = []
 
-    def add_history( self, history ):
-        self.histories.append( GalaxySessionToHistoryAssociation( self, history ) )
+    def add_history( self, history, association=None ):
+        if association is None:
+            self.histories.append( GalaxySessionToHistoryAssociation( self, history ) )
+        else:
+            self.histories.append( association )
     
 class GalaxySessionToHistoryAssociation( object ):
     def __init__( self, galaxy_session, history ):

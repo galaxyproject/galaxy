@@ -2,11 +2,15 @@ import pkg_resources
 pkg_resources.require( "pycrypto" )
 
 from Crypto.Cipher import Blowfish
+from Crypto.Util.randpool import RandomPool
+from Crypto.Util import number
 
 class SecurityHelper( object ):
+    # TODO: checking if histories/datasets are owned by the current user) will be moved here.
     def __init__( self, **config ):
         self.id_secret = config['id_secret']
         self.id_cipher = Blowfish.new( self.id_secret )
+        self.__random_pool = RandomPool( 1024 )
     def encode_id( self, id ):
         # Convert to string
         s = str( id )
@@ -16,3 +20,21 @@ class SecurityHelper( object ):
         return self.id_cipher.encrypt( s ).encode( 'hex' )
     def decode_id( self, id ):
         return int( self.id_cipher.decrypt( id.decode( 'hex' ) ).lstrip( "!" ) )
+    def encode_session_key( self, session_key ):
+        # Session keys are strings
+        # Pad to a multiple of 8 with leading "!" 
+        s = ( "!" * ( 8 - len( session_key ) % 8 ) ) + session_key
+        # Encrypt
+        return self.id_cipher.encrypt( s ).encode( 'hex' )
+    def decode_session_key( self, session_key ):
+        # Session keys are strings
+        return self.id_cipher.decrypt( session_key.decode( 'hex' ) ).lstrip( "!" )
+    def get_new_session_key( self ):
+        # Generate a unique, high entropy 128 bit random number
+        while self.__random_pool.entropy < 100:
+            self.__random_pool.add_event()
+        self.__random_pool.stir()
+        rn = number.getRandomNumber( 128, self.__random_pool.get_bytes )
+        # session_key must be a string
+        return str( rn )
+        

@@ -108,7 +108,6 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
-    
     @property
     def sa_session( self ):
         """
@@ -117,7 +116,6 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         to allow migration toward a more SQLAlchemy 0.4 style of use.
         """
         return self.app.model.context.current
-        
     def log_event( self, message, tool_id=None, **kwargs ):
         """
         Application level logging. Still needs fleshing out (log levels and
@@ -138,119 +136,196 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.ensure_valid_galaxy_session()
         event.session_id = self.galaxy_session.id   
         event.flush()
-        
-    def get_cookie( self, name='universe' ):
-        """
-        Convienience method for getting the universe cookie
-        """
+    def get_cookie( self, name='galaxysession' ):
+        """Convienience method for getting the galaxysession cookie"""
         try:
-            # If we've changed the cookie during the request return the new 
-            # value
+            # If we've changed the cookie during the request return the new value
             if name in self.response.cookies:
                 return self.response.cookies[name].value
             else:
                 return self.request.cookies[name].value
-        except Exception:
+        except:
             return None
-        
-    def set_cookie( self, value, name='universe', path='/', age=90, version='1' ):
-        """
-        Convienience method for setting the universe cookie
-        """
+    def set_cookie( self, value, name='galaxysession', path='/', age=90, version='1' ):
+        """Convienience method for setting the galaxysession cookie"""
+        # The galaxysession cookie value must be a high entropy 128 bit random number encrypted 
+        # using a server secret key.  Any other value is invalid and could pose security issues.
         self.response.cookies[name] = value
-        self.response.cookies[name]['path']     = path
-        self.response.cookies[name]['max-age']  = 3600 * 24 * age
-        tstamp = time.localtime ( time.time() + 3600 * 24 * age  )
-        self.response.cookies[name]['expires'] = time.strftime('%a, %d-%b-%Y %H:%M:%S GMT', tstamp) 
+        self.response.cookies[name]['path'] = path
+        self.response.cookies[name]['max-age'] = 3600 * 24 * age # 90 days
+        tstamp = time.localtime ( time.time() + 3600 * 24 * age )
+        self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp ) 
         self.response.cookies[name]['version'] = version
-        
     def get_history( self, create=False ):
-        """
-        Load the current history
-        """
+        """Load the current history"""
         if self.__history is NOT_SET:
-            history = None
-            id = self.get_cookie( name='universe' )
-            if id:
-                history = self.app.model.History.get( id )
-            if history is None or history.deleted:
-                history = self.new_history()
-            self.__history = history
-        if create is True and ( history is None or history.deleted ):
-            history = self.new_history()             
-        return self.__history
-    
+            self.__history = None
+            # See if we have a galaxysession cookie
+            secure_id = self.get_cookie( name='galaxysession' )
+            if secure_id:
+                session_key = self.security.decode_session_key( secure_id )
+                try:
+                    galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                    if galaxy_session and galaxy_session.is_valid and galaxy_session.current_history_id:
+                        history = self.app.model.History.get( galaxy_session.current_history_id )
+                        if history and not history.deleted:
+                            self.__history = history
+                except Exception, e:
+                    # This should only occur in development if the cookie is not synced with the db
+                    pass
+            else:
+                # See if we have a deprecated universe cookie
+                # TODO: this should be eliminated some time after October 1, 2008
+                # We'll keep it until then because the old universe cookies are valid for 90 days
+                history_id = self.get_cookie( name='universe' )
+                if history_id:
+                    history = self.app.model.History.get( int( history_id ) )
+                    if history and not history.deleted:
+                        self.__history = history
+                    # Expire the universe cookie since it is deprecated
+                    self.set_cookie( name='universe', value=id, age=0 )
+            if self.__history is None:
+                return self.new_history()
+        if create is True and self.__history is None:
+            return self.new_history()
+        return self.__history          
     def new_history( self ):
         history = self.app.model.History()
-        """
-        We are associating the last used genome_build with histories, so we will always
-        initialize a new history with the first dbkey in util.dbnames which is currently
-        ?    unspecified (?)
-        """
-        history.genome_build = util.dbnames.default_value
-        if history.user_id is None and self.user is not None:
-            history.user_id = self.user.id
-        if self.galaxy_session_is_valid():
-            history.add_galaxy_session(self.get_galaxy_session())
+        # Make sure we have an id
         history.flush()
-        self.set_cookie( name='universe', value=history.id )
+        # Immediately associate the new history with self
         self.__history = history
-        return history
-    
-    def set_history( self, history ):
-        if history is None or history.deleted:
-            self.set_cookie( name='universe', value='' )
+        # Make sure we have a valid session to associate with the new history
+        if self.galaxy_session_is_valid():
+            galaxy_session = self.get_galaxy_session()
         else:
-            self.set_cookie( name='universe', value=history.id )
+            galaxy_session = self.new_galaxy_session()
+        # We are associating the last used genome_build with histories, so we will always
+        # initialize a new history with the first dbkey in util.dbnames which is currently
+        # ?    unspecified (?)
+        history.genome_build = util.dbnames.default_value
+        if self.user:
+            history.user_id = self.user.id
+            galaxy_session.user_id = self.user.id
+        try:
+            # See if we have already associated the history with the session
+            association = self.app.model.GalaxySessionToHistoryAssociation.select_by( session_id=galaxy_session.id, history_id=history.id )[0]
+        except:
+            association = None
+        history.add_galaxy_session( galaxy_session, association=association )
+        history.flush()
+        galaxy_session.current_history_id = history.id
+        galaxy_session.flush()
+        self.__history = history
+        return self.__history
+    def set_history( self, history ):
+        if history and not history.deleted and self.galaxy_session_is_valid():
+            galaxy_session = self.get_galaxy_session()
+            galaxy_session.current_history_id = history.id
+            galaxy_session.flush()
         self.__history = history
     history = property( get_history, set_history )
-    
     def get_user( self ):
-        """
-        Return the current user if logged in (based on cookie) or `None`.
-        """
+        """Return the current user if logged in or None."""
         if self.__user is NOT_SET:
-            id = self.get_cookie( name='universe_user' )
-            if not id:
-                self.__user = None
+            self.__user = None
+            # See if we have a galaxysession cookie
+            secure_id = self.get_cookie( name='galaxysession' )
+            if secure_id:
+                session_key = self.security.decode_session_key( secure_id )
+                try:
+                    galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                    if galaxy_session and galaxy_session.is_valid and galaxy_session.user_id:
+                        user = self.app.model.User.get( galaxy_session.user_id )
+                        if user:
+                            self.__user = user
+                except:
+                    # This should only occur in development if the cookie is not synced with the db
+                    pass
             else:
-                self.__user = self.app.model.User.get( int( id ) )
+                # See if we have a deprecated universe_user cookie
+                # TODO: this should be eliminated some time after October 1, 2008
+                # We'll keep it until then because the old universe cookies are valid for 90 days
+                user_id = self.get_cookie( name='universe_user' )
+                if user_id:
+                    user = self.app.model.User.get( int( user_id ) )
+                    if user:
+                        self.__user = user
+                    # Expire the universe_user cookie since it is deprecated
+                    self.set_cookie( name='universe_user', value='', age=0 )
         return self.__user
-    
     def set_user( self, user ):
-        """
-        Set the current user to `user` (by setting a cookie).
-        """
-        if user is None:
-            self.set_cookie( name='universe_user', value='' )
-        else:
-            self.set_cookie( name='universe_user', value=user.id )  
+        """Set the current user if logged in."""
+        if user is not None and self.galaxy_session_is_valid():
+            galaxy_session = self.get_galaxy_session()
+            if galaxy_session.user_id != user.id:
+                galaxy_session.user_id = user.id
+                galaxy_session.flush()
         self.__user = user
     user = property( get_user, set_user )
-    
     def get_galaxy_session( self, create=False ):
-        # Return the current user's galaxy_session.
+        """Return the current user's GalaxySession"""
         if self.__galaxy_session is NOT_SET:
-            id = self.get_cookie( name='universe_session' )
-            if not id:
-                self.__galaxy_session = None
+            self.__galaxy_session = None
+            # See if we have a galaxysession cookie
+            secure_id = self.get_cookie( name='galaxysession' )
+            if secure_id:
+                # Decode the cookie value to get the session_key
+                session_key = self.security.decode_session_key( secure_id )
+                try:
+                    # Retrive the galaxy_session id via the unique session_key
+                    galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                    if galaxy_session and galaxy_session.is_valid:
+                        self.__galaxy_session = galaxy_session
+                except:
+                    # This should only occur in development if the cookie is not synced with the db
+                    pass
             else:
-                self.__galaxy_session = self.app.model.GalaxySession.get( int( id ) )
+                # See if we have a deprecated universe_session cookie
+                # TODO: this should be eliminated some time after October 1, 2008
+                # We'll keep it until then because the old universe cookies are valid for 90 days
+                session_id = self.get_cookie( name='universe_session' )
+                if session_id:
+                    galaxy_session = self.app.model.GalaxySession.get( int( session_id ) )
+                    # NOTE: We can't test for is_valid here since the old session records did not include this flag
+                    if galaxy_session:
+                        # Set the new galaxysession cookie value, old session records did not have a session_key or is_valid flag
+                        session_key = self.security.get_new_session_key()
+                        galaxy_session.session_key = session_key
+                        galaxy_session.is_valid = True
+                        galaxy_session.flush()
+                        secure_id = self.security.encode_session_key( session_key )
+                        self.set_cookie( name='galaxysession', value=secure_id )
+                        # Expire the universe_user cookie since it is deprecated
+                        self.set_cookie( name='universe_session', value='', age=0 )
+                        self.__galaxy_session = galaxy_session
         if create is True and self.__galaxy_session is None:
-            galaxy_session = self.new_galaxy_session()   
+            return self.new_galaxy_session()
         return self.__galaxy_session
-    
-    def new_galaxy_session( self ):
-        # Create a new galaxy_session, retrieving the user's most recently updated history
-        galaxy_session = self.app.model.GalaxySession()
-        if self.user is not None:
+    def new_galaxy_session( self, prev_session_id=None ):
+        """Create a new secure galaxy_session"""
+        session_key = self.security.get_new_session_key()
+        galaxy_session = self.app.model.GalaxySession( session_key=session_key, is_valid=True, prev_session_id=prev_session_id )
+        # Make sure we have an id
+        galaxy_session.flush()
+        # Immediately associate the new session with self
+        self.__galaxy_session = galaxy_session
+        if prev_session_id is not None:
+            # User logged out, so we need to create a new history for this session
+            self.history = self.new_history()
+            galaxy_session.current_history_id = self.history.id
+        elif self.user is not None:
             galaxy_session.user_id = self.user.id
+            # Set this session's current_history_id to the user's last updated history
             h = self.app.model.History
             ht = h.table
             where = ( ht.c.user_id==self.user.id ) & ( ht.c.deleted=='f' )
             history = h.query().filter( where ).order_by( desc( ht.c.update_time ) ).first()
-            if history is not None:
+            if history:
                 self.history = history
+                galaxy_session.current_history_id = self.history.id
+        elif self.history:
+            galaxy_session.current_history_id = self.history.id
         galaxy_session.remote_host = self.request.remote_host
         galaxy_session.remote_addr = self.request.remote_addr
         try:
@@ -258,53 +333,60 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         except:
             galaxy_session.referer = None
         if self.history is not None:
-            galaxy_session.add_history(self.history)
+            # See if we have already associated the session with the history
+            try:
+                association = self.app.model.GalaxySessionToHistoryAssociation.select_by( session_id=galaxy_session.id, history_id=self.history.id )[0]
+            except:
+                association = None
+            galaxy_session.add_history( self.history, association=association )
         galaxy_session.flush()
-        self.set_cookie( name='universe_session', value=galaxy_session.id )
+        # Set the cookie value to the encrypted session_key
+        self.set_cookie( name='galaxysession', value=self.security.encode_session_key( session_key ) )
         self.__galaxy_session = galaxy_session
         return self.__galaxy_session
-
     def set_galaxy_session( self, galaxy_session ):
-        # Set the current galaxy_session by setting the universe_session cookie.
-        if galaxy_session is None:
-            #TODO we may want to raise an exception here instead of creating a new galaxy_session
-            galaxy_session = self.new_galaxy_session()
-        else:
-            if galaxy_session.user_id is None and self.user is not None:
-                galaxy_session.user_id = self.user.id
-                galaxy_session.flush()
-            self.set_cookie( name='universe_session', value=galaxy_session.id )
-            self.__galaxy_session = galaxy_session
-            
-    def galaxy_session_is_valid( self ):
-        # TODO do we want better validation here?
-        valid = False
-        galaxy_session = self.get_galaxy_session()
-        if galaxy_session is not None and galaxy_session.id is not None:
-            valid = True
-        return valid
-
-    def ensure_valid_galaxy_session( self ):
-        if not self.galaxy_session_is_valid():
-            self.new_galaxy_session()
-
-    def end_galaxy_session( self ):
-        # End the current galaxy_session by expiring the universe_session cookie.
-        if self.galaxy_session_is_valid():
-            self.set_cookie( name='universe_session', value=self.galaxy_session.id, age=0 )
-            self.__galaxy_session = None
+        """Set the current galaxy_session"""
+        self.__galaxy_session = galaxy_session
     galaxy_session = property( get_galaxy_session, set_galaxy_session )
-    
-    def make_associations( self ):
+    def galaxy_session_is_valid( self ):
+        try:
+            return self.galaxy_session.is_valid
+        except:
+            return False
+    def ensure_valid_galaxy_session( self ):
+        """Make sure we have a valid galaxy session, create a new one if necessary."""
+        if not self.galaxy_session_is_valid():
+            galaxy_session = self.new_galaxy_session()
+    def logout_galaxy_session( self ):
+        """
+        Logout the current user by setting user to None and galaxy_session.is_valid to False 
+        in the db.  A new galaxy_session is automatically created with prev_session_id is set 
+        to save a reference to the current one as a way of chaining them together
+        """
         if self.galaxy_session_is_valid():
-           if self.galaxy_session.user_id is None and self.user is not None:
-                self.galaxy_session.user_id = self.user.id
-                self.galaxy_session.flush()
-                self.__galaxy_session = self.galaxy_session
-        if self.history is not None and self.user is not None:
-            self.history.user_id = self.user.id
-            self.history.flush()
-            self.__history = self.history
+            galaxy_session = self.get_galaxy_session()
+            old_session_id = galaxy_session.id
+            galaxy_session.is_valid = False
+            galaxy_session.flush()
+            self.set_user( None )
+            return self.new_galaxy_session( prev_session_id=old_session_id )
+        else:
+            error( "Attempted to logout an invalid galaxy_session" )
+    def make_associations( self ):
+        history = self.get_history()
+        user = self.get_user()
+        if self.galaxy_session_is_valid():
+            galaxy_session = self.get_galaxy_session()
+            if galaxy_session.user_id is None and user is not None:
+                galaxy_session.user_id = user.id
+            if history is not None:
+                galaxy_session.current_history_id = history.id
+            galaxy_session.flush()
+            self.__galaxy_session = galaxy_session
+        if history is not None and user is not None:
+            history.user_id = user.id
+            history.flush()
+            self.__history = history
                 
     def get_toolbox(self):
         """Returns the application toolbox"""

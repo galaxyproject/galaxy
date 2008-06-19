@@ -90,15 +90,11 @@ class User( BaseController ):
                 .add_text( "email", "Email address", value=email, error=email_error )
                 .add_password( "password", "Password", value='', error=password_error, 
                                 help="<a href='%s'>Forgot password? Reset here</a>" % web.url_for( action='reset_password' ) ) )
-
     @web.expose
     def logout( self, trans ):
+        # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
-        # If the current history is saved for the current user it should be disconnected.
-        if trans.history.user == trans.user:
-            trans.set_history( None )
-        trans.set_user( None )
-        trans.end_galaxy_session()
+        new_galaxy_session = trans.logout_galaxy_session()
         return trans.show_ok_message( "You are no longer logged in", refresh_frames=['masthead', 'history'] )
             
     @web.expose

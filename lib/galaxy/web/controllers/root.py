@@ -411,7 +411,6 @@ class RootController( BaseController ):
                 new_history = history.copy()
                 new_history.name = history.name+" from "+user.email
                 new_history.user_id = send_to_user.id
-                new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
                 trans.log_event( "History share, id: %s, name: '%s': to new id: %s" % (str(history.id), history.name, str(new_history.id)) )
             self.app.model.flush()
             return trans.show_message( "History (%s) has been shared with: %s" % (",".join(history_names),email) )
@@ -449,7 +448,12 @@ class RootController( BaseController ):
             new_history = import_history.copy()
             new_history.name = "imported: "+new_history.name
             new_history.user_id = user.id
-            new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
+            galaxy_session = trans.get_galaxy_session()
+            try:
+                association = trans.app.model.GalaxySessionToHistoryAssociation.selectone_by( session_id=galaxy_session.id, history_id=new_history.id )
+            except:
+                association = None
+            new_history.add_galaxy_session( galaxy_session, association=association )
             new_history.flush()
             if not user_history.datasets:
                 trans.set_history( new_history )
@@ -461,7 +465,12 @@ class RootController( BaseController ):
             new_history = import_history.copy()
             new_history.name = "imported: "+new_history.name
             new_history.user_id = None
-            new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
+            galaxy_session = trans.get_galaxy_session()
+            try:
+                association = trans.app.model.GalaxySessionToHistoryAssociation.selectone_by( session_id=galaxy_session.id, history_id=new_history.id )
+            except:
+                association = None
+            new_history.add_galaxy_session( galaxy_session, association=association )
             new_history.flush()
             trans.set_history( new_history )
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
@@ -481,7 +490,12 @@ class RootController( BaseController ):
         else:
             new_history = trans.app.model.History.get( id )
             if new_history:
-                new_history.add_galaxy_session(trans.get_galaxy_session( create=True ))
+                galaxy_session = trans.get_galaxy_session()
+                try:
+                    association = trans.app.model.GalaxySessionToHistoryAssociation.selectone_by( session_id=galaxy_session.id, history_id=new_history.id )
+                except:
+                    association = None
+                new_history.add_galaxy_session( galaxy_session, association=association )
                 new_history.flush()
                 trans.set_history( new_history )
                 trans.log_event( "History switched to id: %s, name: '%s'" % (str(new_history.id), new_history.name ) )

@@ -173,7 +173,12 @@ GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=True ),
     Column( "remote_host", String( 255 ) ),
     Column( "remote_addr", String( 255 ) ),
-    Column( "referer", TEXT ) )
+    Column( "referer", TEXT ),
+    Column( "current_history_id", Integer, ForeignKey( "history.id" ), nullable=True ),
+    Column( "session_key", TrimmedString( 255 ), index=True, unique=True ), # unique 128 bit random number coerced to a string
+    Column( "is_valid", Boolean, default=False ),
+    Column( "prev_session_id", Integer ) # saves a reference to the previous session so we have a way to chain them together
+    )
 
 GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", metadata,
     Column( "id", Integer, primary_key=True ),
