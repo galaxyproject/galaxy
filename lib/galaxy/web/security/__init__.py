@@ -10,7 +10,6 @@ class SecurityHelper( object ):
     def __init__( self, **config ):
         self.id_secret = config['id_secret']
         self.id_cipher = Blowfish.new( self.id_secret )
-        self.__random_pool = RandomPool( 1024 )
     def encode_id( self, id ):
         # Convert to string
         s = str( id )
@@ -31,10 +30,11 @@ class SecurityHelper( object ):
         return self.id_cipher.decrypt( session_key.decode( 'hex' ) ).lstrip( "!" )
     def get_new_session_key( self ):
         # Generate a unique, high entropy 128 bit random number
-        while self.__random_pool.entropy < 100:
-            self.__random_pool.add_event()
-        self.__random_pool.stir()
-        rn = number.getRandomNumber( 128, self.__random_pool.get_bytes )
+        random_pool = RandomPool( 16 )
+        while random_pool.entropy < 128:
+            random_pool.add_event()
+        random_pool.stir()
+        rn = number.getRandomNumber( 128, random_pool.get_bytes )
         # session_key must be a string
         return str( rn )
         
