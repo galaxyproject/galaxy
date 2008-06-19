@@ -30,7 +30,7 @@ class SecurityHelper( object ):
         return self.id_cipher.decrypt( session_key.decode( 'hex' ) ).lstrip( "!" )
     def get_new_session_key( self ):
         # Generate a unique, high entropy 128 bit random number
-        random_pool = RandomPool( 16 )
+        random_pool = RandomPool( 1064 )
         while random_pool.entropy < 128:
             random_pool.add_event()
         random_pool.stir()
