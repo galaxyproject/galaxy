@@ -1,9 +1,6 @@
 <%inherit file="/base_panels.mako"/>
 
 <%def name="late_javascripts()">
-    ## <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
-    ## <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.dimensions.js')}"></script>
-    ## <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.ui.js')}"></script>
     <script type='text/javascript' src="/static/scripts/galaxy.panels.js"> </script>
     <script type="text/javascript">
         ensure_dd_helper();
@@ -18,7 +15,6 @@
     ## ${parent.javascripts()}
 
     <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
-    <script type='text/javascript' src="/static/scripts/jquery.dimensions.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
     <script type='text/javascript' src="/static/scripts/galaxy.ui.scrollPanel.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.hoverIntent.js"> </script>

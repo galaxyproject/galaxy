@@ -159,8 +159,9 @@ $.extend( Node.prototype, {
                     ui.helper.get(0).terminal.connectors[0].inner_color = "#FFFFFF";
                 },
                 drop: function( e, ui ) {
+                    var instance = $(this).data("droppable");
                     var source = ui.draggable.get(0).terminal;
-                    var target = ui.element.get(0).terminal;
+                    var target = instance.element.get(0).terminal;
                     var c = new Connector();
                     c.connect( source, target );
                     c.redraw();
@@ -492,7 +493,8 @@ function prebuild_node( type, title_text, tool_id ) {
         scrollSpeed: 20,
         // containment: $("#shim"),
         // grow: true,
-        click: function( _, element ) {
+        click: function( _, ui ) {
+            var element = $(this).data("draggable").element.get(0);
             (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode)
             workflow.activate_node( node );
         },
@@ -506,7 +508,7 @@ function prebuild_node( type, title_text, tool_id ) {
             })
         },
         stop: function( _, ui  ) {
-            element = ui.element.get(0);
+            var element = $(this).data("draggable").element.get(0);
             (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode)
             $(this).css( 'z-index', '100' );
             $(this).find( ".terminal" ).each( function() {

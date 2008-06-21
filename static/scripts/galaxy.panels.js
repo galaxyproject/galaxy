@@ -85,7 +85,7 @@ function make_left_panel( panel_el, center_el, border_el ) {
                 resize( x );
                 // Constrain helper position
                 ui.position.left = x;
-                ui.position.top = ui.instance.originalPosition.top;
+                ui.position.top = $(this).data("draggable").originalPosition.top;
             },
             click: function() {
                 toggle();
@@ -182,7 +182,7 @@ function make_right_panel( panel_el, center_el, border_el ) {
                 resize( w - x - border_tweak );
                 // Constrain helper position
                 ui.position.left = x;
-                ui.position.top = ui.instance.originalPosition.top;
+                ui.position.top = $(this).data("draggable").originalPosition.top;
             }
         }
     ).find( "div" ).show();
