@@ -18,7 +18,7 @@ except:
 assert sys.version_info[:2] >= ( 2, 4 )
 
 class CachedRangesInFile:
-    fmt = 'I'
+    fmt = '<I'
     fmt_size = struct.calcsize( fmt )
     def __init__( self, filename ):
         self.file_size = os.stat( filename ).st_size
@@ -114,15 +114,14 @@ class TableCoverageSummary:
     def __init__( self, coverage_reader, chrom_lengths ):
         self.coverage_reader = coverage_reader
         self.chrom_lengths = chrom_lengths
-        self.chromosome_coverage = {}
-        self.total_interval_size = 0
-        self.total_interval_count = 0
-        self.table_coverage = {}
-        self.table_chromosome_size = {}
-        self.table_chromosome_count = {}
-        self.table_regions_overlaped_count = {}
-        self.interval_table_overlap_count = {}
-        self._nr_region_size = None
+        self.chromosome_coverage = {} #dict of bitset by chromosome holding user's collapsed input intervals
+        self.total_interval_size = 0 #total size of user's input intervals
+        self.total_interval_count = 0 #total number of user's input intervals
+        self.table_coverage = {} #dict of total coverage by user's input intervals by table
+        self.table_chromosome_size = {} #dict of dict of table:chrom containing total coverage of table for a chrom
+        self.table_chromosome_count = {} #dict of dict of table:chrom containing total number of coverage ranges of table for a chrom
+        self.table_regions_overlaped_count = {} #total number of table regions overlaping user's input intervals (non unique)
+        self.interval_table_overlap_count = {} #total number of user input intervals which overlap table
     def add_region( self, chrom, start, end ):
         self.total_interval_size += ( end - start )
         self.total_interval_count += 1
@@ -143,59 +142,56 @@ class TableCoverageSummary:
             if coverage:
                 self.interval_table_overlap_count[table_name] += 1
             self.table_regions_overlaped_count[table_name] += regions
-    def get_nr_coverage( self ):
-        table_coverage = {}
-        interval_table_overlap_count = {}
-        table_regions_overlap_count = {}
-        interval_count = 0
-        region_start_end = {}
-        for chrom, chromosome_bitset in self.chromosome_coverage.iteritems():
-            end = 0
-            last_end_index = {}
-            while True:
-                if end >= chromosome_bitset.size: break
-                start = chromosome_bitset.next_set( end )
-                if start >= chromosome_bitset.size: break
-                end = chromosome_bitset.next_clear( start )
-                interval_count += 1
-                if chrom not in region_start_end:
-                    region_start_end[chrom] = [start, end]
-                else:
-                    if start < region_start_end[chrom][0]: region_start_end[chrom][0] = start
-                    if end > region_start_end[chrom][1]: region_start_end[chrom][1] = end
-                for table_name, coverage, region_count, start_index in self.coverage_reader.iter_table_coverage_regions_index_by_region( chrom, start, end ):
-                    if table_name not in table_coverage:
-                        table_coverage[table_name] = 0
-                        interval_table_overlap_count[table_name] = 0
-                        table_regions_overlap_count[table_name] = 0
-                    table_coverage[table_name] += coverage
-                    if coverage:
-                        interval_table_overlap_count[table_name] += 1
-                        table_regions_overlap_count[table_name] += region_count
-                        if table_name in last_end_index and last_end_index[table_name] == start_index:
-                            table_regions_overlap_count[table_name] -= 1
-                        last_end_index[table_name] = start_index + region_count - 1
-        table_region_coverage = {}
-        table_region_count = {}
-        for chrom, start_end in region_start_end.items():
-            for table_name, coverage, region_count in self.coverage_reader.iter_table_coverage_regions_by_region( chrom, start_end[0], start_end[1] ):
-                if table_name not in table_region_coverage:
-                    table_region_coverage[table_name] = 0
-                    table_region_count[table_name] = 0
-                table_region_coverage[table_name] += coverage
-                table_region_count[table_name] += region_count
-        return table_region_coverage, table_region_count, interval_count, table_coverage, table_regions_overlap_count, interval_table_overlap_count
-    def get_nr_region_size( self ):
-        if self._nr_region_size is None:
-            self._nr_region_size = 0
-            for chrom, chromosome_bitset in self.chromosome_coverage.iteritems():
-                self._nr_region_size += chromosome_bitset.count_range()
-        return self._nr_region_size
     def iter_table_coverage( self ):
-        table_region_coverage, table_region_count, nr_interval_count, nr_table_coverage, nr_table_regions_overlap_count, nr_interval_table_overlap_count = self.get_nr_coverage()
+        def get_nr_coverage():
+            #returns non-redundant coverage, where user's input intervals have been collapse to resolve overlaps
+            table_coverage = {} #dictionary of tables containing number of table bases overlaped by nr intervals
+            interval_table_overlap_count = {} #dictionary of tables containing number of nr intervals overlaping table
+            table_regions_overlap_count = {} #dictionary of tables containing number of regions overlaped (unique)
+            interval_count = 0 #total number of nr intervals
+            interval_size = 0 #holds total size of nr intervals
+            region_start_end = {} #holds absolute start,end for each user input chromosome
+            for chrom, chromosome_bitset in self.chromosome_coverage.iteritems():
+                #loop through user's collapsed input intervals
+                end = 0
+                last_end_index = {}
+                interval_size += chromosome_bitset.count_range()
+                while True:
+                    if end >= chromosome_bitset.size: break
+                    start = chromosome_bitset.next_set( end )
+                    if start >= chromosome_bitset.size: break
+                    end = chromosome_bitset.next_clear( start )
+                    interval_count += 1
+                    if chrom not in region_start_end:
+                        region_start_end[chrom] = [start, end]
+                    else:
+                        region_start_end[chrom][1] = end
+                    for table_name, coverage, region_count, start_index in self.coverage_reader.iter_table_coverage_regions_index_by_region( chrom, start, end ):
+                        if table_name not in table_coverage:
+                            table_coverage[table_name] = 0
+                            interval_table_overlap_count[table_name] = 0
+                            table_regions_overlap_count[table_name] = 0
+                        table_coverage[table_name] += coverage
+                        if coverage:
+                            interval_table_overlap_count[table_name] += 1
+                            table_regions_overlap_count[table_name] += region_count
+                            if table_name in last_end_index and last_end_index[table_name] == start_index:
+                                table_regions_overlap_count[table_name] -= 1
+                            last_end_index[table_name] = start_index + region_count - 1
+            table_region_coverage = {} #total coverage for tables by bounding nr interval region
+            table_region_count = {} #total number for tables by bounding nr interval region
+            for chrom, start_end in region_start_end.items():
+                for table_name, coverage, region_count in self.coverage_reader.iter_table_coverage_regions_by_region( chrom, start_end[0], start_end[1] ):
+                    if table_name not in table_region_coverage:
+                        table_region_coverage[table_name] = 0
+                        table_region_count[table_name] = 0
+                    table_region_coverage[table_name] += coverage
+                    table_region_count[table_name] += region_count
+            return table_region_coverage, table_region_count, interval_count, interval_size, table_coverage, table_regions_overlap_count, interval_table_overlap_count
+        table_region_coverage, table_region_count, nr_interval_count, nr_interval_size, nr_table_coverage, nr_table_regions_overlap_count, nr_interval_table_overlap_count = get_nr_coverage()
         for table_name in self.table_coverage:
             #TODO: determine a type of statistic, then calculate and report here
-            yield table_name, sum( self.table_chromosome_size.get( table_name, [] ).values() ), sum( self.table_chromosome_count.get( table_name, [] ).values() ), table_region_coverage.get( table_name, 0 ), table_region_count.get( table_name, 0 ), self.total_interval_count, self.total_interval_size,  self.table_coverage[table_name], self.table_regions_overlaped_count.get( table_name, 0), self.interval_table_overlap_count.get( table_name, 0 ), nr_interval_count, self.get_nr_region_size(), nr_table_coverage[table_name], nr_table_regions_overlap_count.get( table_name, 0 ), nr_interval_table_overlap_count.get( table_name, 0 )
+            yield table_name, sum( self.table_chromosome_size.get( table_name, {} ).values() ), sum( self.table_chromosome_count.get( table_name, {} ).values() ), table_region_coverage.get( table_name, 0 ), table_region_count.get( table_name, 0 ), self.total_interval_count, self.total_interval_size,  self.table_coverage[table_name], self.table_regions_overlaped_count.get( table_name, 0), self.interval_table_overlap_count.get( table_name, 0 ), nr_interval_count, nr_interval_size, nr_table_coverage[table_name], nr_table_regions_overlap_count.get( table_name, 0 ), nr_interval_table_overlap_count.get( table_name, 0 )
 
 def profile_per_interval( interval_filename, chrom_col, start_col, end_col, out_filename, keep_empty, coverage_reader ):
     out = open( out_filename, 'wb' )
@@ -213,10 +209,10 @@ def profile_summary( interval_filename, chrom_col, start_col, end_col, out_filen
         table_coverage_summary.add_region( region.chrom, region.start, region.end )
     
     out.write( "#tableName\ttableChromosomeCoverage\ttableChromosomeCount\ttableRegionCoverage\ttableRegionCount\tallIntervalCount\tallIntervalSize\tallCoverage\tallTableRegionsOverlaped\tallIntervalsOverlapingTable\tnrIntervalCount\tnrIntervalSize\tnrCoverage\tnrTableRegionsOverlaped\tnrIntervalsOverlapingTable\n" )
-    for table_name, table_chromosome_size, table_chromosome_count, table_region_coverage, table_region_count, total_interval_count, total_interval_size, total_coverage, table_regions_overlaped_count, interval_region_overlap_count, nr_interval_count, nr_region_size, nr_coverage, nr_table_regions_overlaped_count, nr_interval_table_overlap_count in table_coverage_summary.iter_table_coverage():
+    for table_name, table_chromosome_size, table_chromosome_count, table_region_coverage, table_region_count, total_interval_count, total_interval_size, total_coverage, table_regions_overlaped_count, interval_region_overlap_count, nr_interval_count, nr_interval_size, nr_coverage, nr_table_regions_overlaped_count, nr_interval_table_overlap_count in table_coverage_summary.iter_table_coverage():
         if keep_empty or total_coverage:
             #only output tables that have atleast 1 base covered unless empty are requested
-            out.write( "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ( table_name, table_chromosome_size, table_chromosome_count, table_region_coverage, table_region_count, total_interval_count, total_interval_size, total_coverage, table_regions_overlaped_count, interval_region_overlap_count, nr_interval_count, nr_region_size, nr_coverage, nr_table_regions_overlaped_count, nr_interval_table_overlap_count ) )
+            out.write( "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ( table_name, table_chromosome_size, table_chromosome_count, table_region_coverage, table_region_count, total_interval_count, total_interval_size, total_coverage, table_regions_overlaped_count, interval_region_overlap_count, nr_interval_count, nr_interval_size, nr_coverage, nr_table_regions_overlaped_count, nr_interval_table_overlap_count ) )
     out.close()
 
 class ChromosomeLengths:
