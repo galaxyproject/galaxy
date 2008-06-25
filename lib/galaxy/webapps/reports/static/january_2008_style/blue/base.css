@@ -59,12 +59,13 @@ div.reportParamHelp a
 div.reportBody
 { 
   background: #FFFFFF;
-  background-image: url(report_body_bg.png);
   background-repeat: repeat-x;
   background-position: top;
   padding: 5px;
   padding-left: 10px;
   padding-right: 10px;
+  width: 100%;
+  scrolling: no;
 }
 
 div.reportBody div.reportTitle
@@ -258,7 +259,46 @@ table.colored tr.header
   border-bottom: solid #d8b365 1px;
   font-weight: bold;
 }
-
+table.colored tr.headernew
+{ 
+  background: #add8e6;
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+}
+table.colored tr.headerqueued
+{ 
+  background: #ee82ee;
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+}
+table.colored tr.headerrunning
+{ 
+  background: #ffff00;
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+}
+table.colored tr.headererror
+{ 
+  background: #ff0000;
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+}
+table.colored tr.headerok
+{ 
+  background: #008000;
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+}
 table.colored tr
 { 
   background: white;

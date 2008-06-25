@@ -19,7 +19,4 @@ class Report( BaseController ):
         blog_url = trans.app.config.get( "blog_url", "http://g2.trac.bx.psu.edu/blog"   )
         screencasts_url = trans.app.config.get( "screencasts_url", "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )
         return trans.fill_template( "masthead.mako", brand=brand, wiki_url=wiki_url, blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url )
-    @web.expose
-    def main_frame( self, trans ):
-        return trans.fill_template( "main_frame.mako" )
 

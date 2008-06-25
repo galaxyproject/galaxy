@@ -6,13 +6,15 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
+  <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
 </%def>
 
 ## Default javascripts
 <%def name="javascripts()">
   <!--[if lt IE 7]>
-  <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
-  <script type='text/javascript' src="/static/scripts/ie7-recalc.js"> </script>
+  <script type='text/javascript' src="/static/scripts/IE7.js"></script>
+  <script type='text/javascript' src="/static/scripts/IE8.js"></script>
+  <script type='text/javascript' src="/static/scripts/ie7-recalc.js"></script>
   <![endif]-->
 </%def>
 
@@ -22,25 +24,27 @@
     
 ## Masthead
 <%def name="masthead()">
-  <iframe name="galaxy_masthead" src="${h.url_for( 'masthead' )}" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
+  <iframe name="galaxy_masthead" src="${h.url_for( '/root/masthead' )}" width="100%" height="38" frameborder="0" scrolling="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
 </%def>
 
 ## Document
 <html lang="en">
   <head>
     <title>${self.title()}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
     ${self.javascripts()}
     ${self.stylesheets()}
   </head>
-  <body scroll="no">
+  <body>
     ## Background displays first
     <div id="background"></div>
-    ## Layer iframes over backgrounds
+    ## Layer masthead iframe over background
     <div id="masthead">
       ${self.masthead()}
     </div>
-    <div id="center">
-      ${self.center_panel()}
+    ## Display main report body
+    <div id="main_body">
+      ${self.main_body()}
     </div>
     ## Allow other body level elements
     ${next.body()}

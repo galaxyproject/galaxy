@@ -6,7 +6,6 @@
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
     <link href="${h.url_for('/static/style/masthead.css')}" rel="stylesheet" type="text/css" />
   </head>
-
   <body class="mastheadPage">
     <table width="100%" cellspacing="0" border="0">
       <tr valign="middle">
@@ -21,11 +20,10 @@
           | <a target="_blank" href="${screencasts_url}">screencasts</a>
           | <a target="_blank" href="${blog_url}">blog</a>
           &nbsp;&nbsp;&nbsp;
-          <a target="main_frame" href="${h.url_for( controller='root', action='main_frame' )}">Galaxy Reports Home</a>
+          <a target="_top" href="${h.url_for( controller='root', action='index' )}">Galaxy Reports Home</a>
           &nbsp;
         </td>
       </tr>
     </table>
   </body>
 </html>
-
