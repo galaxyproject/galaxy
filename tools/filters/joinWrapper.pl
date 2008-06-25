@@ -15,11 +15,17 @@ my ($fh2, $file2) = tempfile();
 `sort -k $field2 $input2 > $file2`;
 
 my $option = "";
+my @fields = ();
+my $line = "";
 
 if ($OOption eq "Y") {
-  
-  my $line = <$fh1>;
-  my @fields = split /\t/, $line;
+  if (defined($fh1)) {
+    $line = <$fh1>;
+  } else {
+    die "Failed to create file $file1\n";
+  }
+  @fields = split /\t/, $line;
+  die "The field you selected does not exist in the input file" if (@fields < $field1);
   my @optionO = ();
   my $i = 0;
   foreach (@fields) {
