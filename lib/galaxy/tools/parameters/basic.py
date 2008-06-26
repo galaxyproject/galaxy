@@ -1101,7 +1101,7 @@ class DataToolParameter( ToolParameter ):
         filter_value = None
         if self.options:
             try:
-                filter_value = self.options.get_options( trans, other_values )[0][0]
+                filter_value = self.options.get_options( trans, context )[0][0]
             except IndexError:
                 pass #no valid options
         def dataset_collector( datasets ):
