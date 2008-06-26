@@ -772,7 +772,10 @@ class Tool:
                 # Deal with the 'test' element and see if it's value changed
                 test_param_key = prefix + input.test_param.name
                 test_param_error = None
-                if test_param_key not in incoming and update_only:
+                test_incoming = incoming.get( test_param_key, None )
+                if test_param_key not in incoming \
+                   and "__force_update__" + test_param_key not in incoming \
+                   and update_only:
                     # Update only, keep previous value and state, but still
                     # recurse in case there are nested changes
                     value = group_state[ input.test_param.name ]
@@ -781,7 +784,6 @@ class Tool:
                         errors[ input.test_param.name ] = old_errors[ input.test_param.name ]
                 else:
                     # Get value of test param and determine current case
-                    test_incoming = incoming.get( prefix + input.test_param.name, None )
                     value, test_param_error = \
                         check_param( trans, input.test_param, test_incoming, context )
                     current_case = input.get_current_case( value, trans )
@@ -812,7 +814,9 @@ class Tool:
                 # Store the value of the test element
                 group_state[ input.test_param.name ] = value
             else:
-                if key not in incoming and update_only:
+                if key not in incoming \
+                   and "__force_update__" + key not in incoming \
+                   and update_only:
                     # No new value provided, and we are only updating, so keep
                     # the old value (which should already be in the state) and
                     # preserve the old error message.

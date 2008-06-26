@@ -70,6 +70,7 @@ from galaxy.tools.parameters import DataToolParameter
                     Output dataset '${conn.output_name}' from step ${int(conn.output_step.order_index)+1}
                 %else:
                     ${param.get_html_field( t, dict(), other_values ).get_html( str(step.id) + "|" + prefix )}
+                    <input type="hidden" name="${step.id}|__force_update__${prefix}${param.name}" value="true" />
                 %endif
             %else:
                 ${param.value_to_display_text( value, app )}
