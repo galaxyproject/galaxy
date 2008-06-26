@@ -2,7 +2,7 @@
 
 <%def name="main_body()">
   <div class="reportBody">
-    <h3 align="center">All Jobs in Error for ${specified_date}</h3>
+    <h3 align="center">All Jobs in Error for ${day_label},&nbsp;${month_label}&nbsp;${day_of_month},&nbsp;${year_label}</h3>
     %if msg:
       <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
         <tr><td class="ok_bgr">${msg}</td></tr>
@@ -10,7 +10,7 @@
     %endif
     <table align="center" width="60%" class="colored">
       %if len( jobs ) == 0:
-        <tr><td colspan="5">There are no jobs in error for ${specified_date}</td></tr>
+        <tr><td colspan="5">There are no jobs in error for ${day_label},&nbsp;${month_label}&nbsp;${day_of_month},&nbsp;${year_label}</td></tr>
       %else:
         %for job in jobs:
           <tr class="headererror">

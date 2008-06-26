@@ -2,7 +2,7 @@
 
 <%def name="main_body()">
   <div class="reportBody">
-    <h3 align="center">Jobs per month for user ${email}</h3>
+    <h3 align="center">Jobs per month for user "${email}"</h3>
     <h4 align="center">Click Total Jobs to see the user's jobs for that month</h4>
     %if msg:
       <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
@@ -11,10 +11,10 @@
     %endif
     <table align="center" width="60%" class="colored">
       %if len( jobs ) == 0:
-        <tr class="header"><td colspan="5">There are no jobs</td></tr>
+        <tr><td colspan="2">There are no jobs for user "${email}"</td></tr>
       %else:
         <tr class="header">
-          <td>Year-Month</td>
+          <td>Month</td>
           <td>Total Jobs</td>
         </tr>
         <% ctr = 0 %>
@@ -24,8 +24,8 @@
           %else:
             <tr class="tr">
           %endif
-            <td>${job[0]}</td>
-            <td><a href="${h.url_for( controller='jobs', action='user_for_month', id=email, month=job[0] )}">${job[1]}</a></td>
+            <td>${job[2]}&nbsp;${job[3]}</td>
+            <td><a href="${h.url_for( controller='jobs', action='user_for_month', email=email, month_label=job[2].strip(), year_label=job[3], month=job[0] )}">${job[1]}</a></td>
           </tr>
           <% ctr += 1 %>
         %endfor

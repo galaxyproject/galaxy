@@ -3,7 +3,7 @@
 <%def name="main_body()">
   <div class="reportBody">
     <h3 align="center">Jobs In Error Per Month</h3>
-    <h4 align="center">Click Year-Month to view the number of jobs in error for each day of that month</h4>
+    <h4 align="center">Click Month to view the number of jobs in error for each day of that month</h4>
     %if msg:
       <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
         <tr><td class="ok_bgr">${msg}</td></tr>
@@ -11,10 +11,10 @@
     %endif
     <table align="center" width="60%" class="colored">
       %if len( jobs ) == 0:
-        <tr class="header"><td colspan="5">There are no jobs in error</td></tr>
+        <tr><td colspan="2">There are no jobs in error</td></tr>
       %else:
         <tr class="header">
-          <td>Year-Month</td>
+          <td>Month</td>
           <td>Jobs In Error</td>
         </tr>
         <% ctr = 0 %>
@@ -24,7 +24,7 @@
           %else:
             <tr class="tr">
           %endif
-            <td><a href="${h.url_for( controller='jobs', action='specified_month_in_error', id=job[0] )}">${job[0]}</a></td>
+            <td><a href="${h.url_for( controller='jobs', action='specified_month_in_error', month=job[0], month_label=job[2].strip(), year_label=job[3] )}">${job[2]}&nbsp;${job[3]}</a></td>
             <td>${job[1]}</td>
           </tr>
           <% ctr += 1 %>

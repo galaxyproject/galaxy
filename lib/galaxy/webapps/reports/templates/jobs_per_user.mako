@@ -11,7 +11,7 @@
     %endif
     <table align="center" width="60%" class="colored">
       %if len( jobs ) == 0:
-        <tr class="header"><td colspan="5">There are no jobs</td></tr>
+        <tr><td colspan="2">There are no jobs</td></tr>
       %else:
         <tr class="header">
           <td>User</td>
@@ -24,7 +24,7 @@
           %else:
             <tr class="tr">
           %endif
-            <td><a href="${h.url_for( controller='jobs', action='user_per_month', id=job[0] )}">${job[0]}</a></td>
+            <td><a href="${h.url_for( controller='jobs', action='user_per_month', email=job[0] )}">${job[0]}</a></td>
             <td>${job[1]}</td>
           </tr>
           <% ctr += 1 %>

@@ -2,7 +2,7 @@
 
 <%def name="main_body()">
   <div class="reportBody">
-    <h3 align="center">Jobs for user ${email} during ${month}</h3>
+    <h3 align="center">Jobs for user "${email}" during ${month_label}&nbsp;${year_label}</h3>
     %if msg:
       <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
         <tr><td class="ok_bgr">${msg}</td></tr>
@@ -10,7 +10,7 @@
     %endif
     <table align="center" width="60%" class="colored">
       %if len( jobs ) == 0:
-        <tr class="header"><td colspan="5">There are no jobs for ${email} during ${month}</td></tr>
+        <tr><td colspan="5">There are no jobs for user "${email}" during ${month_label}&nbsp;${year_label}</td></tr>
       %else:
         %for job in jobs:
           <% 
