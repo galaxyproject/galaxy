@@ -1100,7 +1100,10 @@ class DataToolParameter( ToolParameter ):
         most_recent_dataset = [None]
         filter_value = None
         if self.options:
-            filter_value = self.options.get_options( trans, context )[0][0]
+            try:
+                filter_value = self.options.get_options( trans, other_values )[0][0]
+            except IndexError:
+                pass #no valid options
         def dataset_collector( datasets ):
             def is_convertable( dataset ):
                 for target_ext in self.extensions:
