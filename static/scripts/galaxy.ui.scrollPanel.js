@@ -66,15 +66,15 @@ $.ui.plugin.add("draggable", "scrollPanel", {
             ui.position.top += amount_moved;
             moved = true;
         }
-        // Update offsets
-        if ( moved ) {
-            $.ui.ddmanager.prepareOffsets( instance, e );
-        }
         // Still contain in panel
         ui.position.left = Math.max( ui.position.left, 0 );
         ui.position.top = Math.max( ui.position.top, 0 );
         ui.position.left = Math.min( ui.position.left, panel_w - element_w );
         ui.position.top = Math.min( ui.position.top, panel_h - element_h );
+        // Update offsets
+        if ( moved ) {
+            $.ui.ddmanager.prepareOffsets( instance, e );
+        }
         // Keep moving even if mouse doesn't move
         if ( moved ) {
             instance.old_e = e;

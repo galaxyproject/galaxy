@@ -9,6 +9,7 @@ from galaxy.datatypes.data import Data
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
+from galaxy.workflow.modules import *
 
 class WorkflowController( BaseController ):
     beta = True
@@ -31,7 +32,7 @@ class WorkflowController( BaseController ):
         """
         user = trans.get_user()
         if not workflow_name:
-            return error( "Must provide a name for the new workflow" )
+            error( "Must provide a name for the new workflow" )
         # Create the new stored workflow
         stored_workflow = model.StoredWorkflow()
         stored_workflow.name = workflow_name
@@ -70,13 +71,12 @@ class WorkflowController( BaseController ):
         rendered by `editor_canvas`.
         """
         if not id:
-            return trans.show_error_message( "Invalid workflow id" )
+            error( "Invalid workflow id" )
         id = trans.security.decode_id( id )
-        return trans.fill_template( "workflow/editor.mako",
-                                    workflow_id=id )
+        return trans.fill_template( "workflow/editor.mako", workflow_id=id )
         
     @web.json
-    def editor_tool_form( self, trans, tool_id=None, **incoming ):
+    def editor_tool_form( self, trans, type='tool', tool_id=None, **incoming ):
         """
         Accepts a tool state and incoming values, and generates a new tool
         form and some additional information, packed into a json dictionary.
@@ -84,59 +84,39 @@ class WorkflowController( BaseController ):
         is selected.
         """
         trans.workflow_building_mode = True
-        tool = trans.app.toolbox.tools_by_id[tool_id]
-        state = DefaultToolState()
-        state.decode( incoming.pop("tool_state"), tool, trans.app )
-        errors = tool.update_state( trans, tool.inputs, state.inputs, incoming )
-        rval = {}
-        rval['form_html'] = trans.fill_template( "workflow/editor_tool_form.mako", 
-            tool=tool, as_html=as_html, values=state.inputs, errors=errors )
-        if errors:
-            rval['tool_errors'] = errors
-        else:
-            rval['tool_errors'] = None
-        # Updated data_inputs
-        rval['data_inputs'] = get_data_inputs( tool.inputs, state.inputs )
-        rval['state'] = state.encode( tool, trans.app )
-        return rval
+        module = module_factory.from_dict( trans, {
+            'type': type,
+            'tool_id': tool_id,
+            'tool_state': incoming.pop("tool_state")
+        } )
+        module.update_state( incoming )
+        return {
+            'tool_state': module.get_state(),
+            'data_inputs': module.get_data_inputs(),
+            'data_outputs': module.get_data_outputs(),
+            'form_html': module.get_config_form()
+        }
         
     @web.json
-    def get_tool_info( self, trans, tool_id ):
+    def get_new_module_info( self, trans, type, **kwargs ):
         """
-        Generate a json dictionary containing info about the tool specified by
-        `tool_id`. Info includes data inputs and outputs, html representation
+        Get the info for a new instance of a module initialized with default
+        paramters (any keyword arguments will be passed along to the module).
+        Result includes data inputs and outputs, html representation
         of the initial form, and the initial tool state (with default values).
         This is called asynchronously whenever a new node is added.
         """
         trans.workflow_building_mode = True
-        tool = trans.app.toolbox.tools_by_id[tool_id]
-        rval = {}
-        rval['name'] = tool.name
-        rval['tool_id'] = tool.id
-        data_outputs = []
-        for name, ( format, metadata_source, parent ) in tool.outputs.iteritems():
-            data_outputs.append( dict( name=name, extension=format ) )
-        rval['data_outputs'] = data_outputs
-        state = tool.new_state( trans, all_pages=True )
-        rval['form_html'] = trans.fill_template( "workflow/editor_tool_form.mako", 
-            tool=tool, as_html=as_html, values=state.inputs, errors={} )
-        rval['tool_state'] = state.encode( tool, trans.app )
-        rval['data_inputs'] = get_data_inputs( tool.inputs, state.inputs )
-        return rval
-      
-    @web.json
-    def get_module_info( self, trans, type ):
-        module = module_types[type]()
-        rval = {}
-        rval['name'] = module.name
-        rval['type'] = module.type
-        rval['tool_state'] = state = module.get_state()
-        rval['data_inputs'] = module.get_data_inputs()
-        rval['data_outputs'] = module.get_data_outputs()
-        rval['form_html'] = trans.fill_template(
-            "workflow/editor_generic_form.mako",
-            form = module.get_config_form() )
-        return rval
+        module = module_factory.new( trans, type, **kwargs )
+        return {
+            'type': module.type,
+            'name':  module.get_name(),
+            'tool_id': module.get_tool_id(),
+            'tool_state': module.get_state(),
+            'data_inputs': module.get_data_inputs(),
+            'data_outputs': module.get_data_outputs(),
+            'form_html': module.get_config_form()
+        }
                 
     @web.json
     def load_workflow( self, trans, id ):
@@ -158,39 +138,18 @@ class WorkflowController( BaseController ):
         data['steps'] = {}
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
-            step_dict = {}
-            step_dict['id'] = step.order_index
-            step_dict['type'] = step_type = ( step.type or "tool" )
-            if step_type == 'tool':
-                step_dict['tool_id'] = tool_id = step.tool_id
-                # Load tool
-                tool = trans.app.toolbox.tools_by_id[tool_id]
-                # Build a state from the tool_inputs dict
-                state = DefaultToolState()
-                state.inputs = tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
-                step_dict['tool_state'] = state.encode( tool, trans.app )
-                # Error messages for the tool
-                step_dict['tool_errors'] = ( step.tool_errors or None )
-                # Input and output specs
-                step_dict['data_inputs'] = get_data_inputs( tool.inputs, state.inputs )
-                data_outputs = []
-                for name, ( format, metadata_source, parent ) in tool.outputs.iteritems():
-                    data_outputs.append( dict( name=name, extension=format ) )
-                step_dict['data_outputs'] = data_outputs
-                # Build the tool form html
-                errors = step.tool_errors
-                step_dict['form_html'] = trans.fill_template( "workflow/editor_tool_form.mako", 
-                    tool=tool, as_html=as_html, values=state.inputs, errors=( step.tool_errors or {} ) )
-                step_dict['name'] = tool.name
-            else:
-                module = module_types[step.type].from_workflow_step( step )
-                step_dict['name'] = module.name
-                step_dict['tool_state'] = state = module.get_state()
-                step_dict['data_inputs'] = module.get_data_inputs()
-                step_dict['data_outputs'] = module.get_data_outputs()
-                step_dict['form_html'] = trans.fill_template(
-                    "workflow/editor_generic_form.mako",
-                    form = module.get_config_form() )
+            module = module_factory.from_workflow_step( trans, step )
+            step_dict = {
+                'id': step.order_index,
+                'type': module.type,
+                'tool_id': module.get_tool_id(),
+                'name': module.get_name(),
+                'tool_state': module.get_state(),
+                'tool_errors': module.get_errors(),
+                'data_inputs': module.get_data_inputs(),
+                'data_outputs': module.get_data_outputs(),
+                'form_html': module.get_config_form()
+            }
             # Connections
             input_conn_dict = {}
             for conn in step.input_connections:
@@ -229,25 +188,14 @@ class WorkflowController( BaseController ):
         for key, step_dict in data['steps'].iteritems():
             # Create the model class for the step
             step = model.WorkflowStep()
-            step.type = step_type = step_dict['type']
             steps.append( step )
             steps_by_external_id[ step_dict['id' ] ] = step
+            # FIXME: Position should be handled inside module
             step.position = step_dict['position']
-            if step_type == 'tool':
-                step.tool_id = step_dict['tool_id']
-                # Decode the tool state from the step dict
-                tool = trans.app.toolbox.tools_by_id[ step_dict['tool_id'] ]
-                state = DefaultToolState()
-                state.decode( step_dict['tool_state'], tool, trans.app )
-                # Convert back to strings for database
-                tool_inputs = tool.params_to_strings( state.inputs, trans.app )
-                step.tool_inputs = tool_inputs
-                step.tool_errors = step_dict.get( 'tool_errors', None )
-                if step.tool_errors:
-                    workflow.has_errors = True
-            else:
-                module = module_types[step_type].from_state( step_dict['tool_state'] )
-                module.save_to_step( step )
+            module = module_factory.from_dict( trans, step_dict )
+            module.save_to_step( step )
+            if step.tool_errors:
+                workflow.has_errors = True
             # Stick this in the step temporarily
             step.temp_input_connections = step_dict['input_connections']
         # Second pass to deal with connections between steps
@@ -405,15 +353,12 @@ class WorkflowController( BaseController ):
         workflow = stored.latest_workflow
         # It is possible for a workflow to have 0 steps
         if len( workflow.steps ) == 0:
-            return trans.show_error_message(
-                "Workflow cannot be run because it does not have any steps" )
+            error( "Workflow cannot be run because it does not have any steps" )
         #workflow = Workflow.from_simple( simplejson.loads( stored.encoded_value ), trans.app )
         if workflow.has_cycles:
-            return trans.show_error_message(
-                "Workflow cannot be run because it contains cycles" )
+            error( "Workflow cannot be run because it contains cycles" )
         if workflow.has_errors:
-            return trans.show_error_message(
-                "Workflow cannot be run because of validation errors in some steps" )
+            error( "Workflow cannot be run because of validation errors in some steps" )
         # Build the state for each step
         errors = {}
         if kwargs:
@@ -438,7 +383,7 @@ class WorkflowController( BaseController ):
                     step_errors = tool.update_state( trans, tool.inputs, step.state.inputs, step_args,
                                                      update_only=True, old_errors=old_errors )
                 else:
-                    module = step.module = WorkflowModule.from_workflow_step( step )
+                    module = step.module = module_factory.from_workflow_step( trans, step )
                     state = step.state = module.decode_runtime_state( trans, step_args.pop( "tool_state" ) )
                     step_errors = module.update_runtime_state( trans, state, step_args )
                 if step_errors:
@@ -495,7 +440,7 @@ class WorkflowController( BaseController ):
                         errors[step.id] = step.tool_errors
                 else:
                     ## Non-tool specific stuff?
-                    step.module = WorkflowModule.from_workflow_step( step )
+                    step.module = module_factory.from_workflow_step( trans, step )
                     step.state = step.module.get_runtime_state()
                 # Connections by input name
                 step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
@@ -505,70 +450,6 @@ class WorkflowController( BaseController ):
                     steps=workflow.steps,
                     workflow=stored,
                     errors=errors )
-        
-## ---- Workflow modules (to be factored out) ---------------------------------
-
-from elementtree.ElementTree import Element
-
-## TODO: 'Tool' should be a module rather than a special case
-
-class WorkflowModule( object ):
-    @classmethod
-    def from_workflow_step( cls, step ):
-        assert step.type in module_types, "Unknown module type"
-        return module_types[ step.type ].from_workflow_step( step )
-
-class InputDataModule( WorkflowModule ):
-    type = "data_input"
-    name = "Input dataset"
-    _inputs = {
-        'input' : DataToolParameter( None, Element( "param", name="input", label="Input Dataset", type="data", format="data" ) )
-    }
-    @classmethod
-    def from_state( cls, state ):
-        return cls()
-    @classmethod
-    def from_workflow_step( cls, step ):
-        return cls()
-    def get_state( self ):
-        return None
-    def save_to_step( self, step ):
-        pass
-    
-    def get_data_inputs( self ):
-        return []
-    def get_data_outputs( self ):
-        return [ dict( name='output', extension='input' ) ]
-    def get_config_form( self ):
-        return web.FormBuilder( title=self.name )
-    
-    def get_runtime_inputs( self ):
-        return self._inputs
-    def get_runtime_state( self ):
-        state = DefaultToolState()
-        state.inputs = dict( input=None )
-        return state
-    def encode_runtime_state( self, trans, state ):
-        fake_tool = Bunch( inputs = self.get_runtime_inputs() )
-        return state.encode( fake_tool, trans.app )
-    def decode_runtime_state( self, trans, string ):
-        fake_tool = Bunch( inputs = self.get_runtime_inputs() )
-        state = DefaultToolState()
-        state.decode( string, fake_tool, trans.app )
-        return state
-    def update_runtime_state( self, trans, state, values ):
-        errors = {}
-        for name, param in self._inputs.iteritems():
-            value, error = check_param( trans, param, values[name], values )
-            state.inputs[ name ] = value
-            if error:
-                errors[ name ] = error
-        return errors
-    
-    def execute( self, trans, state ):
-        return dict( output=state.inputs['input'])
-    
-module_types = dict( data_input=InputDataModule )
     
 ## ---- Utility methods -------------------------------------------------------
         
@@ -589,12 +470,6 @@ def get_stored_workflow( trans, id ):
         error( "Workflow is not owned by current user" )
     # Looks good
     return stored
-        
-def as_html( param, value, trans, prefix ):
-    if type( param ) is DataToolParameter:
-        return "Data input '" + param.name + "' (" + ( " or ".join( param.extensions ) ) + ")"
-    else:
-        return param.get_html_field( trans, value ).get_html( prefix )
 
 def attach_ordered_steps( workflow, steps ):
     ordered_steps = order_workflow_steps( steps )
@@ -701,31 +576,3 @@ def cleanup_param_values( inputs, values ):
                 cleanup( prefix, input.cases[current_case].inputs, group_values )
     cleanup( "", inputs, values )
     return associations
-
-def get_data_inputs( inputs, input_values ):
-    """
-    For a set of input definitions and a tool state, find all of the dataset
-    inputs
-    """
-    data_inputs = []
-    def visitor( inputs, input_values, name_prefix, label_prefix ):
-        for input in inputs.itervalues():
-            if isinstance( input, Repeat ):  
-                for i, d in enumerate( input_values[ input.name ] ):
-                    index = d['__index__']
-                    new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
-                    new_label_prefix = label_prefix + "%s %d > " % ( input.title, i + 1 )
-                    visitor( input.inputs, d, new_name_prefix, new_label_prefix )
-            elif isinstance( input, Conditional ):
-                values = input_values[ input.name ]
-                current = values["__current_case__"]
-                label_prefix = label_prefix
-                name_prefix = name_prefix + "|" + input.name
-                visitor( input.cases[current].inputs, values, name_prefix, label_prefix )
-            else:
-                if isinstance( input, DataToolParameter ):
-                    data_inputs.append( dict( name=name_prefix+input.name, label=label_prefix+input.label, extensions=input.extensions ) )
-    visitor( inputs, input_values, "", "" )
-    return data_inputs
-    
-    

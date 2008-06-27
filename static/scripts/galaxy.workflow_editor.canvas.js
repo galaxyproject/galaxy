@@ -295,9 +295,9 @@ $.extend( Node.prototype, {
     update_field_data : function( data ) {
         var el = $(this.element),
             node = this;
-        this.tool_state = data.state;
+        this.tool_state = data.tool_state;
         this.form_html = data.form_html;
-	this.tool_errors = data.tool_errors;
+        this.tool_errors = data.tool_errors;
         if ( this.tool_errors ) {
                 el.addClass( "tool-node-error" );
         } else {
@@ -493,27 +493,28 @@ function prebuild_node( type, title_text, tool_id ) {
         scrollSpeed: 20,
         // containment: $("#shim"),
         // grow: true,
-        click: function( _, ui ) {
+        click: function( e, ui ) {
             var element = $(this).data("draggable").element.get(0);
             (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode)
             workflow.activate_node( node );
         },
-        start: function() {
+        start: function( e, ui ) {
             workflow.activate_node( node );
             $(this).css( 'z-index', '1000' );
         },
-        drag: function() { 
+        drag: function( e, ui ) { 
             $(this).find( ".terminal" ).each( function() {
                 this.terminal.redraw();
             })
         },
-        stop: function( _, ui  ) {
+        stop: function( e, ui  ) {
             var element = $(this).data("draggable").element.get(0);
             (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode)
             $(this).css( 'z-index', '100' );
             $(this).find( ".terminal" ).each( function() {
                 this.terminal.redraw();
             });
+            workflow.node_changed( this );
         }
     });
     return node;

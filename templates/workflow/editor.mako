@@ -28,11 +28,21 @@
         $(".dialog-box-container" ).fadeOut( function() { $("#overlay").hide(); } );
     };
     
-    function show_modal( title, body, buttons ) {
+    function show_modal( title, body, buttons, extra_buttons ) {
         $( ".dialog-box" ).find( ".title" ).html( title );
         var b = $( ".dialog-box" ).find( ".buttons" ).html( "" );
         if ( buttons ) {
             $.each( buttons, function( name, value ) {
+                b.append( $( '<button/>' ).text( name ).click( value ) );
+                b.append( " " );
+            });
+            b.show();
+        } else {
+            b.hide();
+        }
+        var b = $( ".dialog-box" ).find( ".extra_buttons" ).html( "" );
+        if ( extra_buttons ) {
+            $.each( extra_buttons, function( name, value ) {
                 b.append( $( '<button/>' ).text( name ).click( value ) );
                 b.append( " " );
             });
@@ -100,8 +110,8 @@
         ##     "<b>Load</b> a stored workflow" : load_workflow
         ## });
         
-        $("#save-button").click( save_current_workflow );
-        $("#close-button").click( close_editor );
+        $("#save-button").click( function() { save_current_workflow(); } );
+        $("#close-button").click( function() { close_editor(); } );
         
         // Unload handler
         window.onbeforeunload = function() {
@@ -162,7 +172,7 @@
             var x = 5000, y = 5000;
             $("div.toolFormInCanvas").each( function() {
                 x = Math.min( x, $(this).position().left );
-                y = Math.min( x, $(this).position().left );
+                y = Math.min( y, $(this).position().top );
             });
             x = Math.min( - x + 20, 0 );
             y = Math.min( - y + 20, 0 );
@@ -176,8 +186,8 @@
         workflow.add_node( node );
         workflow.activate_node( node );
         $.ajax( {
-            url: "${h.url_for( action='get_tool_info' )}", 
-            data: { tool_id: id, "_": "true" },
+            url: "${h.url_for( action='get_new_module_info' )}", 
+            data: { type: "tool", tool_id: id, "_": "true" },
             global: false,
             dataType: "json",
             success: function( data ) {
@@ -198,7 +208,7 @@
         workflow.add_node( node );
         workflow.activate_node( node );
         $.ajax( {
-            url: "${h.url_for( action='get_module_info' )}", 
+            url: "${h.url_for( action='get_new_module_info' )}", 
             data: { type: type, "_": "true" }, 
             dataType: "json",
             success: function( data ) {
@@ -226,7 +236,7 @@
         $("#right-content").find( "form" ).ajaxForm( {
             type: 'POST',
             dataType: 'json',
-            success: function( data ) { 
+            success: function( data ) {
                 node.update_field_data( data );
             },
             beforeSubmit: function( data ) {
@@ -247,21 +257,26 @@
     
     var close_editor = function() {
         if ( workflow && workflow.has_changes ) {
+            do_close = function() {
+                window.onbeforeunload = undefined;
+                window.document.location = "${h.url_for( controller='root' )}"
+            };
             show_modal( "Close workflow editor",
                         "There are unsaved changes to your workflow which will be lost.",
                         {
                             "Cancel" : hide_modal,
-                            "Close": function() {
-                                window.onbeforeunload = undefined;
-                                window.document.location = "${h.url_for( controller='root' )}"
+                            "Save Changes" : function() {
+                                save_current_workflow( do_close );
                             }
+                        }, {
+                            "Don't Save": do_close,
                         } );
         } else {
             window.document.location = "${h.url_for( controller='root' )}"
         }
     }
     
-    var save_current_workflow = function () {
+    var save_current_workflow = function ( success_callback ) {
         show_modal( "Saving workflow", "progress" );
         $.ajax( {
             url: "${h.url_for( action='save_workflow' )}",
@@ -287,12 +302,21 @@
                 workflow.name = data.name;
                 workflow.has_changes = false;
                 workflow.stored = true;
-                show_modal( "Workflow saved", body, {
-                    "Ok" : function () { hide_modal(); }
-                });
+                if ( success_callback ) {
+                    success_callback();
+                }
+                hide_modal();
             }
         });
     }
+    
+    ## var update_canvas_map = function() {
+    ##     var c = $("#canvas-map-canvas").get(0).getContext("2d");
+    ##     var cp = $("#canvas-container").position();
+    ##     c.clearRect( 0, 0, 100, 100 );
+    ##     c.strokeStyle = "rgb(200,0,0)";
+    ##     c.strokeRect ( -cp.left / 50, -cp.top / 50, $("#canvas-viewport").width() / 50, $("#canvas-viewport").height() / 50 );
+    ## }
     
     </script>
 </%def>
@@ -485,7 +509,11 @@
                 <div class="unified-panel-header-inner"><span class='title'>Loading workflow editor...</span></div>
             </div>
             <div class="body" style="max-height: 500px; overflow: auto;"><img src="${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}" /></div>
-            <div class="buttons" style="display: none;"></div>
+            <div>
+                <div class="buttons" style="display: none; float: right;"></div>
+                <div class="extra_buttons" style="display: none; padding: 5px;"></div>
+                <div style="clear: both;"></div>
+            </div>
         </div>
         <div class="dialog-box-underlay"></div>
     </div>
@@ -576,6 +604,9 @@
     <div class="unified-panel-body">
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden;">
             <div id="canvas-container" style="height: 5000px; width: 5000px; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;"></div>
+            ## <div id="canvas-map" style="height: 100px; width: 100px; border: solid red 1px; background: white; position: absolute; right: 0; bottom: 0;">
+            ##     <canvas width="100" height="100" style="width: 100%; height: 100%" id="canvas-map-canvas"></canvas>
+            ## </div>
         </div>
     </div>
 

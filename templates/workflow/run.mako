@@ -32,8 +32,9 @@ from galaxy.tools.parameters import DataToolParameter
                 <% rep_errors = dict() %>
             %endif
             <div class="repeat-group-item">
+            <% index = repeat_values[i]['__index__'] %>
             <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
-            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(i) + "|", step, other_values )}
+            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(index) + "|", step, other_values )}
             ## <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}" /></div>
             </div> 
           %endfor
