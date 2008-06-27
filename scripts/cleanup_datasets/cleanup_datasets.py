@@ -168,7 +168,9 @@ def purge_histories( h, cutoff_time, remove_from_disk ):
                     errmsg = purge_dataset( dataset )
                     if errmsg:
                         errors = True
-                        print errmsg
+                        if errmsg.startswith( '# Error' ):
+                            # Only log errors, no need to log "shared history" dataset messages
+                            print errmsg
                     else:
                         print "%s" % dataset.file_name
                 else:
