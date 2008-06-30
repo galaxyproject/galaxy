@@ -1,14 +1,28 @@
 #This is a sample file distributed with Galaxy that enables tools
 #to use a directory of FileBinnedArray data files.  You will need
-#to create thes data files and then create a binned_scores.loc file 
+#to create these data files and then create a binned_scores.loc file 
 #similar to this one (store it in this directory ) that points to 
 #the directories in which those files are stored.  The binned_scores.loc 
 #file has this format (white space characters are TAB characters):
 #
 #<build>	<description>	<dir>
 #
-#Your file should include an entry per line for each FileBinnedArray file 
-#you have stored.
+#So, for example, if you had hg16 ENCODE binCons on MLAGAN alignments
+#stored in /depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan, 
+#then the binned_scores.loc entry would look like this:
+#
+#hg16    ENCODE binCons on MLAGAN alignments     /depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan
+#
+#and your /depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan
+#directory would contain all of your "binned" files (e.g.):
+#
+#-rw-r--r--  1 james    universe 830134 2005-09-13 10:12 ENm001
+#-rw-r--r--  1 james    universe 527388 2005-09-13 10:12 ENm002
+#-rw-r--r--  1 james    universe 269808 2005-09-13 10:12 ENm003
+#...etc...
+#
+#Your binned_scores.loc file should include an entry per line for each
+#"binned" file you have stored.  For example:
 #
 #hg16	ENCODE binCons on MLAGAN alignments	/depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan
 #hg16	ENCODE binCons on TBA alignments	/depot/data2/galaxy/binned_scores/hg16/encode_bincons_tba
