@@ -1,27 +1,18 @@
 <tool id="Convert characters1" name="Convert">
   <description>delimiters to TAB</description>
-  <command interpreter="perl">convert_characters.pl $input $convert_from T $out_file1</command>
+  <command interpreter="python">convert_characters.py $input $convert_from $out_file1</command>
   <inputs>
     <param name="convert_from" type="select" label="Convert all">
       <option value="s">Whitespaces</option>
       <option value="T">Tabs</option>
-      <option value="Sp">Spaces</option>
+      <!--<option value="Sp">Spaces</option>-->
       <option value="Dt">Dots</option>
       <option value="C">Commas</option>
       <option value="D">Dashes</option>
       <option value="U">Underscores</option>
       <option value="P">Pipes</option>
     </param>
-<!--    <param name="convert_to" type="select" label="to">
-      <option value="T">Tabs</option>
-      <option value="Sp">Spaces</option>
-      <option value="Dt">Dots</option>
-      <option value="C">Commas</option>
-      <option value="D">Dashes</option>
-      <option value="U">Underscores</option>
-      <option value="P">Pipes</option>
-    </param> -->
-    <param format="txt" name="input" type="data" lable="in Query"/>
+    <param format="txt" name="input" type="data" label="in Query"/>
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" />
@@ -31,6 +22,11 @@
       <param name="convert_from" value="s"/>
       <param name="input" value="1.bed"/>
       <output name="out_file1" file="eq-convert.dat"/>
+    </test>
+    <test>
+      <param name="convert_from" value="s"/>
+      <param name="input" value="a.txt"/>
+      <output name="out_file1" file="a.tab"/>
     </test>
   </tests>
   <help>

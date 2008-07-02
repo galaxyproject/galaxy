@@ -1,13 +1,25 @@
 <tool id="cat1" name="Concatenate queries">
   <description>tail-to-head</description>
-  <command>cat $input1 $input2 > $out_file1</command>
+  <command interpreter="python">
+    catWrapper.py 
+    $out_file1 
+    $input1
+    #for $q in $queries
+     ${q.input2}
+    #end for
+  </command>
   <inputs>
-    <param name="input1" type="data" label="Concatenate Query1"/>
-    <param name="input2" type="data" label="with Query2" />
+    <param name="input1" type="data" label="Concatenate Query"/>
+    <repeat name="queries" title="with Query">
+        <param name="input2" type="data" label="Select" />
+    </repeat>
+    
   </inputs>
   <outputs>
     <data name="out_file1" format="input" metadata_source="input1"/>
   </outputs>
+  
+  <!--
   <tests>
     <test>
       <param name="input1" value="1.bed"/>
@@ -15,40 +27,49 @@
       <output name="out_file1" file="eq-cat.dat"/>
     </test>
   </tests>
+  -->
+
   <help>
 
 .. class:: warningmark
 
-**WARNING:** Be careful not to concatenate queries of different kinds (e.g., sequences with intervals). This tool does not check if the two queries being concatenated are in the same format. 
+**WARNING:** Be careful not to concatenate queries of different kinds (e.g., sequences with intervals). This tool does not check if the queries being concatenated are in the same format. 
 
 -----
 
 **What it does**
 
-Concatenates two queries
+Concatenates queries
 
 -----
 
 **Example**
 
-Query1::
+Concatenating Query::
 
     chrX  151087187  151087355  A  0  -
     chrX  151572400  151572481  B  0  +
 
-Query2::
+with Query1::
 
     chr1  151242630  151242955  X  0  +
     chr1  151271715  151271999  Y  0  +
     chr1  151278832  151279227  Z  0  -
+    
+and with Query2::
 
-The result of concatenation is::
+    chr2  100000030  200000955  P  0  +
+    chr2  100000015  200000999  Q  0  +
+
+will result in the following::
 
     chrX  151087187  151087355  A  0  -
     chrX  151572400  151572481  B  0  +
     chr1  151242630  151242955  X  0  +
     chr1  151271715  151271999  Y  0  +
     chr1  151278832  151279227  Z  0  -
+    chr2  100000030  200000955  P  0  +
+    chr2  100000015  200000999  Q  0  +
 
 </help>
 </tool>
