@@ -50,6 +50,8 @@ class Users( BaseController ):
         year_label = start_date.strftime( "%Y" )
         q = sa.select( ( sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
+                       whereclause = sa.and_( galaxy.model.User.table.c.create_time >= start_date,
+                                              galaxy.model.User.table.c.create_time < end_date ),
                        from_obj = [ galaxy.model.User.table ],
                        group_by = [ sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ) ],
                        order_by = [ sa.desc( 'date' ) ] )
@@ -76,12 +78,12 @@ class Users( BaseController ):
         day_label = start_date.strftime( "%A" )
         month_label = start_date.strftime( "%B" )
         year_label = start_date.strftime( "%Y" )
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
                          galaxy.model.User.table.c.email ),
                        whereclause = sa.and_( galaxy.model.User.table.c.create_time >= start_date,
                                               galaxy.model.User.table.c.create_time < end_date ),
                        from_obj = [ galaxy.model.User.table ],
-                       order_by = [ sa.desc( galaxy.model.User.table.c.email ) ] )
+                       order_by = [ galaxy.model.User.table.c.email ] )
         users = []
         for row in q.execute():
             users.append( ( row.email ) )
