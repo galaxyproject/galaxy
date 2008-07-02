@@ -1,11 +1,10 @@
-from datetime import datetime
-from calendar import day_name, month_name
+from datetime import *
+import calendar
 from galaxy.webapps.reports.base.controller import *
 import galaxy.model
 import pkg_resources
 pkg_resources.require( "sqlalchemy>=0.3" )
-#from sqlalchemy import eagerload, desc
-import sqlalchemy
+import sqlalchemy as sa
 import logging
 log = logging.getLogger( __name__ )
 
@@ -28,101 +27,69 @@ class Users( BaseController ):
     def registered_users_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = ''
-        engine = galaxy.model.mapping.metadata.engine
+        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+                         sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
+                       from_obj = [ galaxy.model.User.table ],
+                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ) ],
+                       order_by = [ sa.desc( 'date' ) ] )
         users = []
-        s = """
-        SELECT
-            num_users AS num_users,
-            year_month AS year_month,
-            to_char(a_timestamp, 'Month') AS month_label,
-            to_char(a_timestamp, 'YYYY') AS year_label
-        FROM
-            (SELECT
-                num_users AS num_users,
-                year_month AS year_month,
-                to_timestamp(year_month, 'YYYY-MM-DD') AS a_timestamp
-            FROM
-                (SELECT
-                    count(id) AS num_users,
-                    substr(create_time, 1, 7) AS year_month
-                FROM
-                    galaxy_user
-                GROUP BY
-                    year_month
-                ORDER BY
-                    year_month DESC) AS foo) AS bar
-        """
-        user_rows = engine.text( s ).execute().fetchall()
-        for user in user_rows:
-            users.append( ( user.year_month, user.num_users, user.month_label, user.year_label ) )
+        for row in q.execute():
+            users.append( ( row.date.strftime( "%Y-%m" ), 
+                           row.num_users,
+                           row.date.strftime( "%B" ),
+                           row.date.strftime( "%Y" ) ) )
         return trans.fill_template( 'registered_users_per_month.mako', users=users, msg=msg )
     @web.expose
     def specified_month( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = ''
-        year_month = datetime.utcnow().strftime( "%Y-%m" )
-        month = params.get( 'month', year_month )
-        engine = galaxy.model.mapping.metadata.engine
+        year, month = map( int, params.get( 'month', datetime.utcnow().strftime( "%Y-%m" ) ).split( "-" ) )
+        start_date = date( year, month, 1 )
+        end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
+        month_label = start_date.strftime( "%B" )
+        year_label = start_date.strftime( "%Y" )
+        q = sa.select( ( sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+                         sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
+                       from_obj = [ galaxy.model.User.table ],
+                       group_by = [ sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ) ],
+                       order_by = [ sa.desc( 'date' ) ] )
         users = []
-        monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        month_label = params.get( 'month_label', month_name[ int( datetime.utcnow().strftime( "%m" ) ) ] )
-        year_label = params.get( 'year_label', datetime.utcnow().strftime( "%Y" ) )
-        s = """
-        SELECT
-            year_month_day AS year_month_day,
-            day_of_month AS day_of_month,
-            num_users AS num_users,
-            to_char(a_timestamp, 'Day') AS day_label
-        FROM
-            (SELECT
-                foo.create_time AS year_month_day,
-                foo.day_of_month AS day_of_month,
-                count(foo.create_time) AS num_users,
-                to_timestamp(foo.create_time, 'YYYY-MM-DD') AS a_timestamp
-            FROM
-                (SELECT
-                    substr(create_time, 1, 10) AS create_time,
-                    substr(create_time, 9, 2) AS day_of_month
-                FROM
-                    galaxy_user
-                WHERE
-                    substr(create_time, 1, 7) = '%s'
-                GROUP BY
-                    day_of_month,
-                    create_time) AS foo
-            GROUP BY
-                day_of_month,
-                create_time
-            ORDER BY
-                create_time DESC) AS bar
-        """ % month
-        user_rows = engine.text( s ).execute().fetchall()
-        for user in user_rows:
-            users.append( ( user.year_month_day, user.day_of_month, user.num_users, user.day_label ) )
-        return trans.fill_template( 'registered_users_specified_month.mako', month_label=month_label, year_label=year_label, month=month, users=users, msg=msg )
+        for row in q.execute():
+            users.append( ( row.date.strftime( "%Y-%m-%d" ),
+                            row.date.strftime( "%d" ), 
+                            row.num_users, 
+                            row.date.strftime( "%A" ) ) )
+        return trans.fill_template( 'registered_users_specified_month.mako', 
+                                    month_label=month_label, 
+                                    year_label=year_label, 
+                                    month=month, 
+                                    users=users, 
+                                    msg=msg )
     @web.expose
     def specified_date( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = ''
-        engine = galaxy.model.mapping.metadata.engine
+        year, month, day = map( int, params.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) ).split( "-" ) )
+        start_date = date( year, month, day )
+        end_date = start_date + timedelta( days=1 )
+        day_of_month = start_date.strftime( "%d" )
+        day_label = start_date.strftime( "%A" )
+        month_label = start_date.strftime( "%B" )
+        year_label = start_date.strftime( "%Y" )
+        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+                         galaxy.model.User.table.c.email ),
+                       whereclause = sa.and_( galaxy.model.User.table.c.create_time >= start_date,
+                                              galaxy.model.User.table.c.create_time < end_date ),
+                       from_obj = [ galaxy.model.User.table ],
+                       order_by = [ sa.desc( galaxy.model.User.table.c.email ) ] )
         users = []
-        today = datetime.utcnow().strftime( "%Y-%m-%d" )
-        specified_date = params.get( 'specified_date', today )
-        day_label = params.get( 'day_label', datetime.utcnow().strftime( "%d" ) )
-        month_label = params.get( 'month_label', month_name[ int( datetime.utcnow().strftime( "%m" ) ) ] )
-        year_label = params.get( 'year_label', datetime.utcnow().strftime( "%Y" ) )
-        day_of_month = params.get( 'day_of_month', datetime.utcnow().strftime( "%d" ) )
-        s = """
-        SELECT
-            email AS email
-        FROM
-            galaxy_user
-        WHERE
-            substr(create_time, 1, 10) = '%s'
-        ORDER BY
-            email
-        """ % ( specified_date )
-        user_rows = engine.text( s ).execute().fetchall()
-        for user in user_rows:
-            users.append( ( user.email ) )
-        return trans.fill_template( 'registered_users_specified_date.mako', specified_date=specified_date, day_label=day_label, month_label=month_label, year_label=year_label, day_of_month=day_of_month, users=users, msg=msg )
+        for row in q.execute():
+            users.append( ( row.email ) )
+        return trans.fill_template( 'registered_users_specified_date.mako', 
+                                    specified_date=start_date, 
+                                    day_label=day_label, 
+                                    month_label=month_label, 
+                                    year_label=year_label, 
+                                    day_of_month=day_of_month, 
+                                    users=users, 
+                                    msg=msg )
