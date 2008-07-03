@@ -10,7 +10,7 @@
   </command>
   <inputs>
     <param name="input1" type="data" label="Concatenate Query"/>
-    <repeat name="queries" title="with Query">
+    <repeat name="queries" title="Query">
         <param name="input2" type="data" label="Select" />
     </repeat>
     

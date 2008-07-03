@@ -3,7 +3,7 @@
 """
 This tool provides the SQL "group by" functionality.
 """
-import sys, string, re, commands, tempfile
+import sys, string, re, commands, tempfile, random
 from rpy import *
 
 def stop_err(msg):
@@ -48,8 +48,8 @@ def main():
     
     for k,col in enumerate(cols):
         col = int(col)-1
-        if ops[k] not in ['c', 'length', 'unique']:
-            # We'll get here only if the user didn't choose 'Concatenate' or 'Count' or 'Count Distinct', which are the
+        if ops[k] not in ['c', 'length', 'unique', 'random']:
+            # We'll get here only if the user didn't choose 'Concatenate' or 'Count' or 'Count Distinct' or 'pick randmly', which are the
             # only aggregation functions that can be used on columns containing strings.
             try:
                 float( elems[col] )
@@ -102,7 +102,7 @@ def main():
                             valid = True
                             # Before appending the current value, make sure it is numeric if the
                             # operation for the column requires it.
-                            if ops[i] not in ['c','length', 'unique']:
+                            if ops[i] not in ['c','length', 'unique','random']:
                                 try:
                                     float( fields[col].strip())
                                 except:
@@ -124,14 +124,19 @@ def main():
     
                         for i, op in enumerate( ops ):
                             rfunc = "r." + op 
-                            if op not in ['c','length','unique']:
+                            if op not in ['c','length','unique','random']:
                                 for j, elem in enumerate( prev_vals[i] ):
                                     prev_vals[i][j] = float( elem )
                                 rout = "%f" %( eval( rfunc )( prev_vals[i] ))
                                 if rounds[i] == 'yes':
                                     rout = int(round(float(rout)))
                             else:
-                                rout = eval( rfunc )( prev_vals[i] )
+                                if op != 'random':
+                                    rout = eval( rfunc )( prev_vals[i] )
+                                else:
+                                    rand_index = random.randint(0,len(prev_vals[i])-1)
+                                    rout = prev_vals[i][rand_index]
+                                    
                             if op == 'unique':
                                 rfunc = "r.length" 
                                 rout = eval( rfunc )( rout )
@@ -170,14 +175,19 @@ def main():
     for i, op in enumerate(ops):
         rfunc = "r." + op 
         try:
-            if op not in ['c','length','unique']:
+            if op not in ['c','length','unique','random']:
                 for j, elem in enumerate( prev_vals[i] ):
                     prev_vals[i][j] = float( elem )
                 rout = '%f' %( eval( rfunc )( prev_vals[i] ))
                 if rounds[i] == 'yes':
                     rout = int(round(float(rout)))
             else:
-                rout = eval( rfunc )( prev_vals[i] )
+                if op != 'random':
+                    rout = eval( rfunc )( prev_vals[i] )
+                else:
+                    rand_index = random.randint(0,len(prev_vals[i])-1)
+                    rout = prev_vals[i][rand_index]
+                    
             if op == 'unique':
                 rfunc = "r.length" 
                 rout = eval( rfunc )( rout )    
@@ -198,6 +208,8 @@ def main():
             op = 'count'
         elif op == 'unique':
             op = 'count_distinct'
+        elif op == 'random':
+            op = 'randomly_pick'
         msg += op + "[c" + cols[i] + "] "
     if skipped_lines > 0:
         msg+= "--skipped %d invalid lines starting with line %d.  Value '%s' in column %d is not numeric." % ( skipped_lines, first_invalid_line, invalid_value, invalid_column )
