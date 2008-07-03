@@ -64,7 +64,8 @@ class Jobs( BaseController ):
                                               galaxy.model.Job.table.c.create_time < end_date ),
                        from_obj = [ sa.outerjoin( galaxy.model.Job.table, 
                                                   galaxy.model.History.table ).outerjoin( galaxy.model.User.table ) ],
-                       group_by = [ 'date' ] )
+                       group_by = [ 'date' ],
+                       order_by = [ sa.desc( 'date' ) ] )
         jobs = []
         for row in q.execute():
             jobs.append( ( row.date.strftime( "%A" ),
@@ -95,7 +96,8 @@ class Jobs( BaseController ):
                                               galaxy.model.Job.table.c.create_time < end_date ),
                        from_obj = [ sa.outerjoin( galaxy.model.Job.table, 
                                                   galaxy.model.History.table ).outerjoin( galaxy.model.User.table ) ],
-                       group_by = [ 'date' ] )
+                       group_by = [ 'date' ],
+                       order_by = [ sa.desc( 'date' ) ] )
         jobs = []
         for row in q.execute():
             jobs.append( ( row.date.strftime( "%A" ),
