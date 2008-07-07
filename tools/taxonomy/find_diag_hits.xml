@@ -28,7 +28,7 @@
             <option value="subspecies">Subspecies</option>
         </param>
         <param name="out_format" type="select" label="Select output format">
-            <option value="reads">Dignostic read list</option>
+            <option value="reads">Diagnostic read list</option>
             <option value="counts">Number of diagnostic reads per taxonomic rank</option>
         </param>
     </inputs>
