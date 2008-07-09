@@ -263,16 +263,24 @@ def purge_dataset( dataset ):
                     return "# Dataset for deletion ( id %s ) points to a file on disk being shared by another user's history ( dataset id %s )\n" %( str( dataset.id ), str( data.id ) )
         elif dataset.deleted:
             # Remove files from disk and update the database
+            purgable = False
             try:
-                os.unlink( dataset.file_name )
                 dataset.purged = True
                 dataset.file_size = 0
                 dataset.clear_associated_files( purge = True )
                 dataset.flush()
+                if dataset.dataset.purgable:
+                    for shared_data in dataset.dataset.history_associations:
+                        if not shared_data.purged:
+                            break #only purge when not shared
+                    else:
+                        os.unlink( dataset.file_name )
+                        purgable = True
             except Exception, exc:
                 return "# Error, exception: %s caught attempting to purge %s\n" %( str( exc ), dataset.file_name )
             try:
-                os.unlink( dataset.extra_files_path )
+                if purgable:
+                    os.unlink( dataset.extra_files_path )
             except:
                 pass
         else:

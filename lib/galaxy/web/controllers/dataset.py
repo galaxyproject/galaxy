@@ -47,12 +47,12 @@ class DatasetInterface( BaseController ):
 
     @web.expose
     def errors( self, trans, id ):
-        dataset = model.Dataset.get( id )
+        dataset = model.HistoryDatasetAssociation.get( id )
         return trans.fill_template( "dataset/errors.tmpl", dataset=dataset )
     
     @web.expose
     def stderr( self, trans, id ):
-        dataset = model.Dataset.get( id )
+        dataset = model.HistoryDatasetAssociation.get( id )
         job = dataset.creating_job_associations[0].job
         trans.response.set_content_type( 'text/plain' )
         return job.stderr
@@ -66,7 +66,7 @@ class DatasetInterface( BaseController ):
         if to_address is None:
             return trans.show_error_message( "Sorry, error reporting has been disabled for this galaxy instance" )
         # Get the dataset and associated job
-        dataset = model.Dataset.get( id )
+        dataset = model.HistoryDatasetAssociation.get( id )
         job = dataset.creating_job_associations[0].job
         # Build the email message
         msg = MIMEText( string.Template( error_report_template )
@@ -105,7 +105,7 @@ class DatasetInterface( BaseController ):
         """Catches the dataset id and displays file contents as directed"""
         if filename is None or filename.lower() == "index":
             try:
-                data = trans.app.model.Dataset.get( dataset_id )
+                data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
                 if data:
                     mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                     trans.response.set_content_type(mime)
@@ -120,7 +120,7 @@ class DatasetInterface( BaseController ):
         else:
             #display files from directory here
             try:
-                file_path = os.path.join(trans.app.model.Dataset.get( dataset_id ).extra_files_path, filename)
+                file_path = os.path.join(trans.app.model.HistoryDatasetAssociation.get( dataset_id ).extra_files_path, filename)
                 mime, encoding = mimetypes.guess_type(file_path)
                 if mime is None:
                     mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])

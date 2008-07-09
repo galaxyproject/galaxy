@@ -83,9 +83,9 @@
 		##        be a 'visible_children' method on dataset.
                 <%
 		children = []
-                for child_assoc in data.children:
-                    if child_assoc.child.visible:
-                        children.append( child_assoc.child )
+                for child in data.children:
+                    if child.visible:
+                        children.append( child )
                 %>
                 %if len( children ) > 0:
                     <div>

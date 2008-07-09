@@ -33,7 +33,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             dbkey = fields[2]
             filepath = fields[3]
             file_type = fields[4]
-            newdata = app.model.Dataset()
+            newdata = app.model.HistoryDatasetAssociation( create_dataset = True ) #This import should become a library
             newdata.extension = file_type
             newdata.name = basic_name + " (" + description + ")"
             history.add_dataset( newdata )

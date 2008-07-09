@@ -28,7 +28,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             dbkey = fields[1]
             filepath = fields[2]
 
-            newdata = app.model.Dataset()
+            newdata = app.model.HistoryDatasetAssociation( create_dataset = True )
             newdata.extension = "bed"
             newdata.name = basic_name + " (" + dbkey + ")"
             newdata.flush()

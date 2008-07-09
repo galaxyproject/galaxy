@@ -970,20 +970,15 @@ class Tool:
         for name, data in input_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data, datatypes_registry = self.app.datatypes_registry, tool = self, name = name )
             if data:
-                for child_association in data.children:
-                    child = child_association.child
-                    key = "_CHILD___%s___%s" % ( name, child.designation ) 
-                    param_dict[ key ] = DatasetFilenameWrapper( child )
+                for child in data.children:
+                    param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for name, data in output_datasets.items():
             param_dict[name] = DatasetFilenameWrapper( data )
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
             param_dict[name].files_path = os.path.abspath(os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) ))
-            
-            for child_association in data.children:
-                child = child_association.child
-                key = "_CHILD___%s___%s" % ( name, child.designation ) 
-                param_dict[ key ] = DatasetFilenameWrapper( child )
+            for child in data.children:
+                param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
         # More convienent access to app.config.new_file_path; we don't need to wrap a string
@@ -1092,25 +1087,24 @@ class Tool:
                 if visible == "visible": visible = True
                 else: visible = False
                 ext = fields.pop(0).lower()
-                # Create new child dataset
-                child_data = self.app.model.Dataset(extension=ext, parent_id=parent_id, designation=designation, visible=visible, dbkey=outdata.dbkey)
-                child_data.flush()
+                child_dataset = self.app.model.HistoryDatasetAssociation( extension=ext, parent_id=outdata.id, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
                 # Move data from temp location to dataset location
-                shutil.move(filename, child_data.file_name)
-                child_data.name = "Secondary Dataset (%s)" % (designation)
-                child_data.state = child_data.states.OK
-                child_data.init_meta()
-                child_data.set_meta()
-                child_data.set_peek()
-                child_data.set_size()
-                child_data.flush()
-                # Add to child accociation table
-                assoc = self.app.model.DatasetChildAssociation()
-                assoc.child = child_data
-                assoc.designation = child_data.designation
-                outdata.children.append( assoc )
+                shutil.move( filename, child_dataset.file_name )
+                child_dataset.flush()
+                child_dataset.name = "Secondary Dataset (%s)" % ( designation )
+                child_dataset.state = child_dataset.states.OK
+                child_dataset.init_meta()
+                child_dataset.set_meta()
+                child_dataset.set_peek()
+                child_dataset.set_size()
+                child_dataset.flush()
                 # Add child to return dict 
-                children[name][designation] = child_data
+                children[name][designation] = child_dataset
+                for dataset in outdata.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                    if outdata == dataset: continue
+                    # Create new child dataset
+                    child_data = child_dataset.copy( parent_id = dataset.id )
+                    child_data.flush()
         return children
         
     def collect_primary_datasets( self, output):
@@ -1129,20 +1123,25 @@ class Tool:
                 else: visible = False
                 ext = fields.pop(0).lower()
                 # Create new primary dataset
-                primary_data = self.app.model.Dataset(extension=ext, designation=designation, visible=visible, dbkey=outdata.dbkey)
+                primary_data = self.app.model.HistoryDatasetAssociation( extension=ext, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
                 primary_data.flush()
-                self.app.model.History.get(outdata.history_id).add_dataset(primary_data)
                 # Move data from temp location to dataset location
-                shutil.move(filename, primary_data.file_name)
-                primary_data.name = outdata.name
-                primary_data.info = outdata.info
+                shutil.move( filename, primary_data.file_name )
+                primary_data.name = dataset.name
+                primary_data.info = dataset.info
                 primary_data.state = primary_data.states.OK
-                primary_data.init_meta(copy_from=outdata)
+                primary_data.init_meta( copy_from=dataset )
                 primary_data.set_peek()
                 primary_data.set_size()
                 primary_data.flush()
+                outdata.history.add_dataset( primary_data )
                 # Add dataset to return dict 
                 primary_datasets[name][designation] = primary_data
+                for dataset in outdata.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                    if outdata == dataset: continue
+                    new_data = primary_data.copy()
+                    dataset.history.add( new_data )
+                    new_data.flush()
         return primary_datasets
 
         

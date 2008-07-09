@@ -63,61 +63,53 @@ History.table = Table( "history", metadata,
 #             Column( "state", String( 64 ) ),
 #             Column( "tool_parameters", Pickle() ) )
 
-Dataset.table = Table( "dataset", metadata, 
+
+HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
-    Column( "hid", Integer ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "hid", Integer ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
     Column( "peek" , TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
-    Column( "dbkey", TrimmedString( 64 ), key="old_dbkey" ), # maps to old_dbkey, see __init__.py
-    Column( "state", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
-    Column( "parent_id", Integer, nullable=True ),
+    Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
-    Column( "purged", Boolean, index=True, default=False ),
-    Column( "visible", Boolean ),
-    Column( "filename_id", Integer, ForeignKey( "dataset_filename.id" ), index=True, nullable=True ),
-    Column( 'file_size', Numeric( 15, 0 ) ),
-    ForeignKeyConstraint(['parent_id'],['dataset.id'], ondelete="CASCADE") )
+    Column( "visible", Boolean ) )
 
-DatasetAssociatedFile.table = Table( "dataset_associated_file", metadata,
+Dataset.table = Table( "dataset", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+    Column( "state", TrimmedString( 64 ) ),
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "purged", Boolean, index=True, default=False ),
+    Column( "purgable", Boolean, default=True ),
+    Column( "external_filename" , TEXT ),
+    Column( "_extra_files_path", TEXT ),
+    Column( 'file_size', Numeric( 15, 0 ) ) )
+
+ImplicitlyConvertedDatasetAssociation.table = Table( "implicitly_converted_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True, nullable=True ),
-    Column( "parent_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "filename", TEXT ),
+    Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
+    Column( "hda_parent_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
-    Column( "purged", Boolean, index=True, default=False ),
     Column( "metadata_safe", Boolean, index=True, default=True ),
     Column( "type", TrimmedString( 255 ) ) )
 
-DatasetFileName.table = Table( "dataset_filename", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "filename", TEXT ),
-    Column( "extra_files_path", TEXT, nullable=True, default=None ),
-    Column( "readonly", Boolean, default=False ) )
-
 ValidationError.table = Table( "validation_error", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "message", TrimmedString( 255 ) ),
     Column( "err_type", TrimmedString( 64 ) ),
     Column( "attributes", TEXT ) )
-
-DatasetChildAssociation.table = Table( "dataset_child_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "parent_dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "child_dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "designation", TrimmedString( 255 ) ) )
 
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -147,13 +139,13 @@ JobParameter.table = Table( "job_parameter", metadata,
 JobToInputDatasetAssociation.table = Table( "job_to_input_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
     
 JobToOutputDatasetAssociation.table = Table( "job_to_output_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
     
 Event.table = Table( "event", metadata, 
@@ -236,57 +228,59 @@ WorkflowStepConnection.table = Table( "workflow_step_connection", metadata,
 
 assign_mapper( context, ValidationError, ValidationError.table )
 
-# assign_mapper( context, Dataset, Dataset.table,
-#     properties=dict( children=relation( DatasetChildAssociation, primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
-#                                         lazy=False ),
-#                      validation_errors=relation( ValidationError, lazy=False ) ) )
-                                        
-assign_mapper( context, Dataset, Dataset.table,
+assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.table,
     properties=dict( 
+        dataset=relation( 
+            Dataset, 
+            primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
+        history=relation( 
+            History, 
+            primaryjoin=( History.table.c.id == HistoryDatasetAssociation.table.c.history_id ) ),
+        implicitly_converted_datasets=relation( 
+            ImplicitlyConvertedDatasetAssociation, 
+            primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
         children=relation( 
-            DatasetChildAssociation, 
-            primaryjoin=( DatasetChildAssociation.table.c.parent_dataset_id == Dataset.table.c.id ),
-            lazy=False,
-            backref="parent" ),
-        dataset_file=relation( 
-            DatasetFileName, 
-            primaryjoin=( DatasetFileName.table.c.id == Dataset.table.c.filename_id ) ),
-        associated_files=relation( 
-            DatasetAssociatedFile, 
-            primaryjoin=( DatasetAssociatedFile.table.c.parent_id == Dataset.table.c.id ) )
+            HistoryDatasetAssociation, 
+            primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ),
+            backref=backref( "parent", remote_side=[HistoryDatasetAssociation.table.c.id] ) )
             ) )
 
-assign_mapper( context, DatasetFileName, DatasetFileName.table )
+assign_mapper( context, Dataset, Dataset.table,
+    properties=dict( 
+        history_associations=relation( 
+            HistoryDatasetAssociation, 
+            primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) )
+            ) )
 
-assign_mapper( context, DatasetChildAssociation, DatasetChildAssociation.table,
-    properties=dict( child=relation( Dataset, backref="parent", primaryjoin=( DatasetChildAssociation.table.c.child_dataset_id == Dataset.table.c.id ) ) ) )
-
-assign_mapper( context, DatasetAssociatedFile, DatasetAssociatedFile.table, 
-    properties=dict( parent=relation( 
-                     Dataset, 
-                     primaryjoin=( DatasetAssociatedFile.table.c.parent_id == Dataset.table.c.id ) ),
-                     
-                     dataset=relation( 
-                     Dataset, 
-                     primaryjoin=( DatasetAssociatedFile.table.c.dataset_id == Dataset.table.c.id ) ) ) )
 
 # assign_mapper( model.Query, model.Query.table,
 #     properties=dict( datasets=relation( model.Dataset.mapper, backref="query") ) )
 
+
+assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvertedDatasetAssociation.table, 
+    properties=dict( parent=relation( 
+                     HistoryDatasetAssociation, 
+                     primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
+                     
+                     dataset=relation( 
+                     HistoryDatasetAssociation, 
+                     primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_id == HistoryDatasetAssociation.table.c.id ) ) ) )
+
 assign_mapper( context, History, History.table,
     properties=dict( galaxy_sessions=relation( GalaxySessionToHistoryAssociation ),
-                     datasets=relation( Dataset, backref="history", order_by=asc(Dataset.table.c.hid) ),
-                     active_datasets=relation( Dataset, primaryjoin=( ( Dataset.c.history_id == History.table.c.id ) & ( not_( Dataset.c.deleted ) ) ), order_by=asc( Dataset.table.c.hid ), lazy=False, viewonly=True ) ) )
+                     datasets=relation( HistoryDatasetAssociation, backref="history", order_by=asc(HistoryDatasetAssociation.table.c.hid) ),
+                     active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), lazy=False, viewonly=True ) ) )
+
 
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user", 
                                          order_by=desc(History.table.c.update_time) ) ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
-    properties=dict( job=relation( Job ), dataset=relation( Dataset ) ) )
+    properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation ) ) )
 
 assign_mapper( context, JobToOutputDatasetAssociation, JobToOutputDatasetAssociation.table,
-    properties=dict( job=relation( Job ), dataset=relation( Dataset ) ) )
+    properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation ) ) )
 
 assign_mapper( context, JobParameter, JobParameter.table )
 
@@ -310,7 +304,7 @@ assign_mapper( context, GalaxySessionToHistoryAssociation, GalaxySessionToHistor
     properties=dict( galaxy_session=relation( GalaxySession ), 
                      history=relation( History ) ) )
 
-Dataset.mapper.add_property( "creating_job_associations", relation( JobToOutputDatasetAssociation ) )
+HistoryDatasetAssociation.mapper.add_property( "creating_job_associations", relation( JobToOutputDatasetAssociation ) )
 
 assign_mapper( context, Workflow, Workflow.table,
     properties=dict( steps=relation( WorkflowStep, backref='workflow', order_by=asc(WorkflowStep.table.c.order_index), cascade="all, delete-orphan" ) ) )

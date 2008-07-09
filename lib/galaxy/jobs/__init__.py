@@ -369,6 +369,7 @@ class JobWrapper( object ):
             idata = dataset_assoc.dataset
             if not idata: continue
             idata.refresh()
+            idata.dataset.refresh() #we need to refresh the base Dataset, since that is where 'state' is stored
             # don't run jobs for which the input dataset was deleted
             if idata.deleted == True:
                 self.fail( "input data %d was deleted before this job ran" % idata.hid )
@@ -398,30 +399,36 @@ class JobWrapper( object ):
         if job.state == job.states.DELETED:
             self.cleanup()
             return
-        job.state = 'ok'
+        if stderr:
+            job.state = "error"
+        else:
+            job.state = 'ok'
         for dataset_assoc in job.output_datasets:
-            dataset = dataset_assoc.dataset
-            dataset.refresh()
-            dataset.state = model.Dataset.states.OK
-            dataset.blurb = 'done'
-            dataset.peek  = 'no peek'
-            dataset.info  = stdout + stderr
-            dataset.set_size()
-            if dataset.has_data():
-                # Only set metadata values if they are missing...
-                if dataset.missing_meta():
-                    dataset.set_meta()
-                else:
-                    # ...however, some tools add / remove columns,
-                    # so we have to reset the readonly metadata values
-                    dataset.set_readonly_meta()
-                dataset.set_peek()
-            else:
-                dataset.blurb = "empty"
             if stderr: 
-                dataset.state = model.Dataset.states.ERROR
-                dataset.blurb = "error"
-                job.state = "error"
+                dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
+            else:
+                dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
+            dataset_assoc.dataset.dataset.flush()
+            for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                dataset.blurb = 'done'
+                dataset.peek  = 'no peek'
+                dataset.info  = stdout + stderr
+                dataset.set_size()
+                if stderr:
+                    dataset.blurb = "error"
+                elif dataset.has_data():
+                    # Only set metadata values if they are missing...
+                    if dataset.missing_meta():
+                        dataset.set_meta()
+                    else:
+                        # ...however, some tools add / remove columns,
+                        # so we have to reset the readonly metadata values
+                        dataset.set_readonly_meta()
+                    dataset.set_peek()
+                else:
+                    dataset.blurb = "empty"
+                dataset.flush()
+        
         # Save stdout and stderr    
         if len( stdout ) > 32768:
             log.error( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
@@ -588,6 +595,8 @@ class JobStopQueue( object ):
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset
             dataset.refresh()
+            #only the originator of the job can delete a dataset to cause
+            #cancellation of the job, no need to loop through history_associations
             if not dataset.deleted:
                 return False
         return True
@@ -601,11 +610,16 @@ class JobStopQueue( object ):
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset
             dataset.refresh()
-            dataset.state = model.Dataset.states.DELETED
-            dataset.blurb = 'deleted'
-            dataset.peek = 'Job deleted'
-            dataset.info = 'Job deleted by user before it completed'
-            dataset.flush()
+            dataset.deleted = True
+            dataset.state = dataset.states.DISCARDED
+            dataset.dataset.flush()
+            for dataset in dataset.dataset.history_associations:
+                #propagate info across shared datasets
+                dataset.deleted = True
+                dataset.blurb = 'deleted'
+                dataset.peek = 'Job deleted'
+                dataset.info = 'Job deleted by user before it completed'
+                dataset.flush()
 
     def put( self, job ):
         self.queue.put( job )

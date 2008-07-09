@@ -104,7 +104,7 @@ class DataMetaFilter( Filter ):
             return file_value == dataset_value
         assert self.ref_name in other_values or trans.workflow_building_mode, "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = other_values.get( self.ref_name, None )
-        if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.Dataset ):
+        if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ):
             return [] #not a valid dataset
         meta_value = ref.metadata.get( self.key, None )
         assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key

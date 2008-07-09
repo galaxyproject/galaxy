@@ -67,7 +67,7 @@ class RootController( BaseController ):
     def dataset_state ( self, trans, id=None, stamp=None ):
         if id is not None:
             try: 
-                data = self.app.model.Dataset.get( id )
+                data = self.app.model.HistoryDatasetAssociation.get( id )
             except: 
                 return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
             trans.response.headers['X-Dataset-State'] = data.state
@@ -81,7 +81,7 @@ class RootController( BaseController ):
     def dataset_code( self, trans, id=None, hid=None, stamp=None ):
         if id is not None:
             try: 
-                data = self.app.model.Dataset.get( id )
+                data = self.app.model.HistoryDatasetAssociation.get( id )
             except: 
                 return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
             trans.response.headers['Pragma'] = 'no-cache'
@@ -101,7 +101,7 @@ class RootController( BaseController ):
             ids = map( int, ids.split( "," ) )
             states = states.split( "," )
             for id, state in zip( ids, states ):
-                data = self.app.model.Dataset.get( id )
+                data = self.app.model.HistoryDatasetAssociation.get( id )
                 if data.state != state:
                     rval[id] = {
                         "state": data.state,
@@ -131,7 +131,7 @@ class RootController( BaseController ):
                 raise Exception( "No dataset with hid '%d'" % hid )
         else:
             try:
-                data = self.app.model.Dataset.get( id )
+                data = self.app.model.HistoryDatasetAssociation.get( id )
             except:
                 return "Dataset id '%s' is invalid" %str( id )
         if data:
@@ -160,7 +160,7 @@ class RootController( BaseController ):
         Returns child data directly into the browser, based upon parent_id and designation.
         """
         try:
-            data = self.app.model.Dataset.get( parent_id )
+            data = self.app.model.HistoryDatasetAssociation.get( parent_id )
             if data:
                 child = data.get_child_by_designation(designation)
                 if child:
@@ -172,7 +172,7 @@ class RootController( BaseController ):
     @web.expose
     def display_as( self, trans, id=None, display_app=None, **kwd ):
         """Returns a file in a format that can successfully be displayed in display_app"""
-        data = self.app.model.Dataset.get( id )
+        data = self.app.model.HistoryDatasetAssociation.get( id )
         if data:
             trans.response.set_content_type(data.get_mime())
             trans.log_event( "Formatted dataset id %s for display at %s" % ( str(id), display_app ) )
@@ -183,7 +183,7 @@ class RootController( BaseController ):
     @web.expose
     def peek(self, trans, id=None):
         """Returns a 'peek' at the data"""
-        data = self.app.model.Dataset.get( id )
+        data = self.app.model.HistoryDatasetAssociation.get( id )
         if data:
             yield "<html><body><pre>"
             yield data.peek
@@ -201,7 +201,7 @@ class RootController( BaseController ):
         elif id is None: 
             return trans.show_error_message( "Problem loading dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
         else:
-            data = self.app.model.Dataset.get( id )
+            data = self.app.model.HistoryDatasetAssociation.get( id )
         if data is None:
             return trans.show_error_message( "Problem retrieving dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
 
@@ -281,15 +281,12 @@ class RootController( BaseController ):
                     int( id )
                 except:
                     continue
-                data = self.app.model.Dataset.get( id )
+                data = self.app.model.HistoryDatasetAssociation.get( id )
                 if data:
                     # Walk up parent datasets to find the containing history
                     topmost_parent = data
                     while topmost_parent.parent:
-                        # data.parent is a list of associations, data.parent.parent 
-                        # is the actual dataset
-                        assert len( data.parent ) == 1, "Dataset should only have one parent"
-                        topmost_parent = data.parent[0].parent
+                        topmost_parent = topmost_parent.parent
                     assert topmost_parent in history.datasets, "Data does not belong to current history"
                     # Mark deleted and cleanup
                     data.mark_deleted()
@@ -311,15 +308,12 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid" %str( id )
             history = trans.get_history()
-            data = self.app.model.Dataset.get( id )
+            data = self.app.model.HistoryDatasetAssociation.get( id )
             if data:
                 # Walk up parent datasets to find the containing history
                 topmost_parent = data
                 while topmost_parent.parent:
-                    # data.parent is a list of associations, data.parent.parent 
-                    # is the actual dataset
-                    assert len( data.parent ) == 1, "Dataset should only have one parent"
-                    topmost_parent = data.parent[0].parent
+                    topmost_parent = topmost_parent.parent
                 assert topmost_parent in history.datasets, "Data does not belong to current history"
                 # Mark deleted and cleanup
                 data.mark_deleted()
@@ -556,7 +550,7 @@ class RootController( BaseController ):
         """Adds a POSTed file to a History"""
         try:
             history = trans.app.model.History.get( history_id )
-            data = trans.app.model.Dataset( name = name, info = info, extension = ext, dbkey = dbkey )
+            data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_file = True )
             data.flush()
             data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )
@@ -580,7 +574,7 @@ class RootController( BaseController ):
     def dataset_make_primary( self, trans, id=None):
         """Copies a dataset and makes primary"""
         try:
-            old_data = self.app.model.Dataset.get( id )
+            old_data = self.app.model.HistoryDatasetAssociation.get( id )
             new_data = old_data.copy()
             ## new_data.parent = None
             ## history = trans.app.model.History.get( old_data.history_id )
@@ -606,7 +600,7 @@ class RootController( BaseController ):
     @web.expose
     def dataset_errors( self, trans, id=None, **kwd ):
         """View/fix errors associated with dataset"""
-        data = trans.app.model.Dataset.get( id )
+        data = trans.app.model.HistoryDatasetAssociation.get( id )
         p = kwd
         if p.get("fix_errors", None):
             # launch tool to create new, (hopefully) error free dataset

@@ -30,17 +30,18 @@ class DefaultToolAction( object ):
                     for target_ext in input.extensions:
                         if target_ext in data.get_converter_types():
                             data.refresh() #need to refresh incase this conversion just took place, i.e. input above in tool performed the same conversion
-                            assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
-                            if assoc: data = assoc[0].dataset
+                            datasets = data.get_converted_files_by_type( target_ext )
+                            if datasets: data = datasets[0]
                             elif input.converter_safe( param_values, trans ):
                                 #run converter here
-                                assoc = trans.app.model.DatasetAssociatedFile( parent_id = data.id, file_type = "CONVERTED_%s" % target_ext, metadata_safe = False )
+                                assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = data, file_type = target_ext, metadata_safe = False )
                                 new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
                                 new_data.hid = data.hid
                                 new_data.name = data.name
-                                assoc.dataset_id = new_data.id
+                                new_data.flush()
+                                assoc.dataset = new_data
+                                assoc.flush()
                                 data = new_data
-                                data.flush()
                             break
                 return data
             if isinstance( input, DataToolParameter ):
@@ -122,19 +123,20 @@ class DefaultToolAction( object ):
             ## What is the following hack for? Need to document under what 
             ## conditions can the following occur? (james@bx.psu.edu)
             # HACK: the output data has already been created
+            #      this happens i.e. as a result of the async controller
             if name in incoming:
                 dataid = incoming[name]
-                data = trans.app.model.Dataset.get( dataid )
+                data = trans.app.model.HistoryDatasetAssociation.get( dataid )
                 assert data != None
                 out_data[name] = data
-                continue 
-            # the type should match the input
-            ext = output.format
-            if ext == "input":
-                ext = input_ext
-            data = trans.app.model.Dataset(extension=ext)
-            # Commit the dataset immediately so it gets database assigned unique id
-            data.flush()
+            else:
+                # the type should match the input
+                ext = output.format
+                if ext == "input":
+                    ext = input_ext
+                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
+                # Commit the dataset immediately so it gets database assigned unique id
+                data.flush()
             # Create an empty file immediately
             open( data.file_name, "w" ).close()
             # This may not be neccesary with the new parent/child associations
@@ -167,7 +169,7 @@ class DefaultToolAction( object ):
             
         # Add all the top-level (non-child) datasets to the history
         for name in out_data.keys():
-            if name not in child_dataset_names:
+            if name not in child_dataset_names and name not in incoming: #don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
                 trans.history.add_dataset( data, set_hid = set_output_hid )
                 data.flush()
@@ -176,11 +178,7 @@ class DefaultToolAction( object ):
         for parent_name, child_name in parent_to_child_pairs:
             parent_dataset = out_data[ parent_name ]
             child_dataset = out_data[ child_name ]
-            assoc = trans.app.model.DatasetChildAssociation()
-            assoc.child = child_dataset
-            assoc.designation = child_dataset.designation
-            parent_dataset.children.append( assoc )
-            # FIXME: Child dataset hid
+            parent_dataset.children.append( child_dataset )
             
         # Store data after custom code runs 
         trans.app.model.flush()

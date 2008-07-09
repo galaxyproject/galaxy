@@ -636,11 +636,11 @@ class ColumnListParameter( SelectToolParameter ):
     # from a twill perspective...
 
     >>> # Mock up a history (not connected to database)
-    >>> from galaxy.model import History, Dataset
+    >>> from galaxy.model import History, HistoryDatasetAssociation
     >>> from galaxy.util.bunch import Bunch
     >>> hist = History()
     >>> hist.flush()
-    >>> hist.add_dataset( Dataset( id=1, extension='interval' ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='interval', create_dataset=True ) )
     >>> dtp =  DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
     >>> print dtp.name
     blah
@@ -979,15 +979,15 @@ class DataToolParameter( ToolParameter ):
           displayed as radio buttons and multiple selects as a set of checkboxes
 
     >>> # Mock up a history (not connected to database)
-    >>> from galaxy.model import History, Dataset
+    >>> from galaxy.model import History, HistoryDatasetAssociation
     >>> from galaxy.util.bunch import Bunch
     >>> hist = History()
     >>> hist.flush()
-    >>> hist.add_dataset( Dataset( id=1, extension='txt' ) )
-    >>> hist.add_dataset( Dataset( id=2, extension='bed' ) )
-    >>> hist.add_dataset( Dataset( id=3, extension='fasta' ) )
-    >>> hist.add_dataset( Dataset( id=4, extension='png' ) )
-    >>> hist.add_dataset( Dataset( id=5, extension='interval' ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=3, extension='fasta', create_dataset=True ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=4, extension='png', create_dataset=True ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=5, extension='interval', create_dataset=True ) )
     >>> p = DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
     >>> print p.name
     blah
@@ -1056,16 +1056,16 @@ class DataToolParameter( ToolParameter ):
                     else:
                         for target_ext in self.extensions:
                             if target_ext in data.get_converter_types():
-                                assoc = data.get_associated_files_by_type( "CONVERTED_%s" % target_ext )
-                                if assoc:
-                                    data = assoc[0].dataset
+                                datasets = data.get_converted_files_by_type( target_ext )
+                                if datasets:
+                                    data = datasets[0]
                                 elif not self.converter_safe( other_values, trans ):
                                     continue
                                 selected = ( value and ( data in value ) )
                                 field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
                                 break #we only report the first valid converter, assume self.extensions is a priority list
                 # Also collect children via association object
-                dataset_collector( [ assoc.child for assoc in data.children ], hid )
+                dataset_collector( data.children, hid )
         dataset_collector( history.datasets, None )
         some_data = bool( field.options )
         if some_data:
@@ -1116,7 +1116,7 @@ class DataToolParameter( ToolParameter ):
                         continue
                     most_recent_dataset[0] = data
                 # Also collect children via association object
-                dataset_collector( [ assoc.child for assoc in data.children ] )
+                dataset_collector( data.children )
         dataset_collector( history.datasets )
         most_recent_dataset = most_recent_dataset.pop()
         if most_recent_dataset is not None:
@@ -1133,11 +1133,11 @@ class DataToolParameter( ToolParameter ):
         if value in [None, "None"]:
             return None
         if isinstance( value, list ):
-            return [ trans.app.model.Dataset.get( v ) for v in value ]
-        elif isinstance( value, trans.app.model.Dataset ):
+            return [ trans.app.model.HistoryDatasetAssociation.get( v ) for v in value ]
+        elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
             return value
         else:
-            return trans.app.model.Dataset.get( value )
+            return trans.app.model.HistoryDatasetAssociation.get( value )
 
     def value_to_basic( self, value, app ):
         if value is None or isinstance( value, str ):
@@ -1152,7 +1152,7 @@ class DataToolParameter( ToolParameter ):
         if value is None or value == '' or value == 'None':
             return value
         try:
-            return app.model.Dataset.get( int( value ) )
+            return app.model.HistoryDatasetAssociation.get( int( value ) )
         except:
             if ignore_errors:
                 return value
@@ -1221,7 +1221,7 @@ class DataToolParameter( ToolParameter ):
 #            have the history accessable at the job level, it is necessary
 #            I also probably wrote this docstring test thing wrong.
 #     
-#     >>> from galaxy.model import History, Dataset
+#     >>> from galaxy.model import History
 #     >>> from galaxy.util.bunch import Bunch
 #     >>> hist = History( id=1 )
 #     >>> p = HistoryIDParameter( None, XML( '<param name="blah" type="history"/>' ) )

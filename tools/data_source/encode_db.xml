@@ -17,8 +17,10 @@
 	</inputs>
 	
   <uihints minwidth="800"/>
-	
-	<code file="encodedb_filter.py"/>
+  
+  <outputs>
+    <data format="bed" name="output" />
+  </outputs>
 	
 	<options sanitize="False" refresh="True"/>
 

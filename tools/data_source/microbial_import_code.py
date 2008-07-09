@@ -124,7 +124,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             dbkey = fields[3]
             filepath = fields[4]
             file_type = fields[5]
-            newdata = app.model.Dataset()
+            newdata = app.model.HistoryDatasetAssociation( create_dataset = True ) #This import should become a library
             newdata.extension = file_type
             newdata.name = basic_name + " (" + microbe_info[kingdom][org]['chrs'][chr]['data'][description]['feature'] +" for "+microbe_info[kingdom][org]['name']+":"+chr + ")"
             newdata.flush()

@@ -99,92 +99,11 @@ class JobToOutputDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
         self.dataset = dataset
-        
-class History( object ):
-    def __init__( self, id=None, name=None, user=None ):
-        self.id = id
-        self.name = name or "Unnamed history"
-        self.deleted = False
-        self.purged = False
-        self.genome_build = None
-        # Relationships
-        self.user = user
-        self.datasets = []
-        self.galaxy_sessions = []
-        
-    def _next_hid( self ):
-        # TODO: override this with something in the database that ensures 
-        # better integrity
-        if len( self.datasets ) == 0:
-            return 1
-        else:
-            last_hid = 0
-            for dataset in self.datasets:
-                if dataset.hid > last_hid:
-                    last_hid = dataset.hid
-            return last_hid + 1
 
-    def add_galaxy_session( self, galaxy_session, association=None ):
-        if association is None:
-            self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
-        else:
-            self.galaxy_sessions.append( association )
-
-    def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
-        if parent_id:
-            for data in self.datasets:
-                if data.id == parent_id:
-                    dataset.hid = data.hid
-                    break
-            else:
-                if set_hid: dataset.hid = self._next_hid()
-        else:
-            if set_hid: dataset.hid = self._next_hid()
-        self.genome_build = genome_build
-        self.datasets.append( dataset )
-
-    def copy(self):
-        des = History()
-        des.flush()
-        des.name = self.name
-        des.user_id = self.user_id
-        for data in self.datasets:
-            new_data = data.copy()
-            des.add_dataset(new_data)
-            new_data.hid = data.hid
-            new_data.flush()
-            for child_assoc in data.children:
-                new_child = child_assoc.child.copy()
-                new_assoc = DatasetChildAssociation( child_assoc.designation )
-                new_assoc.child = new_child
-                new_assoc.parent = new_data
-                new_child.flush()
-        des.hid_counter = self.hid_counter
-        des.flush()
-        return des
-
-# class Query( object ):
-#     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
-#         self.name = name or "Unnamed query"
-#         self.state = state
-#         self.tool_parameters = tool_parameters
-#         # Relationships
-#         self.history = history
-#         self.datasets = []
-
-class Dataset( object ):
-    states = Bunch( NEW = 'new',
-                    QUEUED = 'queued',
-                    RUNNING = 'running',
-                    OK = 'ok',
-                    EMPTY = 'empty',
-                    ERROR = 'error',
-                    DELETED = 'deleted')
-    file_path = "/tmp/"
-    engine = None
+class HistoryDatasetAssociation( object ):
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
-                  dbkey=None, state=None, metadata=None, history=None, parent_id=None, designation=None,
-                  validation_errors=None, visible=True, filename_id = None, file_size=None ):
+                  dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
+                  parent_id=None, validation_errors=None, visible=True, create_dataset = False ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.hid = hid
@@ -193,71 +112,44 @@ class Dataset( object ):
         self.peek = peek
         self.extension = extension
         self.dbkey = dbkey
-        self.state = state
-        self._metadata = metadata or dict()
-        self.parent_id = parent_id
         self.designation = designation
-        self.deleted = False
-        self.purged = False
+        self._metadata = metadata or dict()
+        self.deleted = deleted
         self.visible = visible
-        self.filename_id = filename_id
-        self.file_size = file_size
         # Relationships
         self.history = history
+        if not dataset and create_dataset:
+            dataset = Dataset()
+            dataset.flush()
+        self.dataset = dataset
+        self.parent_id = parent_id
         self.validation_errors = validation_errors
-        
+    
     @property
     def ext( self ):
         return self.extension
     
+    @property
+    def states( self ):
+        return self.dataset.states
+    
+    def get_dataset_state( self ):
+        return self.dataset.state
+    def set_dataset_state ( self, state ):
+        self.dataset.state = state
+    state = property( get_dataset_state, set_dataset_state )
+    
     def get_file_name( self ):
-        if self.filename_id is None:
-            assert self.id is not None, "ID must be set before filename used (commit the object)"
-            # First try filename directly under file_path
-            filename = os.path.join( self.file_path, "dataset_%d.dat" % self.id )
-            # Only use that filename if it already exists (backward compatibility),
-            # otherwise construct hashed path
-            if not os.path.exists( filename ):
-                dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
-                # Create directory if it does not exist
-                try:
-                    os.makedirs( dir )
-                except OSError, e:
-                    # File Exists is okay, otherwise reraise
-                    if e.errno != errno.EEXIST:
-                        raise
-                # Return filename inside hashed directory
-                return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
-        else:
-            filename = self.dataset_file.filename
-        # Make filename absolute
-        return os.path.abspath( filename )
+        return self.dataset.get_file_name()
             
     def set_file_name (self, filename):
-        if filename is None:
-            self.filename_id = None
-        else:
-            filename_obj = DatasetFileName.get_by(filename=filename)
-            if filename_obj is None:
-                filename_obj = DatasetFileName(filename=filename, extra_files_path=self.extra_files_path)
-                filename_obj.flush()
-            self.filename_id = filename_obj.id
-        self.flush()
-        self.refresh()
+        return self.dataset.set_file_name( filename )
         
     file_name = property( get_file_name, set_file_name )
     
     @property
     def extra_files_path( self ):
-        if self.dataset_file and self.dataset_file.extra_files_path: 
-            path = self.dataset_file.extra_files_path
-        else:
-            path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
-            #only use path directly under self.file_path if it exists
-            if not os.path.exists( path ):
-                path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
-        # Make path absolute
-        return os.path.abspath( path )
+        return self.dataset.extra_files_path
     
     @property
     def datatype( self ):
@@ -279,7 +171,7 @@ class Dataset( object ):
     def get_dbkey( self ):
         dbkey = self.metadata.dbkey
         if not isinstance(dbkey, list): dbkey = [dbkey]
-        if dbkey in [["?"], [None], []]: dbkey = [self.old_dbkey]
+        #if dbkey in [["?"], [None], []]: dbkey = [self.old_dbkey]
         if dbkey in [[None], []]: return "?"
         return dbkey[0]
     def set_dbkey( self, value ):
@@ -288,10 +180,10 @@ class Dataset( object ):
                 self.metadata.dbkey = [value]
             else: 
                 self.metadata.dbkey = value
-        if isinstance(value, list): 
-            self.old_dbkey = value[0]
-        else:
-            self.old_dbkey = value
+        #if isinstance(value, list): 
+        #    self.old_dbkey = value[0]
+        #else:
+        #    self.old_dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
 
     def change_datatype( self, new_ext ):
@@ -299,22 +191,13 @@ class Dataset( object ):
         datatypes_registry.change_datatype( self, new_ext )
     def get_size( self ):
         """Returns the size of the data on disk"""
-        if self.file_size:
-            return self.file_size
-        else:
-            try:
-                return os.path.getsize( self.file_name )
-            except OSError:
-                return 0
+        return self.dataset.get_size()
     def set_size( self ):
         """Returns the size of the data on disk"""
-        try:
-            self.file_size = os.path.getsize( self.file_name )
-        except OSError:
-            self.file_size = 0
+        return self.dataset.set_size()
     def has_data( self ):
         """Detects whether there is any data"""
-        return self.get_size() > 0        
+        return self.dataset.has_data()
     def get_raw_data( self ):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         return self.datatype.get_raw_data( self )
@@ -346,55 +229,33 @@ class Dataset( object ):
         return self.datatype.display_name( self )
     def display_info( self ):
         return self.datatype.display_info( self )
-    def get_associated_files_by_type( self, file_type ):
+    def get_converted_files_by_type( self, file_type ):
         valid = []
-        for assoc in self.associated_files:
+        for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
-                valid.append( assoc )
+                valid.append( assoc.dataset )
         return valid
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         #metadata_safe = True means to only clear when assoc.metadata_safe == False
-        for assoc in self.associated_files:
+        for assoc in self.implicitly_converted_datasets:
             if not metadata_safe or not assoc.metadata_safe:
                 assoc.clear( purge = purge )
     def get_child_by_designation(self, designation):
-        # if self.history:
-        #     for data in self.history.datasets:
-        #         if data.parent_id and data.parent_id == self.id:
-        #             if designation == data.designation:
-        #                 return data
-        for child_association in self.children:
-            if child_association.designation == designation:
-                return child_association.child
+        for child in self.children:
+            if child.designation == designation:
+                return child
         return None
+
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
     
-    def copy(self, parent_id=None):
-        des = Dataset(extension=self.ext)
+    def copy( self, copy_children = False, parent_id = None ):
+        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id )
         des.flush()
-        des.name = self.name
-        des.info = self.info
-        des.blurb = self.blurb
-        des.peek = self.peek
-        des.extension = self.extension
-        des.dbkey = str( self.dbkey )
-        des.state = self.state
-        des.metadata = self.metadata
-        des.hid = self.hid
-        des.deleted = self.deleted
-        des.purged = self.purged
-        # Make sure source is using filename table, so purge works properly
-        if not self.dataset_file:
-            self.set_file_name(self.file_name)
-            self.flush()
-            self.refresh()
-            self.dataset_file.extra_files_path = self.extra_files_path
-            self.flush()
-        # Don't copy file contents, share original file
-        des.file_name = self.file_name
-        des.hid = self.hid
-        des.designation = self.designation
+        if copy_children:
+            for child in self.children:
+                child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
+        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
         return des
 
@@ -407,9 +268,166 @@ class Dataset( object ):
     def mark_deleted( self, include_children=True ):
         self.deleted = True
         if include_children:
-            for child_assoc in self.children:
-                child_assoc.child.mark_deleted()
+            for child in self.children:
+                child.mark_deleted()
+
+
+
+class History( object ):
+    def __init__( self, id=None, name=None, user=None ):
+        self.id = id
+        self.name = name or "Unnamed history"
+        self.deleted = False
+        self.purged = False
+        self.genome_build = None
+        # Relationships
+        self.user = user
+        self.datasets = []
+        self.galaxy_sessions = []
+        
+    def _next_hid( self ):
+        # TODO: override this with something in the database that ensures 
+        # better integrity
+        if len( self.datasets ) == 0:
+            return 1
+        else:
+            last_hid = 0
+            for dataset in self.datasets:
+                if dataset.hid > last_hid:
+                    last_hid = dataset.hid
+            return last_hid + 1
+
+    def add_galaxy_session( self, galaxy_session, association=None ):
+        if association is None:
+            self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
+        else:
+            self.galaxy_sessions.append( association )
+
+    def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
+        if isinstance( dataset, Dataset ):
+            dataset = HistoryDatasetAssociation( dataset = dataset )
+            dataset.flush()
+        elif not isinstance( dataset, HistoryDatasetAssociation ):
+            raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history."
+        if parent_id:
+            for data in self.datasets:
+                if data.id == parent_id:
+                    dataset.hid = data.hid
+                    break
+            else:
+                if set_hid: dataset.hid = self._next_hid()
+        else:
+            if set_hid: dataset.hid = self._next_hid()
+        dataset.history = self
+        if genome_build not in [None, '?']:
+            self.genome_build = genome_build
+        self.datasets.append( dataset )
+
+    def copy(self):
+        des = History()
+        des.flush()
+        des.name = self.name
+        des.user_id = self.user_id
+        for data in self.datasets:
+            new_data = data.copy( copy_children = True )
+            des.add_dataset( new_data )
+            new_data.flush()
+        des.hid_counter = self.hid_counter
+        des.flush()
+        return des
+
+# class Query( object ):
+#     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
+#         self.name = name or "Unnamed query"
+#         self.state = state
+#         self.tool_parameters = tool_parameters
+#         # Relationships
+#         self.history = history
+#         self.datasets = []
+
+class Dataset( object ):
+    states = Bunch( NEW = 'new',
+                    QUEUED = 'queued',
+                    RUNNING = 'running',
+                    OK = 'ok',
+                    EMPTY = 'empty',
+                    ERROR = 'error',
+                    DISCARDED = 'discarded' )
+    file_path = "/tmp/"
+    engine = None
+    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
+        self.id = id
+        self.state = state
+        self.deleted = False
+        self.purged = False
+        self.purgable = purgable
+        self.external_filename = external_filename
+        self._extra_files_path = extra_files_path
+        self.file_size = file_size
+        
+    def get_file_name( self ):
+        if not self.external_filename:
+            assert self.id is not None, "ID must be set before filename used (commit the object)"
+            # First try filename directly under file_path
+            filename = os.path.join( self.file_path, "dataset_%d.dat" % self.id )
+            # Only use that filename if it already exists (backward compatibility),
+            # otherwise construct hashed path
+            if not os.path.exists( filename ):
+                dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
+                # Create directory if it does not exist
+                try:
+                    os.makedirs( dir )
+                except OSError, e:
+                    # File Exists is okay, otherwise reraise
+                    if e.errno != errno.EEXIST:
+                        raise
+                # Return filename inside hashed directory
+                return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
+        else:
+            filename = self.external_filename
+        # Make filename absolute
+        return os.path.abspath( filename )
             
+    def set_file_name ( self, filename ):
+        if not filename:
+            self.external_filename = None
+        else:
+            self.external_filename = filename
+        
+    file_name = property( get_file_name, set_file_name )
+    
+    @property
+    def extra_files_path( self ):
+        if self._extra_files_path: 
+            path = self._extra_files_path
+        else:
+            path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
+            #only use path directly under self.file_path if it exists
+            if not os.path.exists( path ):
+                path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
+        # Make path absolute
+        return os.path.abspath( path )
+    
+    def get_size( self ):
+        """Returns the size of the data on disk"""
+        if self.file_size:
+            return self.file_size
+        else:
+            try:
+                return os.path.getsize( self.file_name )
+            except OSError:
+                return 0
+    def set_size( self ):
+        """Returns the size of the data on disk"""
+        try:
+            self.file_size = os.path.getsize( self.file_name )
+        except OSError:
+            self.file_size = 0
+    def has_data( self ):
+        """Detects whether there is any data"""
+        return self.get_size() > 0
+    def mark_deleted( self, include_children=True ):
+        self.deleted = True
 
     # FIXME: sqlalchemy will replace this
     def _delete(self):
@@ -418,12 +436,6 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
-
-class DatasetFileName( object ):
-    def __init__( self, filename=None, readonly=False, extra_files_path=None ):
-        self.filename = filename
-        self.readonly = readonly
-        self.extra_files_path = extra_files_path
 
 class Old_Dataset( Dataset ):
     pass
@@ -439,47 +451,22 @@ class DatasetToValidationErrorAssociation( object ):
         self.dataset = dataset
         self.validation_error = validation_error
 
-class DatasetChildAssociation( object ):
-    def __init__( self, designation=None ):
-        self.designation = designation
-        self.parent = None
-        self.child = None
-
-class DatasetAssociatedFile( object ):
-    def __init__( self, id = None, dataset_id = None, file_type = None, parent_id = None, filename = None, deleted = False, purged = False, metadata_safe = True ):
+class ImplicitlyConvertedDatasetAssociation( object ):
+    def __init__( self, id = None, parent = None, dataset = None, file_type = None, deleted = False, purged = False, metadata_safe = True ):
         self.id = id
-        self.dataset_id = dataset_id
+        self.dataset = dataset
+        self.parent = parent
         self.type = file_type
-        self.parent_id = parent_id
-        self.filename = filename
         self.deleted = deleted
         self.purged = purged
         self.metadata_safe = metadata_safe
-
-    def get_file_name( self ):
-        #return absolute path of the filename
-        if self.filename:
-            return os.path.abspath( self.filename )
-        if self.dataset_id is not None:
-            return self.dataset.file_name
-        else:
-            assert self.id is not None, "ID must be set before filename used (commit the object)"
-            assert self.parent_id is not None, "Parent ID must be set before filename used"
-            return os.path.abspath( "%s_accociated_%s" % ( self.parent.file_name, self.id ) )
-    def set_file_name ( self, filename ):
-        self.filename = filename
-        if self.dataset:
-            self.dataset.deleted = True
-            self.dataset = None
-            self.dataset_id = None
-    file_name = property( get_file_name, set_file_name )
 
     def clear( self, purge = False ):
         self.deleted = True
         if self.dataset:
             self.dataset.deleted = True
             self.dataset.purged = purge
-        if purge:
+        if purge: #do something with purging
             self.purged = True
             try: os.unlink( self.file_name )
             except Exception, e: print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )

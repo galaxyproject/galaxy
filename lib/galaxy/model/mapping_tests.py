@@ -16,7 +16,7 @@ class MappingTests( unittest.TestCase ):
         #h1.queries.append( model.Query( "h1->q2" ) )
         h2 = model.History( name=( "H" * 1024 ) )
         #q1 = model.Query( "h2->q1" )
-        d1 = model.Dataset( metadata=dict(chromCol=1,startCol=2,endCol=3 ), history=h2 )
+        d1 = model.HistoryDatasetAssociation( metadata=dict(chromCol=1,startCol=2,endCol=3 ), history=h2, create_dataset=True )
         #h2.queries.append( q1 )
         #h2.queries.append( model.Query( "h2->q2" ) )
         model.context.current.flush()

@@ -65,7 +65,7 @@ class UploadToolAction( object ):
         return dict( output=data_list[0] )
 
     def upload_empty(self, trans, err_code, err_msg):
-        data = trans.app.model.Dataset()
+        data = trans.app.model.HistoryDatasetAssociation( create_dataset = True )
         data.name = err_code 
         data.extension = "txt"
         data.dbkey = "?"
@@ -158,13 +158,12 @@ class UploadToolAction( object ):
         if info is None:
             info = 'uploaded %s file' %data_type
 
-        data = trans.app.model.Dataset()
+        data = trans.app.model.HistoryDatasetAssociation( history = trans.history, extension = ext, create_dataset = True )
         data.name = file_name
-        data.extension = ext
         data.dbkey = dbkey
         data.info = info
         data.flush()
-        shutil.move(temp_name, data.file_name)
+        shutil.move( temp_name, data.file_name )
         data.state = data.states.OK
         data.init_meta()
         if self.line_count is not None:

@@ -52,7 +52,7 @@ class ASync( BaseController ):
         if data_id:
             if not URL:
                 return "No URL parameter was submitted for data %s" % data_id
-            data = trans.model.Dataset.get( data_id )
+            data = trans.model.HistoryDatasetAssociation.get( data_id )
            
             if not data:
                 return "Data %s does not exist or has already been deleted" % data_id
@@ -67,7 +67,8 @@ class ASync( BaseController ):
                 trans.log_event( 'Async executing tool %s' % tool.id, tool_id=tool.id )
                 galaxy_url  = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
                 galaxy_url = params.get("GALAXY_URL",galaxy_url)
-                params = dict(url=URL, dataid=data.id, output=data.file_name, GALAXY_URL=galaxy_url)
+                params = dict( url=URL, GALAXY_URL=galaxy_url )
+                params[tool.outputs.keys()[0]] = data.id #assume there is exactly one output file possible
                 #tool.execute( app=self.app, history=history, incoming=params )
                 tool.execute( trans, incoming=params )
             else:
@@ -101,14 +102,14 @@ class ASync( BaseController ):
             #data.dbkey = GALAXY_BUILD
             #data.state = jobs.JOB_OK
             #history.datasets.add_dataset( data )
-
-            data = trans.app.model.Dataset()
             
+            data = trans.app.model.HistoryDatasetAssociation( create_dataset = True, extension = GALAXY_TYPE )
             data.name = GALAXY_NAME
-            data.extension = GALAXY_TYPE
             data.dbkey = GALAXY_BUILD
             data.info = GALAXY_INFO
             data.state = data.states.NEW
+            data.flush()
+            open( data.file_name, 'wb' ).close() #create the file
             trans.history.add_dataset( data, genome_build=GALAXY_BUILD )
             trans.model.flush()
             trans.log_event( "Added dataset %d to history %d" %(data.id, trans.history.id ), tool_id=tool_id )
