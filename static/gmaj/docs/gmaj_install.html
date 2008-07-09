@@ -63,7 +63,7 @@ or higher</b> is required, and for best compatibility
 (or JDK) is recommended.
 <p>
 For stand-alone mode, that's all there is to the installation;
-you will specify different start-up parameters to Gmaj each time
+you will specify different start-up parameters for Gmaj each time
 you run it (see <a href="gmaj_help.html"
 >Starting and Running Gmaj</a>).  The remaining sections on this
 page apply only to applet setup.
@@ -112,6 +112,7 @@ code looks like this:
 &lt;param name=buttonlabel value="Alpha-globin"&gt;
 &lt;param name=nobutton    value="false"&gt;
 &lt;param name=initzoom    value="mouse 110000 147000"&gt;
+&lt;param name=posturl     value="/cgi-bin/save-posted-file.pl"&gt;
 &lt;param name=urlpause    value="100"&gt;
 &lt;param name=debug       value="false"&gt;
 &lt;i&gt;Your browser is not responding to the &amp;lt;applet&amp;gt; tag.&lt;/i&gt;
@@ -119,9 +120,9 @@ code looks like this:
 </pre>
 </blockquote>
 
-This particular fragment is from the alpha-globin example on our
-server; naturally you need to replace the values with your own
-file URLs, button label, etc.  A few things to note:
+This particular fragment is based on the alpha-globin example
+from our server; naturally you need to replace the values with
+your own file URLs, button label, etc.  A few things to note:
 <ul>
 <li>	If the <code>gmaj.jar</code> file is not in the same
 	directory as your web page, you'll need to supply the path
@@ -140,10 +141,32 @@ file URLs, button label, etc.  A few things to note:
 	can still invoke the Unzoom or Set Zoom features
 	interactively to see the entire sequence range.  The
 	sequence name must match one of the names from the alignment
-	file, and the endpoints do include the offset (if any) for
-	that sequence from the parameters file.  To specify the
+	file(s), and the endpoints must include the offset (if any)
+	for that sequence from the parameters file.  To specify the
 	reference sequence without a zoom region, use <code>-1</code>
 	for both endpoints.
+<li>	The <code>posturl</code> parameter designates a URL on your
+	server where exported alignments should be sent.  By default
+	the Export feature is not available in applet mode, because
+	applets generally can't write to the user's local disk due
+	to security restrictions.  However, by specifying this
+	parameter you can enable the applet to send the exported data
+	to your server instead (typically a CGI script).  The output
+	is sent via an HTTP POST request using the MIME protocol for
+	web forms; currently for applets the export file format is
+	always MAF, and the filename is always
+	<code>Gmaj_output.maf</code>.
+<pre class=smallfont>
+  Content-Type: multipart/form-data; boundary=______AaB03x
+
+  --______AaB03x
+  Content-Disposition: form-data; name=file_data; filename=Gmaj_output.maf
+  Content-Type: application/octet-stream
+
+  [MAF file contents, in plain ASCII with platform-dependent line breaks]
+
+  --______AaB03x--
+</pre>
 <li>	The <code>urlpause</code> parameter specifies how many
 	milliseconds the program should pause before retrieving each
 	file from a URL, in order to avoid overloading your server.
@@ -159,6 +182,6 @@ file URLs, button label, etc.  A few things to note:
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, July 2007</i>
+<i>Cathy Riemer, June 2008</i>
 </body>
 </html>

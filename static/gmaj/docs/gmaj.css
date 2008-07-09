@@ -15,6 +15,7 @@ p.scrollspace { margin-top: 100em; margin-bottom: 0 }
 ul.lessindent { padding-left: 4ex }
 img.lower { vertical-align: -3ex }
 code { padding-left: 0.5ex; padding-right: 0.5ex }
+.smallfont { font-size: smaller }
 .baseline { vertical-align: baseline }
 .notop { margin-top: 0 }
 .nobottom { margin-bottom: 0 }

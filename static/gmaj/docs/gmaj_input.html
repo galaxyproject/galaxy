@@ -97,7 +97,7 @@ For this reason, Gmaj uses a meta-level <b>parameters file</b>
 that lists the names of all the data files, plus a few other
 data-related options.  Then when running Gmaj, you only have to
 specify that one file name.  However, if you don't want to use
-any of these annotations or options, you can specify the
+any of these annotations or options, you can specify a single
 <a href="#align">alignment file</a> directly in place of a
 parameters file.
 <p>
@@ -152,7 +152,10 @@ individually in <code>.zip</code>, <code>.jar</code>, or
 and transfer, but still requires overhead for multiple HTTP
 connections in applet mode.  The file name must end with the
 corresponding extension for the compression format to be
-recognized.
+recognized.  (Such files can also be included in the bundle
+if desired; though little if any additional compression is
+typically achieved, this may be more convenient than unzipping
+a large file just to bundle it.)
 <p>
 
 <p class=hdr>
@@ -160,7 +163,7 @@ recognized.
 <p>
 If you supply any annotations for Gmaj to display, these files
 must all use position coordinates that refer to the same original
-sequences identified in the MAF <a href="#align">alignment file</a>
+sequences identified in the MAF <a href="#align">alignment files</a>
 (ignoring any display offsets specified in the <a href="#param"
 >parameters file</a>).  However, even though the MAF coordinates
 are 0-based, the PipMaker-style annotation files all use a
@@ -171,14 +174,14 @@ so the same files can be used with both programs, and the same
 tools can be used to prepare them.  Coordinates for generic
 annotations may be either 1-based or 0-based and closed or
 half-open, depending on the format, but Gmaj always adjusts
-them as needed (including the ones in the MAF file) to convert
+them as needed (including the ones in the MAF files) to convert
 everything to a 1-based, closed-interval system for display.
 <p>
 
 <p class=hdr>
 <h3><a name="align">Alignments</a></h3>
 <p>
-Gmaj is designed to display multiple alignments in
+Gmaj is designed to display multiple-sequence alignments in
 <a href="http://genome.ucsc.edu/FAQ/FAQformat">MAF</a> format.
 It is especially suited for sequence-symmetric alignments from
 programs such as <a href="http://www.bx.psu.edu/miller_lab/"
@@ -186,8 +189,9 @@ programs such as <a href="http://www.bx.psu.edu/miller_lab/"
 reference sequence.  (In the latter case it is a good idea to
 set the <code>refseq</code> field in your <a href="#param"
 >parameters file</a>, to prevent displaying the alignments with
-an inappropriate reference sequence.)  Gmaj displays only one
-alignment file at a time.
+an inappropriate reference sequence.)  It is possible to display
+several alignment files simultaneously on the same plots, e.g.
+for comparing output from different alignment programs.
 <p>
 Gmaj normally requires that each sequence name appears at most
 once in each MAF block, i.e., that the values of the "src" field
@@ -201,7 +205,7 @@ the <code>~</code> does not show in the main display, but you may
 occasionally see it in an error message.
 <p>
 The downside of this feature is that <b>sequence names in the MAF
-file must not end with <code>~</code></b>, even for non-self
+files must not end with <code>~</code></b>, even for non-self
 alignments.
 <p>
 
@@ -630,14 +634,14 @@ Generic files can also contain annotations for several sequences,
 because unlike the PipMaker-style formats, they all have a
 "seqname" or "chrom" field that Gmaj can use to select the
 appropriate lines.  Ideally Gmaj expects this field to match
-the sequence name from the <a href="#align">alignment file</a>,
+the sequence name from the <a href="#align">alignment files</a>,
 but has two ways to deal with exceptions.  If there is only one
 seqname in the annotation file, then Gmaj will go ahead and use
 it, but will display a warning (unless the mismatch can be fixed
 by prepending the organism name, or the organism name plus
 <code>chr</code>, to the annotation seqname).  But if the file
 has annotations for several sequences and some don't match the
-alignment file, you need to tell Gmaj which is which by adding
+alignment files, you need to tell Gmaj which is which by adding
 an alias in the <a href="#param">parameters file</a> (see
 <code><a href="sample.gmaj">sample.gmaj</a></code>).
 <p>
@@ -724,7 +728,7 @@ PipMaker-style formats instead.
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, January 2008</i>
+<i>Cathy Riemer, June 2008</i>
 
 <p class=scrollspace>
 </body>

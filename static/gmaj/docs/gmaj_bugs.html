@@ -33,19 +33,20 @@ however, with further investigation it may be possible to work
 around the problem in future releases of Gmaj.
 <p class=vlarge>
 <ul>
-<li>	<i>Phantom repeats.</i>&nbsp;
+<li>	<a name="phantom"><i>Phantom repeats.</i></a>&nbsp;
 	After zooming in on a small region, the "repeats" panel
 	sometimes shows a spurious extra bar superimposed on the
 	legitimate features across the entire width of the window,
 	or the features may disappear entirely.
 <p>
-<li>	<i>Missing zoom box and crosshairs.</i>&nbsp;
+<li>	<a name="zoombox"><i>Missing zoom box and crosshairs.</i></a>&nbsp;
 	With some datasets (large ones especially) the lines for the
 	zoom rectangle and crosshairs may not display.  It still
 	zooms OK though, if you just pretend the lines are there.
 	<b>Update:</b> This appears to have been fixed in Java 1.5.
 <p>
-<li>	<i>Scrollbar obscures block buttons.</i>&nbsp;
+<!-- [fixed 02/19/08]
+<li>	<a name="buttonscroll"><i>Scrollbar obscures block buttons.</i></a>&nbsp;
 	If there is not enough room for all of the block buttons
 	corresponding to the marked position, a scrollbar will
 	appear.  However, the extra vertical space required for
@@ -55,13 +56,14 @@ around the problem in future releases of Gmaj.
 	box and the button panel toward the left, to create more
 	space for the buttons.
 <p>
-<li>	<i>Can't copy text from dialog messages in applet.</i>&nbsp;
+-->
+<li>	<a name="dialogcopy"><i>Can't copy text from dialog messages in applet.</i></a>&nbsp;
 	In applet mode, you may not be able to select and copy text
 	from pop-up message boxes to the system clipboard for
 	pasting elsewhere.  This is apparently due to a bug in Java;
 	hopefully Sun will fix it eventually.
 <p>
-<li>	<i>Patchy rendering of mark circle and/or red segments.</i>&nbsp;
+<li>	<a name="xor"><i>Patchy rendering of mark circle and/or red segments.</i></a>&nbsp;
 	When using the Large Fonts option with Mark Color Varies,
 	the red circle and plot segments may not appear as solid
 	as they should.  This is because Mark Color Varies is
@@ -73,8 +75,8 @@ around the problem in future releases of Gmaj.
 	Always Red when using Large Fonts should solve the problem
 	(except that it will be invisible against red underlays).
 <p>
-<!-- [fixed]
-<li>	<i>GUI rebuild breaks keyboard shortcuts.</i>&nbsp;
+<!-- [fixed 07/16/07]
+<li>	<a name="buildfocus"><i>GUI rebuild breaks keyboard shortcuts.</i></a>&nbsp;
 	The items on the Options menu generally require all of the
 	open windows to be rebuilt, and although the window that was
 	active may still be in front, on some systems it might not
@@ -87,7 +89,7 @@ around the problem in future releases of Gmaj.
 	different window and then returning to the one you want.
 <p>
 -->
-<li>	<i>Memory leak when closing or rebuilding windows.</i>&nbsp;
+<li>	<a name="leak"><i>Memory leak when closing or rebuilding windows.</i></a>&nbsp;
 	When windows are closed or rebuilt (e.g. when loading data
 	via File - Open, switching to Large Fonts, or even just
 	displaying dialog boxes), not all of the memory they were
@@ -98,7 +100,7 @@ around the problem in future releases of Gmaj.
 	switch, and the size of your dataset.
 <p>
 <!--
-<li>	<i>Name.</i>&nbsp;
+<li>	<a name=" "><i>Name.</i></a>&nbsp;
 	Description.
 <p>
 -->
@@ -119,6 +121,8 @@ Thank you for using Gmaj, and helping us to make it better.
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, January 2008</i>
+<i>Cathy Riemer, June 2008</i>
+
+<p class=scrollspace>
 </body>
 </html>

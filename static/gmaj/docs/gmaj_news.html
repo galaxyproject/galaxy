@@ -12,6 +12,65 @@
 <h2>What's New in Gmaj</h2>
 <p class=vvlarge>
 <dl>
+<dt><b>2008-Jun-30</b><br>
+<dd>	<ul>
+	<li>	Gmaj can display several MAF files simultaneously on the same plots,
+		e.g. for comparing output from different alignment programs.
+	<li>	A new Tags menu allows the user to tag particular blocks for special
+		treatment.  Tagged blocks are conceptually separated from their MAFs
+		and can be displayed, hidden, or exported as a group.
+	<li>	There are many new Export options, including MAF format and exporting
+		only the tagged blocks.  Export is now possible in applet mode, by
+		posting the blocks to an administrator-designated URL (MAF format only).
+		The Export dialog remembers previous selections if you use it repeatedly.
+	<li>	The parameters file has a new option <code>skipotherseq</code>, which
+		causes MAF sequences that aren't mentioned to be ignored (handy for
+		reducing the number of pips and saving memory).
+	<li>	Aliases can be given for each <code>seqname</code> in the parameters
+		file, e.g. if two MAF files use different names for the same sequence.
+	<li>	A new menu item Help - Sequence Summary reports the aligning extents
+		for all sequences (useful when fetching/trimming annotation files).
+	<li>	The long-standing <i>Scrollbar obscures block buttons</i> bug has been
+		fixed, with additional usability enhancements such as remembering
+		manual divider placement (click divider to release).
+	<li>	Minor fixes and improvements:
+		<ul>
+		<li>	The <code>reconseq</code> field in the parameters file has been
+			renamed to <code>reconorg</code> (because it specifies an organism
+			rather than a single sequence); the old <code>reconseq</code>
+			keyword is deprecated but still supported for the time being.
+			The <code>seqfile</code> keyword from pre-MAF days is no longer
+			supported.
+		<li>	Tiny mouse drags in plots are assumed to be accidental and treated
+			as clicks, to avoid the annoying message "Zoom region can't be
+			smaller than ... pixels".
+		<li>	Options - Mark Always Red is now the default, due to the
+			<a href="gmaj_bugs.html#xor">rendering issue with XOR</a>.
+		<li>	The text alignment omits rows below the % identity threshold.
+		<li>	The row of block buttons and the position indicator's block list
+			only include blocks that are in visible categories (according to
+			the new MAF/Tagged checkboxes) and meet the % identity threshold.
+		<li>	When self-alignments include the trivial block, it is typically
+			very slow to load and manipulate in the text panel due to its
+			huge size.  Gmaj requests confirmation before moving the mark to
+			any block that covers the entire aligning extent of the reference
+			sequence, but then remembers if you say OK and only shows the
+			busy cursor thereafter.
+		<li>	The bundle file can contain pre-compressed files.
+		<li>	Several minor bug fixes and performance enhancements.
+<!--
+		<li>	Bugfix: some settings and state values were inappropriately shared
+			among applet invocations.
+		<li>	Bugfix: opening an applet for a pairwise dataset no longer distorts
+			the initial multipip size for other applets.
+		<li>	Bugfix: the text view must not be scrolled if it's not displayed.
+		<li>	Bugfix: race condition when painting "Please wait" dialog is reduced.
+-->
+		<li>	Improved error checking and messages.
+		<li>	Tweaks in wording, punctuation, spacing, dialog title, etc.
+		</ul>
+	</ul>
+<p>
 <dt><b>2008-Jan-08</b><br>
 <dd>	<ul>
 	<li>	Special treatment for pairwise alignments:
@@ -461,6 +520,6 @@
 
 <p class=vvlarge>
 <hr>
-<i>Cathy Riemer, January 2008</i>
+<i>Cathy Riemer, June 2008</i>
 </body>
 </html>

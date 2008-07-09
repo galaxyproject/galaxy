@@ -137,6 +137,7 @@ class HistoryDatasetAssociation( object ):
         return self.dataset.state
     def set_dataset_state ( self, state ):
         self.dataset.state = state
+        self.dataset.flush() #flush here, because hda.flush() won't flush the Dataset object
     state = property( get_dataset_state, set_dataset_state )
     
     def get_file_name( self ):
