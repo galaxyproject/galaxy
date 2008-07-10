@@ -1,5 +1,5 @@
 /*
- * jQuery UI @VERSION
+ * jQuery UI 1.5.2
  *
  * Copyright (c) 2008 Paul Bakaus (ui.jquery.com)
  * Dual licensed under the MIT (MIT-LICENSE.txt)
@@ -32,7 +32,7 @@ $.ui = {
 	cssCache: {},
 	css: function(name) {
 		if ($.ui.cssCache[name]) { return $.ui.cssCache[name]; }
-		var tmp = $('<div class="ui-resizable-gen">').addClass(name).css({position:'absolute', top:'-5000px', left:'-5000px', display:'block'}).appendTo('body');
+		var tmp = $('<div class="ui-gen">').addClass(name).css({position:'absolute', top:'-5000px', left:'-5000px', display:'block'}).appendTo('body');
 		
 		//if (!$.browser.safari)
 			//tmp.appendTo('body'); 
@@ -46,15 +46,11 @@ $.ui = {
 		try { $('body').get(0).removeChild(tmp.get(0));	} catch(e){}
 		return $.ui.cssCache[name];
 	},
-	disableSelection: function(e) {
-		e.unselectable = "on";
-		e.onselectstart = function() { return false; };
-		if (e.style) { e.style.MozUserSelect = "none"; }
+	disableSelection: function(el) {
+		$(el).attr('unselectable', 'on').css('MozUserSelect', 'none');
 	},
-	enableSelection: function(e) {
-		e.unselectable = "off";
-		e.onselectstart = function() { return true; };
-		if (e.style) { e.style.MozUserSelect = ""; }
+	enableSelection: function(el) {
+		$(el).attr('unselectable', 'off').css('MozUserSelect', '');
 	},
 	hasScroll: function(e, a) {
 		var scroll = /top/.test(a||"top") ? 'scrollTop' : 'scrollLeft', has = false;
@@ -69,7 +65,7 @@ $.ui = {
 
 var _remove = $.fn.remove;
 $.fn.remove = function() {
-	$("*", this).add(this).trigger("remove");
+	$("*", this).add(this).triggerHandler("remove");
 	return _remove.apply(this, arguments );
 };
 
@@ -200,7 +196,7 @@ $.ui.mouse = {
 		
 		var self = this,
 			btnIsLeft = (e.which == 1),
-			elIsCancel = (typeof this.options.cancel == "string" ? $(e.target).is(this.options.cancel) : false);
+			elIsCancel = (typeof this.options.cancel == "string" ? $(e.target).parents().add(e.target).filter(this.options.cancel).length : false);
 		if (!btnIsLeft || elIsCancel || !this.mouseCapture(e)) {
 			return true;
 		}
@@ -262,9 +258,8 @@ $.ui.mouse = {
 		if (this._mouseStarted) {
 			this._mouseStarted = false;
 			this.mouseStop(e);
-		}
-		else {
-		    this.mouseClickOnly(e);
+		} else {
+			this.mouseClickOnly(e);
 		}
 		
 		return false;
@@ -311,7 +306,7 @@ $.ui.mouse.defaults = {
  */
 (function($) {
 
-$.widget("ui.draggable", $.extend($.ui.mouse, {
+$.widget("ui.draggable", $.extend({}, $.ui.mouse, {
 	init: function() {
 		
 		//Initialize needed constants
@@ -439,7 +434,7 @@ $.widget("ui.draggable", $.extend($.ui.mouse, {
 				+ this.offset.relative.top	* mod										// Only for relative positioned nodes: Relative offset from element to offset parent
 				+ this.offset.parent.top * mod											// The offsetParent's offset without borders (offset + border)
 				- (this.cssPosition == "fixed" || (this.cssPosition == "absolute" && this.offsetParent[0] == document.body) ? 0 : this.offsetParent[0].scrollTop) * mod	// The offsetParent's scroll position, not if the element is fixed
-				+ (this.cssPosition == "fixed" ? this.offsetParent[0].scrollTop : 0) * mod
+				+ (this.cssPosition == "fixed" ? $(document).scrollTop() : 0) * mod
 				+ this.margins.top * mod												//Add the margin (you don't want the margin counting in intersection methods)
 			),
 			left: (
@@ -447,7 +442,7 @@ $.widget("ui.draggable", $.extend($.ui.mouse, {
 				+ this.offset.relative.left	* mod										// Only for relative positioned nodes: Relative offset from element to offset parent
 				+ this.offset.parent.left * mod											// The offsetParent's offset without borders (offset + border)
 				- (this.cssPosition == "fixed" || (this.cssPosition == "absolute" && this.offsetParent[0] == document.body) ? 0 : this.offsetParent[0].scrollLeft) * mod	// The offsetParent's scroll position, not if the element is fixed
-				+ (this.cssPosition == "fixed" ? this.offsetParent[0].scrollLeft : 0) * mod
+				+ (this.cssPosition == "fixed" ? $(document).scrollLeft() : 0) * mod
 				+ this.margins.left * mod												//Add the margin (you don't want the margin counting in intersection methods)
 			)
 		};
@@ -462,7 +457,7 @@ $.widget("ui.draggable", $.extend($.ui.mouse, {
 				- this.offset.relative.top												// Only for relative positioned nodes: Relative offset from element to offset parent
 				- this.offset.parent.top												// The offsetParent's offset without borders (offset + border)
 				+ (this.cssPosition == "fixed" || (this.cssPosition == "absolute" && this.offsetParent[0] == document.body) ? 0 : this.offsetParent[0].scrollTop)	// The offsetParent's scroll position, not if the element is fixed
-				- (this.cssPosition == "fixed" ? this.offsetParent[0].scrollTop : 0)
+				- (this.cssPosition == "fixed" ? $(document).scrollTop() : 0)
 			),
 			left: (
 				e.pageX																	// The absolute mouse position
@@ -470,7 +465,7 @@ $.widget("ui.draggable", $.extend($.ui.mouse, {
 				- this.offset.relative.left												// Only for relative positioned nodes: Relative offset from element to offset parent
 				- this.offset.parent.left												// The offsetParent's offset without borders (offset + border)
 				+ (this.cssPosition == "fixed" || (this.cssPosition == "absolute" && this.offsetParent[0] == document.body) ? 0 : this.offsetParent[0].scrollLeft)	// The offsetParent's scroll position, not if the element is fixed
-				- (this.cssPosition == "fixed" ? this.offsetParent[0].scrollLeft : 0)
+				- (this.cssPosition == "fixed" ? $(document).scrollLeft() : 0)
 			)
 		};
 		
@@ -515,10 +510,11 @@ $.widget("ui.draggable", $.extend($.ui.mouse, {
 	mouseStop: function(e) {
 		
 		//If we are using droppables, inform the manager about the drop
+		var dropped = false;
 		if ($.ui.ddmanager && !this.options.dropBehaviour)
-			$.ui.ddmanager.drop(this, e);
-			
-		if(this.options.revert) {
+			var dropped = $.ui.ddmanager.drop(this, e);		
+		
+		if((this.options.revert == "invalid" && !dropped) || (this.options.revert == "valid" && dropped) || this.options.revert === true) {
 			var self = this;
 			$(this.helper).animate(this.originalPosition, parseInt(this.options.revert, 10) || 500, function() {
 				self.propagate("stop", e);
@@ -532,8 +528,8 @@ $.widget("ui.draggable", $.extend($.ui.mouse, {
 		return false;
 	},
 	mouseClickOnly: function(e) {
-	    this.propagate( "click", e );
-	},
+		this.propagate( "click", e );
+        },
 	clear: function() {
 		this.helper.removeClass("ui-draggable-dragging");
 		if(this.options.helper != 'original' && !this.cancelHelperRemoval) this.helper.remove();
@@ -554,6 +550,7 @@ $.widget("ui.draggable", $.extend($.ui.mouse, {
 	},
 	propagate: function(n,e) {
 		$.ui.plugin.call(this, n, [e, this.uiHash()]);
+		if(n == "drag") this.positionAbs = this.convertPositionTo("absolute"); //The absolute position has to be recalculated after plugins
 		return this.element.triggerHandler(n == "drag" ? n : "drag"+n, [e, this.uiHash()], this.options[n]);
 	},
 	destroy: function() {
@@ -745,7 +742,7 @@ $.ui.plugin.add("draggable", "connectToSortable", {
 					instance: sortable,
 					shouldRevert: sortable.options.revert
 				});
-				sortable.refresh();	//Do a one-time refresh at start to refresh the containerCache	
+				sortable.refreshItems();	//Do a one-time refresh at start to refresh the containerCache	
 				sortable.propagate("activate", e, inst);
 			}
 		});
@@ -804,7 +801,7 @@ $.ui.plugin.add("draggable", "connectToSortable", {
 					this.instance.options.helper = function() { return ui.helper[0]; };
 				
 					e.target = this.instance.currentItem[0];
-					this.instance.mouseCapture(e, true, true);
+					this.instance.mouseCapture(e, true);
 					this.instance.mouseStart(e, true, true);
 
 					//Because the browser event is way off the new appended portlet, we modify a couple of variables to reflect the changes
@@ -833,7 +830,7 @@ $.ui.plugin.add("draggable", "connectToSortable", {
 					
 					//Now we remove our currentItem, the list group clone again, and the placeholder, and animate the helper back to it's original size
 					this.instance.currentItem.remove();
-					this.instance.placeholder.remove();
+					if(this.instance.placeholder) this.instance.placeholder.remove();
 					
 					inst.propagate("fromSortable", e);
 				}
@@ -890,7 +887,7 @@ $.widget("ui.droppable", {
 		});
 		
 		//Store the droppable's proportions
-		this.proportions = { width: this.element.outerWidth(), height: this.element.outerHeight() };
+		this.proportions = { width: this.element[0].offsetWidth, height: this.element[0].offsetHeight };
 		
 		// Add the reference and positions to the manager
 		$.ui.ddmanager.droppables.push(this);
@@ -1038,12 +1035,12 @@ $.ui.ddmanager = {
 		
 		var m = $.ui.ddmanager.droppables;
 		var type = e ? e.type : null; // workaround for #2317
+
 		for (var i = 0; i < m.length; i++) {
-			
 			if(m[i].options.disabled || (t && !m[i].options.accept.call(m[i].element,(t.currentItem || t.element)))) continue;
-			m[i].visible = m[i].element.is(":visible"); if(!m[i].visible) continue; //If the element is not visible, continue
+			m[i].visible = m[i].element.css("display") != "none"; if(!m[i].visible) continue; //If the element is not visible, continue
 			m[i].offset = m[i].element.offset();
-			m[i].proportions = { width: m[i].element.outerWidth(), height: m[i].element.outerHeight() };
+			m[i].proportions = { width: m[i].element[0].offsetWidth, height: m[i].element[0].offsetHeight };
 			
 			if(type == "dragstart" || type == "sortactivate") m[i].activate.call(m[i], e); //Activate the droppable if used directly from draggables
 		}
@@ -1073,9 +1070,10 @@ $.ui.ddmanager = {
 		if(draggable.options.refreshPositions) $.ui.ddmanager.prepareOffsets(draggable, e);
 		
 		//Run through all droppables and check their positions based on specific tolerance options
+
 		$.each($.ui.ddmanager.droppables, function() {
 			
-			if(this.disabled || this.greedyChild || !this.visible) return;
+			if(this.options.disabled || this.greedyChild || !this.visible) return;
 			var intersects = $.ui.intersect(draggable, this, this.options.tolerance);
 			
 			var c = !intersects && this.isover == 1 ? 'isout' : (intersects && this.isover == 0 ? 'isover' : null);
