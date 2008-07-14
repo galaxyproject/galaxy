@@ -11,6 +11,11 @@ body
     margin: 10px;
 }
 
+img
+{
+    border: 0;
+}
+
 a:link, a:visited, a:active
 {
     color: #303030;
@@ -341,4 +346,72 @@ span.toolParameterExpandableCollapsable
 ul.toolParameterExpandableCollapsable
 {
   list-style: none;
+}
+
+.action-button {
+    background: #eeeeee;
+    color: #333;
+    text-decoration: none;
+    font-size: 90%;
+    font-weight: bold;
+    display: inline-block;
+    cursor: pointer;
+    margin: -1px; padding: 2px;
+    border: solid #aaaaaa 1px;
+    padding-right: 0.5em;
+    padding-left: 0.5em;
+    -moz-border-radius: 0.5em;
+    -webkit-border-radius: 0.5em;
+    border-radius: 0.5em;
+}
+
+.action-button > * {
+    vertical-align: middle;
+}
+
+.action-button:hover {
+    color: black;
+    background: #aaaaaa;
+}
+.action-button:active {
+    color: white;
+    background: #aaaaaa;
+}
+
+div.popupmenu {
+    display: none;
+    background: #eeeeee;
+    color: #333;
+    font-size: 90%;
+    font-weight: bold;
+    position: fixed;
+    z-index: 20000;
+    border: solid #aaaaaa 1px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    -moz-border-radius: 0.5em;
+    -webkit-border-radius: 0.5em;
+    border-radius: 0.5em;
+}
+
+div.popupmenu-item {
+    padding: 3px;
+    padding-left: 1em;
+    padding-right: 1em;
+    cursor: pointer;
+}
+
+div.popupmenu-item:hover {
+    background: #aaaaaa;
+}
+
+.popup-arrow {
+    font-size: 80%;
+    cursor: pointer;
+    text-decoration: none;
+    color: #555
+}
+
+.popup-arrow:hover {
+    color: black;
 }
