@@ -90,7 +90,7 @@ class WorkflowController( BaseController ):
         new_stored.name = "Clone of '%s'" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
         if not owner:
-            new_stored.name += "shared by '%s'" % stored.user.email
+            new_stored.name += " shared by '%s'" % stored.user.email
         new_stored.user = user
         # Persist
         session = trans.sa_session
@@ -106,23 +106,25 @@ class WorkflowController( BaseController ):
         Create a new stored workflow with name `workflow_name`.
         """
         user = trans.get_user()
-        if not workflow_name:
-            error( "Must provide a name for the new workflow" )
-        # Create the new stored workflow
-        stored_workflow = model.StoredWorkflow()
-        stored_workflow.name = workflow_name
-        stored_workflow.user = user
-        # And the first (empty) workflow revision
-        workflow = model.Workflow()
-        workflow.name = workflow_name
-        workflow.stored_workflow = stored_workflow
-        stored_workflow.latest_workflow = workflow
-        # Persist
-        session = trans.sa_session
-        session.save( stored_workflow )
-        session.flush()
-        # Display the management page
-        return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
+        if workflow_name is not None:
+            # Create the new stored workflow
+            stored_workflow = model.StoredWorkflow()
+            stored_workflow.name = workflow_name
+            stored_workflow.user = user
+            # And the first (empty) workflow revision
+            workflow = model.Workflow()
+            workflow.name = workflow_name
+            workflow.stored_workflow = stored_workflow
+            stored_workflow.latest_workflow = workflow
+            # Persist
+            session = trans.sa_session
+            session.save( stored_workflow )
+            session.flush()
+            # Display the management page
+            return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
+        else:
+            return form( url_for(), "Create new workflow", submit_text="Create" ) \
+                .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" )
     
     @web.expose
     def delete( self, trans, id=None ):
