@@ -256,8 +256,9 @@ table.colored
   border-bottom: solid #d8b365 1px;
 }
 
-table.colored td
+table.colored td, table.colored th
 {
+    text-align: left;
     padding: 5px;
 }
 
