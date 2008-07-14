@@ -47,26 +47,63 @@
         </div>
     </div>
     
-    <h2>Stored workflows</h2>
+    <h2>Your workflows</h2>
 
     %if workflows:
         <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-            <tr class="header"><td>Name</td><td># of Steps<td>Last Updated</td><td>Actions</td></tr>
+            <tr class="header">
+                <th>Name</th>
+                <th># of Steps</th>
+                ## <th>Last Updated</th>
+                <th>Actions</th>
+            </tr>
             %for workflow in workflows:
                 <tr>
                     <td>${workflow.name}</td>
-                    <td>${len(workflow.latest_workflow.steps)}
-                    <td>${str(workflow.update_time)[:19]}</td>
+                    <td>${len(workflow.latest_workflow.steps)}</td>
+                    ## <td>${str(workflow.update_time)[:19]}</td>
                     <td>
                         <a href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">run</a>
                         | <a href="${h.url_for( action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">edit</a>
+                        | <a href="${h.url_for( action='rename', id=trans.security.encode_id(workflow.id) )}">rename</a>
+                        | <a href="${h.url_for( action='share', id=trans.security.encode_id(workflow.id) )}">share</a>
                         | <a href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">delete</a>
+                    </td>
                 </tr>    
             %endfor
         </table>
     %else:
     
-        You have no stored workflows.
+        You have no workflows.
+    
+    %endif
+    
+    <h2>Workflows shared with you by others</h2>
+
+    %if shared_by_others:
+        <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+            <tr class="header">
+                <th>Name</th>
+                <th>Owner</th>
+                <th># of Steps</th>
+                <th>Actions</th>
+            </tr>
+            %for association in shared_by_others:
+                <% workflow = association.stored_workflow %>
+                <tr>
+                    <td>${workflow.name}</td>
+                    <td>${workflow.user.email}</td>
+                    <td>${len(workflow.latest_workflow.steps)}</td>
+                    <td>
+                        <a href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">run</a>
+                        <a href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">clone</a>
+                    </td>
+                </tr>    
+            %endfor
+        </table>
+    %else:
+    
+        No workflows have been shared with you.
     
     %endif
     

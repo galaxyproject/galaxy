@@ -538,6 +538,11 @@ class WorkflowStepConnection( object ):
         self.input_step_id = None
         self.input_name = None
 
+class StoredWorkflowUserShareAssociation( object ):
+    def __init__( self ):
+        self.stored_workflow = None
+        self.user = None
+
 ## ---- Utility methods -------------------------------------------------------
 
 def directory_hash_id( id ):

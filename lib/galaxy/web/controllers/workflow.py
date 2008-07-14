@@ -22,7 +22,82 @@ class WorkflowController( BaseController ):
         """
         user = trans.get_user()
         workflows = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, deleted=False ).all()
-        return trans.fill_template( "workflow/index.mako", workflows = workflows )
+        shared_by_others = trans.sa_session \
+            .query( model.StoredWorkflowUserShareAssociation ) \
+            .filter_by( user=user ) \
+            .filter( model.StoredWorkflow.c.deleted == False ) \
+            .all()
+        return trans.fill_template( "workflow/index.mako",
+                                    workflows = workflows,
+                                    shared_by_others = shared_by_others )
+    
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def share( self, trans, id, email="" ):
+        msg = mtype = None
+        # Load workflow from database
+        stored = get_stored_workflow( trans, id )
+        if email:
+            other = model.User.get_by( email=email )
+            if not other:
+                mtype = "error"
+                msg = ( "User '%s' does not exist" % email )
+            elif trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
+                    .filter_by( user=other, stored_workflow=stored ).count() > 0:
+                mtype = "error"
+                msg = ( "Workflow already shared with '%s'" % email )
+            else:
+                
+                share = model.StoredWorkflowUserShareAssociation()
+                share.stored_workflow = stored
+                share.user = other
+                session = trans.sa_session
+                session.save( share )
+                session.flush()
+                ## trans.template_context['message'] = "Workflow '%s' shared with user '%s'" % ( stored.name, other.email )
+                ## return trans.send_redirect( url_for( controller='workflow', action='index' ) )
+                return trans.show_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
+        return trans.fill_template( "workflow/share.mako",
+                                    message = msg,
+                                    messagetype = mtype,
+                                    stored=stored,
+                                    email=email )
+    
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def rename( self, trans, id, new_name=None ):
+        stored = get_stored_workflow( trans, id )
+        if new_name is not None:
+            stored.name = new_name
+            trans.sa_session.flush()
+            return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
+        else:
+            return trans.fill_template( "workflow/rename.mako", stored=stored )
+    
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def clone( self, trans, id ):
+        stored = get_stored_workflow( trans, id, check_ownership=False )
+        user = trans.get_user()
+        if stored.user == user:
+            owner = True
+        else:
+            if trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
+                    .filter_by( user=user, stored_workflow=stored ).count() == 0:
+                error( "Workflow is not owned by or shared with current user" )
+            owner = False
+        new_stored = model.StoredWorkflow()
+        new_stored.name = "Clone of '%s'" % stored.name
+        new_stored.latest_workflow = stored.latest_workflow
+        if not owner:
+            new_stored.name += "shared by '%s'" % stored.user.email
+        new_stored.user = user
+        # Persist
+        session = trans.sa_session
+        session.save( new_stored )
+        session.flush()
+        # Display the management page
+        return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
     
     @web.expose
     @web.require_login( "create workflows" )
@@ -47,7 +122,7 @@ class WorkflowController( BaseController ):
         session.save( stored_workflow )
         session.flush()
         # Display the management page
-        return self.index( trans )
+        return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
     
     @web.expose
     def delete( self, trans, id=None ):
@@ -60,7 +135,7 @@ class WorkflowController( BaseController ):
         stored.deleted = True
         stored.flush()
         # Display the management page
-        return self.index( trans )
+        return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
         
     @web.expose
     @web.require_login( "edit workflows" )
@@ -348,7 +423,12 @@ class WorkflowController( BaseController ):
         
     @web.expose
     def run( self, trans, id, **kwargs ):
-        stored = get_stored_workflow( trans, id )
+        stored = get_stored_workflow( trans, id, check_ownership=False )
+        user = trans.get_user()
+        if stored.user != user:
+            if trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
+                    .filter_by( user=user, stored_workflow=stored ).count() == 0:
+                error( "Workflow is not owned by or shared with current user" )
         # Get the latest revision
         workflow = stored.latest_workflow
         # It is possible for a workflow to have 0 steps
@@ -392,7 +472,7 @@ class WorkflowController( BaseController ):
                 step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )    
             if not errors:
                 # Run each step, connecting outputs to inputs
-                outputs = {}
+                outputs = odict()
                 for step in workflow.steps:
                     if step.type == 'tool' or step.type is None:
                         tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
@@ -453,7 +533,7 @@ class WorkflowController( BaseController ):
     
 ## ---- Utility methods -------------------------------------------------------
         
-def get_stored_workflow( trans, id ):
+def get_stored_workflow( trans, id, check_ownership=True ):
     """
     Get a StoredWorkflow from the database by id, verifying ownership. 
     """
@@ -466,7 +546,7 @@ def get_stored_workflow( trans, id ):
     user = trans.get_user()
     if not user:
         error( "Must be logged in to use workflows" )
-    if not( stored.user == user ):
+    if check_ownership and not( stored.user == user ):
         error( "Workflow is not owned by current user" )
     # Looks good
     return stored

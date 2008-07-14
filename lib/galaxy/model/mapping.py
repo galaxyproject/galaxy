@@ -223,6 +223,12 @@ WorkflowStepConnection.table = Table( "workflow_step_connection", metadata,
     Column( "input_name", String)
     )
 
+StoredWorkflowUserShareAssociation.table = Table( "stored_workflow_user_share_connection", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
+    )
+
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
@@ -326,6 +332,12 @@ assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
                      latest_workflow=relation( Workflow, post_update=True,
                                                primaryjoin=( StoredWorkflow.table.c.latest_workflow_id == Workflow.table.c.id ) )
                    ) )
+
+assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserShareAssociation.table,
+    properties=dict( user=relation( User, backref='workflows_shared_by_others' ),
+                     stored_workflow=relation( StoredWorkflow )
+                   ) )
+
 
 def db_next_hid( self ):
     """
