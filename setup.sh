@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SAMPLES="
-datatype_converters_conf.xml.sample
+datatypes_conf.xml.sample
 reports_wsgi.ini.sample
 tool_conf.xml.sample
 universe_wsgi.ini.sample
