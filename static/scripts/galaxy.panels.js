@@ -14,16 +14,6 @@ function ensure_dd_helper() {
         }
         e.appendTo("body").hide();
     }
-    // And the helper below the popup menus
-    if ( jq( "#popup-helper" ).length == 0 ) {
-        var e = jq("<div id='popup-helper' style='background: white; opacity: 0.00; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 15000;'></div>");
-        if ( jq.browser.ie ) {
-            // Element will not capture drags in ie without nonzero opacity,
-            // but causes flashing in firefox with nonzero opacity
-            e.css( "opacity", "0.01" );
-        }
-        e.appendTo("body").hide();
-    }
 }
 
 function make_left_panel( panel_el, center_el, border_el ) {
