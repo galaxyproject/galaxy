@@ -96,7 +96,7 @@
                     <td>${len(workflow.latest_workflow.steps)}</td>
                     <td>
                         <a href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">run</a>
-                        <a href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">clone</a>
+                        | <a href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">clone</a>
                     </td>
                 </tr>    
             %endfor
