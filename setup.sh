@@ -19,6 +19,16 @@ tool-data/regions.loc.sample
 tool-data/twobit.loc.sample
 "
 
+DIRS="
+database
+database/files
+database/tmp
+database/compiled_templates
+database/job_working_directory
+database/import
+database/pbs
+"
+
 for sample in $SAMPLES; do
     file=`echo $sample | sed -e 's/\.sample$//'`
     if [ -f $file ]; then
@@ -29,7 +39,7 @@ for sample in $SAMPLES; do
     fi
 done
 
-for dir in database/files database/tmp; do
+for dir in $DIRS; do
     if [ ! -d $dir ]; then
         echo "Creating $dir"
         mkdir $dir
