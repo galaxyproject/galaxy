@@ -135,20 +135,24 @@ class WebApplication( object ):
         else:
             start_response( trans.response.wsgi_status(), 
                             trans.response.wsgi_headeritems() )
-            if isinstance( body, types.FileType ):
-                # Stream the file back to the browser
-                return iterate_file( body )
-            elif isinstance( body, ( types.GeneratorType, list, tuple ) ):
-                # Recursively stream the iterable
-                return flatten( body )
-            elif isinstance( body, basestring ):
-                # Wrap the string so it can be iterated
-                return [ body ]
-            elif body is None:
-                # Returns an empty body
-                return []
-        # Worst case scenario
-        return [ str( body ) ]
+            return self.make_body_iterable( trans, body )
+        
+    def make_body_iterable( self, trans, body ):
+        if isinstance( body, types.FileType ):
+            # Stream the file back to the browser
+            return iterate_file( body )
+        elif isinstance( body, ( types.GeneratorType, list, tuple ) ):
+            # Recursively stream the iterable
+            return flatten( body )
+        elif isinstance( body, basestring ):
+            # Wrap the string so it can be iterated
+            return [ body ]
+        elif body is None:
+            # Returns an empty body
+            return []
+        else:
+            # Worst case scenario
+            return [ str( body ) ]
 
     def handle_controller_exception( self, e, trans, **kwargs ):
         """

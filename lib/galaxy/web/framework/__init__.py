@@ -72,6 +72,9 @@ class MessageException( Exception ):
         
 def error( message ):
     raise MessageException( message, type='error' )
+
+def form( *args, **kwargs ):
+    return FormBuilder( *args, **kwargs )
     
 class WebApplication( base.WebApplication ):
     def __init__( self, galaxy_app ):
@@ -88,6 +91,10 @@ class WebApplication( base.WebApplication ):
     def handle_controller_exception( self, e, trans, **kwargs ):
         if isinstance( e, MessageException ):
             return trans.show_message( e.message, e.type )
+    def make_body_iterable( self, trans, body ):
+        if isinstance( body, FormBuilder ):
+            body = trans.show_form( body )
+        return base.WebApplication.make_body_iterable( self, trans, body )
     
 class UniverseWebTransaction( base.DefaultWebTransaction ):
     """
