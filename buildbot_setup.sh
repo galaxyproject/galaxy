@@ -22,6 +22,16 @@ SAMPLES="
 datatypes_conf.xml.sample
 "
 
+DIRS="
+database
+database/files
+database/tmp
+database/compiled_templates
+database/job_working_directory
+database/import
+database/pbs
+"
+
 for link in $LINKS; do
     echo "Linking $link"
     ln -sf $link tool-data
@@ -31,6 +41,13 @@ for sample in $SAMPLES; do
     file=`echo $sample | sed -e 's/\.sample$//'`
     echo "Copying $sample to $file"
     cp $sample $file
+done
+
+for dir in $DIRS; do
+    if [ ! -d $dir ]; then
+        echo "Creating $dir"
+        mkdir $dir
+    fi
 done
 
 python ./scripts/fetch_eggs.py all
