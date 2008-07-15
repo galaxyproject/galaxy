@@ -414,7 +414,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         context.
         """
         self.template_context['message'] = message
-    def show_message( self, message, type='info', refresh_frames=[] ):
+    def show_message( self, message, type='info', refresh_frames=[], cont=None ):
         """
         Convenience method for displaying a simple page with a single message.
         
@@ -424,7 +424,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         `refresh_frames`: names of frames in the interface that should be 
                           refreshed when the message is displayed
         """
-        return self.fill_template( "message.mako", message_type=type, message=message, refresh_frames=refresh_frames )
+        return self.fill_template( "message.mako", message_type=type, message=message, refresh_frames=refresh_frames, cont=cont )
     def show_error_message( self, message, refresh_frames=[] ):
         """
         Convenience method for displaying an error message. See `show_message`.

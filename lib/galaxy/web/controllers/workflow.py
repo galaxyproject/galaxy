@@ -54,9 +54,8 @@ class WorkflowController( BaseController ):
                 session = trans.sa_session
                 session.save( share )
                 session.flush()
-                ## trans.template_context['message'] = "Workflow '%s' shared with user '%s'" % ( stored.name, other.email )
-                ## return trans.send_redirect( url_for( controller='workflow', action='index' ) )
-                return trans.show_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
+                trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
+                return self.index( trans )
         return trans.fill_template( "workflow/share.mako",
                                     message = msg,
                                     messagetype = mtype,
@@ -70,9 +69,11 @@ class WorkflowController( BaseController ):
         if new_name is not None:
             stored.name = new_name
             trans.sa_session.flush()
-            return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
+            trans.set_message( "Workflow renamed to '%s'." % new_name )
+            return self.index( trans )
         else:
-            return trans.fill_template( "workflow/rename.mako", stored=stored )
+            return form( url_for( id=trans.security.encode_id(stored.id) ), "Rename workflow", submit_text="Rename" ) \
+                .add_text( "new_name", "Workflow Name", value=stored.name )
     
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -97,7 +98,8 @@ class WorkflowController( BaseController ):
         session.save( new_stored )
         session.flush()
         # Display the management page
-        return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
+        trans.set_message( 'Clone created with name "%s"' % new_stored.name )
+        return self.index( trans )
     
     @web.expose
     @web.require_login( "create workflows" )
@@ -121,7 +123,8 @@ class WorkflowController( BaseController ):
             session.save( stored_workflow )
             session.flush()
             # Display the management page
-            return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
+            trans.set_message( "Workflow '%s' created" % stored_workflow.name )
+            return self.index( trans )
         else:
             return form( url_for(), "Create new workflow", submit_text="Create" ) \
                 .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" )
@@ -137,7 +140,8 @@ class WorkflowController( BaseController ):
         stored.deleted = True
         stored.flush()
         # Display the management page
-        return trans.response.send_redirect( url_for( controller='workflow', action='index' ) )
+        trans.set_message( "Workflow '%s' deleted" % stored.name )
+        return self.index( trans )
         
     @web.expose
     @web.require_login( "edit workflows" )
