@@ -14,9 +14,7 @@ jQuery(document).ready( function() {
                 }
             };
         });
-        console.log( options );
         var b = $( "#" + $(this).attr( 'popupmenu' ) );
-        console.log( b );
         make_popupmenu( b, options );
         $(this).remove();
         b.show();
