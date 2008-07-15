@@ -384,7 +384,7 @@ div.popupmenu {
     color: #333;
     font-size: 90%;
     font-weight: bold;
-    position: fixed;
+    position: absolute;
     z-index: 20000;
     border: solid #aaaaaa 1px;
     padding-top: 3px;
