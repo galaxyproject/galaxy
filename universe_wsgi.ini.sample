@@ -64,6 +64,12 @@ session_secret = changethisinproduction
 # Galaxy session security
 id_secret = changethisinproductiontoo
 
+# Use user provided in an upstream server's $REMOTE_USER variable
+## use_remote_user = False
+# If use_remote_user is enabled and your external authentication
+# method just returns bare usernames, set a default mail domain
+## remote_user_maildomain = example.org
+
 # Configuration for debugging middleware
 debug = true
 use_lint = false

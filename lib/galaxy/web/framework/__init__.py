@@ -236,31 +236,71 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """Return the current user if logged in or None."""
         if self.__user is NOT_SET:
             self.__user = None
-            # See if we have a galaxysession cookie
-            secure_id = self.get_cookie( name='galaxysession' )
-            if secure_id:
-                session_key = self.security.decode_session_key( secure_id )
-                try:
-                    galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
-                    if galaxy_session and galaxy_session.is_valid and galaxy_session.user_id:
-                        user = self.app.model.User.get( galaxy_session.user_id )
-                        if user:
-                            self.__user = user
-                except:
-                    # This should only occur in development if the cookie is not synced with the db
-                    pass
+            user = self.get_cookie_user()
+            if self.app.config.use_remote_user:
+                remote_user = self.get_remote_user()
+                if user is not None and user.email != remote_user.email:
+                    # The user has a cookie for a different user than the one
+                    # they've authed as.
+                    log.warning( "User logged in as '%s' externally, but has a cookie as '%s',"
+                               % ( remote_user.email, user.email ) + " invalidating session" )
+                    self.logout_galaxy_session()
+                if user is None or ( user is not None and user.email != remote_user.email ):
+                    # The user has no cookie, was not logged in, or the above.
+                    self.set_user( remote_user )
+                    self.make_associations()
+                self.__user = remote_user
             else:
-                # See if we have a deprecated universe_user cookie
-                # TODO: this should be eliminated some time after October 1, 2008
-                # We'll keep it until then because the old universe cookies are valid for 90 days
-                user_id = self.get_cookie( name='universe_user' )
-                if user_id:
-                    user = self.app.model.User.get( int( user_id ) )
-                    if user:
-                        self.__user = user
-                    # Expire the universe_user cookie since it is deprecated
-                    self.set_cookie( name='universe_user', value='', age=0 )
+                if user is not None and user.external:
+                    # use_remote_user is off, but the user still has a cookie
+                    # from when it was on.  Force the user to get a new
+                    # unauthenticated session.
+                    log.warning( "User '%s' is an external user with an existing " % user.email
+                               + "session, invalidating session since external auth is disabled" )
+                    self.logout_galaxy_session()
+                else:   
+                    self.__user = user
         return self.__user
+    def get_remote_user( self ):
+        """Return the user in $HTTP_REMOTE_USER and create if necessary"""
+        # remote_user middleware ensures HTTP_REMOTE_USER exists
+        try:
+            user = self.app.model.User.selectone_by( email=self.environ[ 'HTTP_REMOTE_USER' ] )
+        except:
+            user = self.app.model.User( email=self.environ[ 'HTTP_REMOTE_USER' ] )
+            user.set_password_cleartext( 'external' )
+            user.external = True
+            user.flush()
+            self.log_event( "Automatically created account '%s'" % user.email )
+        return user
+    def get_cookie_user( self ):
+        """Return the user in the galaxysession cookie"""
+        __user = None
+        # See if we have a galaxysession cookie
+        secure_id = self.get_cookie( name='galaxysession' )
+        if secure_id:
+            session_key = self.security.decode_session_key( secure_id )
+            try:
+                galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                if galaxy_session and galaxy_session.is_valid and galaxy_session.user_id:
+                    user = self.app.model.User.get( galaxy_session.user_id )
+                    if user:
+                        __user = user
+            except:
+                # This should only occur in development if the cookie is not synced with the db
+                pass
+        else:
+            # See if we have a deprecated universe_user cookie
+            # TODO: this should be eliminated some time after October 1, 2008
+            # We'll keep it until then because the old universe cookies are valid for 90 days
+            user_id = self.get_cookie( name='universe_user' )
+            if user_id:
+                user = self.app.model.User.get( int( user_id ) )
+                if user:
+                    __user = user
+                # Expire the universe_user cookie since it is deprecated
+                self.set_cookie( name='universe_user', value='', age=0 )
+        return __user
     def set_user( self, user ):
         """Set the current user if logged in."""
         if user is not None and self.galaxy_session_is_valid():
@@ -450,6 +490,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         Fill in a template, putting any keyword arguments on the context.
         """
+        # call get_user so we can invalidate sessions from external users,
+        # if external auth has been disabled.
+        self.get_user()
         if filename.endswith( ".mako" ):
             return self.fill_template_mako( filename, **kwargs )
         else:

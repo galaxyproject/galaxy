@@ -23,12 +23,16 @@
     <!-- | <a target="mainframe" href="/static/index_frame_tools.html">tools</a>
     | <a target="mainframe" href="/static/index_frame_history.html">history</a> -->
     &nbsp;&nbsp;&nbsp;
-    %if t.user:
-        Logged in as ${t.user.email}: <a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">manage</a>
-        | <a target="galaxy_main" href="${h.url_for( controller='user', action='logout' )}">logout</a>
+    %if app.config.use_remote_user:
+        Logged in as ${t.user.email}
     %else:
-        Account: <a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">create</a>
-        | <a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">login</a>
+        %if t.user:
+            Logged in as ${t.user.email}: <a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">manage</a>
+            | <a target="galaxy_main" href="${h.url_for( controller='user', action='logout' )}">logout</a>
+        %else:
+            Account: <a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">create</a>
+            | <a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">login</a>
+        %endif
     %endif
     &nbsp;
 </td>

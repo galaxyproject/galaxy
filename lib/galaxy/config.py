@@ -37,6 +37,8 @@ class Configuration( object ):
         self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
+        self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
         self.job_queue_workers = int( kwargs.get( "job_queue_workers", "10" ) )

@@ -30,6 +30,7 @@ class User( object ):
     def __init__( self, email=None, password=None ):
         self.email = email
         self.password = password
+        self.external = False
         # Relationships
         self.histories = []
     def set_password_cleartext( self, cleartext ):
