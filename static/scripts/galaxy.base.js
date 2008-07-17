@@ -6,11 +6,16 @@ jQuery(document).ready( function() {
     jQuery( "div[@popupmenu]" ).each( function() {
         var options = {};
         $(this).find( "a" ).each( function() {
-            var confirmtext = $(this).attr( "confirm" );
-            var target = $(this).attr( "href" );
+            var confirmtext = $(this).attr( "confirm" ),
+                href = $(this).attr( "href" ),
+                target = $(this).attr( "target" );
             options[ $(this).text() ] = function() {
                 if ( !confirmtext || confirm( confirmtext ) ) {
-                    window.location = target;
+                    var f = window;
+                    if ( target == "_parent" ) {
+                        f = window.parent;
+                    }
+                    f.location = href;
                 }
             };
         });
