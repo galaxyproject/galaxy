@@ -1,5 +1,7 @@
 <%inherit file="/base.mako"/>
 
+<%def name="title()">Workflow home</%def>
+
 <div class="warningmessage">
     Workflow support is currently in <b><i>beta</i></b> testing.
     Workflows may not work with all tools, may fail unexpectedly, and may

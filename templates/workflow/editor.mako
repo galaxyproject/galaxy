@@ -1,5 +1,7 @@
 <%inherit file="/base_panels.mako"/>
 
+<%def name="title()">Galaxy Workflow Editor</%def>
+
 <%def name="late_javascripts()">
     <script type='text/javascript' src="/static/scripts/galaxy.panels.js"> </script>
     <script type="text/javascript">
