@@ -313,7 +313,10 @@ assign_mapper( context, GalaxySessionToHistoryAssociation, GalaxySessionToHistor
 HistoryDatasetAssociation.mapper.add_property( "creating_job_associations", relation( JobToOutputDatasetAssociation ) )
 
 assign_mapper( context, Workflow, Workflow.table,
-    properties=dict( steps=relation( WorkflowStep, backref='workflow', order_by=asc(WorkflowStep.table.c.order_index), cascade="all, delete-orphan" ) ) )
+    properties=dict( steps=relation( WorkflowStep, backref='workflow',
+                                     order_by=asc(WorkflowStep.table.c.order_index),
+                                     cascade="all, delete-orphan",
+                                     lazy=False ) ) )
 
     
 assign_mapper( context, WorkflowStep, WorkflowStep.table )
@@ -330,7 +333,8 @@ assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
                                          cascade="all, delete-orphan",
                                          primaryjoin=( StoredWorkflow.table.c.id == Workflow.table.c.stored_workflow_id ) ),
                      latest_workflow=relation( Workflow, post_update=True,
-                                               primaryjoin=( StoredWorkflow.table.c.latest_workflow_id == Workflow.table.c.id ) )
+                                               primaryjoin=( StoredWorkflow.table.c.latest_workflow_id == Workflow.table.c.id ),
+                                               lazy=False )
                    ) )
 
 assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserShareAssociation.table,
