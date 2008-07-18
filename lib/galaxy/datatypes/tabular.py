@@ -54,10 +54,15 @@ class Tabular( data.Text ):
                             col_type = None
                             val = elems[ col ]
                             if not val:
-                                # Missing a column value, so go to the next line
-                                column_types = []
-                                break
-                            if val.find( '.' ) < 0:
+                                if i == 100:
+                                    # We're about to end our loop, so default col_type to 'str'
+                                    col_type = 'str'
+                                    column_types.append( col_type )
+                                else:
+                                    # Missing a column value, so go to the next line
+                                    column_types = []
+                                    break
+                            if not col_type and val.find( '.' ) < 0:
                                 try:
                                     int( val )
                                     col_type = 'int'

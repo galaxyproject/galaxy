@@ -76,6 +76,9 @@ class User( BaseController ):
             user = trans.app.model.User.get_by( email = email )
             if not user:
                 email_error = "No such user"
+            elif user.external:
+                return trans.show_error_message( "This account was created for use with an external authentication "
+                                               + "method.  Please contact your local Galaxy administrator to activate it." )
             elif not user.check_password( password ):
                 password_error = "Invalid password"
             else:
