@@ -258,10 +258,11 @@
     }
     
     var close_editor = function() {
+        <% next_url = h.url_for( controller='root', m_c='workflow' ) %>
         if ( workflow && workflow.has_changes ) {
             do_close = function() {
                 window.onbeforeunload = undefined;
-                window.document.location = "${h.url_for( controller='root' )}"
+                window.document.location = "${next_url}"
             };
             show_modal( "Close workflow editor",
                         "There are unsaved changes to your workflow which will be lost.",
@@ -274,7 +275,7 @@
                             "Don't Save": do_close,
                         } );
         } else {
-            window.document.location = "${h.url_for( controller='root' )}"
+            window.document.location = "${next_url}"
         }
     }
     

@@ -20,8 +20,10 @@ class RootController( BaseController ):
         return 'This link may not be followed from within Galaxy.'
     
     @web.expose
-    def index(self, trans, id=None, tool_id=None, mode=None, **kwd):
-        return trans.fill_template( "root/index.mako", tool_id=tool_id )
+    def index(self, trans, id=None, tool_id=None, mode=None, m_c=None, m_a=None, **kwd):
+        return trans.fill_template( "root/index.mako",
+                                    tool_id=tool_id,
+                                    m_c=m_c, m_a=m_a )
         
     ## ---- Tool related -----------------------------------------------------
     
