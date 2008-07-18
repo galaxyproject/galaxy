@@ -80,5 +80,9 @@ $.ui.plugin.add("draggable", "scrollPanel", {
             instance.old_e = e;
             instance.timeout = setTimeout( function() { instance.mouseMove( e ) }, 50 );
         }
-    } 
+    },
+    stop: function( e, ui ) {
+        var instance = $(this).data("draggable");
+        clearTimeout( instance.timeout );
+    }
 });
