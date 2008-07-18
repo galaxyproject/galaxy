@@ -476,7 +476,7 @@ class JobWrapper( object ):
 
     def get_input_fnames( self ):
         job = model.Job.get( self.job_id )
-        return [ da.dataset.file_name for da in job.input_datasets ]
+        return [ da.dataset.file_name for da in job.input_datasets if data.dataset ]
 
     def get_output_fnames( self ):
         job = model.Job.get( self.job_id )
