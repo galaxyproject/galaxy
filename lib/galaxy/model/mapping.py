@@ -13,6 +13,7 @@ import datetime
 
 from sqlalchemy.ext.sessioncontext import SessionContext
 from sqlalchemy.ext.assignmapper import assign_mapper
+from sqlalchemy.ext.orderinglist import ordering_list
 
 from sqlalchemy import *
 from galaxy.model import *
@@ -45,7 +46,7 @@ User.table = Table( "galaxy_user", metadata,
     Column( "email", TrimmedString( 255 ), nullable=False ),
     Column( "password", TrimmedString( 40 ), nullable=False ),
     Column( "external", Boolean, default=False ) )
-
+            
 History.table = Table( "history", metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -230,6 +231,12 @@ StoredWorkflowUserShareAssociation.table = Table( "stored_workflow_user_share_co
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
 
+StoredWorkflowMenuEntry.table = Table( "stored_workflow_menu_entry", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),                              
+    Column( "order_index", Integer ) )
+
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
@@ -278,10 +285,12 @@ assign_mapper( context, History, History.table,
                      datasets=relation( HistoryDatasetAssociation, backref="history", order_by=asc(HistoryDatasetAssociation.table.c.hid) ),
                      active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), lazy=False, viewonly=True ) ) )
 
-
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user", 
-                                         order_by=desc(History.table.c.update_time) ) ) )
+                                         order_by=desc(History.table.c.update_time) ),
+                     stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",
+                                          collection_class=ordering_list( 'order_index' ) )
+                     ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation ) ) )
@@ -343,6 +352,8 @@ assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserSh
                      stored_workflow=relation( StoredWorkflow )
                    ) )
 
+assign_mapper( context, StoredWorkflowMenuEntry, StoredWorkflowMenuEntry.table,
+    properties=dict( stored_workflow=relation( StoredWorkflow ) ) )
 
 def db_next_hid( self ):
     """

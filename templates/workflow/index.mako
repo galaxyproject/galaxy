@@ -98,3 +98,9 @@
     No workflows have been shared with you.
 
 %endif
+
+<h2>Other options</h2>
+
+<a class="action-button" href="${h.url_for( action='configure_menu' )}">
+    <span>Configure your workflow menu</span>
+</a>

@@ -538,11 +538,17 @@ class WorkflowStepConnection( object ):
         self.output_name = None
         self.input_step_id = None
         self.input_name = None
-
+        
 class StoredWorkflowUserShareAssociation( object ):
     def __init__( self ):
         self.stored_workflow = None
         self.user = None
+
+class StoredWorkflowMenuEntry( object ):
+    def __init__( self ):
+        self.stored_workflow = None
+        self.user = None
+        self.order_index = None
 
 ## ---- Utility methods -------------------------------------------------------
 

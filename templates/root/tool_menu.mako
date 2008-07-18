@@ -93,6 +93,13 @@
             <div class="toolTitle">
                 <a href="${h.url_for( controller='workflow', action='index' )}" target="galaxy_main">Manage</a> workflows
             </div>
+            %if t.user:
+                %for m in t.user.stored_workflow_menu_entries:
+                    <div class="toolTitle">
+                        <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${m.stored_workflow.name}</a>
+                    </div>
+                %endfor
+            %endif
       </div>
     </div>
 %endif

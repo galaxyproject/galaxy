@@ -537,6 +537,35 @@ class WorkflowController( BaseController ):
                     workflow=stored,
                     errors=errors )
     
+    @web.expose
+    def configure_menu( self, trans, workflow_ids=None ):
+        user = trans.get_user()
+        if workflow_ids:
+            if type( workflow_ids ) != list:
+                workflow_ids = [ workflow_ids ]
+            user.stored_workflow_menu_entries = []
+            sess = trans.sa_session
+            q = sess.query( model.StoredWorkflow )
+            for id in workflow_ids:
+                m = model.StoredWorkflowMenuEntry()
+                m.stored_workflow = q.get( id )
+                user.stored_workflow_menu_entries.append( m )
+            sess.flush()
+            return trans.show_message( "Menu updated", refresh_frames=['tool_menu'] )
+        else:                
+            user = trans.get_user()
+            ids_in_menu = set( [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ] )
+            workflows = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, deleted=False ).all()
+            shared_by_others = trans.sa_session \
+                .query( model.StoredWorkflowUserShareAssociation ) \
+                .filter_by( user=user ) \
+                .filter( model.StoredWorkflow.c.deleted == False ) \
+                .all()
+            return trans.fill_template( "workflow/configure_menu.mako",
+                                        workflows=workflows,
+                                        shared_by_others=shared_by_others,
+                                        ids_in_menu=ids_in_menu )
+    
 ## ---- Utility methods -------------------------------------------------------
         
 def get_stored_workflow( trans, id, check_ownership=True ):
