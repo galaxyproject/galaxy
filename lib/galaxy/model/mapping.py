@@ -289,7 +289,8 @@ assign_mapper( context, User, User.table,
     properties=dict( histories=relation( History, backref="user", 
                                          order_by=desc(History.table.c.update_time) ),
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",
-                                          collection_class=ordering_list( 'order_index' ) )
+                                                            cascade="all, delete-orphan",
+                                                            collection_class=ordering_list( 'order_index' ) )
                      ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,

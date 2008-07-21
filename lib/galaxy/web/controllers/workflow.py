@@ -42,6 +42,9 @@ class WorkflowController( BaseController ):
             if not other:
                 mtype = "error"
                 msg = ( "User '%s' does not exist" % email )
+            if other == trans.get_user():
+                mtype = "error"
+                msg = ( "You cannot share a workflow with yourself" )
             elif trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
                     .filter_by( user=other, stored_workflow=stored ).count() > 0:
                 mtype = "error"
@@ -540,13 +543,25 @@ class WorkflowController( BaseController ):
     @web.expose
     def configure_menu( self, trans, workflow_ids=None ):
         user = trans.get_user()
-        if workflow_ids:
-            if type( workflow_ids ) != list:
+        if trans.request.method == "POST":
+            if workflow_ids is None:
+                workflow_ids = []
+            elif type( workflow_ids ) != list:
                 workflow_ids = [ workflow_ids ]
-            user.stored_workflow_menu_entries = []
             sess = trans.sa_session
+            # This explicit remove seems like a hack, need to figure out
+            # how to make the association do it automatically.
+            for m in user.stored_workflow_menu_entries:
+                sess.delete( m )
+            user.stored_workflow_menu_entries = []
             q = sess.query( model.StoredWorkflow )
+            # To ensure id list is unique
+            seen_workflow_ids = set()
             for id in workflow_ids:
+                if id in seen_workflow_ids:
+                    continue
+                else:
+                    seen_workflow_ids.add( id )
                 m = model.StoredWorkflowMenuEntry()
                 m.stored_workflow = q.get( id )
                 user.stored_workflow_menu_entries.append( m )
