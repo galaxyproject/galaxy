@@ -255,7 +255,7 @@ class Interval( Tabular ):
         >>> Interval().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t' )   
+        headers = get_headers( filename, '\t' )
         try:
             """
             If we got here, we already know the file is_column_based and is not bed,
@@ -266,8 +266,10 @@ class Interval( Tabular ):
                     if len(hdr) < 3:
                         return False
                     try:
-                        int( hdr[1] )
-                        int( hdr[2] )
+                        # Assume chrom start and end are in column positions 1 and 2
+                        # respectively ( for 0 based columns )
+                        check = int( hdr[1] )
+                        check = int( hdr[2] )
                     except:
                         return False
             return True

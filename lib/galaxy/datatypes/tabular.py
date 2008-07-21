@@ -57,7 +57,6 @@ class Tabular( data.Text ):
                                 if i == 100:
                                     # We're about to end our loop, so default col_type to 'str'
                                     col_type = 'str'
-                                    column_types.append( col_type )
                                 else:
                                     # Missing a column value, so go to the next line
                                     column_types = []
