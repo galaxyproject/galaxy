@@ -246,7 +246,7 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
     properties=dict( 
         dataset=relation( 
             Dataset, 
-            primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
+            primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ), lazy=False ),
         history=relation( 
             History, 
             primaryjoin=( History.table.c.id == HistoryDatasetAssociation.table.c.history_id ) ),
