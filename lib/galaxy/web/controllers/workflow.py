@@ -2,7 +2,7 @@ from galaxy.web.base.controller import *
 
 import simplejson
 
-from galaxy.tools.parameters import DataToolParameter, check_param
+from galaxy.tools.parameters import *
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.grouping import Repeat, Conditional
 from galaxy.datatypes.data import Data
@@ -342,7 +342,7 @@ class WorkflowController( BaseController ):
         history = trans.get_history()
         if not user:
             return trans.show_error_message( "Must be logged in to create workflows" )
-        if job_ids is None or workflow_name is None:
+        if ( job_ids is None and dataset_ids is None ) or workflow_name is None:
             jobs, warnings = get_job_dict( trans )
             # Render
             return trans.fill_template(
@@ -351,16 +351,18 @@ class WorkflowController( BaseController ):
                         warnings=warnings,
                         history=history )
         else:
-            # Ensure job_ids is a list
-            if type( job_ids ) == str:
+            # Ensure job_ids and dataset_ids are lists (possibly empty)
+            if job_ids is None:
+                job_ids = []
+            elif type( job_ids ) == str:
                 job_ids = [ job_ids ]
-            job_ids = [ int( id ) for id in job_ids ]
-            if dataset_ids:
-                if type( dataset_ids ) == str:
-                    dataset_ids = [ job_ids ]
-                dataset_ids = [ int( id ) for id in dataset_ids ]
-            else:
+            if dataset_ids is None:
                 dataset_ids = []
+            elif type( dataset_ids ) == str:
+                dataset_ids = [ dataset_ids ]
+            # Convert both sets of ids to integers
+            job_ids = [ int( id ) for id in job_ids ]
+            dataset_ids = [ int( id ) for id in dataset_ids ]
             # Find each job, for security we (implicately) check that they are
             # associated witha job in the current history. 
             jobs, warnings = get_job_dict( trans )
@@ -642,6 +644,15 @@ def order_workflow_steps_with_levels( steps ):
     except CycleError:
         return None
     
+class FakeJob( object ):
+    """
+    Fake job object for datasets that have no creating_job_associations,
+    they will be treated as "input" datasets.
+    """
+    def __init__( self, dataset ):
+        self.is_fake = True
+        self.id = "fake_%s" % dataset.id
+    
 def get_job_dict( trans ):
     """
     Return a dictionary of Job -> [ Dataset ] mappings, for all finished
@@ -656,6 +667,8 @@ def get_job_dict( trans ):
         if dataset.state in ( 'new', 'running', 'queued' ):
             warnings.add( "Some datasets still queued or running were ignored" )
             continue
+        if not dataset.creating_job_associations:
+            jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]        
         for assoc in dataset.creating_job_associations:
             job = assoc.job
             if job in jobs:
@@ -675,9 +688,12 @@ def cleanup_param_values( inputs, values ):
     if 'dbkey' in values:
         del values['dbkey']
     root_values = values
-    # Cleanup all data inputs
+    # Recursively clean data inputs and dynamic selects
     def cleanup( prefix, inputs, values ):
         for key, input in inputs.items():
+            if isinstance( input, ( SelectToolParameter, DrillDownSelectToolParameter ) ):
+                if input.is_dynamic:
+                    values[key] = UnvalidatedValue( values[key] )
             if isinstance( input, DataToolParameter ):
                 tmp = values[key]
                 values[key] = None

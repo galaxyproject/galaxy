@@ -22,13 +22,6 @@ th {
 }
 </style>
 
-<script type="text/javascript">
-## Always try to hide the history pane since it is redundant on this page
-if ( window.parent && window.parent.handle_minwidth_hint ) {
-    window.parent.handle_minwidth_hint( 10000 );
-}
-</script>
-
 </head>
 
 <body>
@@ -90,25 +83,31 @@ into a workflow will be shown in gray.</p>
 %for job, datasets in jobs.iteritems():
 
     <%
-    tool = app.toolbox.tools_by_id[ job.tool_id ]
     cls = "toolForm"
-    if not( tool.is_workflow_compatible ):
+    if hasattr( job, 'is_fake' ) and job.is_fake:
+        tool_name = "Unknown"
         cls += " toolFormDisabled"
         disabled = True
-    else:
-        disabled = False
+    else:    
+        tool = app.toolbox.tools_by_id[ job.tool_id ]
+        tool_name = tool.name
+        if not( tool.is_workflow_compatible ):
+            cls += " toolFormDisabled"
+            disabled = True
+        else:
+            disabled = False
     %>
     
     <tr>
         <td>
             <div class="${cls}">
 
-                <div class="toolFormTitle">${tool.name}</div>
+                <div class="toolFormTitle">${tool_name}</div>
                 <div class="toolFormBody">
                     %if disabled:
                         <div style="font-style: italic; color: gray">This tool cannot be used in workflows</div>
                     %else:
-                        <div><input type="checkbox" name="job_ids" value="${job.id}" checked="true" />Include "${tool.name}" in workflow</div>
+                        <div><input type="checkbox" name="job_ids" value="${job.id}" checked="true" />Include "${tool_name}" in workflow</div>
                     %endif
                 </div>
             </div>
