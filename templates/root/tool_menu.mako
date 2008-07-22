@@ -59,7 +59,7 @@
             <div class="toolTitle">
               <%
               if tool.input_required:
-                  link = h.url_for( 'tool_runner', tool_id=tool.id )
+                  link = h.url_for( controller='tool_runner', tool_id=tool.id )
               else:
                   link = h.url_for( tool.action, ** tool.get_static_param_values( t ) )
               %>
