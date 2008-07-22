@@ -110,6 +110,8 @@ class Tabular( data.Text ):
     def make_html_peek_rows( self, dataset, skipchars=[] ):
         out = [""]
         comments = []
+        if not dataset.peek:
+            dataset.set_peek()
         data = dataset.peek
         lines =  data.splitlines()
         for line in lines:

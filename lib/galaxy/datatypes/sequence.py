@@ -204,6 +204,8 @@ class Maf( Alignment ):
             for species in dataset.metadata.species:
                 out.append( '%s&nbsp;' % species )
             out.append( '</th></tr>' )
+            if not dataset.peek:
+                dataset.set_peek()
             data = dataset.peek
             lines =  data.splitlines()
             for line in lines:

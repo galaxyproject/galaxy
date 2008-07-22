@@ -102,6 +102,8 @@ class Data( object ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
+            if not dataset.peek:
+                dataset.set_peek()
             data = dataset.peek
             lines =  data.splitlines()
             for line in lines:
