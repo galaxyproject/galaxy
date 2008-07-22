@@ -147,7 +147,7 @@ class ToolModule( object ):
         module = Class( trans, tool_id )
         module.state = DefaultToolState()
         print step.tool_inputs
-        module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app )
+        module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
         module.errors = step.tool_errors
         return module
 

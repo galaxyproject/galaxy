@@ -308,7 +308,11 @@
                 if ( success_callback ) {
                     success_callback();
                 }
-                hide_modal();
+                if ( data.errors ) {
+                    show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
+                } else {
+                    hide_modal();
+                }
             }
         });
     }

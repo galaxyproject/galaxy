@@ -10,6 +10,7 @@ from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
+from galaxy.model.mapping import desc
 
 class WorkflowController( BaseController ):
     beta = True
@@ -21,11 +22,15 @@ class WorkflowController( BaseController ):
         Render workflow main page (management of existing workflows)
         """
         user = trans.get_user()
-        workflows = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, deleted=False ).all()
+        workflows = trans.sa_session.query( model.StoredWorkflow ) \
+            .filter_by( user=user, deleted=False ) \
+            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+            .all()
         shared_by_others = trans.sa_session \
             .query( model.StoredWorkflowUserShareAssociation ) \
             .filter_by( user=user ) \
             .filter( model.StoredWorkflow.c.deleted == False ) \
+            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
             .all()
         return trans.fill_template( "workflow/index.mako",
                                     workflows = workflows,
@@ -178,6 +183,7 @@ class WorkflowController( BaseController ):
             'tool_state': module.get_state(),
             'data_inputs': module.get_data_inputs(),
             'data_outputs': module.get_data_outputs(),
+            'tool_errors': module.get_errors(),
             'form_html': module.get_config_form()
         }
         
@@ -568,11 +574,14 @@ class WorkflowController( BaseController ):
                 m.stored_workflow = q.get( id )
                 user.stored_workflow_menu_entries.append( m )
             sess.flush()
-            return trans.show_message( "Menu updated", refresh_frames=['tool_menu'] )
+            return trans.show_message( "Menu updated", refresh_frames=['tools'] )
         else:                
             user = trans.get_user()
             ids_in_menu = set( [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ] )
-            workflows = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, deleted=False ).all()
+            workflows = trans.sa_session.query( model.StoredWorkflow ) \
+                .filter_by( user=user, deleted=False ) \
+                .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+                .all()
             shared_by_others = trans.sa_session \
                 .query( model.StoredWorkflowUserShareAssociation ) \
                 .filter_by( user=user ) \

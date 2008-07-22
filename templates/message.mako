@@ -16,6 +16,11 @@ if ( parent.frames && parent.frames.galaxy_history ) {
     parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history')}";
 }
 %endif
+%if 'tools' in refresh_frames:
+if ( parent.frames && parent.frames.galaxy_tools ) {
+    parent.frames.galaxy_tools.location.href="${h.url_for( controller='root', action='tool_menu')}";
+}
+%endif
 
 if ( parent.handle_minwidth_hint )
 {
