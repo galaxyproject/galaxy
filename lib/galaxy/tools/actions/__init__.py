@@ -64,21 +64,13 @@ class DefaultToolAction( object ):
         return input_datasets
     
     def execute(self, tool, trans, incoming={}, set_output_hid = True ):
-        out_data   = {}
-        
+        out_data = {}
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
-        
-        # Deal with input metadata, 'dbkey', names, and types
-        
-        # FIXME: does this need to modify 'incoming' or should this be 
-        #        moved into 'build_param_dict'? Is this just about getting the
-        #        metadata into the command line?
-        # NEED TO FIX THIS SOON.
+        # Deal with input dataset names, 'dbkey' and types
         input_names = []
         input_ext = 'data'
         input_dbkey = incoming.get( "dbkey", "?" )
-        input_meta = Bunch()
         for name, data in inp_data.items():
             if data:
                 input_names.append( 'data %s' % data.hid )
@@ -87,15 +79,6 @@ class DefaultToolAction( object ):
                 data = NoneDataset( datatypes_registry = trans.app.datatypes_registry )
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
-            for meta_key, meta_value in data.metadata.items():
-                if meta_value is not None:
-                    meta_value = str(data.datatype.metadata_spec[meta_key].wrap(meta_value, data))
-                    meta_key = '%s_%s' % (name, meta_key)
-                    incoming[meta_key] = meta_value
-                else:
-                    incoming_key = '%s_%s' % (name, meta_key)
-                    incoming[incoming_key] = data.datatype.metadata_spec[meta_key].no_value
-
         # Build name for output datasets based on tool name and input names
         if len( input_names ) == 1:
             on_text = input_names[0]
@@ -186,16 +169,13 @@ class DefaultToolAction( object ):
         # Create the job object
         job = trans.app.model.Job()
         job.session_id = trans.get_galaxy_session( create=True ).id
-        if trans.get_history() is not None:
-            job.history_id = trans.get_history().id
+        job.history_id = trans.history.id
         job.tool_id = tool.id
         try:
-            # For backward compatability, some tools may not have versions yet.
+            # For backward compatibility, some tools may not have versions yet.
             job.tool_version = tool.version
         except:
             job.tool_version = "1.0.0"
-        ## job.command_line = command_line
-        ## job.param_filename = param_filename
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
@@ -212,6 +192,5 @@ class DefaultToolAction( object ):
         
         # Queue the job for execution
         trans.app.job_queue.put( job.id, tool )
-        # IMPORTANT: keep the following event as is - we parse it for our session activity reports
         trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
         return out_data

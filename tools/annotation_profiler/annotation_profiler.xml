@@ -1,6 +1,6 @@
 <tool id="Annotation_Profiler_0" name="Profile Annotations" Version="1.0.0">
   <description>for a set of genomic intervals</description>
-  <command interpreter="python2.4">annotation_profiler_for_interval.py -i $input1 -c $input1_chromCol -s $input1_startCol -e $input1_endCol -o $out_file1 $keep_empty -p /depot/data2/galaxy/annotation_profiler/$dbkey $summary -l ${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey}.len -b 3 -t $table_names</command>
+  <command interpreter="python2.4">annotation_profiler_for_interval.py -i $input1 -c ${input1.metadata.chromCol} -s ${input1.metadata.startCol} -e ${input1.metadata.endCol} -o $out_file1 $keep_empty -p /depot/data2/galaxy/annotation_profiler/$dbkey $summary -l ${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey}.len -b 3 -t $table_names</command>
   <inputs>
     <param format="interval" name="input1" type="data" label="Choose Intervals">
       <validator type="dataset_metadata_in_file" filename="annotation_profiler_valid_builds.txt" metadata_name="dbkey" metadata_column="0" message="Profiling is not currently available for this species."/>

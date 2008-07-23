@@ -3,9 +3,9 @@
   <command interpreter="python">
     maf_stats.py
     #if $maf_source_type.maf_source == "user":
-      $maf_source_type.maf_source $input2 $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary
+      $maf_source_type.maf_source $input2 $input1 $out_file1 $dbkey ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} $summary
     #else:
-      $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey $input1_chromCol $input1_startCol $input1_endCol $summary
+      $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} $summary
     #end if
     ${GALAXY_DATA_INDEX_DIR}
   </command>

@@ -85,9 +85,9 @@
     <tool file="maf/maf_limit_to_species.xml"/>
     <tool file="maf/maf_limit_size.xml"/>
     <tool file="maf/maf_by_block_number.xml"/>
+    <tool file="maf/maf_filter.xml"/>
     <!--    
     <tool file="maf/maf_reverse_complement.xml"/>
-    <tool file="maf/maf_filter.xml"/> 
     -->
   </section>
   <section name="Get Genomic Scores" id="scores">
@@ -107,6 +107,7 @@
     <tool file="new_operations/join.xml" />
     <tool file="new_operations/get_flanks.xml" />
     <tool file="new_operations/flanking_features.xml" />
+    <tool file="annotation_profiler/annotation_profiler.xml" />
   </section>
   <section name="Statistics" id="stats">
     <tool file="stats/gsummary.xml" />

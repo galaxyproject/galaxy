@@ -216,7 +216,7 @@ class TwillTestCase( unittest.TestCase ):
 
     def _assert_dataset_state( self, elem, state ):
         if elem.get( 'state' ) != state:
-            errmsg = "Expecting dataset state '%s' but is '%s'. Dataset blurb: %s\n\n" % ( state, elem.get('state'), elem.text.strip() )
+            errmsg = "Expecting dataset state '%s', but state is '%s'. Dataset blurb: %s\n\n" % ( state, elem.get('state'), elem.text.strip() )
             errmsg += "---------------------- >> begin tool stderr << -----------------------\n"
             errmsg += self.get_job_stderr( elem.get( 'id' ) ) + "\n"
             errmsg += "----------------------- >> end tool stderr << ------------------------\n"

@@ -256,11 +256,10 @@ class JobWrapper( object ):
         incoming = self.tool.params_from_strings( incoming, self.app )
         # Do any validation that could not be done at job creation
         self.tool.handle_unvalidated_param_values( incoming, self.app )
-        # Resore input / output data lists
+        # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
-        # add some useful session info to param_dict via incoming - ross august 2007
-        # these can be passed on the commandline if wanted as $userId $userEmail
+        # These can be passed on the command line if wanted as $userId $userEmail
         if job.history.user: # check for anonymous user!
              userId = '%d' % job.history.user.id
              userEmail = str(job.history.user.email)
@@ -271,10 +270,7 @@ class JobWrapper( object ):
         incoming['userEmail'] = userEmail
         # Build params, done before hook so hook can use
         param_dict = self.tool.build_param_dict( incoming, inp_data, out_data )
-        # Run the before queue ("exec_before_job") hook "trans" is no
-        # longer available to this hook, and has been replaced with
-        # app - 5/31/2007, by INS
-        # job added so we can get at the user if needed 14/august/2007 ross
+        # Run the before queue ("exec_before_job") hook
         self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, tool=self.tool, param_dict=incoming)
         mapping.context.current.flush()
@@ -287,8 +283,8 @@ class JobWrapper( object ):
         # FIXME: for now, tools get Galaxy's lib dir in their path
         if self.command_line and self.command_line.startswith( 'python' ):
             self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
-        # command_line won't actually be set in the db until finish unless you do it here
-        # We need it in the db to be able to restart jobs -ndc
+        # We need command_line persisted to the db in order for Galaxy to re-queue the job
+        # if the server was stopped and restarted before the job finished
         job.command_line = self.command_line
         job.flush()
         # Return list of all extra files

@@ -1,6 +1,6 @@
 <tool id="gops_join_1" name="Join">
   <description>the intervals of two queries side-by-side</description>
-  <command interpreter="python">gops_join.py $input1 $input2 $output -1 $input1_chromCol,$input1_startCol,$input1_endCol,$input1_strandCol -2 $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol -m $min -f $fill</command>
+  <command interpreter="python">gops_join.py $input1 $input2 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -2 ${input2.metadata.chromCol},${input2.metadata.startCol},${input2.metadata.endCol},${input2.metadata.strandCol} -m $min -f $fill</command>
   <inputs>
     <param format="interval" name="input1" type="data" help="First query">
       <label>Join</label>

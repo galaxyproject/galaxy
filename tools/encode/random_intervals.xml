@@ -1,6 +1,6 @@
 <tool id="random_intervals1" name="Random Intervals">
 <description>create a random set of intervals</description>
-  <command interpreter="python">random_intervals_no_bits.py $regions $input2 $input1 $out_file1 $input2_chromCol $input2_startCol $input2_endCol $input1_chromCol $input1_startCol $input1_endCol $input1_strandCol $use_mask $strand_overlaps ${GALAXY_DATA_INDEX_DIR}</command>
+  <command interpreter="python">random_intervals_no_bits.py $regions $input2 $input1 $out_file1 ${input2.metadata.chromCol} ${input2.metadata.startCol} ${input2.metadata.endCol} ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} ${input1.metadata.strandCol} $use_mask $strand_overlaps ${GALAXY_DATA_INDEX_DIR}</command>
   <inputs>
     <param name="input1" type="data" format="interval" label="File to Mimick">
       <validator type="unspecified_build" message="Unspecified build, this tool works with data from genome builds hg16 or hg17. Click the pencil icon in your history item to set the genome build."/>
@@ -21,6 +21,7 @@
         <column name="value" index="1"/>
         <column name="dbkey" index="0"/>
         <filter type="data_meta" ref="input1" key="dbkey" column="0" />
+        <validator type="no_options" message="This tool currently only works with ENCODE data from genome builds hg16 or hg17."/>
       </options>
     </param> 
   </inputs>
@@ -31,7 +32,7 @@
 
 .. class:: warningmark
 
-This tool currently only works with data from genome builds hg16 or hg17.
+This tool currently only works with ENCODE data from genome builds hg16 or hg17.
 
 -----
 

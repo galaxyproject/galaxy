@@ -282,9 +282,6 @@ class Tool:
         self.parse_inputs( root )
         # Parse tool help
         self.parse_help( root )
-        # FIXME: This is not used anywhere, what does it do?
-        # url redirection to ougoings
-        self.redir_url  = root.find("url")
         # Description of outputs produced by an invocation of the tool
         self.outputs = {}
         out_elem = root.find("outputs")
@@ -1040,7 +1037,7 @@ class Tool:
             return
         try:                
             # Substituting parameters into the command
-            command_line = fill_template( self.command, context=param_dict ) 
+            command_line = fill_template( self.command, context=param_dict )
             # Remove newlines from command line
             command_line = command_line.replace( "\n", " " ).replace( "\r", " " )
         except Exception, e:

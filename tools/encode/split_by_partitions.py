@@ -57,7 +57,7 @@ def main():
     try:
         strandCol = int( sys.argv[7] )-1
     except:
-        stop_err( "Bad strand column: %s" % ( str( sys.argv[7] ) ) )
+        strandCol = -1
     
     line_count = 0
     skipped_lines = 0

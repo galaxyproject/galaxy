@@ -1,6 +1,6 @@
 <tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.1.0">
   <description>using coordinates from assembled/unassembled genomes</description>
-  <command interpreter="python">extract_genomic_dna.py $input $out_file1 $input_chromCol $input_startCol $input_endCol $input_strandCol $dbkey $out_format ${GALAXY_DATA_INDEX_DIR}</command>
+  <command interpreter="python">extract_genomic_dna.py $input $out_file1 ${input.metadata.chromCol} ${input.metadata.startCol} ${input.metadata.endCol} ${input.metadata.strandCol} $dbkey $out_format ${GALAXY_DATA_INDEX_DIR}</command>
   <inputs>
     <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query">
       <validator type="unspecified_build" />
