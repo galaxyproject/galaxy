@@ -26,6 +26,7 @@ class Configuration( object ):
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
+        self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/reports/compiled_templates" ), self.root )
         self.admin_pass = kwargs.get('admin_pass',"galaxy")
