@@ -36,8 +36,6 @@
 
 This tool finds lines in one query that HAVE or DO NOT HAVE a common field with another query.
 
-- Columns are referenced with a **number**. For example, **3** refers to the 3rd column of a tab-delimited file.
-
 -----
 
 **Example**
@@ -55,12 +53,12 @@ and this is **Second query**::
   geneC Gnas1
   geneE INK4a
 
-Finding lines of the **First query** whose 4th column matching the 1st column of the **Second query**::
+Finding lines of the **First query** whose 4th column matches the 1st column of the **Second query** yields::
 
   chr1 10 20 geneA 
   chr1 50 80 geneB
 
-Conversely, using options **Non Matching rows of First query** on same fields will yield::
+Conversely, using option **Non Matching rows of First query** on the same fields will yield::
 
   chr5 10 40 geneL
 
