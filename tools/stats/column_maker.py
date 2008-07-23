@@ -19,7 +19,9 @@ expr = sys.argv[3]
 round = sys.argv[4] 
 try:
     in_columns = int( sys.argv[5] )
-    in_column_types = sys.argv[6].split( ',' )
+    # in_column_types is passed as a string that looks something like:
+    # "[u'str', u'int', u'int', u'str', u'int', u'str']"
+    in_column_types = sys.argv[6].strip( '[' ).strip( ']' ).replace( 'u', '' ).replace( "'", '' ).split( ',' )
 except:
     stop_err( "Data does not appear to be tabular.  This tool can only be used with tab-delimited data." )
 
@@ -42,12 +44,12 @@ cols, type_casts = [], []
 for col in range( 1, in_columns + 1 ):
     col_name = "c%d" % col
     cols.append( col_name )
-    col_type = in_column_types[ col - 1 ]
+    col_type = in_column_types[ col - 1 ].strip()
     if round == 'no' and col_type == 'int':
         col_type = 'float'
     type_cast = "%s(%s)" % ( col_type, col_name )
     type_casts.append( type_cast )
-        
+
 col_str = ', '.join( cols )    # 'c1, c2, c3, c4'
 type_cast_str = ', '.join( type_casts )  # 'str(c1), int(c2), int(c3), str(c4)'
 assign = "%s = line.split( '\\t' )" % col_str

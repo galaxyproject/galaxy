@@ -1,7 +1,7 @@
 <tool id="Filter1" name="Filter">
   <description>data on any column using simple expressions</description>
   <command interpreter="python">
-    filtering.py $input $out_file1 "$cond" $input_columns $input_column_types
+    filtering.py $input $out_file1 "$cond" ${input.metadata.columns} "${input.metadata.column_types}"
   </command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Filter" help="Query missing? See TIP below."/>

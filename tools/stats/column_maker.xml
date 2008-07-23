@@ -1,7 +1,7 @@
-<tool id="Add a column1" name="Compute">
+<tool id="Add_a_column1" name="Compute">
   <description>an expression on every row</description>
   <command interpreter="python">
-    column_maker.py $input $out_file1 "$cond" $round $input_columns $input_column_types
+    column_maker.py $input $out_file1 "$cond" $round ${input.metadata.columns} "${input.metadata.column_types}"
   </command>
   <inputs>
     <param name="cond" size="40" type="text" value="c3-c2" label="Add expression"/>
