@@ -137,22 +137,25 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid" %str( id )
         if data:
-            mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-            trans.response.set_content_type(mime)
-            if tofile:
-                fStat = os.stat(data.file_name)
-                trans.response.headers['Content-Length'] = int(fStat.st_size)
-                if toext[0:1] != ".":
-                    toext = "." + toext
-                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                fname = data.name
-                fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
-                trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, toext)
-            trans.log_event( "Display dataset id: %s" % str(id) )
-            try:
-                return open( data.file_name )
-            except: 
-                return "This dataset contains no content"
+            if data.allow_action( trans.user, data.access_actions.VIEW ):
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
+                trans.response.set_content_type(mime)
+                if tofile:
+                    fStat = os.stat(data.file_name)
+                    trans.response.headers['Content-Length'] = int(fStat.st_size)
+                    if toext[0:1] != ".":
+                        toext = "." + toext
+                    valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                    fname = data.name
+                    fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
+                    trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, toext)
+                trans.log_event( "Display dataset id: %s" % str(id) )
+                try:
+                    return open( data.file_name )
+                except: 
+                    return "This dataset contains no content"
+            else:
+                return "You are not privileged to view this dataset."
         else:
             return "No dataset with id '%s'" % str( id )
 
@@ -164,9 +167,12 @@ class RootController( BaseController ):
         try:
             data = self.app.model.HistoryDatasetAssociation.get( parent_id )
             if data:
-                child = data.get_child_by_designation(designation)
+                child = data.get_child_by_designation( designation )
                 if child:
-                    return self.display(trans, id=child.id, tofile=tofile, toext=toext)
+                    if child.allow_action( trans.user, child.access_actions.VIEW ):
+                        return self.display( trans, id=child.id, tofile=tofile, toext=toext )
+                    else:
+                        return "You are not privileged to access this dataset."
         except Exception:
             pass
         return "A child named %s could not be found for data %s" % ( designation, parent_id )
@@ -176,9 +182,12 @@ class RootController( BaseController ):
         """Returns a file in a format that can successfully be displayed in display_app"""
         data = self.app.model.HistoryDatasetAssociation.get( id )
         if data:
-            trans.response.set_content_type(data.get_mime())
-            trans.log_event( "Formatted dataset id %s for display at %s" % ( str(id), display_app ) )
-            return data.as_display_type(display_app, **kwd)
+            if data.allow_action( trans.user, data.access_actions.VIEW ):
+                trans.response.set_content_type( data.get_mime() )
+                trans.log_event( "Formatted dataset id %s for display at %s" % ( str( id ), display_app ) )
+                return data.as_display_type( display_app, **kwd )
+            else:
+                return "You are not privileged to access this dataset."
         else:
             return "No data with id=%d" % id
 
@@ -206,69 +215,99 @@ class RootController( BaseController ):
             data = self.app.model.HistoryDatasetAssociation.get( id )
         if data is None:
             return trans.show_error_message( "Problem retrieving dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
-
-        p = util.Params(kwd, safe=False)
-        
-        if p.change:
-            # The user clicked the Save button on the 'Change data type' form
-            trans.app.datatypes_registry.change_datatype( data, p.datatype )
-            trans.app.model.flush()
-        elif p.save:
-            # The user clicked the Save button on the 'Edit Attributes' form
-            data.name  = p.name
-            data.info  = p.info
+        if data.history.user is not None and data.history.user != trans.user:
+            return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
+        if data.allow_action( trans.user, data.access_actions.USE ):
+            p = util.Params(kwd, safe=False)
             
-            # The following for loop will save all metadata_spec items
-            for name, spec in data.datatype.metadata_spec.items():
-                if spec.get("readonly"):
-                    continue
-                optional = p.get("is_"+name, None)
-                if optional and optional == 'true':
-                    # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
-                    setattr(data.metadata,name,None)
-                else:
-                    setattr(data.metadata,name,spec.unwrap(p.get(name, None), p))
+            if p.change:
+                # The user clicked the Save button on the 'Change data type' form
+                trans.app.datatypes_registry.change_datatype( data, p.datatype )
+                trans.app.model.flush()
+            elif p.save:
+                # The user clicked the Save button on the 'Edit Attributes' form
+                data.name  = p.name
+                data.info  = p.info
+                
+                # The following for loop will save all metadata_spec items
+                for name, spec in data.datatype.metadata_spec.items():
+                    if spec.get("readonly"):
+                        continue
+                    optional = p.get("is_"+name, None)
+                    if optional and optional == 'true':
+                        # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
+                        setattr(data.metadata,name,None)
+                    else:
+                        setattr(data.metadata,name,spec.unwrap(p.get(name, None), p))
 
-            data.datatype.after_edit( data )
-            trans.app.model.flush()
-            return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
-        elif p.detect:
-            # The user clicked the Auto-detect button on the 'Edit Attributes' form
+                data.datatype.after_edit( data )
+                trans.app.model.flush()
+                return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
+            elif p.detect:
+                # The user clicked the Auto-detect button on the 'Edit Attributes' form
+                for name, spec in data.datatype.metadata_spec.items():
+                    # We need to be careful about the attributes we are resetting
+                    if name != 'name' and name != 'info' and name != 'dbkey':
+                        if spec.get( 'default' ):
+                            setattr( data.metadata,name,spec.unwrap( spec.get( 'default' ), spec ))
+                data.datatype.set_meta( data )
+                data.datatype.after_edit( data )
+                trans.app.model.flush()
+                return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
+            elif p.convert_data:
+                """The user clicked the Convert button on the 'Convert to new format' form"""
+                target_type = kwd.get("target_type", None)
+                if target_type:
+                    msg = data.datatype.convert_dataset(trans, data, target_type)
+                    return trans.show_ok_message( msg, refresh_frames=['history'] )
+            elif p.change_permision:
+                """The user clicked the change_permision button on the 'Change permissions' form"""
+                if not trans.user:
+                    return trans.show_error_message( "You must be logged in if you want to change dataset permissions." )
+                private_dataset = 'private_dataset'
+                public_group = trans.app.model.GalaxyGroup.get( trans.app.model.GalaxyGroup.public_id )
+                if private_dataset in kwd and data.dataset.has_group( public_group ):
+                    #check user has permision and then remove public group
+                    if data.dataset.allow_action( trans.user, data.dataset.access_actions.REMOVE_GROUP ):
+                        for assoc in data.dataset.groups:
+                            if assoc.group_id == public_group.id:
+                                assoc.delete()
+                                assoc.flush()
+                    else:
+                        return trans.show_error_message( "You are not authorized to change this dataset's permissions." )
+                elif private_dataset not in kwd and not data.dataset.has_group( public_group ):
+                    #check user has permision and then add public group
+                    if data.dataset.allow_action( trans.user, data.dataset.access_actions.ADD_GROUP ):
+                        public_group.add_dataset( data.dataset )
+                        public_group.flush()
+                    else:
+                        return trans.show_error_message( "You are not authorized to change this dataset's permissions." )
+                else:
+                    return trans.show_error_message( "You have not specified a valid change of permissions." )
+                return trans.show_ok_message( 'Permissions have been changed.', refresh_frames=['history'] )
+            
+            data.datatype.before_edit( data )
+            
+            if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
+                # Copy dbkey into metadata, for backwards compatability
+                # This looks like it does nothing, but getting the dbkey
+                # returns the metadata dbkey unless it is None, in which
+                # case it resorts to the old dbkey.  Setting the dbkey
+                # sets it properly in the metadata
+                data.metadata.dbkey = data.dbkey
+            metadata = list()
+            # a list of MetadataParemeters
             for name, spec in data.datatype.metadata_spec.items():
-                # We need to be careful about the attributes we are resetting
-                if name != 'name' and name != 'info' and name != 'dbkey':
-                    if spec.get( 'default' ):
-                        setattr( data.metadata,name,spec.unwrap( spec.get( 'default' ), spec ))
-            data.datatype.set_meta( data )
-            data.datatype.after_edit( data )
-            trans.app.model.flush()
-            return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
-        elif p.convert_data:
-            """The user clicked the Convert button on the 'Convert to new format' form"""
-            target_type = kwd.get("target_type", None)
-            if target_type:
-                msg = data.datatype.convert_dataset(trans, data, target_type)
-                return trans.show_ok_message( msg, refresh_frames=['history'] )
-        data.datatype.before_edit( data )
-        
-        if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
-            # Copy dbkey into metadata, for backwards compatability
-            # This looks like it does nothing, but getting the dbkey
-            # returns the metadata dbkey unless it is None, in which
-            # case it resorts to the old dbkey.  Setting the dbkey
-            # sets it properly in the metadata
-            data.metadata.dbkey = data.dbkey
-        metadata = list()
-        # a list of MetadataParemeters
-        for name, spec in data.datatype.metadata_spec.items():
-            if spec.visible:
-                metadata.append( spec.wrap( data.metadata.get(name), data ) )
-        # let's not overwrite the imported datatypes module with the variable datatypes?
-        ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
-        ldatatypes.sort()
-        trans.log_event( "Opened edit view on dataset %s" % str(id) )
-        return trans.fill_template( "/dataset/edit_attributes.mako", data=data, metadata=metadata,
-                                    datatypes=ldatatypes, err=None )
+                if spec.visible:
+                    metadata.append( spec.wrap( data.metadata.get(name), data ) )
+            # let's not overwrite the imported datatypes module with the variable datatypes?
+            ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
+            ldatatypes.sort()
+            trans.log_event( "Opened edit view on dataset %s" % str(id) )
+            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, metadata=metadata,
+                                        datatypes=ldatatypes, err=None )
+        else:
+            return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % id )
 
     @web.expose
     def delete( self, trans, id = None, **kwd):
@@ -327,6 +366,8 @@ class RootController( BaseController ):
                         self.app.job_stop_queue.put( data.creating_job_associations[0].job )
                     except IndexError:
                         pass    # upload tool will cause this since it doesn't have a job
+            else:
+                return "Dataset id '%s' is invalid" %str( id )
         return "OK"
 
     ## ---- History management -----------------------------------------------
@@ -404,7 +445,7 @@ class RootController( BaseController ):
             send_to_err = "You can't send histories to yourself"
         else:
             for history in histories:
-                new_history = history.copy()
+                new_history = history.copy( target_user=send_to_user )
                 new_history.name = history.name+" from "+user.email
                 new_history.user_id = send_to_user.id
                 trans.log_event( "History share, id: %s, name: '%s': to new id: %s" % (str(history.id), history.name, str(new_history.id)) )
@@ -441,7 +482,7 @@ class RootController( BaseController ):
         if user:
             if import_history.user_id == user.id:
                 return trans.show_error_message( "You cannot import your own history.")
-            new_history = import_history.copy()
+            new_history = import_history.copy( target_user=trans.user )
             new_history.name = "imported: "+new_history.name
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
@@ -548,11 +589,17 @@ class RootController( BaseController ):
         return trans.show_message( "<p>%s" % change_msg, refresh_frames=['history'] ) 
 
     @web.expose
-    def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="txt",dbkey="?",**kwd ):
+    def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="txt",dbkey="?",copy_access_from=None,**kwd ):
         """Adds a POSTed file to a History"""
         try:
             history = trans.app.model.History.get( history_id )
-            data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
+            roles = history.default_roles
+            groups = history.default_groups
+            if copy_access_from:
+                copy_access_from = trans.app.model.HistoryDatasetAssociation.get( copy_access_from )
+                roles = copy_access_from.dataset.roles
+                groups = copy_access_from.dataset.groups
+            data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True, access_groups = groups, access_roles = roles )
             data.flush()
             data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )
@@ -569,7 +616,8 @@ class RootController( BaseController ):
             data.flush()
             trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id))
             return trans.show_ok_message("Dataset "+str(data.hid)+" added to history "+str(history_id)+".")
-        except:
+        except Exception, e:
+            trans.log_event( "Failed to add dataset to history: %s" % ( e ) )
             return trans.show_error_message("Adding File to History has Failed")
 
     @web.expose
