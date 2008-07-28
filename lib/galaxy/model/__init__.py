@@ -105,12 +105,14 @@ class User( object ):
         if groups is not None:
             for assoc in self.default_groups: #this is the association not the actual group
                 assoc.delete()
+                assoc.flush()
             for group in groups:
                 assoc = DefaultUserGroupAssociation( self, group )
                 assoc.flush()
         if roles is not None:
             for assoc in self.default_roles: #this is the association not the actual group
                 assoc.delete()
+                assoc.flush()
             for role in roles:
                 assoc = DefaultUserRoleAssociation( self, role )
                 assoc.flush()
