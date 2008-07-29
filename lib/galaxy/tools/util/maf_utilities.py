@@ -355,8 +355,9 @@ def get_attributes_from_fasta_header( header ):
         pass
     if len( fields ) > 2:
         for i in xrange( 1, len( fields ) - 1 ):
-            prop = fields[i].split( '=' )
-            attributes[ prop[0] ] = prop[1]
+            prop = fields[i].split( '=', 1 )
+            if len( prop ) == 2:
+                attributes[ prop[0] ] = prop[1]
     if len( fields ) > 1:
         attributes['__suffix__'] = fields[-1]
     return attributes

@@ -63,5 +63,10 @@ becomes::
   >canFam2
   GTGT
 
+
+.. class:: warningmark 
+
+ This tool will only work properly on files with Galaxy style FASTA headers.
+
 </help>
 </tool>
