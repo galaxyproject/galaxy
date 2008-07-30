@@ -979,25 +979,19 @@ class DataToolParameter( ToolParameter ):
           displayed as radio buttons and multiple selects as a set of checkboxes
 
     >>> # Mock up a history (not connected to database)
-    >>> from galaxy.model import History, HistoryDatasetAssociation, User, AccessRole, GalaxyGroup, GroupRoleAssociation
+    >>> from galaxy.model import History, HistoryDatasetAssociation
     >>> from galaxy.util.bunch import Bunch
     >>> hist = History()
     >>> hist.flush()
-    >>> role = AccessRole( 'test', list( AccessRole.dataset_actions.__dict__.values() ) )
-    >>> role.flush()
-    >>> group = GalaxyGroup( 'test' )
-    >>> group.flush()
-    >>> GalaxyGroup.public_id = group.id
-    >>> GroupRoleAssociation( group, role ).flush()
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True, access_groups=[ group ] ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True, access_groups=[ group ] ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=3, extension='fasta', create_dataset=True, access_groups=[ group ] ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=4, extension='png', create_dataset=True, access_groups=[ group ] ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=5, extension='interval', create_dataset=True, access_groups=[ group ] ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=3, extension='fasta', create_dataset=True ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=4, extension='png', create_dataset=True ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=5, extension='interval', create_dataset=True ) )
     >>> p = DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
     >>> print p.name
     blah
-    >>> print p.get_html( trans=Bunch( history=hist, user=None ) )
+    >>> print p.get_html( trans=Bunch( history=hist ) )
     <select name="blah">
     <option value="2">2: Unnamed dataset</option>
     <option value="5" selected>5: Unnamed dataset</option>
@@ -1053,7 +1047,7 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( data.hid )
-                if not data.deleted and data.state not in [data.states.ERROR] and data.visible and data.allow_action( trans.user, data.access_actions.USE ):
+                if not data.deleted and data.state not in [data.states.ERROR] and data.visible:
                     if self.options and data.get_dbkey() != filter_value:
                         continue
                     if isinstance( data.datatype, self.formats):
@@ -1066,8 +1060,6 @@ class DataToolParameter( ToolParameter ):
                                 if datasets:
                                     data = datasets[0]
                                 elif not self.converter_safe( other_values, trans ):
-                                    continue
-                                if not data.allow_action( trans.user, data.access_actions.USE ):
                                     continue
                                 selected = ( value and ( data in value ) )
                                 field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )

@@ -113,99 +113,6 @@ ValidationError.table = Table( "validation_error", metadata,
     Column( "err_type", TrimmedString( 64 ) ),
     Column( "attributes", TEXT ) )
 
-GalaxyGroup.table = Table( "galaxy_group", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TEXT ),
-    Column( "priority", Integer ) )
-
-UserGroupAssociation.table = Table( "user_group_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-AccessRole.table = Table( "access_role", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TEXT ),
-    Column( "actions", JSONType(), default=[] ),
-    Column( "priority", Integer ) )
-
-UserRoleAssociation.table = Table( "user_role_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "role_id", Integer, ForeignKey( "access_role.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-GroupRoleAssociation.table = Table( "group_role_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
-    Column( "role_id", Integer, ForeignKey( "access_role.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-GroupDatasetAssociation.table = Table( "group_dataset_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-RoleDatasetAssociation.table = Table( "role_dataset_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "role_id", Integer, ForeignKey( "access_role.id" ), index=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-RoleRoleAssociation.table = Table( "role_role_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "role_id", Integer, ForeignKey( "access_role.id" ), index=True ),
-    Column( "target_role_id", Integer, ForeignKey( "access_role.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-GroupRoleAccessAssociation.table = Table( "group_role_access_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "role_id", Integer, ForeignKey( "access_role.id" ), index=True ),
-    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-
-DefaultUserRoleAssociation.table = Table( "default_user_role_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "role_id", Integer, ForeignKey( "access_role.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-DefaultUserGroupAssociation.table = Table( "default_user_group_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-DefaultHistoryRoleAssociation.table = Table( "default_history_role_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "role_id", Integer, ForeignKey( "access_role.id" ), index=True ),
-    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-DefaultHistoryGroupAssociation.table = Table( "default_history_group_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
-    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -386,56 +293,6 @@ assign_mapper( context, User, User.table,
                                                             collection_class=ordering_list( 'order_index' ) )
                      ) )
 
-assign_mapper( context, GalaxyGroup, GalaxyGroup.table,
-    properties=dict( users=relation( UserGroupAssociation ),
-                     datasets=relation( GroupDatasetAssociation ) ) )
-
-assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
-    properties=dict( user=relation( User, backref = "groups" ),
-                     group=relation( GalaxyGroup, backref = "users" ) ) )
-
-assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
-    properties=dict( role=relation( AccessRole, backref = "users" ),
-                     user=relation( User, backref = "roles" ) ) )
-
-assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
-    properties=dict( role=relation( AccessRole, backref = "groups" ),
-                     group=relation( GalaxyGroup, backref = "roles" ) ) )
-
-assign_mapper( context, AccessRole, AccessRole.table )
-
-assign_mapper( context, GroupDatasetAssociation, GroupDatasetAssociation.table,
-    properties=dict( dataset=relation( Dataset, backref = "groups" ),
-                     group=relation( GalaxyGroup, backref = "datasets" ) ) )
-
-assign_mapper( context, RoleDatasetAssociation, RoleDatasetAssociation.table,
-    properties=dict( dataset=relation( Dataset, backref = "roles" ),
-                     role=relation( AccessRole ) ) )
-
-assign_mapper( context, RoleRoleAssociation, RoleRoleAssociation.table,
-    properties=dict( role=relation( AccessRole, primaryjoin=( ( RoleRoleAssociation.table.c.role_id == AccessRole.table.c.id ) ) ),
-                     target_role=relation( AccessRole, primaryjoin=( RoleRoleAssociation.table.c.target_role_id == AccessRole.table.c.id ), backref="roles" ) ) )
-
-assign_mapper( context, GroupRoleAccessAssociation, GroupRoleAccessAssociation.table,
-    properties=dict( role=relation( AccessRole, backref="access_groups" ),
-                     group=relation( GalaxyGroup, backref="access_roles" ) ) )
-
-assign_mapper( context, DefaultUserRoleAssociation, DefaultUserRoleAssociation.table,
-    properties=dict( user=relation( User, backref = "default_roles" ),
-                     role=relation( AccessRole ) ) )
-
-assign_mapper( context, DefaultUserGroupAssociation, DefaultUserGroupAssociation.table,
-    properties=dict( user=relation( User, backref = "default_groups" ),
-                     group=relation( GalaxyGroup ) ) )
-
-assign_mapper( context, DefaultHistoryRoleAssociation, DefaultHistoryRoleAssociation.table,
-    properties=dict( history=relation( History, backref = "default_roles" ),
-                     role=relation( AccessRole ) ) )
-
-assign_mapper( context, DefaultHistoryGroupAssociation, DefaultHistoryGroupAssociation.table,
-    properties=dict( history=relation( History, backref = "default_groups" ),
-                     group=relation( GalaxyGroup ) ) )
-
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation ) ) )
 
@@ -549,33 +406,6 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.flush = lambda *args, **kwargs: context.current.flush( *args, **kwargs )
     result.context = context
     result.create_tables = create_tables
-    #set up default table entries here, currently only exist for access controls
-    if result.AccessRole.count() == 0:
-        log.warning( "There were no access roles located, setting up default (public) access roles." )
-        #create public group
-        public_group = result.GalaxyGroup( 'public' )
-        public_group.flush()
-        #create public_all role
-        public_role = result.AccessRole( 'public', [ result.Dataset.access_actions.USE, result.Dataset.access_actions.VIEW, result.GalaxyGroup.access_actions.ADD_DATASET, result.GalaxyGroup.access_actions.REMOVE_DATASET ] )
-        public_role.flush()
-        public_group.add_role( public_role )
-        
-        #store public group id
-        GalaxyGroup.public_id = public_group.id #we use the id instead of the object, because of alchemy sessions
-        #add all datasets to public group
-        for dataset in result.Dataset.select():
-            public_group.add_dataset( dataset )
-        
-        #loop through all current users and associate with the public group 
-        #and create and associate with user's own group
-        for user in result.User.select():
-            public_group.add_user( user )
-            private_group = user.create_private_group()
-            user.set_default_access( groups = [ public_group, private_group ], roles = [], history = True, dataset = True )
-    else:
-        #retrieve from database and store public group id, assume first created group is public
-        GalaxyGroup.public_id = result.GalaxyGroup.select( order_by = asc( result.GalaxyGroup.table.c.create_time ) )[0].id #we use the id instead of the object, because of alchemy sessions
-    log.debug( "Public Group identified as id = %s." % ( GalaxyGroup.public_id ) )
     return result
     
 def get_suite():
