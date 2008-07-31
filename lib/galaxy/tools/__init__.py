@@ -731,7 +731,7 @@ class Tool:
                 for i, rep_state in enumerate( group_state ):
                     rep_index = rep_state['__index__']
                     max_index = max( max_index, rep_index )
-                    prefix = "%s_%d|" % ( key, rep_index )
+                    rep_prefix = "%s_%d|" % ( key, rep_index )
                     if group_old_errors:
                         rep_old_errors = group_old_errors[i]
                     else:
@@ -740,7 +740,7 @@ class Tool:
                                                     input.inputs, 
                                                     rep_state, 
                                                     incoming, 
-                                                    prefix=prefix,
+                                                    prefix=rep_prefix,
                                                     context=context,
                                                     update_only=update_only,
                                                     old_errors=rep_old_errors,
@@ -765,9 +765,9 @@ class Tool:
                 group_state = state[input.name]
                 group_old_errors = old_errors.get( input.name, {} )
                 old_current_case = group_state['__current_case__']
-                prefix = "%s|" % ( key )
+                group_prefix = "%s|" % ( key )
                 # Deal with the 'test' element and see if it's value changed
-                test_param_key = prefix + input.test_param.name
+                test_param_key = group_prefix + input.test_param.name
                 test_param_error = None
                 test_incoming = incoming.get( test_param_key, None )
                 if test_param_key not in incoming \
@@ -797,7 +797,7 @@ class Tool:
                                                       input.cases[current_case].inputs, 
                                                       group_state,
                                                       incoming, 
-                                                      prefix=prefix,
+                                                      prefix=group_prefix,
                                                       context=context,
                                                       update_only=update_only,
                                                       old_errors=group_old_errors,
