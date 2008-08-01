@@ -50,6 +50,13 @@
       <param name="returntype" value="" />
       <output name="output" file="gops_intersect_bigint_out.interval" />     
     </test>
+    <test>
+      <param name="input1" value="12.bed" ftype="bed" />
+      <param name="input2" value="1.bed" ftype="bed" />
+      <param name="min" value="1" />
+      <param name="returntype" value="" />
+      <output name="output" file="gops_intersect_no_strand_out.bed" />     
+    </test>
   </tests>
   <help>
 

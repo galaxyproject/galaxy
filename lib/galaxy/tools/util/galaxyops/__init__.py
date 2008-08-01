@@ -13,13 +13,17 @@ def fail( msg ):
     print >> sys.stderr, msg
     sys.exit( 1 )
 
-# Default chrom, start, end, stran cols for a bed file
+# Default chrom, start, end, strand cols for a bed file
 BED_DEFAULT_COLS = 0, 1, 2, 5
 
 def parse_cols_arg( cols ):
     """Parse a columns command line argument into a four-tuple"""
     if cols:
-        return map( lambda x: int( x ) - 1, cols.split(",") )
+        col_list = map( lambda x: int( x ) - 1, cols.split(",") )
+        if len( col_list ) == 3:
+            # We only have  chrom, start and end cols, so we need to add a strand col
+            col_list.append( -1 )
+        return col_list
     else:
         return BED_DEFAULT_COLS
 
