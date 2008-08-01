@@ -43,6 +43,8 @@ class DefaultToolAction( object ):
                                 assoc.flush()
                                 data = new_data
                             break
+                if data and not data.allow_action( trans.user, data.access_actions.USE ):
+                    raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
             if isinstance( input, DataToolParameter ):
                 if isinstance( value, list ):
@@ -79,6 +81,16 @@ class DefaultToolAction( object ):
                 data = NoneDataset( datatypes_registry = trans.app.datatypes_registry )
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
+        
+        #determine output dataset access list
+        existing_datasets = [ inp for inp in inp_data.values() if inp ]
+        if existing_datasets:
+            output_access_groups, output_access_roles = existing_datasets[0].dataset.guess_derived_groups_roles( existing_datasets[1:] )
+        else:
+            #no valid inputs, we will use history defaults
+            output_access_roles = [ role.role for role in trans.history.default_roles ]
+            output_access_groups = [ group.group for group in trans.history.default_groups ]
+        
         # Build name for output datasets based on tool name and input names
         if len( input_names ) == 1:
             on_text = input_names[0]
@@ -117,7 +129,7 @@ class DefaultToolAction( object ):
                 ext = output.format
                 if ext == "input":
                     ext = input_ext
-                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
+                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, access_groups=output_access_groups, access_roles=output_access_roles )
                 # Commit the dataset immediately so it gets database assigned unique id
                 data.flush()
             # Create an empty file immediately
@@ -183,6 +195,8 @@ class DefaultToolAction( object ):
             job.add_parameter( name, value )
         for name, dataset in inp_data.iteritems():
             if dataset:
+                if not dataset.allow_action( trans.user, dataset.access_actions.USE ):
+                    raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 job.add_input_dataset( name, dataset )
             else:
                 job.add_input_dataset( name, None )

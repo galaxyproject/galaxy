@@ -65,7 +65,7 @@ class UploadToolAction( object ):
         return dict( output=data_list[0] )
 
     def upload_empty(self, trans, err_code, err_msg):
-        data = trans.app.model.HistoryDatasetAssociation( create_dataset = True )
+        data = trans.app.model.HistoryDatasetAssociation( create_dataset = True, access_groups = [ group.group for group in trans.history.default_groups ], access_roles = [ role.role for role in trans.history.default_roles ] )
         data.name = err_code 
         data.extension = "txt"
         data.dbkey = "?"
@@ -158,7 +158,7 @@ class UploadToolAction( object ):
         if info is None:
             info = 'uploaded %s file' %data_type
 
-        data = trans.app.model.HistoryDatasetAssociation( history = trans.history, extension = ext, create_dataset = True )
+        data = trans.app.model.HistoryDatasetAssociation( history = trans.history, extension = ext, create_dataset = True, access_groups = [ group.group for group in trans.history.default_groups ], access_roles = [ role.role for role in trans.history.default_roles ] )
         data.name = file_name
         data.dbkey = dbkey
         data.info = info
