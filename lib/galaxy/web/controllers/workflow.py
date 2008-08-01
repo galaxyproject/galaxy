@@ -676,9 +676,16 @@ def get_job_dict( trans ):
         if dataset.state in ( 'new', 'running', 'queued' ):
             warnings.add( "Some datasets still queued or running were ignored" )
             continue
-        if not dataset.creating_job_associations:
-            jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]        
-        for assoc in dataset.creating_job_associations:
+        
+        #if this hda was copied from another, we need to find the job that created the origial hda
+        job_hda = dataset
+        while job_hda.copied_from_history_dataset_association:
+            job_hda = job_hda.copied_from_history_dataset_association
+        
+        if not job_hda.creating_job_associations:
+            jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]
+        
+        for assoc in job_hda.creating_job_associations:
             job = assoc.job
             if job in jobs:
                 jobs[ job ].append( ( assoc.name, dataset ) )

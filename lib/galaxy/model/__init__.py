@@ -104,7 +104,7 @@ class JobToOutputDatasetAssociation( object ):
 class HistoryDatasetAssociation( object ):
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, validation_errors=None, visible=True, create_dataset = False ):
+                  parent_id=None, copied_from_history_dataset_association = None, validation_errors=None, visible=True, create_dataset = False ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.hid = hid
@@ -125,6 +125,7 @@ class HistoryDatasetAssociation( object ):
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
+        self.copied_from_history_dataset_association = copied_from_history_dataset_association
     
     @property
     def ext( self ):
@@ -252,7 +253,7 @@ class HistoryDatasetAssociation( object ):
         return self.datatype.get_converter_types( self, datatypes_registry)
     
     def copy( self, copy_children = False, parent_id = None ):
-        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id )
+        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
         des.flush()
         if copy_children:
             for child in self.children:

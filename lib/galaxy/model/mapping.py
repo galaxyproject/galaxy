@@ -72,6 +72,7 @@ HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
     Column( "hid", Integer ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
@@ -250,13 +251,17 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
         history=relation( 
             History, 
             primaryjoin=( History.table.c.id == HistoryDatasetAssociation.table.c.history_id ) ),
+        copied_to_history_dataset_associations=relation( 
+            HistoryDatasetAssociation, 
+            primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ),
+            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id] ) ),
         implicitly_converted_datasets=relation( 
             ImplicitlyConvertedDatasetAssociation, 
             primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
         children=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ),
-            backref=backref( "parent", remote_side=[HistoryDatasetAssociation.table.c.id] ) )
+            backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id] ) )
             ) )
 
 assign_mapper( context, Dataset, Dataset.table,
