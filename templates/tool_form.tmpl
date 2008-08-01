@@ -57,9 +57,9 @@ jQuery( function() {
       #set group_state = $tool_state[$input.name]
       #set group_errors = $errors.get( $input.name, {} )
       #set current_case = $group_state['__current_case__']
-      #set prefix = $prefix + $input.name + "|"
-      $row_for_param( $prefix, $input.test_param, $group_state, $group_errors, $context )
-      $do_inputs( $input.cases[$current_case].inputs, $group_state, $group_errors, $prefix, $context )
+      #set group_prefix = $prefix + $input.name + "|"
+      $row_for_param( $group_prefix, $input.test_param, $group_state, $group_errors, $context )
+      $do_inputs( $input.cases[$current_case].inputs, $group_state, $group_errors, $group_prefix, $context )
     #else
       $row_for_param( $prefix, $input, $tool_state, $errors, $context )
     #end if

@@ -23,10 +23,10 @@
     %elif input.type == "conditional":
       <% group_values = values[input.name] %>
       <% current_case = group_values['__current_case__'] %>
-      <% prefix = prefix + input.name + "|" %>
+      <% group_prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
-      ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, prefix )}
-      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, prefix )}
+      ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, group_prefix )}
+      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, group_prefix )}
     %else:
       ${row_for_param( input, values[ input.name ], errors, prefix )}
     %endif
