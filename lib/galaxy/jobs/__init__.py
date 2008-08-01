@@ -400,11 +400,6 @@ class JobWrapper( object ):
         else:
             job.state = 'ok'
         for dataset_assoc in job.output_datasets:
-            if stderr: 
-                dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
-            else:
-                dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
-            dataset_assoc.dataset.dataset.flush()
             for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
@@ -424,6 +419,11 @@ class JobWrapper( object ):
                 else:
                     dataset.blurb = "empty"
                 dataset.flush()
+            if stderr: 
+                dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
+            else:
+                dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
+            dataset_assoc.dataset.dataset.flush()
         
         # Save stdout and stderr    
         if len( stdout ) > 32768:
