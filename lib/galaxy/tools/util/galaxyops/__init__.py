@@ -19,10 +19,11 @@ BED_DEFAULT_COLS = 0, 1, 2, 5
 def parse_cols_arg( cols ):
     """Parse a columns command line argument into a four-tuple"""
     if cols:
+        # Handle case where no strand column included - in this case, cols
+        # looks something like 1,2,3,
+        if cols.endswith( ',' ):
+            cols += '0'
         col_list = map( lambda x: int( x ) - 1, cols.split(",") )
-        if len( col_list ) == 3:
-            # We only have  chrom, start and end cols, so we need to add a strand col
-            col_list.append( -1 )
         return col_list
     else:
         return BED_DEFAULT_COLS
