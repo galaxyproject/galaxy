@@ -27,38 +27,16 @@ def set_datatypes_registry( d_registry ):
     datatypes_registry = d_registry
 
 class User( object ):
-    def __init__( self, email=None, password=None, groups = [], roles = [], default_groups = [], default_roles = [] ):
+    def __init__( self, email=None, password=None ):
         self.email = email
         self.password = password
         self.external = False
         # Relationships
         self.histories = []
-        if not groups:
-            groups.append( GalaxyGroup.get( GalaxyGroup.public_id ) )
-            default_groups.append( groups[-1] )
-            default_groups.append( self.create_private_group() )
-        group_id_added = []
-        for group in groups:
-            if group.id not in group_id_added:
-                group.add_user( self )
-                group_id_added.append( group.id )
-        group_id_added = []
-        for group in default_groups:
-            if group.id not in group_id_added:
-                user_group_assoc = DefaultUserGroupAssociation( self, group )
-                user_group_assoc.flush()
-                group_id_added.append( group.id )
-        role_id_added = []
-        for role in roles:
-            if role.id not in role_id_added:
-                role.add_user( self )
-                role_id_added.append( role.id )
-        role_id_added = []
-        for role in default_roles:
-            if role.id not in role_id_added:
-                role_group_assoc = DefaultUserRoleAssociation( self, role )
-                role_group_assoc.flush()
-                role_id_added.append( role.id )
+        
+        self.set_default_access()
+        self.add_group( Group.get_public_group() )
+        
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = sha.new( cleartext ).hexdigest()
@@ -66,28 +44,42 @@ class User( object ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
         return self.password == sha.new( cleartext ).hexdigest()
     def create_private_group( self ):
+        #create roles for user modification of role
+        user_permission = Permission( "%s role modification" % self.email, list( Role.access_actions.__dict__.values() ) )
+        user_permission.flush()
+        user_role = Role( "%s role modification" % self.email )
+        user_role.flush()
+        user_role.add_permission( user_permission )
+        #add role to user
+        user_role.add_user( self )
+        user_role.add_control_role( user_role )
+        
+        
         #create private group
-        group = GalaxyGroup( self.email, priority = 10 )
+        group = Group( self.email, priority = 10 )
         group.flush()
+        #create dataset permissions
+        dataset_permission = Permission( "%s dataset access" % self.email, list( Dataset.access_actions.__dict__.values() ) )
+        dataset_permission.flush()
         #create private dataset access role
-        role = AccessRole( "%s dataset access" % self.email, list( Dataset.access_actions.__dict__.values() ), priority = 1 )
+        role = Role( "%s dataset access" % self.email, priority = 10 )
+        role.add_permission( dataset_permission )
         role.flush()
+        #add control role to role
+        role.add_control_role( user_role )
         #add role to group
         group.add_role( role )
         
-        #create roles for user modification of role
-        user_role = AccessRole( "%s role modification" % self.email, list( AccessRole.access_actions.__dict__.values() ) )
-        user_role.flush()
-        #add role to user
-        user_role.add_user( self )
-        #add role to role
-        role.add_role( user_role )
-        
         #create roles for user modification of group
-        group_role = AccessRole( "%s group modification" % self.email, list( GalaxyGroup.access_actions.__dict__.values() ) )
+        group_permission = Permission( "%s group modification" % self.email, list( Group.access_actions.__dict__.values() ) )
+        group_permission.flush()
+        group_role = Role( "%s group modification" % self.email )
         group_role.flush()
+        #add control role to role
+        group_role.add_control_role( user_role )
+        group_role.add_permission( group_permission )
         #add role to group
-        group.add_access_role( group_role )
+        group.add_control_role( group_role )
         #associate role and user
         group_role.add_user( self )
         
@@ -102,6 +94,9 @@ class User( object ):
     def has_role( self, check_role ):
         return bool( UserRoleAssociation.get_by( role_id = check_role.id, user_id = self.id ) )
     def set_default_access( self, groups = None, roles = None, history = False, dataset = False ):
+        if groups is None and roles is None:
+            groups = [ Group.get_public_group(), self.create_private_group() ]
+            roles = []
         if groups is not None:
             for assoc in self.default_groups: #this is the association not the actual group
                 assoc.delete()
@@ -181,7 +176,7 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
-class AccessRole( object ):
+class Permission( object ):
     dataset_actions = Bunch( VIEW = 'dataset_view', #viewing/downloading
                     USE = 'dataset_use', #use in jobs
                     ADD_ROLE = 'dataset_add_role', #dataset can be added to roles
@@ -200,14 +195,21 @@ class AccessRole( object ):
                     ADD_ROLE = 'group_add_role', #add role to group
                     REMOVE_ROLE = 'group_remove_role', #remove role from group
                     ADD_USER = 'group_add_user' ) #add users to group
-    
-    access_actions = role_actions
-    
-    def __init__( self, name, actions, priority = 0 ):
+    def __init__( self, name = None, actions = [] ):
         self.name = name
-        if not isinstance( actions, list ):
-            actions = [ actions ]
         self.actions = actions
+    def add_action( self, action ):
+        if action not in self.actions:
+            return self.actions.append( action )
+        raise 'action (%s) already exists in permissions list (%s: %s).' % ( action, self.id, self.actions )
+    def remove_action( self, action ):
+        return self.actions.remove( action )
+    
+class Role( object ):
+    access_actions = Permission.role_actions
+    
+    def __init__( self, name, priority = 0 ):
+        self.name = name
         self.priority = priority
     def add_user( self, user ):
         assoc = UserRoleAssociation( user, self )
@@ -217,18 +219,27 @@ class AccessRole( object ):
         assoc = GroupRoleAssociation( group, self )
         assoc.flush()
         return assoc
-    def add_role( self, role ):
-        assoc = RoleRoleAssociation( role, self )
+    def add_permission( self, permission ):
+        assoc = RolePermissionAssociation( self, permission )
         assoc.flush()
         return assoc
     def add_dataset( self, dataset ):
         assoc = RoleDatasetAssociation( self, dataset )
         assoc.flush()
         return assoc
+    def add_control_role( self, role ):
+        assoc = RoleControlRoleAssociation( role, self )
+        assoc.flush()
+        return assoc
 
-class GalaxyGroup( object ):
+class Group( object ):
     public_id = None
-    access_actions = AccessRole.group_actions
+    access_actions = Permission.group_actions
+    
+    @classmethod
+    def get_public_group( cls ):
+        return Group.get( cls.public_id )
+    
     def __init__( self, name, priority = 0 ):
         self.name = name
         self.priority = priority
@@ -238,26 +249,31 @@ class GalaxyGroup( object ):
         return assoc
     def add_role( self, role ):
         return role.add_group( self )
-    def add_access_role( self, role ):
-        assoc = GroupRoleAccessAssociation( self, role )
-        assoc.flush()
-        return assoc
     def add_dataset( self, dataset ):
         assoc = GroupDatasetAssociation( self, dataset )
         assoc.flush()
         return assoc
+    def add_control_role( self, role ):
+        assoc = GroupControlRoleAssociation( self, role )
+        assoc.flush()
+        return assoc
+
+class RolePermissionAssociation( object ):
+    def __init__( self, role, permission ):
+        self.role = role
+        self.permission = permission
 
 class UserGroupAssociation( object ):
     def __init__( self, user, group ):
         self.user = user
         self.group = group
 
-class RoleRoleAssociation( object ):
+class RoleControlRoleAssociation( object ):
     def __init__( self, role, target_role ):
         self.role = role
         self.target_role = target_role
 
-class GroupRoleAccessAssociation( object ):
+class GroupControlRoleAssociation( object ):
     def __init__( self, group, role ):
         self.group = group
         self.role = role
@@ -328,10 +344,10 @@ class Dataset( object ):
                     EMPTY = 'empty',
                     ERROR = 'error',
                     DISCARDED = 'discarded' )
-    access_actions = AccessRole.dataset_actions
+    access_actions = Permission.dataset_actions
     file_path = "/tmp/"
     engine = None
-    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, access_groups=[], access_roles=[] ):
+    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
         self.id = id
         self.state = state
         self.deleted = False
@@ -340,14 +356,7 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
-        if access_groups or access_roles:
-            #self.flush()
-            for group in access_groups:
-                group.add_dataset( self )
-                group.flush()
-            for role in access_roles:
-                role.add_dataset( self )
-                role.flush()
+        
     def get_file_name( self ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
@@ -416,20 +425,23 @@ class Dataset( object ):
         
         #if dataset is in public group, we always return true for viewing and using
         #this may need to change when the ability to alter groups and roles is allowed
-        if action in [ self.access_actions.USE, self.access_actions.VIEW ] and GroupDatasetAssociation.get_by( group_id = GalaxyGroup.public_id, dataset_id = self.id ):
+        if action in [ self.access_actions.USE, self.access_actions.VIEW ] and GroupDatasetAssociation.get_by( group_id = Group.public_id, dataset_id = self.id ):
             return True
         elif user is not None:
             #loop through permissions and if allowed return true:
             #check roles associated directly with dataset first
             for role_dataset_assoc in self.roles:
-                if action in role_dataset_assoc.role.actions and user.has_role( role_dataset_assoc.role ):
-                    return True
+                if user.has_role( role_dataset_assoc.role ):
+                    for permission in role_dataset_assoc.role.permissions:
+                        if action in permission.permission.actions:
+                            return True
             #check roles associated with dataset through groups
             for group_dataset_assoc in self.groups:
                 if user.has_group( group_dataset_assoc.group ):
                     for group_role_assoc in group_dataset_assoc.group.roles:
-                        if action in group_role_assoc.role.actions:
-                            return True
+                        for permission in group_role_assoc.role.permissions:
+                            if action in permission.permission.actions:
+                                return True
         return False #no user and dataset not in public group, or user lacks permission
     def guess_derived_groups_roles( self, other_datasets = [] ):
         """Returns a list of output roles and groups based upon itself and provided datasets"""
@@ -490,7 +502,22 @@ class Dataset( object ):
         return group.add_dataset( self )
     def add_role( self, role ):
         return role.add_dataset( self )
-    
+    def set_groups( self, groups ):
+        for assoc in self.groups:
+            assoc.delete()
+            assoc.flush()
+        for group in groups:
+            if not isinstance( group, Group ):
+                group = group.group
+            self.add_group( group )
+    def set_roles( self, roles ):
+        for assoc in self.roles:
+            assoc.delete()
+            assoc.flush()
+        for role in roles:
+            if not isinstance( role, Role ):
+                role = role.role
+            self.add_role( role )
     def has_group( self, group ):
         return bool( GroupDatasetAssociation.get_by( group_id = group.id, dataset_id = self.id  )  )
     def has_role( self, role ):
@@ -512,7 +539,7 @@ class HistoryDatasetAssociation( object ):
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
                   parent_id=None, copied_from_history_dataset_association = None, validation_errors=None,
-                  visible=True, create_dataset = False, access_groups = [], access_roles = [] ):
+                  visible=True, create_dataset = False ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.hid = hid
@@ -528,7 +555,7 @@ class HistoryDatasetAssociation( object ):
         # Relationships
         self.history = history
         if not dataset and create_dataset:
-            dataset = Dataset( access_groups = access_groups, access_roles = access_roles )
+            dataset = Dataset()
             dataset.flush()
         self.dataset = dataset
         self.parent_id = parent_id
@@ -684,7 +711,7 @@ class HistoryDatasetAssociation( object ):
 
 
 class History( object ):
-    def __init__( self, id=None, name=None, user=None, default_roles = [], default_groups = [] ):
+    def __init__( self, id=None, name=None, user=None ):
         self.id = id
         self.name = name or "Unnamed history"
         self.deleted = False
@@ -695,17 +722,7 @@ class History( object ):
         self.datasets = []
         self.galaxy_sessions = []
         
-        if not default_roles:
-            if user:
-                default_roles = user.default_roles
-        if not default_groups:
-            if user:
-                default_groups = user.default_groups
-            else:
-                default_groups = [ GalaxyGroup.get( GalaxyGroup.public_id ) ]
-        
-        
-        self.set_default_access( roles = default_roles, groups = default_groups )
+        self.set_default_access()
         
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures 
@@ -760,6 +777,13 @@ class History( object ):
         return des
     
     def set_default_access( self, groups = None, roles = None, dataset = False ):
+        if groups is None and roles is None:
+            if self.user:
+                groups = self.user.default_groups
+                roles = self.user.default_roles
+            else:
+                groups = [ Group.get_public_group() ]
+                roles = []
         if groups is not None:
             for assoc in self.default_groups: #this is the association not the actual group
                 assoc.delete()
@@ -778,20 +802,12 @@ class History( object ):
             for data in self.datasets:
                 for hda in data.dataset.history_associations:
                     if self.user and hda.history not in self.user.histories:
+                        data.dataset.set_groups( [ Group.get_public_group() ] )
+                        data.dataset.set_roles( [] )
                         break
                 else:
-                    if groups is not None:
-                        for assoc in data.dataset.groups: #this is the association not the actual group
-                            assoc.delete()
-                            assoc.flush()
-                        for group in groups:
-                            group.add_dataset( data )
-                    if roles is not None:
-                        for assoc in data.dataset.roles: #this is the association not the actual group
-                            assoc.delete()
-                            assoc.flush()
-                        for role in roles:
-                            role.add_dataset( data )
+                    data.dataset.set_groups( groups )
+                    data.dataset.set_roles( roles )
 
 
 

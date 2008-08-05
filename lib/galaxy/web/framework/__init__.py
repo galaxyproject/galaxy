@@ -433,7 +433,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if history is not None and user is not None:
             if not history.user:
                 #This user will now aquire previously unowned history, let set permissions to user's default
-                history.set_default_access( roles = [ role.role for role in user.default_roles ], groups = [ group.group for group in user.default_groups ], dataset = True )
+                history.set_default_access( roles = user.default_roles, groups = user.default_groups, dataset = True )
             history.user_id = user.id
             history.flush()
             self.__history = history

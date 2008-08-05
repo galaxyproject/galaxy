@@ -979,21 +979,34 @@ class DataToolParameter( ToolParameter ):
           displayed as radio buttons and multiple selects as a set of checkboxes
 
     >>> # Mock up a history (not connected to database)
-    >>> from galaxy.model import History, HistoryDatasetAssociation, User, AccessRole, GalaxyGroup, GroupRoleAssociation
+    >>> from galaxy.model import History, HistoryDatasetAssociation, User, Role, Permission, Group, GroupRoleAssociation
     >>> from galaxy.util.bunch import Bunch
     >>> hist = History()
     >>> hist.flush()
-    >>> role = AccessRole( 'test', list( AccessRole.dataset_actions.__dict__.values() ) )
+    >>> permission = Permission( 'test', list( Permission.dataset_actions.__dict__.values() ) )
+    >>> permission.flush()
+    >>> role = Role( 'test' )
     >>> role.flush()
-    >>> group = GalaxyGroup( 'test' )
+    >>> assoc = role.add_permission( permission )
+    >>> group = Group( 'test' )
     >>> group.flush()
-    >>> GalaxyGroup.public_id = group.id
+    >>> Group.public_id = group.id
     >>> GroupRoleAssociation( group, role ).flush()
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True, access_groups=[ group ] ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True, access_groups=[ group ] ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=3, extension='fasta', create_dataset=True, access_groups=[ group ] ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=4, extension='png', create_dataset=True, access_groups=[ group ] ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=5, extension='interval', create_dataset=True, access_groups=[ group ] ) )
+    >>> dataset1 = HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True )
+    >>> dataset1.dataset.set_groups( [ group ] )
+    >>> dataset2 = HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True )
+    >>> dataset2.dataset.set_groups( [ group ] )
+    >>> dataset3 = HistoryDatasetAssociation( id=3, extension='fasta', create_dataset=True )
+    >>> dataset3.dataset.set_groups( [ group ] )
+    >>> dataset4 = HistoryDatasetAssociation( id=4, extension='png', create_dataset=True )
+    >>> dataset4.dataset.set_groups( [ group ] )
+    >>> dataset5 = HistoryDatasetAssociation( id=5, extension='interval', create_dataset=True )
+    >>> dataset5.dataset.set_groups( [ group ] )
+    >>> hist.add_dataset( dataset1 )
+    >>> hist.add_dataset( dataset2 )
+    >>> hist.add_dataset( dataset3 )
+    >>> hist.add_dataset( dataset4 )
+    >>> hist.add_dataset( dataset5 )
     >>> p = DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
     >>> print p.name
     blah

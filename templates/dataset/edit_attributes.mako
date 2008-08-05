@@ -144,7 +144,7 @@
                 Private Dataset:
             </label>
             <% checked = "" %>
-            %if not data.dataset.has_group( trans.app.model.GalaxyGroup.get( trans.app.model.GalaxyGroup.public_id ) ):
+            %if not data.dataset.has_group( trans.app.model.Group.get_public_group() ):
                 <% checked = " checked" %>
             %endif
             <div style="float: left; width: 250px; margin-right: 10px;">

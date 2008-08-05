@@ -179,7 +179,7 @@ class User( BaseController ):
                 #collect groups as entered by user
                 for name, value in kwd.items():
                     if name.startswith( "group_" ):
-                        group = trans.app.model.GalaxyGroup.get( name.replace( "group_", "", 1 ) )
+                        group = trans.app.model.Group.get( name.replace( "group_", "", 1 ) )
                         if not group:
                             return trans.show_error_message( 'You have specified an invalid group.' )
                         if value == 'in':

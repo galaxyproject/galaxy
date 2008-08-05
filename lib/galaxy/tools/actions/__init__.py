@@ -129,7 +129,9 @@ class DefaultToolAction( object ):
                 ext = output.format
                 if ext == "input":
                     ext = input_ext
-                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, access_groups=output_access_groups, access_roles=output_access_roles )
+                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
+                data.dataset.set_groups( output_access_groups )
+                data.dataset.set_roles( output_access_roles )
                 # Commit the dataset immediately so it gets database assigned unique id
                 data.flush()
             # Create an empty file immediately

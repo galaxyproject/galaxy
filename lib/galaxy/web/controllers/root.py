@@ -265,7 +265,7 @@ class RootController( BaseController ):
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change dataset permissions." )
                 private_dataset = 'private_dataset'
-                public_group = trans.app.model.GalaxyGroup.get( trans.app.model.GalaxyGroup.public_id )
+                public_group = trans.app.model.Group.get_public_group()
                 if private_dataset in kwd and data.dataset.has_group( public_group ):
                     #check user has permision and then remove public group
                     if data.dataset.allow_action( trans.user, data.dataset.access_actions.REMOVE_GROUP ):
@@ -599,7 +599,9 @@ class RootController( BaseController ):
                 copy_access_from = trans.app.model.HistoryDatasetAssociation.get( copy_access_from )
                 roles = copy_access_from.dataset.roles
                 groups = copy_access_from.dataset.groups
-            data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True, access_groups = groups, access_roles = roles )
+            data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
+            data.dataset.set_groups( groups )
+            data.dataset.set_roles( roles )
             data.flush()
             data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )
@@ -633,7 +635,7 @@ class RootController( BaseController ):
                 #collect groups as entered by user
                 for name, value in kwd.items():
                     if name.startswith( "group_" ):
-                        group = trans.app.model.GalaxyGroup.get( name.replace( "group_", "", 1 ) )
+                        group = trans.app.model.Group.get( name.replace( "group_", "", 1 ) )
                         if not group:
                             return trans.show_error_message( 'You have specified an invalid group.' )
                         if value == 'in':
