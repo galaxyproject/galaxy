@@ -27,19 +27,99 @@ def set_datatypes_registry( d_registry ):
     datatypes_registry = d_registry
 
 class User( object ):
-    def __init__( self, email=None, password=None ):
+    def __init__( self, email=None, password=None, groups = [], roles = [], default_groups = [], default_roles = [] ):
         self.email = email
         self.password = password
         self.external = False
         # Relationships
         self.histories = []
+        if not groups:
+            groups.append( GalaxyGroup.get( GalaxyGroup.public_id ) )
+            default_groups.append( groups[-1] )
+            default_groups.append( self.create_private_group() )
+        group_id_added = []
+        for group in groups:
+            if group.id not in group_id_added:
+                group.add_user( self )
+                group_id_added.append( group.id )
+        group_id_added = []
+        for group in default_groups:
+            if group.id not in group_id_added:
+                user_group_assoc = DefaultUserGroupAssociation( self, group )
+                user_group_assoc.flush()
+                group_id_added.append( group.id )
+        role_id_added = []
+        for role in roles:
+            if role.id not in role_id_added:
+                role.add_user( self )
+                role_id_added.append( role.id )
+        role_id_added = []
+        for role in default_roles:
+            if role.id not in role_id_added:
+                role_group_assoc = DefaultUserRoleAssociation( self, role )
+                role_group_assoc.flush()
+                role_id_added.append( role.id )
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = sha.new( cleartext ).hexdigest()
     def check_password( self, cleartext ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
         return self.password == sha.new( cleartext ).hexdigest()
+    def create_private_group( self ):
+        #create private group
+        group = GalaxyGroup( self.email, priority = 10 )
+        group.flush()
+        #create private dataset access role
+        role = AccessRole( "%s dataset access" % self.email, list( Dataset.access_actions.__dict__.values() ), priority = 1 )
+        role.flush()
+        #add role to group
+        group.add_role( role )
         
+        #create roles for user modification of role
+        user_role = AccessRole( "%s role modification" % self.email, list( AccessRole.access_actions.__dict__.values() ) )
+        user_role.flush()
+        #add role to user
+        user_role.add_user( self )
+        #add role to role
+        role.add_role( user_role )
+        
+        #create roles for user modification of group
+        group_role = AccessRole( "%s group modification" % self.email, list( GalaxyGroup.access_actions.__dict__.values() ) )
+        group_role.flush()
+        #add role to group
+        group.add_access_role( group_role )
+        #associate role and user
+        group_role.add_user( self )
+        
+        #add user to group
+        group.add_user( self )
+        group.flush()
+        return group
+    def add_group( self, group ):
+        return group.add_user( self )
+    def has_group( self, check_group ):
+        return bool( UserGroupAssociation.get_by( group_id = check_group.id, user_id = self.id ) )
+    def has_role( self, check_role ):
+        return bool( UserRoleAssociation.get_by( role_id = check_role.id, user_id = self.id ) )
+    def set_default_access( self, groups = None, roles = None, history = False, dataset = False ):
+        if groups is not None:
+            for assoc in self.default_groups: #this is the association not the actual group
+                assoc.delete()
+                assoc.flush()
+            for group in groups:
+                assoc = DefaultUserGroupAssociation( self, group )
+                assoc.flush()
+        if roles is not None:
+            for assoc in self.default_roles: #this is the association not the actual group
+                assoc.delete()
+                assoc.flush()
+            for role in roles:
+                assoc = DefaultUserRoleAssociation( self, role )
+                assoc.flush()
+        if history:
+            for history in self.histories:
+                history.set_default_access( groups = groups, roles = roles, dataset = dataset )
+    
 class Job( object ):
     """
     A job represents a request to run a tool given input datasets, tool 
@@ -101,10 +181,338 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
+class AccessRole( object ):
+    dataset_actions = Bunch( VIEW = 'dataset_view', #viewing/downloading
+                    USE = 'dataset_use', #use in jobs
+                    ADD_ROLE = 'dataset_add_role', #dataset can be added to roles
+                    REMOVE_ROLE = 'dataset_remove_role', #dataset can be removed from roles
+                    ADD_GROUP = 'dataset_add_group', #dataset can be added to groups
+                    REMOVE_GROUP = 'dataset_remove_group' ) #dataset can be removed from groups
+    role_actions = Bunch( ADD_DATASET = 'role_add_dataset', #add role to dataset
+                    REMOVE_DATASET = 'role_remove_dataset', #remove role from dataset
+                    DELETE = 'role_delete', #delete a role
+                    MODIFY = 'role_modify', #change a role's actions,
+                    ADD_GROUP = 'role_add_group', #add role to a group
+                    REMOVE_GROUP = 'role_remove_group' ) #remove role from a group
+    group_actions = Bunch( ADD_DATASET = 'group_add_dataset', #add group to dataset
+                    REMOVE_DATASET = 'group_remove_dataset', #remove dataset from group
+                    DELETE = 'group_delete', #delete a group
+                    ADD_ROLE = 'group_add_role', #add role to group
+                    REMOVE_ROLE = 'group_remove_role', #remove role from group
+                    ADD_USER = 'group_add_user' ) #add users to group
+    
+    access_actions = role_actions
+    
+    def __init__( self, name, actions, priority = 0 ):
+        self.name = name
+        if not isinstance( actions, list ):
+            actions = [ actions ]
+        self.actions = actions
+        self.priority = priority
+    def add_user( self, user ):
+        assoc = UserRoleAssociation( user, self )
+        assoc.flush()
+        return assoc
+    def add_group( self, group ):
+        assoc = GroupRoleAssociation( group, self )
+        assoc.flush()
+        return assoc
+    def add_role( self, role ):
+        assoc = RoleRoleAssociation( role, self )
+        assoc.flush()
+        return assoc
+    def add_dataset( self, dataset ):
+        assoc = RoleDatasetAssociation( self, dataset )
+        assoc.flush()
+        return assoc
+
+class GalaxyGroup( object ):
+    public_id = None
+    access_actions = AccessRole.group_actions
+    def __init__( self, name, priority = 0 ):
+        self.name = name
+        self.priority = priority
+    def add_user( self, user ):
+        assoc = UserGroupAssociation( user, self )
+        assoc.flush()
+        return assoc
+    def add_role( self, role ):
+        return role.add_group( self )
+    def add_access_role( self, role ):
+        assoc = GroupRoleAccessAssociation( self, role )
+        assoc.flush()
+        return assoc
+    def add_dataset( self, dataset ):
+        assoc = GroupDatasetAssociation( self, dataset )
+        assoc.flush()
+        return assoc
+
+class UserGroupAssociation( object ):
+    def __init__( self, user, group ):
+        self.user = user
+        self.group = group
+
+class RoleRoleAssociation( object ):
+    def __init__( self, role, target_role ):
+        self.role = role
+        self.target_role = target_role
+
+class GroupRoleAccessAssociation( object ):
+    def __init__( self, group, role ):
+        self.group = group
+        self.role = role
+
+class GroupRoleAssociation( object ):
+    def __init__( self, group, role ):
+        self.group = group
+        self.role = role
+
+class UserRoleAssociation( object ):
+    def __init__( self, user, role ):
+        self.user = user
+        self.role = role
+
+class GroupDatasetAssociation( object ):
+    def __init__( self, group, dataset ):
+        if isinstance( group, GroupDatasetAssociation ) or isinstance( group, DefaultUserGroupAssociation ) or isinstance( group, DefaultHistoryGroupAssociation ):
+            group = group.group
+        self.group = group
+        
+        if isinstance( dataset, HistoryDatasetAssociation ):
+            dataset = dataset.dataset
+        self.dataset = dataset
+
+class RoleDatasetAssociation( object ):
+    def __init__( self, role, dataset ):
+        if isinstance( role, RoleDatasetAssociation ) or isinstance( role, DefaultUserRoleAssociation ) or isinstance( role, DefaultHistoryRoleAssociation ):
+            role = role.role
+        self.role = role
+        
+        if isinstance( dataset, HistoryDatasetAssociation ):
+            dataset = dataset.dataset
+        self.dataset = dataset
+
+class DefaultUserRoleAssociation( object ):
+    def __init__( self, user, role ):
+        if isinstance( role, RoleDatasetAssociation ) or isinstance( role, DefaultUserRoleAssociation ) or isinstance( role, DefaultHistoryRoleAssociation ):
+            role = role.role
+        self.user = user
+        self.role = role
+
+class DefaultUserGroupAssociation( object ):
+    def __init__( self, user, group ):
+        if isinstance( group, GroupDatasetAssociation ) or isinstance( group, DefaultUserGroupAssociation ) or isinstance( group, DefaultHistoryGroupAssociation ):
+            group = group.group
+        self.user = user
+        self.group = group
+
+class DefaultHistoryRoleAssociation( object ):
+    def __init__( self, history, role ):
+        if isinstance( role, RoleDatasetAssociation ) or isinstance( role, DefaultUserRoleAssociation ) or isinstance( role, DefaultHistoryRoleAssociation ):
+            role = role.role
+        self.history = history
+        self.role = role
+
+class DefaultHistoryGroupAssociation( object ):
+    def __init__( self, history, group ):
+        if isinstance( group, GroupDatasetAssociation ) or isinstance( group, DefaultUserGroupAssociation ) or isinstance( group, DefaultHistoryGroupAssociation ):
+            group = group.group
+        self.history = history
+        self.group = group
+
+class Dataset( object ):
+    states = Bunch( NEW = 'new',
+                    QUEUED = 'queued',
+                    RUNNING = 'running',
+                    OK = 'ok',
+                    EMPTY = 'empty',
+                    ERROR = 'error',
+                    DISCARDED = 'discarded' )
+    access_actions = AccessRole.dataset_actions
+    file_path = "/tmp/"
+    engine = None
+    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, access_groups=[], access_roles=[] ):
+        self.id = id
+        self.state = state
+        self.deleted = False
+        self.purged = False
+        self.purgable = purgable
+        self.external_filename = external_filename
+        self._extra_files_path = extra_files_path
+        self.file_size = file_size
+        if access_groups or access_roles:
+            #self.flush()
+            for group in access_groups:
+                group.add_dataset( self )
+                group.flush()
+            for role in access_roles:
+                role.add_dataset( self )
+                role.flush()
+    def get_file_name( self ):
+        if not self.external_filename:
+            assert self.id is not None, "ID must be set before filename used (commit the object)"
+            # First try filename directly under file_path
+            filename = os.path.join( self.file_path, "dataset_%d.dat" % self.id )
+            # Only use that filename if it already exists (backward compatibility),
+            # otherwise construct hashed path
+            if not os.path.exists( filename ):
+                dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
+                # Create directory if it does not exist
+                try:
+                    os.makedirs( dir )
+                except OSError, e:
+                    # File Exists is okay, otherwise reraise
+                    if e.errno != errno.EEXIST:
+                        raise
+                # Return filename inside hashed directory
+                return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
+        else:
+            filename = self.external_filename
+        # Make filename absolute
+        return os.path.abspath( filename )
+            
+    def set_file_name ( self, filename ):
+        if not filename:
+            self.external_filename = None
+        else:
+            self.external_filename = filename
+        
+    file_name = property( get_file_name, set_file_name )
+    
+    @property
+    def extra_files_path( self ):
+        if self._extra_files_path: 
+            path = self._extra_files_path
+        else:
+            path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
+            #only use path directly under self.file_path if it exists
+            if not os.path.exists( path ):
+                path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
+        # Make path absolute
+        return os.path.abspath( path )
+    
+    def get_size( self ):
+        """Returns the size of the data on disk"""
+        if self.file_size:
+            return self.file_size
+        else:
+            try:
+                return os.path.getsize( self.file_name )
+            except OSError:
+                return 0
+    def set_size( self ):
+        """Returns the size of the data on disk"""
+        try:
+            self.file_size = os.path.getsize( self.file_name )
+        except OSError:
+            self.file_size = 0
+    def has_data( self ):
+        """Detects whether there is any data"""
+        return self.get_size() > 0
+    def mark_deleted( self, include_children=True ):
+        self.deleted = True
+    def allow_action( self, user, action ):
+        """Returns true when user has permission to perform an action"""
+        
+        #if dataset is in public group, we always return true for viewing and using
+        #this may need to change when the ability to alter groups and roles is allowed
+        if action in [ self.access_actions.USE, self.access_actions.VIEW ] and GroupDatasetAssociation.get_by( group_id = GalaxyGroup.public_id, dataset_id = self.id ):
+            return True
+        elif user is not None:
+            #loop through permissions and if allowed return true:
+            #check roles associated directly with dataset first
+            for role_dataset_assoc in self.roles:
+                if action in role_dataset_assoc.role.actions and user.has_role( role_dataset_assoc.role ):
+                    return True
+            #check roles associated with dataset through groups
+            for group_dataset_assoc in self.groups:
+                if user.has_group( group_dataset_assoc.group ):
+                    for group_role_assoc in group_dataset_assoc.group.roles:
+                        if action in group_role_assoc.role.actions:
+                            return True
+        return False #no user and dataset not in public group, or user lacks permission
+    def guess_derived_groups_roles( self, other_datasets = [] ):
+        """Returns a list of output roles and groups based upon itself and provided datasets"""
+        if not other_datasets:
+            return [ data_group_assoc.group for data_group_assoc in self.groups ], [ data_role_assoc.role for data_role_assoc in self.roles ]
+        access_roles = None
+        priority_access_role = None
+        access_groups = None
+        priority_access_group = None
+        for dataset in [ self ] + other_datasets:
+            #determine access roles and groups for output datasets
+            #roles and groups for output dataset is the intersection across all inputs
+            #if we end up with no intersection between inputs, then we rely on priorities
+            if isinstance( dataset, HistoryDatasetAssociation ):
+                dataset = dataset.dataset
+            roles = [ data_role_assoc.role for data_role_assoc in dataset.roles ]
+            for role in roles:
+                if priority_access_role is None or priority_access_role.priority < role.priority:
+                    priority_access_role = role
+            groups = [ data_group_assoc.group for data_group_assoc in dataset.groups ]
+            for group in groups:
+                if priority_access_group is None or priority_access_group.priority < group.priority:
+                    priority_access_group = group
+            if access_roles is None:
+                access_roles = set( roles )
+                access_groups = set( groups )
+            else:
+                access_roles.intersection_update( set( roles ) )
+                access_groups.intersection_update( set( groups ) )
+        
+        #complete lists for output dataset access
+        if access_roles:
+            access_roles = list( access_roles )
+        else:
+            access_roles = []
+        if access_groups:
+            access_groups = list( access_groups)
+        else:
+            access_groups = []
+        #if we have no roles or groups left after intersection,
+        #take the highest priority group or role
+        if not access_roles and not access_groups:
+            if priority_access_role and priority_access_group:
+                if priority_access_group.priority == priority_access_role.priority:
+                    access_groups = [ priority_access_group ]
+                    access_roles = [ priority_access_role ]
+                elif priority_access_group.priority > priority_access_role.priority:
+                    access_groups = [ priority_access_group ]
+                else:
+                   access_roles = [ priority_access_role ]
+            elif priority_access_role:
+                 access_roles = [ priority_access_role ]
+            elif priority_access_group:
+                access_groups = [ priority_access_group ]
+        
+        return access_groups, access_roles
+    def add_group( self, group ):
+        return group.add_dataset( self )
+    def add_role( self, role ):
+        return role.add_dataset( self )
+    
+    def has_group( self, group ):
+        return bool( GroupDatasetAssociation.get_by( group_id = group.id, dataset_id = self.id  )  )
+    def has_role( self, role ):
+        return bool( RoleDatasetAssociation.get_by( role_id = role.id, dataset_id = self.id  )  )
+
+    # FIXME: sqlalchemy will replace this
+    def _delete(self):
+        """Remove the file that corresponds to this data"""
+        try:
+            os.remove(self.data.file_name)
+        except OSError, e:
+            log.critical('%s delete error %s' % (self.__class__.__name__, e))
+
+
+
 class HistoryDatasetAssociation( object ):
+    states = Dataset.states
+    access_actions = Dataset.access_actions
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, copied_from_history_dataset_association = None, validation_errors=None, visible=True, create_dataset = False ):
+                  parent_id=None, copied_from_history_dataset_association = None, validation_errors=None,
+                  visible=True, create_dataset = False, access_groups = [], access_roles = [] ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.hid = hid
@@ -120,7 +528,7 @@ class HistoryDatasetAssociation( object ):
         # Relationships
         self.history = history
         if not dataset and create_dataset:
-            dataset = Dataset()
+            dataset = Dataset( access_groups = access_groups, access_roles = access_roles )
             dataset.flush()
         self.dataset = dataset
         self.parent_id = parent_id
@@ -130,10 +538,6 @@ class HistoryDatasetAssociation( object ):
     @property
     def ext( self ):
         return self.extension
-    
-    @property
-    def states( self ):
-        return self.dataset.states
     
     def get_dataset_state( self ):
         return self.dataset.state
@@ -252,7 +656,8 @@ class HistoryDatasetAssociation( object ):
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
     
-    def copy( self, copy_children = False, parent_id = None ):
+    def copy( self, copy_children = False, parent_id = None, target_user = None ):
+        if target_user is None: target_user = self.user
         des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
         des.flush()
         if copy_children:
@@ -274,10 +679,12 @@ class HistoryDatasetAssociation( object ):
             for child in self.children:
                 child.mark_deleted()
 
+    def allow_action( self, user, action ):
+        return self.dataset.allow_action( user, action )
 
 
 class History( object ):
-    def __init__( self, id=None, name=None, user=None ):
+    def __init__( self, id=None, name=None, user=None, default_roles = [], default_groups = [] ):
         self.id = id
         self.name = name or "Unnamed history"
         self.deleted = False
@@ -287,6 +694,18 @@ class History( object ):
         self.user = user
         self.datasets = []
         self.galaxy_sessions = []
+        
+        if not default_roles:
+            if user:
+                default_roles = user.default_roles
+        if not default_groups:
+            if user:
+                default_groups = user.default_groups
+            else:
+                default_groups = [ GalaxyGroup.get( GalaxyGroup.public_id ) ]
+        
+        
+        self.set_default_access( roles = default_roles, groups = default_groups )
         
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures 
@@ -326,18 +745,55 @@ class History( object ):
             self.genome_build = genome_build
         self.datasets.append( dataset )
 
-    def copy(self):
-        des = History()
+    def copy( self, target_user = None ):
+        if not target_user:
+            target_user = self.user
+        des = History( user = target_user )
         des.flush()
         des.name = self.name
-        des.user_id = self.user_id
         for data in self.datasets:
-            new_data = data.copy( copy_children = True )
+            new_data = data.copy( copy_children = True, target_user = target_user )
             des.add_dataset( new_data )
             new_data.flush()
         des.hid_counter = self.hid_counter
         des.flush()
         return des
+    
+    def set_default_access( self, groups = None, roles = None, dataset = False ):
+        if groups is not None:
+            for assoc in self.default_groups: #this is the association not the actual group
+                assoc.delete()
+                assoc.flush()
+            for group in groups:
+                assoc = DefaultHistoryGroupAssociation( self, group )
+                assoc.flush()
+        if roles is not None:
+            for assoc in self.default_roles: #this is the association not the actual group
+                assoc.delete()
+                assoc.flush()
+            for role in roles:
+                assoc = DefaultHistoryRoleAssociation( self, role )
+                assoc.flush()
+        if dataset:
+            for data in self.datasets:
+                for hda in data.dataset.history_associations:
+                    if self.user and hda.history not in self.user.histories:
+                        break
+                else:
+                    if groups is not None:
+                        for assoc in data.dataset.groups: #this is the association not the actual group
+                            assoc.delete()
+                            assoc.flush()
+                        for group in groups:
+                            group.add_dataset( data )
+                    if roles is not None:
+                        for assoc in data.dataset.roles: #this is the association not the actual group
+                            assoc.delete()
+                            assoc.flush()
+                        for role in roles:
+                            role.add_dataset( data )
+
+
 
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
@@ -347,98 +803,6 @@ class History( object ):
 #         # Relationships
 #         self.history = history
 #         self.datasets = []
-
-class Dataset( object ):
-    states = Bunch( NEW = 'new',
-                    QUEUED = 'queued',
-                    RUNNING = 'running',
-                    OK = 'ok',
-                    EMPTY = 'empty',
-                    ERROR = 'error',
-                    DISCARDED = 'discarded' )
-    file_path = "/tmp/"
-    engine = None
-    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
-        self.id = id
-        self.state = state
-        self.deleted = False
-        self.purged = False
-        self.purgable = purgable
-        self.external_filename = external_filename
-        self._extra_files_path = extra_files_path
-        self.file_size = file_size
-        
-    def get_file_name( self ):
-        if not self.external_filename:
-            assert self.id is not None, "ID must be set before filename used (commit the object)"
-            # First try filename directly under file_path
-            filename = os.path.join( self.file_path, "dataset_%d.dat" % self.id )
-            # Only use that filename if it already exists (backward compatibility),
-            # otherwise construct hashed path
-            if not os.path.exists( filename ):
-                dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
-                # Create directory if it does not exist
-                try:
-                    os.makedirs( dir )
-                except OSError, e:
-                    # File Exists is okay, otherwise reraise
-                    if e.errno != errno.EEXIST:
-                        raise
-                # Return filename inside hashed directory
-                return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
-        else:
-            filename = self.external_filename
-        # Make filename absolute
-        return os.path.abspath( filename )
-            
-    def set_file_name ( self, filename ):
-        if not filename:
-            self.external_filename = None
-        else:
-            self.external_filename = filename
-        
-    file_name = property( get_file_name, set_file_name )
-    
-    @property
-    def extra_files_path( self ):
-        if self._extra_files_path: 
-            path = self._extra_files_path
-        else:
-            path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
-            #only use path directly under self.file_path if it exists
-            if not os.path.exists( path ):
-                path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
-        # Make path absolute
-        return os.path.abspath( path )
-    
-    def get_size( self ):
-        """Returns the size of the data on disk"""
-        if self.file_size:
-            return self.file_size
-        else:
-            try:
-                return os.path.getsize( self.file_name )
-            except OSError:
-                return 0
-    def set_size( self ):
-        """Returns the size of the data on disk"""
-        try:
-            self.file_size = os.path.getsize( self.file_name )
-        except OSError:
-            self.file_size = 0
-    def has_data( self ):
-        """Detects whether there is any data"""
-        return self.get_size() > 0
-    def mark_deleted( self, include_children=True ):
-        self.deleted = True
-
-    # FIXME: sqlalchemy will replace this
-    def _delete(self):
-        """Remove the file that corresponds to this data"""
-        try:
-            os.remove(self.data.file_name)
-        except OSError, e:
-            log.critical('%s delete error %s' % (self.__class__.__name__, e))
 
 class Old_Dataset( Dataset ):
     pass
