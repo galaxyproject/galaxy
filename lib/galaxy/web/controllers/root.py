@@ -137,7 +137,7 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid" %str( id )
         if data:
-            if data.allow_action( trans.user, data.access_actions.VIEW ):
+            if trans.app.security_agent.allow_action( trans.user, data.access_actions.VIEW, dataset = data ):
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
                 if tofile:
@@ -169,7 +169,7 @@ class RootController( BaseController ):
             if data:
                 child = data.get_child_by_designation( designation )
                 if child:
-                    if child.allow_action( trans.user, child.access_actions.VIEW ):
+                    if trans.app.security_agent.allow_action( trans.user, child.access_actions.VIEW, dataset = child ):
                         return self.display( trans, id=child.id, tofile=tofile, toext=toext )
                     else:
                         return "You are not privileged to access this dataset."
@@ -182,7 +182,7 @@ class RootController( BaseController ):
         """Returns a file in a format that can successfully be displayed in display_app"""
         data = self.app.model.HistoryDatasetAssociation.get( id )
         if data:
-            if data.allow_action( trans.user, data.access_actions.VIEW ):
+            if trans.app.security_agent.allow_action( trans.user, data.access_actions.VIEW, dataset = data ):
                 trans.response.set_content_type( data.get_mime() )
                 trans.log_event( "Formatted dataset id %s for display at %s" % ( str( id ), display_app ) )
                 return data.as_display_type( display_app, **kwd )
@@ -217,7 +217,7 @@ class RootController( BaseController ):
             return trans.show_error_message( "Problem retrieving dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
         if data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
-        if data.allow_action( trans.user, data.access_actions.USE ):
+        if trans.app.security_agent.allow_action( trans.user, data.access_actions.USE, dataset = data ):
             p = util.Params(kwd, safe=False)
             
             if p.change:
@@ -265,21 +265,23 @@ class RootController( BaseController ):
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change dataset permissions." )
                 private_dataset = 'private_dataset'
-                public_group = trans.app.model.Group.get_public_group()
+                public_group = trans.app.security_agent.get_public_group()
                 if private_dataset in kwd and data.dataset.has_group( public_group ):
                     #check user has permision and then remove public group
-                    if data.dataset.allow_action( trans.user, data.dataset.access_actions.REMOVE_GROUP ):
-                        for assoc in data.dataset.groups:
-                            if assoc.group_id == public_group.id:
-                                assoc.delete()
-                                assoc.flush()
+                    if trans.app.security_agent.allow_action( trans.user, data.dataset.access_actions.REMOVE_GROUP, dataset = data.dataset ):
+                        trans.app.security_agent.remove_component_association( dataset = data, group = public_group )
+                        #for assoc in data.dataset.groups:
+                        #    if assoc.group_id == public_group.id:
+                        #        assoc.delete()
+                        #        assoc.flush()
                     else:
                         return trans.show_error_message( "You are not authorized to change this dataset's permissions." )
                 elif private_dataset not in kwd and not data.dataset.has_group( public_group ):
                     #check user has permision and then add public group
-                    if data.dataset.allow_action( trans.user, data.dataset.access_actions.ADD_GROUP ):
-                        public_group.add_dataset( data.dataset )
-                        public_group.flush()
+                    if trans.app.security_agent.allow_action( trans.user, data.dataset.access_actions.ADD_GROUP, dataset = data.dataset ):
+                        trans.app.security_agent.associate_components( dataset = data, group = public_group)
+                        #public_group.add_dataset( data.dataset )
+                        #public_group.flush()
                     else:
                         return trans.show_error_message( "You are not authorized to change this dataset's permissions." )
                 else:
@@ -600,8 +602,8 @@ class RootController( BaseController ):
                 roles = copy_access_from.dataset.roles
                 groups = copy_access_from.dataset.groups
             data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
-            data.dataset.set_groups( groups )
-            data.dataset.set_roles( roles )
+            trans.app.security_agent.set_dataset_groups( data.dataset, groups )
+            trans.app.security_agent.set_dataset_roles( data.dataset, roles )
             data.flush()
             data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )
@@ -648,7 +650,7 @@ class RootController( BaseController ):
                 group_in.sort()
                 cur_groups.sort()
                 if cur_groups != group_in:
-                    history.set_default_access( groups = group_in )
+                    trans.app.security_agent.history_set_default_access( history, groups = group_in )
                     return trans.show_ok_message( 'Default history permissions have been changed.' )
                 else:
                     return trans.show_error_message( "You did not specify any changes to this history's default permissions." )

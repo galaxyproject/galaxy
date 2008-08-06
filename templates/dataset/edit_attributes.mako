@@ -133,7 +133,7 @@
 
 <p />
 
-%if trans.app.config.enable_beta_features and trans.user and ( data.allow_action( trans.user, data.access_actions.REMOVE_GROUP ) or data.allow_action( trans.user, data.access_actions.ADD_GROUP ) ):
+%if trans.app.config.enable_beta_features and trans.user and ( trans.app.security_agent.allow_action( trans.user, data.access_actions.REMOVE_GROUP, dataset = data ) or trans.app.security_agent.allow_action( trans.user, data.access_actions.ADD_GROUP, dataset = data ) ):
   <div class="toolForm">
   <div class="toolFormTitle">Change permissions</div>
   <div class="toolFormBody">

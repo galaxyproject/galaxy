@@ -104,8 +104,8 @@ class ASync( BaseController ):
             #history.datasets.add_dataset( data )
             
             data = trans.app.model.HistoryDatasetAssociation( create_dataset = True, extension = GALAXY_TYPE )
-            data.dataset.set_groups( trans.history.default_groups )
-            data.dataset.set_roles( trans.history.default_roles )
+            trans.app.security_agent.set_dataset_groups( data.dataset, trans.history.default_groups )
+            trans.app.security_agent.set_dataset_roles( data.dataset, trans.history.default_roles )
             data.name = GALAXY_NAME
             data.dbkey = GALAXY_BUILD
             data.info = GALAXY_INFO

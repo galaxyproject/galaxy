@@ -118,6 +118,7 @@ class User( BaseController ):
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
                 user.flush()
+                trans.app.security_agent.setup_new_user( user )
                 trans.set_user( user )
                 trans.ensure_valid_galaxy_session()
                 """
@@ -192,7 +193,7 @@ class User( BaseController ):
                 group_in.sort()
                 cur_groups.sort()
                 if cur_groups != group_in:
-                    trans.user.set_default_access( groups = group_in )
+                    trans.app.security_agent.user_set_default_access( trans.user, groups = group_in )
                     return trans.show_ok_message( 'Default new history permissions have been changed.' )
                 else:
                     return trans.show_error_message( "You did not specify any changes to new history's default permissions." )

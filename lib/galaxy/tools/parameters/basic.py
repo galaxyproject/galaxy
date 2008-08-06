@@ -981,27 +981,30 @@ class DataToolParameter( ToolParameter ):
     >>> # Mock up a history (not connected to database)
     >>> from galaxy.model import History, HistoryDatasetAssociation, User, Role, Permission, Group, GroupRoleAssociation
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.security import GalaxyRBACAgent
+    >>> import galaxy.model
+    >>> security_agent = GalaxyRBACAgent( galaxy.model )
     >>> hist = History()
     >>> hist.flush()
     >>> permission = Permission( 'test', list( Permission.dataset_actions.__dict__.values() ) )
     >>> permission.flush()
     >>> role = Role( 'test' )
     >>> role.flush()
-    >>> assoc = role.add_permission( permission )
+    >>> assoc = security_agent.associate_components( role = role, permission = permission )
     >>> group = Group( 'test' )
     >>> group.flush()
     >>> Group.public_id = group.id
-    >>> GroupRoleAssociation( group, role ).flush()
+    >>> assoc = security_agent.associate_components( group = group, role = role )
     >>> dataset1 = HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True )
-    >>> dataset1.dataset.set_groups( [ group ] )
+    >>> security_agent.set_dataset_groups( dataset1, [ group ] )
     >>> dataset2 = HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True )
-    >>> dataset2.dataset.set_groups( [ group ] )
+    >>> security_agent.set_dataset_groups( dataset2, [ group ] )
     >>> dataset3 = HistoryDatasetAssociation( id=3, extension='fasta', create_dataset=True )
-    >>> dataset3.dataset.set_groups( [ group ] )
+    >>> security_agent.set_dataset_groups( dataset3, [ group ] )
     >>> dataset4 = HistoryDatasetAssociation( id=4, extension='png', create_dataset=True )
-    >>> dataset4.dataset.set_groups( [ group ] )
+    >>> security_agent.set_dataset_groups( dataset4, [ group ] )
     >>> dataset5 = HistoryDatasetAssociation( id=5, extension='interval', create_dataset=True )
-    >>> dataset5.dataset.set_groups( [ group ] )
+    >>> security_agent.set_dataset_groups( dataset5, [ group ] )
     >>> hist.add_dataset( dataset1 )
     >>> hist.add_dataset( dataset2 )
     >>> hist.add_dataset( dataset3 )
@@ -1010,7 +1013,7 @@ class DataToolParameter( ToolParameter ):
     >>> p = DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
     >>> print p.name
     blah
-    >>> print p.get_html( trans=Bunch( history=hist, user=None ) )
+    >>> print p.get_html( trans=Bunch( history=hist, user=None, app=Bunch( security_agent = security_agent ) ) )
     <select name="blah">
     <option value="2">2: Unnamed dataset</option>
     <option value="5" selected>5: Unnamed dataset</option>
@@ -1066,7 +1069,7 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( data.hid )
-                if not data.deleted and data.state not in [data.states.ERROR] and data.visible and data.allow_action( trans.user, data.access_actions.USE ):
+                if not data.deleted and data.state not in [data.states.ERROR] and data.visible and trans.app.security_agent.allow_action( trans.user, data.access_actions.USE, dataset = data ):
                     if self.options and data.get_dbkey() != filter_value:
                         continue
                     if isinstance( data.datatype, self.formats):
@@ -1080,7 +1083,7 @@ class DataToolParameter( ToolParameter ):
                                     data = datasets[0]
                                 elif not self.converter_safe( other_values, trans ):
                                     continue
-                                if not data.allow_action( trans.user, data.access_actions.USE ):
+                                if not trans.app.security_agent.allow_action( trans.user, data.access_actions.USE, dataset = data ):
                                     continue
                                 selected = ( value and ( data in value ) )
                                 field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )

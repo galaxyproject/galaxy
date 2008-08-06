@@ -19,6 +19,7 @@ from sqlalchemy import *
 from galaxy.model import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
+from galaxy.security import GalaxyRBACAgent
 
 metadata = DynamicMetaData( threadlocal=False )
 context = SessionContext( create_session ) 
@@ -574,6 +575,8 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.flush = lambda *args, **kwargs: context.current.flush( *args, **kwargs )
     result.context = context
     result.create_tables = create_tables
+    #load local galaxy security policy
+    result.security_agent = GalaxyRBACAgent( result )
     #set up default table entries here, currently only exist for access controls
     if result.Role.count() == 0:
         log.warning( "There were no access roles located, setting up default (public) access roles." )
@@ -583,10 +586,10 @@ def init( file_path, url, engine_options={}, create_tables=False ):
         #create public_all role
         public_role = result.Role( 'public' )
         public_role.flush()
-        public_group.add_role( public_role )
+        result.security_agent.associate_components( group = public_group, role = public_role )
         permission = result.Permission( 'public', [ result.Dataset.access_actions.USE, result.Dataset.access_actions.VIEW, result.Group.access_actions.ADD_DATASET, result.Group.access_actions.REMOVE_DATASET ] )
         permission.flush()
-        public_role.add_permission( permission )
+        result.security_agent.associate_components( permission = permission, role = public_role )
         
         #store public group id
         Group.public_id = public_group.id #we use the id instead of the object, because of alchemy sessions
@@ -595,18 +598,17 @@ def init( file_path, url, engine_options={}, create_tables=False ):
         for history in result.History.select():
             if history.user:
                 if not history.user.default_groups:
-                    history.user.set_default_access( history = True, dataset = True )
-                    history.user.add_group( public_group )
+                    results.security_agent.setup_new_user( history.user )
                     history.user.flush()
             else:
-                history.set_default_access( dataset = True )
+                result.security_agent.history_set_default_access( history, dataset = True )
                 history.flush()
         #add all datasets which aren't in a history to the public group
         orphans = result.Dataset.get_by( history_id = None )
         if orphans:
             for dataset in orphans:
-                dataset.set_groups( [ public_group ] )
-                dataset.set_roles( [] )
+                result.security_agent.set_dataset_groups( dataset, [ public_group ] )
+                result.security_agent.set_dataset_roles( dataset, [] )
     else:
         #retrieve from database and store public group id, assume first created group is public
         Group.public_id = result.Group.select( order_by = asc( result.Group.table.c.create_time ) )[0].id #we use the id instead of the object, because of alchemy sessions

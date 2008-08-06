@@ -43,7 +43,7 @@ class DefaultToolAction( object ):
                                 assoc.flush()
                                 data = new_data
                             break
-                if data and not data.allow_action( trans.user, data.access_actions.USE ):
+                if data and not trans.app.security_agent.allow_action( trans.user, data.access_actions.USE, dataset = data ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
             if isinstance( input, DataToolParameter ):
@@ -85,7 +85,7 @@ class DefaultToolAction( object ):
         #determine output dataset access list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]
         if existing_datasets:
-            output_access_groups, output_access_roles = existing_datasets[0].dataset.guess_derived_groups_roles( existing_datasets[1:] )
+            output_access_groups, output_access_roles = trans.app.security_agent.guess_derived_groups_roles_for_datasets( existing_datasets )
         else:
             #no valid inputs, we will use history defaults
             output_access_roles = [ role.role for role in trans.history.default_roles ]
@@ -130,10 +130,10 @@ class DefaultToolAction( object ):
                 if ext == "input":
                     ext = input_ext
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
-                data.dataset.set_groups( output_access_groups )
-                data.dataset.set_roles( output_access_roles )
                 # Commit the dataset immediately so it gets database assigned unique id
                 data.flush()
+                trans.app.security_agent.set_dataset_groups( data.dataset, output_access_groups )
+                trans.app.security_agent.set_dataset_roles( data.dataset, output_access_roles )
             # Create an empty file immediately
             open( data.file_name, "w" ).close()
             # This may not be neccesary with the new parent/child associations
@@ -197,7 +197,7 @@ class DefaultToolAction( object ):
             job.add_parameter( name, value )
         for name, dataset in inp_data.iteritems():
             if dataset:
-                if not dataset.allow_action( trans.user, dataset.access_actions.USE ):
+                if not trans.app.security_agent.allow_action( trans.user, dataset.access_actions.USE, dataset = dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 job.add_input_dataset( name, dataset )
             else:
