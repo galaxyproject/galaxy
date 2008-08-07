@@ -103,28 +103,27 @@ class DatasetInterface( BaseController ):
     @web.expose
     def display(self, trans, dataset_id=None, filename=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
-        if filename is None or filename.lower() == "index":
-            try:
-                data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
-                if data:
-                    mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-                    trans.response.set_content_type(mime)
-                    trans.log_event( "Display dataset id: %s" % str(dataset_id) )
-                    try:
-                        return open( data.file_name )
-                    except: 
-                        return "This item contains no content"
-            except:
-                pass
-            return "Invalid dataset specified"
-        else:
-            #display files from directory here
-            try:
-                file_path = os.path.join(trans.app.model.HistoryDatasetAssociation.get( dataset_id ).extra_files_path, filename)
-                mime, encoding = mimetypes.guess_type(file_path)
-                if mime is None:
-                    mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
+        data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+        if not data:
+            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset." )
+        if trans.app.security_agent.allow_action( trans.user, data.access_actions.VIEW, dataset = data ):
+            if filename is None or filename.lower() == "index":
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
-                return open(file_path)
-            except:
-                raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % (filename) )
+                trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
+                try:
+                    return open( data.file_name )
+                except:
+                    raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
+            else:
+                file_path = os.path.join( data.extra_files_path, filename )
+                mime, encoding = mimetypes.guess_type( file_path )
+                if mime is None:
+                    mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
+                trans.response.set_content_type( mime )
+                try:
+                    return open( file_path )
+                except:
+                    raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
+        else:
+            raise paste.httpexceptions.HTTPForbidden( "You are not privileged to access this dataset." )

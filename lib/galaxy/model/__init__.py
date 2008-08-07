@@ -13,6 +13,7 @@ from galaxy import util
 import tempfile
 import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import MetadataCollection
+from galaxy.security import RBACAgent
 
 import logging
 log = logging.getLogger( __name__ )
@@ -33,13 +34,14 @@ class User( object ):
         self.external = False
         # Relationships
         self.histories = []
+        
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = sha.new( cleartext ).hexdigest()
     def check_password( self, cleartext ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
         return self.password == sha.new( cleartext ).hexdigest()
-        
+    
 class Job( object ):
     """
     A job represents a request to run a tool given input datasets, tool 
@@ -101,10 +103,220 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
+class Permission( object ):
+    dataset_actions = RBACAgent.actions.dataset_actions
+    role_actions = RBACAgent.actions.role_actions
+    group_actions = RBACAgent.actions.group_actions
+    
+    def __init__( self, name = None, actions = [] ):
+        self.name = name
+        self.actions = actions
+    def add_action( self, action ):
+        if action not in self.actions:
+            return self.actions.append( action )
+        raise 'action (%s) already exists in permissions list (%s: %s).' % ( action, self.id, self.actions )
+    def remove_action( self, action ):
+        return self.actions.remove( action )
+    
+class Role( object ):
+    access_actions = Permission.role_actions
+    
+    def __init__( self, name, priority = 0 ):
+        self.name = name
+        self.priority = priority
+
+class Group( object ):
+    public_id = None
+    access_actions = Permission.group_actions
+    
+    @classmethod
+    def get_public_group( cls ):
+        return Group.get( cls.public_id )
+    
+    def __init__( self, name, priority = 0 ):
+        self.name = name
+        self.priority = priority
+
+class RolePermissionAssociation( object ):
+    def __init__( self, role, permission ):
+        self.role = role
+        self.permission = permission
+
+class UserGroupAssociation( object ):
+    def __init__( self, user, group ):
+        self.user = user
+        self.group = group
+
+class RoleControlRoleAssociation( object ):
+    def __init__( self, role, target_role ):
+        self.role = role
+        self.target_role = target_role
+
+class GroupControlRoleAssociation( object ):
+    def __init__( self, group, role ):
+        self.group = group
+        self.role = role
+
+class GroupRoleAssociation( object ):
+    def __init__( self, group, role ):
+        self.group = group
+        self.role = role
+
+class UserRoleAssociation( object ):
+    def __init__( self, user, role ):
+        self.user = user
+        self.role = role
+
+class GroupDatasetAssociation( object ):
+    def __init__( self, group, dataset ):
+        if isinstance( group, GroupDatasetAssociation ) or isinstance( group, DefaultUserGroupAssociation ) or isinstance( group, DefaultHistoryGroupAssociation ):
+            group = group.group
+        self.group = group
+        
+        if isinstance( dataset, HistoryDatasetAssociation ):
+            dataset = dataset.dataset
+        self.dataset = dataset
+
+class RoleDatasetAssociation( object ):
+    def __init__( self, role, dataset ):
+        if isinstance( role, RoleDatasetAssociation ) or isinstance( role, DefaultUserRoleAssociation ) or isinstance( role, DefaultHistoryRoleAssociation ):
+            role = role.role
+        self.role = role
+        
+        if isinstance( dataset, HistoryDatasetAssociation ):
+            dataset = dataset.dataset
+        self.dataset = dataset
+
+class DefaultUserRoleAssociation( object ):
+    def __init__( self, user, role ):
+        if isinstance( role, RoleDatasetAssociation ) or isinstance( role, DefaultUserRoleAssociation ) or isinstance( role, DefaultHistoryRoleAssociation ):
+            role = role.role
+        self.user = user
+        self.role = role
+
+class DefaultUserGroupAssociation( object ):
+    def __init__( self, user, group ):
+        if isinstance( group, GroupDatasetAssociation ) or isinstance( group, DefaultUserGroupAssociation ) or isinstance( group, DefaultHistoryGroupAssociation ):
+            group = group.group
+        self.user = user
+        self.group = group
+
+class DefaultHistoryRoleAssociation( object ):
+    def __init__( self, history, role ):
+        if isinstance( role, RoleDatasetAssociation ) or isinstance( role, DefaultUserRoleAssociation ) or isinstance( role, DefaultHistoryRoleAssociation ):
+            role = role.role
+        self.history = history
+        self.role = role
+
+class DefaultHistoryGroupAssociation( object ):
+    def __init__( self, history, group ):
+        if isinstance( group, GroupDatasetAssociation ) or isinstance( group, DefaultUserGroupAssociation ) or isinstance( group, DefaultHistoryGroupAssociation ):
+            group = group.group
+        self.history = history
+        self.group = group
+
+class Dataset( object ):
+    states = Bunch( NEW = 'new',
+                    QUEUED = 'queued',
+                    RUNNING = 'running',
+                    OK = 'ok',
+                    EMPTY = 'empty',
+                    ERROR = 'error',
+                    DISCARDED = 'discarded' )
+    access_actions = Permission.dataset_actions
+    file_path = "/tmp/"
+    engine = None
+    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
+        self.id = id
+        self.state = state
+        self.deleted = False
+        self.purged = False
+        self.purgable = purgable
+        self.external_filename = external_filename
+        self._extra_files_path = extra_files_path
+        self.file_size = file_size
+        
+    def get_file_name( self ):
+        if not self.external_filename:
+            assert self.id is not None, "ID must be set before filename used (commit the object)"
+            # First try filename directly under file_path
+            filename = os.path.join( self.file_path, "dataset_%d.dat" % self.id )
+            # Only use that filename if it already exists (backward compatibility),
+            # otherwise construct hashed path
+            if not os.path.exists( filename ):
+                dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
+                # Create directory if it does not exist
+                try:
+                    os.makedirs( dir )
+                except OSError, e:
+                    # File Exists is okay, otherwise reraise
+                    if e.errno != errno.EEXIST:
+                        raise
+                # Return filename inside hashed directory
+                return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
+        else:
+            filename = self.external_filename
+        # Make filename absolute
+        return os.path.abspath( filename )
+            
+    def set_file_name ( self, filename ):
+        if not filename:
+            self.external_filename = None
+        else:
+            self.external_filename = filename
+        
+    file_name = property( get_file_name, set_file_name )
+    
+    @property
+    def extra_files_path( self ):
+        if self._extra_files_path: 
+            path = self._extra_files_path
+        else:
+            path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
+            #only use path directly under self.file_path if it exists
+            if not os.path.exists( path ):
+                path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
+        # Make path absolute
+        return os.path.abspath( path )
+    
+    def get_size( self ):
+        """Returns the size of the data on disk"""
+        if self.file_size:
+            return self.file_size
+        else:
+            try:
+                return os.path.getsize( self.file_name )
+            except OSError:
+                return 0
+    def set_size( self ):
+        """Returns the size of the data on disk"""
+        try:
+            self.file_size = os.path.getsize( self.file_name )
+        except OSError:
+            self.file_size = 0
+    def has_data( self ):
+        """Detects whether there is any data"""
+        return self.get_size() > 0
+    def mark_deleted( self, include_children=True ):
+        self.deleted = True
+
+    # FIXME: sqlalchemy will replace this
+    def _delete(self):
+        """Remove the file that corresponds to this data"""
+        try:
+            os.remove(self.data.file_name)
+        except OSError, e:
+            log.critical('%s delete error %s' % (self.__class__.__name__, e))
+
+
+
 class HistoryDatasetAssociation( object ):
+    states = Dataset.states
+    access_actions = Dataset.access_actions
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, copied_from_history_dataset_association = None, validation_errors=None, visible=True, create_dataset = False ):
+                  parent_id=None, copied_from_history_dataset_association = None, validation_errors=None,
+                  visible=True, create_dataset = False ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.hid = hid
@@ -130,10 +342,6 @@ class HistoryDatasetAssociation( object ):
     @property
     def ext( self ):
         return self.extension
-    
-    @property
-    def states( self ):
-        return self.dataset.states
     
     def get_dataset_state( self ):
         return self.dataset.state
@@ -252,7 +460,8 @@ class HistoryDatasetAssociation( object ):
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
     
-    def copy( self, copy_children = False, parent_id = None ):
+    def copy( self, copy_children = False, parent_id = None, target_user = None ):
+        if target_user is None: target_user = self.user
         des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
         des.flush()
         if copy_children:
@@ -273,7 +482,6 @@ class HistoryDatasetAssociation( object ):
         if include_children:
             for child in self.children:
                 child.mark_deleted()
-
 
 
 class History( object ):
@@ -326,18 +534,21 @@ class History( object ):
             self.genome_build = genome_build
         self.datasets.append( dataset )
 
-    def copy(self):
-        des = History()
+    def copy( self, target_user = None ):
+        if not target_user:
+            target_user = self.user
+        des = History( user = target_user )
         des.flush()
         des.name = self.name
-        des.user_id = self.user_id
         for data in self.datasets:
-            new_data = data.copy( copy_children = True )
+            new_data = data.copy( copy_children = True, target_user = target_user )
             des.add_dataset( new_data )
             new_data.flush()
         des.hid_counter = self.hid_counter
         des.flush()
         return des
+    
+
 
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
@@ -347,98 +558,6 @@ class History( object ):
 #         # Relationships
 #         self.history = history
 #         self.datasets = []
-
-class Dataset( object ):
-    states = Bunch( NEW = 'new',
-                    QUEUED = 'queued',
-                    RUNNING = 'running',
-                    OK = 'ok',
-                    EMPTY = 'empty',
-                    ERROR = 'error',
-                    DISCARDED = 'discarded' )
-    file_path = "/tmp/"
-    engine = None
-    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
-        self.id = id
-        self.state = state
-        self.deleted = False
-        self.purged = False
-        self.purgable = purgable
-        self.external_filename = external_filename
-        self._extra_files_path = extra_files_path
-        self.file_size = file_size
-        
-    def get_file_name( self ):
-        if not self.external_filename:
-            assert self.id is not None, "ID must be set before filename used (commit the object)"
-            # First try filename directly under file_path
-            filename = os.path.join( self.file_path, "dataset_%d.dat" % self.id )
-            # Only use that filename if it already exists (backward compatibility),
-            # otherwise construct hashed path
-            if not os.path.exists( filename ):
-                dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
-                # Create directory if it does not exist
-                try:
-                    os.makedirs( dir )
-                except OSError, e:
-                    # File Exists is okay, otherwise reraise
-                    if e.errno != errno.EEXIST:
-                        raise
-                # Return filename inside hashed directory
-                return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
-        else:
-            filename = self.external_filename
-        # Make filename absolute
-        return os.path.abspath( filename )
-            
-    def set_file_name ( self, filename ):
-        if not filename:
-            self.external_filename = None
-        else:
-            self.external_filename = filename
-        
-    file_name = property( get_file_name, set_file_name )
-    
-    @property
-    def extra_files_path( self ):
-        if self._extra_files_path: 
-            path = self._extra_files_path
-        else:
-            path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
-            #only use path directly under self.file_path if it exists
-            if not os.path.exists( path ):
-                path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
-        # Make path absolute
-        return os.path.abspath( path )
-    
-    def get_size( self ):
-        """Returns the size of the data on disk"""
-        if self.file_size:
-            return self.file_size
-        else:
-            try:
-                return os.path.getsize( self.file_name )
-            except OSError:
-                return 0
-    def set_size( self ):
-        """Returns the size of the data on disk"""
-        try:
-            self.file_size = os.path.getsize( self.file_name )
-        except OSError:
-            self.file_size = 0
-    def has_data( self ):
-        """Detects whether there is any data"""
-        return self.get_size() > 0
-    def mark_deleted( self, include_children=True ):
-        self.deleted = True
-
-    # FIXME: sqlalchemy will replace this
-    def _delete(self):
-        """Remove the file that corresponds to this data"""
-        try:
-            os.remove(self.data.file_name)
-        except OSError, e:
-            log.critical('%s delete error %s' % (self.__class__.__name__, e))
 
 class Old_Dataset( Dataset ):
     pass

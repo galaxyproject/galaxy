@@ -1,5 +1,5 @@
 <%inherit file="/base.mako"/>
-<%def name="title()">Your saved histories</%def>
+<%def name="title()">Edit Dataset Attributes</%def>
 
 
 <%def name="datatype( dataset, datatypes )">
@@ -130,3 +130,36 @@
       </form>
   </div>
   </div>
+
+<p />
+
+%if trans.app.config.enable_beta_features and trans.user and ( trans.app.security_agent.allow_action( trans.user, data.access_actions.REMOVE_GROUP, dataset = data ) or trans.app.security_agent.allow_action( trans.user, data.access_actions.ADD_GROUP, dataset = data ) ):
+  <div class="toolForm">
+  <div class="toolFormTitle">Change permissions</div>
+  <div class="toolFormBody">
+      <form name="change_permision_form" action="${h.url_for( action='edit' )}" method="post">
+          <input type="hidden" name="id" value="${data.id}">
+          <div class="form-row">
+            <label>
+                Private Dataset:
+            </label>
+            <% checked = "" %>
+            %if not data.dataset.has_group( trans.app.model.Group.get_public_group() ):
+                <% checked = " checked" %>
+            %endif
+            <div style="float: left; width: 250px; margin-right: 10px;">
+                <input type="checkbox" name="private_dataset"${checked}>
+            </div>
+            <div style="clear: both"></div>
+            <div class="toolParamHelp" style="clear: both;">
+                This will prevent other users from viewing or utilizing this dataset, even if you share your history with them.
+            </div>
+            <div style="clear: both"></div>
+          </div>
+          <div class="form-row">
+              <input type="submit" name="change_permision" value="Save">
+          </div>
+      </form>
+  </div>
+  </div>
+%endif
