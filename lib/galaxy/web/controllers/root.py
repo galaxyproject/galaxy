@@ -270,18 +270,12 @@ class RootController( BaseController ):
                     #check user has permision and then remove public group
                     if trans.app.security_agent.allow_action( trans.user, data.dataset.access_actions.REMOVE_GROUP, dataset = data.dataset ):
                         trans.app.security_agent.remove_component_association( dataset = data, group = public_group )
-                        #for assoc in data.dataset.groups:
-                        #    if assoc.group_id == public_group.id:
-                        #        assoc.delete()
-                        #        assoc.flush()
                     else:
                         return trans.show_error_message( "You are not authorized to change this dataset's permissions." )
                 elif private_dataset not in kwd and not data.dataset.has_group( public_group ):
                     #check user has permision and then add public group
                     if trans.app.security_agent.allow_action( trans.user, data.dataset.access_actions.ADD_GROUP, dataset = data.dataset ):
                         trans.app.security_agent.associate_components( dataset = data, group = public_group)
-                        #public_group.add_dataset( data.dataset )
-                        #public_group.flush()
                     else:
                         return trans.show_error_message( "You are not authorized to change this dataset's permissions." )
                 else:
@@ -637,7 +631,7 @@ class RootController( BaseController ):
                 #collect groups as entered by user
                 for name, value in kwd.items():
                     if name.startswith( "group_" ):
-                        group = trans.app.model.Group.get( name.replace( "group_", "", 1 ) )
+                        group = trans.app.security_agent.get_component( 'group', name.replace( "group_", "", 1 ) )
                         if not group:
                             return trans.show_error_message( 'You have specified an invalid group.' )
                         if value == 'in':

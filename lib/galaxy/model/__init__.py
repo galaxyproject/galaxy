@@ -121,7 +121,7 @@ class Permission( object ):
 class Role( object ):
     access_actions = Permission.role_actions
     
-    def __init__( self, name, priority = 0 ):
+    def __init__( self, name = None, priority = 0 ):
         self.name = name
         self.priority = priority
 
@@ -132,8 +132,18 @@ class Group( object ):
     @classmethod
     def get_public_group( cls ):
         return Group.get( cls.public_id )
+    @classmethod
+    def set_public_group( cls, group ):
+        #we store the id instead of the object, because of alchemy sessions
+        if isinstance( group, Group ):
+            group = group.id
+        cls.public_id = group
+    @classmethod
+    def guess_public_group( cls ):
+        #retrieve from database and store public group id, assume first created group is public
+        cls.set_public_group( Group.select( order_by = Group.table.c.create_time )[0] )
     
-    def __init__( self, name, priority = 0 ):
+    def __init__( self, name = None, priority = 0 ):
         self.name = name
         self.priority = priority
 

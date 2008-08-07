@@ -581,18 +581,15 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     if result.Role.count() == 0:
         log.warning( "There were no access roles located, setting up default (public) access roles." )
         #create public group
-        public_group = result.Group( 'public' )
-        public_group.flush()
+        public_group = result.security_agent.create_component( 'group', name = 'public' )
         #create public_all role
-        public_role = result.Role( 'public' )
-        public_role.flush()
+        public_role = result.security_agent.create_component( 'role', name = 'public' )
         result.security_agent.associate_components( group = public_group, role = public_role )
-        permission = result.Permission( 'public', [ result.Dataset.access_actions.USE, result.Dataset.access_actions.VIEW, result.Group.access_actions.ADD_DATASET, result.Group.access_actions.REMOVE_DATASET ] )
-        permission.flush()
+        permission = result.security_agent.create_component( 'permission', name = 'public', actions = [ result.security_agent.actions.dataset_actions.USE, result.security_agent.actions.dataset_actions.VIEW, result.security_agent.actions.group_actions.ADD_DATASET, result.security_agent.actions.group_actions.REMOVE_DATASET ] )
         result.security_agent.associate_components( permission = permission, role = public_role )
         
         #store public group id
-        Group.public_id = public_group.id #we use the id instead of the object, because of alchemy sessions
+        result.security_agent.set_public_group( public_group )
         
         #loop through all histories and set up rbac on users, histories and datasets
         for history in result.History.select():
@@ -610,8 +607,7 @@ def init( file_path, url, engine_options={}, create_tables=False ):
                 result.security_agent.set_dataset_groups( dataset, [ public_group ] )
                 result.security_agent.set_dataset_roles( dataset, [] )
     else:
-        #retrieve from database and store public group id, assume first created group is public
-        Group.public_id = result.Group.select( order_by = asc( result.Group.table.c.create_time ) )[0].id #we use the id instead of the object, because of alchemy sessions
+        result.security_agent.guess_public_group()
     log.debug( "Public Group identified as id = %s." % ( Group.public_id ) )
     return result
     

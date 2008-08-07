@@ -37,6 +37,12 @@ class RBACAgent:
         raise "Unimplemented Method"
     def associate_components( self, **kwd ):
         raise 'No valid method of associating provided components: %s' % kwd
+    def get_component( self, component_type, id ):
+        raise 'No valid method of retrieving requested component %s with %s' % ( component_type, id )
+    def get_component_by( self, component_type, **kwd ):
+        raise 'No valid method of retrieving requested component %s with %s' % ( component_type, kwd )
+    def create_component( self, component_type, **kwd ):
+        raise 'No valid method of creating requested components %s with %s' % ( component_type, kwd )
     def create_private_user_group( self, user ):
         raise "Unimplemented Method"
     def user_set_default_access( self, user, groups = None, roles = None, history = False, dataset = False ):
@@ -46,7 +52,11 @@ class RBACAgent:
         self.associate_components( user = user, group = self.get_public_group() )
     def history_set_default_access( self, history, groups = None, roles = None, dataset = False ):
         raise "Unimplemented Method"
+    def set_public_group( self, group ):
+        raise "Unimplemented Method"
     def get_public_group( self ):
+        raise "Unimplemented Method"
+    def guess_public_group( self ):
         raise "Unimplemented Method"
     def set_dataset_groups( self, dataset, groups ):
         raise "Unimplemented Method"
@@ -146,6 +156,39 @@ class GalaxyRBACAgent( RBACAgent ):
                 access_groups = [ priority_access_group ]
         
         return access_groups, access_roles
+    
+    def get_component( self, component_type, id ):
+        if component_type.lower() == 'group':
+            return self.model.Group.get( id )
+        elif component_type.lower() == 'role':
+            return self.model.Role.get( id )
+        elif component_type.lower() == 'permission':
+            return self.model.Permission.get( id )
+        raise 'No valid method of retrieving requested component %s with %s' % ( component_type, id )
+    def get_component_by( self, component_type, **kwd ):
+        if component_type.lower() == 'group':
+            return self.model.Group.get_by( **kwd )
+        elif component_type.lower() == 'role':
+            return self.model.Role.get_by( **kwd )
+        elif component_type.lower() == 'permission':
+            return self.model.Permission.get_by( **kwd )
+        raise 'No valid method of retrieving requested component %s with %s' % ( component_type, kwd )
+    
+    def create_component( self, component_type, **kwd ):
+        if component_type.lower() == 'group':
+            rval = self.model.Group( **kwd )
+            rval.flush()
+            return rval
+        elif component_type.lower() == 'role':
+            rval = self.model.Role( **kwd )
+            rval.flush()
+            return rval
+        elif component_type.lower() == 'permission':
+            rval = self.model.Permission( **kwd )
+            rval.flush()
+            return rval
+        raise 'No valid method of creating requested components %s with %s' % ( component_type, kwd )
+
     
     def associate_components( self, **kwd ):
         assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to associate.'
@@ -308,6 +351,10 @@ class GalaxyRBACAgent( RBACAgent ):
     
     def get_public_group( self ):
         return self.model.Group.get_public_group()
+    def set_public_group( self, group ):
+        return self.model.Group.set_public_group( group )
+    def guess_public_group( self ):
+        return self.model.Group.guess_public_group()
     
     def set_dataset_groups( self, dataset, groups ):
         if isinstance( dataset, self.model.HistoryDatasetAssociation):
