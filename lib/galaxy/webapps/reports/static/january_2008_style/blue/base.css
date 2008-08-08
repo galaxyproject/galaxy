@@ -322,3 +322,6 @@ div.debug
   display: none;
 }
 
+pre {
+    font-size: 80%;
+}

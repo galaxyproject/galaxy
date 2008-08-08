@@ -51,13 +51,13 @@
             <td colspan="5">Stderr</td>
           </tr>
           <tr>
-            <td colspan="5">${job[9]}</td>
+            <td colspan="5"><pre>${job[9]}</pre></td>
           </tr>
           <tr class="header">
             <td colspan="5">Stack Trace</td>
           </tr>
           <tr>
-            <td colspan="5">${job[10]}</td>
+            <td colspan="5"><pre>${job[10]}</pre></td>
           </tr>
           <tr class="header">
             <td colspan="5">Info</td>
