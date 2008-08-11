@@ -144,7 +144,7 @@ class Group( object ):
     def guess_public_group( cls ):
         # TODO, Nate: Make sure this method is functionally correct.
         #retrieve from database and store public group id, assume first created group is public
-        cls.set_public_group( Group.select( order_by = Group.table.c.create_time )[0] )
+        cls.set_public_group( Group.select_by( name = 'public' ) )
 
 class UserGroupAssociation( object ):
     def __init__( self, user, group ):

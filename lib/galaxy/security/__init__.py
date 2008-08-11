@@ -14,17 +14,9 @@ log = logging.getLogger(__name__)
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch( 
-        dataset_actions = Bunch( VIEW = 'dataset_view', #viewing/downloading
-                                 USE = 'dataset_use', #use in jobs
-                                 ADD_GROUP = 'dataset_add_group', #dataset can be added to groups
-                                 REMOVE_GROUP = 'dataset_remove_group' #dataset can be removed from groups
-                                ),
-        group_actions = Bunch( ADD_DATASET = 'group_add_dataset', #add dataset to group
-                               REMOVE_DATASET = 'group_remove_dataset', #remove dataset from group
-                               DELETE = 'group_delete', #delete a group
-                               ADD_USER = 'group_add_user', #add users to group
-                               REMOVE_USER  = 'group_remove_user' #remove user from group
-                             )
+        EDIT_METADATA = 'edit_metadata',
+        MANAGE_PERMISSIONS = 'manage_permissions',
+        ACCESS = 'access'
     )
     def allow_action( self, user, action, **kwd ):
         raise 'No valid method of checking action (%s) on %s for user %s.' % ( action, kwd, user )
