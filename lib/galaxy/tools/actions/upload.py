@@ -65,9 +65,9 @@ class UploadToolAction( object ):
         return dict( output=data_list[0] )
 
     def upload_empty(self, trans, err_code, err_msg):
-        data = trans.app.model.HistoryDatasetAssociation( create_dataset = True )
+        data = trans.app.model.HistoryDatasetAssociation( create_dataset=True )
+        # TODO, Nate: Make sure the following is appropriate.
         trans.app.security_agent.set_dataset_groups( data.dataset, trans.history.default_groups )
-        trans.app.security_agent.set_dataset_roles( data.dataset, trans.history.default_roles )
         data.name = err_code
         data.extension = "txt"
         data.dbkey = "?"
@@ -87,12 +87,12 @@ class UploadToolAction( object ):
         if not os.path.getsize( temp_name ) > 0:
             raise BadFileException( "you attempted to upload an empty file." )
         
-        # See if we have a gzipped file, which, if it passes our restrictions, we'll decompress on the fly.
+        # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress on the fly.
         is_gzipped, is_valid = self.check_gzip( temp_name )
         if is_gzipped and not is_valid:
             raise BadFileException( "you attempted to upload an inappropriate file." )
         elif is_gzipped and is_valid:
-            #We need to decompress the temp_name file
+            # We need to uncompress the temp_name file
             CHUNK_SIZE = 2**20 # 1Mb   
             fd, uncompressed = tempfile.mkstemp()   
             gzipped_file = gzip.GzipFile( temp_name )
@@ -161,8 +161,8 @@ class UploadToolAction( object ):
             info = 'uploaded %s file' %data_type
 
         data = trans.app.model.HistoryDatasetAssociation( history = trans.history, extension = ext, create_dataset = True )
+        # TODO, Nate: Make sure the following is appropriate.
         trans.app.security_agent.set_dataset_groups( data.dataset, trans.history.default_groups )
-        trans.app.security_agent.set_dataset_roles( data.dataset, trans.history.default_roles )
         data.name = file_name
         data.dbkey = dbkey
         data.info = info

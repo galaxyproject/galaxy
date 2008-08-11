@@ -1,11 +1,11 @@
 <%inherit file="/base.mako"/>
-<%def name="title()">Change Default History Permissions</%def>
+<%def name="title()">Change Default History Permitted Actions</%def>
 
 %if trans.user:
   <div class="toolForm">
-  <div class="toolFormTitle">Change Default History Permissions</div>
+  <div class="toolFormTitle">Change Default History Permitted Actions</div>
   <div class="toolFormBody">
-      <form name="set_permissions" method="post">
+      <form name="set_permitted_actions" method="post">
           <div class="form-row">
                 <% user_groups = [ assoc.group for assoc in trans.user.groups ] %>
                 <% cur_groups = [ assoc.group for assoc in trans.get_history().default_groups ] %>
@@ -29,12 +29,12 @@
             <div style="clear: both"></div>
             
             <div class="toolParamHelp" style="clear: both;">
-                This will change the default permissions assigned to new datasets for your current history.
+                This will change the default permitted actions assigned to new datasets for your current history.
             </div>
             <div style="clear: both"></div>
           </div>
           <div class="form-row">
-              <input type="submit" name="set_permissions" value="Save">
+              <input type="submit" name="set_permitted_actions" value="Save">
           </div>
       </form>
   </div>

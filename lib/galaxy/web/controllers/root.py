@@ -14,6 +14,8 @@ import urllib
 log = logging.getLogger( __name__ )
 
 class RootController( BaseController ):
+    # TODO, Nate: This is where a lot of the new dataset security stuff is managed.
+    # Make sure it is is functionally correct.
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -137,7 +139,7 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid" %str( id )
         if data:
-            if trans.app.security_agent.allow_action( trans.user, data.access_actions.VIEW, dataset = data ):
+            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.VIEW, dataset = data ):
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
                 if tofile:
@@ -169,7 +171,7 @@ class RootController( BaseController ):
             if data:
                 child = data.get_child_by_designation( designation )
                 if child:
-                    if trans.app.security_agent.allow_action( trans.user, child.access_actions.VIEW, dataset = child ):
+                    if trans.app.security_agent.allow_action( trans.user, child.permitted_actions.VIEW, dataset = child ):
                         return self.display( trans, id=child.id, tofile=tofile, toext=toext )
                     else:
                         return "You are not privileged to access this dataset."
@@ -182,7 +184,7 @@ class RootController( BaseController ):
         """Returns a file in a format that can successfully be displayed in display_app"""
         data = self.app.model.HistoryDatasetAssociation.get( id )
         if data:
-            if trans.app.security_agent.allow_action( trans.user, data.access_actions.VIEW, dataset = data ):
+            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.VIEW, dataset = data ):
                 trans.response.set_content_type( data.get_mime() )
                 trans.log_event( "Formatted dataset id %s for display at %s" % ( str( id ), display_app ) )
                 return data.as_display_type( display_app, **kwd )
@@ -217,7 +219,7 @@ class RootController( BaseController ):
             return trans.show_error_message( "Problem retrieving dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
         if data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
-        if trans.app.security_agent.allow_action( trans.user, data.access_actions.USE, dataset = data ):
+        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.USE, dataset = data ):
             p = util.Params(kwd, safe=False)
             
             if p.change:
@@ -263,24 +265,24 @@ class RootController( BaseController ):
             elif p.change_permision:
                 """The user clicked the change_permision button on the 'Change permissions' form"""
                 if not trans.user:
-                    return trans.show_error_message( "You must be logged in if you want to change dataset permissions." )
+                    return trans.show_error_message( "You must be logged in if you want to change dataset permitted actions." )
                 private_dataset = 'private_dataset'
                 public_group = trans.app.security_agent.get_public_group()
                 if private_dataset in kwd and data.dataset.has_group( public_group ):
-                    #check user has permision and then remove public group
-                    if trans.app.security_agent.allow_action( trans.user, data.dataset.access_actions.REMOVE_GROUP, dataset = data.dataset ):
+                    #check user has permission and then remove public group
+                    if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.REMOVE_GROUP, dataset = data.dataset ):
                         trans.app.security_agent.remove_component_association( dataset = data, group = public_group )
                     else:
-                        return trans.show_error_message( "You are not authorized to change this dataset's permissions." )
+                        return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
                 elif private_dataset not in kwd and not data.dataset.has_group( public_group ):
-                    #check user has permision and then add public group
-                    if trans.app.security_agent.allow_action( trans.user, data.dataset.access_actions.ADD_GROUP, dataset = data.dataset ):
+                    #check user has permission and then add public group
+                    if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.ADD_GROUP, dataset = data.dataset ):
                         trans.app.security_agent.associate_components( dataset = data, group = public_group)
                     else:
-                        return trans.show_error_message( "You are not authorized to change this dataset's permissions." )
+                        return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
                 else:
-                    return trans.show_error_message( "You have not specified a valid change of permissions." )
-                return trans.show_ok_message( 'Permissions have been changed.', refresh_frames=['history'] )
+                    return trans.show_error_message( "You have not specified a valid change of permitted actions." )
+                return trans.show_ok_message( 'Permitted actions have been changed.', refresh_frames=['history'] )
             
             data.datatype.before_edit( data )
             
@@ -589,15 +591,12 @@ class RootController( BaseController ):
         """Adds a POSTed file to a History"""
         try:
             history = trans.app.model.History.get( history_id )
-            roles = history.default_roles
             groups = history.default_groups
             if copy_access_from:
                 copy_access_from = trans.app.model.HistoryDatasetAssociation.get( copy_access_from )
-                roles = copy_access_from.dataset.roles
                 groups = copy_access_from.dataset.groups
             data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
             trans.app.security_agent.set_dataset_groups( data.dataset, groups )
-            trans.app.security_agent.set_dataset_roles( data.dataset, roles )
             data.flush()
             data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )
@@ -619,19 +618,18 @@ class RootController( BaseController ):
             return trans.show_error_message("Adding File to History has Failed")
 
     @web.expose
-    def history_set_default_permissions( self, trans, **kwd ):
-        """Sets the user's default permissions for the current history"""
-        #TODO: allow changing of default roles associated with history
+    def history_set_default_permitted_actions( self, trans, **kwd ):
+        """Sets the user's default permitted_actions for the current history"""
         if trans.user:
-            if 'set_permissions' in kwd:
-                """The user clicked the set_permissions button on the set_permissions form"""
+            if 'set_permitted_actions' in kwd:
+                """The user clicked the set_permitted_actions button on the set_permitted_actions form"""
                 history = trans.get_history()
                 group_in = []
                 group_out = []
-                #collect groups as entered by user
+                # Collect groups as entered by user
                 for name, value in kwd.items():
                     if name.startswith( "group_" ):
-                        group = trans.app.security_agent.get_component( 'group', name.replace( "group_", "", 1 ) )
+                        group = trans.app.security_agent.get_group( name.replace( "group_", "", 1 ) )
                         if not group:
                             return trans.show_error_message( 'You have specified an invalid group.' )
                         if value == 'in':
@@ -644,14 +642,14 @@ class RootController( BaseController ):
                 group_in.sort()
                 cur_groups.sort()
                 if cur_groups != group_in:
-                    trans.app.security_agent.history_set_default_access( history, groups = group_in )
-                    return trans.show_ok_message( 'Default history permissions have been changed.' )
+                    trans.app.security_agent.history_set_default_access( history, groups=group_in )
+                    return trans.show_ok_message( 'Default history permitted actions have been changed.' )
                 else:
-                    return trans.show_error_message( "You did not specify any changes to this history's default permissions." )
+                    return trans.show_error_message( "You did not specify any changes to this history's default permitted actions." )
             return trans.fill_template( 'history/permissions.mako' )
         else:
             #user not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change a history's default permissions." )
+            return trans.show_error_message( "You must be logged in to change a history's default permitted actions." )
 
 
     @web.expose
@@ -678,8 +676,15 @@ class RootController( BaseController ):
         bugs_email = trans.app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )
         blog_url = trans.app.config.get( "blog_url", "http://g2.trac.bx.psu.edu/blog"   )
         screencasts_url = trans.app.config.get( "screencasts_url", "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )
+        admin_user = "false"
+        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+        user = trans.get_user()
+        if user:
+            user_email = trans.get_user().email
+            if user_email in admin_users:
+                admin_user = "true"
         return trans.fill_template( "/root/masthead.mako", brand=brand, wiki_url=wiki_url, 
-          blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url )
+          blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url, admin_user=admin_user )
 
     @web.expose
     def dataset_errors( self, trans, id=None, **kwd ):

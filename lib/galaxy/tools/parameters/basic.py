@@ -972,6 +972,8 @@ class DrillDownSelectToolParameter( ToolParameter ):
 
 
 class DataToolParameter( ToolParameter ):
+    # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
+    # components.  Add as many additional tests as necessary.
     """
     Parameter that takes on one (or many) or a specific set of values.
 
@@ -979,22 +981,16 @@ class DataToolParameter( ToolParameter ):
           displayed as radio buttons and multiple selects as a set of checkboxes
 
     >>> # Mock up a history (not connected to database)
-    >>> from galaxy.model import History, HistoryDatasetAssociation, User, Role, Permission, Group, GroupRoleAssociation
+    >>> from galaxy.model import History, HistoryDatasetAssociation, User, Group
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.security import GalaxyRBACAgent
     >>> import galaxy.model
     >>> security_agent = GalaxyRBACAgent( galaxy.model )
     >>> hist = History()
     >>> hist.flush()
-    >>> permission = Permission( 'test', list( Permission.dataset_actions.__dict__.values() ) )
-    >>> permission.flush()
-    >>> role = Role( 'test' )
-    >>> role.flush()
-    >>> assoc = security_agent.associate_components( role = role, permission = permission )
     >>> group = Group( 'test' )
     >>> group.flush()
     >>> Group.public_id = group.id
-    >>> assoc = security_agent.associate_components( group = group, role = role )
     >>> dataset1 = HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True )
     >>> security_agent.set_dataset_groups( dataset1, [ group ] )
     >>> dataset2 = HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True )
@@ -1069,7 +1065,7 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( data.hid )
-                if not data.deleted and data.state not in [data.states.ERROR] and data.visible and trans.app.security_agent.allow_action( trans.user, data.access_actions.USE, dataset = data ):
+                if not data.deleted and data.state not in [data.states.ERROR] and data.visible and trans.app.security_agent.allow_action( trans.user, data.permitted_actions.USE, dataset = data ):
                     if self.options and data.get_dbkey() != filter_value:
                         continue
                     if isinstance( data.datatype, self.formats):
@@ -1083,7 +1079,7 @@ class DataToolParameter( ToolParameter ):
                                     data = datasets[0]
                                 elif not self.converter_safe( other_values, trans ):
                                     continue
-                                if not trans.app.security_agent.allow_action( trans.user, data.access_actions.USE, dataset = data ):
+                                if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.USE, dataset = data ):
                                     continue
                                 selected = ( value and ( data in value ) )
                                 field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )

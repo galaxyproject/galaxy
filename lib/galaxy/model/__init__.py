@@ -103,127 +103,73 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
-class Permission( object ):
-    dataset_actions = RBACAgent.actions.dataset_actions
-    role_actions = RBACAgent.actions.role_actions
-    group_actions = RBACAgent.actions.group_actions
-    
-    def __init__( self, name = None, actions = [] ):
-        self.name = name
-        self.actions = actions
-    def add_action( self, action ):
-        if action not in self.actions:
-            return self.actions.append( action )
-        raise 'action (%s) already exists in permissions list (%s: %s).' % ( action, self.id, self.actions )
-    def remove_action( self, action ):
-        return self.actions.remove( action )
-    
-class Role( object ):
-    access_actions = Permission.role_actions
-    
-    def __init__( self, name = None, priority = 0 ):
-        self.name = name
-        self.priority = priority
+class GroupDatasetAssociation( object ):
+    dataset_actions = RBACAgent.permitted_actions.dataset_actions
+    group_actions = RBACAgent.permitted_actions.group_actions
+    def __init__( self, group, dataset, permitted_actions=[] ):
+        if isinstance( group, GroupDatasetAssociation ) or \
+           isinstance( group, DefaultUserGroupAssociation ) or \
+           isinstance( group, DefaultHistoryGroupAssociation ):
+            group = group.group
+        self.group = group
+        if isinstance( dataset, HistoryDatasetAssociation ):
+            dataset = dataset.dataset
+        self.dataset = dataset
+        self.permitted_actions = permitted_actions
+    def add_permitted_action( self, action ):
+        if action not in self.permitted_actions:
+            return self.permitted_actions.append( action )
+        raise 'action (%s) already exists in permitted actions list (%s: %s).' % ( action, str( self.id ), str( self.permitted_actions ) )
+    def remove_permitted_action( self, action ):
+        return self.permitted_actions.remove( action )
 
 class Group( object ):
     public_id = None
-    access_actions = Permission.group_actions
-    
+    permitted_actions = GroupDatasetAssociation.group_actions
+    def __init__( self, name = None, priority = 0 ):
+        self.name = name
+        self.priority = priority
     @classmethod
     def get_public_group( cls ):
+        # TODO, Nate: Make sure this method is functionally correct.
         return Group.get( cls.public_id )
     @classmethod
     def set_public_group( cls, group ):
+        # TODO, Nate: Make sure this method is functionally correct.
         #we store the id instead of the object, because of alchemy sessions
         if isinstance( group, Group ):
             group = group.id
         cls.public_id = group
     @classmethod
     def guess_public_group( cls ):
+        # TODO, Nate: Make sure this method is functionally correct.
         #retrieve from database and store public group id, assume first created group is public
         cls.set_public_group( Group.select( order_by = Group.table.c.create_time )[0] )
-    
-    def __init__( self, name = None, priority = 0 ):
-        self.name = name
-        self.priority = priority
-
-class RolePermissionAssociation( object ):
-    def __init__( self, role, permission ):
-        self.role = role
-        self.permission = permission
 
 class UserGroupAssociation( object ):
     def __init__( self, user, group ):
         self.user = user
         self.group = group
 
-class RoleControlRoleAssociation( object ):
-    def __init__( self, role, target_role ):
-        self.role = role
-        self.target_role = target_role
-
-class GroupControlRoleAssociation( object ):
-    def __init__( self, group, role ):
-        self.group = group
-        self.role = role
-
-class GroupRoleAssociation( object ):
-    def __init__( self, group, role ):
-        self.group = group
-        self.role = role
-
-class UserRoleAssociation( object ):
-    def __init__( self, user, role ):
-        self.user = user
-        self.role = role
-
-class GroupDatasetAssociation( object ):
-    def __init__( self, group, dataset ):
-        if isinstance( group, GroupDatasetAssociation ) or isinstance( group, DefaultUserGroupAssociation ) or isinstance( group, DefaultHistoryGroupAssociation ):
-            group = group.group
-        self.group = group
-        
-        if isinstance( dataset, HistoryDatasetAssociation ):
-            dataset = dataset.dataset
-        self.dataset = dataset
-
-class RoleDatasetAssociation( object ):
-    def __init__( self, role, dataset ):
-        if isinstance( role, RoleDatasetAssociation ) or isinstance( role, DefaultUserRoleAssociation ) or isinstance( role, DefaultHistoryRoleAssociation ):
-            role = role.role
-        self.role = role
-        
-        if isinstance( dataset, HistoryDatasetAssociation ):
-            dataset = dataset.dataset
-        self.dataset = dataset
-
-class DefaultUserRoleAssociation( object ):
-    def __init__( self, user, role ):
-        if isinstance( role, RoleDatasetAssociation ) or isinstance( role, DefaultUserRoleAssociation ) or isinstance( role, DefaultHistoryRoleAssociation ):
-            role = role.role
-        self.user = user
-        self.role = role
-
 class DefaultUserGroupAssociation( object ):
-    def __init__( self, user, group ):
-        if isinstance( group, GroupDatasetAssociation ) or isinstance( group, DefaultUserGroupAssociation ) or isinstance( group, DefaultHistoryGroupAssociation ):
+    def __init__( self, user, group, permitted_actions ):
+        if isinstance( group, GroupDatasetAssociation ) or \
+           isinstance( group, DefaultUserGroupAssociation ) or \
+           isinstance( group, DefaultHistoryGroupAssociation ):
             group = group.group
         self.user = user
         self.group = group
-
-class DefaultHistoryRoleAssociation( object ):
-    def __init__( self, history, role ):
-        if isinstance( role, RoleDatasetAssociation ) or isinstance( role, DefaultUserRoleAssociation ) or isinstance( role, DefaultHistoryRoleAssociation ):
-            role = role.role
-        self.history = history
-        self.role = role
+        self.permitted_actions = permitted_actions
 
 class DefaultHistoryGroupAssociation( object ):
-    def __init__( self, history, group ):
-        if isinstance( group, GroupDatasetAssociation ) or isinstance( group, DefaultUserGroupAssociation ) or isinstance( group, DefaultHistoryGroupAssociation ):
+    def __init__( self, history, group, permitted_actions ):
+        if isinstance( group, GroupDatasetAssociation ) or \
+           isinstance( group, DefaultUserGroupAssociation ) or \
+           isinstance( group, DefaultHistoryGroupAssociation ):
             group = group.group
         self.history = history
         self.group = group
+        self.permitted_actions = permitted_actions
 
 class Dataset( object ):
     states = Bunch( NEW = 'new',
@@ -233,7 +179,7 @@ class Dataset( object ):
                     EMPTY = 'empty',
                     ERROR = 'error',
                     DISCARDED = 'discarded' )
-    access_actions = Permission.dataset_actions
+    permitted_actions = GroupDatasetAssociation.dataset_actions
     file_path = "/tmp/"
     engine = None
     def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
@@ -318,11 +264,9 @@ class Dataset( object ):
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
 
-
-
 class HistoryDatasetAssociation( object ):
     states = Dataset.states
-    access_actions = Dataset.access_actions
+    permitted_actions = Dataset.permitted_actions
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
                   parent_id=None, copied_from_history_dataset_association = None, validation_errors=None,
@@ -569,8 +513,6 @@ class History( object ):
 #         self.history = history
 #         self.datasets = []
 
-class Old_Dataset( Dataset ):
-    pass
             
 class ValidationError( object ):
     def __init__( self, message=None, err_type=None, attributes=None ):

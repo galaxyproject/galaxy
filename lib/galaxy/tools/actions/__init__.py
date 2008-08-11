@@ -43,7 +43,8 @@ class DefaultToolAction( object ):
                                 assoc.flush()
                                 data = new_data
                             break
-                if data and not trans.app.security_agent.allow_action( trans.user, data.access_actions.USE, dataset = data ):
+                # TODO, Nate: Make sure the permitted actions here are appropriate.
+                if data and not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.USE, dataset=data ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
             if isinstance( input, DataToolParameter ):
@@ -82,13 +83,12 @@ class DefaultToolAction( object ):
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
         
-        #determine output dataset access list
+        # Determine output dataset permitted_actions list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]
         if existing_datasets:
-            output_access_groups, output_access_roles = trans.app.security_agent.guess_derived_groups_roles_for_datasets( existing_datasets )
+            output_access_groups = trans.app.security_agent.guess_derived_groups_for_datasets( existing_datasets )
         else:
-            #no valid inputs, we will use history defaults
-            output_access_roles = [ role.role for role in trans.history.default_roles ]
+            # No valid inputs, we will use history defaults
             output_access_groups = [ group.group for group in trans.history.default_groups ]
         
         # Build name for output datasets based on tool name and input names
@@ -133,7 +133,6 @@ class DefaultToolAction( object ):
                 # Commit the dataset immediately so it gets database assigned unique id
                 data.flush()
                 trans.app.security_agent.set_dataset_groups( data.dataset, output_access_groups )
-                trans.app.security_agent.set_dataset_roles( data.dataset, output_access_roles )
             # Create an empty file immediately
             open( data.file_name, "w" ).close()
             # This may not be neccesary with the new parent/child associations
@@ -197,7 +196,8 @@ class DefaultToolAction( object ):
             job.add_parameter( name, value )
         for name, dataset in inp_data.iteritems():
             if dataset:
-                if not trans.app.security_agent.allow_action( trans.user, dataset.access_actions.USE, dataset = dataset ):
+                # TODO, Nate: Make sure the permitted actions here are appropriate.
+                if not trans.app.security_agent.allow_action( trans.user, dataset.permitted_actions.USE, dataset=dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 job.add_input_dataset( name, dataset )
             else:

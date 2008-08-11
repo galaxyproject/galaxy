@@ -169,18 +169,18 @@ class User( BaseController ):
                 .add_text( "email", "Email", value=email, error=error ) )
     
     @web.expose
-    def set_default_permissions( self, trans, **kwd ):
-        """Sets the user's default permissions for the new histories"""
-        #TODO: allow changing of default roles
+    def set_default_permitted_actions( self, trans, **kwd ):
+        # TODO, Nate: Make sure this method is functionally correct.
+        """Sets the user's default permitted actions for the new histories"""
         if trans.user:
-            if 'set_permissions' in kwd:
-                """The user clicked the set_permissions button on the set_permissions form"""
+            if 'set_permitted_actions' in kwd:
+                """The user clicked the set_permitted_actions button on the set_permitted_actions form"""
                 group_in = []
                 group_out = []
-                #collect groups as entered by user
+                # Collect groups as entered by user
                 for name, value in kwd.items():
                     if name.startswith( "group_" ):
-                        group = trans.app.security_agent.get_component( 'group', name.replace( "group_", "", 1 ) )
+                        group = trans.app.security_agent.get_group( name.replace( "group_", "", 1 ) )
                         if not group:
                             return trans.show_error_message( 'You have specified an invalid group.' )
                         if value == 'in':
@@ -194,10 +194,10 @@ class User( BaseController ):
                 cur_groups.sort()
                 if cur_groups != group_in:
                     trans.app.security_agent.user_set_default_access( trans.user, groups = group_in )
-                    return trans.show_ok_message( 'Default new history permissions have been changed.' )
+                    return trans.show_ok_message( 'Default new history permitted actions have been changed.' )
                 else:
-                    return trans.show_error_message( "You did not specify any changes to new history's default permissions." )
+                    return trans.show_error_message( "You did not specify any changes to new history's default permitted actions." )
             return trans.fill_template( 'user/permissions.mako' )
         else:
-            #user not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change your default permissions." )
+            # User not logged in, history group must be only public
+            return trans.show_error_message( "You must be logged in to change your default permitted actions." )

@@ -129,8 +129,8 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.extension = file_type
             newdata.name = basic_name + " (" + microbe_info[kingdom][org]['chrs'][chr]['data'][description]['feature'] +" for "+microbe_info[kingdom][org]['name']+":"+chr + ")"
             newdata.flush()
+            #TODO, Nate: Make sure the following is functionally correct
             app.security_agent.set_dataset_groups( newdata.dataset, base_dataset.dataset.groups )
-            app.security_agent.set_dataset_roles( newdata.dataset, base_dataset.dataset.roles )
             history.add_dataset( newdata )
             app.model.flush()
             try:

@@ -133,9 +133,9 @@
 
 <p />
 
-%if trans.app.config.enable_beta_features and trans.user and ( trans.app.security_agent.allow_action( trans.user, data.access_actions.REMOVE_GROUP, dataset = data ) or trans.app.security_agent.allow_action( trans.user, data.access_actions.ADD_GROUP, dataset = data ) ):
+%if trans.app.config.enable_beta_features and trans.user and ( trans.app.security_agent.allow_action( trans.user, data.permitted_actions.REMOVE_GROUP, dataset = data ) or trans.app.security_agent.allow_action( trans.user, data.permitted_actions.ADD_GROUP, dataset = data ) ):
   <div class="toolForm">
-  <div class="toolFormTitle">Change permissions</div>
+  <div class="toolFormTitle">Change Permitted Actions</div>
   <div class="toolFormBody">
       <form name="change_permision_form" action="${h.url_for( action='edit' )}" method="post">
           <input type="hidden" name="id" value="${data.id}">

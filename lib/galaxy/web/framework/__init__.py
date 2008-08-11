@@ -432,9 +432,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             galaxy_session.flush()
             self.__galaxy_session = galaxy_session
         if history is not None and user is not None:
+            # TODO, Nate: Make sure the following is functionally correct
             if not history.user:
-                #This user will now aquire previously unowned history, let set permissions to user's default
-                self.app.security_agent.history_set_default_access( history, roles = user.default_roles, groups = user.default_groups, dataset = True )
+                # This user will now acquire previously non-owned history, so set permitted actions to user's default
+                self.app.security_agent.history_set_default_access( history, groups=user.default_groups, dataset=True )
             history.user_id = user.id
             history.flush()
             self.__history = history
