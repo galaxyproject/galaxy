@@ -139,7 +139,7 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid" %str( id )
         if data:
-            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.VIEW, dataset = data ):
+            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
                 if tofile:
@@ -171,7 +171,7 @@ class RootController( BaseController ):
             if data:
                 child = data.get_child_by_designation( designation )
                 if child:
-                    if trans.app.security_agent.allow_action( trans.user, child.permitted_actions.VIEW, dataset = child ):
+                    if trans.app.security_agent.allow_action( trans.user, child.permitted_actions.DATASET_ACCESS, dataset = child ):
                         return self.display( trans, id=child.id, tofile=tofile, toext=toext )
                     else:
                         return "You are not privileged to access this dataset."
@@ -184,7 +184,7 @@ class RootController( BaseController ):
         """Returns a file in a format that can successfully be displayed in display_app"""
         data = self.app.model.HistoryDatasetAssociation.get( id )
         if data:
-            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.VIEW, dataset = data ):
+            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
                 trans.response.set_content_type( data.get_mime() )
                 trans.log_event( "Formatted dataset id %s for display at %s" % ( str( id ), display_app ) )
                 return data.as_display_type( display_app, **kwd )
@@ -219,7 +219,7 @@ class RootController( BaseController ):
             return trans.show_error_message( "Problem retrieving dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
         if data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
-        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.USE, dataset = data ):
+        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
             p = util.Params(kwd, safe=False)
             
             if p.change:
@@ -262,6 +262,8 @@ class RootController( BaseController ):
                 if target_type:
                     msg = data.datatype.convert_dataset(trans, data, target_type)
                     return trans.show_ok_message( msg, refresh_frames=['history'] )
+            '''
+            # Users can't currently change permissions or groups
             elif p.change_permision:
                 """The user clicked the change_permision button on the 'Change permissions' form"""
                 if not trans.user:
@@ -283,6 +285,7 @@ class RootController( BaseController ):
                 else:
                     return trans.show_error_message( "You have not specified a valid change of permitted actions." )
                 return trans.show_ok_message( 'Permitted actions have been changed.', refresh_frames=['history'] )
+            '''
             
             data.datatype.before_edit( data )
             

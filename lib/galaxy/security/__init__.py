@@ -14,9 +14,9 @@ log = logging.getLogger(__name__)
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch( 
-        EDIT_METADATA = 'edit_metadata',
-        MANAGE_PERMISSIONS = 'manage_permissions',
-        ACCESS = 'access'
+        DATASET_EDIT_METADATA = 'dataset_edit_metadata',
+        DATASET_MANAGE_PERMISSIONS = 'dataset_manage_permissions',
+        DATASET_ACCESS = 'dataset_access'
     )
     def allow_action( self, user, action, **kwd ):
         raise 'No valid method of checking action (%s) on %s for user %s.' % ( action, kwd, user )
@@ -68,7 +68,7 @@ class GalaxyRBACAgent( RBACAgent ):
             dataset = dataset.dataset
         # If dataset is in public group, we always return true for viewing and using
         # This may need to change when the ability to alter groups and permitted_actions is allowed
-        if action in [ self.permitted_actions.dataset_actions.USE, self.permitted_actions.dataset_actions.VIEW ] and \
+        if action == self.permitted_actions.DATASET_ACCESS and \
             self.components_are_associated( group = self.get_public_group(), dataset = dataset ):
             return True
         elif user is not None:
@@ -229,3 +229,14 @@ class GalaxyRBACAgent( RBACAgent ):
             if 'group' in kwd:
                 return self.model.UserGroupAssociation.get_by( group_id = kwd['group'].id, user_id = kwd['user'].id )
         raise 'No valid method of associating provided components: %s' % kwd
+
+def get_permitted_actions( self, filter=None ):
+    '''Utility method to return a subset of RBACAgent's permitted actions'''
+    if filter is None:
+        return RBACAgent.permitted_actions
+    if not filter.endswith('_'):
+        filter += '_'
+    tmp_bunch = Bunch()
+    [tmp_bunch.__dict__.__setitem__(k, v) for k, v in \
+     RBACAgent.permitted_actions.items() if k.startswith(filter)]
+    return tmp_bunch

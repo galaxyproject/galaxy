@@ -104,8 +104,6 @@ class JobToOutputDatasetAssociation( object ):
         self.dataset = dataset
 
 class GroupDatasetAssociation( object ):
-    dataset_actions = RBACAgent.permitted_actions.dataset_actions
-    group_actions = RBACAgent.permitted_actions.group_actions
     def __init__( self, group, dataset, permitted_actions=[] ):
         if isinstance( group, GroupDatasetAssociation ) or \
            isinstance( group, DefaultUserGroupAssociation ) or \
@@ -125,7 +123,7 @@ class GroupDatasetAssociation( object ):
 
 class Group( object ):
     public_id = None
-    permitted_actions = GroupDatasetAssociation.group_actions
+    permitted_actions = galaxy.security.get_permitted_actions( 'GROUP' )
     def __init__( self, name = None, priority = 0 ):
         self.name = name
         self.priority = priority
@@ -179,7 +177,7 @@ class Dataset( object ):
                     EMPTY = 'empty',
                     ERROR = 'error',
                     DISCARDED = 'discarded' )
-    permitted_actions = GroupDatasetAssociation.dataset_actions
+    permitted_actions = galaxy.security.get_permitted_actions( 'DATASET' )
     file_path = "/tmp/"
     engine = None
     def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):

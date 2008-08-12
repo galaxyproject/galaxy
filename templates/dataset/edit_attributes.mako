@@ -133,6 +133,7 @@
 
 <p />
 
+<%doc>
 %if trans.app.config.enable_beta_features and trans.user and ( trans.app.security_agent.allow_action( trans.user, data.permitted_actions.REMOVE_GROUP, dataset = data ) or trans.app.security_agent.allow_action( trans.user, data.permitted_actions.ADD_GROUP, dataset = data ) ):
   <div class="toolForm">
   <div class="toolFormTitle">Change Permitted Actions</div>
@@ -163,3 +164,4 @@
   </div>
   </div>
 %endif
+</%doc>

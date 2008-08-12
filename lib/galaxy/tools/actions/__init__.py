@@ -44,7 +44,7 @@ class DefaultToolAction( object ):
                                 data = new_data
                             break
                 # TODO, Nate: Make sure the permitted actions here are appropriate.
-                if data and not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.USE, dataset=data ):
+                if data and not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=data ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
             if isinstance( input, DataToolParameter ):
@@ -197,7 +197,7 @@ class DefaultToolAction( object ):
         for name, dataset in inp_data.iteritems():
             if dataset:
                 # TODO, Nate: Make sure the permitted actions here are appropriate.
-                if not trans.app.security_agent.allow_action( trans.user, dataset.permitted_actions.USE, dataset=dataset ):
+                if not trans.app.security_agent.allow_action( trans.user, dataset.permitted_actions.DATASET_ACCESS, dataset=dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 job.add_input_dataset( name, dataset )
             else:

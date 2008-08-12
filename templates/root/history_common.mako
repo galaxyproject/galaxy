@@ -32,7 +32,7 @@
         ## Body for history items, extra info and actions, data "peek"
         
         <div id="info${data.id}" class="historyItemBody">
-            %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.VIEW, dataset = data.dataset ):
+            %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
                 <div>You do not have permision to view this dataset.</div>
             %elif data_state == "queued":
                 <div>Job is waiting to run</div>

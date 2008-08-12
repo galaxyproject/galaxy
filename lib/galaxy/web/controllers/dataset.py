@@ -107,7 +107,7 @@ class DatasetInterface( BaseController ):
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset." )
         # TODO, Nate: Make sure the following is functionally correct.
-        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.VIEW, dataset = data ):
+        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
             if filename is None or filename.lower() == "index":
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
