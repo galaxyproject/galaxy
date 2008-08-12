@@ -1,5 +1,5 @@
 """
-Utility functions used systemwide.
+Galaxy Security
 
 """
 import logging

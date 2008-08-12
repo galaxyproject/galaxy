@@ -29,5 +29,11 @@
       </form>
     </td>
   </tr>
+  <tr>
+    <td>
+      <a href="${h.url_for( '/library/manage_libraries' )}">Manage Libraries</a>
+    </td>
+  </tr>
+  <tr>
 </table>
 

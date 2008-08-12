@@ -262,16 +262,16 @@ class Dataset( object ):
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
 
-class HistoryDatasetAssociation( object ):
+
+class DatasetInstance( object ):
+    """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
     permitted_actions = Dataset.permitted_actions
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, copied_from_history_dataset_association = None, validation_errors=None,
-                  visible=True, create_dataset = False ):
+                  parent_id=None, validation_errors=None, visible=True, create_dataset = False ):
         self.name = name or "Unnamed dataset"
         self.id = id
-        self.hid = hid
         self.info = info
         self.blurb = blurb
         self.peek = peek
@@ -282,14 +282,12 @@ class HistoryDatasetAssociation( object ):
         self.deleted = deleted
         self.visible = visible
         # Relationships
-        self.history = history
         if not dataset and create_dataset:
             dataset = Dataset()
             dataset.flush()
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
-        self.copied_from_history_dataset_association = copied_from_history_dataset_association
     
     @property
     def ext( self ):
@@ -399,10 +397,7 @@ class HistoryDatasetAssociation( object ):
                 valid.append( assoc.dataset )
         return valid
     def clear_associated_files( self, metadata_safe = False, purge = False ):
-        #metadata_safe = True means to only clear when assoc.metadata_safe == False
-        for assoc in self.implicitly_converted_datasets:
-            if not metadata_safe or not assoc.metadata_safe:
-                assoc.clear( purge = purge )
+        raise 'Unimplemented'
     def get_child_by_designation(self, designation):
         for child in self.children:
             if child.designation == designation:
@@ -411,17 +406,6 @@ class HistoryDatasetAssociation( object ):
 
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
-    
-    def copy( self, copy_children = False, parent_id = None, target_user = None ):
-        if target_user is None: target_user = self.user
-        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
-        des.flush()
-        if copy_children:
-            for child in self.children:
-                child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
-        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        des.flush()
-        return des
 
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
@@ -435,6 +419,35 @@ class HistoryDatasetAssociation( object ):
             for child in self.children:
                 child.mark_deleted()
 
+
+
+class HistoryDatasetAssociation( DatasetInstance ):
+    def __init__( self, hid = None, history = None, copied_from_history_dataset_association = None, copied_from_library_folder_dataset_association = None, **kwd ):
+        DatasetInstance.__init__( self, **kwd )
+        self.hid = hid
+        # Relationships
+        self.history = history
+        self.copied_from_history_dataset_association = copied_from_history_dataset_association
+        self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
+    
+    def copy( self, copy_children = False, parent_id = None ):
+        print "self.dataset", self.dataset
+        
+        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
+        print "des data", des.dataset
+        des.flush()
+        if copy_children:
+            for child in self.children:
+                child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
+        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        des.flush()
+        return des
+
+    def clear_associated_files( self, metadata_safe = False, purge = False ):
+        #metadata_safe = True means to only clear when assoc.metadata_safe == False
+        for assoc in self.implicitly_converted_datasets:
+            if not metadata_safe or not assoc.metadata_safe:
+                assoc.clear( purge = purge )
 
 class History( object ):
     def __init__( self, id=None, name=None, user=None ):
@@ -499,8 +512,74 @@ class History( object ):
         des.hid_counter = self.hid_counter
         des.flush()
         return des
-    
 
+
+class Library( object ):
+    def __init__( self, name = None, description = None, root_folder = None ):
+        self.name = name or "Unnamed library"
+        self.description = description
+        self.root_folder = root_folder
+
+class LibraryFolder( object ):
+    def __init__( self, name = None, description = None, order_id = None ):
+        self.name = name or "Unnamed folder"
+        self.description = description
+        self.item_count = item_count
+        self.order_id = order_id
+    def add_dataset( self, dataset ):
+        dataset.folder_id = self.id
+        dataset.order_id = self.item_count
+        self.item_count += 1
+    def add_folder( self, folder ):
+        folder.parent_id = self.id
+        folder.order_id = self.item_count
+        self.item_count += 1
+
+class LibraryFolderDatasetAssociation( DatasetInstance ):
+    def __init__( self, folder = None, order_id = None, copied_from_history_dataset_association = None, copied_from_library_folder_dataset_association = None, **kwd ):
+        DatasetInstance.__init__( self, **kwd )
+        self.folder = folder
+        self.order_id = order_id
+        self.copied_from_history_dataset_association = copied_from_history_dataset_association
+        self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
+
+    def to_history_dataset_association( self, parent_id = None ):
+        des = HistoryDatasetAssociation( name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_library_folder_dataset_association = self )
+        des.flush()
+        for child in self.children:
+            child_copy = child.to_history_dataset_association( parent_id = des.id )
+        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        des.flush()
+        return des
+
+    
+    def copy( self, copy_children = False, parent_id = None ):
+        des = LibraryFolderDatasetAssociation( name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_library_folder_dataset_association = self )
+        des.flush()
+        if copy_children:
+            for child in self.children:
+                child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
+        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        des.flush()
+        return des
+        
+    def clear_associated_files( self, metadata_safe = False, purge = False ):
+        return
+
+
+class LibraryTag( object ):
+    def __init__( self, tag ):
+        self.tag = tag
+
+class LibraryTagFolderAssociation( object ):
+    def __init__( self, tag, folder ):
+        self.tag = tag
+        self.folder = folder
+
+class LibraryTagDatasetAssociation( object ):
+    def __init__( self, tag, dataset ):
+        self.tag = tag
+        self.dataset = dataset
 
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
