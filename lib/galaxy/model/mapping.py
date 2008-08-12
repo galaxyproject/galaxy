@@ -120,7 +120,8 @@ Group.table = Table( "galaxy_group", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TEXT ),
-    Column( "priority", Integer ) )
+    Column( "priority", Integer ),
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 UserGroupAssociation.table = Table( "user_group_association", metadata, 
     Column( "id", Integer, primary_key=True ),
