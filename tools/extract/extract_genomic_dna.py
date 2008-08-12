@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 """
-usage: extract_genomic_dna.py $input $out_file1 ${input.metadata.chromCol} ${input.metadata.startCol} ${input.metadata.endCol} ${input.metadata.strandCol} $dbkey $out_format GALAXY_DATA_INDEX_DIR
-by Wen-Yu Chung
+usage: %prog $input $out_file1
+    -1, --cols=N,N,N,N: Columns for start, end, strand in input file
+    -d, --dbkey=N: Genome build of input file
+    -o, --output_format=N: the data type of the output file
+    -g, --GALAXY_DATA_INDEX_DIR=N: the directory containing alignseq.loc and twobit.loc
 """
 from galaxy import eggs
 import pkg_resources
@@ -10,6 +13,7 @@ import sys, string, os, re
 from bx.cookbook import doc_optparse
 import bx.seq.nib
 import bx.seq.twobit
+from galaxy.tools.util.galaxyops import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
     
@@ -54,32 +58,18 @@ def check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR ):
     return twobit_path
         
 def __main__():
-    input_filename = sys.argv[1]
-    output_filename = sys.argv[2]
-    includes_strand_col = False
+    options, args = doc_optparse.parse( __doc__ )
+    try:
+        chrom_col, start_col, end_col, strand_col = parse_cols_arg( options.cols )
+        dbkey = options.dbkey
+        output_format = options.output_format
+        GALAXY_DATA_INDEX_DIR = options.GALAXY_DATA_INDEX_DIR
+        input_filename, output_filename = args
+    except:
+        doc_optparse.exception()
+
+    includes_strand_col = strand_col >= 0
     strand = None
-    # If any of the following exceptions are thrown, we need to improve the metadata validator.
-    try:
-        chrom_col = int( sys.argv[3] ) - 1
-    except:
-        stop_err( "Chrom column not properly set, click the pencil icon in your history item to set it." )
-    try:
-        start_col = int( sys.argv[4] ) - 1
-    except:
-        stop_err( "Start column not properly set, click the pencil icon in your history item to set it." )
-    try:
-        end_col = int( sys.argv[5] ) - 1
-    except:
-        stop_err( "End column not properly set, click the pencil icon in your history item to set it." )
-    try:
-        strand_col = int( sys.argv[6] ) - 1
-        if strand_col >= 0:
-            includes_strand_col = True
-    except:
-        pass
-    dbkey = sys.argv[7]
-    output_format = sys.argv[8]
-    GALAXY_DATA_INDEX_DIR = sys.argv[9]
     nibs = {}
     twobits = {}
     nib_path = check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR )
