@@ -197,9 +197,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             return self.new_history()
         return self.__history          
     def new_history( self ):
-        history = self.app.model.History()
+        history = self.app.model.History( user = self.user )
         # Make sure we have an id
         history.flush()
+        self.app.security_agent.history_set_default_access( history )
         # Immediately associate the new history with self
         self.__history = history
         # Make sure we have a valid session to associate with the new history
@@ -431,6 +432,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             galaxy_session.flush()
             self.__galaxy_session = galaxy_session
         if history is not None and user is not None:
+            # TODO, Nate: Make sure the following is functionally correct
+            if not history.user:
+                # This user will now acquire previously non-owned history, so set permitted actions to user's default
+                self.app.security_agent.history_set_default_access( history, groups=user.default_groups, dataset=True )
             history.user_id = user.id
             history.flush()
             self.__history = history

@@ -27,12 +27,13 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             fields = line.split("\t")
             dbkey = fields[1]
             filepath = fields[2]
-
             newdata = app.model.HistoryDatasetAssociation( create_dataset = True )
             newdata.extension = "bed"
             newdata.name = basic_name + " (" + dbkey + ")"
             newdata.flush()
             history.add_dataset( newdata )
+            #TODO, Nate: Make sure the following is functionally correct
+            app.security_agent.set_dataset_groups( newdata.dataset, output_data.dataset.groups )
             newdata.flush()
             history.flush()
             app.model.flush()

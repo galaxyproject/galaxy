@@ -118,6 +118,7 @@ class User( BaseController ):
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
                 user.flush()
+                trans.app.security_agent.setup_new_user( user )
                 trans.set_user( user )
                 trans.ensure_valid_galaxy_session()
                 """
@@ -166,3 +167,37 @@ class User( BaseController ):
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Reset Password", submit_text="Submit" )
                 .add_text( "email", "Email", value=email, error=error ) )
+    
+    @web.expose
+    def set_default_permitted_actions( self, trans, **kwd ):
+        # TODO, Nate: Make sure this method is functionally correct.
+        """Sets the user's default permitted actions for the new histories"""
+        if trans.user:
+            if 'set_permitted_actions' in kwd:
+                """The user clicked the set_permitted_actions button on the set_permitted_actions form"""
+                group_in = []
+                group_out = []
+                # Collect groups as entered by user
+                for name, value in kwd.items():
+                    if name.startswith( "group_" ):
+                        group = trans.app.security_agent.get_group( name.replace( "group_", "", 1 ) )
+                        if not group:
+                            return trans.show_error_message( 'You have specified an invalid group.' )
+                        if value == 'in':
+                            group_in.append( group )
+                        else:
+                            group_out.append( group )
+                if not group_in:
+                    return trans.show_error_message( "You must specify at least one default group." )
+                cur_groups = [ assoc.group for assoc in trans.user.default_groups ]
+                group_in.sort()
+                cur_groups.sort()
+                if cur_groups != group_in:
+                    trans.app.security_agent.user_set_default_access( trans.user, groups = group_in )
+                    return trans.show_ok_message( 'Default new history permitted actions have been changed.' )
+                else:
+                    return trans.show_error_message( "You did not specify any changes to new history's default permitted actions." )
+            return trans.fill_template( 'user/permissions.mako' )
+        else:
+            # User not logged in, history group must be only public
+            return trans.show_error_message( "You must be logged in to change your default permitted actions." )

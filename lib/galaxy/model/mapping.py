@@ -19,6 +19,7 @@ from sqlalchemy import *
 from galaxy.model import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
+from galaxy.security import GalaxyRBACAgent
 
 metadata = DynamicMetaData( threadlocal=False )
 context = SessionContext( create_session ) 
@@ -113,6 +114,47 @@ ValidationError.table = Table( "validation_error", metadata,
     Column( "message", TrimmedString( 255 ) ),
     Column( "err_type", TrimmedString( 64 ) ),
     Column( "attributes", TEXT ) )
+
+Group.table = Table( "galaxy_group", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TEXT ),
+    Column( "priority", Integer ) )
+
+UserGroupAssociation.table = Table( "user_group_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+GroupDatasetAssociation.table = Table( "group_dataset_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "permitted_actions", JSONType(), default=[] ) )
+
+# TODO, Nate: Need to better understand what these Default tables are for and add appropriate 
+# comments here to clarify them.  Need to ensure that they should include the permitted_actions
+# columns, and if so, that they are correctly populated.
+DefaultUserGroupAssociation.table = Table( "default_user_group_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "permitted_actions", JSONType(), default=[] ) )
+
+DefaultHistoryGroupAssociation.table = Table( "default_history_group_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "permitted_actions", JSONType(), default=[] ) )
 
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -298,6 +340,30 @@ assign_mapper( context, User, User.table,
                                                             collection_class=ordering_list( 'order_index' ) )
                      ) )
 
+assign_mapper( context, Group, Group.table,
+    properties=dict( users=relation( UserGroupAssociation ),
+                     datasets=relation( GroupDatasetAssociation ) ) )
+
+assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
+    properties=dict( user=relation( User, backref = "groups" ),
+                     group=relation( Group, backref = "users" ) ) )
+
+
+# TODO, Nate: Need to make sure we have optimal performance - may need more mappers...
+# if we have a user and a list of datasets, what is the fastest 
+# way to ask whether the user has a certain action on all of them. 
+assign_mapper( context, GroupDatasetAssociation, GroupDatasetAssociation.table,
+    properties=dict( dataset=relation( Dataset, backref = "groups" ),
+                     group=relation( Group, backref = "datasets" ) ) )
+
+assign_mapper( context, DefaultUserGroupAssociation, DefaultUserGroupAssociation.table,
+    properties=dict( user=relation( User, backref = "default_groups" ),
+                     group=relation( Group ) ) )
+
+assign_mapper( context, DefaultHistoryGroupAssociation, DefaultHistoryGroupAssociation.table,
+    properties=dict( history=relation( History, backref = "default_groups" ),
+                     group=relation( Group ) ) )
+
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation ) ) )
 
@@ -411,6 +477,41 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.flush = lambda *args, **kwargs: context.current.flush( *args, **kwargs )
     result.context = context
     result.create_tables = create_tables
+    #load local galaxy security policy
+    result.security_agent = GalaxyRBACAgent( result )
+    # TODO, Nate: The following may not work for our Galaxy instances because there are too
+    # many rows that need updating ( I think ) even though we have eliminated all of the
+    # Role stuff.  Maybe we can test this to see how long it takes for about 1000 datasets.
+    # If we decide to  use this approach rather than SQL commands to populate the tables,
+    # then this needs to be thoroughly tested to ensure the data is populated as expected
+    # (i.e., make sure naything that is public gets the public security settings, etc).
+    #
+    # Set up default table entries here, only exist for group access because
+    # permitted actions are exclusively restricted to the association between a group
+    # and a dataset
+    if result.Group.count() == 0:
+        log.warning( "There were no groups located, setting up default (public) group." )
+        # Create public group
+        public_group = result.security_agent.create_group( name = 'public' )        
+        # Store public group id
+        result.security_agent.set_public_group( public_group )
+        # Loop through all histories and set up rbac on users, histories and datasets
+        for history in result.History.select( result.History.table.c.purged == False ):
+            if history.user:
+                if not history.user.default_groups:
+                    result.security_agent.setup_new_user( history.user )
+                    history.user.flush()
+            else:
+                result.security_agent.history_set_default_access( history, dataset=True )
+                history.flush()
+        # Add all datasets which aren't in a history to the public group
+        orphans = result.Dataset.get_by( history_id = None )
+        if orphans:
+            for dataset in orphans:
+                result.security_agent.set_dataset_groups( dataset, [ public_group ] )
+    else:
+        result.security_agent.guess_public_group()
+    log.debug( "Public Group identified as id = %s." % ( Group.public_id ) )
     return result
     
 def get_suite():
