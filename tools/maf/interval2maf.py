@@ -54,23 +54,22 @@ def __main__():
     
     if options.chromCol: chromCol = int( options.chromCol ) - 1
     else: 
-        print >>sys.stderr, "Chromosome column has not been specified."
+        print >>sys.stderr, "Chromosome column not set, click the pencil icon in the history item to set the metadata attributes."
         sys.exit()
     
     if options.startCol: startCol = int( options.startCol ) - 1
     else: 
-        print >>sys.stderr, "Start column has not been specified."
+        print >>sys.stderr, "Start column not set, click the pencil icon in the history item to set the metadata attributes."
         sys.exit()
     
     if options.endCol: endCol = int( options.endCol ) - 1
     else: 
-        print >>sys.stderr, "End column has not been specified."
+        print >>sys.stderr, "End column not set, click the pencil icon in the history item to set the metadata attributes."
         sys.exit()
     
     if options.strandCol: strandCol = int( options.strandCol ) - 1
     else: 
-        print >>sys.stderr, "Strand column has not been specified."
-        sys.exit()
+        strandCol = -1
     
     if options.interval_file: interval_file = options.interval_file
     else: 
