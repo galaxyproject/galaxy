@@ -272,6 +272,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             user.set_password_cleartext( 'external' )
             user.external = True
             user.flush()
+            self.app.security_agent.setup_new_user( user )
             self.log_event( "Automatically created account '%s'" % user.email )
         return user
     def get_cookie_user( self ):

@@ -171,7 +171,7 @@ class GalaxyRBACAgent( RBACAgent ):
     def user_set_default_access( self, user, groups = None, history = False, dataset = False ):
         # TODO, Nate: Make sure this method is functionally correct with permitted actions set appropriately.
         if groups is None:
-            groups = [ self.get_public_group(), self.create_private_user_group( user ) ]
+            groups = [ self.create_private_user_group( user ) ]
         if groups is not None:
             for assoc in user.default_groups: #this is the association not the actual group
                 assoc.delete()
