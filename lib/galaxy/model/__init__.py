@@ -129,20 +129,18 @@ class Group( object ):
         self.priority = priority
     @classmethod
     def get_public_group( cls ):
-        # TODO, Nate: Make sure this method is functionally correct.
         return Group.get( cls.public_id )
     @classmethod
     def set_public_group( cls, group ):
-        # TODO, Nate: Make sure this method is functionally correct.
-        #we store the id instead of the object, because of alchemy sessions
+        # We store the id instead of the object, because of alchemy sessions
         if isinstance( group, Group ):
             group = group.id
         cls.public_id = group
     @classmethod
     def guess_public_group( cls ):
-        # TODO, Nate: Make sure this method is functionally correct.
-        #retrieve from database and store public group id, assume first created group is public
-        cls.set_public_group( Group.select( order_by = Group.table.c.create_time )[0] )
+        # Retrieve from database and store public group id
+        group = Group.select_by( name='public' )[0]
+        cls.set_public_group( group )
 
 class UserGroupAssociation( object ):
     def __init__( self, user, group ):
@@ -261,7 +259,6 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
-
 
 class DatasetInstance( object ):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
@@ -419,8 +416,6 @@ class DatasetInstance( object ):
             for child in self.children:
                 child.mark_deleted()
 
-
-
 class HistoryDatasetAssociation( DatasetInstance ):
     def __init__( self, hid = None, history = None, copied_from_history_dataset_association = None, copied_from_library_folder_dataset_association = None, **kwd ):
         DatasetInstance.__init__( self, **kwd )
@@ -521,7 +516,7 @@ class Library( object ):
         self.root_folder = root_folder
 
 class LibraryFolder( object ):
-    def __init__( self, name = None, description = None, order_id = None ):
+    def __init__( self, name = None, description = None, item_count = 0, order_id = None ):
         self.name = name or "Unnamed folder"
         self.description = description
         self.item_count = item_count

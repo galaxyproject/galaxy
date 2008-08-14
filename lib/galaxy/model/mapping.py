@@ -139,9 +139,7 @@ GroupDatasetAssociation.table = Table( "group_dataset_association", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "permitted_actions", JSONType(), default=[] ) )
 
-# TODO, Nate: Need to better understand what these Default tables are for and add appropriate 
-# comments here to clarify them.  Need to ensure that they should include the permitted_actions
-# columns, and if so, that they are correctly populated.
+# The following table stores the permissions that are considered the defaults for new histories when they are created by a user
 DefaultUserGroupAssociation.table = Table( "default_user_group_association", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
@@ -150,6 +148,8 @@ DefaultUserGroupAssociation.table = Table( "default_user_group_association", met
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "permitted_actions", JSONType(), default=[] ) )
 
+# The following table stores the default permissions assigned to histories for datasets 
+# that need permissions ( dataset permissions that cannot be determined based on ancestor ) 
 DefaultHistoryGroupAssociation.table = Table( "default_history_group_association", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
@@ -417,10 +417,6 @@ assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
     properties=dict( user=relation( User, backref = "groups" ),
                      group=relation( Group, backref = "users" ) ) )
 
-
-# TODO, Nate: Need to make sure we have optimal performance - may need more mappers...
-# if we have a user and a list of datasets, what is the fastest 
-# way to ask whether the user has a certain action on all of them. 
 assign_mapper( context, GroupDatasetAssociation, GroupDatasetAssociation.table,
     properties=dict( dataset=relation( Dataset, backref = "groups" ),
                      group=relation( Group, backref = "datasets" ) ) )
@@ -609,7 +605,7 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     if result.Group.count() == 0:
         log.warning( "There were no groups located, setting up default (public) group." )
         # Create public group
-        public_group = result.security_agent.create_group( name = 'public' )        
+        public_group = result.security_agent.create_group( name='public' )        
         # Store public group id
         result.security_agent.set_public_group( public_group )
         # Loop through all histories and set up rbac on users, histories and datasets

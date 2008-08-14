@@ -13,9 +13,14 @@ log = logging.getLogger(__name__)
 # are correct when an authenticated user creates things inside their "private" environment.
 class RBACAgent:
     """Class that handles galaxy security"""
-    permitted_actions = Bunch( 
+    permitted_actions = Bunch(
+        # The ability to edit the metadata of the associated dataset 
         DATASET_EDIT_METADATA = 'dataset_edit_metadata',
+        # The ability to change the permissions of a dataset (so specifically, to add and modify 
+        # group_dataset_association rows where the dataset is the dataset for which the permission is set). 
         DATASET_MANAGE_PERMISSIONS = 'dataset_manage_permissions',
+        # The ability to perform any read only operation on the dataset (view, display at external site,
+        # use in a job, etc).
         DATASET_ACCESS = 'dataset_access'
     )
     def allow_action( self, user, action, **kwd ):
