@@ -81,9 +81,8 @@ class GalaxyRBACAgent( RBACAgent ):
             # Check permitted_actions associated with dataset through groups
             for group_dataset_assoc in dataset.groups:
                 if self.components_are_associated( user = user, group = group_dataset_assoc.group ):
-                    for pa in group_dataset_assoc.permitted_actions:
-                        if action in pa.permitted_actions.actions:
-                            return True
+                    if action in group_dataset_assoc.permitted_actions:
+                        return True
         return False # No user and dataset not in public group, or user lacks permission
     def guess_derived_groups_for_datasets( self, datasets=[] ):
          # TODO, Nate: Make sure this method is functionally correct.
@@ -132,6 +131,12 @@ class GalaxyRBACAgent( RBACAgent ):
             if 'group' in kwd:
                 return self.associate_user_group( kwd['user'], kwd['group'] )
         raise 'No valid method of associating provided components: %s' % kwd
+    def disassociate_components( self, **kwd ):
+        assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to disassociate.'
+        if 'dataset' in kwd:
+            if 'group' in kwd:
+                return self.disassociate_group_dataset( kwd['group'], kwd['dataset'] )
+        raise 'No valid method of associating provided components: %s' % kwd
     def associate_group_dataset( self, group, dataset, permitted_actions=[] ):
         # TODO, Nate: Make sure this method is functionally correct.
         # TODO: For now, just take the dataset's permitted_actions, but we need to make sure 
@@ -145,6 +150,11 @@ class GalaxyRBACAgent( RBACAgent ):
         assoc = self.model.GroupDatasetAssociation( group, dataset, permitted_actions )
         assoc.flush()
         return assoc
+    def disassociate_group_dataset( self, group, dataset ):
+        log.debug("In disassociate_group_dataset, removing %s -> %s" % (group.id, dataset.id))
+        assoc = self.model.GroupDatasetAssociation.selectone_by( group_id = group.id, dataset_id = dataset.id )
+        assoc.delete()
+        assoc.flush()
     def associate_user_group( self, user, group ):
         assoc = self.model.UserGroupAssociation( user, group )
         assoc.flush()
@@ -182,7 +192,7 @@ class GalaxyRBACAgent( RBACAgent ):
         # TODO, Nate: Make sure this method is functionally correct with permitted actions set appropriately.
         if groups is None:
             if history.user:
-                groups = history.user.default_groups
+                groups = [ assoc.group for assoc in history.user.default_groups ]
             else:
                 groups = [ self.get_public_group() ]
         if groups is not None:
@@ -234,6 +244,8 @@ class GalaxyRBACAgent( RBACAgent ):
             if 'group' in kwd:
                 return self.model.UserGroupAssociation.get_by( group_id = kwd['group'].id, user_id = kwd['user'].id )
         raise 'No valid method of associating provided components: %s' % kwd
+    def dataset_has_group( self, dataset_id, group_id ):
+        return bool( self.model.GroupDatasetAssociation.get_by( group_id = group_id, dataset_id = dataset_id  )  )
 
 def get_permitted_actions( self, filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''

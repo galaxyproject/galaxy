@@ -60,7 +60,7 @@ class ASync( BaseController ):
             if STATUS == 'OK':
                 key = hmac.new( trans.app.config.tool_secret, "%d:%d" % ( data.id, data.history_id), sha ).hexdigest()
                 if key != data_secret:
-                    return "You do not have permision to alter data %s." % data_id
+                    return "You do not have permission to alter data %s." % data_id
                 # push the job into the queue
                 data.state = data.blurb = data.states.RUNNING
                 log.debug('executing tool %s' % tool.id)

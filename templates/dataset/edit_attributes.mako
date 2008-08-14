@@ -133,19 +133,18 @@
 
 <p />
 
-<%doc>
-%if trans.app.config.enable_beta_features and trans.user and ( trans.app.security_agent.allow_action( trans.user, data.permitted_actions.REMOVE_GROUP, dataset = data ) or trans.app.security_agent.allow_action( trans.user, data.permitted_actions.ADD_GROUP, dataset = data ) ):
+%if trans.app.config.enable_beta_features and trans.user and ( trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data ) ):
   <div class="toolForm">
   <div class="toolFormTitle">Change Permitted Actions</div>
   <div class="toolFormBody">
-      <form name="change_permision_form" action="${h.url_for( action='edit' )}" method="post">
+      <form name="change_permission_form" action="${h.url_for( action='edit' )}" method="post">
           <input type="hidden" name="id" value="${data.id}">
           <div class="form-row">
             <label>
                 Private Dataset:
             </label>
             <% checked = "" %>
-            %if not data.dataset.has_group( trans.app.model.Group.get_public_group() ):
+            %if not trans.app.security_agent.dataset_has_group( data.id, trans.app.model.Group.get_public_group().id ):
                 <% checked = " checked" %>
             %endif
             <div style="float: left; width: 250px; margin-right: 10px;">
@@ -158,10 +157,9 @@
             <div style="clear: both"></div>
           </div>
           <div class="form-row">
-              <input type="submit" name="change_permision" value="Save">
+              <input type="submit" name="change_permission" value="Save">
           </div>
       </form>
   </div>
   </div>
 %endif
-</%doc>

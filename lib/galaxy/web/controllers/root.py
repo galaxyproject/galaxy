@@ -262,30 +262,27 @@ class RootController( BaseController ):
                 if target_type:
                     msg = data.datatype.convert_dataset(trans, data, target_type)
                     return trans.show_ok_message( msg, refresh_frames=['history'] )
-            '''
-            # Users can't currently change permissions or groups
-            elif p.change_permision:
-                """The user clicked the change_permision button on the 'Change permissions' form"""
+            elif p.change_permission:
+                """The user clicked the change_permission button on the 'Change permissions' form"""
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change dataset permitted actions." )
                 private_dataset = 'private_dataset'
                 public_group = trans.app.security_agent.get_public_group()
-                if private_dataset in kwd and data.dataset.has_group( public_group ):
+                if private_dataset in kwd and trans.app.security_agent.dataset_has_group( data.dataset.id, public_group.id ):
                     #check user has permission and then remove public group
-                    if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.REMOVE_GROUP, dataset = data.dataset ):
-                        trans.app.security_agent.remove_component_association( dataset = data, group = public_group )
+                    if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data.dataset ):
+                        trans.app.security_agent.disassociate_components( dataset = data, group = public_group )
                     else:
                         return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
-                elif private_dataset not in kwd and not data.dataset.has_group( public_group ):
+                elif private_dataset not in kwd and not trans.app.security_agent.dataset_has_group( data.dataset.id, public_group.id ):
                     #check user has permission and then add public group
-                    if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.ADD_GROUP, dataset = data.dataset ):
+                    if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data.dataset ):
                         trans.app.security_agent.associate_components( dataset = data, group = public_group)
                     else:
                         return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
                 else:
                     return trans.show_error_message( "You have not specified a valid change of permitted actions." )
                 return trans.show_ok_message( 'Permitted actions have been changed.', refresh_frames=['history'] )
-            '''
             
             data.datatype.before_edit( data )
             
