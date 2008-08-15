@@ -94,9 +94,9 @@
       </div>
       <div style="clear: both"></div>
       <div class="form-row">
-        <a href="${h.url_for( controller='admin', action='dataset', folder_id = this_folder.id )}">Add new dataset to folder '${this_folder.name}'</a>
+        <a href="${h.url_for( controller='admin', action='dataset', folder_id=this_folder.id )}">Add new dataset to folder '${this_folder.name}'</a>
         <div style="clear: both"></div>
-        <a href="${h.url_for( controller='admin', action='folder', parent_id = this_folder.id )}">Add new folder to folder '${this_folder.name}'</a>
+        <a href="${h.url_for( controller='admin', action='folder', parent_id=this_folder.id )}">Add new folder to folder '${this_folder.name}'</a>
       </div>
       <div style="clear: both"></div>  
     </div>

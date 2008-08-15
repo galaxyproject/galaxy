@@ -395,8 +395,13 @@ class RootController( BaseController ):
                 if history:
                     if history.user_id != None and user:
                         assert user.id == history.user_id, "History does not belong to current user"
-                    history_names.append(history.name)
+                    # Delete DefaultHistoryGroupAssociations
+                    for default_history_group_association in history.default_groups:
+                        default_history_group_association.delete()
+                        default_history_group_association.flush()
+                    # Mark history as deleted in db
                     history.deleted = True
+                    history_names.append(history.name)
                     # If deleting the current history, make a new current.
                     if history == trans.get_history():
                         trans.new_history()

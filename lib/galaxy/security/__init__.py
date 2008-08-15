@@ -21,7 +21,7 @@ class RBACAgent:
         DATASET_MANAGE_PERMISSIONS = 'dataset_manage_permissions',
         # The ability to perform any read only operation on the dataset (view, display at external site,
         # use in a job, etc).
-        DATASET_ACCESS = 'dataset_access'
+        DATASET_ACCESSS = 'dataset_access'
     )
     def allow_action( self, user, action, **kwd ):
         raise 'No valid method of checking action (%s) on %s for user %s.' % ( action, kwd, user )
@@ -67,9 +67,8 @@ class GalaxyRBACAgent( RBACAgent ):
             return self.allow_dataset_action( user, action, kwd['dataset'] )
         raise 'No valid method of checking action (%s) on %s for user %s.' % ( action, kwd, user )
     def allow_dataset_action( self, user, action, dataset ):
-        # TODO, Nate: Make sure this method is functionally correct.
         """Returns true when user has permission to perform an action"""
-        while not isinstance( dataset, self.model.Dataset ):
+        if not isinstance( dataset, self.model.Dataset ):
             dataset = dataset.dataset
         # If dataset is in public group, we always return true for viewing and using
         # This may need to change when the ability to alter groups and permitted_actions is allowed
@@ -122,7 +121,6 @@ class GalaxyRBACAgent( RBACAgent ):
         return rval
         raise 'No valid method of creating group with %s' % ( kwd )
     def associate_components( self, **kwd ):
-        # TODO, Nate: Make sure this method is functionally correct.
         assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to associate.'
         if 'dataset' in kwd:
             if 'group' in kwd:
@@ -138,15 +136,11 @@ class GalaxyRBACAgent( RBACAgent ):
                 return self.disassociate_group_dataset( kwd['group'], kwd['dataset'] )
         raise 'No valid method of associating provided components: %s' % kwd
     def associate_group_dataset( self, group, dataset, permitted_actions=[] ):
-        # TODO, Nate: Make sure this method is functionally correct.
-        # TODO: For now, just take the dataset's permitted_actions, but we need to make sure 
-        # we can associate group permitted_actions if necessary - need to look into this...
         if not permitted_actions:
             if isinstance( dataset.permitted_actions, Bunch ):
                 permitted_actions = dataset.permitted_actions.__dict__.values()
             else:
                 permitted_actions = dataset.permitted_actions
-        log.debug("In associate_group_dataset, permitted_actions: %s" %str(permitted_actions) )
         assoc = self.model.GroupDatasetAssociation( group, dataset, permitted_actions )
         assoc.flush()
         return assoc
@@ -160,9 +154,9 @@ class GalaxyRBACAgent( RBACAgent ):
         assoc.flush()
         return assoc
     def create_private_user_group( self, user ):
-        # TODO, Nate: Make sure this method is functionally correct.
         # Create private group
-        group = self.model.Group( user.email, priority = 10 )
+        group_name = "%s private group" % user.email
+        group = self.model.Group( name=group_name, priority=10 )
         group.flush()        
         # Add user to group
         self.associate_components( group=group, user=user )
@@ -177,12 +171,10 @@ class GalaxyRBACAgent( RBACAgent ):
                 assoc.delete()
                 assoc.flush()
             for group in groups:
-                log.debug("In user_set_default_access, group: %s" %str(group))
                 if isinstance( group, self.model.Group ):
                     permitted_actions = group.permitted_actions.__dict__.values()
                 else:
                     permitted_actions = group.permitted_actions
-                log.debug("In user_set_default_access, permitted_actions: %s" % str( permitted_actions))
                 assoc = self.model.DefaultUserGroupAssociation( user, group, permitted_actions )
                 assoc.flush()
         if history:
@@ -200,12 +192,10 @@ class GalaxyRBACAgent( RBACAgent ):
                 assoc.delete()
                 assoc.flush()
             for group in groups:
-                log.debug("In history_set_default_access, group: %s" %str(group))
                 if isinstance( group, self.model.Group ):
                     permitted_actions = group.permitted_actions.__dict__.values()
                 else:
                     permitted_actions = group.permitted_actions
-                log.debug("In history_set_default_access, permitted_actions: %s" % str( permitted_actions))
                 assoc = self.model.DefaultHistoryGroupAssociation( history, group, permitted_actions )
                 assoc.flush()
         if dataset:
@@ -223,7 +213,6 @@ class GalaxyRBACAgent( RBACAgent ):
     def guess_public_group( self ):
         return self.model.Group.guess_public_group()
     def set_dataset_groups( self, dataset, groups ):
-        # TODO, Nate: Make sure this method is functionally correct.
         if isinstance( dataset, self.model.HistoryDatasetAssociation ):
             dataset = dataset.dataset
         for group_dataset_assoc in dataset.groups:
@@ -232,7 +221,6 @@ class GalaxyRBACAgent( RBACAgent ):
         for group in groups:
             if not isinstance( group, self.model.Group ):
                 group = group.group
-            log.debug("In set_dataset_groups, before elf.associate_components, dataset: %s, group: %s" % ( str(dataset), str(group)))
             self.associate_components( dataset=dataset, group=group )
     def get_component_associations( self, **kwd ):
         # TODO, Nate: Make sure this method is functionally correct.
@@ -254,6 +242,5 @@ def get_permitted_actions( self, filter=None ):
     if not filter.endswith('_'):
         filter += '_'
     tmp_bunch = Bunch()
-    [tmp_bunch.__dict__.__setitem__(k, v) for k, v in \
-     RBACAgent.permitted_actions.items() if k.startswith(filter)]
+    [tmp_bunch.__dict__.__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)]
     return tmp_bunch

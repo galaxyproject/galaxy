@@ -1,5 +1,6 @@
 
-import shutil, StringIO
+import shutil, StringIO, operator
+from galaxy import util
 from galaxy.web.base.controller import *
 from galaxy.datatypes import sniff
 from galaxy.security import RBACAgent
@@ -540,7 +541,7 @@ class Admin( BaseController ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         data_files = []
-        def add_file( file_obj, name, extension, dbkey, info = 'no info', space_to_tab = False ):
+        def add_file( file_obj, name, extension, dbkey, groups, info='no info', space_to_tab=False ):
             data_type = None
             temp_name = sniff.stream_to_file( file_obj )
             if space_to_tab:
@@ -555,8 +556,14 @@ class Admin( BaseController ):
             folder = trans.app.model.LibraryFolder.get( folder_id )
             folder.add_dataset( dataset )
             dataset.flush()
-            # TODO, SET SECURTY INTERACTIVELY ON DATASET, right now everything is public
-            trans.app.security_agent.set_dataset_groups( dataset.dataset, [trans.app.security_agent.get_public_group()] )
+            # GroupDatasetAssociations will enable security on the dataset based on the permitted_actions
+            # associated with the GroupDatasetAssociation.  The default permitted_actions at this point
+            # will be DATASET_ACCESS, but the user can change this after the file is uploaded.
+            permitted_actions = [ RBACAgent.permitted_actions.DATASET_ACCESS ]
+            for group_id in groups:
+                group = galaxy.model.Group.get( group_id )
+                group_dataset_assoc = galaxy.model.GroupDatasetAssociation( group, dataset.dataset, permitted_actions )
+                group_dataset_assoc.flush()
             shutil.move( temp_name, dataset.dataset.file_name )
             dataset.dataset.state = dataset.dataset.states.OK
             dataset.init_meta()
@@ -575,7 +582,7 @@ class Admin( BaseController ):
 
             return dataset
         if 'create_dataset' in kwd:
-            #copied from upload tool action
+            # Copied from upload tool action
             last_dataset_created = None
             data_file = kwd['file_data']
             url_paste = kwd['url_paste']
@@ -583,6 +590,12 @@ class Admin( BaseController ):
             if 'space_to_tab' in kwd:
                 if kwd['space_to_tab'] not in ["None", None]:
                     space_to_tab = True
+            groups = kwd['groups']
+            if groups and not isinstance( groups, list ):
+                # mako sends singleton lists as a string
+                groups = [ groups ]
+            if groups is None:
+                groups = []
             temp_name = ""
             data_list = []
 
@@ -590,14 +603,26 @@ class Admin( BaseController ):
                 file_name = data_file.filename
                 file_name = file_name.split( '\\' )[-1]
                 file_name = file_name.split( '/' )[-1]
-                last_dataset_created = add_file( data_file.file, file_name, extension, dbkey, info="uploaded file", space_to_tab = space_to_tab )
+                last_dataset_created = add_file( data_file.file, 
+                                                 file_name, 
+                                                 extension, 
+                                                 dbkey, 
+                                                 groups,
+                                                 info="uploaded file", 
+                                                 space_to_tab=space_to_tab )
             elif url_paste not in [ None, "" ]:
                 if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
                     url_paste = url_paste.replace( '\r', '' ).split( '\n' )
                     for line in url_paste:
                         line = line.rstrip( '\r\n' )
                         if line:
-                            last_dataset_created = add_file( urllib.urlopen( line ), line, extension, dbkey, info="uploaded url", space_to_tab=space_to_tab )
+                            last_dataset_created = add_file( urllib.urlopen( line ),
+                                                             line,
+                                                             extension, 
+                                                             dbkey, 
+                                                             groups,
+                                                             info="uploaded url", 
+                                                             space_to_tab=space_to_tab )
                 else:
                     is_valid = False
                     for line in url_paste:
@@ -606,16 +631,73 @@ class Admin( BaseController ):
                             is_valid = True
                             break
                     if is_valid:
-                        last_dataset_created = add_file( StringIO.StringIO( url_paste ), 'Pasted Entry', extension, dbkey, info="pasted entry", space_to_tab=space_to_tab )
-            trans.response.send_redirect( web.url_for( action='dataset', id = last_dataset_created.id ) )
-            #return self.dataset( trans, id = last_dataset_created.id )
+                        last_dataset_created = add_file( StringIO.StringIO( url_paste ),
+                                                         'Pasted Entry', 
+                                                         extension, 
+                                                         dbkey, 
+                                                         groups,
+                                                         info="pasted entry", 
+                                                         space_to_tab=space_to_tab )
+            trans.response.send_redirect( web.url_for( action='dataset', id=last_dataset_created.id ) )
         elif id is None:
-            return trans.fill_template( '/admin/library/new_dataset.mako', folder_id = folder_id )
+            # Send list of data formats to the form so the "extension" select list can be populated dynamically
+            file_formats = trans.app.datatypes_registry.upload_file_formats
+            # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
+            def get_dbkey_options():
+                last_used_build = trans.history.genome_build
+                for dbkey, build_name in util.dbnames:
+                    yield build_name, dbkey, ( dbkey==last_used_build )
+            dbkeys = get_dbkey_options()
+            # Send list of groups to the form so the dataset can be associated with 1 or more of them.
+            groups = []
+            q = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
+                             ( galaxy.model.Group.table.c.name ).label( 'group_name' ) ),
+                            order_by = [ galaxy.model.Group.table.c.name ] )
+            for row in q.execute():
+                groups.append( ( row.group_id, row.group_name ) )
+            groups = sorted( groups, key=operator.itemgetter(1) )
+            return trans.fill_template( '/admin/library/new_dataset.mako', 
+                                        folder_id=folder_id,
+                                        file_formats=file_formats,
+                                        dbkeys=dbkeys,
+                                        groups=groups )
         dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id )
         if dataset:
-            #copied from edit attributes for 'regular' datasets
+            # Copied from edit attributes for 'regular' datasets with some additions
             p = util.Params(kwd, safe=False)
-            if p.change:
+            if p.change_permitted_actions:
+                # The user clicked the Save button on the 'Group Associations' form
+                actions = p.actions
+                if actions and not isinstance( actions, list ):
+                    actions = [ actions ]
+                if actions is None:
+                    actions = []
+                # actions is a list of comma-separated strings consisting of group_id and permitted_action,
+                # something like: ['6,dataset_access', '6,dataset_edit_metadata'].  We'll parse them and
+                # create a dict whose keys are groups_id and values are permitted_actions
+                gdpa_dict = {}
+                for action in actions:
+                    group_id, dpa = action.split( ',' )
+                    group_id = int( group_id )
+                    if group_id in gdpa_dict.keys():
+                        gdpa_dict[ group_id ].append( dpa )
+                    else:
+                        gdpa_dict[ group_id ] = [ dpa ]
+                # Check to see if we need to delete any GroupDatasetAssociations.  This occurs if
+                # the user unchecked all boxes for a group
+                for group_dataset_assoc in dataset.dataset.groups:
+                    if group_dataset_assoc.group_id not in gdpa_dict.keys():
+                        group_dataset_assoc.delete()
+                        group_dataset_assoc.flush()
+                # Use the dict to update the permitted actions for each GroupDatasetAssociaton
+                for group_id in gdpa_dict:
+                    actions = gdpa_dict[ group_id ]
+                    # Update the permitted_actions for every GroupDatasetAssociation of the Group
+                    q = sa.update( galaxy.model.GroupDatasetAssociation.table,
+                                   whereclause = galaxy.model.GroupDatasetAssociation.table.c.group_id == group_id,
+                                   values = { galaxy.model.GroupDatasetAssociation.table.c.permitted_actions : actions } )
+                    result = q.execute()
+            elif p.change:
                 # The user clicked the Save button on the 'Change data type' form
                 trans.app.datatypes_registry.change_datatype( dataset, p.datatype )
                 trans.app.model.flush()
@@ -623,7 +705,6 @@ class Admin( BaseController ):
                 # The user clicked the Save button on the 'Edit Attributes' form
                 dataset.name  = name
                 dataset.info  = info
-                
                 # The following for loop will save all metadata_spec items
                 for name, spec in dataset.datatype.metadata_spec.items():
                     if spec.get("readonly"):
@@ -651,7 +732,20 @@ class Admin( BaseController ):
                 return trans.show_ok_message( "Attributes updated" )
             
             dataset.datatype.before_edit( dataset )
-            
+            # Get all actions to send to the form
+            dataset_actions = []
+            dpas = RBACAgent.permitted_actions
+            for dpa in dpas.items():
+                if dpa[0].startswith( 'DATASET' ):
+                    dataset_actions.append( dpa[1] )
+                dataset_actions.sort()
+            # Get the permitted_actions of each GroupDatasetAssociation to send to the form
+            gdas = []
+            # Refresh the dataset to ensure we have a valid set of DatasetGroupAssociations
+            dataset.dataset.refresh()
+            for group_dataset_assoc in dataset.dataset.groups:
+                group = galaxy.model.Group.get( group_dataset_assoc.group_id )
+                gdas.append( ( group.id, group.name, group_dataset_assoc.permitted_actions ) )
             if "dbkey" in dataset.datatype.metadata_spec and not dataset.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
                 # This looks like it does nothing, but getting the dbkey
@@ -670,7 +764,9 @@ class Admin( BaseController ):
             return trans.fill_template( "/admin/library/dataset.mako", 
                                         dataset=dataset, 
                                         metadata=metadata,
-                                        datatypes=ldatatypes, 
+                                        datatypes=ldatatypes,
+                                        dataset_actions=dataset_actions,
+                                        gdas=gdas,
                                         err=None )
         else:
             return trans.show_error_message( "Invalid dataset specified" )

@@ -186,7 +186,6 @@ Library.table = Table( "library", metadata,
     Column( "name", TEXT ),
     Column( "description", TEXT ) )
 
-
 LibraryFolder.table = Table( "library_folder", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "parent_id", Integer, ForeignKey( "library_folder.id" ), nullable = True, index=True ),
@@ -216,7 +215,6 @@ LibraryTagDatasetAssociation.table = Table( "library_tag_dataset_association", m
     Column( "tag_id", Integer, ForeignKey( "library_tag.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ) )
-
 
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
