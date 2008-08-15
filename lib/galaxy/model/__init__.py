@@ -417,7 +417,12 @@ class DatasetInstance( object ):
                 child.mark_deleted()
 
 class HistoryDatasetAssociation( DatasetInstance ):
-    def __init__( self, hid = None, history = None, copied_from_history_dataset_association = None, copied_from_library_folder_dataset_association = None, **kwd ):
+    def __init__( self, 
+                  hid = None, 
+                  history = None, 
+                  copied_from_history_dataset_association = None, 
+                  copied_from_library_folder_dataset_association = None, 
+                  **kwd ):
         DatasetInstance.__init__( self, **kwd )
         self.hid = hid
         # Relationships
@@ -426,10 +431,19 @@ class HistoryDatasetAssociation( DatasetInstance ):
         self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
     
     def copy( self, copy_children = False, parent_id = None ):
-        print "self.dataset", self.dataset
-        
-        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
-        print "des data", des.dataset
+        des = HistoryDatasetAssociation( hid=self.hid, 
+                                         name=self.name, 
+                                         info=self.info, 
+                                         blurb=self.blurb, 
+                                         peek=self.peek, 
+                                         extension=self.extension, 
+                                         dbkey=self.dbkey, 
+                                         metadata=self._metadata, 
+                                         dataset = self.dataset, 
+                                         visible=self.visible, 
+                                         deleted=self.deleted, 
+                                         parent_id=parent_id, 
+                                         copied_from_history_dataset_association=self )
         des.flush()
         if copy_children:
             for child in self.children:
@@ -501,13 +515,12 @@ class History( object ):
         des.flush()
         des.name = self.name
         for data in self.datasets:
-            new_data = data.copy( copy_children = True, target_user = target_user )
+            new_data = data.copy( copy_children = True )
             des.add_dataset( new_data )
             new_data.flush()
         des.hid_counter = self.hid_counter
         des.flush()
         return des
-
 
 class Library( object ):
     def __init__( self, name = None, description = None, root_folder = None ):
@@ -531,7 +544,12 @@ class LibraryFolder( object ):
         self.item_count += 1
 
 class LibraryFolderDatasetAssociation( DatasetInstance ):
-    def __init__( self, folder = None, order_id = None, copied_from_history_dataset_association = None, copied_from_library_folder_dataset_association = None, **kwd ):
+    def __init__( self, 
+                  folder = None, 
+                  order_id = None, 
+                  copied_from_history_dataset_association = None, 
+                  copied_from_library_folder_dataset_association = None, 
+                  **kwd ):
         DatasetInstance.__init__( self, **kwd )
         self.folder = folder
         self.order_id = order_id
@@ -539,7 +557,18 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
         self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
 
     def to_history_dataset_association( self, parent_id = None ):
-        des = HistoryDatasetAssociation( name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_library_folder_dataset_association = self )
+        des = HistoryDatasetAssociation( name=self.name, 
+                                         info=self.info, 
+                                         blurb=self.blurb, 
+                                         peek=self.peek, 
+                                         extension=self.extension, 
+                                         dbkey=self.dbkey, 
+                                         metadata=self._metadata, 
+                                         dataset = self.dataset, 
+                                         visible=self.visible, 
+                                         deleted=self.deleted, 
+                                         parent_id=parent_id, 
+                                         copied_from_library_folder_dataset_association = self )
         des.flush()
         for child in self.children:
             child_copy = child.to_history_dataset_association( parent_id = des.id )
@@ -549,7 +578,18 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
 
     
     def copy( self, copy_children = False, parent_id = None ):
-        des = LibraryFolderDatasetAssociation( name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_library_folder_dataset_association = self )
+        des = LibraryFolderDatasetAssociation( name=self.name, 
+                                               info=self.info, 
+                                               blurb=self.blurb, 
+                                               peek=self.peek, 
+                                               extension=self.extension, 
+                                               dbkey=self.dbkey, 
+                                               metadata=self._metadata, 
+                                               dataset = self.dataset, 
+                                               visible=self.visible, 
+                                               deleted=self.deleted, 
+                                               parent_id=parent_id, 
+                                               copied_from_library_folder_dataset_association = self )
         des.flush()
         if copy_children:
             for child in self.children:
@@ -626,7 +666,16 @@ class Event( object ):
         self.message = message
 
 class GalaxySession( object ):
-    def __init__( self, id=None, user=None, remote_host=None, remote_addr=None, referer=None, current_history_id=None, session_key=None, is_valid=False, prev_session_id=None ):
+    def __init__( self, 
+                  id=None, 
+                  user=None, 
+                  remote_host=None, 
+                  remote_addr=None, 
+                  referer=None, 
+                  current_history_id=None, 
+                  session_key=None, 
+                  is_valid=False, 
+                  prev_session_id=None ):
         self.id = id
         self.user = user
         self.remote_host = remote_host
