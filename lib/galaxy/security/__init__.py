@@ -68,7 +68,6 @@ class GalaxyRBACAgent( RBACAgent ):
         raise 'No valid method of checking action (%s) on %s for user %s.' % ( action, kwd, user )
     def allow_dataset_action( self, user, action, dataset ):
         """Returns true when user has permission to perform an action"""
-        log.debug("In allow_dataset_action, user: %s, action: %s, dataset: %s" % ( str(user), str(action), str(dataset)))
         if not isinstance( dataset, self.model.Dataset ):
             dataset = dataset.dataset
         # If dataset is in public group, we always return true for viewing and using
@@ -146,7 +145,6 @@ class GalaxyRBACAgent( RBACAgent ):
         assoc.flush()
         return assoc
     def disassociate_group_dataset( self, group, dataset ):
-        log.debug("In disassociate_group_dataset, removing %s -> %s" % (group.id, dataset.id))
         assoc = self.model.GroupDatasetAssociation.selectone_by( group_id = group.id, dataset_id = dataset.id )
         assoc.delete()
         assoc.flush()
@@ -239,11 +237,9 @@ class GalaxyRBACAgent( RBACAgent ):
 def get_permitted_actions( self, filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''
     if filter is None:
-        log.debug("In get_permitted_actions, returning RBACAgent.permitted_actions: %s" % str( RBACAgent.permitted_actions))
         return RBACAgent.permitted_actions
     if not filter.endswith('_'):
         filter += '_'
     tmp_bunch = Bunch()
     [tmp_bunch.__dict__.__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)]
-    log.debug("In get_permitted_actions, returning tmp_bunch: %s" % str( tmp_bunch))
     return tmp_bunch

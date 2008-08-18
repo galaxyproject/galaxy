@@ -513,6 +513,10 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         if 'create_folder' in kwd:
             folder = trans.app.model.LibraryFolder( name = name, description = description )
+            # We are associating the last used genome_build with folders, so we will always
+            # initialize a new folder with the first dbkey in util.dbnames which is currently
+            # ?    unspecified (?)
+            folder.genome_build = util.dbnames.default_value
             if parent_id:
                 parent_folder = trans.app.model.LibraryFolder.get( parent_id )
                 parent_folder.add_folder( folder )
@@ -540,8 +544,17 @@ class Admin( BaseController ):
     def dataset( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, dbkey=None, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
+        if isinstance( dbkey, list ):
+            last_used_build = dbkey[0]
+        else:
+            last_used_build = dbkey
+        if folder_id and not last_used_build:
+            folder = trans.app.model.LibraryFolder.get( folder_id )
+            last_used_build = folder.genome_build
         data_files = []
-        def add_file( file_obj, name, extension, dbkey, groups, info='no info', space_to_tab=False ):
+
+        # add_file method
+        def add_file( file_obj, name, extension, dbkey, last_used_build, groups, info='no info', space_to_tab=False ):
             data_type = None
             temp_name = sniff.stream_to_file( file_obj )
             if space_to_tab:
@@ -552,9 +565,13 @@ class Admin( BaseController ):
                 data_type = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
             else:
                 data_type = extension
-            dataset = trans.app.model.LibraryFolderDatasetAssociation( name = name, info = info, extension = data_type, dbkey = dbkey, create_dataset = True )
+            dataset = trans.app.model.LibraryFolderDatasetAssociation( name=name, 
+                                                                       info=info, 
+                                                                       extension=data_type, 
+                                                                       dbkey=dbkey, 
+                                                                       create_dataset=True )
             folder = trans.app.model.LibraryFolder.get( folder_id )
-            folder.add_dataset( dataset )
+            folder.add_dataset( dataset, genome_build=last_used_build )
             dataset.flush()
             # GroupDatasetAssociations will enable security on the dataset based on the permitted_actions
             # associated with the GroupDatasetAssociation.  The default permitted_actions at this point
@@ -575,12 +592,12 @@ class Admin( BaseController ):
             else:
                 dataset.set_peek()
             dataset.set_size()
-
             if dataset.missing_meta():
                 dataset.datatype.set_meta( dataset )
             trans.app.model.flush()
-
             return dataset
+        # END add_file method
+
         if 'create_dataset' in kwd:
             # Copied from upload tool action
             last_dataset_created = None
@@ -603,12 +620,13 @@ class Admin( BaseController ):
                 file_name = data_file.filename
                 file_name = file_name.split( '\\' )[-1]
                 file_name = file_name.split( '/' )[-1]
-                last_dataset_created = add_file( data_file.file, 
-                                                 file_name, 
-                                                 extension, 
-                                                 dbkey, 
+                last_dataset_created = add_file( data_file.file,
+                                                 file_name,
+                                                 extension,
+                                                 dbkey,
+                                                 last_used_build,
                                                  groups,
-                                                 info="uploaded file", 
+                                                 info="uploaded file",
                                                  space_to_tab=space_to_tab )
             elif url_paste not in [ None, "" ]:
                 if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
@@ -618,10 +636,11 @@ class Admin( BaseController ):
                         if line:
                             last_dataset_created = add_file( urllib.urlopen( line ),
                                                              line,
-                                                             extension, 
-                                                             dbkey, 
+                                                             extension,
+                                                             dbkey,
+                                                             last_used_build,
                                                              groups,
-                                                             info="uploaded url", 
+                                                             info="uploaded url",
                                                              space_to_tab=space_to_tab )
                 else:
                     is_valid = False
@@ -632,22 +651,22 @@ class Admin( BaseController ):
                             break
                     if is_valid:
                         last_dataset_created = add_file( StringIO.StringIO( url_paste ),
-                                                         'Pasted Entry', 
-                                                         extension, 
-                                                         dbkey, 
+                                                         'Pasted Entry',
+                                                         extension,
+                                                         dbkey,
+                                                         last_used_build,
                                                          groups,
-                                                         info="pasted entry", 
+                                                         info="pasted entry",
                                                          space_to_tab=space_to_tab )
             trans.response.send_redirect( web.url_for( action='dataset', id=last_dataset_created.id ) )
         elif id is None:
             # Send list of data formats to the form so the "extension" select list can be populated dynamically
             file_formats = trans.app.datatypes_registry.upload_file_formats
             # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
-            def get_dbkey_options():
-                last_used_build = trans.history.genome_build
+            def get_dbkey_options( last_used_build ):
                 for dbkey, build_name in util.dbnames:
                     yield build_name, dbkey, ( dbkey==last_used_build )
-            dbkeys = get_dbkey_options()
+            dbkeys = get_dbkey_options( last_used_build )
             # Send list of groups to the form so the dataset can be associated with 1 or more of them.
             groups = []
             q = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
@@ -660,6 +679,7 @@ class Admin( BaseController ):
                                         folder_id=folder_id,
                                         file_formats=file_formats,
                                         dbkeys=dbkeys,
+                                        last_used_build=last_used_build,
                                         groups=groups )
         dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id )
         if dataset:

@@ -52,7 +52,11 @@
         <div style="float: left; width: 250px; margin-right: 10px;">
           <select name="dbkey">
             %for dbkey in dbkeys:
-              <option value="${dbkey[1]}">${dbkey[0]}</option>
+              %if dbkey[1] == last_used_build:
+                <option value="${dbkey[1]}" selected>${dbkey[0]}</option>
+              %else:
+                <option value="${dbkey[1]}">${dbkey[0]}</option>
+              %endif
             %endfor
           </select>
         </div>

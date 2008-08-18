@@ -66,7 +66,6 @@ History.table = Table( "history", metadata,
 #             Column( "state", String( 64 ) ),
 #             Column( "tool_parameters", Pickle() ) )
 
-
 HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
@@ -194,7 +193,8 @@ LibraryFolder.table = Table( "library_folder", metadata,
     Column( "name", TEXT ),
     Column( "description", TEXT ),
     Column( "order_id", Integer ),
-    Column( "item_count", Integer ) )
+    Column( "item_count", Integer ),
+    Column( "genome_build", TrimmedString( 40 ) ) )
 
 LibraryTag.table = Table( "library_tag", metadata,
     Column( "id", Integer, primary_key=True ),

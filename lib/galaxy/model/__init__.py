@@ -285,34 +285,26 @@ class DatasetInstance( object ):
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
-    
     @property
     def ext( self ):
         return self.extension
-    
     def get_dataset_state( self ):
         return self.dataset.state
     def set_dataset_state ( self, state ):
         self.dataset.state = state
         self.dataset.flush() #flush here, because hda.flush() won't flush the Dataset object
     state = property( get_dataset_state, set_dataset_state )
-    
     def get_file_name( self ):
         return self.dataset.get_file_name()
-            
     def set_file_name (self, filename):
         return self.dataset.set_file_name( filename )
-        
     file_name = property( get_file_name, set_file_name )
-    
     @property
     def extra_files_path( self ):
         return self.dataset.extra_files_path
-    
     @property
     def datatype( self ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
-
     def get_metadata( self ):
         if not self._metadata:
             self._metadata = dict()
@@ -321,11 +313,8 @@ class DatasetInstance( object ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = dict( bunch.items() )
     metadata = property( get_metadata, set_metadata )
-
-    """
-    This provide backwards compatibility with using the old dbkey
-    field in the database.  That field now maps to "old_dbkey" (see mapping.py).
-    """
+    # This provide backwards compatibility with using the old dbkey
+    # field in the database.  That field now maps to "old_dbkey" (see mapping.py).
     def get_dbkey( self ):
         dbkey = self.metadata.dbkey
         if not isinstance(dbkey, list): dbkey = [dbkey]
@@ -343,7 +332,6 @@ class DatasetInstance( object ):
         #else:
         #    self.old_dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
-
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
         datatypes_registry.change_datatype( self, new_ext )
@@ -400,16 +388,12 @@ class DatasetInstance( object ):
             if child.designation == designation:
                 return child
         return None
-
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
-
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
-
     def extend_validation_errors( self, validation_errors ):
         self.validation_errors.extend(validation_errors)
-
     def mark_deleted( self, include_children=True ):
         self.deleted = True
         if include_children:
@@ -429,7 +413,6 @@ class HistoryDatasetAssociation( DatasetInstance ):
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
-    
     def copy( self, copy_children = False, parent_id = None ):
         des = HistoryDatasetAssociation( hid=self.hid, 
                                          name=self.name, 
@@ -451,7 +434,6 @@ class HistoryDatasetAssociation( DatasetInstance ):
         des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
         return des
-
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         #metadata_safe = True means to only clear when assoc.metadata_safe == False
         for assoc in self.implicitly_converted_datasets:
@@ -469,7 +451,6 @@ class History( object ):
         self.user = user
         self.datasets = []
         self.galaxy_sessions = []
-        
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures 
         # better integrity
@@ -481,13 +462,11 @@ class History( object ):
                 if dataset.hid > last_hid:
                     last_hid = dataset.hid
             return last_hid + 1
-
     def add_galaxy_session( self, galaxy_session, association=None ):
         if association is None:
             self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
         else:
             self.galaxy_sessions.append( association )
-
     def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
         if isinstance( dataset, Dataset ):
             dataset = HistoryDatasetAssociation( dataset = dataset )
@@ -507,7 +486,6 @@ class History( object ):
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
         self.datasets.append( dataset )
-
     def copy( self, target_user = None ):
         if not target_user:
             target_user = self.user
@@ -534,10 +512,13 @@ class LibraryFolder( object ):
         self.description = description
         self.item_count = item_count
         self.order_id = order_id
-    def add_dataset( self, dataset ):
+        self.genome_build = None
+    def add_dataset( self, dataset, genome_build=None ):
         dataset.folder_id = self.id
         dataset.order_id = self.item_count
         self.item_count += 1
+        if genome_build not in [None, '?']:
+            self.genome_build = genome_build
     def add_folder( self, folder ):
         folder.parent_id = self.id
         folder.order_id = self.item_count
@@ -555,7 +536,6 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
         self.order_id = order_id
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
-
     def to_history_dataset_association( self, parent_id = None ):
         des = HistoryDatasetAssociation( name=self.name, 
                                          info=self.info, 
@@ -575,8 +555,6 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
         des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
         return des
-
-    
     def copy( self, copy_children = False, parent_id = None ):
         des = LibraryFolderDatasetAssociation( name=self.name, 
                                                info=self.info, 
@@ -597,10 +575,8 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
         des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
         return des
-        
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return
-
 
 class LibraryTag( object ):
     def __init__( self, tag ):
