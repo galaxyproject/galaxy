@@ -1085,6 +1085,8 @@ class Tool:
                 else: visible = False
                 ext = fields.pop(0).lower()
                 child_dataset = self.app.model.HistoryDatasetAssociation( extension=ext, parent_id=outdata.id, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
+                # TODO, Nate: Make sure the following is functionally correct.
+                self.app.security_agent.set_dataset_groups( child_dataset.dataset, outdata.dataset.groups )
                 # Move data from temp location to dataset location
                 shutil.move( filename, child_dataset.file_name )
                 child_dataset.flush()
@@ -1121,6 +1123,8 @@ class Tool:
                 ext = fields.pop(0).lower()
                 # Create new primary dataset
                 primary_data = self.app.model.HistoryDatasetAssociation( extension=ext, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
+                # TODO, Nate: Make sure the following is functionally correct.
+                self.app.security_agent.set_dataset_groups( primary_data.dataset, outdata.dataset.groups )
                 primary_data.flush()
                 # Move data from temp location to dataset location
                 shutil.move( filename, primary_data.file_name )
