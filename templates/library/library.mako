@@ -13,7 +13,6 @@
                 if group_dataset_assoc.group_id in group_ids:
                     render = True
                     break
-        # TODO: Do we need to upgrade sqlalchemy?  The following shouldn't be necessary if the mappers work correctly.
         # Check the folder's sub-folders to see what can be rendered
         for library_folder in component.folders:
             render_component( library_folder )
