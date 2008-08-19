@@ -67,25 +67,29 @@ def __main__():
         sys.exit()
     
     if not options.geneBED:
-        if options.chromCol: chr_col = int( options.chromCol ) - 1
+        if options.chromCol:
+            chr_col = int( options.chromCol ) - 1
         else: 
-            print >>sys.stderr, "Chromosome column has not been specified."
+            print >>sys.stderr, "Chromosome column not set, click the pencil icon in the history item to set the metadata attributes."
             sys.exit()
         
-        if options.startCol: start_col = int( options.startCol ) - 1
+        if options.startCol:
+            start_col = int( options.startCol ) - 1
         else: 
-            print >>sys.stderr, "Start column has not been specified."
+            print >>sys.stderr, "Start column not set, click the pencil icon in the history item to set the metadata attributes."
             sys.exit()
         
-        if options.endCol: end_col = int( options.endCol ) - 1
+        if options.endCol:
+            end_col = int( options.endCol ) - 1
         else: 
-            print >>sys.stderr, "End column has not been specified."
+            print >>sys.stderr, "End column not set, click the pencil icon in the history item to set the metadata attributes."
             sys.exit()
         
-        if options.strandCol: strand_col = int( options.strandCol ) - 1
+        if options.strandCol:
+            strand_col = int( options.strandCol ) - 1
         else: 
-            print >>sys.stderr, "Strand column has not been specified."
-            sys.exit()
+            strandCol = -1
+
     mafIndexFile = "%s/maf_index.loc" % options.mafIndexFileDir
     #Finish parsing command line
         
