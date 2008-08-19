@@ -33,64 +33,46 @@ class Library( BaseController ):
                     group_ids.append( user_group_assoc.group_id )
             library = trans.app.model.Library.get( library_id )
             return trans.fill_template( '/library/library.mako', library=library, group_ids=group_ids )
-        if user:
-            # Only display libraries that contain datasets associated with the user's groups
-            group_ids = []
-            for user_group_assoc in user.groups:
-                group = trans.app.model.Group.get( user_group_assoc.group_id )
-                group_ids.append( group.id )
+        else:
+            if user:
+                # Only display libraries that contain datasets associated with the user's groups
+                group_ids = []
+                for user_group_assoc in user.groups:
+                    group = trans.app.model.Group.get( user_group_assoc.group_id )
+                    group_ids.append( group.id )
+            else:       
+                # Only display libraries that contain datasets associated with the public group
+                group_ids = [ trans.app.model.Group.select_by( name='public' )[0].id ]
             libs = trans.app.model.Library.select()
             for library in libs:
-                user_can_access = False
-                # Check for public datasets in the Library's root folder
-                for library_folder_dataset_assoc in library.root_folder.datasets:
-                    if user_can_access:
+                folder = library.root_folder
+                components = list( folder.folders ) + list( folder.datasets )
+                for component in components:
+                    if self.renderable( trans, component, group_ids ):
+                        libraries.append( library )
                         break
-                    dataset = trans.app.model.Dataset.get( library_folder_dataset_assoc.dataset_id )
-                    for group_dataset_assoc in dataset.groups:
-                        if group_dataset_assoc.group_id in group_ids:
-                            libraries.append( library )
-                            user_can_access = True
-                            break
-                for folder in library.root_folder.folders:
-                    if user_can_access:
-                        break
-                    for library_folder_dataset_assoc in folder.datasets:
-                        if user_can_access:
-                            break
-                        dataset = trans.app.model.Dataset.get( library_folder_dataset_assoc.dataset_id )
-                        for group_dataset_assoc in dataset.groups:
-                            if group_dataset_assoc.group_id in group_ids:
-                                libraries.append( library )
-                                user_can_access = True
-                                break
-        else:       
-            # Only display libraries that contain datasets associated with the public group
-            group_ids = [ trans.app.model.Group.select_by( name='public' )[0].id ]
-            libs = trans.app.model.Library.select()
-            for library in libs:
-                public_library = False
-                # Check for public datasets in the Library's root folder
-                for library_folder_dataset_assoc in library.root_folder.datasets:
-                    if public_library:
-                        break
-                    dataset = trans.app.model.Dataset.get( library_folder_dataset_assoc.dataset_id )
-                    for group_dataset_assoc in dataset.groups:
-                        if group_dataset_assoc.group_id in group_ids:
-                            libraries.append( library )
-                            public_library = True
-                            break
-                # Check for public datasets in the root folder's sub-folders
-                for folder in library.root_folder.folders:
-                    if public_library:
-                        break
-                    for library_folder_dataset_assoc in folder.datasets:
-                        if public_library:
-                            break
-                        dataset = trans.app.model.Dataset.get( library_folder_dataset_assoc.dataset_id )
-                        for group_dataset_assoc in dataset.groups:
-                            if group_dataset_assoc.group_id in group_ids:
-                                libraries.append( library )
-                                public_library = True
-                                break
         return trans.fill_template( '/library/libraries.mako', group_ids=group_ids, libraries=libraries )
+    def renderable( self, trans, component, group_ids ):
+        render = False
+        if isinstance( component, trans.app.model.LibraryFolder ):
+            # Check the folder's datasets to see what can be rendered
+            for library_folder_dataset_assoc in component.datasets:
+                if render:
+                    break
+                dataset = trans.app.model.Dataset.get( library_folder_dataset_assoc.dataset_id )
+                for group_dataset_assoc in dataset.groups:
+                    if group_dataset_assoc.group_id in group_ids:
+                        render = True
+                        break
+            # Check the folder's sub-folders to see what can be rendered
+            if not render:
+                for library_folder in component.folders:
+                    self.renderable( trans, library_folder, group_ids )
+        elif isinstance( component, trans.app.model.LibraryFolderDatasetAssociation ):
+            render = False
+            dataset = trans.app.model.Dataset.get( component.dataset_id )
+            for group_dataset_assoc in dataset.groups:
+                if group_dataset_assoc.group_id in group_ids:
+                    render = True
+                    break
+        return render

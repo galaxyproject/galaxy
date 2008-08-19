@@ -461,6 +461,7 @@ class Admin( BaseController ):
                                          galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ] )
             for row2 in q2.execute():
                 total_datasets = row2.total_datasets
+                libraries = []
                 permitted_actions = []
                 # There may not yet be any GroupDatasetAssociations, in which case no
                 # actions will be found
@@ -468,16 +469,42 @@ class Admin( BaseController ):
                     for action in row2.permitted_actions:
                         permitted_actions.append( action.encode( 'ascii' ) )
                     permitted_actions.sort()
+                    # If we have permitted actions, then we have at least 1 GroupDatasetAssociation, in
+                    # which case, we can see if we have any Libraries that the user can access
+                    libs = trans.app.model.Library.select()
+                    for library in libs:
+                        folder = library.root_folder
+                        components = list( folder.folders ) + list( folder.datasets )
+                        for component in components:
+                            if self.renderable( trans, component, row2.group_id ):
+                                libraries.append( library.id )
+                                break
             groups.append( ( row.group_id,
                              escape( row.group_name, entities ),
                              row.group_priority,
                              row2.total_datasets,
-                             permitted_actions ) )
+                             permitted_actions, 
+                             libraries ) )
         return trans.fill_template( '/admin/dataset_security/specified_users_groups.mako', 
                                     user_id=user_id, 
                                     user_email=escape( user_email, entities ),
-                                    groups=groups, 
+                                    groups=groups,
                                     msg=msg )
+    @web.expose
+    def specified_users_group_libraries( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        library_ids = params.library_ids.split( ',' )
+        libraries = []
+        for id in library_ids:
+            library = trans.app.model.Library.get( id )
+            libraries.append( library )
+        return trans.fill_template( '/admin/library/specified_users_group_libraries.mako', 
+                                    user_email=params.user_email, 
+                                    group_name=params.group_name, 
+                                    libraries=libraries )
 
     # Galaxy Library Stuff
     @web.expose
@@ -794,3 +821,28 @@ class Admin( BaseController ):
                                         err=None )
         else:
             return trans.show_error_message( "Invalid dataset specified" )
+    def renderable( self, trans, component, group_id ):
+        render = False
+        if isinstance( component, trans.app.model.LibraryFolder ):
+            # Check the folder's datasets to see what can be rendered
+            for library_folder_dataset_assoc in component.datasets:
+                if render:
+                    break
+                dataset = trans.app.model.Dataset.get( library_folder_dataset_assoc.dataset_id )
+                for group_dataset_assoc in dataset.groups:
+                    if group_dataset_assoc.group_id == group_id:
+                        render = True
+                        break
+            # Check the folder's sub-folders to see what can be rendered
+            if not render:
+                for library_folder in component.folders:
+                    self.renderable( trans, library_folder, group_id )
+        elif isinstance( component, trans.app.model.LibraryFolderDatasetAssociation ):
+            render = False
+            dataset = trans.app.model.Dataset.get( component.dataset_id )
+            for group_dataset_assoc in dataset.groups:
+                if group_dataset_assoc.group_id == group_id:
+                    render = True
+                    break
+        return render
+
