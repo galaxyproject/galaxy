@@ -703,6 +703,8 @@ class Admin( BaseController ):
                         gdpa_dict[ group_id ].append( dpa )
                     else:
                         gdpa_dict[ group_id ] = [ dpa ]
+                # Refresh the Dataset to ensure we have a valid set of DatasetGroupAssociations
+                dataset.dataset.refresh()
                 # Check to see if we need to delete any GroupDatasetAssociations.  This occurs if
                 # the user unchecked all boxes for a group
                 for group_dataset_assoc in dataset.dataset.groups:
@@ -761,9 +763,11 @@ class Admin( BaseController ):
                 dataset_actions.sort()
             # Get the permitted_actions of each GroupDatasetAssociation to send to the form
             gdas = []
-            # Refresh the dataset to ensure we have a valid set of DatasetGroupAssociations
+            # Refresh the Dataset to ensure we have a valid set of GroupDatasetAssociations
             dataset.dataset.refresh()
             for group_dataset_assoc in dataset.dataset.groups:
+                # Refresh the GroupDatasetAssociation to ensure we have a valid set of permitted_actions
+                group_dataset_assoc.refresh()
                 group = galaxy.model.Group.get( group_dataset_assoc.group_id )
                 gdas.append( ( group.id, group.name, group_dataset_assoc.permitted_actions ) )
             if "dbkey" in dataset.datatype.metadata_spec and not dataset.metadata.dbkey:
