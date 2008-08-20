@@ -170,33 +170,23 @@ class User( BaseController ):
     
     @web.expose
     def set_default_permitted_actions( self, trans, **kwd ):
-        # TODO, Nate: Make sure this method is functionally correct.
         """Sets the user's default permitted actions for the new histories"""
         if trans.user:
             if 'set_permitted_actions' in kwd:
                 """The user clicked the set_permitted_actions button on the set_permitted_actions form"""
-                group_in = []
-                group_out = []
-                # Collect groups as entered by user
-                for name, value in kwd.items():
-                    if name.startswith( "group_" ):
-                        group = trans.app.security_agent.get_group( name.replace( "group_", "", 1 ) )
-                        if not group:
-                            return trans.show_error_message( 'You have specified an invalid group.' )
-                        if value == 'in':
-                            group_in.append( group )
-                        else:
-                            group_out.append( group )
-                if not group_in:
-                    return trans.show_error_message( "You must specify at least one default group." )
-                cur_groups = [ assoc.group for assoc in trans.user.default_groups ]
-                group_in.sort()
-                cur_groups.sort()
-                if cur_groups != group_in:
-                    trans.app.security_agent.user_set_default_access( trans.user, groups = group_in )
-                    return trans.show_ok_message( 'Default new history permitted actions have been changed.' )
-                else:
-                    return trans.show_error_message( "You did not specify any changes to new history's default permitted actions." )
+                group_args = [ k.replace('group_', '', 1) for k in kwd if k.startswith('group_') ]
+                group_ids_checked = filter( lambda x: not x.count('_'), group_args )
+                if not group_ids_checked:
+                    return trans.show_error_message( "You must specify at least one default group." ) 
+                permissions = []
+                for group_id in group_ids_checked:
+                    group = trans.app.security_agent.get_group( group_id )
+                    if not group:
+                        return trans.show_error_message( 'You have specified an invalid group.' )
+                    action_strings = [ action.replace(group_id + '_', '', 1) for action in group_args if action.startswith(group_id + '_') ]
+                    permissions.append( ( group, trans.app.security_agent.convert_permitted_action_strings( action_strings ) ) )
+                trans.app.security_agent.user_set_default_access( trans.user, permissions )
+                return trans.show_ok_message( 'Default new history permitted actions have been changed.' )
             return trans.fill_template( 'user/permissions.mako' )
         else:
             # User not logged in, history group must be only public

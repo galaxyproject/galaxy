@@ -7,10 +7,6 @@ from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
 
-# TODO, Nate: Think about whether the following permitted actions are appropriate for the dataset and
-# group objects.  What should be the default "public" permitted actions?  Make sure that the public group
-# and public datasets are set with the correct permitted actions.  Also make sure that "private" settings
-# are correct when an authenticated user creates things inside their "private" environment.
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
@@ -23,9 +19,14 @@ class RBACAgent:
         # use in a job, etc).
         DATASET_ACCESS = 'dataset_access'
     )
+    permitted_action_descriptions = Bunch(
+        DATASET_EDIT_METADATA = "Edit this dataset's metadata in the library",
+        DATASET_MANAGE_PERMISSIONS = "Manage the groups associated with this dataset (and those groups' permissions on the dataset)",
+        DATASET_ACCESS = "View, import, and perform analyses on this dataset"
+    )
     def allow_action( self, user, action, **kwd ):
         raise 'No valid method of checking action (%s) on %s for user %s.' % ( action, kwd, user )
-    def guess_derived_groups_permitted_actions_for_datasets( self, datasets = [] ):
+    def guess_derived_permissions_for_datasets( self, datasets = [] ):
         raise "Unimplemented Method"
     def associate_components( self, **kwd ):
         raise 'No valid method of associating provided components: %s' % kwd
@@ -35,12 +36,12 @@ class RBACAgent:
         raise 'No valid method of creating group with %s' % ( kwd )
     def create_private_user_group( self, user ):
         raise "Unimplemented Method"
-    def user_set_default_access( self, user, groups = None, history = False, dataset = False ):
+    def user_set_default_access( self, user, permissions = None, history = False, dataset = False ):
         raise "Unimplemented Method"
     def setup_new_user( self, user ):
         self.user_set_default_access( user, history = True, dataset = True )
         self.associate_components( user=user, group=self.get_public_group() )
-    def history_set_default_access( self, history, groups=None, dataset=False ):
+    def history_set_default_access( self, history, permissions=None, dataset=False ):
         raise "Unimplemented Method"
     def set_public_group( self, group ):
         raise "Unimplemented Method"
@@ -48,7 +49,7 @@ class RBACAgent:
         raise "Unimplemented Method"
     def guess_public_group( self ):
         raise "Unimplemented Method"
-    def set_dataset_groups( self, dataset, groups ):
+    def set_dataset_permissions( self, dataset, permissions ):
         raise "Unimplemented Method"
     def set_dataset_permitted_actions( self, dataset ):
         raise "Unimplemented Method"
@@ -56,6 +57,24 @@ class RBACAgent:
         raise "Unimplemented Method"
     def components_are_associated( self, **kwd ):
         return bool( self.get_component_associations( **kwd ) )
+    def convert_permitted_action_strings( self, permitted_action_strings ):
+        """
+        When getting permitted actions from an untrusted source like a
+        form, ensure that they match our actual permitted actions.
+        """
+        return filter( lambda x: x is not None, [ self.permitted_actions.get( action_string ) for action_string in permitted_action_strings ] )
+    def get_permitted_action_description( self, permitted_action ):
+        """
+        Return the description of a permitted_action, regardless of
+        whether permitted_action is a key or value.
+        """
+        if self.permitted_action_descriptions.get( permitted_action ) is not None:
+            return self.permitted_action_descriptions.get( permitted_action )
+        else:
+            for k, v in self.permitted_actions.items():
+                if v == permitted_action:
+                    return self.permitted_action_descriptions.get( k )
+            return permitted_action # so at least something useful is printable
 
 class GalaxyRBACAgent( RBACAgent ):
     def __init__( self, model, permitted_actions=None ):
@@ -83,35 +102,41 @@ class GalaxyRBACAgent( RBACAgent ):
                     if action in group_dataset_assoc.permitted_actions:
                         return True
         return False # No user and dataset not in public group, or user lacks permission
-    def guess_derived_groups_for_datasets( self, datasets=[] ):
-         # TODO, Nate: Make sure this method is functionally correct.
-        """Returns a list of groups for the output dataset based upon itself and provided datasets"""
-        access_groups = None
-        priority_access_group = None
+    def guess_derived_permissions_for_datasets( self, datasets=[] ):
+        """Returns a list of group/action tuples for the output dataset based upon provided datasets"""
+        intersect = None
+        priority_access_perms = None
         for dataset in datasets:
             # Determine access groups for output datasets - these groups are the 
             # intersection across all inputs.  If we end up with no intersection 
             # between inputs, then we rely on priorities
             if isinstance( dataset, self.model.HistoryDatasetAssociation ):
                 dataset = dataset.dataset
-            groups = [ data_group_assoc.group for data_group_assoc in dataset.groups ]
-            for group in groups:
-                if priority_access_group is None or priority_access_group.priority < group.priority:
-                    priority_access_group = group
-            if access_groups is None:
-                access_groups = set( groups )
+            assocs = [ assoc for assoc in dataset.groups ]
+            for assoc in assocs:
+                if priority_access_perms is None or priority_access_perms[0].priority < assoc.group.priority:
+                    priority_access_perms = ( assoc.group, assoc.permitted_actions )
+            if intersect is None:
+                intersect = [ (a.group, a.permitted_actions) for a in assocs ]
             else:
-                access_groups.intersection_update( set( groups ) )
-        # Complete lists for output dataset access
-        if access_groups:
-            access_groups = list( access_groups)
-        else:
-            access_groups = []
+                # Intersect existing perms with new perms
+                #access_assocs = filter( lambda x: x.group in [ a.group for a in access_assocs ], assocs )
+                new_intersect = []
+                for group, actions in intersect:
+                    matches = filter( lambda x: x.group == group, assocs )
+                    # Could a dataset ever have more than one GDA with the same group id?
+                    if len( matches ) > 1:
+                        log.error( "Unable to derive permissions, duplicate group_dataset_association rows exist for group %d, dataset %d" % (group.id, dataset.id) )
+                    elif len( matches ) == 1:
+                        # compare permitted_actions
+                        pa_intersect = filter( lambda x: x in actions, matches[0].permitted_actions )
+                        new_intersect.append( ( group, pa_intersect ) )
+                intersect = new_intersect
         # If we have no groups left after intersection, take the highest priority group
-        if not access_groups:
-            if priority_access_group:
-                access_groups = [ priority_access_group ]
-        return access_groups
+        if not intersect:
+            if priority_access_perms:
+                intersect = [ priority_access_perms ]
+        return intersect
     def get_group( self, id ):
         return self.model.Group.get( id )
         raise 'No valid method of retrieving requested group %s' % ( id )    
@@ -125,29 +150,18 @@ class GalaxyRBACAgent( RBACAgent ):
         if 'dataset' in kwd:
             if 'group' in kwd:
                 return self.associate_group_dataset( kwd['group'], kwd['dataset'] )
+            elif 'permissions' in kwd:
+                return self.associate_group_dataset( kwd['permissions'][0], kwd['dataset'], kwd['permissions'][1] )
         elif 'user' in kwd:
             if 'group' in kwd:
                 return self.associate_user_group( kwd['user'], kwd['group'] )
         raise 'No valid method of associating provided components: %s' % kwd
-    def disassociate_components( self, **kwd ):
-        assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to disassociate.'
-        if 'dataset' in kwd:
-            if 'group' in kwd:
-                return self.disassociate_group_dataset( kwd['group'], kwd['dataset'] )
-        raise 'No valid method of associating provided components: %s' % kwd
-    def associate_group_dataset( self, group, dataset, permitted_actions=[] ):
-        if not permitted_actions:
-            if isinstance( dataset.permitted_actions, Bunch ):
-                permitted_actions = dataset.permitted_actions.__dict__.values()
-            else:
-                permitted_actions = dataset.permitted_actions
+    def associate_group_dataset( self, group, dataset, permitted_actions=[ RBACAgent.permitted_actions.DATASET_ACCESS ] ):
+        # HACK: The default permitted_actions should really not be used... need to find cases where this is done and correct it
+        log.debug("In associate_permissions_dataset, dataset: %d, group: %d, permitted_actions: %s" % ( dataset.id, group.id, permitted_actions ) )
         assoc = self.model.GroupDatasetAssociation( group, dataset, permitted_actions )
         assoc.flush()
         return assoc
-    def disassociate_group_dataset( self, group, dataset ):
-        assoc = self.model.GroupDatasetAssociation.selectone_by( group_id = group.id, dataset_id = dataset.id )
-        assoc.delete()
-        assoc.flush()
     def associate_user_group( self, user, group ):
         assoc = self.model.UserGroupAssociation( user, group )
         assoc.flush()
@@ -161,66 +175,69 @@ class GalaxyRBACAgent( RBACAgent ):
         self.associate_components( group=group, user=user )
         group.flush()
         return group
-    def user_set_default_access( self, user, groups = None, history = False, dataset = False ):
-        # TODO, Nate: Make sure this method is functionally correct with permitted actions set appropriately.
-        if groups is None:
-            groups = [ self.create_private_user_group( user ) ]
-        if groups is not None:
+    def user_set_default_access( self, user, permissions = None, history = False, dataset = False ):
+        if permissions is None:
+            permissions = [ ( self.create_private_user_group( user ), self.permitted_actions.__dict__.values() ) ]
+        if permissions is not None:
             for assoc in user.default_groups: #this is the association not the actual group
                 assoc.delete()
                 assoc.flush()
-            for group in groups:
-                if isinstance( group, self.model.Group ):
-                    permitted_actions = group.permitted_actions.__dict__.values()
-                else:
-                    permitted_actions = group.permitted_actions
+            for group, permitted_actions in permissions:
+                log.debug("In user_set_default_access, user: %s, group: %s, permitted_actions: %s" % (user.email, group.name, str( permitted_actions)))
                 assoc = self.model.DefaultUserGroupAssociation( user, group, permitted_actions )
                 assoc.flush()
         if history:
             for history in user.histories:
-                self.history_set_default_access( history, groups=groups, dataset=dataset )
-    def history_set_default_access( self, history, groups=None, dataset=False ):
-        # TODO, Nate: Make sure this method is functionally correct with permitted actions set appropriately.
-        if groups is None:
+                self.history_set_default_access( history, permissions=permissions, dataset=dataset )
+    def user_get_default_access( self, user ):
+        return [ ( duga.group, duga.permitted_actions ) for duga in user.default_groups ]
+    def history_set_default_access( self, history, permissions=None, dataset=False ):
+        if permissions is None:
             if history.user:
-                groups = [ assoc.group for assoc in history.user.default_groups ]
+                permissions = self.user_get_default_access( history.user )
             else:
-                groups = [ self.get_public_group() ]
-        if groups is not None:
+                # FIXME: should this be all permissions?
+                permissions = [ ( self.get_public_group(), [ self.permitted_actions.DATASET_ACCESS ] ) ]
+        if permissions is not None:
             for assoc in history.default_groups: #this is the association not the actual group
                 assoc.delete()
                 assoc.flush()
-            for group in groups:
-                if isinstance( group, self.model.Group ):
-                    permitted_actions = group.permitted_actions.__dict__.values()
-                else:
-                    permitted_actions = group.permitted_actions
+            for group, permitted_actions in permissions:
+                log.debug("In history_set_default_access, history: %s, group: %s, permitted_actions: %s" % (history.id, group.name, str( permitted_actions)))
                 assoc = self.model.DefaultHistoryGroupAssociation( history, group, permitted_actions )
                 assoc.flush()
         if dataset:
             for data in history.datasets:
                 for hda in data.dataset.history_associations:
                     if history.user and hda.history not in history.user.histories:
-                        self.set_dataset_groups( data.dataset, [ self.get_public_group() ] )
+                        self.set_dataset_permissions( data.dataset, [ ( self.get_public_group(), [ self.permitted_actions.DATASET_ACCESS ] ) ] )
                         break
                 else:
-                    self.set_dataset_groups( data.dataset, groups )
+                    self.set_dataset_permissions( data.dataset, permissions )
+    def history_get_default_access( self, history ):
+        return [ ( dhga.group, dhga.permitted_actions ) for dhga in history.default_groups ]
     def get_public_group( self ):
         return self.model.Group.get_public_group()
     def set_public_group( self, group ):
         return self.model.Group.set_public_group( group )
     def guess_public_group( self ):
         return self.model.Group.guess_public_group()
-    def set_dataset_groups( self, dataset, groups ):
+    def set_dataset_permissions( self, dataset, permissions ):
+        """
+        Apply permissions (a list of (group, permitted_action) tuples)
+        to a dataset, removing any existing permissions.  permissions can
+        also be a list of GroupDatasetAssociations (for simplicity).
+        """
         if isinstance( dataset, self.model.HistoryDatasetAssociation ):
             dataset = dataset.dataset
         for group_dataset_assoc in dataset.groups:
             group_dataset_assoc.delete()
             group_dataset_assoc.flush()
-        for group in groups:
-            if not isinstance( group, self.model.Group ):
-                group = group.group
-            self.associate_components( dataset=dataset, group=group )
+        if isinstance( permissions[0], self.model.GroupDatasetAssociation ):
+            permissions = [ ( gda.group, gda.permitted_actions ) for gda in permissions ]
+        for ptuple in permissions:
+            log.debug("In set_dataset_permissions, before elf.associate_components, dataset: %s, group: %s, permitted_actions: %s" % ( str(dataset.id), str(ptuple[0].id), str(ptuple[1])))
+            self.associate_components( dataset=dataset, permissions=ptuple )
     def get_component_associations( self, **kwd ):
         # TODO, Nate: Make sure this method is functionally correct.
         assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to check for associations.'

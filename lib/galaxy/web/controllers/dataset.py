@@ -126,4 +126,4 @@ class DatasetInterface( BaseController ):
                 except:
                     raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
         else:
-            raise paste.httpexceptions.HTTPForbidden( "You are not permitted to access this dataset." )
+            return trans.show_error_message( "You are not privileged to access this dataset." )

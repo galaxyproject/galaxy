@@ -86,11 +86,10 @@ class DefaultToolAction( object ):
         # Determine output dataset permitted_actions list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]
         if existing_datasets:
-            output_access_groups = trans.app.security_agent.guess_derived_groups_for_datasets( existing_datasets )
+            output_permissions = trans.app.security_agent.guess_derived_permissions_for_datasets( existing_datasets )
         else:
             # No valid inputs, we will use history defaults
-            output_access_groups = [ group.group for group in trans.history.default_groups ]
-        
+            output_permissions = trans.app.security_agent.history_get_default_access( trans.history )
         # Build name for output datasets based on tool name and input names
         if len( input_names ) == 1:
             on_text = input_names[0]
@@ -132,7 +131,7 @@ class DefaultToolAction( object ):
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
                 # Commit the dataset immediately so it gets database assigned unique id
                 data.flush()
-                trans.app.security_agent.set_dataset_groups( data.dataset, output_access_groups )
+                trans.app.security_agent.set_dataset_permissions( data.dataset, output_permissions )
             # Create an empty file immediately
             open( data.file_name, "w" ).close()
             # This may not be neccesary with the new parent/child associations

@@ -133,33 +133,80 @@
 
 <p />
 
-%if trans.app.config.enable_beta_features and trans.user and ( trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data ) ):
+%if trans.user and ( trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data ) ):
+  <script type="text/javascript">
+    var q = jQuery.noConflict();
+    q( document ).ready( function () {
+        // initialize state
+        q("input.groupCheckbox").each( function() {
+            if ( ! q(this).is(":checked") ) q("div#" + this.name).hide();
+        });
+        // handle events
+        q("input.groupCheckbox").click( function() {
+            if ( q(this).is(":checked") ) {
+                q("div#" + this.name).slideDown("fast");
+            } else {
+                q("div#" + this.name).slideUp("fast");
+            }
+        });
+    });
+  </script>
   <div class="toolForm">
-  <div class="toolFormTitle">Change Permitted Actions</div>
+  <div class="toolFormTitle">Change Dataset Access Permissions</div>
   <div class="toolFormBody">
       <form name="change_permission_form" action="${h.url_for( action='edit' )}" method="post">
           <input type="hidden" name="id" value="${data.id}">
           <div class="form-row">
-            <label>
-                Private Dataset:
-            </label>
-            <% checked = "" %>
-            %if not trans.app.security_agent.dataset_has_group( data.id, trans.app.model.Group.get_public_group().id ):
-                <% checked = " checked" %>
-            %endif
-            <div style="float: left; width: 250px; margin-right: 10px;">
-                <input type="checkbox" name="private_dataset"${checked}>
-            </div>
-            <div style="clear: both"></div>
-            <div class="toolParamHelp" style="clear: both;">
-                This will prevent other users from viewing or utilizing this dataset, even if you share your history with them.
-            </div>
-            <div style="clear: both"></div>
-          </div>
-          <div class="form-row">
+              <% user_groups = [ assoc.group for assoc in trans.user.groups ] %>
+              <% dataset_group_ids = [ assoc.group.id for assoc in data.dataset.groups ] %>
+              <div class="toolParamHelp" style="clear: both;">
+                Check each group which should have access to this dataset.
+              </div>
+              %for group in user_groups:
+                %if group.id in dataset_group_ids:
+                  <% assoc = filter( lambda x: x.group_id == group.id, data.dataset.groups )[0] %>
+                %else:
+                  <% assoc = None %>
+                %endif
+                <input type="checkbox" name="group_${group.id}" class="groupCheckbox"
+                %if assoc is not None:
+                  checked
+                %endif
+                  /> ${group.name} <br/>
+                <div class="permissionContainer" id="group_${group.id}">
+                %for k, v in trans.app.security_agent.permitted_actions.items():
+                  <input type="checkbox" name="group_${group.id}_${k}"
+                  %if assoc is not None and v in assoc.permitted_actions:
+                    checked
+                  %endif
+                  /> ${trans.app.security_agent.get_permitted_action_description(k)} <br/>
+                %endfor
+                </div>
+              %endfor
               <input type="submit" name="change_permission" value="Save">
           </div>
       </form>
+  </div>
+  </div>
+%elif trans.user and ( trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ) ):
+  <div class="toolForm">
+  <div class="toolFormTitle">Dataset Access Permissions</div>
+  <div class="toolFormBody">
+    <div class="form-row">
+      <label>The following groups may perform the actions listed on this dataset:</label>
+      <br/>
+      %for assoc in data.dataset.groups:
+          ${assoc.group.name}
+          <ul>
+          %for action in assoc.permitted_actions:
+              <li>${trans.app.security_agent.get_permitted_action_description(action)}</li>
+          %endfor
+          </ul>
+      %endfor
+      <div class="toolParamHelp" style="clear: both;">
+        You do not have permission to edit this dataset's permissions.
+      </div>
+    </div>
   </div>
   </div>
 %endif

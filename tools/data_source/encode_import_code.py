@@ -38,8 +38,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.extension = file_type
             newdata.name = basic_name + " (" + description + ")"
             history.add_dataset( newdata )
-            #TODO, Nate: Make sure the following is functionally correct
-            app.security_agent.set_dataset_groups( newdata.dataset, base_dataset.dataset.groups )
+            app.security_agent.set_dataset_permissions( newdata.dataset, base_dataset.dataset.groups )
             app.model.flush()
             try:
                 copyfile(filepath,newdata.file_name)

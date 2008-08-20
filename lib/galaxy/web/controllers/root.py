@@ -14,8 +14,6 @@ import urllib
 log = logging.getLogger( __name__ )
 
 class RootController( BaseController ):
-    # TODO, Nate: This is where a lot of the new dataset security stuff is managed.
-    # Make sure it is is functionally correct.
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -266,23 +264,18 @@ class RootController( BaseController ):
                 """The user clicked the change_permission button on the 'Change permissions' form"""
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change dataset permitted actions." )
-                private_dataset = 'private_dataset'
-                public_group = trans.app.security_agent.get_public_group()
-                if private_dataset in kwd and trans.app.security_agent.dataset_has_group( data.dataset.id, public_group.id ):
-                    #check user has permission and then remove public group
-                    if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data.dataset ):
-                        trans.app.security_agent.disassociate_components( dataset = data, group = public_group )
-                    else:
-                        return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
-                elif private_dataset not in kwd and not trans.app.security_agent.dataset_has_group( data.dataset.id, public_group.id ):
-                    #check user has permission and then add public group
-                    if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data.dataset ):
-                        trans.app.security_agent.associate_components( dataset = data, group = public_group)
-                    else:
-                        return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
+                if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data.dataset ):
+                    group_args = [ k.replace('group_', '', 1) for k in kwd if k.startswith('group_') ]
+                    group_ids_checked = filter( lambda x: not x.count('_'), group_args )
+                    permissions = []
+                    for group_id in group_ids_checked:
+                        action_strings = [ action.replace(group_id + '_', '', 1) for action in group_args if action.startswith(group_id + '_') ]
+                        actions = trans.app.security_agent.convert_permitted_action_strings( action_strings )
+                        permissions.append( ( trans.app.security_agent.get_group( group_id ), actions ) )
+                    trans.app.security_agent.set_dataset_permissions( data.dataset, permissions )
+                    return trans.show_ok_message( "Dataset permissions have been set.", refresh_frames=['history'] )
                 else:
-                    return trans.show_error_message( "You have not specified a valid change of permitted actions." )
-                return trans.show_ok_message( 'Permitted actions have been changed.', refresh_frames=['history'] )
+                    return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
             
             data.datatype.before_edit( data )
             
@@ -596,12 +589,12 @@ class RootController( BaseController ):
         """Adds a POSTed file to a History"""
         try:
             history = trans.app.model.History.get( history_id )
-            groups = history.default_groups
+            groups = trans.app.security_agent.history_get_default_access( history )
             if copy_access_from:
                 copy_access_from = trans.app.model.HistoryDatasetAssociation.get( copy_access_from )
-                groups = copy_access_from.dataset.groups
+                group_dataset_associations = copy_access_from.dataset.groups
             data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
-            trans.app.security_agent.set_dataset_groups( data.dataset, groups )
+            trans.app.security_agent.set_dataset_permissions( data.dataset, group_dataset_associations )
             data.flush()
             data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )
@@ -629,33 +622,23 @@ class RootController( BaseController ):
             if 'set_permitted_actions' in kwd:
                 """The user clicked the set_permitted_actions button on the set_permitted_actions form"""
                 history = trans.get_history()
-                group_in = []
-                group_out = []
-                # Collect groups as entered by user
-                for name, value in kwd.items():
-                    if name.startswith( "group_" ):
-                        group = trans.app.security_agent.get_group( name.replace( "group_", "", 1 ) )
-                        if not group:
-                            return trans.show_error_message( 'You have specified an invalid group.' )
-                        if value == 'in':
-                            group_in.append( group )
-                        else:
-                            group_out.append( group )
-                if not group_in:
+                group_args = [ k.replace('group_', '', 1) for k in kwd if k.startswith('group_') ]
+                group_ids_checked = filter( lambda x: not x.count('_'), group_args )
+                if not group_ids_checked:
                     return trans.show_error_message( "You must specify at least one default group." )
-                cur_groups = [ assoc.group for assoc in history.default_groups ]
-                group_in.sort()
-                cur_groups.sort()
-                if cur_groups != group_in:
-                    trans.app.security_agent.history_set_default_access( history, groups=group_in )
-                    return trans.show_ok_message( 'Default history permitted actions have been changed.' )
-                else:
-                    return trans.show_error_message( "You did not specify any changes to this history's default permitted actions." )
+                permissions = []
+                for group_id in group_ids_checked:
+                    group = trans.app.security_agent.get_group( group_id )
+                    if not group:
+                        return trans.show_error_message( 'You have specified an invalid group.' )
+                    action_strings = [ action.replace(group_id + '_', '', 1) for action in group_args if action.startswith(group_id + '_') ]
+                    permissions.append( ( group, trans.app.security_agent.convert_permitted_action_strings( action_strings ) ) )
+                trans.app.security_agent.history_set_default_access( history, permissions = permissions )
+                return trans.show_ok_message( 'Default history permitted actions have been changed.' )
             return trans.fill_template( 'history/permissions.mako' )
         else:
             #user not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change a history's default permitted actions." )
-
 
     @web.expose
     def dataset_make_primary( self, trans, id=None):

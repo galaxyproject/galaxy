@@ -619,7 +619,7 @@ def init( file_path, url, engine_options={}, create_tables=False ):
         orphans = result.Dataset.get_by( history_id = None )
         if orphans:
             for dataset in orphans:
-                result.security_agent.set_dataset_groups( dataset, [ public_group ] )
+                result.security_agent.set_dataset_permissions( dataset, [ ( public_group, result.security_agent.permitted_actions.DATASET_ACCESS ) ] )
     else:
         result.security_agent.guess_public_group()
     log.debug( "Public Group identified as id = %s." % ( Group.public_id ) )

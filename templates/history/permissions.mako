@@ -2,6 +2,23 @@
 <%def name="title()">Change Default History Permitted Actions</%def>
 
 %if trans.user:
+  <script type="text/javascript">
+    var q = jQuery.noConflict();
+    q( document ).ready( function () {
+        // initialize state
+        q("input.groupCheckbox").each( function() {
+            if ( ! q(this).is(":checked") ) q("div#" + this.name).hide();
+        });
+        // handle events
+        q("input.groupCheckbox").click( function() {
+            if ( q(this).is(":checked") ) {
+                q("div#" + this.name).slideDown("fast");
+            } else {
+                q("div#" + this.name).slideUp("fast");
+            }
+        });
+    });
+  </script>
   <div class="toolForm">
   <div class="toolFormTitle">Change Default History Permitted Actions</div>
   <div class="toolFormBody">
@@ -9,27 +26,34 @@
           <div class="form-row">
                 <% user_groups = [ assoc.group for assoc in trans.user.groups ] %>
                 <% cur_groups = [ assoc.group for assoc in trans.get_history().default_groups ] %>
-            <div style="float: left; width: 250px; margin-right: 10px;">
-                <table>
-                <tr><th>Group</th><th>In</th><th>Out</th></tr>
                 %for group in user_groups:
-                <tr><td>${group.name}</td><td><input type="radio" name="group_${group.id}" value="in"
-                %if group in cur_groups:
-                checked
-                %endif
-                ></td><td><input type="radio" name="group_${group.id}" value="out"
-                %if group not in cur_groups:
-                checked
-                %endif
-                ></td></tr>
+                    <input type="checkbox" name="group_${group.id}" class="groupCheckbox"
+                    %if group in cur_groups:
+                      <% assoc = filter( lambda x: x.group_id == group.id, trans.get_history().default_groups )[0] %>
+                      checked
+                    %else:
+                      <% assoc = None %>
+                    %endif
+                    /> ${group.name} <br/>
+                    <div class="permissionContainer" id="group_${group.id}">
+                    %for k, v in trans.app.security_agent.permitted_actions.items():
+                        <input type="checkbox" name="group_${group.id}_${k}"
+                        %if assoc is not None and v in assoc.permitted_actions:
+                          checked
+                        %endif
+                        /> ${trans.app.security_agent.get_permitted_action_description(k)} <br/>
+                    %endfor
+                    </div>
                 %endfor
-                </table>
-            </div>
             
             <div style="clear: both"></div>
             
             <div class="toolParamHelp" style="clear: both;">
-                This will change the default permitted actions assigned to new datasets for your current history.
+                This will change the default permitted actions assigned
+                to new datasets in your current history.  You may also
+                specify the defaults for new histories via the
+                <a href="${h.url_for(controller='user')}">user options</a>.
+
             </div>
             <div style="clear: both"></div>
           </div>
