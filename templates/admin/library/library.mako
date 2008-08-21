@@ -7,6 +7,9 @@
     <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="${h.url_for( controller='admin', action='users' )}">Users</a>
   </div>
+  %if msg:
+    <p class="ok_bgr">${msg}</p>
+  %endif
   <div class="toolFormTitle">Manage Library '${library.name}'</div>
   <div class="toolFormBody">
   <form name="end_library" action="${h.url_for( controller='admin', action='library' )}" method="post" >

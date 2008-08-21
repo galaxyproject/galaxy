@@ -7,6 +7,9 @@
     <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
     <tr><td><a href="${h.url_for( controller='admin', action='users' )}">Users</a></td></tr>
   </div>
+  %if msg:
+    <p class="ok_bgr">${msg}</p></td></tr>
+  %endif
   <div class="toolFormTitle">Create a new Library Dataset</div>
   <div class="toolFormBody">
     <form name="tool_form" action="${h.url_for( controller='admin', action='dataset' )}" enctype="multipart/form-data" method="post">

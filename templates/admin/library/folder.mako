@@ -4,11 +4,12 @@
   <%
     if isinstance( component, trans.app.model.LibraryFolder ):
       return render_folder( component )
-    elif isinstance( component, trans.app.model.LibraryFolderDatasetAssociation ):
+    elif isinstance( component, trans.app.model.LibraryFolderDatasetAssociation ) and not component.deleted:
       return render_dataset( component )
   %>
 </%def>
-## Render the dataset `data` as history item, using `hid` as the displayed id
+
+## Render the dataset `data` as folder item, using `hid` as the displayed id
 <%def name="render_dataset( data )">
   <%
     if data.state in ['no state','',None]:
@@ -20,7 +21,7 @@
     <div class="toolFormTitle">${data.display_name()}</div>
     <div class="toolFormBody">
       <div class="form-row">        
-        ## Header row for history items (name, state, action buttons)      
+        ## Header row for folder items (name, state, action buttons)      
         <div style="overflow: hidden;" class="historyItemTitleBar">
           %if data_state != 'ok':
             <div><img src="${h.url_for( "/static/style/data_%s.png" % data_state )}" border="0" align="middle"></div>
@@ -37,10 +38,19 @@
                                                     title='edit attributes' 
                                                     class='editButton' 
                                                     border='0'></a>
+          <a href="${h.url_for( controller='admin',
+                                action='delete_dataset',
+                                id=data.id )}"<img src="${h.url_for('/static/images/delete_icon.png')}" 
+                                                           rollover="${h.url_for('/static/images/delete_icon_dark.png')}" 
+                                                           width='16' 
+                                                           height='16' 
+                                                           alt='delete' 
+                                                           class='deleteButton' 
+                                                           border='0'></a>
         </div>
         ##<span class="historyItemTitle"><b>${data.display_name()}</b></span>
       </div>    
-      ## Body for history items, extra info and actions, data "peek"    
+      ## Body for folder items, extra info and actions, data "peek"    
       <div id="info${data.id}" class="historyItemBody">
         %if data_state == "queued":
           <div>Job is waiting to run</div>
@@ -76,6 +86,7 @@
     </div>
   </div>
 </%def>
+
 ## Render a folder
 <%def name="render_folder( this_folder )">
   <div class="toolForm">
