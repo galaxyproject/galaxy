@@ -81,11 +81,14 @@ class Admin( BaseController ):
                        order_by = [ galaxy.model.Group.table.c.name ] )
         groups = []
         for row in q.execute():
+            total_datasets = 0
+            permitted_actions = []
             # This 2nd query retrieves the number of datasets and dataset permitted_actions associated with each group
             q2 = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
                               ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ),
                               sa.func.count( galaxy.model.Dataset.table.c.id ).label( 'total_datasets' ) ),
-                            whereclause = galaxy.model.Group.table.c.id == row.group_id,
+                            whereclause = sa.and_( galaxy.model.Group.table.c.id == row.group_id,
+                                                   galaxy.model.Dataset.table.c.deleted == False ),
                             from_obj = [ sa.outerjoin( galaxy.model.Group.table,
                                                        galaxy.model.GroupDatasetAssociation.table
                                                      ).outerjoin( galaxy.model.Dataset.table ) ],
@@ -354,7 +357,8 @@ class Admin( BaseController ):
             q2 = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
                               ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ),
                               sa.func.count( galaxy.model.Dataset.table.c.id ).label( 'total_datasets' ) ),
-                            whereclause = galaxy.model.Group.table.c.id == row.group_id,
+                            whereclause = sa.and_( galaxy.model.Group.table.c.id == row.group_id,
+                                                   galaxy.model.Dataset.table.c.deleted == False ),
                             from_obj = [ sa.outerjoin( galaxy.model.Group.table,
                                                        galaxy.model.GroupDatasetAssociation.table
                                                      ).outerjoin( galaxy.model.Dataset.table ) ],
@@ -462,7 +466,8 @@ class Admin( BaseController ):
             q2 = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
                               ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ),
                               sa.func.count( galaxy.model.Dataset.table.c.id ).label( 'total_datasets' ) ),
-                            whereclause = galaxy.model.Group.table.c.id == row.group_id,
+                            whereclause = sa.and_( galaxy.model.Group.table.c.id == row.group_id,
+                                                   galaxy.model.Dataset.table.c.deleted == False ),
                             from_obj = [ sa.outerjoin( galaxy.model.Group.table,
                                                        galaxy.model.GroupDatasetAssociation.table
                                                      ).outerjoin( galaxy.model.Dataset.table ) ],
@@ -651,15 +656,23 @@ class Admin( BaseController ):
             last_dataset_created = None
             data_file = kwd['file_data']
             url_paste = kwd['url_paste']
+            if data_file == '' and url_paste == '':
+                msg = 'Select a file, enter an URL or enter Text.'
+                trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=msg ) )
             space_to_tab = False 
             if 'space_to_tab' in kwd:
                 if kwd['space_to_tab'] not in ["None", None]:
                     space_to_tab = True
+            if 'groups' not in kwd:
+                msg = 'The dataset must be associated with at least 1 group.'
+                trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=msg ) )
             groups = kwd['groups']
             if groups and not isinstance( groups, list ):
                 # mako sends singleton lists as a string
                 groups = [ groups ]
-            if groups is None:
+            elif groups is None:
+                groups = []
+            else:
                 groups = []
             temp_name = ""
             data_list = []
@@ -844,6 +857,38 @@ class Admin( BaseController ):
                                         msg=msg )
         else:
             return trans.show_error_message( "Invalid dataset specified" )
+    @web.expose
+    def delete_dataset( self, trans, id=None, **kwd):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        if id:
+            # id is a LibraryFolderDatasetAssociation.id
+            library_folder_dataset_assoc = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+            folder = library_folder_dataset_assoc.folder
+            library = folder.library_root[0]
+            dataset = library_folder_dataset_assoc.dataset
+            # TODO: assuming 1 to 1 mapping between Dataset -> LibraryFolders ( i.e., is can the same
+            # dataset record be shared across LibraryFolders?
+            # Confirm that things should be deleted as follows
+            # Delete the LibraryFolderDatasetAssociation
+            library_folder_dataset_assoc.deleted = True
+            library_folder_dataset_assoc.flush()
+            # Delete any GroupDatasetAssociations
+            for group_dataset_assoc in dataset.groups:
+                group_dataset_assoc.delete()
+                group_dataset_assoc.flush()
+            # Delete any HistoryDatasetAssociations
+            for history_dataset_assoc in dataset.history_associations:
+                history_dataset_assoc.delete()
+                history_dataset_assoc.flush()
+            # Delete the dataset
+            dataset.deleted = True
+            dataset.flush()
+            trans.log_event( "Dataset id %s deleted from library folder id %s" % ( str( id ), str( folder.id ) ) )
+            msg = 'The dataset was deleted from the folder'
+            # Refresh the library for display
+            library.refresh()
+        return trans.fill_template( '/admin/library/library.mako', library=library, msg=msg )
     def renderable( self, trans, component, group_id ):
         render = False
         if isinstance( component, trans.app.model.LibraryFolder ):
