@@ -18,6 +18,7 @@
     %endif
     %if app.config.enable_beta_features:
     <li><a href="${h.url_for( controller='workflow', action='build_from_current_history' )}">Construct workflow</a> from the current history</li>
+    <li><a href="${h.url_for( action='history_set_default_permitted_actions' )}">Change default permitted actions</a> for the current history</li>
     %endif
     <li><a href="${h.url_for( action='history_share' )}" target="galaxy_main">Share</a> current history</div>
 %endif

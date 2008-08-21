@@ -197,9 +197,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             return self.new_history()
         return self.__history          
     def new_history( self ):
-        history = self.app.model.History()
+        history = self.app.model.History( user = self.user )
         # Make sure we have an id
         history.flush()
+        self.app.security_agent.history_set_default_access( history )
         # Immediately associate the new history with self
         self.__history = history
         # Make sure we have a valid session to associate with the new history
@@ -271,6 +272,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             user.set_password_cleartext( 'external' )
             user.external = True
             user.flush()
+            self.app.security_agent.setup_new_user( user )
             self.log_event( "Automatically created account '%s'" % user.email )
         return user
     def get_cookie_user( self ):
@@ -431,6 +433,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             galaxy_session.flush()
             self.__galaxy_session = galaxy_session
         if history is not None and user is not None:
+            if not history.user:
+                # This user will now acquire previously non-owned history, so set permitted actions to user's default
+                self.app.security_agent.history_set_default_access( history, dataset=True )
             history.user_id = user.id
             history.flush()
             self.__history = history
@@ -522,8 +527,8 @@ class FormBuilder( object ):
         self.action = action
         self.submit_text = submit_text
         self.inputs = []
-    def add_input( self, type, name, label, value=None, error=None, help=None  ):
-        self.inputs.append( FormInput( type, label, name, value, error, help ) )
+    def add_input( self, type, name, label, value=None, error=None, help=None, use_label=True  ):
+        self.inputs.append( FormInput( type, label, name, value, error, help, use_label ) )
         return self
     def add_text( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'text', label, name, value, error, help )
@@ -534,13 +539,14 @@ class FormInput( object ):
     """
     Simple class describing a form input element
     """
-    def __init__( self, type, name, label, value=None, error=None, help=None ):
+    def __init__( self, type, name, label, value=None, error=None, help=None, use_label=True ):
         self.type = type
         self.name = name
         self.label = label
         self.value = value
         self.error = error
         self.help = help
+        self.use_label = use_label
     
 class FormData( object ):
     """
