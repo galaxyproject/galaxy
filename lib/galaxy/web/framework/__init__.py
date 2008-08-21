@@ -435,6 +435,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if history is not None and user is not None:
             if not history.user:
                 # This user will now acquire previously non-owned history, so set permitted actions to user's default
+                history.user = user
                 self.app.security_agent.history_set_default_access( history, dataset=True )
             history.user_id = user.id
             history.flush()

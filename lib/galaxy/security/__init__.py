@@ -196,8 +196,7 @@ class GalaxyRBACAgent( RBACAgent ):
             if history.user:
                 permissions = self.user_get_default_access( history.user )
             else:
-                # FIXME: should this be all permissions?
-                permissions = [ ( self.get_public_group(), [ self.permitted_actions.DATASET_ACCESS ] ) ]
+                permissions = [ ( self.get_public_group(), self.permitted_actions.__dict__.values() ) ]
         if permissions is not None:
             for assoc in history.default_groups: #this is the association not the actual group
                 assoc.delete()
@@ -210,10 +209,12 @@ class GalaxyRBACAgent( RBACAgent ):
             for data in history.datasets:
                 for hda in data.dataset.history_associations:
                     if history.user and hda.history not in history.user.histories:
+                        # When would this occur?
                         self.set_dataset_permissions( data.dataset, [ ( self.get_public_group(), [ self.permitted_actions.DATASET_ACCESS ] ) ] )
                         break
                 else:
-                    self.set_dataset_permissions( data.dataset, permissions )
+                    if self.allow_action( history.user, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=data.dataset ):
+                        self.set_dataset_permissions( data.dataset, permissions )
     def history_get_default_access( self, history ):
         return [ ( dhga.group, dhga.permitted_actions ) for dhga in history.default_groups ]
     def get_public_group( self ):
