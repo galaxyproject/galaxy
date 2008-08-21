@@ -203,29 +203,38 @@ class RootController( BaseController ):
             yield "No data with id=%d" % id
 
     @web.expose
-    def edit(self, trans, id=None, hid=None, **kwd):
+    def edit(self, trans, id=None, hid=None, lid=None, **kwd):
         """Returns data directly into the browser. Sets the mime-type according to the extension"""
         if hid is not None:
             history = trans.get_history()
             # TODO: hid handling
             data = history.datasets[ int( hid ) - 1 ]
-        elif id is None: 
-            return trans.show_error_message( "Problem loading dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
-        else:
+        elif lid is not None:
+            data = self.app.model.LibraryFolderDatasetAssociation.get( lid )
+        elif id is not None: 
             data = self.app.model.HistoryDatasetAssociation.get( id )
+        else:
+            trans.log_event( "Problem loading dataset id %s with history id %s and library id %s." % ( str( id ), str( hid ), str( lid ) ) )
+            return trans.show_error_message( "Problem loading dataset." )
         if data is None:
-            return trans.show_error_message( "Problem retrieving dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
-        if data.history.user is not None and data.history.user != trans.user:
+            trans.log_event( "Problem retrieving dataset id %s with history id %s and library id %s." % ( str( id ), str( hid ), str( lid ) ) )
+            return trans.show_error_message( "Problem retrieving dataset." )
+        if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
         if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
             p = util.Params(kwd, safe=False)
             
+            can_edit_metadata = lid is None or trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_EDIT_METADATA, dataset = data )
             if p.change:
                 # The user clicked the Save button on the 'Change data type' form
+                if not can_edit_metadata:
+                    return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 trans.app.datatypes_registry.change_datatype( data, p.datatype )
                 trans.app.model.flush()
             elif p.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
+                if not can_edit_metadata:
+                    return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 data.name  = p.name
                 data.info  = p.info
                 
@@ -245,6 +254,8 @@ class RootController( BaseController ):
                 return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
             elif p.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
+                if not can_edit_metadata:
+                    return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 for name, spec in data.datatype.metadata_spec.items():
                     # We need to be careful about the attributes we are resetting
                     if name != 'name' and name != 'info' and name != 'dbkey':
@@ -255,7 +266,11 @@ class RootController( BaseController ):
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
             elif p.convert_data:
+                if lid is not None:
+                    return trans.show_error_message( "Data in the library cannot be converted.  Please import it to a history and covert it." )
                 """The user clicked the Convert button on the 'Convert to new format' form"""
+                if not can_edit_metadata:
+                    return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 target_type = kwd.get("target_type", None)
                 if target_type:
                     msg = data.datatype.convert_dataset(trans, data, target_type)

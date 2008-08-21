@@ -34,7 +34,18 @@
 <%def name="render_dataset( data )">
   <div>
     <input type="checkbox" name="import_ids" value="${data.id}">${data.name}
-  <div>
+    <a href="${h.url_for( controller='root', 
+                          action='edit', 
+                          lid=data.id )}"><img src="${h.url_for('/static/images/pencil_icon.png')}" 
+                                               rollover="${h.url_for('/static/images/pencil_icon_dark.png')}" 
+                                               width='16' 
+                                               height='16' 
+                                               alt='view or edit attributes' 
+                                               title='view or edit attributes' 
+                                               class='editButton' 
+                                               style='vertical-align: middle'
+                                               border='0'></a>
+  </div>
 </%def>
 
 ## Render a folder
