@@ -35,7 +35,7 @@ def check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR ):
     for line in open( nib_file ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ) and line.startswith( 'seq' ):
-            fields = line.split()
+            fields = line.split( '\t' )
             if len( fields ) < 3:
                 continue
             if fields[1] == dbkey:
@@ -49,7 +49,7 @@ def check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR ):
     for line in open( twobit_file ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ): 
-            fields = line.split()
+            fields = line.split( '\t' )
             if len( fields ) < 2:
                 continue
             if fields[0] == dbkey:

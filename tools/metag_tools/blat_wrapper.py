@@ -15,7 +15,7 @@ def check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR ):
     for i, line in enumerate( file( nib_file ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ):
-            fields = line.split()
+            fields = line.split( '\t' )
             if len( fields ) < 3:
                 continue
             if fields[0] == 'seq':
@@ -31,7 +31,7 @@ def check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR ):
     for i, line in enumerate( file( twobit_file ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ): 
-            fields = line.split()
+            fields = line.split( '\t' )
             if len( fields ) < 2:
                 continue
             twobits[( fields[0] )] = fields[1]

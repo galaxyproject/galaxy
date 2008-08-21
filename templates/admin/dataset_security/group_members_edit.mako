@@ -105,7 +105,7 @@
                 </td>
               </tr>
             %endif
-            <tr><td><center><button name="action" value="update_group_members">Update Membership</button></center></td></tr>
+            <tr><td><center><button name="group_members_edit_button" value="update_group_members">Update Membership</button></center></td></tr>
           </form>
         </table>
       </td>
