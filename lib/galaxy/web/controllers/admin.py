@@ -134,6 +134,9 @@ class Admin( BaseController ):
         if not name:
             msg = "Please enter a name"
             trans.response.send_redirect( '/admin/create_group?msg=%s' % msg )
+        elif len( trans.app.model.Group.select_by( name=name ) ) > 0:
+            msg = "A group with that name already exists"
+            trans.response.send_redirect( '/admin/create_group?msg=%s' % msg )
         else:
             try:
                 priority = int( params.priority )
@@ -144,6 +147,12 @@ class Admin( BaseController ):
             group.flush()
             # Add the members
             members = params.members
+            if members and not isinstance( members, list ):
+                # mako passes singleton lists as strings for some reason
+                members = [ members ]
+            # Handle case where admin removed all members from group
+            elif members is None:
+                members = []
             for user_id in members:
                 user = galaxy.model.User.get( user_id )
                 # Create the UserGroupAssociation
@@ -504,25 +513,33 @@ class Admin( BaseController ):
         return trans.fill_template( '/admin/library/specified_users_group_libraries.mako', 
                                     user_email=params.user_email, 
                                     group_name=params.group_name, 
-                                    libraries=libraries )
+                                    libraries=libraries,
+                                    msg=msg )
 
     # Galaxy Library Stuff
     @web.expose
     def libraries( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
-        return trans.fill_template( '/admin/library/libraries.mako', libraries=trans.app.model.Library.select() )
+        params = util.Params( kwd )
+        msg = params.msg
+        return trans.fill_template( '/admin/library/libraries.mako', libraries=trans.app.model.Library.select(), msg=msg )
     @web.expose
     def library( self, trans, id=None, name="Unnamed", description=None, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
         if 'create_library' in kwd:
+            if len( trans.app.model.Library.select_by( name=name ) ) > 0:
+                msg = "A library with that name already exists"
+                trans.response.send_redirect( web.url_for( action='libraries', msg=msg ) )
             library = trans.app.model.Library( name=name, description=description )
             root_folder = trans.app.model.LibraryFolder( name=name, description=description )
             root_folder.flush()
             library.root_folder = root_folder
             library.flush()
-            trans.response.send_redirect( web.url_for( action='folder', id = root_folder.id ) )
+            trans.response.send_redirect( web.url_for( action='folder', id=root_folder.id, msg=msg ) )
         elif id is None:
             return trans.show_form( 
                 web.FormBuilder( action = web.url_for(), title = "Create a new Library", name = "create_library", submit_text = "Submit" )
@@ -531,13 +548,15 @@ class Admin( BaseController ):
                     .add_input( 'hidden', "Create Library", 'create_library', use_label = False  ) )
         library = trans.app.model.Library.get( id )
         if library:
-            return trans.fill_template( '/admin/library/library.mako', library = library )
+            return trans.fill_template( '/admin/library/library.mako', library=library, msg=msg )
         else:
             return trans.show_error_message( "Invalid library specified" )
     @web.expose
     def folder( self, trans, id=None, name="Unnamed", description=None, parent_id = None, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
         if 'create_folder' in kwd:
             folder = trans.app.model.LibraryFolder( name = name, description = description )
             # We are associating the last used genome_build with folders, so we will always
@@ -548,7 +567,7 @@ class Admin( BaseController ):
                 parent_folder = trans.app.model.LibraryFolder.get( parent_id )
                 parent_folder.add_folder( folder )
             folder.flush()
-            trans.response.send_redirect( web.url_for( action='folder', id = folder.id ) )
+            trans.response.send_redirect( web.url_for( action='folder', id=folder.id, msg=msg ) )
         elif id is None:
             return trans.show_form( 
                 web.FormBuilder( action = web.url_for(), title = "Create a new Folder", name = "create_folder", submit_text = "Submit" )
@@ -579,6 +598,8 @@ class Admin( BaseController ):
             folder = trans.app.model.LibraryFolder.get( folder_id )
             last_used_build = folder.genome_build
         data_files = []
+        params = util.Params( kwd )
+        msg = params.msg
 
         # add_file method
         def add_file( file_obj, name, extension, dbkey, last_used_build, groups, info='no info', space_to_tab=False ):
@@ -707,7 +728,8 @@ class Admin( BaseController ):
                                         file_formats=file_formats,
                                         dbkeys=dbkeys,
                                         last_used_build=last_used_build,
-                                        groups=groups )
+                                        groups=groups,
+                                        msg=msg )
         dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id )
         if dataset:
             # Copied from edit attributes for 'regular' datasets with some additions
@@ -818,7 +840,8 @@ class Admin( BaseController ):
                                         datatypes=ldatatypes,
                                         dataset_actions=dataset_actions,
                                         gdas=gdas,
-                                        err=None )
+                                        err=None,
+                                        msg=msg )
         else:
             return trans.show_error_message( "Invalid dataset specified" )
     def renderable( self, trans, component, group_id ):

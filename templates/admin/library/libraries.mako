@@ -8,6 +8,9 @@
   </div>
   <div class="form-row"><a href="${h.url_for( controller='admin', action='library' )}">Create a new library</a></div>
   <br/>
+  %if msg:
+    <p class="ok_bgr">${msg}</p>
+  %endif
   <div class="toolFormTitle">Galaxy Libraries</div>
   <div class="toolFormBody">
     %for library in libraries:

@@ -119,7 +119,7 @@ Group.table = Table( "galaxy_group", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TEXT ),
+    Column( "name", TEXT, index=True, unique=True ),
     Column( "priority", Integer ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
@@ -182,7 +182,7 @@ Library.table = Table( "library", metadata,
     Column( "root_folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TEXT ),
+    Column( "name", TEXT, index=True, unique=True ),
     Column( "description", TEXT ) )
 
 LibraryFolder.table = Table( "library_folder", metadata,

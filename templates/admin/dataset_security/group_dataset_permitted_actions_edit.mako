@@ -64,7 +64,7 @@
           </tr>
           <% ctr += 1 %>
         %endfor
-        <tr><td colspan="3"><center><button name="action" value="group_dataset_permitted_actions_edit">Update</button></center></td></tr>
+        <tr><td colspan="3"><center><button name="group_dataset_permitted_actions_edit_button" value="group_dataset_permitted_actions_edit">Update</button></center></td></tr>
       </form>
     %endif
   </table>
