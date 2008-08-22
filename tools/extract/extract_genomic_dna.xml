@@ -4,7 +4,7 @@
   <inputs>
     <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query">
       <validator type="unspecified_build" />
-      <validator type="dataset_metadata_in_file" filename="alignseq.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." split="\t" line_startswith="seq" />
+      <validator type="dataset_metadata_in_file" filename="alignseq.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="seq" />
     </param>
 	<param name="out_format" type="select" label="Output data type">
 	<option value="fasta">FASTA</option>
