@@ -33,17 +33,23 @@ import sys
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+def stop_err( msg ):
+    sys.stderr.write( msg )
+    sys.exit()
+
 def __main__():
     
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
     mincols = 0
-    
-    if options.dbkey: primary_species = options.dbkey
-    else: primary_species = None
+    strand_col = -1
+   
+    if options.dbkey:
+        primary_species = options.dbkey
+    else:
+        primary_species = None
     if primary_species in [None, "?", "None"]:
-        print >>sys.stderr, "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
-        sys.exit()
+        stop_err( "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file." )
     
     include_primary = True
     if options.species:
@@ -52,43 +58,40 @@ def __main__():
             secondary_species = None
             species = None
         else:
-            try: secondary_species.remove( primary_species )
-            except: include_primary = False
+            try:
+                secondary_species.remove( primary_species )
+            except:
+                include_primary = False
             species = [primary_species] + secondary_species
     
-    if options.interval_file: interval_file = options.interval_file
+    if options.interval_file:
+        interval_file = options.interval_file
     else: 
-        print >>sys.stderr, "Input interval file has not been specified."
-        sys.exit()
+        stop_err( "Input interval file has not been specified." )
     
-    if options.output_file: output_file = options.output_file
+    if options.output_file:
+        output_file = options.output_file
     else: 
-        print >>sys.stderr, "Output file has not been specified."
-        sys.exit()
+        stop_err( "Output file has not been specified." )
     
     if not options.geneBED:
         if options.chromCol:
             chr_col = int( options.chromCol ) - 1
         else: 
-            print >>sys.stderr, "Chromosome column not set, click the pencil icon in the history item to set the metadata attributes."
-            sys.exit()
+            stop_err( "Chromosome column not set, click the pencil icon in the history item to set the metadata attributes." )
         
         if options.startCol:
             start_col = int( options.startCol ) - 1
         else: 
-            print >>sys.stderr, "Start column not set, click the pencil icon in the history item to set the metadata attributes."
-            sys.exit()
+            stop_err( "Start column not set, click the pencil icon in the history item to set the metadata attributes." )
         
         if options.endCol:
             end_col = int( options.endCol ) - 1
         else: 
-            print >>sys.stderr, "End column not set, click the pencil icon in the history item to set the metadata attributes."
-            sys.exit()
-        
+            stop_err( "End column not set, click the pencil icon in the history item to set the metadata attributes." )
+
         if options.strandCol:
             strand_col = int( options.strandCol ) - 1
-        else: 
-            strandCol = -1
 
     mafIndexFile = "%s/maf_index.loc" % options.mafIndexFileDir
     #Finish parsing command line
@@ -99,21 +102,17 @@ def __main__():
     if options.mafSourceType.lower() in ["cached"]:
         index = maf_utilities.maf_index_by_uid( options.mafSource, mafIndexFile )
         if index is None:
-            print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( options.mafSource )
-            sys.exit()
+            stop_err( "The MAF source specified (%s) appears to be invalid." % ( options.mafSource ) )
     elif options.mafSourceType.lower() in ["user"]:
         #index maf for use here, need to remove index_file when finished
         index, index_filename = maf_utilities.build_maf_index( options.mafSource, species = [primary_species] )
         if index is None:
-            print >> sys.stderr, "Your MAF file appears to be malformed."
-            sys.exit()
+            stop_err( "Your MAF file appears to be malformed." )
     else:
-        print >> sys.stderr, "Invalid MAF source type specified."
-        sys.exit()
+        stop_err( "Invalid MAF source type specified." )
     
     #open output file
     output = open( output_file, "w" )
-    
     
     if options.geneBED:
         region_enumerator = maf_utilities.line_enumerator( open( interval_file, "r" ).readlines() )
