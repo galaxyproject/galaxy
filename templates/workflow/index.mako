@@ -21,16 +21,15 @@
 </div>
 %endif
 
-<div>
-    <div style="float: right;">
-        <a class="action-button" href="${h.url_for( action='create' )}">
-            <img src="${h.url_for('/static/images/silk/add.png')}" />
-            <span>Add a new workflow</span>
-        </a>
-    </div>
-    <h2>Your workflows</h2>
-</div>
+<h2>Your workflows</h2>
 
+<div style="float: right; margin-top: -2.5em;">
+    <a class="action-button" href="${h.url_for( action='create' )}">
+        <img src="${h.url_for('/static/images/silk/add.png')}" />
+        <span>Add a new workflow</span>
+    </a>
+</div>
+  
 %if workflows:
     <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">

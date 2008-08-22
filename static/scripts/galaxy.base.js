@@ -29,13 +29,10 @@ jQuery(document).ready( function() {
 function ensure_popup_helper() {
     // And the helper below the popup menus
     if ( $( "#popup-helper" ).length == 0 ) {
-        var e = $("<div id='popup-helper' style='background: white; opacity: 0.00; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 15000;'></div>");
-        if ( $.browser.ie ) {
-            // Element will not capture drags in ie without nonzero opacity,
-            // but causes flashing in firefox with nonzero opacity
-            e.css( "opacity", "0.01" );
-        }
-        e.appendTo("body").hide();
+        $( "<div id='popup-helper'/>" ).css( {
+            background: 'white', opacity: 0, zIndex: 15000,
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' 
+        } ).appendTo( "body" ).hide();
     }
 }
 
