@@ -235,7 +235,7 @@ elif isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
           </ul>
       %endfor
       <div class="toolParamHelp" style="clear: both;">
-        You do not have permission to edit this dataset's permissions.
+        You are not allowed to change the permitted actions on this dataset.
       </div>
     </div>
   </div>

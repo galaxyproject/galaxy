@@ -29,7 +29,7 @@
       <div style="clear: both"></div>
     </div>
     <table>
-      <tr><td>&nbsp;</td><td><input type="submit" value="Save"></td></tr>
+      <tr><td>&nbsp;</td><td><input name="end_library_button" type="submit" value="Save"></td></tr>
     </table>
   </form>
 </div>

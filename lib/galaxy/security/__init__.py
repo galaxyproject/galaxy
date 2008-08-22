@@ -11,18 +11,18 @@ class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
         # The ability to edit the metadata of the associated dataset 
-        DATASET_EDIT_METADATA = 'dataset_edit_metadata',
+        DATASET_EDIT_METADATA = 'edit metadata',
         # The ability to change the permissions of a dataset (so specifically, to add and modify 
         # group_dataset_association rows where the dataset is the dataset for which the permission is set). 
-        DATASET_MANAGE_PERMISSIONS = 'dataset_manage_permissions',
+        DATASET_MANAGE_PERMISSIONS = 'manage permissions',
         # The ability to perform any read only operation on the dataset (view, display at external site,
         # use in a job, etc).
-        DATASET_ACCESS = 'dataset_access'
+        DATASET_ACCESS = 'access'
     )
     permitted_action_descriptions = Bunch(
-        DATASET_EDIT_METADATA = "Edit this dataset's metadata in the library",
-        DATASET_MANAGE_PERMISSIONS = "Manage the groups associated with this dataset (and those groups' permissions on the dataset)",
-        DATASET_ACCESS = "View, import, and perform analyses on this dataset"
+        DATASET_EDIT_METADATA = "User can edit this dataset's metadata in the library",
+        DATASET_MANAGE_PERMISSIONS = "User can manage the groups and group permitted actions associated with this dataset",
+        DATASET_ACCESS = "User can import this dataset into their history for analysis"
     )
     def allow_action( self, user, action, **kwd ):
         raise 'No valid method of checking action (%s) on %s for user %s.' % ( action, kwd, user )

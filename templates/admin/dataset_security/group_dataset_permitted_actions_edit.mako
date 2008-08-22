@@ -45,7 +45,7 @@
               %for da in dataset_actions:
                 <% check = False %>
                 %for action in gda[1]:
-                  %if action == da:
+                  %if action == da[0]:
                     <%
                       check = True
                       break
@@ -53,11 +53,12 @@
                   %endif
                 %endfor
                 %if check:
-                  <input type="checkbox" name="actions" value="${da}" checked/>
+                  <input type="checkbox" name="actions" value="${da[0]}" checked/>
                 %else:
-                  <input type="checkbox" name="actions" value="${da}"/>
+                  <input type="checkbox" name="actions" value="${da[0]}"/>
                 %endif
-                ${da}<br/>
+                ${da[0]}<br/>${da[1]}<br/>
+                <br/>
               %endfor
               <br/>
             </td>

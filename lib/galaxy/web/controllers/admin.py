@@ -275,19 +275,28 @@ class Admin( BaseController ):
         msg = params.msg
         group_id = int( params.group_id )
         group_name = unescape( params.group_name, unentities )
+        gdas = []
+        permitted_actions = []
         # Need to get all actions to send to the form
         dataset_actions = []
         dpas = RBACAgent.permitted_actions
+        dpa_descriptions = RBACAgent.permitted_action_descriptions
         for dpa in dpas.items():
+            pa = pa_description = ''
+            pa = dpa[0]
             if dpa[0].startswith( 'DATASET' ):
-                dataset_actions.append( dpa[1] )
-            dataset_actions.sort()
+                for dpa_description in dpa_descriptions.items():
+                    if pa == dpa_description[0]:
+                        pa = dpa[1]
+                        pa_description = dpa_description[1]
+                        break
+                dataset_actions.append( ( pa, pa_description ) )
+            dataset_actions = sorted( dataset_actions, key=operator.itemgetter(0) )
         q = sa.select( ( ( galaxy.model.Group.table.c.priority ).label( 'group_priority' ),
                          ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ) ),
-                        whereclause = galaxy.model.GroupDatasetAssociation.table.c.id == group_id,
+                        whereclause = galaxy.model.GroupDatasetAssociation.table.c.group_id == group_id,
                         from_obj = [ sa.outerjoin( galaxy.model.Group.table,
                                                    galaxy.model.GroupDatasetAssociation.table ) ] )
-        gdas = []
         for row in q.execute():
             permitted_actions = []
             # Although there may be GroupDatasetAssociations, there may not be any permitted_actions on them
@@ -460,8 +469,11 @@ class Admin( BaseController ):
                        from_obj = [ sa.outerjoin( galaxy.model.User.table, 
                                                   galaxy.model.UserGroupAssociation.table ).outerjoin( galaxy.model.Group.table ) ],
                        order_by = [ 'group_name' ] )
-        groups = []
         for row in q.execute():
+            libraries = []
+            groups = []
+            permitted_actions = []
+            total_datasets = 0
             # Perform a 2nd query to get datasets associated with each group
             q2 = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
                               ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ),
@@ -474,9 +486,9 @@ class Admin( BaseController ):
                             group_by = [ galaxy.model.Group.table.c.id,
                                          galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ] )
             for row2 in q2.execute():
-                total_datasets = row2.total_datasets
                 libraries = []
                 permitted_actions = []
+                total_datasets = row2.total_datasets
                 # There may not yet be any GroupDatasetAssociations, in which case no
                 # actions will be found
                 if row2.permitted_actions:
@@ -496,7 +508,7 @@ class Admin( BaseController ):
             groups.append( ( row.group_id,
                              escape( row.group_name, entities ),
                              row.group_priority,
-                             row2.total_datasets,
+                             total_datasets,
                              permitted_actions, 
                              libraries ) )
         return trans.fill_template( '/admin/dataset_security/specified_users_groups.mako', 
