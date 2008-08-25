@@ -593,7 +593,7 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     # Ensure group named 'public' exists
     public_group = result.Group.get_by( name='public' )
     if not public_group:
-        public_group = result.security_agent.create_component( 'group', name='public' )
+        public_group = result.security_agent.create_group( name = 'public' )
     # Store public group id
     result.security_agent.set_public_group( public_group )
     log.debug( "Public Group identified as id = %s." % ( public_group.id ) )
