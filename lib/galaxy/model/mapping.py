@@ -590,8 +590,12 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.create_tables = create_tables
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
-    public_group = result.Group.get_by( name='public' )      
-    log.debug( "Public Group identified as id = %s." % ( public_group.id ) )
+    try:
+        public_group = result.Group.get_by( name='public' )
+        log.debug( "Public Group identified as id = %s." % ( public_group.id ) )
+    except:
+        # May want to raise an exception here...
+        pass
     return result
     
 def get_suite():
