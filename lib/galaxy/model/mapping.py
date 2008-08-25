@@ -590,39 +590,8 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.create_tables = create_tables
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
-    # TODO, Nate: The following may not work for our Galaxy instances because there are too
-    # many rows that need updating ( I think ) even though we have eliminated all of the
-    # Role stuff.  Maybe we can test this to see how long it takes for about 1000 datasets.
-    # If we decide to  use this approach rather than SQL commands to populate the tables,
-    # then this needs to be thoroughly tested to ensure the data is populated as expected
-    # (i.e., make sure naything that is public gets the public security settings, etc).
-    #
-    # Set up default table entries here, only exist for group access because
-    # permitted actions are exclusively restricted to the association between a group
-    # and a dataset
-    if result.Group.count() == 0:
-        log.warning( "There were no groups located, setting up default (public) group." )
-        # Create public group
-        public_group = result.security_agent.create_group( name='public' )        
-        # Store public group id
-        result.security_agent.set_public_group( public_group )
-        # Loop through all histories and set up rbac on users, histories and datasets
-        for history in result.History.select( result.History.table.c.purged == False ):
-            if history.user:
-                if not history.user.default_groups:
-                    result.security_agent.setup_new_user( history.user )
-                    history.user.flush()
-            else:
-                result.security_agent.history_set_default_access( history, dataset=True )
-                history.flush()
-        # Add all datasets which aren't in a history to the public group
-        orphans = result.Dataset.get_by( history_id = None )
-        if orphans:
-            for dataset in orphans:
-                result.security_agent.set_dataset_permissions( dataset, [ ( public_group, result.security_agent.permitted_actions.DATASET_ACCESS ) ] )
-    else:
-        result.security_agent.guess_public_group()
-    log.debug( "Public Group identified as id = %s." % ( Group.public_id ) )
+    public_group = result.Group.get_by( name='public' )      
+    log.debug( "Public Group identified as id = %s." % ( public_group.id ) )
     return result
     
 def get_suite():

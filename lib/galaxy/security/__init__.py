@@ -158,7 +158,6 @@ class GalaxyRBACAgent( RBACAgent ):
         raise 'No valid method of associating provided components: %s' % kwd
     def associate_group_dataset( self, group, dataset, permitted_actions=[ RBACAgent.permitted_actions.DATASET_ACCESS ] ):
         # HACK: The default permitted_actions should really not be used... need to find cases where this is done and correct it
-        log.debug("In associate_permissions_dataset, dataset: %d, group: %d, permitted_actions: %s" % ( dataset.id, group.id, permitted_actions ) )
         assoc = self.model.GroupDatasetAssociation( group, dataset, permitted_actions )
         assoc.flush()
         return assoc
@@ -183,7 +182,6 @@ class GalaxyRBACAgent( RBACAgent ):
                 assoc.delete()
                 assoc.flush()
             for group, permitted_actions in permissions:
-                log.debug("In user_set_default_access, user: %s, group: %s, permitted_actions: %s" % (user.email, group.name, str( permitted_actions)))
                 assoc = self.model.DefaultUserGroupAssociation( user, group, permitted_actions )
                 assoc.flush()
         if history:
@@ -202,7 +200,6 @@ class GalaxyRBACAgent( RBACAgent ):
                 assoc.delete()
                 assoc.flush()
             for group, permitted_actions in permissions:
-                log.debug("In history_set_default_access, history: %s, group: %s, permitted_actions: %s" % (history.id, group.name, str( permitted_actions)))
                 assoc = self.model.DefaultHistoryGroupAssociation( history, group, permitted_actions )
                 assoc.flush()
         if dataset:
@@ -237,7 +234,6 @@ class GalaxyRBACAgent( RBACAgent ):
         if isinstance( permissions[0], self.model.GroupDatasetAssociation ):
             permissions = [ ( gda.group, gda.permitted_actions ) for gda in permissions ]
         for ptuple in permissions:
-            log.debug("In set_dataset_permissions, before elf.associate_components, dataset: %s, group: %s, permitted_actions: %s" % ( str(dataset.id), str(ptuple[0].id), str(ptuple[1])))
             self.associate_components( dataset=dataset, permissions=ptuple )
     def get_component_associations( self, **kwd ):
         # TODO, Nate: Make sure this method is functionally correct.
