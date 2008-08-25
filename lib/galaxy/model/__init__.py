@@ -112,9 +112,9 @@ class HistoryDatasetAssociation( object ):
         self.blurb = blurb
         self.peek = peek
         self.extension = extension
-        self.dbkey = dbkey
         self.designation = designation
         self._metadata = metadata or dict()
+        self.dbkey = dbkey
         self.deleted = deleted
         self.visible = visible
         # Relationships
