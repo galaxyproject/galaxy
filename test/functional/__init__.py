@@ -73,6 +73,7 @@ def setup():
                                    test_conf = "test.conf",
                                    log_destination = "stdout",
                                    use_heartbeat=False,
+                                   admin_users = 'test@bx.psu.edu',
                                    global_conf= { "__file__": "universe_wsgi.ini.sample" } )
                                    
         log.info( "Embedded Universe application started" )
