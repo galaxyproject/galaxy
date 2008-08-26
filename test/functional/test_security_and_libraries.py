@@ -1,3 +1,4 @@
+import galaxy.model
 from base.twilltestcase import TwillTestCase
 
 s = 'You must have Galaxy administrator privileges to use this feature.'
@@ -52,21 +53,39 @@ class TestHistory( TwillTestCase ):
         self.visit_page( "admin/groups" )
          # the following should have been created when account was created.
         self.check_page_for_string( 'test@bx.psu.edu private group' )
-        self.create_group()
+        self.create_group( name='New Test Group', priority='10' )
         self.visit_page( "admin/groups" )
         self.check_page_for_string( "group_name=New+Test+Group" )
-    # TODO: Upgrade twill, make sure the following works
+    # twill version 0.9 still does not allow for the following test
     #def test_15_add_group_member( self ):
-    #    #"""Testing adding a member to an existing group"""
-    #    #self.add_group_member()
-    #    #self.visit_page( 'group_name=New+Test+Group' )
-    #    #self.check_page_for_string( 'test@bx.psu.edu' )
-    #    # TODO: See self.add_group_member() problem
-    #    #self.check_page_for_string( 'test2@bx.psu.edu' )
-    # TODO: make the following work
-    #def test_20_create_library( self ):
-    #    """Testing creating new library"""
-    #    self.create_library()
-    #    self.visit_page( 'admin/libraries' )
-    #    self.check_page_for_string( "New Test Library" )
+    #    """Testing adding a member to an existing group"""
+    #    group = galaxy.model.Group.get_by( name='New Test Group' )
+    #    group_id = str( group.id )
+    #    group_name = group.name.replace( ' ', '+' )
+    #    self.add_group_member( group_id=group_id, group_name=group_name )
+    #    self.visit_page( 'admin/group_members?group_id=%s&group_name=%s' % ( group_id, group_name ) )
+    #    self.check_page_for_string( 'test@bx.psu.edu' )
+    #    self.check_page_for_string( 'test2@bx.psu.edu' )
+    def test_20_delete_group( self ):
+        """Testing deleting a group"""
+        self.visit_page( "admin/groups" )
+        self.check_page_for_string( "group_name=New+Test+Group" )
+        group = galaxy.model.Group.get_by( name='New Test Group' )
+        group_id = str( group.id )
+        self.mark_group_deleted( group_id=group_id )
+    def test_25_undelete_group( self ):
+        """Testing undeleting a deleted group"""
+        group = galaxy.model.Group.get_by( name='New Test Group' )
+        group_id = str( group.id )
+        self.undelete_group( group_id=group_id )
+    def test_30_purge_group( self ):
+        """Testing purging a group"""
+        group = galaxy.model.Group.get_by( name='New Test Group' )
+        self.purge_group( group=group )
+
+    def test_20_create_library( self ):
+        """Testing creating new library"""
+        self.create_library( name='New Test Library', description='New test Library Description' )
+        self.visit_page( 'admin/libraries' )
+        self.check_page_for_string( "New Test Library" )
                

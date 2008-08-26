@@ -126,6 +126,8 @@ class Admin( BaseController ):
         for row in q.execute():
             users.append( ( row.user_id,
                             escape( row.user_email, entities ) ) )
+        if users:
+            users = sorted( users, key=operator.itemgetter(1) )
         return trans.fill_template( '/admin/dataset_security/group_create.mako', users=users, msg=msg )
     @web.expose
     def new_group( self, trans, **kwd ):
@@ -169,8 +171,10 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        group_id = params.group_id
+        group_id = int( params.group_id )
         group_name = unescape( params.group_name, unentities )
+        group = galaxy.model.Group.get( group_id )
+        deleted = group.deleted
         # This query retrieves all members of the group
         q = sa.select( ( ( galaxy.model.User.table.c.id ).label( 'user_id' ),
                          ( galaxy.model.User.table.c.email ).label( 'user_email' ) ),
@@ -182,9 +186,12 @@ class Admin( BaseController ):
         for row in q.execute():
             members.append( ( row.user_id,
                               escape( row.user_email, entities ) ) )
+        if members:
+            members = sorted( members, key=operator.itemgetter(1) )
         return trans.fill_template( '/admin/dataset_security/group_members.mako', 
                                     group_id=group_id, 
                                     group_name=escape( group_name, entities ),
+                                    deleted=deleted,
                                     members=members,
                                     msg=msg )
     @web.expose
@@ -204,6 +211,8 @@ class Admin( BaseController ):
         for row in q.execute():
             users.append( ( row.user_id,
                             escape( row.user_email, entities ) ) )
+        if users:
+            users = sorted( users, key=operator.itemgetter(1) )
         # Then get members of the group
         q = sa.select( ( ( galaxy.model.User.table.c.id ).label( 'user_id' ),
                          ( galaxy.model.User.table.c.email ).label( 'user_email' ) ),
@@ -215,6 +224,8 @@ class Admin( BaseController ):
         for row in q.execute():
             members.append( ( row.user_id,
                               escape( row.user_email, entities ) ) )
+        if members:
+            members = sorted( members, key=operator.itemgetter(1) )
         return trans.fill_template( '/admin/dataset_security/group_members_edit.mako', 
                                     group_id=group_id, 
                                     group_name=escape( group_name, entities ),
@@ -362,6 +373,8 @@ class Admin( BaseController ):
                        order_by = [ galaxy.model.Group.table.c.name ] )
         groups = []
         for row in q.execute():
+            total_datasets = 0
+            permitted_actions = []
             # This 2nd query retrieves the number of datasets and dataset permitted_actions associated with each group
             q2 = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
                               ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ),
@@ -376,8 +389,7 @@ class Admin( BaseController ):
             for row2 in q2.execute():
                 total_datasets = row2.total_datasets
                 permitted_actions = []
-                # There may not yet be any GroupDatasetAssociations, in which case no
-                # actions will be found
+                # There may not yet be any GroupDatasetAssociations, in which case no actions will be found
                 if row2.permitted_actions:
                     for action in row2.permitted_actions:
                         permitted_actions.append( action.encode( 'ascii' ) )

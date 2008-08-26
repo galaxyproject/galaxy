@@ -7,7 +7,7 @@ from itertools import *
 
 import twill
 import twill.commands as tc
-from twill.other_packages import ClientForm
+from twill.other_packages._mechanize_dist import ClientForm
 from elementtree import ElementTree
 
 from galaxy.web.controllers.admin import entities, unentities
@@ -514,41 +514,65 @@ class TwillTestCase( unittest.TestCase ):
     def create_group( self, name='New Test Group', priority='10' ):
         """Create a new group with 1 member"""
         self.visit_url( "%s/admin/create_group" % self.url )
+        form = tc.show()
         self.check_page_for_string( "Create Group" )
         try: 
             tc.fv( "1", "name", name )
             tc.fv( "1", "priority", priority )
-            tc.fv( "1", "members", "1" )
+            # twill version 0.9 still does not allow for easily testing forms that contain
+            # multiple fields with the same name ( e.g., check boxes ).  We could attempt to determine
+            # the number of the field on the form and use it instead of the name of the field, but we
+            # would be forced to drop and recreate the database every time we test in order to ensure
+            # the fields will be the same on the form ( since it is dynamically rendered from the database ).
+            tc.fv( "1", "3", "1" ) # 1-based form field 3 is the 1st check box named 'members', user id 1 is test@bx.psu.edu
             tc.submit( "create_group_button" )
         except AssertionError, err:
             errmsg = 'Exception caught attempting to create group: %s' % str( err )
             raise AssertionError( errmsg )
         self.home()
-    #def add_group_member( self, group_id='4', group_name='New+Test+Group' ):
-    #    """Add a member to an existing group"""
-    #    self.visit_page( "admin/group_members_edit?group_id=%s&group_name=%s" % ( group_id, group_name ) )
-    #    self.check_page_for_string( 'Members of' )
-    #    """
-    #    TODO: we need to upgrade twill to be able to test checkbox entries.  With the 
-    #    current version, the following test produces:
-    #    ItemNotFoundError: cannot find value/label "2" in list control
-    #    Weeding through Internet blogs, I found that some new version of twill has the
-    #    following fv signature:
-    #    def formvalue(formname, fieldname, value, fieldnum=-1)
-    #    The fieldname param allows for multiple form feilds with the same name (checkboxes,
-    #    multi-select lists, etc )
-    #    """
-    #    try:
-    #        tc.fv( "1", "members", "2", 2 ) # user id 2 has email test2@bx.psu.edu
-    #        tc.submit( "group_members_edit_button" )
-    #    except AssertionError, err:
-    #        errmsg = 'Exception caught attempting to create group: %s' % str( err )
-    #        raise AssertionError( errmsg )
-    #    self.home()
+        return form
+    def add_group_member( self, group_id='', group_name='' ):
+        """Add a member to an existing group"""
+        # twill version 0.9 does not allow for this test
+        self.visit_url( "%s/admin/group_members_edit?group_id=%s&group_name=%s" % ( self.url, group_id, group_name ) )
+        self.check_page_for_string( 'Members of' )
+        try:
+            tc.fv( "1", "", "2" ) # 1-based form field 2 is the 2nd check box named 'members', user id 2 is test2@bx.psu.edu
+            tc.submit( "group_members_edit_button" )
+        except AssertionError, err:
+            errmsg = 'Exception caught attempting to create group: %s' % str( err )
+            raise AssertionError( errmsg )
+        self.home()
+    def mark_group_deleted( self, group_id='' ):
+        """Delete an existing group"""
+        self.visit_url( "%s/admin/mark_group_deleted?group_id=%s" % ( self.url, group_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The group has been marked as deleted' )
+        self.home()
+    def undelete_group( self, group_id='' ):
+        """Undelete an existing group"""
+        self.visit_url( "%s/admin/undelete_group?group_id=%s" % ( self.url, group_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The group has been marked as not deleted' )
+        self.home()
+    def purge_group( self, group=None ):
+        """Purge an existing group"""
+        if not group.deleted:
+            self.mark_group_deleted( group_id=group.id )
+        group_id = str( group.id )
+        group_name = group.name.replace( ' ', '+' )
+        self.visit_url( "%s/admin/deleted_groups" % self.url )
+        self.check_page_for_string( '%s' % group.name )
+        self.visit_url( "%s/admin/purge_group?group_id=%s" % ( self.url, group_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The group has been purged from the database' )
+        self.home()
 
     # Library stuff
-    def create_library( self, name='New Test Library', description='New test Library Description' ):
+    def create_library( self, name='', description='' ):
         """Create a new library"""
+        name = name.replace( ' ', '+' )
+        description = description.replace( ' ', '+' )
         try:
             self.visit_url( "%s/admin/library?name=%s&description=%s&create_library=None" % ( self.url, name, description ) )
         except AssertionError, err:
