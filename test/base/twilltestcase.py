@@ -7,7 +7,7 @@ from itertools import *
 
 import twill
 import twill.commands as tc
-from twill.other_packages import ClientForm
+from twill.other_packages._mechanize_dist import ClientForm
 from elementtree import ElementTree
 
 buffer = StringIO.StringIO()
@@ -410,7 +410,10 @@ class TwillTestCase( unittest.TestCase ):
     def submit_form( self, form=1, button="runtool_btn", **kwd ):
         """Populates and submits a form from the keyword arguments"""
         #Check for onchange attribute, submit a change if required
-        for i, control in enumerate(tc.showforms()[form-1].controls):
+        for i, f in enumerate( tc.showforms() ):
+            if i == form - 1:
+                break   
+        for i, control in enumerate( f.controls ):
             try:
                 if 'refresh_on_change' in control.attrs.keys():
                     changed = False
@@ -456,7 +459,10 @@ class TwillTestCase( unittest.TestCase ):
             if not isinstance(value, list):
                 value = [ value ]
 
-            for i, control in enumerate(tc.showforms()[form-1].controls):
+            for i, f in enumerate( tc.showforms() ):
+                if i == form - 1:
+                    break   
+            for i, control in enumerate( f.controls ):
                 if control.name == key:
                     control.clear()
                     if control.is_of_kind("text"):
