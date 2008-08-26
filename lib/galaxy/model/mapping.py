@@ -449,7 +449,7 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
         active_datasets=relation( LibraryFolderDatasetAssociation,
             primaryjoin=( ( LibraryFolderDatasetAssociation.table.c.folder_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolderDatasetAssociation.table.c.deleted ) ) ), 
             order_by=asc( LibraryFolderDatasetAssociation.table.c.order_id ), 
-            lazy=True, 
+            lazy=False, 
             viewonly=True ),
         tags=relation( 
             LibraryTagFolderAssociation, 
