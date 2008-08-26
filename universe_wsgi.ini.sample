@@ -77,8 +77,8 @@ use_lint = false
 # NEVER enable this on a public site (even test or QA)
 use_interactive = true
 
-# Admin Password
-admin_pass = galaxy
+# Admin Users - this should be a comma-separated list of valid Galaxy users
+#admin_users = user1@bx.psu.edu,user2@bx.psu.edu
 
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
