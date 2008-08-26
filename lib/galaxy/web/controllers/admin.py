@@ -467,6 +467,25 @@ class Admin( BaseController ):
                                     msg=msg )
     @web.expose
     def specified_users_groups( self, trans, **kwd ):
+        def renderable( component, group_id ):
+            #return True if component or at least one of components contents is 
+            #associated with group_id
+            if isinstance( component, trans.app.model.LibraryFolder ):
+                # Check the folder's datasets to see what can be rendered
+                for library_folder_dataset_assoc in component.active_datasets:
+                    if renderable( library_folder_dataset_assoc, group_id ):
+                        return True
+                # Check the folder's sub-folders to see what can be rendered
+                for library_folder in component.active_folders:
+                    if renderable( library_folder, group_id ):
+                        return True
+            elif isinstance( component, trans.app.model.LibraryFolderDatasetAssociation ):
+                dataset = trans.app.model.Dataset.get( component.dataset_id )
+                for group_dataset_assoc in dataset.groups:
+                    if group_dataset_assoc.group_id == group_id:
+                        return True
+            return False
+        
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
@@ -509,14 +528,9 @@ class Admin( BaseController ):
                     permitted_actions.sort()
                     # If we have permitted actions, then we have at least 1 GroupDatasetAssociation, in
                     # which case, we can see if we have any Libraries that the user can access
-                    libs = trans.app.model.Library.select()
-                    for library in libs:
-                        folder = library.root_folder
-                        components = list( folder.folders ) + list( folder.datasets )
-                        for component in components:
-                            if self.renderable( trans, component, row2.group_id ):
-                                libraries.append( library.id )
-                                break
+                    
+                    libraries = [ library for library in trans.app.model.Library.select() if renderable( library.root_folder, row2.group_id ) ]
+                    
             groups.append( ( row.group_id,
                              escape( row.group_name, entities ),
                              row.group_priority,
@@ -552,7 +566,7 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        return trans.fill_template( '/admin/library/libraries.mako', libraries=trans.app.model.Library.select(), msg=msg )
+        return trans.fill_template( '/admin/library/libraries.mako', libraries=trans.app.model.Library.select_by( deleted = False ), msg=msg )
     @web.expose
     def library( self, trans, id=None, name="Unnamed", description=None, **kwd ):
         if not self.user_is_admin( trans ):
@@ -888,53 +902,78 @@ class Admin( BaseController ):
         if id:
             # id is a LibraryFolderDatasetAssociation.id
             library_folder_dataset_assoc = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-            folder = library_folder_dataset_assoc.folder
-            library = folder.library_root[0]
-            dataset = library_folder_dataset_assoc.dataset
-            # TODO: assuming 1 to 1 mapping between Dataset -> LibraryFolders ( i.e., is can the same
-            # dataset record be shared across LibraryFolders?
-            # Confirm that things should be deleted as follows
-            # Delete the LibraryFolderDatasetAssociation
-            library_folder_dataset_assoc.deleted = True
-            library_folder_dataset_assoc.flush()
-            # Delete any GroupDatasetAssociations
-            for group_dataset_assoc in dataset.groups:
-                group_dataset_assoc.delete()
-                group_dataset_assoc.flush()
-            # Delete any HistoryDatasetAssociations
-            for history_dataset_assoc in dataset.history_associations:
-                history_dataset_assoc.delete()
-                history_dataset_assoc.flush()
-            # Delete the dataset
-            dataset.deleted = True
-            dataset.flush()
-            trans.log_event( "Dataset id %s deleted from library folder id %s" % ( str( id ), str( folder.id ) ) )
-            msg = 'The dataset was deleted from the folder'
-            # Refresh the library for display
-            library.refresh()
-        return trans.fill_template( '/admin/library/library.mako', library=library, msg=msg )
-    def renderable( self, trans, component, group_id ):
-        render = False
-        if isinstance( component, trans.app.model.LibraryFolder ):
-            # Check the folder's datasets to see what can be rendered
-            for library_folder_dataset_assoc in component.datasets:
-                if render:
-                    break
-                dataset = trans.app.model.Dataset.get( library_folder_dataset_assoc.dataset_id )
-                for group_dataset_assoc in dataset.groups:
-                    if group_dataset_assoc.group_id == group_id:
-                        render = True
-                        break
-            # Check the folder's sub-folders to see what can be rendered
-            if not render:
-                for library_folder in component.folders:
-                    self.renderable( trans, library_folder, group_id )
-        elif isinstance( component, trans.app.model.LibraryFolderDatasetAssociation ):
-            render = False
-            dataset = trans.app.model.Dataset.get( component.dataset_id )
-            for group_dataset_assoc in dataset.groups:
-                if group_dataset_assoc.group_id == group_id:
-                    render = True
-                    break
-        return render
-
+            self._delete_dataset( library_folder_dataset_assoc )
+            trans.log_event( "Dataset id %s deleted from library folder id %s" % ( str( id ), str( library_folder_dataset_assoc.folder.id ) ) )
+            trans.response.send_redirect( web.url_for( action = 'folder', id = library_folder_dataset_assoc.folder.id, msg = 'The dataset was deleted from the folder' ) )
+        return trans.show_error_message( "You did not specify a dataset to delete." )
+    
+    def _delete_dataset( self, library_folder_dataset_assoc ):
+        #dataset = library_folder_dataset_assoc.dataset
+        # TODO: assuming 1 to 1 mapping between Dataset -> LibraryFolders ( i.e., is can the same
+        # dataset record be shared across LibraryFolders?
+        # Confirm that things should be deleted as follows
+        
+        ### Deleting the base dataset will delete datasets that exist in user's histories
+        ### ( LDA.dataset == HDA.dataset )
+        ### Shouldn't this be a separate option?
+        ### For Now, I am commenting out logic that acts on the dataset directly
+        ### -- Dan:
+        
+        
+        # Delete any GroupDatasetAssociations #perhaps group assocs should only be deleted when the Dataset object is purged?
+        #for group_dataset_assoc in dataset.groups:
+        #    group_dataset_assoc.delete()
+        #    group_dataset_assoc.flush()
+        # Delete any HistoryDatasetAssociations #Just because we delete this Library Dataset Association from the library, doesn't mean we want to remove it from a user's history (without their knowledge even)
+        #for history_dataset_assoc in dataset.history_associations:
+        #    history_dataset_assoc.deleted = True #set deleted flag to True, do not delete row
+        #    history_dataset_assoc.flush()
+        # Delete the dataset
+        #dataset.deleted = True
+        #dataset.flush()
+        
+        # Delete the LibraryFolderDatasetAssociation
+        library_folder_dataset_assoc.deleted = True
+        library_folder_dataset_assoc.flush()
+    
+    @web.expose
+    def delete_folder( self, trans, id=None, **kwd):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        if id:
+            if 'confirm' not in kwd:
+                return trans.show_warn_message( 'Click <a href="%s">here</a> to confirm folder deletion.' % web.url_for( action = 'delete_folder', id = id, confirm=True ) )
+            # id is a LibraryFolder.id
+            folder = trans.app.model.LibraryFolder.get( id )
+            self._delete_folder( folder )
+            
+            trans.log_event( "Folder id %s deleted." % id )
+            
+            if folder.library_root:
+                trans.response.send_redirect( web.url_for( action = 'library', id = folder.library_root[0].id, msg = 'You have deleted the root folder.' ) )
+            trans.response.send_redirect( web.url_for( action = 'folder', id = folder.parent_id, msg = 'The folder was deleted.' ) )
+        return trans.show_error_message( "You did not specify a folder to delete." )
+    
+    def _delete_folder( self, folder ):
+        for library_folder_dataset_association in folder.active_datasets:
+            self._delete_dataset( library_folder_dataset_association )
+        for folder in folder.active_folders:
+            self._delete_folder( folder )
+        folder.deleted = True
+        folder.flush()
+    
+    @web.expose
+    def delete_library( self, trans, id=None, **kwd):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        if id:
+            if 'confirm' not in kwd:
+                return trans.show_warn_message( 'Click <a href="%s">here</a> to confirm library deletion.' % web.url_for( action = 'delete_library', id = id, confirm=True ) )
+            # id is a LibraryFolder.id
+            library = trans.app.model.Library.get( id )
+            self._delete_folder( library.root_folder )
+            library.deleted = True
+            library.flush()
+            trans.log_event( "Library id %s deleted." % id )
+            trans.response.send_redirect( web.url_for( action = 'libraries', msg = 'You have deleted the library %s.' % library.id ) )
+        return trans.show_error_message( "You did not specify a library to delete." )

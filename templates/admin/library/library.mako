@@ -32,7 +32,10 @@
       <tr><td>&nbsp;</td><td><input name="end_library_button" type="submit" value="Save"></td></tr>
     </table>
   </form>
+  <div style="clear: both"></div>
+  </div>
 </div>
 <div style="float: left; width: 250px; margin-right: 10px;">
-  <a href="${h.url_for( 'folder', id = library.root_folder.id )}">Manage Root Folder</a>
+  <a href="${h.url_for( 'folder', id = library.root_folder.id )}">Manage Root Folder</a> | 
+  <a href="${h.url_for( controller = 'admin', action = 'delete_library', id = library.id )}">delete library</a>
 </div>

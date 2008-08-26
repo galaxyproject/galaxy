@@ -53,7 +53,7 @@
   <div>
     Folder: ${this_folder.name}
     <%
-      components = list( this_folder.folders ) + list( this_folder.datasets )
+      components = this_folder.active_components
       components = [ ( getattr( components[i], "order_id" ), i, components [i] ) for i in xrange( len( components ) ) ]
       components.sort()
       components = [ tup[-1] for tup in components ]

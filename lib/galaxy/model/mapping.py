@@ -183,6 +183,7 @@ Library.table = Table( "library", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TEXT, index=True, unique=True ),
+    Column( "deleted", Boolean, index=True, default=False ),
     Column( "description", TEXT ) )
 
 LibraryFolder.table = Table( "library_folder", metadata,
@@ -194,6 +195,7 @@ LibraryFolder.table = Table( "library_folder", metadata,
     Column( "description", TEXT ),
     Column( "order_id", Integer ),
     Column( "item_count", Integer ),
+    Column( "deleted", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ) )
 
 LibraryTag.table = Table( "library_tag", metadata,
@@ -439,6 +441,16 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
             LibraryFolder, 
             primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ),
             backref=backref( "parent", primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ), remote_side=[LibraryFolder.table.c.id] ) ),
+        active_folders=relation( LibraryFolder, 
+            primaryjoin=( ( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolder.table.c.deleted ) ) ), 
+            order_by=asc( LibraryFolder.table.c.order_id ), 
+            lazy=True, #"""sqlalchemy.exceptions.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
+            viewonly=True ),
+        active_datasets=relation( LibraryFolderDatasetAssociation,
+            primaryjoin=( ( LibraryFolderDatasetAssociation.table.c.folder_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolderDatasetAssociation.table.c.deleted ) ) ), 
+            order_by=asc( LibraryFolderDatasetAssociation.table.c.order_id ), 
+            lazy=True, 
+            viewonly=True ),
         tags=relation( 
             LibraryTagFolderAssociation, 
             primaryjoin=( LibraryFolder.table.c.id == LibraryTagFolderAssociation.table.c.folder_id ),
