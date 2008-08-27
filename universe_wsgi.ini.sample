@@ -80,6 +80,10 @@ use_interactive = true
 # Admin Users - this should be a comma-separated list of valid Galaxy users
 #admin_users = user1@bx.psu.edu,user2@bx.psu.edu
 
+# Files in directories under this directory can be directly imported through
+# the library admin's "add dataset" tool
+## library_import_dir = /var/opt/galaxy/import
+
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
 

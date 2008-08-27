@@ -1,5 +1,7 @@
 <%inherit file="/base.mako"/>
 
+<% import os %>
+
 <%def name="title()">Create New Library Dataset</%def>
 <div class="toolForm" id="new_dataset">
   <div class="form-row">
@@ -27,6 +29,23 @@
         </div>
         <div style="clear: both"></div>
       </div>
+      %if trans.app.config.library_import_dir is not None:
+      <div class="form-row">
+        <label>Server Directory</label>
+        <div style="float: left; width: 250px; margin-right: 10px;">
+          <select name="server_dir">
+            <option>None</option>
+          %for dir in os.listdir( trans.app.config.library_import_dir ):
+            <option>${dir}</option>
+          %endfor
+          </select>
+        </div>
+        <div class="toolParamHelp" style="clear: both;">
+          You may also choose to upload all files in a subdirectory of <strong>${trans.app.config.library_import_dir}</strong> on the Galaxy server.
+        </div>
+        <div style="clear: both"></div>
+      </div>
+      %endif
       <div class="form-row">
         <label>Convert spaces to tabs:</label>
         <div style="float: left; width: 250px; margin-right: 10px;"><div><input type="checkbox" name="space_to_tab" value="Yes">Yes</div></div>

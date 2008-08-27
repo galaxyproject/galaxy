@@ -51,6 +51,7 @@
     </form>
   </div>
 </div>
+<p/>
 <div class="toolForm">
   <div class="toolFormTitle">Edit Attributes</div>
   <div class="toolFormBody">

@@ -1,5 +1,5 @@
 
-import shutil, StringIO, operator
+import shutil, StringIO, operator, urllib
 from galaxy import util
 from galaxy.web.base.controller import *
 from galaxy.datatypes import sniff
@@ -668,8 +668,12 @@ class Admin( BaseController ):
             last_dataset_created = None
             data_file = kwd['file_data']
             url_paste = kwd['url_paste']
-            if data_file == '' and url_paste == '':
-                msg = 'Select a file, enter an URL or enter Text.'
+            server_dir = kwd['server_dir']
+            if data_file == '' and url_paste == '' and server_dir in [ 'None', '' ]:
+                if trans.app.config.library_import_dir is not None:
+                    msg = 'Select a file, enter a URL or Text, or select a server directory.'
+                else:
+                    msg = 'Select a file, enter a URL or enter Text.'
                 trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=msg ) )
             space_to_tab = False 
             if 'space_to_tab' in kwd:
@@ -684,10 +688,12 @@ class Admin( BaseController ):
                 groups = [ groups ]
             elif groups is None:
                 groups = []
-            else:
-                groups = []
+            # Greg: what's this for?  it kills the ability to select multiple groups
+            #else:
+            #    groups = []
             temp_name = ""
             data_list = []
+            created_datasets = []
 
             if 'filename' in dir( data_file ):
                 file_name = data_file.filename
@@ -715,6 +721,7 @@ class Admin( BaseController ):
                                                              groups,
                                                              info="uploaded url",
                                                              space_to_tab=space_to_tab )
+                            created_datasets.append( last_dataset_created )
                 else:
                     is_valid = False
                     for line in url_paste:
@@ -731,7 +738,31 @@ class Admin( BaseController ):
                                                          groups,
                                                          info="pasted entry",
                                                          space_to_tab=space_to_tab )
-            trans.response.send_redirect( web.url_for( action='dataset', id=last_dataset_created.id ) )
+            elif server_dir not in [ None, "", "None" ]:
+                full_dir = os.path.join( trans.app.config.library_import_dir, server_dir )
+                try:
+                    files = os.listdir( full_dir )
+                except:
+                    log.debug( "Unable to get file list for %s" % full_dir )
+                for file in files:
+                    full_file = os.path.join( full_dir, file )
+                    if not os.path.isfile( full_file ):
+                        continue
+                    last_dataset_created = add_file( open( full_file, 'rb' ),
+                                                     file,
+                                                     extension,
+                                                     dbkey,
+                                                     last_used_build,
+                                                     groups,
+                                                     info="imported file",
+                                                     space_to_tab=space_to_tab )
+                    created_datasets.append( last_dataset_created )
+            if len( created_datasets ):
+                trans.response.send_redirect( web.url_for( action='change_permissions', ids=",".join( [ str(d.id) for d in created_datasets ] ) ) )
+            elif last_dataset_created is not None:
+                trans.response.send_redirect( web.url_for( action='dataset', id=last_dataset_created.id ) )
+            else:
+                return trans.show_error_message( 'Upload failed' )
         elif id is None:
             # Send list of data formats to the form so the "extension" select list can be populated dynamically
             file_formats = trans.app.datatypes_registry.upload_file_formats
@@ -869,6 +900,43 @@ class Admin( BaseController ):
                                         msg=msg )
         else:
             return trans.show_error_message( "Invalid dataset specified" )
+    @web.expose
+    def change_permissions( self, trans, ids=[], **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        if not ids:
+            return trans.show_error_message( 'You must specify at least two datasets to modify permissions on' )
+        datasets = []
+        for id in [ int( id ) for id in ids.split(',') ]:
+            d = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+            if d is None:
+                return trans.show_error_message( 'You specified an invalid dataset' )
+            datasets.append( d )
+        if len( datasets ) == 0:
+            return trans.show_error_message( 'You must specify at least two datasets to modify permissions on' )
+        elif len( datasets ) == 1:
+            trans.response.send_redirect( web.url_for( action='dataset', id=datasets[0].id ) )
+        # If the permissions on the first dataset don't match the intersection
+        # of permissions, the permissions across all datasets are not
+        # identical.  Although, should we care, or should we just let the admin
+        # overwrite permissions regardless?
+        if trans.app.security_agent.get_dataset_permissions( datasets[0] ) != \
+           trans.app.security_agent.guess_derived_permissions_for_datasets( [ d.dataset for d in datasets ] ):
+            return trans.show_error_message( "The datasets you selected do not have identical permissions, so they can not be updated together" )
+        if 'change_permissions' in kwd:
+            group_args = [ k.replace('group_', '', 1) for k in kwd if k.startswith('group_') ]
+            group_ids_checked = filter( lambda x: not x.count('_'), group_args )
+            permissions = []
+            for group_id in group_ids_checked:
+                action_strings = [ action.replace(group_id + '_', '', 1) for action in group_args if action.startswith(group_id + '_') ]
+                actions = trans.app.security_agent.convert_permitted_action_strings( action_strings )
+                permissions.append( ( trans.app.security_agent.get_group( group_id ), actions ) )
+            for d in datasets:
+                trans.app.security_agent.set_dataset_permissions( d.dataset, permissions )
+            return trans.show_ok_message( "Dataset permissions have been set." )
+        else:
+            return trans.fill_template( "/admin/library/change_permissions.mako",
+                                        datasets=datasets )
     @web.expose
     def delete_dataset( self, trans, id=None, **kwd):
         if not self.user_is_admin( trans ):

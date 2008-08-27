@@ -64,6 +64,9 @@ class Configuration( object ):
         self.bugs_email = kwargs.get( 'bugs_email', None )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
+        self.library_import_dir = kwargs.get( 'library_import_dir', None )
+        if self.library_import_dir is not None and not os.path.exists( self.library_import_dir ):
+            raise ConfigurationError( "library_import_dir specified in config (%s) does not exist" % self.library_import_dir )
         #Parse global_conf
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
