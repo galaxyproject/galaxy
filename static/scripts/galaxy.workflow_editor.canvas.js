@@ -483,7 +483,8 @@ function prebuild_node( type, title_text, tool_id ) {
     // zIndex tracking for bring to front
     zmax = $("#canvas-container").data( "zmax" )
     if ( ! zmax ) {
-        zmax = 0;
+        // Start above level where connectors are drawn
+        zmax = 20;
     }
     f.css( "zIndex", zmax + 1 );
     $("#canvas-container").data( "zmax", zmax + 1 );
