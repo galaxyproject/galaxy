@@ -32,15 +32,16 @@ function OutputTerminal( element, datatype ) {
     this.datatype = datatype;
 }
 
-OutputTerminal.prototype.__proto__ = Terminal.prototype;
+OutputTerminal.prototype = new Terminal;
 
 function InputTerminal( element, datatypes ) {
     Terminal.call( this, element );
     this.datatypes = datatypes;
 }
 
-InputTerminal.prototype = {
-    __proto__: Terminal.prototype,
+InputTerminal.prototype = new Terminal;
+
+$.extend( InputTerminal.prototype, {
     can_accept: function ( other ) {
         if ( this.connectors.length < 1 ) {
             for ( t in this.datatypes ) {
@@ -53,7 +54,7 @@ InputTerminal.prototype = {
         }
         return false;
     }
-}
+});
 
 function Connector( handle1, handle2 ) {
     this.canvas = null;
@@ -81,6 +82,10 @@ $.extend( Connector.prototype, {
         var canvas_container = $("#canvas-container");
         if ( ! this.canvas ) {
             this.canvas = document.createElement( "canvas" );
+            // excanvas specific hack
+            if ( window.G_vmlCanvasManager ) {
+                G_vmlCanvasManager.initElement( this.canvas );
+            }
             canvas_container.append( $(this.canvas) );
             if ( this.dragging ) { this.canvas.style.zIndex = "300" }
         }
@@ -182,14 +187,14 @@ $.extend( Node.prototype, {
                                         t.remove();
                                     })))
                             .bind( "mouseleave", function() {
-                                $(this).fadeOut( "fast", function() { $(this).remove() } )
+                                $(this).remove();
                             });
                         // Position it and show
                         t.css( {
                                 top: $(this).offset().top - 2,
                                 left: $(this).offset().left - t.width(),
                                 'padding-right': $(this).width() }
-                            ).fadeIn( "fast" );
+                            ).show();
                     }
                 },
                 function() {}
@@ -272,12 +277,12 @@ $.extend( Node.prototype, {
         var node = this;
         var b = f.find( ".toolFormBody" );
         b.find( "div" ).remove();
-        var ibox = $("<div class='inputs'/>").appendTo( b );
+        var ibox = $("<div class='inputs'></div>").appendTo( b );
         $.each( data.data_inputs, function( i, input ) {
-            t = $("<div class='terminal input-terminal'></div>")
+            var t = $("<div class='terminal input-terminal'></div>");
             node.enable_input_terminal( t, input.name, input.extensions );
-            ibox.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div></div>" ).prepend( t ) );
-        });        
+            ibox.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" ).prepend( t ) );
+        });
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
             b.append( $( "<div class='rule'></div>" ) );
         }
@@ -305,8 +310,8 @@ $.extend( Node.prototype, {
         }
         // Update input rows
         var old_body = el.find( "div.inputs" );
-        var new_body = $("<div class='inputs'/>");
-        old = old_body.find( "div.input-data-row")
+        var new_body = $("<div class='inputs'></div>");
+        var old = old_body.find( "div.input-data-row")
         $.each( data.data_inputs, function( i, input ) {
             var t = $("<div class='terminal input-terminal'></div>");
             node.enable_input_terminal( t, input.name, input.extensions );
@@ -322,7 +327,7 @@ $.extend( Node.prototype, {
                 $(this).remove();
             });
             // Append to new body
-            new_body.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div></div>" ).prepend( t ) );
+            new_body.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" ).prepend( t ) );
         });
         old_body.replaceWith( new_body );
         // Cleanup any leftover terminals
@@ -468,13 +473,21 @@ function prebuild_node( type, title_text, tool_id ) {
     f.append( b )
     // Fix width to computed width
     // Now add floats
-    var buttons = $("<div class='buttons' style='float: right'></div>");
-    buttons.append( $("<img src='../images/delete_icon.png' />").click( function() { 
+    var buttons = $("<div class='buttons' style='float: right;'></div>");
+    buttons.append( $("<img src='../images/delete_icon.png' />").click( function( e ) {
         node.destroy();
     } ).hover( 
         function() { $(this).attr( 'src', "../images/delete_icon_dark.png" ) },
         function() { $(this).attr( 'src', "../images/delete_icon.png" ) }
     ) );
+    // zIndex tracking for bring to front
+    zmax = $("#canvas-container").data( "zmax" )
+    if ( ! zmax ) {
+        zmax = 0;
+    }
+    f.css( "zIndex", zmax + 1 );
+    $("#canvas-container").data( "zmax", zmax + 1 );
+    // Place inside container
     f.appendTo( "#canvas-container" );
     // Position in container
     var o = $("#canvas-container").position();
@@ -494,13 +507,16 @@ function prebuild_node( type, title_text, tool_id ) {
         // containment: $("#shim"),
         // grow: true,
         click: function( e, ui ) {
-            var element = $(this).data("draggable").element.get(0);
-            (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode)
+            // Bring to front
+            zmax = $("#canvas-container").data( "zmax" )
+            $(this).css( "zIndex", zmax + 1 );
+            $("#canvas-container").data( "zmax", zmax + 1 );
+            // Make active
             workflow.activate_node( node );
         },
         start: function( e, ui ) {
             workflow.activate_node( node );
-            $(this).css( 'z-index', '1000' );
+            $(this).css( 'z-index', $("#canvas-container").data( "zmax" ) + 1000 );
         },
         drag: function( e, ui ) { 
             $(this).find( ".terminal" ).each( function() {
@@ -508,9 +524,11 @@ function prebuild_node( type, title_text, tool_id ) {
             })
         },
         stop: function( e, ui  ) {
-            var element = $(this).data("draggable").element.get(0);
-            (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode)
-            $(this).css( 'z-index', '100' );
+            // Bring to front
+            zmax = $("#canvas-container").data( "zmax" )
+            $(this).css( "zIndex", zmax + 1 );
+            $("#canvas-container").data( "zmax", zmax + 1 );
+            // Redraw
             $(this).find( ".terminal" ).each( function() {
                 this.terminal.redraw();
             });

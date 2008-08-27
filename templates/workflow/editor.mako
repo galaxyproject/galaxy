@@ -14,8 +14,11 @@
 
 <%def name="javascripts()">
     
-    ## ${parent.javascripts()}
-
+    ${parent.javascripts()}
+    
+    <!--[if IE]>
+    <script type='text/javascript' src="/static/scripts/excanvas.js"> </script>
+    <![endif]-->
     <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
     <script type='text/javascript' src="/static/scripts/galaxy.ui.scrollPanel.js"> </script>
@@ -23,46 +26,6 @@
     <script type='text/javascript' src="/static/scripts/jquery.form.js"> </script>
     <script type='text/javascript' src="/static/scripts/jquery.json.js"> </script>
 
-    <script type='text/javascript'>
-    /* Dialog and menu handling tools to be moved to galaxy.layout.js */
-    
-    function hide_modal() {
-        $(".dialog-box-container" ).fadeOut( function() { $("#overlay").hide(); } );
-    };
-    
-    function show_modal( title, body, buttons, extra_buttons ) {
-        $( ".dialog-box" ).find( ".title" ).html( title );
-        var b = $( ".dialog-box" ).find( ".buttons" ).html( "" );
-        if ( buttons ) {
-            $.each( buttons, function( name, value ) {
-                b.append( $( '<button/>' ).text( name ).click( value ) );
-                b.append( " " );
-            });
-            b.show();
-        } else {
-            b.hide();
-        }
-        var b = $( ".dialog-box" ).find( ".extra_buttons" ).html( "" );
-        if ( extra_buttons ) {
-            $.each( extra_buttons, function( name, value ) {
-                b.append( $( '<button/>' ).text( name ).click( value ) );
-                b.append( " " );
-            });
-            b.show();
-        } else {
-            b.hide();
-        }
-        if ( body == "progress" ) {
-            body = $( "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>" );
-        }
-        $( ".dialog-box" ).find( ".body" ).html( body );
-        if ( ! $(".dialog-box-container").is( ":visible" ) ) {
-            $("#overlay").show();
-            $(".dialog-box-container").fadeIn()
-        }
-    };
-    </script>
-    
     <script type='text/javascript' src="/static/scripts/galaxy.workflow_editor.canvas.js"> </script>
     
     <script type='text/javascript'>
@@ -70,38 +33,34 @@
     $( function() {
         // Initialize workflow state
         reset();
-        // Shim (the background of the editor area) causes loss of focus
-        // $("#shim").click( workflow.clear_active_node ).hoverIntent( {
-        //     over: function () { $("div.toolForm").fadeTo( "fast", 0.7 ) },
-        //     out: function () { $("div.toolForm").fadeTo( "fast", 1.0 ) },
-        //     interval: 300
-        // });
         // Load the datatype info
-        $.getJSON( "${h.url_for( action='get_datatypes' )}", function( data ) {
-            populate_datatype_info( data );
-            // Load workflow definition
-            $.ajax( {
-                url: "${h.url_for( action='load_workflow' )}",
-                data: { id: "${trans.security.encode_id( workflow_id )}", "_": "true" },
-                dataType: 'json',
-                success: function( data ) {
-                     reset();
-                     workflow.from_simple( data );
-                     workflow.has_changes = false;
-                     scroll_to_nodes();
-                     hide_modal();
-                 },
-                 beforeSubmit: function( data ) {
-                     show_modal( "Loading workflow", "progress" );
-                 }
-            });
+        $.ajax( {
+            url: "${h.url_for( action='get_datatypes' )}",
+            dataType: "json",
+            cache: false,
+            success: function( data ) {
+                populate_datatype_info( data );
+                // Load workflow definition
+                $.ajax( {
+                    url: "${h.url_for( action='load_workflow' )}",
+                    data: { id: "${trans.security.encode_id( workflow_id )}", "_": "true" },
+                    dataType: 'json',
+                    cache: false,
+                    success: function( data ) {
+                         reset();
+                         workflow.from_simple( data );
+                         workflow.has_changes = false;
+                         scroll_to_nodes();
+                         hide_modal();
+                     },
+                     beforeSubmit: function( data ) {
+                         show_modal( "Loading workflow", "progress" );
+                     }
+                });
+            }
         });
         
         $(document).ajaxError( function ( e, x ) {
-            // $("#error-display").empty()
-            //     .append( $("<div/>").html( x.responseText ) )
-            //     .append( $("<div><a>close</a></div>" ).click( function() { $("#error-display").hide(); } ) )
-            //     .show(); 
             show_modal( "Server error", x.responseText, { "Ignore error" : hide_modal } );
             return false;
         });
@@ -272,7 +231,7 @@
                                 save_current_workflow( do_close );
                             }
                         }, {
-                            "Don't Save": do_close,
+                            "Don't Save": do_close
                         } );
         } else {
             window.document.location = "${next_url}"
@@ -410,20 +369,10 @@
         margin: 5px;
     }
     
-    #error-display {
-        display: none;
-        position: fixed;
-        top: 5%; left: 5%; width: 90%; height: 90%;
-        border: solid red 10px;
-        background: #FFDDDD;
-        z-index: 50000;
-        overflow: auto;
-    }
-    
     canvas { position: absolute; z-index: 10; } 
     canvas.dragging { position: absolute; z-index: 1000; }
-    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; bottom: 0; left: -16px; z-index: 1500; }
-    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; bottom: 0; right: -16px; z-index: 1500; }
+    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 0; left: -16px; z-index: 1500; }
+    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 0; right: -16px; z-index: 1500; }
     .drag-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_drag.png')}); position: absolute; z-index: 1500; }
     .input-terminal-active { background: url(${h.url_for('/static/style/workflow_circle_green.png')}); }
     ## .input-terminal-hover { background: yellow; border: solid black 1px; }
@@ -504,13 +453,11 @@
     
     </style>
 </%def>
-        
-<div id="error-display"></div>
 
 <div id="overlay">
     ## Need a table here for centering in IE6
     <table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"><tr><td>
-    <div style="position: relative;">
+    <div class="dialog-box-wrapper">
         <div class="dialog-box">
             <div class="unified-panel-header">
                 <div class="unified-panel-header-inner"><span class='title'>Loading workflow editor...</span></div>
@@ -522,7 +469,6 @@
                 <div style="clear: both;"></div>
             </div>
         </div>
-        <div class="dialog-box-underlay"></div>
     </div>
     </td></tr></table>
 </div>
@@ -558,9 +504,9 @@
                                     %if "[[" in tool.description and "]]" in tool.description:
                                         ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="javascript:add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                                     %elif tool.name:
-                                        <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
+                                        <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
                                     %else:
-                                        <a id="link-${tool.id}" href="javascript:add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                                        <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
                                     %endif
                                 </div>
                             %else:
@@ -588,7 +534,7 @@
             <div id="__workflow__input__" class="toolSectionBody">
                 <div class="toolSectionBg">
                     <div class="toolTitle">
-                        <a href="javascript:add_node_for_module( 'data_input', 'Input Dataset' )">Input dataset</a>
+                        <a href="#" onclick="add_node_for_module( 'data_input', 'Input Dataset' )">Input dataset</a>
                     </div>
                 </div>
             </div>                    

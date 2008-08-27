@@ -11,13 +11,19 @@
 <div class="toolForm">
   <div class="form-row">
     <a href="${h.url_for( controller='admin', action='libraries' )}">Libraries</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+    %if deleted:
+      <a href="${h.url_for( controller='admin', action='deleted_groups' )}">Deleted Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+    %else:
+      <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+    %endif
     <tr><td><a href="${h.url_for( controller='admin', action='users' )}">Users</a></td></tr>
   </div>
-  <div class="form-row">
-    <a href="${h.url_for( controller='admin', action='group_members_edit', group_id=group_id, group_name=group_name )}">Manage group membership</a>
-    <br/>
-  </div>
+  %if not deleted:
+    <div class="form-row">
+      <a href="${h.url_for( controller='admin', action='group_members_edit', group_id=group_id, group_name=group_name )}">Manage group membership</a>
+      <br/>
+    </div>
+  %endif
   <div class="toolFormTitle">Members of Group '${gn}'</div>
   <table align="center" class="colored">
     %if msg:

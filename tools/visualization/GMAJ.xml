@@ -3,6 +3,7 @@
   <command interpreter="python">GMAJ.py $out_file1 $maf_input $gmaj_file $filenames_file</command>
   <inputs>
       <param name="maf_input" type="data" format="maf" label="Alignment File" optional="False"/>
+      <param name="refseq" label="Reference Sequence" value="" type="text" help="Leave empty to allow interactive selection."/>
       <repeat name="annotations" title="Annotations">
         <param name="species" type="select" label="Species of Annotation" multiple="False">
           <options>
@@ -70,7 +71,11 @@
 
 title = "Galaxy: $maf_input.name"
 alignfile = input.maf
+#if $refseq.value:
+refseq = $refseq
+#else:
 refseq = any
+#end if
 tabext = .bed .gff .gtf
 #if $nowarn.value:
 nowarn = $nowarn

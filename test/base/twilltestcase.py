@@ -7,9 +7,12 @@ from itertools import *
 
 import twill
 import twill.commands as tc
-from twill.other_packages import ClientForm
+from twill.other_packages._mechanize_dist import ClientForm
 from elementtree import ElementTree
 
+from galaxy.web.controllers.admin import entities, unentities
+from xml.sax.saxutils import escape, unescape 
+  
 buffer = StringIO.StringIO()
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
@@ -18,6 +21,7 @@ tc.config('use_tidy', 0)
 
 # Dial ClientCookie logging down (very noisy)
 logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
+#log = logging.getLogger( __name__ )
 
 class TwillTestCase( unittest.TestCase ):
 
@@ -30,7 +34,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.set_history()
 
-    """Functions associated with files"""
+    # Functions associated with files
     def files_diff( self, file1, file2 ):
         """Checks the contents of 2 files for differences"""
         if not filecmp.cmp( file1, file2 ):
@@ -82,7 +86,7 @@ class TwillTestCase( unittest.TestCase ):
             errmsg += str( err )
             raise AssertionError( errmsg )
 
-    """Functions associated with histories"""
+    # Functions associated with histories
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
         self.visit_page( "history" )
@@ -209,7 +213,7 @@ class TwillTestCase( unittest.TestCase ):
     def view_stored_histories( self ):
         self.visit_page( "history_available" )
 
-    """Functions associated with datasets (history items) and meta data"""
+    # Functions associated with datasets (history items) and meta data
     def get_job_stderr( self, id ):
         self.visit_page( "dataset/stderr?id=%s" % id )
         return self.last_page()
@@ -350,7 +354,7 @@ class TwillTestCase( unittest.TestCase ):
         genome_build = elem.get('dbkey')
         self.assertTrue( genome_build == dbkey )
 
-    """Functions associated with user accounts"""
+    # Functions associated with user accounts
     def create( self, email='test@bx.psu.edu', password='testuser', confirm='testuser' ):
         self.visit_page( "user/create?email=%s&password=%s&confirm=%s" %(email, password, confirm) )
         try:
@@ -370,7 +374,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( "You are no longer logged in" )
         self.home() #Reset our URL for future tests
 
-    """Functions associated with browsers, cookies, HTML forms and page visits"""
+    # Functions associated with browsers, cookies, HTML forms and page visits
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""
         page = self.last_page()
@@ -410,7 +414,10 @@ class TwillTestCase( unittest.TestCase ):
     def submit_form( self, form=1, button="runtool_btn", **kwd ):
         """Populates and submits a form from the keyword arguments"""
         #Check for onchange attribute, submit a change if required
-        for i, control in enumerate(tc.showforms()[form-1].controls):
+        for i, f in enumerate( tc.showforms() ):
+            if i == form - 1:
+                break
+        for i, control in enumerate( f.controls ):
             try:
                 if 'refresh_on_change' in control.attrs.keys():
                     changed = False
@@ -444,19 +451,20 @@ class TwillTestCase( unittest.TestCase ):
                             tc.formvalue(str(form), str(i+1), str(elem) )                        
                         #Create a new submit control, allows form to refresh, instead of going to next page
                         control = ClientForm.SubmitControl('SubmitControl','___refresh_grouping___',{'name':'refresh_grouping'})
-                        control.add_to_form(tc.showforms()[form-1])
+                        control.add_to_form( f )
+                        control.fixup()
                         #submit for refresh
                         tc.submit('___refresh_grouping___')
                         #start over submit_form()
                         return self.submit_form(form, button, **kwd)
-            except: continue
-        
+            except Exception, e:
+                # Log.debug("In submit_form, caught exception: %s" %str( e ))
+                continue
         for key, value in kwd.items():
             # needs to be able to handle multiple values per key
             if not isinstance(value, list):
                 value = [ value ]
-
-            for i, control in enumerate(tc.showforms()[form-1].controls):
+            for i, control in enumerate( f.controls ):
                 if control.name == key:
                     control.clear()
                     if control.is_of_kind("text"):
@@ -483,7 +491,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.go("%s" % url)
         tc.code( 200 )
 
-    """Functions associated with Galaxy tools"""
+    # Functions associated with Galaxy tools
     def run_tool( self, tool_id, **kwd ):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
@@ -506,3 +514,73 @@ class TwillTestCase( unittest.TestCase ):
             else:
                 break
         self.assertNotEqual(count, maxiter)
+
+    # Dataset Security stuff
+    def create_group( self, name='New Test Group', priority='10' ):
+        """Create a new group with 1 member"""
+        self.visit_url( "%s/admin/create_group" % self.url )
+        form = tc.show()
+        self.check_page_for_string( "Create Group" )
+        try: 
+            tc.fv( "1", "name", name )
+            tc.fv( "1", "priority", priority )
+            # twill version 0.9 still does not allow for easily testing forms that contain
+            # multiple fields with the same name ( e.g., check boxes ).  We could attempt to determine
+            # the number of the field on the form and use it instead of the name of the field, but we
+            # would be forced to drop and recreate the database every time we test in order to ensure
+            # the fields will be the same on the form ( since it is dynamically rendered from the database ).
+            tc.fv( "1", "3", "1" ) # 1-based form field 3 is the 1st check box named 'members', user id 1 is test@bx.psu.edu
+            tc.submit( "create_group_button" )
+        except AssertionError, err:
+            errmsg = 'Exception caught attempting to create group: %s' % str( err )
+            raise AssertionError( errmsg )
+        self.home()
+        return form
+    def add_group_member( self, group_id='', group_name='' ):
+        """Add a member to an existing group"""
+        # twill version 0.9 does not allow for this test
+        self.visit_url( "%s/admin/group_members_edit?group_id=%s&group_name=%s" % ( self.url, group_id, group_name ) )
+        self.check_page_for_string( 'Members of' )
+        try:
+            tc.fv( "1", "", "2" ) # 1-based form field 2 is the 2nd check box named 'members', user id 2 is test2@bx.psu.edu
+            tc.submit( "group_members_edit_button" )
+        except AssertionError, err:
+            errmsg = 'Exception caught attempting to create group: %s' % str( err )
+            raise AssertionError( errmsg )
+        self.home()
+    def mark_group_deleted( self, group_id='' ):
+        """Delete an existing group"""
+        self.visit_url( "%s/admin/mark_group_deleted?group_id=%s" % ( self.url, group_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The group has been marked as deleted' )
+        self.home()
+    def undelete_group( self, group_id='' ):
+        """Undelete an existing group"""
+        self.visit_url( "%s/admin/undelete_group?group_id=%s" % ( self.url, group_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The group has been marked as not deleted' )
+        self.home()
+    def purge_group( self, group=None ):
+        """Purge an existing group"""
+        if not group.deleted:
+            self.mark_group_deleted( group_id=group.id )
+        group_id = str( group.id )
+        group_name = group.name.replace( ' ', '+' )
+        self.visit_url( "%s/admin/deleted_groups" % self.url )
+        self.check_page_for_string( '%s' % group.name )
+        self.visit_url( "%s/admin/purge_group?group_id=%s" % ( self.url, group_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The group has been purged from the database' )
+        self.home()
+
+    # Library stuff
+    def create_library( self, name='', description='' ):
+        """Create a new library"""
+        name = name.replace( ' ', '+' )
+        description = description.replace( ' ', '+' )
+        try:
+            self.visit_url( "%s/admin/library?name=%s&description=%s&create_library=None" % ( self.url, name, description ) )
+        except AssertionError, err:
+            errmsg = 'Exception caught attempting to create library: %s' % str( err )
+            raise AssertionError( errmsg )
+        self.home()

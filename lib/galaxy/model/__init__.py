@@ -524,6 +524,10 @@ class LibraryFolder( object ):
         folder.order_id = self.item_count
         self.item_count += 1
 
+    @property
+    def active_components( self ):
+        return list( self.active_folders ) + list( self.active_datasets )
+
 class LibraryFolderDatasetAssociation( DatasetInstance ):
     def __init__( self, 
                   folder = None, 

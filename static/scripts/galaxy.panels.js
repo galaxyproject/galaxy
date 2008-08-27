@@ -6,13 +6,10 @@ var jq = jQuery;
 function ensure_dd_helper() {
     // Insert div that covers everything when dragging the borders
     if ( jq( "#DD-helper" ).length == 0 ) {
-        var e = jq("<div id='DD-helper' style='background: white; opacity: 0.00; top: 0; left: 0; width: 100%; height: 100%; position: absolute; z-index: 9000;'></div>");
-        if ( jq.browser.ie ) {
-            // Element will not capture drags in ie without nonzero opacity,
-            // but causes flashing in firefox with nonzero opacity
-            e.css( "opacity", "0.01" );
-        }
-        e.appendTo("body").hide();
+        $( "<div id='DD-helper'/>" ).css( {
+            background: 'white', opacity: 0, zIndex: 9000,
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' 
+        } ).appendTo( "body" ).hide();
     }
 }
 
@@ -178,6 +175,46 @@ function make_right_panel( panel_el, center_el, border_el ) {
     ).find( "div" ).show();
     return { handle_minwidth_hint: handle_minwidth_hint };
 };
+
+// Modal dialog boxes
+
+function hide_modal() {
+    $(".dialog-box-container" ).fadeOut( function() { $("#overlay").hide(); } );
+};
+
+function show_modal( title, body, buttons, extra_buttons ) {
+    $( ".dialog-box" ).find( ".title" ).html( title );
+    var b = $( ".dialog-box" ).find( ".buttons" ).html( "" );
+    if ( buttons ) {
+        $.each( buttons, function( name, value ) {
+            b.append( $( '<button/>' ).text( name ).click( value ) );
+            b.append( " " );
+        });
+        b.show();
+    } else {
+        b.hide();
+    }
+    var b = $( ".dialog-box" ).find( ".extra_buttons" ).html( "" );
+    if ( extra_buttons ) {
+        $.each( extra_buttons, function( name, value ) {
+            b.append( $( '<button/>' ).text( name ).click( value ) );
+            b.append( " " );
+        });
+        b.show();
+    } else {
+        b.hide();
+    }
+    if ( body == "progress" ) {
+        body = $( "<img src='../images/yui/rel_interstitial_loading.gif')' />" );
+    }
+    $( ".dialog-box" ).find( ".body" ).html( body );
+    if ( ! $(".dialog-box-container").is( ":visible" ) ) {
+        $("#overlay").show();
+        $(".dialog-box-container").fadeIn()
+    }
+};
+    
+// Popup -- is this up to date?
 
 function make_popupmenu( button_element, options ) {
     var menu_element = $( "<div class='popupmenu'><div class='popupmenu-top'><div class='popupmenu-top-inner'/></div></div>" ).appendTo( "body" );

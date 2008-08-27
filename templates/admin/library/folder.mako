@@ -4,7 +4,7 @@
   <%
     if isinstance( component, trans.app.model.LibraryFolder ):
       return render_folder( component )
-    elif isinstance( component, trans.app.model.LibraryFolderDatasetAssociation ) and not component.deleted:
+    elif isinstance( component, trans.app.model.LibraryFolderDatasetAssociation ):
       return render_dataset( component )
   %>
 </%def>
@@ -90,11 +90,11 @@
 ## Render a folder
 <%def name="render_folder( this_folder )">
   <div class="toolForm">
-    <div class="toolFormTitle">Contents of Folder: ${this_folder.name}</div>
+    <div class="toolFormTitle">Contents of Folder: <a href="${h.url_for( controller='admin', action='folder', id=this_folder.id )}">${this_folder.name}</a></div>
     <div class="toolFormBody">
       <div class="form-row">
         <%
-          components = list( this_folder.folders ) + list( this_folder.datasets )
+          components = this_folder.active_components
           components = [ ( getattr( components[i], "order_id" ), i, components [i] ) for i in xrange( len( components ) ) ]
           components.sort()
           components = [ tup[-1] for tup in components ]
@@ -155,10 +155,11 @@
   <div class="toolFormBody">
     <div class="form-row">
     %if folder.parent:
-      <a href="${h.url_for( controller='admin', action='folder', id=folder.parent_id )}">Up a Level</a>
+      <a href="${h.url_for( controller='admin', action='folder', id=folder.parent_id )}">Up a Level</a> | 
     %elif folder.library_root:
-      <a href="${h.url_for( controller='admin', action='library', id=folder.library_root[0].id )}">Manage Library</a>
+      <a href="${h.url_for( controller='admin', action='library', id=folder.library_root[0].id )}">Manage Library</a> | 
     %endif
+    <a href="${h.url_for( controller='admin', action='delete_folder', id=folder.id )}">delete folder</a>
   </div>
   <div style="clear: both"></div>
     <div class="form-row">

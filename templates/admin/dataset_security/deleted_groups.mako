@@ -7,6 +7,7 @@
 
 ## Render a row
 <%def name="render_row( group_name, group )">
+   <td><a href="${h.url_for( controller='admin', action='undelete_group', group_id=group[0] )}">Undelete</a></td>
    <td>${group_name}</td>
    <td>${group[2]}</td>
    <td><a href="${h.url_for( controller='admin', action='group_members', group_id=group[0], group_name=group[1] )}">${group[3]}</a></td>
@@ -24,27 +25,22 @@
        %endfor
      %endif
    </td>
-   <td><a href="${h.url_for( controller='admin', action='mark_group_deleted', group_id=group[0] )}">Mark group deleted</a></td>
+   <td><a href="${h.url_for( controller='admin', action='purge_group', group_id=group[0] )}">Purge</a></td>
 </%def>
 
 <%def name="title()">Groups</%def>
 <div class="toolForm">
   <div class="form-row">
     <a href="${h.url_for( controller='admin', action='libraries' )}">Libraries</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="${h.url_for( controller='admin', action='users' )}">Users</a>
-  </div>
-  <div class="form-row">
-    <a href="${h.url_for( controller='admin', action='create_group' )}">Create a new group</a>
-    <br/>
-    <a href="${h.url_for( controller='admin', action='deleted_groups' )}">Manage deleted groups</a>
-    <br/>
+    <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+    <tr><td><a href="${h.url_for( controller='admin', action='users' )}">Users</a></td></tr>
   </div>
   <table align="center" class="colored">
     %if msg:
-      <tr><td colspan="6"><p class="ok_bgr">${msg}</p></td></tr>
+      <tr><td colspan="7"><p class="ok_bgr">${msg}</p></td></tr>
     %endif
     %if len( groups ) == 0:
-      <tr><td colspan="6">There are no Galaxy groups</td></tr>
+      <tr><td colspan="7">There are no deleted Galaxy groups</td></tr>
     %else:
       <% 
         render_quick_find = len( groups ) > 50
@@ -57,9 +53,9 @@
           anchored = False
           curr_anchor = 'A'
         %>
-        <tr class="header"><td colspan="6"><center><a name="TOP">Galaxy Groups - Quick Find</a></td></center></tr>
+        <tr class="header"><td colspan="7"><center><a name="TOP">Deleted Galaxy Groups - Quick Find</a></td></center></tr>
         <tr>
-          <td colspan="6">
+          <td colspan="7">
             <center>
               |<a href="#A">A</a>|<a href="#B">B</a>|<a href="#C">C</a>|<a href="#D">D</a>|<a href="#E">E</a>|<a href="#F">F</a>
               |<a href="#G">G</a>|<a href="#H">H</a>|<a href="#I">I</a>|<a href="#J">J</a>|<a href="#K">K</a>|<a href="#L">L</a>
@@ -70,9 +66,10 @@
           </td>
         </tr>
       %else:
-        <tr class="header"><td colspan="7"><center>Galaxy Groups</td></center></tr>
+        <tr class="header"><td colspan="7"><center>Deleted Galaxy Groups</td></center></tr>
       %endif
       <tr class="header">
+        <td>&nbsp;</td>
         <td>Group</td>
         <td>Priority</td>
         <td>Members</td>
@@ -92,7 +89,7 @@
           %if render_quick_find and group_name.upper().startswith( curr_anchor ):
             %if not anchored:
               <tr>
-                <td colspan="6" class=panel-body">
+                <td colspan="7" class=panel-body">
                   <a name="${curr_anchor}"></a>
                   <div style="float: right;"><a href="#TOP">quick find</a></div>
                   <% anchored = True %>
@@ -105,7 +102,7 @@
               %if group_name.upper().startswith( anchor ):
                 %if not anchored:
                   <tr>
-                    <td colspan="6" class="panel-body">
+                    <td colspan="7" class="panel-body">
                       <a name="${anchor}"></a>
                       <div style="float: right;"><a href="#TOP">quick find</a></div>
                       <% 

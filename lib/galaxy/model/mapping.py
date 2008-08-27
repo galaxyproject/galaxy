@@ -183,6 +183,7 @@ Library.table = Table( "library", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TEXT, index=True, unique=True ),
+    Column( "deleted", Boolean, index=True, default=False ),
     Column( "description", TEXT ) )
 
 LibraryFolder.table = Table( "library_folder", metadata,
@@ -194,6 +195,7 @@ LibraryFolder.table = Table( "library_folder", metadata,
     Column( "description", TEXT ),
     Column( "order_id", Integer ),
     Column( "item_count", Integer ),
+    Column( "deleted", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ) )
 
 LibraryTag.table = Table( "library_tag", metadata,
@@ -439,6 +441,16 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
             LibraryFolder, 
             primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ),
             backref=backref( "parent", primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ), remote_side=[LibraryFolder.table.c.id] ) ),
+        active_folders=relation( LibraryFolder, 
+            primaryjoin=( ( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolder.table.c.deleted ) ) ), 
+            order_by=asc( LibraryFolder.table.c.order_id ), 
+            lazy=True, #"""sqlalchemy.exceptions.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
+            viewonly=True ),
+        active_datasets=relation( LibraryFolderDatasetAssociation,
+            primaryjoin=( ( LibraryFolderDatasetAssociation.table.c.folder_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolderDatasetAssociation.table.c.deleted ) ) ), 
+            order_by=asc( LibraryFolderDatasetAssociation.table.c.order_id ), 
+            lazy=False, 
+            viewonly=True ),
         tags=relation( 
             LibraryTagFolderAssociation, 
             primaryjoin=( LibraryFolder.table.c.id == LibraryTagFolderAssociation.table.c.folder_id ),
@@ -590,39 +602,13 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.create_tables = create_tables
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
-    # TODO, Nate: The following may not work for our Galaxy instances because there are too
-    # many rows that need updating ( I think ) even though we have eliminated all of the
-    # Role stuff.  Maybe we can test this to see how long it takes for about 1000 datasets.
-    # If we decide to  use this approach rather than SQL commands to populate the tables,
-    # then this needs to be thoroughly tested to ensure the data is populated as expected
-    # (i.e., make sure naything that is public gets the public security settings, etc).
-    #
-    # Set up default table entries here, only exist for group access because
-    # permitted actions are exclusively restricted to the association between a group
-    # and a dataset
-    if result.Group.count() == 0:
-        log.warning( "There were no groups located, setting up default (public) group." )
-        # Create public group
-        public_group = result.security_agent.create_group( name='public' )        
-        # Store public group id
-        result.security_agent.set_public_group( public_group )
-        # Loop through all histories and set up rbac on users, histories and datasets
-        for history in result.History.select( result.History.table.c.purged == False ):
-            if history.user:
-                if not history.user.default_groups:
-                    result.security_agent.setup_new_user( history.user )
-                    history.user.flush()
-            else:
-                result.security_agent.history_set_default_access( history, dataset=True )
-                history.flush()
-        # Add all datasets which aren't in a history to the public group
-        orphans = result.Dataset.get_by( history_id = None )
-        if orphans:
-            for dataset in orphans:
-                result.security_agent.set_dataset_permissions( dataset, [ ( public_group, result.security_agent.permitted_actions.DATASET_ACCESS ) ] )
-    else:
-        result.security_agent.guess_public_group()
-    log.debug( "Public Group identified as id = %s." % ( Group.public_id ) )
+    # Ensure group named 'public' exists
+    public_group = result.Group.get_by( name='public' )
+    if not public_group:
+        public_group = result.security_agent.create_group( name = 'public' )
+    # Store public group id
+    result.security_agent.set_public_group( public_group )
+    log.debug( "Public Group identified as id = %s." % ( public_group.id ) )
     return result
     
 def get_suite():
