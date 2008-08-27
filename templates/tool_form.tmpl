@@ -126,7 +126,7 @@ jQuery( function() {
         <input type="submit" class="primary-button" name="runtool_btn" value="Execute">
         
     #else
-    	
+        
           <div style="display: none;">
             #if $tool_state.page == $tool.last_page
             <input type="submit" class="primary-button" name="runtool_btn" value="Execute">
@@ -142,7 +142,7 @@ jQuery( function() {
             <input type="submit" class="primary-button" name="runtool_btn" value="Next step">
             #end if
           </div>    
-    	
+        
     #end if    
 
   </form>
@@ -178,7 +178,7 @@ jQuery( function() {
            }
        });
        \$( 'ul ul' ).each( function(i) {
-           if ( \$( this )[0].className == 'toolParameterExpandableCollapsable' )
+           if ( \$( this )[0].className == 'toolParameterExpandableCollapsable' && this.attributes.getNamedItem( 'default_state' ).value == 'collapsed' )
            {
                \$( this ).hide();
            }

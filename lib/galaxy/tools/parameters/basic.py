@@ -729,13 +729,13 @@ class DrillDownSelectToolParameter( ToolParameter ):
     >>> print p.get_html()
     <div><ul class="toolParameterExpandableCollapsable">
     <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable">
+    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
     <li><input type="checkbox" name="some_name" value="option1"">Option 1
     </li>
     <li><input type="checkbox" name="some_name" value="option2"">Option 2
     </li>
     <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable">
+    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
     <li><input type="checkbox" name="some_name" value="option3"">Option 3
     </li>
     <li><input type="checkbox" name="some_name" value="option4"">Option 4
@@ -766,13 +766,13 @@ class DrillDownSelectToolParameter( ToolParameter ):
     >>> print p.get_html()
     <div><ul class="toolParameterExpandableCollapsable">
     <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="some_name" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable">
+    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
     <li><input type="radio" name="some_name" value="option1"">Option 1
     </li>
     <li><input type="radio" name="some_name" value="option2"">Option 2
     </li>
     <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="some_name" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable">
+    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
     <li><input type="radio" name="some_name" value="option3"">Option 3
     </li>
     <li><input type="radio" name="some_name" value="option4"">Option 4

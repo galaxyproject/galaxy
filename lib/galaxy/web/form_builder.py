@@ -203,13 +203,13 @@ class DrillDownField( BaseField ):
     >>> print t.get_html()
     <div><ul class="toolParameterExpandableCollapsable">
     <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable">
+    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
     <li><input type="checkbox" name="foo" value="option1"">Option 1
     </li>
     <li><input type="checkbox" name="foo" value="option2"">Option 2
     </li>
     <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable">
+    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
     <li><input type="checkbox" name="foo" value="option3"">Option 3
     </li>
     <li><input type="checkbox" name="foo" value="option4"">Option 4
@@ -225,13 +225,13 @@ class DrillDownField( BaseField ):
     >>> print t.get_html()
     <div><ul class="toolParameterExpandableCollapsable">
     <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="foo" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable">
+    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
     <li><input type="radio" name="foo" value="option1"">Option 1
     </li>
     <li><input type="radio" name="foo" value="option2"">Option 2
     </li>
     <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="foo" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable">
+    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
     <li><input type="radio" name="foo" value="option3"">Option 3
     </li>
     <li><input type="radio" name="foo" value="option4"">Option 4
@@ -266,22 +266,36 @@ class DrillDownField( BaseField ):
         else:
             self.refresh_on_change_text = ''
     def get_html( self, prefix="" ):
-        def recurse_options( html, options ):
+        def find_expanded_options( expanded_options, options, parent_options = [] ):
+            for option in options:
+                if option['value'] in self.value:
+                    expanded_options.extend( parent_options )
+                if option['options']:
+                    new_parents = list( parent_options ) + [ option['value'] ]
+                    find_expanded_options( expanded_options, option['options'], new_parents )
+        def recurse_options( html, options, expanded_options = [] ):
             for option in options:
                 selected = ( option['value'] in self.value )
                 if selected: selected = ' checked'
                 else: selected = ''
                 if option['options']:
-                    html.append( '<li><span class="toolParameterExpandableCollapsable">[+]</span><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, option['value'], selected, option['name']) )
-                    html.append( '<ul class="toolParameterExpandableCollapsable">')
-                    recurse_options( html, option['options'] )
+                    default_state = 'collapsed'
+                    default_icon = '[+]'
+                    if option['value'] in expanded_options:
+                        default_state = 'expanded'
+                        default_icon = '[-]'
+                    html.append( '<li><span class="toolParameterExpandableCollapsable">%s</span><input type="%s" name="%s%s" value="%s"%s">%s' % ( default_icon, self.display, prefix, self.name, option['value'], selected, option['name']) )
+                    html.append( '<ul class="toolParameterExpandableCollapsable" default_state="%s">' % default_state )
+                    recurse_options( html, option['options'], expanded_options )
                     html.append( '</ul>')
                 else:
                     html.append( '<li><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, option['value'], selected, option['name']) )
                 html.append( '</li>' )
         rval = []
         rval.append( '<div><ul class="toolParameterExpandableCollapsable">' )
-        recurse_options( rval, self.options )
+        expanded_options = []
+        find_expanded_options( expanded_options, self.options )
+        recurse_options( rval, self.options, expanded_options )
         rval.append( '</ul></div>' )
         return '\n'.join( rval )
 
