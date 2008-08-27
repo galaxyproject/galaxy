@@ -18,6 +18,7 @@ tc.config('use_tidy', 0)
 
 # Dial ClientCookie logging down (very noisy)
 logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
+#log = logging.getLogger( __name__ )
 
 class TwillTestCase( unittest.TestCase ):
 
@@ -412,7 +413,7 @@ class TwillTestCase( unittest.TestCase ):
         #Check for onchange attribute, submit a change if required
         for i, f in enumerate( tc.showforms() ):
             if i == form - 1:
-                break   
+                break
         for i, control in enumerate( f.controls ):
             try:
                 if 'refresh_on_change' in control.attrs.keys():
@@ -447,21 +448,19 @@ class TwillTestCase( unittest.TestCase ):
                             tc.formvalue(str(form), str(i+1), str(elem) )                        
                         #Create a new submit control, allows form to refresh, instead of going to next page
                         control = ClientForm.SubmitControl('SubmitControl','___refresh_grouping___',{'name':'refresh_grouping'})
-                        control.add_to_form(tc.showforms()[form-1])
+                        control.add_to_form( f )
+                        control.fixup()
                         #submit for refresh
                         tc.submit('___refresh_grouping___')
                         #start over submit_form()
                         return self.submit_form(form, button, **kwd)
-            except: continue
-        
+            except Exception, e:
+                # Log.debug("In submit_form, caught exception: %s" %str( e ))
+                continue
         for key, value in kwd.items():
             # needs to be able to handle multiple values per key
             if not isinstance(value, list):
                 value = [ value ]
-
-            for i, f in enumerate( tc.showforms() ):
-                if i == form - 1:
-                    break   
             for i, control in enumerate( f.controls ):
                 if control.name == key:
                     control.clear()
