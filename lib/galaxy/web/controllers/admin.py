@@ -1,6 +1,5 @@
-
-import shutil, StringIO, operator, urllib
-from galaxy import util
+import shutil, StringIO, operator, urllib, gzip, tempfile
+from galaxy import util, datatypes
 from galaxy.web.base.controller import *
 from galaxy.datatypes import sniff
 from galaxy.security import RBACAgent
@@ -648,6 +647,33 @@ class Admin( BaseController ):
         def add_file( file_obj, name, extension, dbkey, last_used_build, groups, info='no info', space_to_tab=False ):
             data_type = None
             temp_name = sniff.stream_to_file( file_obj )
+
+            # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress on the fly.
+            is_gzipped, is_valid = self.check_gzip( temp_name )
+            if is_gzipped and not is_valid:
+                raise BadFileException( "you attempted to upload an inappropriate file." )
+            elif is_gzipped and is_valid:
+                # We need to uncompress the temp_name file
+                CHUNK_SIZE = 2**20 # 1Mb   
+                fd, uncompressed = tempfile.mkstemp()   
+                gzipped_file = gzip.GzipFile( temp_name )
+                while 1:
+                    try:
+                        chunk = gzipped_file.read( CHUNK_SIZE )
+                    except IOError:
+                        os.close( fd )
+                        os.remove( uncompressed )
+                        raise BadFileException( 'problem decompressing gzipped data.' )
+                    if not chunk:
+                        break
+                    os.write( fd, chunk )
+                os.close( fd )
+                gzipped_file.close()
+                # Replace the gzipped file with the decompressed file
+                shutil.move( uncompressed, temp_name )
+                name = name.rstrip( '.gz' )
+                data_type = 'gzip'
+
             if space_to_tab:
                 line_count = sniff.convert_newlines_sep2tabs( temp_name )
             else:
@@ -926,6 +952,22 @@ class Admin( BaseController ):
                                         msg=msg )
         else:
             return trans.show_error_message( "Invalid dataset specified" )
+    def check_gzip( self, temp_name ):
+        """
+        Utility method to check gzipped uploads
+        """
+        temp = open( temp_name, "U" )
+        magic_check = temp.read( 2 )
+        temp.close()
+        if magic_check != datatypes.data.gzip_magic:
+            return ( False, False )
+        CHUNK_SIZE = 2**15 # 32Kb
+        gzipped_file = gzip.GzipFile( temp_name )
+        chunk = gzipped_file.read( CHUNK_SIZE )
+        gzipped_file.close()
+        #if self.check_html( temp_name, chunk=chunk ) or self.check_binary( temp_name, chunk=chunk ):
+        #    return( True, False )
+        return ( True, True )
     @web.expose
     def change_permissions( self, trans, ids=[], **kwd ):
         if not self.user_is_admin( trans ):
