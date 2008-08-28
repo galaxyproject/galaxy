@@ -446,16 +446,18 @@ $.extend( Workflow.prototype, {
         parent.show_form_for_tool( "<div>No node selected</div>" );
     },
     activate_node : function( node ) {
-        this.clear_active_node();
-        parent.show_form_for_tool( node.form_html, node );
-        node.make_active();
-        this.active_node = node;
+        if ( this.active_node != node ) {
+            this.clear_active_node();
+            parent.show_form_for_tool( node.form_html, node );
+            node.make_active();
+            this.active_node = node;
+        }
     },
     node_changed : function ( node ) {
         this.has_changes = true;
         if ( this.active_node == node ) {
             // Reactive with new form_html
-            this.activate_node( node );
+            parent.show_form_for_tool( node.form_html, node );
         }
     }
 });
