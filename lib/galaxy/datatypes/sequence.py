@@ -24,6 +24,7 @@ class Alignment( Sequence ):
 
     """Add metadata elements"""
     MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
+    MetadataElement( name="species_chromosomes", desc="Species Chromosomes", value={}, param=metadata.PythonObjectParameter, readonly=True, no_value={}, to_string=str )
 
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
@@ -165,9 +166,10 @@ class Maf( Alignment ):
     
     def set_meta( self, dataset, first_line_is_header=False, **kwd ):
         """
-        Parses and returns species from MAF files.
+        Parses and sets species and chromosomes from MAF files.
         """
         species = []
+        species_chromosomes = {}
         try:
             for i, m in enumerate( bx.align.maf.Reader( open(dataset.file_name) ) ):
                 for c in m.components:
@@ -176,15 +178,20 @@ class Maf( Alignment ):
                     # "src_split" finds the rightmost dot, which is probably
                     # wrong in general, and certainly here. 
                     spec = c.src
+                    chrom = None
                     if "." in spec:
-                        spec = spec.split( "." )[0]
+                        spec, chrom = spec.split( ".", 1 )
                     if spec not in species: 
                         species.append(spec)
+                        species_chromosomes[spec] = []
+                    if chrom and chrom not in species_chromosomes[spec]:
+                        species_chromosomes[spec].append( chrom )
                 # only check first 100,000 blocks for species
                 if i > 100000: break
         except: 
             pass
         dataset.metadata.species = species
+        dataset.metadata.species_chromosomes = species_chromosomes
     
     def missing_meta( self, dataset ):
         """Checks to see if species is set"""

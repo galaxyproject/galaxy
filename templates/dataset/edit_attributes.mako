@@ -39,15 +39,17 @@
             <div style="clear: both"></div>
           </div> 
           %for element in metadata:
-              <div class="form-row">
-                <label>
-                    ${element.spec.desc}:
-                </label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    ${element.get_html()}
+              %if element.display:
+                <div class="form-row">
+                  <label>
+                      ${element.spec.desc}:
+                  </label>
+                  <div style="float: left; width: 250px; margin-right: 10px;">
+                      ${element.get_html()}
+                  </div>
+                  <div style="clear: both"></div>
                 </div>
-                <div style="clear: both"></div>
-              </div>
+              %endif
           %endfor
           <div class="form-row">
               <input type="submit" name="save" value="Save">

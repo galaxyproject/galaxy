@@ -10,7 +10,6 @@
             <filter type="data_meta" ref="maf_input" key="species" />
           </options>
         </param>
-        <param name="chromosome" label="Chromosome" value="" type="text"/>
         <param name="exons_file" type="data" format="bed,gff" label="Exons File" optional="True"/>
         <param name="highlights_file" type="data" format="bed,gff" label="Highlights File" optional="True"/>
         <param name="underlays_file" type="data" format="bed,gff" label="Underlays File" optional="True"/>
@@ -81,48 +80,53 @@ tabext = .bed .gff .gtf
 nowarn = $nowarn
 #end if
 
-#for $seq_count, $annotation in $enumerate( $annotations ):
-seq ${seq_count}:
-#if $annotation['chromosome'].value:
-seqname = $annotation['species'].$annotation['chromosome']
-#else:
-seqname = $annotation['species']
+#set $seq_count = 0
+#for $spec_count, $annotation in $enumerate( $annotations ):
+#if $annotation['species'].value in $maf_input.metadata.species_chromosomes and $maf_input.metadata.species_chromosomes[$annotation['species'].value]:
+#set $seq_names = [ "%s.%s" % ( $annotation['species'].value, $chrom ) for $chrom in $maf_input.metadata.species_chromosomes[$annotation['species'].value]]
+#else
+#set $seq_names = [$annotation['species'].value]
 #end if
+#for $seq_name in $seq_names:
+seq ${seq_count}:
+seqname = $seq_name
 #if $annotation['exons_file'].dataset:
-exons = ${seq_count}.exons.${annotation['exons_file'].extension}
+exons = ${spec_count}.exons.${annotation['exons_file'].extension}
 #end if
 #if $annotation['repeats_file'].dataset:
-repeats = ${seq_count}.repeats.${annotation['repeats_file'].extension}
+repeats = ${spec_count}.repeats.${annotation['repeats_file'].extension}
 #end if
 #if $annotation['links_file'].dataset:
-links = ${seq_count}.links.${annotation['links_file'].extension}
+links = ${spec_count}.links.${annotation['links_file'].extension}
 #end if
 #if $annotation['underlays_file'].dataset:
-underlays = ${seq_count}.underlays.${annotation['underlays_file'].extension}
+underlays = ${spec_count}.underlays.${annotation['underlays_file'].extension}
 #end if
 #if $annotation['highlights_file'].dataset:
-highlights = ${seq_count}.highlights.${annotation['highlights_file'].extension}
+highlights = ${spec_count}.highlights.${annotation['highlights_file'].extension}
 #end if
 offset = $annotation['offset']
 
+#set $seq_count = $seq_count + 1
+#end for
 #end for
 </configfile>
     <configfile name="filenames_file">
-#for $seq_count, $annotation in $enumerate( $annotations ):
+#for $spec_count, $annotation in $enumerate( $annotations ):
 #if $annotation['exons_file'].dataset:
-$annotation['exons_file'] = ${seq_count}.exons.${annotation['exons_file'].extension}
+$annotation['exons_file'] = ${spec_count}.exons.${annotation['exons_file'].extension}
 #end if
 #if $annotation['repeats_file'].dataset:
-$annotation['repeats_file'] = ${seq_count}.repeats.${annotation['repeats_file'].extension}
+$annotation['repeats_file'] = ${spec_count}.repeats.${annotation['repeats_file'].extension}
 #end if
 #if $annotation['links_file'].dataset:
-$annotation['links_file'] = ${seq_count}.links.${annotation['links_file'].extension}
+$annotation['links_file'] = ${spec_count}.links.${annotation['links_file'].extension}
 #end if
 #if $annotation['underlays_file'].dataset:
-$annotation['underlays_file'] = ${seq_count}.underlays.${annotation['underlays_file'].extension}
+$annotation['underlays_file'] = ${spec_count}.underlays.${annotation['underlays_file'].extension}
 #end if
 #if $annotation['highlights_file'].dataset:
-$annotation['highlights_file'] = ${seq_count}.highlights.${annotation['highlights_file'].extension}
+$annotation['highlights_file'] = ${spec_count}.highlights.${annotation['highlights_file'].extension}
 #end if
 #end for
 </configfile>

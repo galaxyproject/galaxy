@@ -66,6 +66,7 @@ class MetadataParameter( object ):
                 value = str( value )
         self.value = value
         self.context = context
+        self.display = True
 
     def __str__(self):
         if self.value is None:
@@ -264,4 +265,24 @@ class ColumnTypesParameter( MetadataParameter ):
     def __str__(self):
         return ",".join( map( str, self.value ) )
 
+class PythonObjectParameter( MetadataParameter ):
+    def __init__( self, spec, value, context ):
+        MetadataParameter.__init__( self, spec, value, context )
+        self.value = value
+        self.display = False
+    
+    def __str__(self):
+        if not self.value:
+            return self.spec.to_string( self.spec.no_value )
+        return self.spec.to_string( self.value )
+    
+    def get_html_field( self, value=None, other_values={} ):
+        return form_builder.TextField( self.spec.name, value=str( self ) )
+
+    def get_html( self ):
+        return str( self )
+
+    @classmethod
+    def marshal( cls, value ):
+        return value
 
