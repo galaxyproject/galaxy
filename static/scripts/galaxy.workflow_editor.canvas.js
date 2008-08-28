@@ -259,7 +259,12 @@ $.extend( Node.prototype, {
         $(this.element).addClass( "toolForm-active" );
     },
     make_inactive : function () {
-        $(this.element).removeClass( "toolForm-active" );
+        // Keep inactive nodes stacked from most to least recently active
+        // by moving element to the end of parent's node list
+        var element = this.element.get(0);
+        (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode);
+        // Remove active class
+        $(element).removeClass( "toolForm-active" );
     },
     init_field_data : function ( data ) {
         var f = this.element;
@@ -480,14 +485,6 @@ function prebuild_node( type, title_text, tool_id ) {
         function() { $(this).attr( 'src', "../images/delete_icon_dark.png" ) },
         function() { $(this).attr( 'src', "../images/delete_icon.png" ) }
     ) );
-    // zIndex tracking for bring to front
-    zmax = $("#canvas-container").data( "zmax" )
-    if ( ! zmax ) {
-        // Start above level where connectors are drawn
-        zmax = 20;
-    }
-    f.css( "zIndex", zmax + 1 );
-    $("#canvas-container").data( "zmax", zmax + 1 );
     // Place inside container
     f.appendTo( "#canvas-container" );
     // Position in container
@@ -508,16 +505,11 @@ function prebuild_node( type, title_text, tool_id ) {
         // containment: $("#shim"),
         // grow: true,
         click: function( e, ui ) {
-            // Bring to front
-            zmax = $("#canvas-container").data( "zmax" )
-            $(this).css( "zIndex", zmax + 1 );
-            $("#canvas-container").data( "zmax", zmax + 1 );
             // Make active
             workflow.activate_node( node );
         },
         start: function( e, ui ) {
             workflow.activate_node( node );
-            $(this).css( 'z-index', $("#canvas-container").data( "zmax" ) + 1000 );
         },
         drag: function( e, ui ) { 
             $(this).find( ".terminal" ).each( function() {
@@ -525,10 +517,6 @@ function prebuild_node( type, title_text, tool_id ) {
             })
         },
         stop: function( e, ui  ) {
-            // Bring to front
-            zmax = $("#canvas-container").data( "zmax" )
-            $(this).css( "zIndex", zmax + 1 );
-            $("#canvas-container").data( "zmax", zmax + 1 );
             // Redraw
             $(this).find( ".terminal" ).each( function() {
                 this.terminal.redraw();
