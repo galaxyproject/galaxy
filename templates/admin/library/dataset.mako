@@ -15,38 +15,29 @@
   </select>
 </%def>
 
-<%def name="group_dataset_permitted_actions( dataset_actions, gda )">
-  %for da in dataset_actions:
-    <% check = False %>
-    %for action in gda[2]:
-      %if action == da:
-        <%
-          check = True
-          break
-        %>
-      %endif
-    %endfor
-    %if check:
-      <input type="checkbox" name="actions" value="${gda[0]},${da}" checked/>
-    %else:
-      <input type="checkbox" name="actions" value="${gda[0]},${da}"/>
-    %endif
-    ${da}<br/>
-  %endfor
-</%def>
-
 <div class="toolForm">
-  <div class="toolFormTitle">Group Associations</div>
+  <div class="toolFormTitle">Dataset Permissions</div>
   <div class="toolFormBody">
     <form name="edit_group_associations" action="${h.url_for( controller='admin', action='dataset' )}" method="post">
       <input type="hidden" name="id" value="${dataset.id}">
-      %for gda in gdas:
-        <div class="form-row"><label>Group:</label>${gda[1]}</div>
-        <div class="form-row"><label>Permitted actions on dataset:</label></div>
-        <div class="form-row">
-          ${group_dataset_permitted_actions( dataset_actions, gda )}
-        </div>
-      %endfor
+      <div class="form-row">
+          <% dataset_gdas = [ assoc for assoc in dataset.dataset.groups ] %>
+          <div class="toolParamHelp" style="clear: both;">
+            Choose the permissions each user or group should have on this dataset.
+          </div>
+          %for gda in dataset_gdas:
+            <input type="checkbox" name="group_${gda.group.id}" class="groupCheckbox" checked readonly /> ${gda.group.name.replace( ' private group', '' )} <br/>
+            <div class="permissionContainer" id="group_${gda.group.id}">
+            %for k, v in trans.app.security_agent.permitted_actions.items():
+              <input type="checkbox" name="actions" value="${gda.group.id},${v}"
+              %if v in gda.permitted_actions:
+                checked
+              %endif
+              /> ${trans.app.security_agent.get_permitted_action_description(k)} <br/>
+            %endfor
+            </div>
+          %endfor
+      </div>
       <div class="form-row"><input type="submit" name="change_permitted_actions" value="Save"></div>
     </form>
   </div>

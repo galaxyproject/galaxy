@@ -643,6 +643,12 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
 
+        def listify( item ):
+            if isinstance( item, list ):
+                return item
+            else:
+                return [ item ]
+
         # add_file method
         def add_file( file_obj, name, extension, dbkey, last_used_build, groups, info='no info', space_to_tab=False ):
             data_type = None
@@ -731,22 +737,19 @@ class Admin( BaseController ):
             if 'space_to_tab' in kwd:
                 if kwd['space_to_tab'] not in ["None", None]:
                     space_to_tab = True
-            if 'groups' not in kwd:
-                msg = 'The dataset must be associated with at least 1 group.'
+            if 'groups' not in kwd and 'users' not in kwd and 'public' not in kwd:
+                msg = 'The dataset must be associated with at least 1 user or group, or be set public.'
                 trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=msg ) )
-            groups = kwd['groups']
-            if groups and not isinstance( groups, list ):
-                # mako sends singleton lists as a string
-                groups = [ groups ]
-            elif groups is None:
-                groups = []
-            # Greg: what's this for?  it kills the ability to select multiple groups
-            #else:
-            #    groups = []
+            groups = []
+            if 'groups' in kwd:
+                groups.extend( listify(kwd['groups']) )
+            if 'users' in kwd:
+                groups.extend( listify(kwd['users']) )
+            if 'public' in kwd:
+                groups.extend( [ trans.app.security_agent.get_public_group().id ] )
             temp_name = ""
             data_list = []
             created_datasets = []
-
             if 'filename' in dir( data_file ):
                 file_name = data_file.filename
                 file_name = file_name.split( '\\' )[-1]
@@ -843,7 +846,7 @@ class Admin( BaseController ):
             # Copied from edit attributes for 'regular' datasets with some additions
             p = util.Params(kwd, safe=False)
             if p.change_permitted_actions:
-                # The user clicked the Save button on the 'Group Associations' form
+                # The user clicked the Save button on the 'Dataset Permissions' form
                 actions = p.actions
                 if actions and not isinstance( actions, list ):
                     actions = [ actions ]

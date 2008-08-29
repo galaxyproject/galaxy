@@ -85,14 +85,30 @@
         <div style="clear: both"></div>
       </div>
       <div class="form-row">
-        <label>Associate with Groups:</label>
-        <help>Multi-select list - hold the appropriate key while clicking to select multiple columns</help>
+        <label>Allow public access:</label>
+        <input type="checkbox" name="public" value="Yes">  This dataset can be accessed by anyone (make it public).<br/>
+        <p/>
+        <% user_groups = [ g for g in groups if g[1].endswith( ' private group' ) ] %>
+        <% real_groups = [ g for g in groups if not g[1].endswith( ' private group' ) and g[1] != 'public' ] %>
         <div style="float: left; width: 250px; margin-right: 10px;">
-          <select name="groups" multiple="true" size="5">
-            %for group in groups:
-              <option value="${group[0]}">${group[1]}</option>
+          <label>Associate with users:</label>
+          <select name="users" multiple="true" size="5">
+            %for group in user_groups:
+              <option value="${group[0]}">${group[1].replace( ' private group', '' )}</option>
             %endfor
           </select>
+          %if len( real_groups ):
+            <p/>
+            <label>Associate with groups:</label>
+            <select name="groups" multiple="true" size="5">
+              %for group in real_groups:
+                <option value="${group[0]}">${group[1]}</option>
+              %endfor
+            </select>
+          %endif
+        </div>
+        <div class="toolParamHelp" style="clear: both;">
+          To select multiple users or groups, hold ctrl or command while clicking.
         </div>
       </div>
       <div style="clear: both"></div>
