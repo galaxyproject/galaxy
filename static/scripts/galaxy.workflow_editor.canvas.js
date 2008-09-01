@@ -252,8 +252,8 @@ $.extend( Node.prototype, {
             t.destroy();
             $(t.element).draggable('destroy');
         });
+        workflow.remove_node( this );
         $(this.element).draggable('destroy').remove();
-	workflow.remove_node( this );
     },
     make_active : function () {
         $(this.element).addClass( "toolForm-active" );
@@ -442,6 +442,7 @@ $.extend( Workflow.prototype, {
     clear_active_node : function() {
         if ( this.active_node ) {
             this.active_node.make_inactive();
+            this.active_node = null;
         }
         parent.show_form_for_tool( "<div>No node selected</div>" );
     },
