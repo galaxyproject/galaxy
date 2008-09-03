@@ -235,10 +235,13 @@ class GalaxyRBACAgent( RBACAgent ):
             permissions = [ ( gda.group, gda.permitted_actions ) for gda in permissions ]
         for ptuple in permissions:
             self.associate_components( dataset=dataset, permissions=ptuple )
-    def get_dataset_permissions( self, dataset ):
+    def get_dataset_permissions( self, dataset, group_id=None ):
         if not isinstance( dataset, self.model.Dataset ):
             dataset = dataset.dataset
-        return [ ( gda.group, gda.permitted_actions ) for gda in dataset.groups ]
+        if group_id is not None:
+            return [ ( gda.group, gda.permitted_actions ) for gda in dataset.groups if gda.group_id == int(group_id) ][0]
+        else:
+            return [ ( gda.group, gda.permitted_actions ) for gda in dataset.groups ]
     def get_component_associations( self, **kwd ):
         # TODO, Nate: Make sure this method is functionally correct.
         assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to check for associations.'

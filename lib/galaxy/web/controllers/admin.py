@@ -284,44 +284,12 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         group_id = int( params.group_id )
-        group_name = unescape( params.group_name, unentities )
         gdas = []
         permitted_actions = []
-        # Need to get all actions to send to the form
-        dataset_actions = []
-        dpas = RBACAgent.permitted_actions
-        dpa_descriptions = RBACAgent.permitted_action_descriptions
-        for dpa in dpas.items():
-            pa = pa_description = ''
-            pa = dpa[0]
-            if dpa[0].startswith( 'DATASET' ):
-                for dpa_description in dpa_descriptions.items():
-                    if pa == dpa_description[0]:
-                        pa = dpa[1]
-                        pa_description = dpa_description[1]
-                        break
-                dataset_actions.append( ( pa, pa_description ) )
-            dataset_actions = sorted( dataset_actions, key=operator.itemgetter(0) )
-        q = sa.select( ( ( galaxy.model.Group.table.c.priority ).label( 'group_priority' ),
-                         ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ) ),
-                        whereclause = galaxy.model.GroupDatasetAssociation.table.c.group_id == group_id,
-                        from_obj = [ sa.outerjoin( galaxy.model.Group.table,
-                                                   galaxy.model.GroupDatasetAssociation.table ) ] )
-        for row in q.execute():
-            permitted_actions = []
-            # Although there may be GroupDatasetAssociations, there may not be any permitted_actions on them
-            if row.permitted_actions:
-                for action in row.permitted_actions:
-                    permitted_actions.append( action.encode( 'ascii' ) )
-                permitted_actions.sort()
-            gdas.append( ( row.group_priority,
-                           permitted_actions ) )
-            break # Just need 1 row
+        group = galaxy.model.Group.get( group_id )
         return trans.fill_template( '/admin/dataset_security/group_dataset_permitted_actions_edit.mako', 
-                                    group_id=group_id,
-                                    group_name=escape( group_name, entities ),
-                                    gdas=gdas,
-                                    dataset_actions=dataset_actions,
+                                    group=group,
+                                    gdas=group.datasets,
                                     msg=msg )
     @web.expose
     def group_dataset_permitted_actions_edit( self, trans, **kwd ):
@@ -329,15 +297,29 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         group_id = int( params.group_id )
-        actions = params.actions
-        if actions and not isinstance( actions, list ):
-            actions = [ actions ]
-        # Update the permitted_actions for every GroupDatasetAssociation of the Group
-        q = sa.update( galaxy.model.GroupDatasetAssociation.table,
-                       whereclause = galaxy.model.GroupDatasetAssociation.table.c.group_id == group_id,
-                       values = { galaxy.model.GroupDatasetAssociation.table.c.permitted_actions : actions } )
-        result = q.execute()
-        msg = "The dataset permitted actions for the group have been updated, affecting %d rows in the group_dataset_association table" % result.rowcount
+        permissions = {}
+        for gda_id in params.gdas.split(','):
+            permissions[gda_id] = params.get('gda_actions_%s' % gda_id, None)
+            if isinstance( permissions[gda_id], str ):
+                permissions[gda_id] = [ permissions[gda_id] ]
+        for gda_id, permitted_actions in permissions.items():
+            if permitted_actions is None:
+                gda = trans.app.model.GroupDatasetAssociation.get( int( gda_id ) )
+                if gda.permitted_actions is not []:
+                    log.debug( "gda %s: permitted_actions emptied (set to none)" % gda_id )
+                    gda.permitted_actions = []
+                    gda.flush()
+            else:
+                valid_pas = trans.app.model.security_agent.convert_permitted_action_strings( permitted_actions )
+                if not valid_pas:
+                    continue # this shouldn't happen, but might as well check
+                gda = trans.app.model.GroupDatasetAssociation.get( int( gda_id ) )
+                if sorted(gda.permitted_actions) != sorted(valid_pas):
+                    log.debug( "gda %s: permitted_actions changed to %s" % ( gda_id, valid_pas ) )
+                    gda = trans.app.model.GroupDatasetAssociation.get( int( gda_id ) )
+                    gda.permitted_actions = valid_pas
+                    gda.flush()
+        msg = "The dataset permitted actions have been updated"
         trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
     @web.expose
     def mark_group_deleted( self, trans, **kwd ):
