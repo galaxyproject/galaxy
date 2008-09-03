@@ -82,7 +82,7 @@ nowarn = $nowarn
 
 #set $seq_count = 0
 #for $spec_count, $annotation in $enumerate( $annotations ):
-#if $annotation['species'].value in $maf_input.metadata.species_chromosomes and $maf_input.metadata.species_chromosomes[$annotation['species'].value]:
+#if $maf_input.metadata.species_chromosomes and $annotation['species'].value in $maf_input.metadata.species_chromosomes and $maf_input.metadata.species_chromosomes[$annotation['species'].value]:
 #set $seq_names = [ "%s.%s" % ( $annotation['species'].value, $chrom ) for $chrom in $maf_input.metadata.species_chromosomes[$annotation['species'].value]]
 #else
 #set $seq_names = [$annotation['species'].value]
