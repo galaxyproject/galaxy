@@ -27,15 +27,20 @@
                 class="active-link"
             %endif
         ><a target="_parent" href="${h.url_for( controller='workflow', action='index' )}">workflow</a></span>
+        %if admin_user == "true":
+        | <span
+            %if active_view == "admin":
+                class="active-link"
+            %endif
+        ><a target="_parent" href="${h.url_for( controller='admin', action='index' )}">admin</a></span>
+        %endif
+        
     </span>
     &nbsp;&nbsp;&nbsp;
     <span class="link-group">
     Info: <span><a href="${bugs_email}">report bugs</a></span>
     | <span><a target="_blank" href="${wiki_url}">wiki</a></span>             
     | <span><a target="_blank" href="${screencasts_url}">screencasts</a></span>
-    %if admin_user == "true":
-        | <span><a target="galaxy_main" href="${h.url_for( controller='admin', action='index' )}">admin</a></span>
-    %endif
     </span>
     <!-- | <a target="mainframe" href="/static/index_frame_tools.html">tools</a>
     | <a target="mainframe" href="/static/index_frame_history.html">history</a> -->

@@ -17,15 +17,17 @@
 
 <h2>Your workflows</h2>
 
-<div style="float: right; margin-top: -2.5em;">
-    <a class="action-button" href="${h.url_for( action='create' )}">
-        <img src="${h.url_for('/static/images/silk/add.png')}" />
-        <span>Add a new workflow</span>
-    </a>
-</div>
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( action='create' )}">
+            <img src="${h.url_for('/static/images/silk/add.png')}" />
+            <span>Add a new workflow</span>
+        </a>
+    </li>
+</ul>
   
 %if workflows:
-    <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+    <table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <th>Name</th>
             <th># of Steps</th>

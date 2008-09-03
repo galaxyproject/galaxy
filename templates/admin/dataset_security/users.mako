@@ -6,19 +6,17 @@
 %>
 
 <%def name="title()">Users</%def>
-<div class="toolForm">
-  <div class="form-row">
-    <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="${h.url_for( controller='admin', action='libraries' )}">Libraries</a>
-  </div>
-  <table align="center" class="colored">
-    %if msg:
-      <tr><td><p class="ok_bgr">${msg}</p></td></tr>
-    %endif
-    <tr><td>&nbsp;</td>
-    %if len( users ) == 0:
-      <tr><td>There are no Galaxy users</td></tr>
-    %else:
+
+%if msg:
+<div class="donemessage">${msg}</div>
+%endif
+
+<h2>Users</h2>
+
+%if len( users ) == 0:
+    There are no Galaxy users
+%else:
+    <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
       <% 
         render_quick_find = len( users ) > 50
         ctr = 0
@@ -30,7 +28,6 @@
           anchored = False
           curr_anchor = 'A'
         %>
-        <tr class="header"><td><center><a name="TOP">Galaxy Users - Quick Find</a></td></center></tr>
         <tr>
           <td>
             |<a href="#A">A</a>|<a href="#B">B</a>|<a href="#C">C</a>|<a href="#D">D</a>|<a href="#E">E</a>|<a href="#F">F</a>
@@ -41,7 +38,7 @@
           </td>
         </tr>
       %else:
-        <tr class="header"><td><center>Galaxy Users</td></center></tr>
+        <tr class="header"><td>Email address</td></tr>
       %endif
       %for user in users:
         <% email = unescape( user[1], unentities ) %>
@@ -92,6 +89,7 @@
           <% ctr += 1 %>
         </tr>
       %endfor
-    %endif
   </table>
-</div>
+  
+%endif
+

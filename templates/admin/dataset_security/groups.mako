@@ -28,24 +28,31 @@
 </%def>
 
 <%def name="title()">Groups</%def>
-<div class="toolForm">
-  <div class="form-row">
-    <a href="${h.url_for( controller='admin', action='libraries' )}">Libraries</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="${h.url_for( controller='admin', action='users' )}">Users</a>
-  </div>
-  <div class="form-row">
-    <a href="${h.url_for( controller='admin', action='create_group' )}">Create a new group</a>
-    <br/>
-    <a href="${h.url_for( controller='admin', action='deleted_groups' )}">Manage deleted groups</a>
-    <br/>
-  </div>
-  <table align="center" class="colored">
-    %if msg:
-      <tr><td colspan="6"><p class="ok_bgr">${msg}</p></td></tr>
-    %endif
-    %if len( groups ) == 0:
-      <tr><td colspan="6">There are no Galaxy groups</td></tr>
-    %else:
+
+%if msg:
+<div class="donemessage">${msg}</div>
+%endif
+
+<h2>Groups</h2>
+
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( controller='admin', action='create_group' )}">
+            Create a new group
+        </a>
+    </li>
+    <li>
+        <a class="action-button" href="${h.url_for( controller='admin', action='deleted_groups' )}">
+            Manage deleted groups
+        </a>
+    </li>
+</ul>
+
+%if len( groups ) == 0:
+    There are no Galaxy groups
+%else:
+    <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+
       <% 
         render_quick_find = len( groups ) > 50
         ctr = 0
@@ -57,7 +64,6 @@
           anchored = False
           curr_anchor = 'A'
         %>
-        <tr class="header"><td colspan="6"><center><a name="TOP">Galaxy Groups - Quick Find</a></td></center></tr>
         <tr>
           <td colspan="6">
             <center>
@@ -69,11 +75,9 @@
             </center>
           </td>
         </tr>
-      %else:
-        <tr class="header"><td colspan="7"><center>Galaxy Groups</td></center></tr>
       %endif
       <tr class="header">
-        <td>Group</td>
+        <td>Name</td>
         <td>Priority</td>
         <td>Members</td>
         <td>Datasets</td>
