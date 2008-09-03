@@ -671,7 +671,7 @@ class RootController( BaseController ):
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" ) 
 
     @web.expose
-    def masthead( self, trans ):
+    def masthead( self, trans, active_view=None ):
         brand = trans.app.config.get( "brand", "" )
         if brand:
             brand ="<span class='brand'>/%s</span>" % brand
@@ -687,7 +687,7 @@ class RootController( BaseController ):
             if user_email in admin_users:
                 admin_user = "true"
         return trans.fill_template( "/root/masthead.mako", brand=brand, wiki_url=wiki_url, 
-          blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url, admin_user=admin_user )
+          blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url, admin_user=admin_user, active_view=active_view )
 
     @web.expose
     def dataset_errors( self, trans, id=None, **kwd ):
