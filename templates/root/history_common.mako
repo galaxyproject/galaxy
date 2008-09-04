@@ -57,7 +57,7 @@
                 <div class="info">Info: ${data.display_info()} </div>
                 <div> 
                     %if data.has_data:
-                        <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext='data.ext' )}" target="_blank">save</a>
+                        <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
                         %for display_app in data.datatype.get_display_types():
                             <% display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                             %if len( display_links ) > 0:
