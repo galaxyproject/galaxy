@@ -182,7 +182,7 @@ Library.table = Table( "library", metadata,
     Column( "root_folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TEXT, index=True, unique=True ),
+    Column( "name", TEXT, index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "description", TEXT ) )
 
