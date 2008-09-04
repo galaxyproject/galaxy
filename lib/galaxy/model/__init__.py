@@ -413,7 +413,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
-    def copy( self, copy_children = False, parent_id = None ):
+    def copy( self, copy_children = False, parent_id = None, target_history = None ):
         des = HistoryDatasetAssociation( hid=self.hid, 
                                          name=self.name, 
                                          info=self.info, 
@@ -426,12 +426,14 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                          visible=self.visible, 
                                          deleted=self.deleted, 
                                          parent_id=parent_id, 
-                                         copied_from_history_dataset_association=self )
+                                         copied_from_history_dataset_association=self,
+                                         history = target_history )
         des.flush()
         if copy_children:
             for child in self.children:
                 child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
-        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        if not self.datatype.copy_safe_peek:
+            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
         return des
     def clear_associated_files( self, metadata_safe = False, purge = False ):
@@ -493,8 +495,8 @@ class History( object ):
         des.flush()
         des.name = self.name
         for data in self.datasets:
-            new_data = data.copy( copy_children = True )
-            des.add_dataset( new_data )
+            new_data = data.copy( copy_children = True, target_history = des )
+            des.add_dataset( new_data, set_hid = False )
             new_data.flush()
         des.hid_counter = self.hid_counter
         des.flush()
@@ -540,7 +542,11 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
         self.order_id = order_id
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
-    def to_history_dataset_association( self, parent_id = None ):
+    def to_history_dataset_association( self, parent_id = None, target_history = None ):
+        if target_history:
+            hid = target_history._next_hid()
+        else:
+            hid = None
         des = HistoryDatasetAssociation( name=self.name, 
                                          info=self.info, 
                                          blurb=self.blurb, 
@@ -552,14 +558,17 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
                                          visible=self.visible, 
                                          deleted=self.deleted, 
                                          parent_id=parent_id, 
-                                         copied_from_library_folder_dataset_association = self )
+                                         copied_from_library_folder_dataset_association = self,
+                                         history = target_history,
+                                         hid = hid )
         des.flush()
         for child in self.children:
             child_copy = child.to_history_dataset_association( parent_id = des.id )
-        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        if not self.datatype.copy_safe_peek:
+            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
         return des
-    def copy( self, copy_children = False, parent_id = None ):
+    def copy( self, copy_children = False, parent_id = None, target_folder = None ):
         des = LibraryFolderDatasetAssociation( name=self.name, 
                                                info=self.info, 
                                                blurb=self.blurb, 
@@ -571,12 +580,14 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
                                                visible=self.visible, 
                                                deleted=self.deleted, 
                                                parent_id=parent_id, 
-                                               copied_from_library_folder_dataset_association = self )
+                                               copied_from_library_folder_dataset_association = self,
+                                               folder = target_folder )
         des.flush()
         if copy_children:
             for child in self.children:
                 child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
-        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        if not self.datatype.copy_safe_peek:
+            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
         return des
     def clear_associated_files( self, metadata_safe = False, purge = False ):

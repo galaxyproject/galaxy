@@ -32,8 +32,8 @@ class Library( BaseController ):
                 import_ids = [import_ids]
             history = trans.get_history()
             for id in import_ids:
-                dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id ).to_history_dataset_association()
-                history.add_dataset( dataset )
+                dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id ).to_history_dataset_association( target_history = history )
+                history.add_dataset( dataset, set_hid = not dataset.hid )
                 dataset.flush()
             history.flush()
             return trans.show_ok_message( "%i datasets have been imported into your history" % len( import_ids ), refresh_frames=['history'] )

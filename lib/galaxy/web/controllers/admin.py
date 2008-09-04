@@ -708,7 +708,7 @@ class Admin( BaseController ):
             last_dataset_created = None
             data_file = kwd['file_data']
             url_paste = kwd['url_paste']
-            server_dir = kwd['server_dir']
+            server_dir = kwd.get( 'server_dir', 'None' )
             if data_file == '' and url_paste == '' and server_dir in [ 'None', '' ]:
                 if trans.app.config.library_import_dir is not None:
                     msg = 'Select a file, enter a URL or Text, or select a server directory.'

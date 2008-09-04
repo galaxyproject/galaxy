@@ -103,18 +103,22 @@ def create_applet_tag_peek( class_name, archive, params ):
 class Gmaj( data.Data ):
     """Class describing a GMAJ Applet"""
     file_ext = "gmaj.zip"
+    copy_safe_peek = False
     def set_peek( self, dataset ):
-        params = {
-        "bundle":"display?id=%s&tofile=yes&toext=.zip" % dataset.id,
-        "buttonlabel": "Launch GMAJ",
-        "nobutton": "false",
-        "urlpause" :"100",
-        "debug": "false",
-        "posturl": "history_add_to?%s" % urlencode( { 'history_id': dataset.history_id, 'ext': 'maf', 'name': 'GMAJ Output on data %s' % dataset.hid, 'info': 'Added by GMAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id } )
-        }
-        class_name = "edu.psu.bx.gmaj.MajApplet.class"
-        archive = "/static/gmaj/gmaj.jar"
-        dataset.peek = create_applet_tag_peek( class_name, archive, params )
+        if hasattr( dataset, 'history_id' ):
+            params = {
+            "bundle":"display?id=%s&tofile=yes&toext=.zip" % dataset.id,
+            "buttonlabel": "Launch GMAJ",
+            "nobutton": "false",
+            "urlpause" :"100",
+            "debug": "false",
+            "posturl": "history_add_to?%s" % urlencode( { 'history_id': dataset.history_id, 'ext': 'maf', 'name': 'GMAJ Output on data %s' % dataset.hid, 'info': 'Added by GMAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id } )
+            }
+            class_name = "edu.psu.bx.gmaj.MajApplet.class"
+            archive = "/static/gmaj/gmaj.jar"
+            dataset.peek = create_applet_tag_peek( class_name, archive, params )
+        else:
+            dataset.peek = "After you add this item to your history, you will be able to launch the GMAJ applet."
         dataset.blurb = 'GMAJ Multiple Alignment Viewer'
     def display_peek(self, dataset):
         try:
@@ -175,17 +179,21 @@ class Html( data.Text ):
 class Laj( data.Text ):
     """Class describing a LAJ Applet"""
     file_ext = "laj"
+    copy_safe_peek = False
     def set_peek( self, dataset ):
-        params = {
-        "alignfile1": "display?id=%s" % dataset.id,
-        "buttonlabel": "Launch LAJ",
-        "title": "LAJ in Galaxy",
-        "posturl": "history_add_to?%s" % urlencode( { 'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id } ),
-        "noseq": "true"
-        }
-        class_name = "edu.psu.cse.bio.laj.LajApplet.class"
-        archive = "/static/laj/laj.jar"
-        dataset.peek = create_applet_tag_peek( class_name, archive, params )
+        if hasattr( dataset, 'history_id' ):
+            params = {
+            "alignfile1": "display?id=%s" % dataset.id,
+            "buttonlabel": "Launch LAJ",
+            "title": "LAJ in Galaxy",
+            "posturl": "history_add_to?%s" % urlencode( { 'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id } ),
+            "noseq": "true"
+            }
+            class_name = "edu.psu.cse.bio.laj.LajApplet.class"
+            archive = "/static/laj/laj.jar"
+            dataset.peek = create_applet_tag_peek( class_name, archive, params )
+        else:
+            dataset.peek = "After you add this item to your history, you will be able to launch the LAJ applet."
         dataset.blurb = 'LAJ Multiple Alignment Viewer'
     def display_peek(self, dataset):
         try:
