@@ -43,7 +43,7 @@
       <param name="input1" value="1.bed" />
       <param name="input2" value="2.bed" />
       <param name="min" value="10" />
-      <param name="returntype" value="-p" />
+      <param name="returntype" value="Non-overlapping pieces of intervals" />
       <output name="output" file="gops-subtract-p.dat" />     
     </test>
   </tests>

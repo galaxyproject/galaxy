@@ -2,7 +2,7 @@ import atexit, logging, os, sys, tempfile
 
 import pkg_resources
 
-pkg_resources.require( "twill==0.8.3" )
+pkg_resources.require( "twill==0.9" )
 pkg_resources.require( "Paste" )
 pkg_resources.require( "PasteDeploy" )
 pkg_resources.require( "Cheetah" )

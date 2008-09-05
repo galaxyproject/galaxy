@@ -33,8 +33,8 @@
       <param name="input2" value="2.bed"/>
       <param name="field1" value="2"/>
       <param name="field2" value="2"/>
-      <param name="unmatched" value="-u"/>
-      <param name="partial" value="-p"/>
+      <param name="unmatched" value="Yes"/>
+      <param name="partial" value="Yes"/>
       <output name="out_file1" file="joiner_out2.bed"/>
     </test>
   </tests>

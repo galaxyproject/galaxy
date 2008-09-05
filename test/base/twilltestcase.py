@@ -1,8 +1,7 @@
 import pkg_resources
-pkg_resources.require('twill')
+pkg_resources.require( "twill==0.9" )
 
-import StringIO
-import os, sys, random, filecmp, time, unittest, urllib, logging, difflib, zipfile
+import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, zipfile
 from itertools import *
 
 import twill
@@ -18,7 +17,7 @@ tc.config('use_tidy', 0)
 
 # Dial ClientCookie logging down (very noisy)
 logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
-#log = logging.getLogger( __name__ )
+log = logging.getLogger( __name__ )
 
 class TwillTestCase( unittest.TestCase ):
 
@@ -244,8 +243,14 @@ class TwillTestCase( unittest.TestCase ):
         self.assertEqual(len(elems), 1)
         self.visit_page( "delete?id=%s" % elems[0].get('id') )
 
-    def edit_metadata( self, hid=None, form=1, **kwd ):
-        """Edits the metadata associated with a history item.  There are currently 3 forms on the edit page."""
+    def edit_metadata( self, hid=None, form_no=0, **kwd ):
+        """
+        Edits the metadata associated with a history item."""
+        # There are currently 4 forms on the edit page:
+        # 0. name="edit_attributes"
+        # 1. name="auto_detect"
+        # 2. name="convert_data"
+        # 3. name="change_datatype"
         data_list = self.get_history()
         self.assertTrue( data_list )
         if hid is None: # take last hid
@@ -253,12 +258,16 @@ class TwillTestCase( unittest.TestCase ):
             hid = elem.get('hid')
         self.assertTrue( hid )
         self.visit_page( 'edit?hid=%d' % hid )
-        if form == 1: button = "save"           #Edit Attributes form
-        elif form == 2: button = "detect"       #Auto-detect Metadata Attributes
-        elif form == 3: button = "convert_data" #Convert to new format form
-        elif form == 4: button = "change"       #Change data type form
+        if form_no == 0:
+            button = "save"           #Edit Attributes form
+        elif form_no == 1:
+            button = "detect"       #Auto-detect Metadata Attributes
+        elif form_no == 2:
+            button = "convert_data" #Convert to new format form
+        elif form_no == 3:
+            button = "change"       #Change data type form
         if kwd:
-            self.submit_form(form=form, button=button, **kwd)
+            self.submit_form( form_no=form_no, button=button, **kwd)
 
     def get_dataset_ids_in_history( self ):
         """Returns the ids of datasets in a history"""
@@ -406,23 +415,24 @@ class TwillTestCase( unittest.TestCase ):
 
     def showforms( self ):
         """Shows form, helpful for debugging new tests"""
-        return tc.browser.showforms()
+        return tc.showforms()
 
-    def submit_form( self, form=1, button="runtool_btn", **kwd ):
-        """Populates and submits a form from the keyword arguments"""
-        #Check for onchange attribute, submit a change if required
-        for i, f in enumerate( tc.showforms() ):
-            if i == form - 1:
+    def submit_form( self, form_no=0, button="runtool_btn", **kwd ):
+        """Populates and submits a form from the keyword arguments."""
+        for i, f in enumerate( self.showforms() ):
+            if i == form_no:
                 break
+        # An HTMLForm contains a sequence of Controls.  Supported control classes are:
+        # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
+        # SubmitControl, ImageControl
         for i, control in enumerate( f.controls ):
             try:
+                # Check for refresh_on_change attribute, submit a change if required
                 if 'refresh_on_change' in control.attrs.keys():
                     changed = False
                     for elem in kwd[control.name]:
-                        """
-                        For DataToolParameter, control.value is the index of the DataToolParameter select list, 
-                        but elem is the filename.  The following loop gets the filename of that index.
-                        """
+                        # For DataToolParameter, control.value is the index of the DataToolParameter select list, 
+                        # but elem is the filename.  The following loop gets the filename of that index.
                         param_text = ''
                         for param in tc.show().split('<select'):
                             param = ('<select' + param.split('select>')[0] + 'select>').replace('selected', 'selected="yes"')
@@ -433,52 +443,56 @@ class TwillTestCase( unittest.TestCase ):
                                         param_text = option.text.strip()
                                         break
                                 break
-
                         if elem not in control.value and param_text.find(elem) == -1 :
                             changed = True
                             break
                     if changed:
-                        # Clear Control and set to proper value - the command: 
-                        # formvalue <formnum> <fieldname> <value>
-                        # sets the given field in the given form to the given value. 
-                        # For read-only form widgets/controls, the click may be recorded for use by submit, 
-                        # but the value is not changed unless the 'config' command has changed the default behavior.
+                        # Clear Control and set to proper value
                         control.clear()
-                        for elem in kwd[control.name]:
-                            tc.formvalue(str(form), str(i+1), str(elem) )                        
-                        #Create a new submit control, allows form to refresh, instead of going to next page
-                        control = ClientForm.SubmitControl('SubmitControl','___refresh_grouping___',{'name':'refresh_grouping'})
+                        # kwd[control.name] should be a singlelist
+                        for elem in kwd[ control.name ]:
+                            tc.fv( f.name, control.name, str( elem ) )
+                        # Create a new submit control, allows form to refresh, instead of going to next page
+                        control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name':'refresh_grouping'} )
                         control.add_to_form( f )
                         control.fixup()
-                        #submit for refresh
-                        tc.submit('___refresh_grouping___')
-                        #start over submit_form()
-                        return self.submit_form(form, button, **kwd)
+                        # Submit for refresh
+                        tc.submit( '___refresh_grouping___' )
+                        return self.submit_form( form_no=form_no, button=button, **kwd )
             except Exception, e:
-                # Log.debug("In submit_form, caught exception: %s" %str( e ))
+                log.debug( "In submit_form, continuing, but caught exception: %s" % str( e ) )
                 continue
-        for key, value in kwd.items():
-            # needs to be able to handle multiple values per key
-            if not isinstance(value, list):
-                value = [ value ]
-            for i, control in enumerate( f.controls ):
-                if control.name == key:
-                    control.clear()
-                    if control.is_of_kind("text"):
-                        # set the given field in the given form to the given value. 
-                        tc.formvalue(str(form), str(i+1), ",".join(value) )
-                    else:
-                        try:
-                            for elem in value:
-                                tc.formvalue(str(form), str(i+1), str(elem) )
-                        except Exception, exc:
-                            errmsg = "Attempting to set field '%s' to value '%s' threw exception: '%s'\n" % ( str( key ), str( elem ), str( exc ) )
-                            errmsg += "control: %s\n" % str( control )
-                            errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
-                            errmsg += "make sure to include a proper 'ftype' attribute to the tag for the control within the <test> tag set.\n"
-                            raise AssertionError( errmsg )
-                    break
-        tc.submit(button)
+        # No refresh_on_change attribute found in current form, so process as usual
+        for control_name, control_value in kwd.items():
+            if not isinstance( control_value, list ):
+                control_value = [ control_value ]
+            try:
+                control = f.find_control( name=control_name )
+            except:
+                # This assumes we always want the first control of the given name,
+                # which may not be ideal...
+                control = f.find_control( name=control_name, nr=0 )
+            control.clear()
+            if control.is_of_kind( "text" ):
+                tc.fv( f.name, control.name, ",".join( control_value ) )
+            elif control.is_of_kind( "list" ):
+                try:
+                    if control.is_of_kind( "multilist" ):
+                        for elem in control_value:
+                            control.get( name=elem ).selected = True
+                    else: # control.is_of_kind( "singlelist" )
+                        for elem in control_value:
+                            tc.fv( f.name, control.name, str( elem ) )
+                except Exception, exc:
+                    errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % ( control_name, str( control_value ), f.name, str( exc ) )
+                    errmsg += "control: %s\n" % str( control )
+                    errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
+                    errmsg += "make sure to include a proper 'ftype' attribute to the tag for the control within the <test> tag set.\n"
+                    raise AssertionError( errmsg )
+            else:
+                # Add conditions for other control types here when necessary.
+                pass
+        tc.submit( button )
 
     def visit_page( self, page ):
         tc.go("./%s" % page)
@@ -493,8 +507,8 @@ class TwillTestCase( unittest.TestCase ):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
         self.visit_url( "%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
-        tc.find('runtool_btn')
-        self.submit_form(**kwd)
+        tc.find( 'runtool_btn' )
+        self.submit_form( **kwd )
 
     def wait( self, maxiter=20 ):
         """Waits for the tools to finish"""
