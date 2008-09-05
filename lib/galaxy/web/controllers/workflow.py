@@ -16,8 +16,12 @@ class WorkflowController( BaseController ):
     beta = True
     
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
     def index( self, trans ):
+        return trans.fill_template( "workflow/index.mako" )
+                                   
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def list( self, trans ):
         """
         Render workflow main page (management of existing workflows)
         """
@@ -32,7 +36,7 @@ class WorkflowController( BaseController ):
             .filter( model.StoredWorkflow.c.deleted == False ) \
             .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
             .all()
-        return trans.fill_template( "workflow/index.mako",
+        return trans.fill_template( "workflow/list.mako",
                                     workflows = workflows,
                                     shared_by_others = shared_by_others )
     
