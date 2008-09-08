@@ -283,6 +283,11 @@ table.colored tr
   background: white;
 }
 
+table.colored tr.odd_row
+{ 
+  background: #DADFEF;
+}
+
 div.debug
 {
     margin: 10px;
@@ -294,7 +299,7 @@ div.debug
 
 div.odd_row
 {
-    background: #FFFF99;
+    background: #DADFEF;
 }
     
 #footer {

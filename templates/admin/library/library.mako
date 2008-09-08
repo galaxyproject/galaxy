@@ -1,16 +1,13 @@
 <%inherit file="/base.mako"/>
 
 <%def name="title()">Library</%def>
+
+%if msg:
+<div class="donemessage">${msg}</div>
+%endif
+
 <div class="toolForm">
-  <div class="form-row">
-    <a href="${h.url_for( controller='admin', action='libraries' )}">Libraries</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="${h.url_for( controller='admin', action='users' )}">Users</a>
-  </div>
-  %if msg:
-    <p class="ok_bgr">${msg}</p>
-  %endif
-  <div class="toolFormTitle">Manage Library '${library.name}'</div>
+  <div class="toolFormTitle">Library '${library.name}'</div>
   <div class="toolFormBody">
   <form name="end_library" action="${h.url_for( controller='admin', action='library' )}" method="post" >
     <input type="hidden" name="library_id" value="${library.id}">
@@ -29,7 +26,7 @@
       <div style="clear: both"></div>
     </div>
     <table>
-      <tr><td>&nbsp;</td><td><input name="end_library_button" type="submit" value="Save"></td></tr>
+      <tr><td>&nbsp;</td><td><input name="end_library_button" type="submit" value="Save changes"></td></tr>
     </table>
   </form>
   <div style="clear: both"></div>

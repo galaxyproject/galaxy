@@ -7,21 +7,22 @@
 
 <% email = unescape( user_email, unentities ) %>
 
-<%def name="title()">Create Group</%def>
-<div class="toolForm">
-  <div class="form-row">
-    <a href="${h.url_for( controller='admin', action='libraries' )}">Libraries</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <tr><td><a href="${h.url_for( controller='admin', action='users' )}">Users</a></td></tr>
-  </div>
-  <h3 align="center">Groups of which '${email}' is a member</h3>
-  <table align="center" class="colored">
-    %if msg:
-      <tr><td colspan="5"><p class="ok_bgr">${msg}</p></td></tr>
-    %endif
-    %if len( groups ) == 0:
-      <tr><td colspan="5">User '${email}' belongs to no groups</td></tr>
-    %else:
+<%def name="title()">Group Membership</%def>
+
+%if msg:
+<div class="donemessage">${msg}</div>
+%endif
+
+<h2>Groups of which '${email}' is a member</h2>
+  
+%if len( groups ) == 0:
+
+    User '${email}' belongs to no groups
+
+%else:
+  
+<table class="colored" cellpadding="0" cellspacing="0" width="100%">
+
       <tr class="header">
         <td>Group</td>
         <td>Priority</td>
@@ -65,6 +66,7 @@
         </tr>
         <% ctr += 1 %>
       %endfor
-    %endif
+
   </table>
-</div>
+
+%endif

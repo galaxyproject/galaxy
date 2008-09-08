@@ -7,32 +7,33 @@
 
 <% gn = unescape( group_name, unentities ) %>
 
-<%def name="title()">Create Group</%def>
-<div class="toolForm">
-  <div class="form-row">
-    <a href="${h.url_for( controller='admin', action='libraries' )}">Libraries</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    %if deleted:
-      <a href="${h.url_for( controller='admin', action='deleted_groups' )}">Deleted Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    %else:
-      <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    %endif
-    <tr><td><a href="${h.url_for( controller='admin', action='users' )}">Users</a></td></tr>
-  </div>
-  %if not deleted:
-    <div class="form-row">
-      <a href="${h.url_for( controller='admin', action='group_members_edit', group_id=group_id, group_name=group_name )}">Manage group membership</a>
-      <br/>
-    </div>
-  %endif
-  <div class="toolFormTitle">Members of Group '${gn}'</div>
-  <table align="center" class="colored">
-    %if msg:
-      <tr><td><p class="ok_bgr">${msg}</p></td></tr>
-    %endif
-    <tr><td>&nbsp;</td></tr>
-    %if len( members ) == 0:
-      <tr><td>Group '${gn}' contains no members</td></tr>
-    %else:
+<%def name="title()">Group Members</%def>
+
+%if msg:
+<div class="donemessage">${msg}</div>
+%endif
+
+<h2>Members of Group '${gn}'</h2>
+
+%if not deleted:
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( controller='admin', action='group_members_edit', group_id=group_id, group_name=group_name )}">
+            Manage group membership
+        </a>
+    </li>
+</ul>
+
+%endif
+  
+%if len( members ) == 0:
+
+  Group '${gn}' contains no members
+  
+%else:
+  
+  <table cellpadding="0" cellspacing="0" width="100%" class="colored">
+      <tr class="header"><td>Username</td></tr>
       <% ctr = 0 %>
       %for member in members:
         <% email = unescape( member[1], unentities ) %>
@@ -48,6 +49,6 @@
         </tr>
         <% ctr += 1 %>
       %endfor
-    %endif
   </table>
-</div>
+
+%endif

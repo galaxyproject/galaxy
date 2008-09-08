@@ -6,17 +6,16 @@
 %>
 
 <%def name="title()">Manage Group Membership</%def>
-<div class="toolForm">
-  <div class="form-row">
-    <a href="${h.url_for( controller='admin', action='libraries' )}">Libraries</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="${h.url_for( controller='admin', action='groups' )}">Groups</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-    <tr><td><a href="${h.url_for( controller='admin', action='users' )}">Users</a></td></tr>
-  </div>
-  <table align="center" class="colored">
-    %if msg:
-      <tr><td><p class="ok_bgr">${msg}</p></td></tr>
-    %endif
-    <% gn = unescape( group_name, unentities ) %>
+
+%if msg:
+<div class="donemessage">${msg}</div>
+%endif
+
+<% gn = unescape( group_name, unentities ) %>
+
+<h2>Members of group '${gn}'</h2>
+
+  <table cellpadding="0" cellspacing="0" width="100%" class="colored">
     <tr><td>&nbsp;</td></tr>
     <tr>
       <td>
@@ -25,7 +24,6 @@
             %if len( users ) == 0:
               <tr><td>There are no Galaxy users</td></tr>
             %else:
-              <tr class="header"><td>Members of '${gn}' - Quick Find</td></tr>
               <tr>
                 <td>
                   |<a href="#A">A</a>|<a href="#B">B</a>|<a href="#C">C</a>|<a href="#D">D</a>|<a href="#E">E</a>|<a href="#F">F</a>
