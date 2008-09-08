@@ -90,6 +90,7 @@ def main():
     
     for ii, line in enumerate( file( tmpfile.name )):
         if line and not line.startswith( '#' ):
+            line = line.strip()
             try:
                 fields = line.split("\t")
                 item = fields[group_col]
