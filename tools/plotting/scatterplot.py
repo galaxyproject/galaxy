@@ -44,7 +44,10 @@ def main():
                     skipped_lines += 1
                     if not first_invalid_line:
                         first_invalid_line = i + 1
-                        invalid_value = fields[column]
+                        try:
+                            invalid_value = fields[column]
+                        except:
+                            invalid_value = ''
                         invalid_column = column + 1
                     break
         else:
