@@ -13,7 +13,6 @@ def run( cmd ):
 
 templates = [ ( "base.css.tmpl", "base.css" ),
               ( "panel_layout.css.tmpl", "panel_layout.css" ),
-              ( "panel_layout_ie.css.tmpl", "panel_layout_ie.css" ),
               ( "masthead.css.tmpl", "masthead.css"),
               ( "history.css.tmpl", "history.css" ),
               ( "tool_menu.css.tmpl", "tool_menu.css" ),
@@ -64,7 +63,8 @@ for line in open( vars ):
 for input, output in templates:
     print input ,"->", output
     open( os.path.join( out_dir, output ), "w" ).write( str( Template( file=input, searchList=[context] ) ) )
-    
+  
+"""
 for rule, output in images:
     t = string.Template( rule ).substitute( context ) 
     print t, "->", output
@@ -74,3 +74,4 @@ for src, bg, out in shared_images:
     t = "./png_over_color.py shared_images/%s %s %s" % ( src, context[bg], os.path.join( out_dir, out ) )
     print t
     run( t.split() )
+"""

@@ -16,6 +16,7 @@ img
     border: 0;
 }
 
+
 a:link, a:visited, a:active
 {
     color: #303030;
@@ -348,6 +349,16 @@ ul.toolParameterExpandableCollapsable
   list-style: none;
 }
 
+ul.manage-table-actions {
+    float: right;
+    margin-top: -2.5em;
+}
+ul.manage-table-actions li {
+    display: block;
+    float: left;
+    margin-left: 0.5em;
+}
+
 .action-button {
     background: #eeeeee;
     color: #333;
@@ -414,4 +425,8 @@ div.popupmenu-item:hover {
 
 .popup-arrow:hover {
     color: black;
+}
+
+div.permissionContainer {
+    padding-left: 20px;
 }
