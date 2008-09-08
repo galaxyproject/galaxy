@@ -41,7 +41,7 @@ class TestHistory( TwillTestCase ):
         """Testing logging in as an admin user"""
         self.login( email='test@bx.psu.edu' ) #This is configured as our admin user
         self.visit_page( "admin" )
-        self.check_page_for_string( 'Galaxy Administration' )
+        self.check_page_for_string( 'Administration' )
         self.logout()
         # Need to ensure that we have 2 users
         self.login( email='test2@bx.psu.edu' ) # This will not be an admin user
