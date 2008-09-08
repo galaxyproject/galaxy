@@ -1,21 +1,40 @@
-<tool id="gmaj_1" name="GMAJ" Version="2.0.0">
+<tool id="gmaj_1" name="GMAJ" Version="2.0.1">
 <description>Multiple Alignment Viewer</description>
   <command interpreter="python">GMAJ.py $out_file1 $maf_input $gmaj_file $filenames_file</command>
   <inputs>
       <param name="maf_input" type="data" format="maf" label="Alignment File" optional="False"/>
       <param name="refseq" label="Reference Sequence" value="" type="text" help="Leave empty to allow interactive selection."/>
       <repeat name="annotations" title="Annotations">
-        <param name="species" type="select" label="Species of Annotation" multiple="False">
-          <options>
-            <filter type="data_meta" ref="maf_input" key="species" />
-          </options>
-        </param>
-        <param name="exons_file" type="data" format="bed,gff" label="Exons File" optional="True"/>
-        <param name="highlights_file" type="data" format="bed,gff" label="Highlights File" optional="True"/>
-        <param name="underlays_file" type="data" format="bed,gff" label="Underlays File" optional="True"/>
-        <param name="repeats_file" type="data" format="bed,gff" label="Repeats File" optional="True"/>
-        <param name="links_file" type="data" format="bed,gff" label="Links File" optional="True"/>
-        <param name="offset" label="Offset" value="0" type="integer"/>
+        <conditional name="annotation_style">
+          <param name="style" type="select" label="Annotation Style" help="If your data is not in a style similar to what is available from Galaxy (and the UCSC table browser), choose 'Basic'.">
+            <option value="galaxy" selected="true">Galaxy</option>
+            <option value="basic">Basic</option>
+          </param>
+          <when value="galaxy">
+            <param name="species" type="select" label="Species of Annotation" multiple="False">
+              <options>
+                <filter type="data_meta" ref="maf_input" key="species" />
+              </options>
+            </param>
+            <param name="exons_file" type="data" format="bed,gff" label="Exons File" optional="True"/>
+            <param name="highlights_file" type="data" format="bed,gff" label="Highlights File" optional="True"/>
+            <param name="underlays_file" type="data" format="bed,gff" label="Underlays File" optional="True"/>
+            <param name="repeats_file" type="data" format="bed,gff" label="Repeats File" optional="True"/>
+            <param name="links_file" type="data" format="bed,gff" label="Links File" optional="True"/>
+            <param name="offset" label="Offset" value="0" type="integer"/>
+          </when>
+          <when value="basic">
+            <param name="seq_name" label="Full Sequence Name" value="" type="text">
+              <validator type="empty_field" message="You must supply the sequence name"/>
+            </param>
+            <param name="exons_file" type="data" format="bed,gff" label="Exons File" optional="True"/>
+            <param name="highlights_file" type="data" format="bed,gff" label="Highlights File" optional="True"/>
+            <param name="underlays_file" type="data" format="bed,gff" label="Underlays File" optional="True"/>
+            <param name="repeats_file" type="data" format="bed,gff" label="Repeats File" optional="True"/>
+            <param name="links_file" type="data" format="bed,gff" label="Links File" optional="True"/>
+            <param name="offset" label="Offset" value="0" type="integer"/>
+          </when>
+        </conditional>
       </repeat>
       <param name="nowarn" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true" label="Choose Warnings to Suppress" separator=" " help="These do not affect behavior, only suppress warning messages.">
         <options>    
@@ -81,52 +100,59 @@ nowarn = $nowarn
 #end if
 
 #set $seq_count = 0
-#for $spec_count, $annotation in $enumerate( $annotations ):
-#if $maf_input.metadata.species_chromosomes and $annotation['species'].value in $maf_input.metadata.species_chromosomes and $maf_input.metadata.species_chromosomes[$annotation['species'].value]:
-#set $seq_names = [ "%s.%s" % ( $annotation['species'].value, $chrom ) for $chrom in $maf_input.metadata.species_chromosomes[$annotation['species'].value]]
-#else
-#set $seq_names = [$annotation['species'].value]
+#for $annotation_count, $annotation in $enumerate( $annotations ):
+#if $annotation.annotation_style.style == "galaxy":
+#if $maf_input.metadata.species_chromosomes and $annotation.annotation_style['species'].value in $maf_input.metadata.species_chromosomes and $maf_input.metadata.species_chromosomes[$annotation.annotation_style['species'].value]:
+#set $seq_names = [ "%s.%s" % ( $annotation.annotation_style['species'].value, $chrom ) for $chrom in $maf_input.metadata.species_chromosomes[$annotation.annotation_style['species'].value]]
+#set $aliases = [ " %s" % $chrom for $chrom in $maf_input.metadata.species_chromosomes[$annotation.annotation_style['species'].value]]
+#else:
+#set $seq_names = [$annotation.annotation_style['species']]
+#set $aliases = [""]
 #end if
-#for $seq_name in $seq_names:
+#else:
+#set $seq_names = [$annotation.annotation_style['seq_name']]
+#set $aliases = [""]
+#end if
+#for $seq_name, $alias in $zip( $seq_names, $aliases ):
 seq ${seq_count}:
 seqname = $seq_name
-#if $annotation['exons_file'].dataset:
-exons = ${spec_count}.exons.${annotation['exons_file'].extension}
+#if $annotation.annotation_style['exons_file'].dataset:
+exons = ${annotation_count}.exons.${annotation.annotation_style['exons_file'].extension}$alias
 #end if
-#if $annotation['repeats_file'].dataset:
-repeats = ${spec_count}.repeats.${annotation['repeats_file'].extension}
+#if $annotation.annotation_style['repeats_file'].dataset:
+repeats = ${annotation_count}.repeats.${annotation.annotation_style['repeats_file'].extension}$alias
 #end if
-#if $annotation['links_file'].dataset:
-links = ${spec_count}.links.${annotation['links_file'].extension}
+#if $annotation.annotation_style['links_file'].dataset:
+links = ${annotation_count}.links.${annotation.annotation_style['links_file'].extension}$alias
 #end if
-#if $annotation['underlays_file'].dataset:
-underlays = ${spec_count}.underlays.${annotation['underlays_file'].extension}
+#if $annotation.annotation_style['underlays_file'].dataset:
+underlays = ${annotation_count}.underlays.${annotation.annotation_style['underlays_file'].extension}$alias
 #end if
-#if $annotation['highlights_file'].dataset:
-highlights = ${spec_count}.highlights.${annotation['highlights_file'].extension}
+#if $annotation.annotation_style['highlights_file'].dataset:
+highlights = ${annotation_count}.highlights.${annotation.annotation_style['highlights_file'].extension}$alias
 #end if
-offset = $annotation['offset']
+offset = $annotation.annotation_style['offset']
 
 #set $seq_count = $seq_count + 1
 #end for
 #end for
 </configfile>
     <configfile name="filenames_file">
-#for $spec_count, $annotation in $enumerate( $annotations ):
-#if $annotation['exons_file'].dataset:
-$annotation['exons_file'] = ${spec_count}.exons.${annotation['exons_file'].extension}
+#for $annotation_count, $annotation in $enumerate( $annotations ):
+#if $annotation.annotation_style['exons_file'].dataset:
+$annotation.annotation_style['exons_file'] = ${annotation_count}.exons.${annotation.annotation_style['exons_file'].extension}
 #end if
-#if $annotation['repeats_file'].dataset:
-$annotation['repeats_file'] = ${spec_count}.repeats.${annotation['repeats_file'].extension}
+#if $annotation.annotation_style['repeats_file'].dataset:
+$annotation.annotation_style['repeats_file'] = ${annotation_count}.repeats.${annotation.annotation_style['repeats_file'].extension}
 #end if
-#if $annotation['links_file'].dataset:
-$annotation['links_file'] = ${spec_count}.links.${annotation['links_file'].extension}
+#if $annotation.annotation_style['links_file'].dataset:
+$annotation.annotation_style['links_file'] = ${annotation_count}.links.${annotation.annotation_style['links_file'].extension}
 #end if
-#if $annotation['underlays_file'].dataset:
-$annotation['underlays_file'] = ${spec_count}.underlays.${annotation['underlays_file'].extension}
+#if $annotation.annotation_style['underlays_file'].dataset:
+$annotation.annotation_style['underlays_file'] = ${annotation_count}.underlays.${annotation.annotation_style['underlays_file'].extension}
 #end if
-#if $annotation['highlights_file'].dataset:
-$annotation['highlights_file'] = ${spec_count}.highlights.${annotation['highlights_file'].extension}
+#if $annotation.annotation_style['highlights_file'].dataset:
+$annotation.annotation_style['highlights_file'] = ${annotation_count}.highlights.${annotation.annotation_style['highlights_file'].extension}
 #end if
 #end for
 </configfile>
