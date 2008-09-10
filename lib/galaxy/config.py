@@ -64,9 +64,10 @@ class Configuration( object ):
         self.bugs_email = kwargs.get( 'bugs_email', None )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
-        #Parse global_conf
+        # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
+        self.global_conf_parser = global_conf_parser
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
         #Store per-tool runner config
@@ -118,6 +119,12 @@ def configure_logging( config ):
     Allow some basic logging configuration to be read from the cherrpy
     config.
     """
+    # PasteScript will have already configured the logger if the appropriate
+    # sections were found in the config file, so we do nothing if the
+    # config has a loggers section, otherwise we do some simple setup
+    # using the 'log_*' values from the config.
+    if config.global_conf_parser.has_section( "loggers" ):
+        return
     format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
     level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
     destination = config.get( "log_destination", "stdout" )
