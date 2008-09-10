@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+from galaxy import eggs
+import pkg_resources
+pkg_resources.require("Cheetah")
+
 import sys
 from Cheetah.Template import Template
 import string
@@ -14,6 +18,7 @@ def run( cmd ):
 templates = [ ( "base.css.tmpl", "base.css" ),
               ( "panel_layout.css.tmpl", "panel_layout.css" ),
               ( "masthead.css.tmpl", "masthead.css"),
+              ( "library.css.tmpl", "library.css"),
               ( "history.css.tmpl", "history.css" ),
               ( "tool_menu.css.tmpl", "tool_menu.css" ),
               ( "reset.css.tmpl", "reset.css" ) ]

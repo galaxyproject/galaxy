@@ -89,11 +89,14 @@ class GalaxyRBACAgent( RBACAgent ):
         """Returns true when user has permission to perform an action"""
         if not isinstance( dataset, self.model.Dataset ):
             dataset = dataset.dataset
-        # If dataset is in public group, we always return true for viewing and using
-        # This may need to change when the ability to alter groups and permitted_actions is allowed
-        if action == self.permitted_actions.DATASET_ACCESS and \
-            self.components_are_associated( group = self.get_public_group(), dataset = dataset ):
-            return True
+        if user is None:
+            try:
+                public_assoc = [ gda for gda in dataset.groups if gda.group == self.get_public_group() ][0]
+            except:
+                # There'll be an IndexError if the dataset doesn't have a gda with public
+                return False
+            if action in public_assoc.permitted_actions:
+                return True
         elif user is not None:
             # Loop through permitted_actions and if allowed return true:
             # Check permitted_actions associated with dataset through groups
@@ -231,7 +234,7 @@ class GalaxyRBACAgent( RBACAgent ):
         for group_dataset_assoc in dataset.groups:
             group_dataset_assoc.delete()
             group_dataset_assoc.flush()
-        if isinstance( permissions[0], self.model.GroupDatasetAssociation ):
+        if len( permissions ) and isinstance( permissions[0], self.model.GroupDatasetAssociation ):
             permissions = [ ( gda.group, gda.permitted_actions ) for gda in permissions ]
         for ptuple in permissions:
             self.associate_components( dataset=dataset, permissions=ptuple )
@@ -254,6 +257,27 @@ class GalaxyRBACAgent( RBACAgent ):
         raise 'No valid method of associating provided components: %s' % kwd
     def dataset_has_group( self, dataset_id, group_id ):
         return bool( self.model.GroupDatasetAssociation.get_by( group_id = group_id, dataset_id = dataset_id  )  )
+    def check_folder_contents( self, user, entry ):
+        """
+	Return true if there are any datasets under 'folder' that the
+	user has access permission on.  We do this a lot and it's a
+	pretty inefficient method, optimizations are welcomed.
+        """
+        if isinstance( entry, self.model.Library ):
+            return self.check_folder_contents( user, entry.root_folder )
+        elif isinstance( entry, self.model.LibraryFolderDatasetAssociation ):
+            return self.allow_action( user, self.permitted_actions.DATASET_ACCESS, dataset=entry )
+        elif isinstance( entry, self.model.LibraryFolder ):
+            for dataset in entry.active_datasets:
+                if self.allow_action( user, self.permitted_actions.DATASET_ACCESS, dataset=dataset ):
+                    return True
+            for folder in entry.active_folders:
+                if self.check_folder_contents( user, folder ):
+                    return True
+            return False
+        else:
+            raise 'Passed an illegal object to check_folder_contents: %s' % type( entry )
+
 
 def get_permitted_actions( self, filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''

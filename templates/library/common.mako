@@ -1,5 +1,10 @@
-## Render the dataset `data` as history item, using `hid` as the displayed id
-<%def name="render_dataset( data, hid )">
+<%doc>
+    Shamelessly stolen from history... this needs to be cleaned up to remove a
+    bunch of stuff that doesn't apply to library datasets (like state, etc).
+</%doc>
+
+## Render the dataset `data`
+<%def name="render_dataset( data )">
     <%
 	if data.state in ['no state','',None]:
 	    data_state = "queued"
@@ -25,12 +30,19 @@
 		    <div><img src="${h.url_for( "/static/style/data_%s.png" % data_state )}" border="0" align="middle"></div>
 		%endif
 	    </div>			
+            <%doc>
 	    <div style="float: right;">
 	    <a href="${h.url_for( controller='dataset', dataset_id=data.id, action='display', filename='index')}" target="galaxy_main"><img src="${h.url_for('/static/images/eye_icon.png')}" rollover="${h.url_for('/static/images/eye_icon_dark.png')}" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>
 	    <a href="${h.url_for( action='edit', id=data.id )}" target="galaxy_main"><img src="${h.url_for('/static/images/pencil_icon.png')}" rollover="${h.url_for('/static/images/pencil_icon_dark.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>
 	    <a href="${h.url_for( action='delete', id=data.id )}" class="historyItemDelete" id="historyItemDelter-${data.id}"><img src="${h.url_for('/static/images/delete_icon.png')}" rollover="${h.url_for('/static/images/delete_icon_dark.png')}" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
 	    </div>
-	    <span class="historyItemTitle"><b>${hid}: ${data.display_name()}</b></span>
+            </%doc>
+            <table cellspacing="0" cellpadding="0" border="0" width="100%"><tr>
+	    <td width="*"><input type="checkbox" name="import_ids" value="${data.id}"/> <span class="historyItemTitle"><b>${data.display_name()}</b></span></td>
+            <td width="100">${data.ext}</td>
+            <td width="50"><span class="${data.dbkey}">${data.dbkey}</span></td>
+            <td width="200">${data.info}</td>
+            </tr></table>
 	</div>
         
         ## Body for history items, extra info and actions, data "peek"
@@ -51,19 +63,11 @@
                 <div>No data: <i>${data.display_info()}</i></div>
             %elif data_state == "ok":
                 <div>
-                    ${data.blurb},
-                    format: <span class="${data.ext}">${data.ext}</span>, 
-                    database:
-                    %if data.dbkey == '?':
-                        <a href="${h.url_for( action='edit', id=data.id )}" target="galaxy_main">${data.dbkey}</a>
-                    %else:
-                        <span class="${data.dbkey}">${data.dbkey}</span>
-                    %endif
+                    ${data.blurb}
                 </div>
-                <div class="info">Info: ${data.display_info()} </div>
                 <div> 
                     %if data.has_data:
-                        <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
+                        <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext='data.ext' )}" target="_blank">save</a>
                         %for display_app in data.datatype.get_display_types():
                             <% display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                             %if len( display_links ) > 0:
@@ -81,9 +85,7 @@
 	    %else:
 		<div>Error: unknown dataset state "${data_state}".</div>
             %endif
-               
             ## Recurse for child datasets
-                              
             %if len( data.children ) > 0:
 		## FIXME: This should not be in the template, there should
 		##        be a 'visible_children' method on dataset.
@@ -102,8 +104,6 @@
                     </div>
                 %endif
             %endif
-
         </div>
     </div>
-
 </%def>
