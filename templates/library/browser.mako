@@ -16,19 +16,19 @@
         q("li.libraryOrFolderRow").wrap( "<a href='#' class='expandLink'></a>" ).click( function() {
             var contents = q(this).parent().next("ul");
             if ( this.id == "libraryRow" ) {
-                var icon_open = "${h.url_for( '/static/images/library_open.png' )}";
-                var icon_closed = "${h.url_for( '/static/images/library_closed.png' )}";
+                var icon_open = "${h.url_for( '/static/images/silk/book_open.png' )}";
+                var icon_closed = "${h.url_for( '/static/images/silk/book.png' )}";
             } else {
-                var icon_open = "${h.url_for( '/static/images/folder_open.png' )}";
-                var icon_closed = "${h.url_for( '/static/images/folder_closed.png' )}";
+                var icon_open = "${h.url_for( '/static/images/silk/folder_page.png' )}";
+                var icon_closed = "${h.url_for( '/static/images/silk/folder.png' )}";
             }
             if ( contents.is(":visible") ) {
                 contents.slideUp("fast");
-                q(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/expander_closed.png' )}"; });
+                q(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_next.png' )}"; });
                 q(this).children().find("img.rowIcon").each( function() { this.src = icon_closed; });
             } else {
                 contents.slideDown("fast");
-                q(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/expander_open.png' )}"; });
+                q(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_bottom.png' )}"; });
                 q(this).children().find("img.rowIcon").each( function() { this.src = icon_open; });
             }
         });
@@ -65,10 +65,10 @@
     pad = parent_pad + 20
   %>
   %if parent_pad == 0:
-    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;"><div class="rowTitle"><img src="${h.url_for( '/static/images/expander_open.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/folder_open.png' )}" class="rowIcon"/> ${parent.name}</div></li>
+    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;"><div class="rowTitle"><img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/folder_page.png' )}" class="rowIcon"/> ${parent.name}</div></li>
     <ul>
   %else:
-    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;"><div class="rowTitle"><img src="${h.url_for( '/static/images/expander_closed.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/folder_closed.png' )}" class="rowIcon"/> ${parent.name}</div></li>
+    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;"><div class="rowTitle"><img src="${h.url_for( '/static/images/silk/resultset_next.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/folder.png' )}" class="rowIcon"/> ${parent.name}</div></li>
     <ul id="subFolder">
   %endif
       %for folder in parent.active_folders:
@@ -88,7 +88,7 @@
 %for library in libraries:
   %if trans.app.security_agent.check_folder_contents( trans.user, library ):
   <li class="libraryRow libraryOrFolderRow" id="libraryRow"><div class="rowTitle"><table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle"><tr>
-    <th width="*"><img src="${h.url_for( '/static/images/expander_open.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/library_open.png' )}" class="rowIcon"/> ${library.name}</th>
+    <th width="*"><img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/> ${library.name}</th>
     <th width="100">Format</th>
     <th width="50">Db</th>
     <th width="200">Info</th>

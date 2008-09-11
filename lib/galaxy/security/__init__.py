@@ -209,7 +209,7 @@ class GalaxyRBACAgent( RBACAgent ):
             for data in history.datasets:
                 for hda in data.dataset.history_associations:
                     if history.user and hda.history not in history.user.histories:
-                        # When would this occur?
+                        # This will occur when a user logs in and has datasets in their previously-public history.
                         self.set_dataset_permissions( data.dataset, [ ( self.get_public_group(), [ self.permitted_actions.DATASET_ACCESS ] ) ] )
                         break
                 else:

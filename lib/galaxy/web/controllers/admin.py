@@ -542,74 +542,119 @@ class Admin( BaseController ):
 
     # Galaxy Library Stuff
     @web.expose
-    def libraries( self, trans, **kwd ):
+    def library_browser( self, trans, **kwd ):
+        ## TODO: "show deleted libraries" toggle?
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
-        params = util.Params( kwd )
-        msg = params.msg
-        return trans.fill_template( '/admin/library/libraries.mako', libraries=trans.app.model.Library.select_by( deleted = False ), msg=msg )
-    @web.expose
-    def library( self, trans, id=None, name="Unnamed", description=None, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
-        params = util.Params( kwd )
-        msg = params.msg
-        if 'create_library' in kwd:
-            if len( trans.app.model.Library.select_by( name=name ) ) > 0:
-                msg = "A library with that name already exists"
-                trans.response.send_redirect( web.url_for( action='libraries', msg=msg ) )
-            library = trans.app.model.Library( name=name, description=description )
-            root_folder = trans.app.model.LibraryFolder( name=name, description=description )
-            root_folder.flush()
-            library.root_folder = root_folder
-            library.flush()
-            trans.response.send_redirect( web.url_for( action='folder', id=root_folder.id, msg=msg ) )
-        elif id is None:
-            return trans.show_form( 
-                web.FormBuilder( action = web.url_for(), title = "Create a new Library", name = "create_library", submit_text = "Submit" )
-                    .add_text( name = "name", label = "Name", value = "Unnamed", error = None, help = None )
-                    .add_text( name = "description", label = "Description", value = None, error = None, help = None )
-                    .add_input( 'hidden', "Create Library", 'create_library', use_label = False  ) )
-        library = trans.app.model.Library.get( id )
-        if library:
-            return trans.fill_template( '/admin/library/library.mako', library=library, msg=msg )
+        if 'message' in kwd:
+            message = kwd['message']
         else:
-            return trans.show_error_message( "Invalid library specified" )
+            message = None
+        return trans.fill_template( '/admin/library/browser.mako', libraries=trans.app.model.Library.select_by( deleted = False ), message = message )
+    libraries = library_browser
     @web.expose
-    def folder( self, trans, id=None, name="Unnamed", description=None, parent_id = None, **kwd ):
+    def library( self, trans, id=None, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
+        if not id and 'new' not in kwd:
+            return trans.show_error_message( "Galaxy can't perform a library action if you don't specify a library" )
+        if 'new' not in kwd:
+            library = trans.app.model.Library.get( id )
         params = util.Params( kwd )
-        msg = params.msg
-        if 'create_folder' in kwd:
-            folder = trans.app.model.LibraryFolder( name = name, description = description )
-            # We are associating the last used genome_build with folders, so we will always
-            # initialize a new folder with the first dbkey in util.dbnames which is currently
-            # ?    unspecified (?)
-            folder.genome_build = util.dbnames.default_value
-            if parent_id:
-                parent_folder = trans.app.model.LibraryFolder.get( parent_id )
-                parent_folder.add_folder( folder )
-            folder.flush()
-            trans.response.send_redirect( web.url_for( action='folder', id=folder.id, msg=msg ) )
-        elif id is None:
+        if 'new' in kwd:
+            if params.new == 'submitted':
+                library = trans.app.model.Library( name = params.name, description = params.description )
+                root_folder = trans.app.model.LibraryFolder( name = params.name, description = "" )
+                root_folder.flush()
+                library.root_folder = root_folder
+                library.flush()
+                return trans.response.send_redirect( web.url_for( action='library_browser' ) )
             return trans.show_form( 
-                web.FormBuilder( action = web.url_for(), title = "Create a new Folder", name = "create_folder", submit_text = "Submit" )
-                    .add_text( name = "name", label = "Name", value = "Unnamed", error = None, help = None )
-                    .add_text( name = "description", label = "Description", value = None, error = None, help = None )
-                    .add_input( 'hidden', None, 'parent_id', value = parent_id, use_label = False  )
-                    .add_input( 'hidden', "Create Folder", 'create_folder', use_label = False  ) )
-        folder = trans.app.model.LibraryFolder.get( id )
-        if folder:
-            msg = ''
-            if 'rename_folder' in kwd:
-                folder.name = name
-                folder.description = description
+                web.FormBuilder( action = web.url_for(), title = "Create a new Library", name="library", submit_text = "Create" )
+                    .add_text( name = "name", label = "Name", value = "New Library" )
+                    .add_text( name = "description", label = "Description", value = "" )
+                    .add_input( 'hidden', '', 'new', 'submitted', use_label = False  ) )
+        elif 'rename' in kwd:
+            if params.rename == 'submitted':
+                if 'root_folder' in kwd:
+                    root_folder = library.root_folder
+                    root_folder.name = params.name
+                    root_folder.flush()
+                library.name = params.name
+                library.description = params.description
+                library.flush()
+                return trans.response.send_redirect( web.url_for( action='library_browser' ) )
+            return trans.show_form( 
+                web.FormBuilder( action = web.url_for(), title = "Edit library name and description", name = "library", submit_text = "Save" )
+                    .add_text( name = "name", label = "Name", value = library.name )
+                    .add_text( name = "description", label = "Description", value = library.description )
+                    .add_input( 'checkbox', 'Also change the root folder\'s name', 'root_folder' )
+                    .add_input( 'hidden', '', 'rename', 'submitted', use_label = False  )
+                    .add_input( 'hidden', '', 'id', id, use_label = False  ) )
+        elif 'delete' in kwd:
+            def delete_folder( folder ):
+                for subfolder in folder.active_folders:
+                    delete_folder( subfolder )
+                for dataset in folder.active_datasets:
+                    dataset.deleted = True
+                    dataset.flush()
+                folder.deleted = True
                 folder.flush()
-                msg = 'Folder has been renamed.'
-            return trans.fill_template( '/admin/library/folder.mako', folder=folder, msg=msg )
+            delete_folder( library.root_folder )
+            library.deleted = True
+            library.flush()
+            return trans.response.send_redirect( web.url_for( action='library_browser' ) )
         else:
-            return trans.show_error_message( "Invalid folder specified" )
+            return trans.show_error_message( "Galaxy can't perform a library action if you don't specify an action" )
+    @web.expose
+    def folder( self, trans, id=None, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        if not id:
+            return trans.show_error_message( "Galaxy can't perform a folder action if you don't specify a folder" )
+        params = util.Params( kwd )
+        folder = trans.app.model.LibraryFolder.get( id )
+        if 'new' in kwd:
+            if params.new == 'submitted':
+                new_folder = trans.app.model.LibraryFolder( name = params.name, description = params.description )
+                # We are associating the last used genome_build with folders, so we will always
+                # initialize a new folder with the first dbkey in util.dbnames which is currently
+                # ?    unspecified (?)
+                new_folder.genome_build = util.dbnames.default_value
+                folder.add_folder( new_folder )
+                new_folder.flush()
+                return trans.response.send_redirect( web.url_for( action='library_browser' ) )
+            return trans.show_form( 
+                web.FormBuilder( action = web.url_for(), title = "Create a new folder", name="folder", submit_text = "Create" )
+                    .add_text( name = "name", label = "Name", value = "New Folder" )
+                    .add_text( name = "description", label = "Description", value = "" )
+                    .add_input( 'hidden', '', 'new', 'submitted', use_label = False  )
+                    .add_input( 'hidden', '', 'id', id, use_label = False  ) )
+        elif 'rename' in kwd:
+            if params.rename == 'submitted':
+                folder.name = params.name
+                folder.description = params.description
+                folder.flush()
+                return trans.response.send_redirect( web.url_for( action='library_browser' ) )
+            return trans.show_form( 
+                web.FormBuilder( action = web.url_for(), title = "Edit folder name and description", name = "folder", submit_text = "Save" )
+                    .add_text( name = "name", label = "Name", value = folder.name )
+                    .add_text( name = "description", label = "Description", value = folder.description )
+                    .add_input( 'hidden', '', 'rename', 'submitted', use_label = False  )
+                    .add_input( 'hidden', '', 'id', id, use_label = False  ) )
+        elif 'delete' in kwd:
+            def delete_folder( folder ):
+                for subfolder in folder.active_folders:
+                    delete_folder( subfolder )
+                for dataset in folder.active_datasets:
+                    dataset.deleted = True
+                    dataset.flush()
+                folder.deleted = True
+                folder.flush()
+            delete_folder( folder )
+            return trans.response.send_redirect( web.url_for( action='library_browser' ) )
+        else:
+            return trans.show_error_message( "Galaxy can't perform a folder action if you don't specify an action" )
     @web.expose
     def dataset( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, dbkey=None, **kwd ):
         if not self.user_is_admin( trans ):
@@ -624,12 +669,6 @@ class Admin( BaseController ):
         data_files = []
         params = util.Params( kwd )
         msg = params.msg
-
-        def listify( item ):
-            if isinstance( item, list ):
-                return item
-            else:
-                return [ item ]
 
         # add_file method
         def add_file( file_obj, name, extension, dbkey, last_used_build, groups, info='no info', space_to_tab=False ):
@@ -703,6 +742,7 @@ class Admin( BaseController ):
             return dataset
         # END add_file method
 
+        # Dataset upload
         if 'create_dataset' in kwd:
             # Copied from upload tool action
             last_dataset_created = None
@@ -794,13 +834,25 @@ class Admin( BaseController ):
                                                      info="imported file",
                                                      space_to_tab=space_to_tab )
                     created_datasets.append( last_dataset_created )
-            if len( created_datasets ):
-                trans.response.send_redirect( web.url_for( action='change_permissions', ids=",".join( [ str(d.id) for d in created_datasets ] ) ) )
+            if len( created_datasets ) > 1:
+                trans.response.send_redirect( web.url_for(
+                    action = 'library_browser',
+                    message = "%i new datasets added to the library.  <a href='%s'>Click here</a> if you'd like to edit the permissions on these datasets." % (
+                        len( created_datasets ),
+                        web.url_for( action='dataset', id=",".join( [ str(d.id) for d in created_datasets ] ) )
+                    )
+                ) )
             elif last_dataset_created is not None:
-                trans.response.send_redirect( web.url_for( action='dataset', id=last_dataset_created.id ) )
+                trans.response.send_redirect( web.url_for(
+                    action = 'library_browser',
+                    message = "New dataset added to the library.  <a href='%s'>Click here</a> if you'd like to edit the permissions or attributes on this dataset." %
+                        web.url_for( action='dataset', id=last_dataset_created.id )
+                ) )
             else:
                 return trans.show_error_message( 'Upload failed' )
-        elif id is None:
+
+        # No dataset(s) specified, display upload form
+        elif not id:
             # Send list of data formats to the form so the "extension" select list can be populated dynamically
             file_formats = trans.app.datatypes_registry.upload_file_formats
             # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
@@ -823,45 +875,21 @@ class Admin( BaseController ):
                                         last_used_build=last_used_build,
                                         groups=groups,
                                         msg=msg )
-        dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-        if dataset:
+        else:
+            if id.count( ',' ):
+                ids = id.split(',')
+                id = None
+            else:
+                ids = None
+        # id specified, display attributes form
+        if id:
+            dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+            if not dataset:
+                return trans.show_error_message( "Invalid dataset specified" )
+
             # Copied from edit attributes for 'regular' datasets with some additions
             p = util.Params(kwd, safe=False)
-            if p.change_permitted_actions:
-                # The user clicked the Save button on the 'Dataset Permissions' form
-                actions = p.actions
-                if actions and not isinstance( actions, list ):
-                    actions = [ actions ]
-                if actions is None:
-                    actions = []
-                # actions is a list of comma-separated strings consisting of group_id and permitted_action,
-                # something like: ['6,dataset_access', '6,dataset_edit_metadata'].  We'll parse them and
-                # create a dict whose keys are groups_id and values are permitted_actions
-                gdpa_dict = {}
-                for action in actions:
-                    group_id, dpa = action.split( ',' )
-                    group_id = int( group_id )
-                    if group_id in gdpa_dict.keys():
-                        gdpa_dict[ group_id ].append( dpa )
-                    else:
-                        gdpa_dict[ group_id ] = [ dpa ]
-                # Refresh the Dataset to ensure we have a valid set of DatasetGroupAssociations
-                dataset.dataset.refresh()
-                # Check to see if we need to delete any GroupDatasetAssociations.  This occurs if
-                # the user unchecked all boxes for a group
-                for group_dataset_assoc in dataset.dataset.groups:
-                    if group_dataset_assoc.group_id not in gdpa_dict.keys():
-                        group_dataset_assoc.delete()
-                        group_dataset_assoc.flush()
-                # Use the dict to update the permitted actions for each GroupDatasetAssociaton
-                for group_id in gdpa_dict:
-                    actions = gdpa_dict[ group_id ]
-                    # Update the permitted_actions for every GroupDatasetAssociation of the Group
-                    q = sa.update( galaxy.model.GroupDatasetAssociation.table,
-                                   whereclause = galaxy.model.GroupDatasetAssociation.table.c.group_id == group_id,
-                                   values = { galaxy.model.GroupDatasetAssociation.table.c.permitted_actions : actions } )
-                    result = q.execute()
-            elif p.change:
+            if p.change:
                 # The user clicked the Save button on the 'Change data type' form
                 trans.app.datatypes_registry.change_datatype( dataset, p.datatype )
                 trans.app.model.flush()
@@ -879,7 +907,7 @@ class Admin( BaseController ):
                         setattr(dataset.metadata,name,None)
                     else:
                         setattr(dataset.metadata,name,spec.unwrap(p.get(name, None), p))
-
+    
                 dataset.datatype.after_edit( dataset )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated" )
@@ -894,24 +922,11 @@ class Admin( BaseController ):
                 dataset.datatype.after_edit( dataset )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated" )
-            
+            elif p.delete:
+                dataset.deleted = True
+                dataset.flush()
+                trans.response.send_redirect( web.url_for( action='library_browser' ) )
             dataset.datatype.before_edit( dataset )
-            # Get all actions to send to the form
-            dataset_actions = []
-            dpas = RBACAgent.permitted_actions
-            for dpa in dpas.items():
-                if dpa[0].startswith( 'DATASET' ):
-                    dataset_actions.append( dpa[1] )
-                dataset_actions.sort()
-            # Get the permitted_actions of each GroupDatasetAssociation to send to the form
-            gdas = []
-            # Refresh the Dataset to ensure we have a valid set of GroupDatasetAssociations
-            dataset.dataset.refresh()
-            for group_dataset_assoc in dataset.dataset.groups:
-                # Refresh the GroupDatasetAssociation to ensure we have a valid set of permitted_actions
-                group_dataset_assoc.refresh()
-                group = galaxy.model.Group.get( group_dataset_assoc.group_id )
-                gdas.append( ( group.id, group.name, group_dataset_assoc.permitted_actions ) )
             if "dbkey" in dataset.datatype.metadata_spec and not dataset.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
                 # This looks like it does nothing, but getting the dbkey
@@ -931,12 +946,28 @@ class Admin( BaseController ):
                                         dataset=dataset, 
                                         metadata=metadata,
                                         datatypes=ldatatypes,
-                                        dataset_actions=dataset_actions,
-                                        gdas=gdas,
                                         err=None,
                                         msg=msg )
-        else:
-            return trans.show_error_message( "Invalid dataset specified" )
+        # multiple ids specfied, display multi permission form
+        elif ids:
+            datasets = []
+            for id in [ int( id ) for id in ids ]:
+                d = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+                if d is None:
+                    return trans.show_error_message( 'You specified an invalid dataset' )
+                datasets.append( d )
+            if len( datasets ) < 2:
+                return trans.show_error_message( 'You must specify at least two datasets to modify permissions on' )
+            # If the permissions on the first dataset don't match the intersection
+            # of permissions, the permissions across all datasets are not
+            # identical.  Although, should we care, or should we just let the admin
+            # overwrite permissions regardless?
+            if trans.app.security_agent.get_dataset_permissions( datasets[0] ) != \
+            trans.app.security_agent.guess_derived_permissions_for_datasets( [ d.dataset for d in datasets ] ):
+                return trans.show_error_message( "The datasets you selected do not have identical permissions, so they can not be updated together" )
+            else:
+                return trans.fill_template( "/admin/library/dataset.mako",
+                                            dataset=datasets )
     def check_gzip( self, temp_name ):
         """
         Utility method to check gzipped uploads
@@ -954,42 +985,59 @@ class Admin( BaseController ):
         #    return( True, False )
         return ( True, True )
     @web.expose
-    def change_permissions( self, trans, ids=[], **kwd ):
+    def dataset_permissions( self, trans, id=None, **kwd ):
+        '''
+        In this method, id is an actual Dataset object, not an association.
+        '''
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
-        if not ids:
-            return trans.show_error_message( 'You must specify at least two datasets to modify permissions on' )
-        datasets = []
-        for id in [ int( id ) for id in ids.split(',') ]:
-            d = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-            if d is None:
-                return trans.show_error_message( 'You specified an invalid dataset' )
-            datasets.append( d )
-        if len( datasets ) == 0:
-            return trans.show_error_message( 'You must specify at least two datasets to modify permissions on' )
-        elif len( datasets ) == 1:
-            trans.response.send_redirect( web.url_for( action='dataset', id=datasets[0].id ) )
-        # If the permissions on the first dataset don't match the intersection
-        # of permissions, the permissions across all datasets are not
-        # identical.  Although, should we care, or should we just let the admin
-        # overwrite permissions regardless?
-        if trans.app.security_agent.get_dataset_permissions( datasets[0] ) != \
-           trans.app.security_agent.guess_derived_permissions_for_datasets( [ d.dataset for d in datasets ] ):
-            return trans.show_error_message( "The datasets you selected do not have identical permissions, so they can not be updated together" )
-        if 'change_permissions' in kwd:
-            group_args = [ k.replace('group_', '', 1) for k in kwd if k.startswith('group_') ]
-            group_ids_checked = filter( lambda x: not x.count('_'), group_args )
-            permissions = []
-            for group_id in group_ids_checked:
-                action_strings = [ action.replace(group_id + '_', '', 1) for action in group_args if action.startswith(group_id + '_') ]
-                actions = trans.app.security_agent.convert_permitted_action_strings( action_strings )
-                permissions.append( ( trans.app.security_agent.get_group( group_id ), actions ) )
-            for d in datasets:
-                trans.app.security_agent.set_dataset_permissions( d.dataset, permissions )
-            return trans.show_ok_message( "Dataset permissions have been set." )
+        if not id:
+            return trans.show_error_message( 'You must specify at least one dataset to modify permissions on' )
+        params = util.Params( kwd )
+        # id can be a list of comma separated datasets, too.
+        if id.count( ',' ):
+            ids = id.split( ',' )
         else:
-            return trans.fill_template( "/admin/library/change_permissions.mako",
-                                        datasets=datasets )
+            ids = [ id ]
+        datasets = []
+        for d_id in ids:
+            d = trans.app.model.Dataset.get( d_id )
+            if not d:
+                return trans.show_error_message( 'You specified an invalid dataset' )
+            datasets.append( d ) 
+        if 'change_permitted_actions' in kwd:
+            users = []
+            groups = []
+            if params.users:
+                users = listify( params.users )
+            if params.groups:
+                groups = listify( params.groups )
+            permissions = []
+            for group_id in users + groups:
+                permitted_actions = [ pa.replace( group_id + ',', '' ) for pa in params.actions if pa.startswith( group_id + ',' ) ]
+                permitted_actions = trans.app.security_agent.convert_permitted_action_strings( permitted_actions )
+                permissions.append( ( trans.app.model.Group.get( int( group_id ) ), permitted_actions ) )
+            if params.public:
+                permissions.append( ( trans.app.security_agent.get_public_group(), trans.app.security_agent.permitted_actions.DATASET_ACCESS ) )
+            for dataset in datasets:
+                trans.app.security_agent.set_dataset_permissions( dataset, permissions )
+        elif 'create_group_associations' in kwd:
+            users = []
+            groups = []
+            if params.users:
+                users = listify( params.users )
+            if params.groups:
+                groups = listify( params.groups )
+            if params.public:
+                for dataset in datasets:
+                    trans.app.security_agent.associate_components( group=trans.app.security_agent.get_public_group(), dataset=dataset )
+            for group_id in users + groups:
+                for dataset in datasets:
+                    trans.app.security_agent.associate_components( group=trans.app.model.Group.get( int( group_id ) ), dataset=dataset )
+        if params.lid:
+            trans.response.send_redirect( web.url_for( action='dataset', id=params.lid ) )
+        else:
+            trans.response.send_redirect( web.url_for( action='library_browser' ) )
     @web.expose
     def delete_dataset( self, trans, id=None, **kwd):
         if not self.user_is_admin( trans ):
@@ -1072,3 +1120,12 @@ class Admin( BaseController ):
             trans.log_event( "Library id %s deleted." % id )
             trans.response.send_redirect( web.url_for( action = 'libraries', msg = 'You have deleted the library %s.' % library.id ) )
         return trans.show_error_message( "You did not specify a library to delete." )
+
+def listify( item ):
+    """
+    Since single params are not a single item list
+    """
+    if isinstance( item, list ):
+        return item
+    else:
+        return [ item ]
