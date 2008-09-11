@@ -83,25 +83,22 @@
 ## configure which of their stored workflows appear in the tools menu). 
 
 %if app.config.enable_beta_features:
-    <div class="toolSectionPad"></div>
-    <div class="toolSectionPad"></div>
-    <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-      <span>Workflow <i>(beta)</i></span>
-    </div>
-    <div id="XXinternalXXworkflow" class="toolSectionBody">
-      <div class="toolSectionBg">
-            <div class="toolTitle">
-                <a href="${h.url_for( controller='workflow', action='index' )}" target="galaxy_main">Manage</a> workflows
-            </div>
-            %if t.user:
+    %if t.user and t.user.stored_workflow_menu_entries:
+        <div class="toolSectionPad"></div>
+        <div class="toolSectionPad"></div>
+        <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+          <span>Your workflows</span>
+        </div>
+        <div id="XXinternalXXworkflow" class="toolSectionBody">
+            <div class="toolSectionBg">        
                 %for m in t.user.stored_workflow_menu_entries:
                     <div class="toolTitle">
                         <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${m.stored_workflow.name}</a>
                     </div>
                 %endfor
-            %endif
-      </div>
-    </div>
+            </div>
+        </div>
+    %endif
 %endif
 
 </div>
