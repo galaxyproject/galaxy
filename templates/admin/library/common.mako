@@ -192,7 +192,7 @@
             </%doc>
             <table cellspacing="0" cellpadding="0" border="0" width="100%"><tr>
 	    <td width="*">
-                <input type="checkbox" name="import_ids" value="${data.id}"/>
+                <input type="checkbox" name="dataset_ids" value="${data.id}"/>
                 <span class="historyItemTitle"><b>${data.display_name()}</b></span>
                 <a id="dataset-${data.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 <div popupmenu="dataset-${data.id}-popup">

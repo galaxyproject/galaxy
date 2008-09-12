@@ -58,18 +58,52 @@
     });
 </script>
 
+<![if gte IE 7]>
+<script type="text/javascript">
+    q( document ).ready( function() {
+        // Add rollover effect to any image with a 'rollover' attribute
+        preload_images = {}
+        q( "img[@rollover]" ).each( function() {
+            var r = q(this).attr('rollover');
+            var s = q(this).attr('src');
+            preload_images[r] = true;
+            q(this).hover( 
+                function() { q(this).attr( 'src', r ) },
+                function() { q(this).attr( 'src', s ) }
+            )
+        })
+        for ( r in preload_images ) { q( "<img>" ).attr( "src", r ) }
+    })
+</script>
+<![endif]>
+
 <%def name="render_folder( parent, parent_pad )">
   <%
     if not trans.app.security_agent.check_folder_contents( trans.user, parent ):
       return ""
     pad = parent_pad + 20
+    if parent_pad == 0:
+        expander = "/static/images/silk/resultset_bottom.png"
+        folder = "/static/images/silk/folder_page.png"
+        subfolder = False
+    else:
+        expander = "/static/images/silk/resultset_next.png"
+        folder = "/static/images/silk/folder.png"
+        subfolder = True
   %>
-  %if parent_pad == 0:
-    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;"><div class="rowTitle"><img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/folder_page.png' )}" class="rowIcon"/> ${parent.name}</div></li>
-    <ul>
-  %else:
-    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;"><div class="rowTitle"><img src="${h.url_for( '/static/images/silk/resultset_next.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/folder.png' )}" class="rowIcon"/> ${parent.name}</div></li>
+  <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
+    <div class="rowTitle">
+      <img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
+      ${parent.name}
+      %if parent.description:
+        <i>- ${parent.description}</i>
+      %endif
+    </div>
+  </li>
+  %if subfolder:
     <ul id="subFolder">
+  %else:
+    <ul>
   %endif
       %for folder in parent.active_folders:
         ${render_folder( folder, pad )}
@@ -88,7 +122,13 @@
 %for library in libraries:
   %if trans.app.security_agent.check_folder_contents( trans.user, library ):
   <li class="libraryRow libraryOrFolderRow" id="libraryRow"><div class="rowTitle"><table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle"><tr>
-    <th width="*"><img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/> ${library.name}</th>
+    <th width="*">
+        <img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
+        ${library.name}
+        %if library.description:
+          <i>- ${library.description}</i>
+        %endif
+    </th>
     <th width="100">Format</th>
     <th width="50">Db</th>
     <th width="200">Info</th>

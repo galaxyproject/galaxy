@@ -56,6 +56,15 @@
             });
         });
     });
+    function checkForm() {
+        if ( $("select#with-selected-select option:selected").text() == "delete" ) {
+            if ( confirm( "Are you sure you want to delete these datasets?" ) ) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
 </script>
 
 <%def name="render_folder( parent, parent_pad )">
@@ -130,7 +139,7 @@
         </a>
     </li>
 </ul>
-<form name="import_from_library" action="${h.url_for( '/library/import_datasets' )}" method="post">
+<form name="update_multiple_datasets" action="${h.url_for( action='datasets' )}" onSubmit="javascript:return checkForm();" method="post">
 <ul>
 %for library in libraries:
   ##%if trans.app.security_agent.check_folder_contents( trans.user, library ):
@@ -158,5 +167,13 @@
   ##%endif
 %endfor
 </ul>
-##<input type="submit" class="primary-button" name="import_dataset" value="Import selected datasets"/>
+<div style="float: right;">
+    With selected datasets:
+    <select name="action" id="with-selected-select">
+        <option value="None" selected></option>
+        <option value="edit">edit permissions</option>
+        <option value="delete">delete</option>
+    </select>
+    <input type="submit" class="primary-button" name="with-selected" id="with-selected-submit" value="go"/>
+</div>
 </form>

@@ -563,8 +563,8 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         if 'new' in kwd:
             if params.new == 'submitted':
-                library = trans.app.model.Library( name = params.name, description = params.description )
-                root_folder = trans.app.model.LibraryFolder( name = params.name, description = "" )
+                library = trans.app.model.Library( name = util.restore_text( params.name ), description = util.restore_text( params.description ) )
+                root_folder = trans.app.model.LibraryFolder( name = util.restore_text( params.name ), description = "" )
                 root_folder.flush()
                 library.root_folder = root_folder
                 library.flush()
@@ -578,10 +578,10 @@ class Admin( BaseController ):
             if params.rename == 'submitted':
                 if 'root_folder' in kwd:
                     root_folder = library.root_folder
-                    root_folder.name = params.name
+                    root_folder.name = util.restore_text( params.name )
                     root_folder.flush()
-                library.name = params.name
-                library.description = params.description
+                library.name = util.restore_text( params.name )
+                library.description = util.restore_text( params.description )
                 library.flush()
                 return trans.response.send_redirect( web.url_for( action='library_browser' ) )
             return trans.show_form( 
@@ -616,7 +616,7 @@ class Admin( BaseController ):
         folder = trans.app.model.LibraryFolder.get( id )
         if 'new' in kwd:
             if params.new == 'submitted':
-                new_folder = trans.app.model.LibraryFolder( name = params.name, description = params.description )
+                new_folder = trans.app.model.LibraryFolder( name = util.restore_text( params.name ), description = util.restore_text( params.description ) )
                 # We are associating the last used genome_build with folders, so we will always
                 # initialize a new folder with the first dbkey in util.dbnames which is currently
                 # ?    unspecified (?)
@@ -632,8 +632,8 @@ class Admin( BaseController ):
                     .add_input( 'hidden', '', 'id', id, use_label = False  ) )
         elif 'rename' in kwd:
             if params.rename == 'submitted':
-                folder.name = params.name
-                folder.description = params.description
+                folder.name = util.restore_text( params.name )
+                folder.description = util.restore_text( params.description )
                 folder.flush()
                 return trans.response.send_redirect( web.url_for( action='library_browser' ) )
             return trans.show_form( 
@@ -908,6 +908,7 @@ class Admin( BaseController ):
                     else:
                         setattr(dataset.metadata,name,spec.unwrap(p.get(name, None), p))
     
+                dataset.metadata.dbkey = dbkey
                 dataset.datatype.after_edit( dataset )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated" )
@@ -1038,6 +1039,27 @@ class Admin( BaseController ):
             trans.response.send_redirect( web.url_for( action='dataset', id=params.lid ) )
         else:
             trans.response.send_redirect( web.url_for( action='library_browser' ) )
+    @web.expose
+    def datasets( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        if 'with-selected' in kwd:
+            if not params.dataset_ids:
+                return trans.show_error_message( "At least one dataset must be selected." )
+            dataset_ids = listify( params.dataset_ids )
+            if params.action == 'edit':
+                trans.response.send_redirect( web.url_for( action = 'dataset', id = ",".join( dataset_ids ) ) )
+            elif params.action == 'delete':
+                for id in dataset_ids:
+                    d = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+                    d.deleted = True
+                    d.flush()
+                trans.response.send_redirect( web.url_for( action = 'library_browser' ) )
+            else:
+                return trans.show_error_message( "Not implemented." )
+        else:
+            return trans.show_error_message( "Galaxy can't operate on datasets without an operation." )
     @web.expose
     def delete_dataset( self, trans, id=None, **kwd):
         if not self.user_is_admin( trans ):

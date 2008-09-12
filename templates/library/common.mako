@@ -38,7 +38,18 @@
 	    </div>
             </%doc>
             <table cellspacing="0" cellpadding="0" border="0" width="100%"><tr>
-	    <td width="*"><input type="checkbox" name="import_ids" value="${data.id}"/> <span class="historyItemTitle"><b>${data.display_name()}</b></span></td>
+	    <td width="*">
+              <div style="float: right; padding-right: 2px;">
+                <a href="${h.url_for( controller='root', action='edit', lid=data.id )}">
+                  <img src="${h.url_for('/static/images/pencil_icon.png')}" 
+                    rollover="${h.url_for('/static/images/pencil_icon_dark.png')}" 
+                    width='16' height='16' alt='view or edit attributes' title='view or edit attributes'
+                    class='editButton' style='vertical-align: middle' border='0'>
+                </a>
+              </div>
+              <input type="checkbox" name="import_ids" value="${data.id}"/>
+              <span class="historyItemTitle"><b>${data.display_name()}</b></span>
+            </td>
             <td width="100">${data.ext}</td>
             <td width="50"><span class="${data.dbkey}">${data.dbkey}</span></td>
             <td width="200">${data.info}</td>
@@ -50,18 +61,7 @@
         <div id="info${data.id}" class="historyItemBody">
             %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
                 <div>You do not have permission to view this dataset.</div>
-            %elif data_state == "queued":
-                <div>Job is waiting to run</div>
-            %elif data_state == "running":
-                <div>Job is currently running</div>
-            %elif data_state == "error":
-                <div>
-                    An error occurred running this job: <i>${data.display_info().strip()}</i>, 
-                    <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main">report this error</a>
-                </div>
-            %elif data_state == "empty":
-                <div>No data: <i>${data.display_info()}</i></div>
-            %elif data_state == "ok":
+            %else:
                 <div>
                     ${data.blurb}
                 </div>
@@ -82,8 +82,6 @@
                 %if data.peek != "no peek":
                     <div><pre id="peek${data.id}" class="peek">${data.display_peek()}</pre></div>
                 %endif
-	    %else:
-		<div>Error: unknown dataset state "${data_state}".</div>
             %endif
             ## Recurse for child datasets
             %if len( data.children ) > 0:
