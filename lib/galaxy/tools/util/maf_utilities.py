@@ -54,11 +54,15 @@ class RegionAlignment( object ):
     
     #sets a position for a species
     def set_position( self, index, species, base ):
+        if len( base ) != 1: raise "A genomic position can only have a length of 1."
+        return self.set_range( index, species, base )
+    #sets a range for a species
+    def set_range( self, index, species, bases ):
         if index >= self.size or index < 0: raise "Your index (%i) is out of range (0 - %i)." % ( index, self.size - 1 )
-        if len(base) != 1: raise "A genomic position can only have a length of 1."
+        if len( bases ) == 0: raise "A set of genomic positions can only have a positive length."
         if species not in self.sequences.keys(): self.add_species( species )
         self.sequences[species].seek( index )
-        self.sequences[species].write( base )
+        self.sequences[species].write( bases )
         
     #Flush temp file of specified species, or all species
     def flush( self, species = None ):
@@ -164,32 +168,40 @@ def build_maf_index( maf_file, species = None ):
     except:
         return ( None, None )
 
+def chop_block_by_region( block, src, region, species = None, mincols = 0, force_strand = None ):
+    ref = block.get_component_by_src( src )
+    #We want our block coordinates to be from positive strand
+    if ref.strand == "-":
+        block = block.reverse_complement()
+        ref = block.get_component_by_src( src )
+    
+    #save old score here for later use
+    old_score =  block.score
+    slice_start = max( region.start, ref.start )
+    slice_end = min( region.end, ref.end )
+    
+    #slice block by reference species at determined limits
+    block = block.slice_by_component( ref, slice_start, slice_end )
+    
+    if block.text_size > mincols:
+        if ( force_strand is None and region.strand != ref.strand ) or ( force_strand is not None and force_strand != ref.strand ):
+            block = block.reverse_complement()
+        # restore old score, may not be accurate, but it is better than 0 for everything
+        block.score = old_score
+        if species is not None:
+            block = block.limit_to_species( species )
+            block.remove_all_gap_columns()
+        return block
+    return None
 #generator yielding only chopped and valid blocks for a specified region
 def get_chopped_blocks_for_region( index, src, region, species = None, mincols = 0, force_strand = None ):
-    for block in index.get_as_iterator( src, region.start, region.end ):
-        ref = block.get_component_by_src( src )
-        #We want our block coordinates to be from positive strand
-        if ref.strand == "-":
-            block = block.reverse_complement()
-            ref = block.get_component_by_src( src )
-        
-        #save old score here for later use
-        old_score =  block.score
-        slice_start = max( region.start, ref.start )
-        slice_end = min( region.end, ref.end )
-        
-        #slice block by reference species at determined limits
-        block = block.slice_by_component( ref, slice_start, slice_end )
-        
-        if block.text_size > mincols:
-            if ( force_strand is None and region.strand != ref.strand ) or ( force_strand is not None and force_strand != ref.strand ):
-                block = block.reverse_complement()
-            # restore old score, may not be accurate, but it is better than 0 for everything
-            block.score = old_score
-            if species is not None:
-                block = block.limit_to_species( species )
-                block.remove_all_gap_columns()
-            yield block
+    for block, idx, offset in get_chopped_blocks_with_index_offset_for_region( index, src, region, species, mincols, force_strand ):
+        yield block
+def get_chopped_blocks_with_index_offset_for_region( index, src, region, species = None, mincols = 0, force_strand = None ):
+    for block, idx, offset in index.get_as_iterator_with_index_and_offset( src, region.start, region.end ):
+        block = chop_block_by_region( block, src, region, species, mincols )
+        if block is not None:
+            yield block, idx, offset
 
 #returns a filled region alignment for specified regions
 def get_region_alignment( index, primary_species, chrom, start, end, strand = '+', species = None, mincols = 0 ):
@@ -199,46 +211,51 @@ def get_region_alignment( index, primary_species, chrom, start, end, strand = '+
 
 #fills a region alignment 
 def fill_region_alignment( alignment, index, primary_species, chrom, start, end, strand = '+', species = None, mincols = 0 ):
-    #first step through blocks, save index and score in array, then order by score (array will start as 0=index0,scoreX)
-    #step through ordered list, step through maf blocks, stopping at index, store, then break inner loop
     region = bx.intervals.Interval( start, end )
     region.chrom = chrom
     region.strand = strand
     primary_src = "%s.%s" % ( primary_species, chrom )
-        
+    
+    def reduce_block_by_primary_genome( block ):
+        #returns ( startIndex, {species:texts}
+        #where texts' contents are reduced to only positions existing in the primary genome
+        ref = block.get_component_by_src( primary_src )
+        start_offset = ref.start - start
+        species_texts = {}
+        for c in block.components:
+            species_texts[ c.src.split( '.' )[0] ] = list( c.text )
+        #remove locations which are gaps in the primary species, starting from the downstream end
+        for i in range( len( species_texts[ primary_species ] ) - 1, -1, -1 ):
+            if species_texts[ primary_species ][i] == '-':
+                for text in species_texts.values():
+                    text.pop( i )
+        for spec, text in species_texts.items():
+            species_texts[spec] = ''.join( text )
+        return ( start_offset, species_texts )
+    
     #Order blocks overlaping this position by score, lowest first
-    blocks_order = []
-    for i, block in enumerate( get_chopped_blocks_for_region( index, primary_src, region, species, mincols ) ):
-        for j in range( 0, len( blocks_order ) ):
-            if float( block.score ) < float( blocks_order[j]['score'] ):
-                blocks_order.insert( j, {'index':i, 'score':block.score} )
+    blocks = []
+    for block, idx, offset in index.get_as_iterator_with_index_and_offset( primary_src, start, end ):
+        score = float( block.score )
+        for i in range( 0, len( blocks ) ):
+            if score < blocks[i][0]:
+                blocks.insert( i, ( score, idx, offset ) )
                 break
         else:
-            blocks_order.append( {'index':i, 'score':block.score} )
+            blocks.append( ( score, idx, offset ) )
     
-    #Loop through ordered block indexes and layer blocks by score
-    for block_dict in blocks_order:
-        for block_index, block in enumerate( get_chopped_blocks_for_region( index, primary_src, region, species, mincols ) ):
-            if block_index == block_dict['index']:
-                ref = block.get_component_by_src( primary_src )
-                #skip gap locations due to insertions in secondary species relative to primary species
-                start_offset = ref.start - start
-                num_gaps = 0
-                for i in range( len( ref.text.rstrip().rstrip("-") ) ):
-                    if ref.text[i] in ["-"]:
-                        num_gaps += 1
-                        continue
-                    #Set base for all species
-                    for spec in [ c.src.split( '.' )[0] for c in block.components ]:
-                        try:
-                            #NB: If a gap appears in higher scoring secondary species block,
-                            #it will overwrite any bases that have been set by lower scoring blocks
-                            #this seems more proper than allowing, e.g. a single base from lower scoring alignment to exist outside of its genomic context
-                            alignment.set_position( start_offset + i - num_gaps, spec, block.get_component_by_src_start( spec ).text[i] )
-                        except:
-                            #species/sequence for species does not exist
-                            pass
-                break
+    #Loop through ordered blocks and layer by increasing score
+    for block_dict in blocks:
+        block = chop_block_by_region( block_dict[1].get_at_offset( block_dict[2] ), primary_src, region, species, mincols, strand )
+        if block is None: continue
+        start_offset, species_texts = reduce_block_by_primary_genome( block )
+        for spec, text in species_texts.items():
+            try:
+                alignment.set_range( start_offset, spec, text )
+            except:
+                #species/sequence for species does not exist
+                pass
+    
     return alignment
 
 #returns a filled spliced region alignment for specified region with start and end lists
