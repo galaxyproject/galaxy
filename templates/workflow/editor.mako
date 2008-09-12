@@ -28,9 +28,21 @@
 
     <script type='text/javascript' src="/static/scripts/galaxy.workflow_editor.canvas.js"> </script>
     
+    <!--[if lt IE 7]>
     <script type='text/javascript'>
+    window.lt_ie_7 = true;
+    </script>
+    <![endif]-->
     
+    <script type='text/javascript'>
     $( function() {
+        if ( window.lt_ie_7 ) {
+            show_modal(
+                "Browser not supported",
+                "Sorry, the workflow editor is not supported for IE6 and below."
+            );
+            return;
+        }
         // Initialize workflow state
         reset();
         // Load the datatype info
