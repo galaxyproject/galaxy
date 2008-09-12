@@ -141,6 +141,10 @@
     <tool file="taxonomy/find_diag_hits.xml" />
     <tool file="taxonomy/poisson2test.xml" />
   </section>
+  <section name="Solexa tools" id="solexa_tools">
+    <tool file="solexa/fastq_statistics.xml" />
+    <tool file="solexa/lastz_wrapper.xml" />
+  </section> 
   <!--
   TODO: uncomment the following EMBOSS section whenever 
   moving to test, but comment it in .sample to eliminate 
@@ -265,14 +269,16 @@
     <tool file="fasta_tools/fasta_to_tabular.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
   </section>
-  <section name="Short Read Analysis" id="short_read_analysis">
+  <section name="Short Read QC and Manipulation" id="short_read_analysis">
     <tool file="metag_tools/short_reads_figure_score.xml" />
     <tool file="metag_tools/short_reads_figure_high_quality_length.xml" />
     <tool file="metag_tools/short_reads_trim_seq.xml" />
-    <tool file="metag_tools/blat_wrapper.xml" />
-    <tool file="metag_tools/megablast_wrapper.xml" />
-    <tool file="metag_tools/megablast_xml_parser.xml" />
     <tool file="metag_tools/blat_coverage_report.xml" />
-    <tool file="metag_tools/blat_mapping.xml" />
   </section>
+  <section name="Short Read Mapping" id="solexa_tools">
+   <tool file="sr_mapping/lastz_wrapper.xml" />
+   <tool file="metag_tools/megablast_wrapper.xml" />
+   <tool file="metag_tools/megablast_xml_parser.xml" />
+   <tool file="metag_tools/blat_wrapper.xml" />
+   </section>
 </toolbox>

@@ -1,0 +1,343 @@
+<tool id="lastz_wrapper_1" name="Lastz" version="1.0.0">
+  <description>: map short reads against reference sequence</description>
+  <command>
+    #if   ($params.source_select=="pre_set" and $seq_name.how_to_name=="No"  and $out_format.value=="diffs"):#lastz                     $input1 ${input2}[fullnames] --${params.pre_set_options} --ambiguousn --nolaj --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format  > $output1
+    #elif ($params.source_select=="pre_set" and $seq_name.how_to_name=="Yes" and $out_format.value=="diffs"):#lastz $seq_name.ref_name::$input1 ${input2}[fullnames] --${params.pre_set_options} --ambiguousn --nolaj --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format  > $output1
+    #elif ($params.source_select=="full"    and $seq_name.how_to_name=="No"  and $out_format.value=="diffs"):#lastz                     $input1 ${input2}[fullnames] $params.strand $params.seed $params.transition O=$params.O E=$params.E X=$params.X Y=$params.Y K=$params.K L=$params.L $params.entropy --ambiguousn --nolaj --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format > $output1
+    #elif ($params.source_select=="full"    and $seq_name.how_to_name=="Yes" and $out_format.value=="diffs"):#lastz $seq_name.ref_name::$input1 ${input2}[fullnames] $params.strand $params.seed $params.transition O=$params.O E=$params.E X=$params.X Y=$params.Y K=$params.K L=$params.L $params.entropy --ambiguousn --nolaj --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format > $output1
+    #elif ($params.source_select=="pre_set" and $seq_name.how_to_name=="No"  and $out_format.value=="maf"):#lastz                     $input1 read::${input2} --${params.pre_set_options} --ambiguousn --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format  > $output1
+    #elif ($params.source_select=="pre_set" and $seq_name.how_to_name=="Yes" and $out_format.value=="maf"):#lastz $seq_name.ref_name::$input1 read::${input2} --${params.pre_set_options} --ambiguousn --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format  > $output1
+    #elif ($params.source_select=="full"    and $seq_name.how_to_name=="No"  and $out_format.value=="maf"):#lastz                     $input1 read::${input2} $params.strand $params.seed $params.transition O=$params.O E=$params.E X=$params.X Y=$params.Y K=$params.K L=$params.L $params.entropy --ambiguousn --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format > $output1
+    #elif ($params.source_select=="full"    and $seq_name.how_to_name=="Yes" and $out_format.value=="maf"):#lastz $seq_name.ref_name::$input1 read::${input2} $params.strand $params.seed $params.transition O=$params.O E=$params.E X=$params.X Y=$params.Y K=$params.K L=$params.L $params.entropy --ambiguousn --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format > $output1
+    #end if
+  </command>
+	<inputs>
+	<param name="input2" format="fasta" type="data" label="Align sequencing reads" />
+	<param name="input1" format="fasta" type="data" label="against reference" help="must be a single sequence"/>
+	<param name="out_format" type="select" label="Select output format">
+	   <option value="diffs">Polymorphisms</option>
+	   <option value="maf">Alignments in MAF format</option>
+	   </param>
+	
+	<conditional name="params">
+		<param name="source_select" type="select" label="Lastz settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full List">
+				<option value="pre_set">Commonly used</option>
+				<option value="full">Full Parameter List</option>
+		</param>
+		<when value="pre_set">
+			<param name="pre_set_options" type="select" label="Select mapping mode">
+			     <option value="yasra95short">Illumina-Solexa/AB-SOLiD 95% identity</option>
+			     <option value="yasra85short">Illumina-Solexa/AB-SOLiD 85% identity</option>
+			     <option value="yasra98">Roche-454 98% identity</option>
+			     <option value="yasra95">Roche-454 95% identity</option>
+			     <option value="yasra90">Roche-454 90% identity</option>
+			     <option value="yasra85">Roche-454 85% identity</option>
+			     <option value="yasra75">Roche-454 75% identity</option>
+			</param>
+		</when>
+		<when value="full">
+			<param name="strand" type="select" label="Which strand to search?">
+			     <option value="--strand=both">Both</option>
+			     <option value="--strand=plus">Search forward strand only (the one in the reference)</option>
+			     <option value="--strand=minus">Search the reverse complement strand only (opposite of the reference)</option>
+			</param>
+			<param name="seed" type="select" label="Select seeding settings" help="allows you set word size and number of mismatches">
+			     <option value="--seed=12of19">Seed hits require a 19 bp word with matches in 12 specific positions</option>
+			     <option value="--seed=14of22">Seed hits require a 22 bp word with matches in 14 specific positions</option>
+			</param>
+			<param name="transition" type="select" label="Select transition settings" help="affects the number of allowed transition substitutions">
+			     <option value="--transition">Allow one transition in each seed hit</option>
+			     <option value="--transition2">Allow two transitions in a seed hit </option>
+			     <option value="--notransition">Don't allow any transitions in seed hits</option>
+			</param>
+			<param name="gfextend" type="boolean" truevalue="--gfextend" falsevalue="--nogfextend " label="Perform gap-free extension of seed hits to HSPs (high scoring segment pairs)?" />
+			<param name="chain"    type="boolean" truevalue="--chain"    falsevalue="--nochain"     label="Perform chaining of HSPs?" />
+			<param name="gapped"   type="boolean" truevalue="--gapped"   falsevalue="--nogapped"    label="Perform gapped alignment (instead of gap-free)?" />
+            <param name="O" type="integer" size="5" value="400"  label="Gap opening penalty"/>
+            <param name="E" type="integer" size="5" value="30"   label="Gap extension penalty"/>
+            <param name="X" type="integer" size="5" value="910"  label="X-drop threshold "/>
+            <param name="Y" type="integer" size="5" value="9370" label="Y-drop threshold"/>
+            <param name="K" type="integer" size="5" value="3000" label="Set the threshold for HSPs (ungapped extensions scoring lower are discarded)"/>
+            <param name="L" type="integer" size="5" value="3000"  label="Set the threshold for gapped alignments (gapped extensions scoring lower are discarded)"/>
+            <param name="entropy" type="boolean" truevalue="--entropy" falsevalue="--noentropy " label="Involve entropy when filtering HSPs?" />
+          </when>   
+    </conditional>
+    	<conditional name="seq_name">
+	   <param name="how_to_name" type="select" label="Do you want to modify reference name?">
+	       <option value="No">No</option>
+	       <option value="Yes">Yes</option>
+	   </param>
+	       <when value="Yes">
+	           <param name="ref_name" type="text" size="25" value="Type sequence name here" label="Enter name for the Reference sequence"/>
+	       </when>
+	       <when value="No" />
+	</conditional>
+	<param name="min_ident" type="integer" size="3" value="0"   label="Do not report matches below this identity (%)"/>
+    <param name="max_ident" type="integer" size="3" value="100" label="Do not report matches above this identity (%)"/>
+    <param name="min_cvrg"  type="integer" size="3" value="0"   label="Do not report matches that cover less than this fraction (%) of each read"/>
+  </inputs>
+    <outputs>
+    <data format="tabular" name="output1" />
+    <data format="tabular" name="output2" />
+  </outputs>
+  	<requirements>
+	  <requirement type="binary">lastz</requirement>
+	</requirements>
+	<code file="lastz_code.py" />  
+  <tests>
+    <test>
+      <param name="input1" value="phiX.fa" ftype="fasta"  />
+      <param name="input2" value="B1.fa" ftype="fasta" />
+      <param name="source_select" value="pre_set" />
+      <param name="pre_set_options" value="yasra95short" />
+      <param name="how_to_name" value="No" />
+      <param name="min_ident" value="0" />
+      <param name="max_ident" value="100" />
+      <param name="min_cvrg" value="0" />
+      <param name="out_format" value="diffs" />
+      <output name="output1" file="lastz_diffs.txt" />
+    </test>
+     <test>
+      <param name="input1" value="phiX.fa" ftype="fasta"  />
+      <param name="input2" value="B1.fa" ftype="fasta" />
+      <param name="source_select" value="pre_set" />
+      <param name="pre_set_options" value="yasra95short" />
+      <param name="how_to_name" value="Yes" />
+      <param name="ref_name" value="Ref" />
+      <param name="min_ident" value="0" />
+      <param name="max_ident" value="100" />
+      <param name="min_cvrg" value="0" />
+      <param name="out_format" value="diffs" />
+      <output name="output1" file="lastz_diffs_ref_name.txt" />
+    </test>
+  </tests>
+ <help>
+    	
+**What it does**   	
+    	
+**LASTZ** is a high perfomance pairwise sequence aligner derived from BLASTZ. It is written by Bob Harris in Webb Miller's laboratory at Penn State. Special scoring sets were derived to improve the performance, both in runtime and quality. The Galaxy version of LASTZ is geared towards aligning of short (Illumina/Solexa, AB/SOLiD) and medium (Roche/454) reads against a reference sequence. 
+ 
+.. class:: warningmark
+ 
+At present this tools supports aligning reads against a single reference sequence no longer than 1 Megabase. This limitation will be lifted in the coming months as our short read analysis hardware capacity is expanding. 
+
+------
+
+**Input formats**
+
+LASTZ accepts reference and reads in FASTA format. However, because Galaxy supports implicit format conversion the tool will recognize fastq and other method specific formats.
+
+------
+
+**Outputs**
+
+LASTZ generates two outputs. **First**, depending on the choice you make in *Select output format* drop-down LASTZ will produce either a list of differences between the reads and reference (Polymorphisms) or a list of pairwise alignments in MAF format. **Second**, it will generate a coverage table listing the number of times each reference base is hit by a read. Examples of these outputs are shown below.
+
+**Polymorphism (SNP or differences) output**
+
+Polymorphism output contains 14 columns (scroll sideways to see the entire example)::
+
+     1     2     3  4     5                                   6   7   8  9  10  11 12                                   13                                    14
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------
+  chrM  2490  2491  +  5386  HWI-EAS91_1_306UPAAXX:6:1:486:822   10  11  -  36  C  A  ACCTGTTTTACAGACACCTAAAGCTACATCGTCAAC  ACCTGTTTTAAAGACACCTAAAGCTACATCGTCAAC
+  chrM  2173  2174  +  5386  HWI-EAS91_1_306UPAAXX:6:1:259:1389  26  27  +  36  G  T  GCGTACTTATTCGCCACCATGATTATGACCAGTGTT  GCGTACTTATTCGCCACCATGATTATTACCAGTGTT
+
+where::
+
+  1. (chrM)   - Reference sequence id
+  2. (2490)   - Start position of the difference in the reference
+  3. (2491)   - End position of the difference in the reference
+  4. (+)      - Strand of the reference (always plus)
+  5. (5386)   - Length of the reference sequence
+  6. (HWI...) - read id
+  7. (10)     - Start position of the difference in the read
+  8. (11)     - End position of the difference in the read
+  9. (+)      - Strand of the read
+ 10. (36)     - Length of the read
+ 11. (C)      - Nucleotide in the reference
+ 12. (A)      - Nucleotide in the read
+ 13. (ACC...) - Reference side os the alignment
+ 14. (ACC...) - Read side of the alignment
+ 
+**MAF output**
+
+Multiple alignment output conforms to the MAF format used by mitliZ, TBA and other multiple aligners. This is the format used extensively by UCSC Genome Biology Group::
+
+  a score=35
+  s chrM 4294 35 + 5386 CCCCCAACTTGATATTAATAACACTATAGACCACC
+  s read    1 35 -   36 CCCCCAACTTGATATTAATAACACTATAGACCACC
+
+  a score=36
+  s chrM 3521 36 + 5386 ATGCTTGCTTATCAACAGAAGGAGTCTACTGCTCGC
+  s read    0 36 -   36 ATGCTTGCTTATCAACAGAAGGAGTCTACTGCTCGC
+  
+.. class:: infomark
+
+MAF output format of LASTZ strips read names and replaces them with *read* label. 
+
+**Coverage output**
+
+Coverage contains three columns::
+
+     1  2    3
+  ------------
+  chrM  1  124
+  chrM  2  255
+  
+where::
+
+  1. (chrM) - Reference sequence id
+  2. (1)    - Position in the reference
+  3. (124)  - The number of times this position is covered by reads
+
+.. class:: infomark
+
+LASTZ cuts coverage statistics at 255. Thus if a certain position is listed as covered 255 times, this implies that it can be covered 255 or more times.
+
+-------
+
+**LASTZ Settings**
+
+There are two setting modes: (1) **Commonly used settings** and (2) **Full Parameter List**.
+
+**Commonly used settings**
+
+There are seven modes::
+
+  Illumina-Solexa/AB-SOLiD 95% identity
+  Illumina-Solexa/AB-SOLiD 85% identity
+  Roche-454 98% identity
+  Roche-454 95% identity
+  Roche-454 90% identity
+  Roche-454 85% identity
+  Roche-454 75% identity
+
+when deciding which one to use consider the following: a 36 bp read with two difference will be 34/36 = 94% identical to the reference.  
+
+**Full Parameter List**
+
+The modes gives you a fuller control over lastz. The description of these and other parameters is found at the end of this page. Note, that not all parameters are included in this interface. If you would like to make additional options available through Galaxy, e-mail us at galaxy-bugs@bx.psu.edu.
+
+------
+
+** Do you want to modify reference name?**
+
+This option allows you set the name of the reference sequence manually. This is helpful when, for example, you would like to make reference name compatible with the UCSC naming conventions to be able to display your lastz results as a custom track at UCSC Genome Browser.
+
+------
+
+**LASTZ parameter list**
+
+This is an exhaustive list of LASTZ options. Once again, please note that not all parameters are included in this interface. If you would like to make additional options available through Galaxy, e-mail us at galaxy-bugs@bx.psu.edu::
+
+  target[[s..e]][-]      spec/file containing target sequence (fasta or nib)
+                         [s..e] defines a subrange of the file
+                         - indicates reverse-complement
+                         (use --help=files for more details)
+  query[[s..e]][-]       spec/file containing query sequences (fasta or nib)
+                         if absent, queries come from stdin (unless they
+                         aren't needed, as for --self or --tableonly)
+                         (use --help=files for more details)
+  --self                 the target sequence is also the query
+  --quantum              the query sequence contains quantum DNA
+  --seed=match&lt;length&gt;   use a word with no gaps instead of a seed pattern
+  --seed=half&lt;length&gt;    use space-free half-weight word instead of seed pattern
+  --[no]trans[ition][=2] allow one or two transitions in a seed hit
+                         (by default a transition is allowed)
+  --word=&lt;bits&gt;          set max bits for word hash;  use this to trade time for
+                         memory, eliminating thrashing for heavy seeds
+                         (default is 28 bits)
+  --[no]filter=[&lt;T&gt;:]&lt;M&gt; filter half-weight seed hits, requiring at least M
+                         matches and allowing no more than T transversions
+                         (default is no filtering)
+  --notwins              require just one seed hit
+  --twins=[&lt;min&gt;:]&lt;maxgap&gt; require two nearby seed hits on the same diagonal
+                         (default is twins aren't required)
+  --seedqueue=&lt;entries&gt;  set number of entries in seed hit queue
+                         (default is 262144)
+  --anchors=&lt;file&gt;       read anchors from a file, instead of discovering anchors
+                         via seeding
+  --recoverhits          recover hash-collision seed hits
+                         (default is not to recover seed hits)
+  --step=&lt;length&gt;        set step length (default is 1)
+  --strand=both          search both strands
+  --strand=plus          search + strand only (matching strand of query spec)
+  --strand=minus         search - strand only (opposite strand of query spec)
+                         (by default both strands are searched)
+  --ambiguousn           treat N as an ambiguous nucleotide
+                         (by default N is treated as a sequence splicing character)
+  --[no]gfextend         perform gap-free extension of seed hits to HSPs
+                         (by default no extension is performed)
+  --[no]chain            perform chaining
+  --chain=&lt;diag,anti&gt;    perform chaining with given penalties for diagonal and
+                         anti-diagonal
+                         (by default no chaining is performed)
+  --[no]gapped           perform gapped alignment (instead of gap-free)
+                         (by default gapped alignment is performed)
+  --score[s]=&lt;file&gt;      read substitution scores from a file
+                         (default is HOXD70)
+  --unitscore[s]         scores are +1/-1 for match/mismatch
+  --gap=&lt;[open,]extend&gt;  set gap open and extend penalties (default is 400,30)
+  --xdrop=&lt;score&gt;        set x-drop threshold (default is 10*sub[A][A])
+  --ydrop=&lt;score&gt;        set y-drop threshold (default is open+300extend)
+  --infer[=&lt;control&gt;]    infer scores from the sequences, then use them
+  --inferonly[=&lt;control&gt;] infer scores, but don't use them (requires --infscores)
+                         all inference options are read from the control file
+  --infscores[=&lt;file&gt;]   write inferred scores to a file
+  --hspthresh=&lt;score&gt;    set threshold for high scoring pairs (default is 3000)
+                         ungapped extensions scoring lower are discarded
+                         &lt;score&gt; can also be a percentage or base count
+  --exact=&lt;length&gt;       set threshold for exact matches
+                         if specified, exact matches are found rather than high
+                         scoring pairs (replaces --hspthresh)
+  --inner=&lt;score&gt;        set threshold for HSPs during interpolation
+                         (default is no interpolation)
+  --gappedthresh=&lt;score&gt; set threshold for gapped alignments
+                         gapped extensions scoring lower are discarded
+                         &lt;score&gt; can also be a percentage or base count
+                         (default is to use same value as --hspthresh)
+  --ball=&lt;score&gt;         set minimum score required of words 'in' a quantum ball
+  --[no]entropy          involve entropy in filtering high scoring pairs
+                         (default is "entropy")
+  --[no]mirror           report/use mirror image of all gap-free alignments
+                         (default is "mirror" for self-alignments only)
+  --traceback=&lt;bytes&gt;    space for trace-back information
+                         (default is 80.0M)
+  --masking=&lt;count&gt;      mask any position in target hit this many times
+                         zero indicates no masking
+                         (default is no masking)
+  --[no]census[=&lt;file&gt;]  count/report how many times each target base aligns
+                         (default is to not report census)
+  --identity=&lt;min&gt;[..&lt;max&gt;] filter alignments by percent identity
+                         0&lt;=min&lt;=max&lt;=100;  blocks (or HSPs) outside min..max
+                         are discarded
+                         (default is no identity filtering)
+  --coverage=&lt;min&gt;[..&lt;max&gt;] filter alignments by percentage pf query covered
+                         0&lt;=min&lt;=max&lt;=100;  blocks (or HSPs) outside min..max
+                         are discarded
+                         (default is no query coverage filtering)
+  --code=&lt;file&gt;          give quantum code for query sequence (only for display)
+  --format=&lt;type&gt;        specify output format; one of lav, axt, maf, text,
+                         lav+text, gfa, identity, infstats(&lt;pct id range&gt;)
+                         (by default output is LAV)
+  --verbosity=&lt;level&gt;    set info level (0 is minimum, 10 is everything)
+                         (default is 0)
+  --[no]runtime          report runtime in the output file
+                         (default is to not report runtime)
+  --tableonly[=count]    just produce the target position table, don't
+                         search for seeds
+  --[no]stats[=&lt;file&gt;]   show search statistics (or don't)
+                         (not available in this build)
+  --version              report the program version and quit
+  --help                 list all options
+  --help=files           list information about file specifiers
+  --help=short[cuts]     list blastz-compatible shortcuts
+  --help=yasra           list yasra-specific shortcuts
+
+
+	
+	
+	</help>
+</tool>
+
+

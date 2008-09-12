@@ -1,5 +1,5 @@
-<tool id="megablast_wrapper" name="Run megablast" version="1.0.0">
-	<description></description>
+<tool id="megablast_wrapper" name="Megablast" version="1.0.0">
+	<description>: compare short reads against nt and wgs databases</description>
 	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $evalue_cutoff $filter_query ${GALAXY_DATA_INDEX_DIR}</command>
 	<inputs>
 		<param name="source_select" type="select" display="radio" label="Choose target database">
