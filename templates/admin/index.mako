@@ -57,6 +57,11 @@
         display: list-item;
         list-style: square outside;
     }
+    a:link, a:visited, a:active
+    {
+        color: #303030;
+    }
+
 
     </style>
 </%def>
