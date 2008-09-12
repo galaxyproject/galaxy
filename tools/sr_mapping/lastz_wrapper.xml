@@ -216,11 +216,11 @@ when deciding which one to use consider the following: a 36 bp read with two dif
 
 **Full Parameter List**
 
-The modes gives you a fuller control over lastz. The description of these and other parameters is found at the end of this page. Note, that not all parameters are included in this interface. If you would like to make additional options available through Galaxy, e-mail us at galaxy-bugs@bx.psu.edu.
+This modes gives you a fuller control over lastz. The description of these and other parameters is found at the end of this page. Note, that not all parameters are included in this interface. If you would like to make additional options available through Galaxy, e-mail us at galaxy-bugs@bx.psu.edu.
 
 ------
 
-** Do you want to modify reference name?**
+**Do you want to modify reference name?**
 
 This option allows you set the name of the reference sequence manually. This is helpful when, for example, you would like to make reference name compatible with the UCSC naming conventions to be able to display your lastz results as a custom track at UCSC Genome Browser.
 
