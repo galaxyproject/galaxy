@@ -276,6 +276,7 @@
     <tool file="metag_tools/blat_coverage_report.xml" />
   </section>
   <section name="Short Read Mapping" id="solexa_tools">
+   <tool file="metag_tools/shrimp_wrapper.xml" />
    <tool file="sr_mapping/lastz_wrapper.xml" />
    <tool file="metag_tools/megablast_wrapper.xml" />
    <tool file="metag_tools/megablast_xml_parser.xml" />

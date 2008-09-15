@@ -1,0 +1,196 @@
+<tool id="shrimp_wrapper" name="SHRiMP" version="1.0.0">
+  <description>SHort Read Mapping Package</description>
+  <command interpreter="python">
+    #if     ($type_of_reads.single_or_paired=="single" and $param.skip_or_full=="skip"):#shrimp_wrapper.py $type_of_reads.single_or_paired $input_target $output1 $output2 $input_query
+    #elif   ($type_of_reads.single_or_paired=="paired" and $param.skip_or_full=="skip"):#shrimp_wrapper.py $type_of_reads.single_or_paired $input_target $output1 $output2 ${type_of_reads.input1} ${type_of_reads.input2} 
+    #elif   ($type_of_reads.single_or_paired=="single" and $param.skip_or_full=="full"):#shrimp_wrapper.py $type_of_reads.single_or_paired $input_target $output1 $output2 $param.spaced_seed $param.seed_matches_per_window $param.seed_hit_taboo_length $param.seed_generation_taboo_length $param.seed_window_length $param.max_hits_per_read $param.max_read_length $param.kmer $param.sw_match_value $param.sw_mismatch_value $param.sw_gap_open_ref $param.sw_gap_open_query $param.sw_gap_ext_ref $param.sw_gap_ext_query $param.sw_hit_threshold $input_query 
+    #elif   ($type_of_reads.single_or_paired=="paired" and $param.skip_or_full=="full"):#shrimp_wrapper.py $type_of_reads.single_or_paired $input_target $output1 $output2 $param.spaced_seed $param.seed_matches_per_window $param.seed_hit_taboo_length $param.seed_generation_taboo_length $param.seed_window_length $param.max_hits_per_read $param.max_read_length $param.kmer $param.sw_match_value $param.sw_mismatch_value $param.sw_gap_open_ref $param.sw_gap_open_query $param.sw_gap_ext_ref $param.sw_gap_ext_query $param.sw_hit_threshold ${type_of_reads.input1} ${type_of_reads.input2}
+    #end if
+  </command>
+    <inputs>
+        <page>
+        <param name="input_target" type="data" format="fasta" label="Reference sequence" />
+        <conditional name="type_of_reads">
+            <param name="single_or_paired" type="select" label="Single- or Paired-ends">
+                <option value="single">Single-end</option>
+                <option value="paired">Paired-end</option>
+            </param>
+            <when value="single">
+                <param name="input_query" type="data" format="fastqsolexa" label="Sequence file" />
+            </when>
+            <when value="paired">
+                <param name="input1" type="data" format="fastqsolexa" label="One end" />
+                <param name="input2" type="data" format="fastqsolexa" label="The other end" />
+            </when> 
+        </conditional>
+        <conditional name="param">
+            <param name="skip_or_full" type="select" label="SHRiMP parameter selection">
+                <option value="skip">Default setting</option>
+                <option value="full">Full list</option>
+            </param>
+            <when value="skip" />
+            <when value="full">
+                <param name="spaced_seed" type="text" size="30" value="111111011111" label="Spaced Seed" />
+                <param name="seed_matches_per_window" type="integer" size="5" value="2" label="Seed Matches per Window" />
+                <param name="seed_hit_taboo_length" type="integer" size="5" value="4" label="Seed Hit Taboo Length" />
+                <param name="seed_generation_taboo_length" type="integer" size="5" value="0" label="Seed Generation Taboo Length" />
+                <param name="seed_window_length" type="float" size="10" value="115.0" label="Seed Window Length" help="in percentage"/>
+                <param name="max_hits_per_read" type="integer" size="10" value="100" label="Maximum Hits per Read" />
+                <param name="max_read_length" type="integer" size="10" value="1000" label="Maximum Read Length" />
+                <param name="kmer" type="integer" size="10" value="-1" label="Kmer Std. Deviation Limit" help="-1 as None"/>
+                <param name="sw_match_value" type="integer" size="10" value="100" label="S-W Match Value" />
+                <param name="sw_mismatch_value" type="integer" size="10" value="-150" label="S-W Mismatch Value" />
+                <param name="sw_gap_open_ref" type="integer" size="10" value="-400" label="S-W Gap Open Penalty (Reference)" />
+                <param name="sw_gap_open_query" type="integer" size="10" value="-400" label="S-W Gap Open Penalty (Query)" />
+                <param name="sw_gap_ext_ref" type="integer" size="10" value="-70" label="S-W Gap Extend Penalty (Reference)" />
+                <param name="sw_gap_ext_query" type="integer" size="10" value="-70" label="S-W Gap Extend Penalty (Query)" />
+                <param name="sw_hit_threshold" type="float" size="10" value="68.0" label="S-W Hit Threshold" help="in percentage"/>
+            </when>
+        </conditional>
+        </page>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular"/>
+        <data name="output2" format="tabular"/>
+    </outputs>
+    <requirements>
+      <requirement type="binary">SHRiMP_rmapper</requirement>
+    </requirements>
+    <tests>
+        <test>
+            <param name="single_or_paired" value="single" />
+            <param name="skip_or_full" value="skip" />
+            <param name="input_target" value="shrimp_phix_anc.fa" ftype="fasta" />
+            <param name="input_query" value="shrimp_wrapper_test1.fastq" ftype="fastqsolexa"/>
+            <output name="output1" file="shrimp_wrapper_test1.out1" />
+        </test>
+        <!-- 
+        <test>
+            <param name="input1" value="shrimp_wrapper_test2_end1.fastq" ftype="fastqsolexa" />
+            <param name="input2" value="shrimp_wrapper_test2_end2.fastq" ftype="fastqsolexa" />
+            <param name="single_or_paired" value="paired" />
+            <param name="skip_or_full" value="skip" />
+            <param name="input_target" value="shrimp_eca_chrMT.fa" ftype="fasta" />
+            <output name="output1" file="shrimp_wrapper_test2.out1" />
+        </test>
+        <test>
+            <param name="single_or_paired" value="single" />
+            <param name="skip_or_full" value="full" />
+            <param name="input_target" value="shrimp_phix_anc.fa" ftype="fasta" />
+            <param name="input_query" value="shrimp_wrapper_test1.fastq" ftype="fastqsolexa"/>
+            <param name="spaced_seed" value="111111011111" />
+            <param name="seed_matches_per_window" value="2" />
+            <param name="seed_hit_taboo_length" value="4" />
+            <param name="seed_generation_taboo_length" value="0" />
+            <param name="seed_window_length" value="115.0" />
+            <param name="max_hits_per_read" value="100" />
+            <param name="max_read_length" value="1000" />
+            <param name="kmer" value="-1" />
+            <param name="sw_match_value" value="100" />
+            <param name="sw_mismatch_value" value="-150" />
+            <param name="sw_gap_open_ref" value="-400" />
+            <param name="sw_gap_open_query" value="-400" />
+            <param name="sw_gap_ext_ref" value="-70" />
+            <param name="sw_gap_ext_query" value="-70" />
+            <param name="sw_hit_threshold" value="68.0" />
+            <output name="output1" file="shrimp_wrapper_test1.out1" />
+        </test> 
+        <test>
+            <param name="single_or_paired" value="paired" />
+            <param name="skip_or_full" value="full" />
+            <param name="input_target" value="shrimp_eca_chrMT.fa" ftype="fasta" />
+            <param name="spaced_seed" value="111111011111" />
+            <param name="seed_matches_per_window" value="2" />
+            <param name="seed_hit_taboo_length" value="4" />
+            <param name="seed_generation_taboo_length" value="0" />
+            <param name="seed_window_length" value="115.0" />
+            <param name="max_hits_per_read" value="100" />
+            <param name="max_read_length" value="1000" />
+            <param name="kmer" value="-1" />
+            <param name="sw_match_value" value="100" />
+            <param name="sw_mismatch_value" value="-150" />
+            <param name="sw_gap_open_ref" value="-400" />
+            <param name="sw_gap_open_query" value="-400" />
+            <param name="sw_gap_ext_ref" value="-70" />
+            <param name="sw_gap_ext_query" value="-70" />
+            <param name="sw_hit_threshold" value="68.0" />
+            <param name="input1" value="shrimp_wrapper_test2_end1.fastq" ftype="fastqsolexa"/>
+            <param name="input2" value="shrimp_wrapper_test2_end2.fastq" ftype="fastqsolexa"/>
+            <output name="output1" file="shrimp_wrapper_test2.out1" />
+        </test>
+        -->
+    </tests>
+<help>
+    
+.. class:: warningmark 
+
+Only nucleotide sequences as query.
+
+-----
+    
+**What it does**
+ 
+Run SHRiMP on letter-space reads. 
+ 
+-----
+ 
+**Example**
+ 
+- Input a multiple-fastq file like the following::
+
+    @seq1
+    TACCCGATTTTTTGCTTTCCACTTTATCCTACCCTT
+    +seq2
+    hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+
+- Use default settings (for detail explanations, please see **Parameters** section)
+
+- Search against your own uploaded file, result will be in the following format::
+
+    +-------+-------+--------+----------+----------+---------+--------+--------+-------+------------+
+    | id    | chrom | strand | t.start  | t.end    | q.start | q.end  | length | score | editstring |
+    +-------+-------+--------+----------+----------+---------+--------+--------+-------+------------+
+    | >seq1 | chrMT | +      | 14712    | 14747    | 1       | 36     | 36     | 3350  | 24T11      |
+    +-------+-------+--------+----------+----------+---------+--------+--------+-------+------------+
+    
+- The result will be formatted Table::
+
+    +-------+---------+---------+----------+---------+----------+---------+----------+
+    | chrom | ref_loc | read_id | read_loc | ref_nuc | read_nuc | quality | coverage |
+    +-------+---------+---------+----------+---------+----------+---------+----------+ 
+    | chrMT | 14711   | seq1    | 0        | T       | T        | 40      | 1        |
+    | chrMT | 14712   | seq1    | 1        | A       | A        | 40      | 1        |
+    | chrMT | 14713   | seq1    | 2        | C       | C        | 40      | 1        |
+    +-------+---------+---------+----------+---------+----------+---------+----------+
+
+-----
+
+**Parameters**
+
+Parameter list with default value settings::
+
+    -s    Spaced Seed                             (default: 111111011111)
+    -n    Seed Matches per Window                 (default: 2)
+    -t    Seed Hit Taboo Length                   (default: 4)
+    -9    Seed Generation Taboo Length            (default: 0)
+    -w    Seed Window Length                      (default: 115.00%)
+    -o    Maximum Hits per Read                   (default: 100)
+    -r    Maximum Read Length                     (default: 1000)
+    -d    Kmer Std. Deviation Limit               (default: -1 [None])
+
+    -m    S-W Match Value                         (default: 100)
+    -i    S-W Mismatch Value                      (default: -150)
+    -g    S-W Gap Open Penalty (Reference)        (default: -400)
+    -q    S-W Gap Open Penalty (Query)            (default: -400)
+    -e    S-W Gap Extend Penalty (Reference)      (default: -70)
+    -f    S-W Gap Extend Penalty (Query)          (default: -70)
+    -h    S-W Hit Threshold                       (default: 68.00%)
+
+-----
+
+**Reference**
+ 
+ **SHRiMP**: Stephen M. Rumble, Michael Brudno, Phil Lacroute, Vladimir Yanovsky, Marc Fiume, Adrian Dalca. shrimp at cs dot toronto dot edu. 
+
+</help>
+</tool>
