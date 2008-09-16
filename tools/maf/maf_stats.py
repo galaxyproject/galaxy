@@ -64,19 +64,11 @@ def __main__():
             for c in block.components:
                 spec = c.src.split( '.' )[0]
                 if spec not in coverage: coverage[spec] = zeros( region.end - region.start, dtype = bool )
-            ref = block.get_component_by_src( src )
-            #skip gap locations due to insertions in secondary species relative to primary species
-            start_offset = ref.start - region.start
-            num_gaps = 0
-            for i in range( len( ref.text.rstrip().rstrip( "-" ) ) ):
-                if ref.text[i] in ["-"]:
-                    num_gaps += 1
-                    continue
-                #Toggle base if covered
-                for comp in block.components:
-                    spec = comp.src.split( '.' )[0]
-                    if comp.text and comp.text[i] not in ['-']:
-                        coverage[spec][start_offset + i - num_gaps] = True
+            start_offset, alignment = maf_utilities.reduce_block_by_primary_genome( block, dbkey, region.chrom, region.start )
+            for i in range( len( alignment[dbkey] ) ):
+                for spec, text in alignment.items():
+                    if text[i] != '-':
+                        coverage[spec][start_offset + i] = True
         if summary:
             #record summary
             for key in coverage.keys():

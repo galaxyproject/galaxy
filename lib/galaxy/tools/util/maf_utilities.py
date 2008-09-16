@@ -199,7 +199,7 @@ def get_chopped_blocks_for_region( index, src, region, species = None, mincols =
         yield block
 def get_chopped_blocks_with_index_offset_for_region( index, src, region, species = None, mincols = 0, force_strand = None ):
     for block, idx, offset in index.get_as_iterator_with_index_and_offset( src, region.start, region.end ):
-        block = chop_block_by_region( block, src, region, species, mincols )
+        block = chop_block_by_region( block, src, region, species, mincols, force_strand )
         if block is not None:
             yield block, idx, offset
 
@@ -209,6 +209,25 @@ def get_region_alignment( index, primary_species, chrom, start, end, strand = '+
     else: alignment = RegionAlignment( end - start, primary_species )
     return fill_region_alignment( alignment, index, primary_species, chrom, start, end, strand, species, mincols )
 
+#reduces a block to only positions exisiting in the src provided
+def reduce_block_by_primary_genome( block, species, chromosome, region_start ):
+    #returns ( startIndex, {species:texts}
+    #where texts' contents are reduced to only positions existing in the primary genome
+    src = "%s.%s" % ( species, chromosome )
+    ref = block.get_component_by_src( src )
+    start_offset = ref.start - region_start
+    species_texts = {}
+    for c in block.components:
+        species_texts[ c.src.split( '.' )[0] ] = list( c.text )
+    #remove locations which are gaps in the primary species, starting from the downstream end
+    for i in range( len( species_texts[ species ] ) - 1, -1, -1 ):
+        if species_texts[ species ][i] == '-':
+            for text in species_texts.values():
+                text.pop( i )
+    for spec, text in species_texts.items():
+        species_texts[spec] = ''.join( text )
+    return ( start_offset, species_texts )
+
 #fills a region alignment 
 def fill_region_alignment( alignment, index, primary_species, chrom, start, end, strand = '+', species = None, mincols = 0 ):
     region = bx.intervals.Interval( start, end )
@@ -216,22 +235,7 @@ def fill_region_alignment( alignment, index, primary_species, chrom, start, end,
     region.strand = strand
     primary_src = "%s.%s" % ( primary_species, chrom )
     
-    def reduce_block_by_primary_genome( block ):
-        #returns ( startIndex, {species:texts}
-        #where texts' contents are reduced to only positions existing in the primary genome
-        ref = block.get_component_by_src( primary_src )
-        start_offset = ref.start - start
-        species_texts = {}
-        for c in block.components:
-            species_texts[ c.src.split( '.' )[0] ] = list( c.text )
-        #remove locations which are gaps in the primary species, starting from the downstream end
-        for i in range( len( species_texts[ primary_species ] ) - 1, -1, -1 ):
-            if species_texts[ primary_species ][i] == '-':
-                for text in species_texts.values():
-                    text.pop( i )
-        for spec, text in species_texts.items():
-            species_texts[spec] = ''.join( text )
-        return ( start_offset, species_texts )
+
     
     #Order blocks overlaping this position by score, lowest first
     blocks = []
@@ -248,7 +252,7 @@ def fill_region_alignment( alignment, index, primary_species, chrom, start, end,
     for block_dict in blocks:
         block = chop_block_by_region( block_dict[1].get_at_offset( block_dict[2] ), primary_src, region, species, mincols, strand )
         if block is None: continue
-        start_offset, species_texts = reduce_block_by_primary_genome( block )
+        start_offset, species_texts = reduce_block_by_primary_genome( block, primary_species, chrom, start )
         for spec, text in species_texts.items():
             try:
                 alignment.set_range( start_offset, spec, text )
