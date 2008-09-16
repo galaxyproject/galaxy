@@ -1,6 +1,6 @@
 <tool id="comp1" name="Compare two Queries">
   <description>to find common or distinct rows</description>
-  <command interpreter="perl">joinWrapper.pl $input1 $input2 $field1 $field2 $mode "Y" $out_file1</command>
+  <command interpreter="python">joinWrapper.py $input1 $input2 $field1 $field2 $mode $out_file1</command>
   <inputs>
     <param format="tabular" name="input1" type="data" label="Compare"/>
     <param name="field1" label="Using column" type="data_column" data_ref="input1" />
