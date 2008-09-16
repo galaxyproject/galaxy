@@ -450,11 +450,45 @@ class RootController( BaseController ):
             return trans.fill_template("/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
         user = trans.get_user()  
         send_to_user = trans.app.model.User.get_by( email = email )
+        p = util.Params( kwd )
+        if p.action:
+            if p.action == "no_share":
+                trans.response.send_redirect( url_for( action='history_options' ) )
+            try:
+                send_to_group = trans.app.model.Group.select_by( name = send_to_user.email + ' private group' )[0]
+            except:
+                send_to_group = None
+            if not send_to_group:
+                return trans.show_error_message( "Couldn't locate %s's private group, please report this error." % user.email )
         if not send_to_user:
             send_to_err = "No such user"
         elif user.email == email:
             send_to_err = "You can't send histories to yourself"
         else:
+            # if we're not checking or changing permissions, skip this step
+            if not p.action or ( p.action and p.action != 'share' ):
+                # ugly
+                can_change = {}
+                cannot_change = {}
+                for history in histories:
+                    for dataset in history.active_datasets:
+                        if not trans.app.security_agent.allow_action( send_to_user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=dataset ):
+                            if trans.app.security_agent.allow_action( user, trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=dataset ):
+                                if p.action and p.action == "update":
+                                    trans.app.security_agent.associate_components( dataset=dataset, permissions=( send_to_group, [ trans.app.security_agent.permitted_actions.DATASET_ACCESS ] ) )
+                                elif history not in can_change:
+                                    can_change[history] = [ dataset ]
+                                else:
+                                    can_change[history].append( dataset )
+                            else:
+                                if p.action and p.action == "update":
+                                    pass # don't change stuff that the user doesn't have permission to change
+                                elif history not in cannot_change:
+                                    cannot_change[history] = [ dataset ]
+                                else:
+                                    cannot_change[history].append( dataset )
+                if can_change or cannot_change:
+                    return trans.fill_template("/history/share.mako", histories=histories, email=email, send_to_err=send_to_err, can_change=can_change, cannot_change=cannot_change)
             for history in histories:
                 new_history = history.copy( target_user=send_to_user )
                 new_history.name = history.name+" from "+user.email
