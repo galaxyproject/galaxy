@@ -113,7 +113,7 @@ class HistoryDatasetAssociation( object ):
         self.peek = peek
         self.extension = extension
         self.designation = designation
-        self._metadata = metadata or dict()
+        self.metadata = metadata or dict()
         self.dbkey = dbkey
         self.deleted = deleted
         self.visible = visible
@@ -159,9 +159,9 @@ class HistoryDatasetAssociation( object ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
 
     def get_metadata( self ):
-        if not self._metadata:
-            self._metadata = dict()
-        return MetadataCollection( self, self.datatype.metadata_spec )
+        if not hasattr( self, '_metadata_collection' ):
+            self._metadata_collection = MetadataCollection( self, self.datatype.metadata_spec )
+        return self._metadata_collection
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = dict( bunch.items() )
@@ -191,6 +191,8 @@ class HistoryDatasetAssociation( object ):
 
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
+        if hasattr( self, '_metadata_collection' ):
+            del self._metadata_collection
         datatypes_registry.change_datatype( self, new_ext )
     def get_size( self ):
         """Returns the size of the data on disk"""
