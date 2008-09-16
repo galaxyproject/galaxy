@@ -247,7 +247,7 @@ class MetadataInFileColumnValidator( Validator ):
             if line_startswith is None or line.startswith( line_startswith ):
                 fields = line.split( '\t' )
                 if metadata_column < len( fields ):
-                    self.valid_values.append( fields[metadata_column] )
+                    self.valid_values.append( fields[metadata_column].strip() )
     def validate( self, value, history = None ):
         if not value: return
         if hasattr( value, "metadata" ):
