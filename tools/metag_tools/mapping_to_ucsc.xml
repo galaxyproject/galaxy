@@ -1,0 +1,202 @@
+<tool id="mapToUCSC" name="Format mapping data" version="1.0.0">
+  <description> as UCSC custom track</description>
+  <command interpreter="python">
+  	mapping_to_ucsc.py 
+  	$out_file1
+  	$input
+  	$chr_col
+  	$coord_col
+  	$track.track_type
+  	#if $track.track_type == "coverage" or $track.track_type == "both"
+  	$track.coverage_col
+    "${track.cname}"
+    "${track.cdescription}"
+    "${track.ccolor}"
+    "${track.cvisibility}"
+    #end if
+    #if $track.track_type == "snp" or $track.track_type == "both"
+    "${track.sdescription}"
+    "${track.svisibility}"
+     $track.col2
+    #end if
+  </command>
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Select mapping data"/>
+    <param name="chr_col" type="data_column" data_ref="input" label="Column for reference chromosome" />
+    <param name="coord_col" type="data_column" data_ref="input" numerical="True" label="Numerical column for reference co-ordinate" />
+    <conditional name="track">
+      <param name="track_type" type="select" label="Display">
+    	<option value="snp" selected="true">SNPs</option>
+        <option value="coverage">Read coverage</option>
+    	<option value="both">Both</option>
+      </param>
+      <when value = "coverage">
+      <param name="coverage_col" type="data_column" data_ref="input" numerical="True" label="Numerical column for read coverage" />
+      <param name="cname" type="text" size="15" value="User Track" label="Coverage track name">
+        <validator type="length" max="15"/>
+      </param>
+      <param name="cdescription" type="text" value="User Supplied Coverage Track (from Galaxy)" label="Coverage track description">
+        <validator type="length" max="60" size="15"/>
+      </param>
+      <param label="Coverage track Color" name="ccolor" type="select">
+            <option selected="yes" value="0-0-0">Black</option>
+            <option value="255-0-0">Red</option>
+            <option value="0-255-0">Green</option>
+            <option value="0-0-255">Blue</option>
+            <option value="255-0-255">Magenta</option>
+            <option value="0-255-255">Cyan</option>
+            <option value="255-215-0">Gold</option>
+            <option value="160-32-240">Purple</option>
+            <option value="255-140-0">Orange</option>
+            <option value="255-20-147">Pink</option>
+            <option value="92-51-23">Dark Chocolate</option>
+            <option value="85-107-47">Olive green</option>
+      </param>
+      <param label="Coverage track Visibility" name="cvisibility" type="select">
+            <option selected="yes" value="1">Dense</option>
+            <option value="2">Full</option>
+            <option value="3">Pack</option>
+            <option value="4">Squish</option>
+            <option value="0">Hide</option>
+      </param>
+      </when>
+      
+      <when value = "snp">
+      <!-- 
+      <param name="col1" type="data_column" data_ref="input" label="Column containing the reference nucleotide" />
+       -->
+      <param name="col2" type="data_column" data_ref="input" label="Column containing the read nucleotide" />
+      <!-- 
+      <param name="sname" type="text" size="15" value="User Track-2" label="SNP track name">
+        <validator type="length" max="15"/>
+      </param>
+       -->
+      <param name="sdescription" type="text" value="User Supplied Track (from Galaxy)" label="SNP track description">
+        <validator type="length" max="60" size="15"/>
+      </param>
+      <param label="SNP track Visibility" name="svisibility" type="select">
+            <option selected="yes" value="1">Dense</option>
+            <option value="2">Full</option>
+            <option value="3">Pack</option>
+            <option value="4">Squish</option>
+            <option value="0">Hide</option>
+      </param>
+      </when>
+      
+      <when value = "both">
+      <param name="coverage_col" type="data_column" data_ref="input" numerical="True" label="Numerical column for read coverage" />
+      <param name="cname" type="text" size="15" value="User Track" label="Coverage track name">
+        <validator type="length" max="15"/>
+      </param>
+      <param name="cdescription" type="text" size="15" value="User Supplied Track (from Galaxy)" label="Coverage track description">
+        <validator type="length" max="60"/>
+      </param>
+      <param label="Coverage track Color" name="ccolor" type="select">
+            <option selected="yes" value="0-0-0">Black</option>
+            <option value="255-0-0">Red</option>
+            <option value="0-255-0">Green</option>
+            <option value="0-0-255">Blue</option>
+            <option value="255-0-255">Magenta</option>
+            <option value="0-255-255">Cyan</option>
+            <option value="255-215-0">Gold</option>
+            <option value="160-32-240">Purple</option>
+            <option value="255-140-0">Orange</option>
+            <option value="255-20-147">Pink</option>
+            <option value="92-51-23">Dark Chocolate</option>
+            <option value="85-107-47">Olive green</option>
+      </param>
+      <param label="Coverage track Visibility" name="cvisibility" type="select">
+            <option selected="yes" value="1">Dense</option>
+            <option value="2">Full</option>
+            <option value="3">Pack</option>
+            <option value="4">Squish</option>
+            <option value="0">Hide</option>
+      </param>
+      <!-- 
+      <param name="col1" type="data_column" data_ref="input" label="Column containing the reference nucleotide" />
+       -->
+      <param name="col2" type="data_column" data_ref="input" label="Column containing the read nucleotide" />
+      <!-- 
+      <param name="sname" type="text" size="15" value="User Track-2" label="SNP track name">
+        <validator type="length" max="15"/>
+      </param>
+       -->
+      <param name="sdescription" type="text" size="15" value="User Supplied Track (from Galaxy)" label="SNP track description">
+        <validator type="length" max="60"/>
+      </param>
+      <param label="SNP track Visibility" name="svisibility" type="select">
+            <option selected="yes" value="1">Dense</option>
+            <option value="2">Full</option>
+            <option value="3">Pack</option>
+            <option value="4">Squish</option>
+            <option value="0">Hide</option>
+      </param>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="customtrack" name="out_file1"/>
+  </outputs>
+
+  
+ <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool formats mapping data generated by short read mappers, as a custom track that can be displayed at UCSC genome browser. 
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+This tool requires the mapping data to contain at least the following information: 
+
+chromosome, genome coordinate, read nucleotide (if option to display is SNPs), read coverage (if option to display is Read coverage). 
+
+-----
+
+**Example**
+
+For the following Mapping data::
+
+   #chr g_start read_id          read_coord g_nt read_nt qual read_coverage
+   chrM    1   1:29:1672:1127/1    11        G    G       40  134
+   chrM    1   1:32:93:933/1       4         G    A       40  134
+   chrM    1   1:34:116:2032/1     11        G    A       40  134
+   chrM    1   1:39:207:964/1      1         G    G       40  134
+   chrM    2   1:3:359:848/1       1         G    C       40  234
+   chrM    2   1:40:1435:1013/1    1         G    G       40  234
+   chrM    3   1:40:730:972/1      9         G    G       40  334
+   chrM    4   1:42:1712:921/2     31        G    T       35  434
+   chrM    4   1:44:1649:493/1     4         G    G       40  434
+
+running this tool to display both SNPs and Read coverage will return the following tracks, containing aggregated data per genome co-ordinate::
+
+   track type=wiggle_0 name="Coverage Track" description="User Supplied Track (from Galaxy)" color=0,0,0 visibility=1
+   variableStep chrom=chrM
+   1   134
+   2   234
+   3   334
+   4   434
+   track type=wiggle_0 name="Track A" description="User Supplied SNP Track (from Galaxy)" color=255,0,0 visibility=1
+   variableStep chrom=chrM
+   1   2
+   track type=wiggle_0 name="Track T" description="User Supplied SNP Track (from Galaxy)" color=0,255,0 visibility=1
+   variableStep chrom=chrM
+   4   1
+   track type=wiggle_0 name="Track G" description="User Supplied SNP Track (from Galaxy)" color=0,0,255 visibility=1
+   variableStep chrom=chrM
+   1   2
+   2   1
+   3   1
+   4   1
+   track type=wiggle_0 name="Track C" description="User Supplied SNP Track (from Galaxy)" color=255,0,255 visibility=1
+   variableStep chrom=chrM
+   2   1
+   
+  </help>  
+</tool>
