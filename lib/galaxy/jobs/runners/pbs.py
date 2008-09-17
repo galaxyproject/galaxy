@@ -146,7 +146,7 @@ class PBSJobRunner( object ):
         if self.app.config.pbs_application_server:
             pbs_ofile = self.app.config.pbs_application_server + ':' + ofile
             pbs_efile = self.app.config.pbs_application_server + ':' + efile
-            stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames() )
+            stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames(), symlink=True )
             stageout = self.get_stage_in_out( job_wrapper.get_output_fnames() )
             job_attrs = pbs.new_attropl(5)
             job_attrs[0].name = pbs.ATTR_o
@@ -372,15 +372,15 @@ class PBSJobRunner( object ):
         self.queue.put( self.STOP_SIGNAL )
         log.info( "pbs job runner stopped" )
 
-    def get_stage_in_out( self, fnames ):
+    def get_stage_in_out( self, fnames, symlink=False ):
         """Convenience function to create a stagein/stageout list"""
         stage = ''
         for fname in fnames:
             if os.access(fname, os.R_OK):
-                if stage != '':
+                if stage:
                     stage += ','
                 # pathnames are now absolute
-                if self.app.config.pbs_stage_path != '':
+                if symlink and self.app.config.pbs_stage_path:
                     stage_name = os.path.join(self.app.config.pbs_stage_path, os.path.split(fname)[1])
                 else:
                     stage_name = fname
