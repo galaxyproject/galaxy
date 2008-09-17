@@ -281,5 +281,6 @@
    <tool file="metag_tools/megablast_wrapper.xml" />
    <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="metag_tools/blat_wrapper.xml" />
+   <tool file="metag_tools/mapping_to_ucsc.xml" />
    </section>
 </toolbox>
