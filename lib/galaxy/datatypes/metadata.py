@@ -211,6 +211,9 @@ class SelectParameter( MetadataParameter ):
             elif not isinstance(value, list):
                 MetadataParameter.__setattr__(self, name, [value])
     
+    def __iter__( self ):
+        return iter( self.value )
+    
     def __str__(self):
         if self.value in [None, []]:
             return str(self.spec.no_value)

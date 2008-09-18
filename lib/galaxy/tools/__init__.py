@@ -1177,6 +1177,31 @@ class DatasetFilenameWrapper( object ):
     Wraps a dataset so that __str__ returns the filename, but all other
     attributes are accessible.
     """
+    
+    class MetadataWrapper:
+        """
+        Wraps a Metadata Collection to return MetadataParameters wrapped according to the metadata spec.
+        Methods implemented to match behavior of a Metadata Collection.
+        """
+        def __init__( self, metadata ):
+            self.metadata = metadata
+        def __getattr__( self, name ):
+            rval = self.metadata.get( name, None )
+            if name in self.metadata.spec:
+                rval = self.metadata.spec[name].wrap( rval, self.metadata.parent )
+            return rval
+        def __nonzero__( self ):
+            return self.metadata.__nonzero__()
+        def __iter__( self ):
+            return self.metadata.__iter__()
+        def get( self, key, default=None ):
+            try:
+                return getattr( self, key )
+            except:
+                return default
+        def items( self ):
+            return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
+    
     def __init__( self, dataset, datatypes_registry = None, tool = None, name = None ):
         if not dataset:
             try:
@@ -1187,6 +1212,7 @@ class DatasetFilenameWrapper( object ):
             self.dataset = NoneDataset( datatypes_registry = datatypes_registry, ext = ext )
         else:
             self.dataset = dataset
+            self.metadata = self.MetadataWrapper( dataset.metadata )
     def __str__( self ):
         return self.dataset.file_name
     def __getattr__( self, key ):
