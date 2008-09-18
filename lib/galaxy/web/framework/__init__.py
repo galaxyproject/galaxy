@@ -24,7 +24,7 @@ import mako.lookup
 pkg_resources.require( "simplejson" )
 import simplejson
 
-pkg_resources.require( "sqlalchemy>=0.3" )
+pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import desc
             
 import logging

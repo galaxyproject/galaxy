@@ -85,7 +85,7 @@ class TestHistory( TwillTestCase ):
 
     def test_20_create_library( self ):
         """Testing creating new library"""
-        self.create_library( name='New Test Library', description='New test Library Description' )
+        self.create_library( name='New Test Library', description='New Test Library Description' )
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( "New Test Library" )
                

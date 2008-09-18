@@ -6,7 +6,7 @@ from galaxy.security import RBACAgent
 import galaxy.model
 from xml.sax.saxutils import escape, unescape
 import pkg_resources
-pkg_resources.require( "sqlalchemy>=0.3" )
+pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 
 import logging
@@ -251,7 +251,7 @@ class Admin( BaseController ):
         # simpler approach of deleting all existing members and creating 
         # new records for user_ids in the received members param.
         # First remove existing members that are not in the received members param
-        for user_group_assoc in group.users:
+        for user_group_assoc in group.members:
             if user_group_assoc.user_id not in members:
                 user = galaxy.model.User.get( user_group_assoc.user_id )
                 # Delete DefaultUserGroupAssociations
@@ -272,7 +272,7 @@ class Admin( BaseController ):
         # Then add all new members to the group
         for user_id in members:
             user = galaxy.model.User.get( user_id )
-            if user not in group.users:
+            if user not in group.members:
                 user_group_association = galaxy.model.UserGroupAssociation( user, group )
                 user_group_association.flush()
         msg = "Group membership has been updated with a total of %s members" % len( members )
@@ -405,7 +405,7 @@ class Admin( BaseController ):
         group_id = params.group_id
         group = galaxy.model.Group.get( group_id )
         # Remove members and all associations
-        for user_group_assoc in group.users:
+        for user_group_assoc in group.members:
             user = galaxy.model.User.get( user_group_assoc.user_id )
             # Delete DefaultUserGroupAssociations
             for default_user_group_association in user.default_groups:

@@ -103,28 +103,9 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
-<<<<<<< local
-class HistoryDatasetAssociation( object ):
-    def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
-                  dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, copied_from_history_dataset_association = None, validation_errors=None, visible=True, create_dataset = False ):
-        self.name = name or "Unnamed dataset"
-        self.id = id
-        self.hid = hid
-        self.info = info
-        self.blurb = blurb
-        self.peek = peek
-        self.extension = extension
-        self.designation = designation
-        self.metadata = metadata or dict()
-        self.dbkey = dbkey
-        self.deleted = deleted
-        self.visible = visible
-        # Relationships
-=======
 class GroupDatasetAssociation( object ):
     def __init__( self, group, dataset, permitted_actions=[] ):
-        if isinstance( group, GroupDatasetAssociation ) or \
+        if isinstance( group,  GroupDatasetAssociation ) or \
            isinstance( group, DefaultUserGroupAssociation ) or \
            isinstance( group, DefaultHistoryGroupAssociation ):
             group = group.group
@@ -182,16 +163,9 @@ class DefaultHistoryGroupAssociation( object ):
            isinstance( group, DefaultUserGroupAssociation ) or \
            isinstance( group, DefaultHistoryGroupAssociation ):
             group = group.group
->>>>>>> other
         self.history = history
-<<<<<<< local
-        if not dataset and create_dataset:
-            dataset = Dataset()
-            dataset.flush()
-        self.dataset = dataset
-        self.parent_id = parent_id
-        self.validation_errors = validation_errors
-        self.copied_from_history_dataset_association = copied_from_history_dataset_association
+        self.group = group
+        self.permitted_actions = permitted_actions
     
     @property
     def ext( self ):
@@ -342,8 +316,6 @@ class DefaultHistoryGroupAssociation( object ):
             for child in self.children:
                 child.mark_deleted()
 
-
-
 class History( object ):
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
@@ -415,10 +387,6 @@ class History( object ):
 #         # Relationships
 #         self.history = history
 #         self.datasets = []
-=======
-        self.group = group
-        self.permitted_actions = permitted_actions
->>>>>>> other
 
 class Dataset( object ):
     states = Bunch( NEW = 'new',
@@ -528,7 +496,7 @@ class DatasetInstance( object ):
         self.extension = extension
         self.dbkey = dbkey
         self.designation = designation
-        self._metadata = metadata or dict()
+        self.metadata = metadata or dict()
         self.deleted = deleted
         self.visible = visible
         # Relationships
@@ -559,9 +527,9 @@ class DatasetInstance( object ):
     def datatype( self ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
     def get_metadata( self ):
-        if not self._metadata:
-            self._metadata = dict()
-        return MetadataCollection( self, self.datatype.metadata_spec )
+        if not hasattr( self, '_metadata_collection' ):
+            self._metadata_collection = MetadataCollection( self, self.datatype.metadata_spec )
+        return self._metadata_collection
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = dict( bunch.items() )
@@ -587,6 +555,8 @@ class DatasetInstance( object ):
     dbkey = property( get_dbkey, set_dbkey )
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
+        if hasattr( self, '_metadata_collection' ):
+            del self._metadata_collection
         datatypes_registry.change_datatype( self, new_ext )
     def get_size( self ):
         """Returns the size of the data on disk"""

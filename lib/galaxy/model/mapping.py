@@ -5,24 +5,21 @@ are encapsulated here.
 import logging
 log = logging.getLogger( __name__ )
 
-import pkg_resources
-pkg_resources.require( "sqlalchemy>=0.3" )
-
 import sys
 import datetime
 
-from sqlalchemy.ext.sessioncontext import SessionContext
-from sqlalchemy.ext.assignmapper import assign_mapper
-from sqlalchemy.ext.orderinglist import ordering_list
-
-from sqlalchemy import *
 from galaxy.model import *
+from galaxy.model.orm import *
+from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
 from galaxy.security import GalaxyRBACAgent
 
-metadata = DynamicMetaData( threadlocal=False )
-context = SessionContext( create_session ) 
+metadata = MetaData()
+context = Session = scoped_session( sessionmaker( autoflush=False, transactional=False ) )
+
+# For backward compatibility with "context.current"
+context.current = Session
 
 dialect_to_egg = { 
     "sqlite"   : "pysqlite>=2",
@@ -224,15 +221,15 @@ Job.table = Table( "job", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "tool_id", String( 255 ) ),
-    Column( "tool_version", String, default="1.0.0" ),
+    Column( "tool_version", TEXT, default="1.0.0" ),
     Column( "state", String( 64 ) ),
     Column( "info", TrimmedString( 255 ) ),
-    Column( "command_line", String() ), 
+    Column( "command_line", TEXT ), 
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
-    Column( "stdout", String() ),
-    Column( "stderr", String() ),
-    Column( "traceback", String() ),
+    Column( "stdout", TEXT ),
+    Column( "stderr", TEXT ),
+    Column( "traceback", TEXT ),
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True, nullable=True ),
     Column( "job_runner_name", String( 255 ) ),
     Column( "job_runner_external_id", String( 255 ) ) )
@@ -292,7 +289,7 @@ StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
     Column( "latest_workflow_id", Integer,
             ForeignKey( "workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk' ), index=True ),
-    Column( "name", String ),
+    Column( "name", TEXT ),
     Column( "deleted", Boolean, default=False ),
     )
 
@@ -301,7 +298,7 @@ Workflow.table = Table( "workflow", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True, nullable=False ),
-    Column( "name", String ),
+    Column( "name", TEXT ),
     Column( "has_cycles", Boolean ),
     Column( "has_errors", Boolean )
     )
@@ -312,8 +309,8 @@ WorkflowStep.table = Table( "workflow_step", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), index=True, nullable=False ),
     Column( "type", String(64) ),
-    Column( "tool_id", String ),
-    Column( "tool_version", String ), # Reserved for future
+    Column( "tool_id", TEXT ),
+    Column( "tool_version", TEXT ), # Reserved for future
     Column( "tool_inputs", JSONType ),
     Column( "tool_errors", JSONType ),
     Column( "position", JSONType ),
@@ -326,8 +323,8 @@ WorkflowStepConnection.table = Table( "workflow_step_connection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "output_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
     Column( "input_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
-    Column( "output_name", String ),
-    Column( "input_name", String)
+    Column( "output_name", TEXT ),
+    Column( "input_name", TEXT)
     )
 
 StoredWorkflowUserShareAssociation.table = Table( "stored_workflow_user_share_connection", metadata,
@@ -352,9 +349,7 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
         dataset=relation( 
             Dataset, 
             primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ), lazy=False ),
-        history=relation( 
-            History, 
-            primaryjoin=( History.table.c.id == HistoryDatasetAssociation.table.c.history_id ) ),
+        # .history defined in History mapper
         copied_to_history_dataset_associations=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ),
@@ -415,11 +410,11 @@ assign_mapper( context, Group, Group.table,
 
 assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
     properties=dict( user=relation( User, backref = "groups" ),
-                     group=relation( Group, backref = "users" ) ) )
+                     group=relation( Group, backref = "members" ) ) )
 
 assign_mapper( context, GroupDatasetAssociation, GroupDatasetAssociation.table,
     properties=dict( dataset=relation( Dataset, backref = "groups" ),
-                     group=relation( Group, backref = "datasets" ) ) )
+                     group=relation( Group, backref = "group_datasets" ) ) )
 
 assign_mapper( context, DefaultUserGroupAssociation, DefaultUserGroupAssociation.table,
     properties=dict( user=relation( User, backref = "default_groups" ),
@@ -555,11 +550,12 @@ def db_next_hid( self ):
     Override __next_hid to generate from the database in a concurrency
     safe way.
     """
-    conn = self.table.engine.contextual_connect()
+    conn = object_session( self ).connection()
+    table = self.table
     trans = conn.begin()
     try:
-        next_hid = select( [self.c.hid_counter], self.c.id == self.id, for_update=True ).scalar()
-        self.table.update( self.c.id == self.id ).execute( hid_counter = ( next_hid + 1 ) )
+        next_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
+        table.update( table.c.id == self.id ).execute( hid_counter = ( next_hid + 1 ) )
         trans.commit()
         return next_hid
     except:
@@ -588,17 +584,21 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     # Create the database engine
     engine = create_engine( url, **engine_options )
     # Connect the metadata to the database.
-    metadata.connect( engine )
-    ## metadata.engine.echo = True
+    metadata.bind = engine
+    # Clear any existing contextual sessions and reconfigure
+    Session.remove()
+    Session.configure( bind=engine )
     # Create tables if needed
     if create_tables:
         metadata.create_all()
         # metadata.engine.commit()
     # Pack everything into a bunch
     result = Bunch( **globals() )
-    result.engine = metadata.engine
-    result.flush = lambda *args, **kwargs: context.current.flush( *args, **kwargs )
-    result.context = context
+    result.engine = engine
+    result.flush = lambda *args, **kwargs: Session.flush( *args, **kwargs )
+    result.session = Session
+    # For backward compatibility with "model.context.current"
+    result.context = Session
     result.create_tables = create_tables
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
