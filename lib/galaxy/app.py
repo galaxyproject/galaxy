@@ -21,7 +21,7 @@ class UniverseApplication( object ):
         if self.config.database_connection:
             db_url = self.config.database_connection
         else:
-            db_url = "sqlite://%s?isolation_level=IMMEDIATE" % self.config.database
+            db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         # Setup the database engine and ORM
         self.model = galaxy.model.mapping.init( self.config.file_path,
                                                 db_url,
