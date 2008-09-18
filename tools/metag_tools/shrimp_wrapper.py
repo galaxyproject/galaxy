@@ -61,17 +61,13 @@ def reverse_complement(s):
     reversed_s.reverse()
     return "".join(reversed_s)
 
-def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_per_read):
+def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_per_read, insertion_size):
     
-    """
-    TODO: the cross-over error has not been addressed yet.
-    """
+    invalid_editstring_char = 0
     
-    insertion_size = 600
+    all_score_file = score_files.split(',')
     
-    all_score_file = score_files.split('&')
-    
-    if len(all_score_file) != hit_per_read: stop_err('Un-equal number of files!')
+    if len(all_score_file) != hit_per_read: stop_err('One or more query files is missing. Please check your dataset.')
         
     temp_table_name = tempfile.NamedTemporaryFile().name
     temp_table = open(temp_table_name, 'w')
@@ -178,7 +174,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                         hits_score[readname] = {}
                         hits_score[readname][endindex] = score
     
-    # mutation call to all mappings            
+    # call to all mappings            
     for readkey in hits.keys():
         if len(hits[readkey]) != hit_per_read: continue
 
@@ -211,6 +207,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                             match_count += 1
 
         if match_count == 1:
+            
             for x, end_data in enumerate(matches[0]):
                 
                 end_strand, end_editstring, end_chr_start, end_chr_end, end_read_start, end_chrom = end_data
@@ -226,20 +223,26 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                 gap_read = 0
                 
                 while editindex < len(end_editstring):
+                    
                     editchr = end_editstring[editindex]
                     chrA = ''
                     chrB = ''
                     locIndex = []
+                    
                     if editchr.isdigit():
                         editcode = ''
+                        
                         while editchr.isdigit() and editindex < len(end_editstring):
                             editcode += editchr
                             editindex += 1
                             if editindex < len(end_editstring): editchr = end_editstring[editindex]
+                        
                         for baseIndex in range(int(editcode)):
                             chrA += refsegment[match_len+baseIndex]
                             chrB = chrA
+                        
                         match_len += int(editcode)
+                        
                     elif editchr == 'x':
                         # crossover: inserted between the appropriate two bases
                         # Two sequencing errors: 4x15x6 (25 matches with 2 crossovers)
@@ -263,18 +266,21 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                         
                     elif editchr == '(':
                         editcode = ''
+                        
                         while editchr != ')' and editindex < len(end_editstring):
                             if editindex < len(end_editstring): editchr = end_editstring[editindex]
                             editcode += editchr
                             editindex += 1
+                        
                         editcode = editcode[1:-1]
                         chrA = '-'*len(editcode)
                         chrB = editcode
                         
                     else:
-                        print 'Warning! Unknown symbols', editchr
-                    
+                        invalid_editstring_char += 1
+                        
                     if end_strand == '-':
+                        
                         chrA = reverse_complement(chrA)
                         chrB = reverse_complement(chrB)
                         
@@ -288,9 +294,12 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                         chrBx = chrB[mappingIndex]
 
                         if chrAx and chrBx and chrBx.upper() != 'N':
+                            
                             if end_strand == '+':
+                            
                                 chrom_loc = end_chr_start+match_len-len(chrA)+mappingIndex         
                                 read_loc = end_read_start+match_len-len(chrA)+mappingIndex-gap_read
+                                
                                 if chrAx == '-': chrom_loc -= 1
                                 
                                 if chrBx == '-': 
@@ -300,9 +309,12 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                                 
                                 # 1-based on chrom_loc and read_loc
                                 pos_line = pos_line + '\t'.join([end_chrom, str(chrom_loc+1), readkey+'/'+str(x+1), str(read_loc+1), chrAx, chrBx, scoreBx]) + '\n'
+                                
                             else:
+                                
                                 chrom_loc = end_chr_end-match_len+mappingIndex
                                 read_loc = end_read_start+match_len-1-mappingIndex-gap_read
+                                
                                 if chrAx == '-': chrom_loc -= 1
                                 
                                 if chrBx == '-': 
@@ -314,11 +326,14 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                                 rev_line = '\t'.join([end_chrom, str(chrom_loc+1), readkey+'/'+str(x+1), str(read_loc+1), chrAx, chrBx, scoreBx]) +'\n' + rev_line
 
                             if chrom_cov.has_key(end_chrom):
+                                
                                 if chrom_cov[end_chrom].has_key(chrom_loc):
                                     chrom_cov[end_chrom][chrom_loc] += 1
                                 else:
                                     chrom_cov[end_chrom][chrom_loc] = 1
+                                    
                             else:
+                                
                                 chrom_cov[end_chrom] = {}
                                 chrom_cov[end_chrom][chrom_loc] = 1
                     
@@ -329,6 +344,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
 
     # chrom-wide coverage
     for i, line in enumerate(open(temp_table_name)):
+        
         line = line.rstrip()
         if not line or line.startswith('#'): continue
         
@@ -348,6 +364,9 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
     outfile.close()
     
     if os.path.exists(temp_table_name): os.remove(temp_table_name)
+    
+    if invalid_editstring_char:
+        print 'Skip ', invalid_editstring_char, ' invalid characters in editstrings'
         
     return True 
    
@@ -359,7 +378,7 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
     seq_title_startswith = ''
     qual_title_startswith = ''
     
-    default_coding_value = 64
+    default_coding_value = 64       # Solexa ascii-code
     fastq_block_lines = 0
     
     for i, line in enumerate( file( infile_name ) ):
@@ -448,16 +467,63 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
 
 def __main__():
     
+    # SHRiMP path
+    shrimp = 'rmapper-ls'
+    
     # I/O
-    type_of_reads = sys.argv[1]     # single or paired
-    input_target = sys.argv[2]      # fasta
-    shrimp_outfile = sys.argv[3]    # shrimp output
-    table_outfile = sys.argv[4]     # table output
-     
-    # SHRiMP parameters: total = 15
-    # TODO: put threshold on each of these parameters
-    if len(sys.argv) == 21 or len(sys.argv) == 22:
-        spaced_seed = sys.argv[5]
+    input_target_file = sys.argv[1]                  # fasta
+    shrimp_outfile    = sys.argv[2]                # shrimp output
+    table_outfile     = sys.argv[3]                 # table output
+    single_or_paired  = sys.argv[4].split(',')       
+    
+    insertion_size = 600
+    
+    if len(single_or_paired) == 1:                  # single or paired
+        type_of_reads = 'single'
+        hit_per_read  = 1
+        input_query   = single_or_paired[0]
+        query_fasta   = tempfile.NamedTemporaryFile().name
+        query_qual    = tempfile.NamedTemporaryFile().name
+
+    else:                                           # paired-end
+        type_of_reads    = 'paired'
+        hit_per_read     = 2
+        input_query_end1 = single_or_paired[0]  
+        input_query_end2 = single_or_paired[1]
+        insertion_size = int(single_or_paired[2])
+        query_fasta_end1 = tempfile.NamedTemporaryFile().name
+        query_fasta_end2 = tempfile.NamedTemporaryFile().name
+        query_qual_end1  = tempfile.NamedTemporaryFile().name
+        query_qual_end2  = tempfile.NamedTemporaryFile().name
+        
+    # SHRiMP parameters: total = 15, default values
+    spaced_seed = '111111011111'
+    seed_matches_per_window = '2'
+    seed_hit_taboo_length = '4'
+    seed_generation_taboo_length = '0'
+    seed_window_length = '115.0'
+    max_hits_per_read = '100'
+    max_read_length = '1000'
+    kmer = '-1'
+    sw_match_value = '100'
+    sw_mismatch_value = '-150'
+    sw_gap_open_ref = '-400'
+    sw_gap_open_query = '-400'
+    sw_gap_ext_ref = '-70'
+    sw_gap_ext_query = '-70'
+    sw_hit_threshold = '68.0'
+
+    # TODO: put the threshold on each of these parameters
+    if len(sys.argv) > 5:
+        
+        try:
+            if sys.argv[5].isdigit():
+                spaced_seed = sys.argv[5]
+            else:
+                stop_err('Error in assigning parameter: Spaced seed.')
+        except:
+            stop_err('Spaced seed must be a combination of 1s and 0s.')
+        
         seed_matches_per_window = sys.argv[6]
         seed_hit_taboo_length = sys.argv[7]
         seed_generation_taboo_length = sys.argv[8]
@@ -473,53 +539,6 @@ def __main__():
         sw_gap_ext_query = sys.argv[18]
         sw_hit_threshold = sys.argv[19]
     
-        # Single-end parameters
-        if type_of_reads == 'single':
-            input_query = sys.argv[20]   # single-end
-            hit_per_read = 1
-            query_fasta = tempfile.NamedTemporaryFile().name
-            query_qual = tempfile.NamedTemporaryFile().name
-        else: # Paired-end parameters
-            input_query_end1 = sys.argv[20]  # paired-end
-            input_query_end2 = sys.argv[21]
-            hit_per_read = 2
-            query_fasta_end1 = tempfile.NamedTemporaryFile().name
-            query_fasta_end2 = tempfile.NamedTemporaryFile().name
-            query_qual_end1 = tempfile.NamedTemporaryFile().name
-            query_qual_end2 = tempfile.NamedTemporaryFile().name
-    else:
-        spaced_seed = '111111011111'
-        seed_matches_per_window = '2'
-        seed_hit_taboo_length = '4'
-        seed_generation_taboo_length = '0'
-        seed_window_length = '115.0'
-        max_hits_per_read = '100'
-        max_read_length = '1000'
-        kmer = '-1'
-        sw_match_value = '100'
-        sw_mismatch_value = '-150'
-        sw_gap_open_ref = '-400'
-        sw_gap_open_query = '-400'
-        sw_gap_ext_ref = '-70'
-        sw_gap_ext_query = '-70'
-        sw_hit_threshold = '68.0'
-
-        # Single-end parameters
-        if type_of_reads == 'single':
-            input_query = sys.argv[5]   # single-end
-            hit_per_read = 1
-            query_fasta = tempfile.NamedTemporaryFile().name
-            query_qual = tempfile.NamedTemporaryFile().name
-        else: # Paired-end parameters
-            input_query_end1 = sys.argv[5]  # paired-end
-            input_query_end2 = sys.argv[6]
-            hit_per_read = 2
-            query_fasta_end1 = tempfile.NamedTemporaryFile().name
-            query_fasta_end2 = tempfile.NamedTemporaryFile().name
-            query_qual_end1 = tempfile.NamedTemporaryFile().name
-            query_qual_end2 = tempfile.NamedTemporaryFile().name
-
-            
     # temp file for shrimp log file
     shrimp_log = tempfile.NamedTemporaryFile().name
     
@@ -532,7 +551,7 @@ def __main__():
         
     # SHRiMP command
     if type_of_reads == 'single':
-        command = ' '.join(['rmapper-ls',  '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta, input_target, '>', shrimp_outfile, '2>', shrimp_log])
+        command = ' '.join([shrimp,  '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta, input_target_file, '>', shrimp_outfile, '2>', shrimp_log])
     
         try:
             os.system(command)
@@ -541,9 +560,9 @@ def __main__():
             if os.path.exists(query_qual): os.remove(query_qual)
             stop_err(str(e))
             
-    else:
-        command_end1 = ' '.join(['rmapper-ls', '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end1, input_target, '>', shrimp_outfile, '2>', shrimp_log])
-        command_end2 = ' '.join(['rmapper-ls', '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end2, input_target, '>>', shrimp_outfile, '2>>', shrimp_log])
+    else: # paired
+        command_end1 = ' '.join([shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end1, input_target_file, '>', shrimp_outfile, '2>', shrimp_log])
+        command_end2 = ' '.join([shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end2, input_target_file, '>>', shrimp_outfile, '2>>', shrimp_log])
         
         try:
             os.system(command_end1)
@@ -557,9 +576,9 @@ def __main__():
         
     # convert to table
     if type_of_reads == 'single':
-        return_value = generate_sub_table(shrimp_outfile, input_target, query_qual, table_outfile, hit_per_read)
+        return_value = generate_sub_table(shrimp_outfile, input_target_file, query_qual, table_outfile, hit_per_read, insertion_size)
     else:
-        return_value = generate_sub_table(shrimp_outfile, input_target, query_qual_end1+'&'+query_qual_end2, table_outfile, hit_per_read)
+        return_value = generate_sub_table(shrimp_outfile, input_target_file, query_qual_end1+','+query_qual_end2, table_outfile, hit_per_read, insertion_size)
         
     # remove temp. files
     if type_of_reads == 'single':
