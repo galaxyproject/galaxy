@@ -353,11 +353,11 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
         copied_to_history_dataset_associations=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id] ) ),
+            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
         copied_to_library_folder_dataset_associations=relation( 
             LibraryFolderDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id] ) ),
+            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id], uselist=False ) ),
         implicitly_converted_datasets=relation( 
             ImplicitlyConvertedDatasetAssociation, 
             primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
