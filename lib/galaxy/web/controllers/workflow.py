@@ -64,7 +64,7 @@ class WorkflowController( BaseController ):
                 share.stored_workflow = stored
                 share.user = other
                 session = trans.sa_session
-                session.save( share )
+                session.save_or_update( share )
                 session.flush()
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
                 return self.list( trans )
@@ -107,7 +107,7 @@ class WorkflowController( BaseController ):
         new_stored.user = user
         # Persist
         session = trans.sa_session
-        session.save( new_stored )
+        session.save_or_update( new_stored )
         session.flush()
         # Display the management page
         trans.set_message( 'Clone created with name "%s"' % new_stored.name )
@@ -132,7 +132,7 @@ class WorkflowController( BaseController ):
             stored_workflow.latest_workflow = workflow
             # Persist
             session = trans.sa_session
-            session.save( stored_workflow )
+            session.save_or_update( stored_workflow )
             session.flush()
             # Display the management page
             trans.set_message( "Workflow '%s' created" % stored_workflow.name )
@@ -309,7 +309,7 @@ class WorkflowController( BaseController ):
         workflow.stored_workflow = stored
         stored.latest_workflow = workflow
         # Persist
-        trans.sa_session.save( stored )
+        trans.sa_session.save_or_update( stored )
         trans.sa_session.flush()
         # Return something informative
         errors = []
@@ -434,7 +434,7 @@ class WorkflowController( BaseController ):
             stored.name = workflow_name
             workflow.stored_workflow = stored
             stored.latest_workflow = workflow
-            trans.sa_session.save( stored )
+            trans.sa_session.save_or_update( stored )
             trans.sa_session.flush()
             # Index page with message
             return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
