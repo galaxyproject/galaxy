@@ -3,7 +3,10 @@
   <command interpreter="python">GMAJ.py $out_file1 $maf_input $gmaj_file $filenames_file</command>
   <inputs>
       <param name="maf_input" type="data" format="maf" label="Alignment File" optional="False"/>
-      <param name="refseq" label="Reference Sequence" value="" type="text" help="Leave empty to allow interactive selection."/>
+      <param name="refseq" label="Reference Sequence" type="select">
+        <option value="first" selected="true">First sequence in each block</option>
+        <option value="any">Any sequence</option>
+      </param>
       <repeat name="annotations" title="Annotations">
         <conditional name="annotation_style">
           <param name="style" type="select" label="Annotation Style" help="If your data is not in a style similar to what is available from Galaxy (and the UCSC table browser), choose 'Basic'.">
@@ -11,7 +14,7 @@
             <option value="basic">Basic</option>
           </param>
           <when value="galaxy">
-            <param name="species" type="select" label="Species of Annotation" multiple="False">
+            <param name="species" type="select" label="Species" multiple="False">
               <options>
                 <filter type="data_meta" ref="maf_input" key="species" />
               </options>
@@ -21,7 +24,6 @@
             <param name="underlays_file" type="data" format="bed,gff" label="Underlays File" optional="True"/>
             <param name="repeats_file" type="data" format="bed,gff" label="Repeats File" optional="True"/>
             <param name="links_file" type="data" format="bed,gff" label="Links File" optional="True"/>
-            <param name="offset" label="Offset" value="0" type="integer"/>
           </when>
           <when value="basic">
             <param name="seq_name" label="Full Sequence Name" value="" type="text">
@@ -44,6 +46,7 @@
               <option name="Skipping unsupported paragraph (maf_paragraph)" value="maf_paragraph"/>
               <option name="Skipping all reconstruction scores: no species specified (recon_noseq)" value="recon_noseq"/>
               <option name="Skipping reconstruction scores in blocks with missing row (recon_missing)" value="recon_missing"/>
+              <option name="The first row in some blocks is not the specified reference sequence (refseq_not_first)" value="refseq_not_first"/>
               <option name="Skipping extra MAF File (unused_maf)" value="unused_maf"/>
             </option>
             <option name="Annotation Files" value="annotations">
@@ -71,12 +74,15 @@
               </option>
               <option name="Red Flags" value="red">
                 <option name="Sequence name in annotation file does not match name in MAF (seqname_mismatch)" value="seqname_mismatch"/>
-                <option name="BED Start or end &lt; 0 (bed_coord)" value="bed_coord"/>
-                <option name="GFF Start or end &lt; 1 (gff_coord)" value="gff_coord"/>
+                <option name="BED start or end &lt; 0 (bed_coord)" value="bed_coord"/>
+                <option name="GFF start or end &lt; 1 (gff_coord)" value="gff_coord"/>
                 <option name="Missing item name for URL substitution (url_subst)" value="url_subst"/>
               </option>
             </option>
             <option name="Miscellaneous" value="miscellaneous">
+              <option name="No refseq specified; assuming 'first' (default_refseq)" value="default_refseq"/>
+              <option name="One or more bundle entries are not used in parameters file(unused_entry)" value="unused_entry"/>
+              <option name="Skipping blocks for export where reference sequence is hidden or all gaps (export_skip)" value="export_skip"/>
               <option name="Possible parse error: token ends with an escaped quote (escaped_quote)" value="escaped_quote"/>
               <option name="Draggable panel dividers will not be sticky (no_sticky)" value="no_sticky"/>
             </option>
@@ -89,11 +95,7 @@
 
 title = "Galaxy: $maf_input.name"
 alignfile = input.maf
-#if $refseq.value:
 refseq = $refseq
-#else:
-refseq = any
-#end if
 tabext = .bed .gff .gtf
 #if $nowarn.value:
 nowarn = $nowarn
@@ -102,36 +104,35 @@ nowarn = $nowarn
 #set $seq_count = 0
 #for $annotation_count, $annotation in $enumerate( $annotations ):
 #if $annotation.annotation_style.style == "galaxy":
-#if $maf_input.metadata.species_chromosomes and $annotation.annotation_style['species'].value in $maf_input.metadata.species_chromosomes and $maf_input.metadata.species_chromosomes[$annotation.annotation_style['species'].value]:
-#set $seq_names = [ "%s.%s" % ( $annotation.annotation_style['species'].value, $chrom ) for $chrom in $maf_input.metadata.species_chromosomes[$annotation.annotation_style['species'].value]]
-#set $aliases = [ " %s" % $chrom for $chrom in $maf_input.metadata.species_chromosomes[$annotation.annotation_style['species'].value]]
+#if $maf_input.dataset.metadata.species_chromosomes and $annotation.annotation_style['species'].value in $maf_input.dataset.metadata.species_chromosomes and $maf_input.dataset.metadata.species_chromosomes[$annotation.annotation_style['species'].value]:
+#set $seq_names = [ "%s.%s" % ( $annotation.annotation_style['species'].value, $chrom ) for $chrom in $maf_input.dataset.metadata.species_chromosomes[$annotation.annotation_style['species'].value]]
 #else:
 #set $seq_names = [$annotation.annotation_style['species']]
-#set $aliases = [""]
 #end if
 #else:
 #set $seq_names = [$annotation.annotation_style['seq_name']]
-#set $aliases = [""]
 #end if
-#for $seq_name, $alias in $zip( $seq_names, $aliases ):
+#for $seq_name in $seq_names:
 seq ${seq_count}:
 seqname = $seq_name
 #if $annotation.annotation_style['exons_file'].dataset:
-exons = ${annotation_count}.exons.${annotation.annotation_style['exons_file'].extension}$alias
+exons = ${annotation_count}.exons.${annotation.annotation_style['exons_file'].extension}
 #end if
 #if $annotation.annotation_style['repeats_file'].dataset:
-repeats = ${annotation_count}.repeats.${annotation.annotation_style['repeats_file'].extension}$alias
+repeats = ${annotation_count}.repeats.${annotation.annotation_style['repeats_file'].extension}
 #end if
 #if $annotation.annotation_style['links_file'].dataset:
-links = ${annotation_count}.links.${annotation.annotation_style['links_file'].extension}$alias
+links = ${annotation_count}.links.${annotation.annotation_style['links_file'].extension}
 #end if
 #if $annotation.annotation_style['underlays_file'].dataset:
-underlays = ${annotation_count}.underlays.${annotation.annotation_style['underlays_file'].extension}$alias
+underlays = ${annotation_count}.underlays.${annotation.annotation_style['underlays_file'].extension}
 #end if
 #if $annotation.annotation_style['highlights_file'].dataset:
-highlights = ${annotation_count}.highlights.${annotation.annotation_style['highlights_file'].extension}$alias
+highlights = ${annotation_count}.highlights.${annotation.annotation_style['highlights_file'].extension}
 #end if
+#if $annotation.annotation_style.style == "basic":
 offset = $annotation.annotation_style['offset']
+#end if
 
 #set $seq_count = $seq_count + 1
 #end for
