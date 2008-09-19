@@ -5,7 +5,7 @@ Image classes
 import data
 import logging
 from galaxy.datatypes.sniff import *
-from urllib import urlencode
+from urllib import urlencode, quote_plus
 import zipfile
 
 log = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ class Gmaj( data.Data ):
             "nobutton": "false",
             "urlpause" :"100",
             "debug": "false",
-            "posturl": "history_add_to?%s" % urlencode( { 'history_id': dataset.history_id, 'ext': 'maf', 'name': 'GMAJ Output on data %s' % dataset.hid, 'info': 'Added by GMAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id } )
+            "posturl": quote_plus( "history_add_to?%s" % "&".join( [ "%s=%s" % ( key, value ) for key, value in { 'history_id': dataset.history_id, 'ext': 'maf', 'name': 'GMAJ Output on data %s' % dataset.hid, 'info': 'Added by GMAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id }.items() ] ) )
             }
             class_name = "edu.psu.bx.gmaj.MajApplet.class"
             archive = "/static/gmaj/gmaj.jar"
@@ -186,7 +186,7 @@ class Laj( data.Text ):
             "alignfile1": "display?id=%s" % dataset.id,
             "buttonlabel": "Launch LAJ",
             "title": "LAJ in Galaxy",
-            "posturl": "history_add_to?%s" % urlencode( { 'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id } ),
+            "posturl": quote_plus( "history_add_to?%s" % "&".join( [ "%s=%s" % ( key, value ) for key, value in { 'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id }.items() ] ) ),
             "noseq": "true"
             }
             class_name = "edu.psu.cse.bio.laj.LajApplet.class"
