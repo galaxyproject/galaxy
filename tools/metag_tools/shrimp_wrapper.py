@@ -162,6 +162,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                     readname, endindex = line[1:].split('/')
             else:
                 score = line
+                
         if score:   # the last one
             if hits.has_key(readname):
                 if len(hits[readname]) == hit_per_read:
@@ -182,8 +183,9 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
         match_count = 0
         
         if hit_per_read == 1:
-            matches = [ hits[readkey]['1'] ]
-            match_count = 1
+            if len(hits[readkey]['1']) == 1:
+                matches = [ hits[readkey]['1'] ]
+                match_count = 1
         else:
             end1_data = hits[readkey]['1']
             end2_data = hits[readkey]['2']
@@ -591,6 +593,7 @@ def __main__():
         if os.path.exists(query_qual_end2): os.remove(query_qual_end2)    
     
     if os.path.exists(shrimp_log): os.remove(shrimp_log)
+
     
 if __name__ == '__main__': __main__()
     

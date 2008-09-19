@@ -1,0 +1,56 @@
+<tool id="split_paired_reads" name="Split" version="1.0.0">
+  <description>paired-end reads into two ends</description>
+  <command interpreter="python">
+    split_paired_reads.py $input $output1 $output2
+  </command>
+    <inputs>
+        <param name="input" type="data" format="fastqsolexa" label="Your paired-end file" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="fastqsolexa"/>
+        <data name="output2" format="fastqsolexa"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="split_paired_reads_test1.fastq" ftype="fastqsolexa" />
+            <output name="output1" file="split_paired_reads_test1.out1" fype="fastqsolexa" />
+        </test>
+    </tests>
+<help>
+        
+**What it does**
+ 
+This tool splits a single paired-end file in half and returns two files with each ends.  
+
+-----
+
+**Input formats**
+
+A multiple-fastq file, for example::
+
+    @HWI-EAS91_1_30788AAXX:7:21:1542:1758
+    GTCAATTGTACTGGTCAATACTAAAAGAATAGGATCGCTCCTAGCATCTGGAGTCTCTATCACCTGAGCCCA
+    +HWI-EAS91_1_30788AAXX:7:21:1542:1758
+    hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh`hfhhVZSWehR
+
+
+-----
+
+**Outputs**
+
+One end::
+
+    @HWI-EAS91_1_30788AAXX:7:21:1542:1758/1
+    GTCAATTGTACTGGTCAATACTAAAAGAATAGGATC
+    +HWI-EAS91_1_30788AAXX:7:21:1542:1758/1
+    hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+
+The other end::
+
+    @HWI-EAS91_1_30788AAXX:7:21:1542:1758/2
+    GCTCCTAGCATCTGGAGTCTCTATCACCTGAGCCCA
+    +HWI-EAS91_1_30788AAXX:7:21:1542:1758/2
+    hhhhhhhhhhhhhhhhhhhhhhhh`hfhhVZSWehR
+    
+</help>
+</tool>
