@@ -129,6 +129,11 @@
     <tool file="regVariation/getIndels_3way.xml" />
     <tool file="regVariation/getIndelRates_3way.xml" />
   </section>
+  <section name="Multiple regression" id="multReg">
+    <tool file="regVariation/linear_regression.xml" />
+    <tool file="regVariation/best_regression_subsets.xml" />
+    <tool file="regVariation/rcve.xml" />
+  </section>
  <section name="Evolution: HyPhy" id="hyphy">
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />

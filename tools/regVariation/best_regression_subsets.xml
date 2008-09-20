@@ -1,0 +1,64 @@
+<tool id="BestSubsetsRegression1" name="Perform Best-subsets Regression">
+  <description> </description>
+  <command interpreter="python">
+    best_regression_subsets.py 
+      $input1
+      $response_col
+      $predictor_cols
+      $out_file1
+      $out_file2
+      1>/dev/null
+      2>/dev/null
+  </command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param name="response_col" label="Response column (Y)" type="data_column" data_ref="input1" />
+    <param name="predictor_cols" label="Predictor columns (X)" type="data_column" data_ref="input1" multiple="true" />
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1" />
+    <data format="pdf" name="out_file2" />
+  </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
+  <tests>
+    <!-- Testing this tool will not be possible because this tool produces a pdf output file.
+    -->
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+.. class:: infomark
+
+**What it does**
+
+This tool uses the 'regsubsets' function from R statistical package for regression subset selection. It outputs two files, one containing a table with the best subsets and the corresponding summary statistics, and the other containing the graphical representation of the results.  
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+- This tool currently treats all predictor and response variables as continuous variables. 
+
+- Rows containing non-numeric (or missing) data in any of the chosen columns will be skipped from the analysis.
+
+- The 6 columns in the output are described below:
+
+  - Column 1 (Vars): denotes the number of variables in the model
+  - Column 2 ([c2 c3 c4...]): represents a list of the user-selected predictor variables (full model). An asterix denotes the presence of the corresponding predictor variable in the selected model.
+  - Column 3 (R-sq): the fraction of variance explained by the model
+  - Column 4 (Adj. R-sq): the above R-squared statistic adjusted, penalizing for higher number of predictors (p)
+  - Column 5 (Cp): Mallow's Cp statistics  
+  - Column 6 (bic): Bayesian Information Criterion. 
+
+
+  </help>
+</tool>

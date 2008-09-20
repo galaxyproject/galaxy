@@ -1,0 +1,68 @@
+<tool id="rcve1" name="Compute RCVE" version="1.0.0">
+  <description> </description>
+  <command interpreter="python">
+    rcve.py 
+      $input1
+      $response_col
+      $predictor_cols
+      $out_file1
+      1>/dev/null
+  </command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param name="response_col" label="Response column (Y)" type="data_column" data_ref="input1" />
+    <param name="predictor_cols" label="Predictor columns (X)" type="data_column" data_ref="input1" multiple="true" />
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1" />
+  </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
+  <tests>
+    <!-- Test data with vlid values -->
+  	<test>
+      <param name="input1" value="reg_inp.tab"/>
+      <param name="response_col" value="1"/>
+      <param name="predictor_cols" value="2,3,4"/>
+      <output name="out_file1" file="rcve_out.dat"/>
+    </test>
+    
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+.. class:: infomark
+
+**What it does**
+
+This tool computes the RCVE (Relative Contribution to Variance) for all possible variable subsets using the following formula:
+
+**RCVE(i) = [R-sq (full: 1,2,..,i..,p-1) - R-sq(without i: 1,2,...,p-1)] / R-sq (full: 1,2,..,i..,p-1)**,
+which denotes the case where the 'i'th predictor is dropped. 
+
+
+In general,
+**RCVE(X+) = [R-sq (full: {X,X+}) - R-sq(reduced: {X})] / R-sq (full: {X,X+})**,
+where,
+
+- {X,X+} denotes the set of all predictors, 
+- X+ is the set of predictors for which we compute RCVE (and therefore drop from the full model to obtain a reduced one), 
+- {X} is the set of the predictors that are left in the reduced model after excluding {X+} 
+
+
+The 4 columns in the output are described below:
+
+- Column 1 (Model): denotes the variables present in the model ({X})
+- Column 2 (R-sq): denotes the R-squared value corresponding to the model in Column 1
+- Column 3 (RCVE_Terms): denotes the variable/s for which RCVE is computed ({X+}). These are the variables that are absent in the reduced model in Column 1. A '-' in this column indicates that the model in Column 1 is the Full model.
+- Column 4 (RCVE): denotes the RCVE value corresponding to the variable/s in Column 3. A '-' in this column indicates that the model in Column 1 is the Full model.
+  
+  
+  </help>
+</tool>
