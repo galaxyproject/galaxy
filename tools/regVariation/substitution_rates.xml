@@ -1,0 +1,61 @@
+<tool id="subRate1" name="Estimate substitution rates " version="1.0.0">
+  <description> for non-coding regions</description>
+  <command interpreter="python">
+  	substitution_rates.py 
+  	$input 
+  	$out_file1
+  	#if $region.type == "win":
+      ${region.input2} ${region.input2.dbkey} ${region.input2.metadata.chromCol},$region.input2.metadata.startCol,$region.input2.metadata.endCol,$region.input2.metadata.strandCol
+    #else:
+      "None"
+    #end if 
+  </command>
+  <inputs>
+    <param format="maf" name="input" type="data" label="Select pair-wise alignment data"/>
+    <conditional name="region">
+	      <param name="type" type="select" label="Estimate rates corresponding to" multiple="false">
+	         <option value="align">Alignment block</option>
+	         <option value="win">Intervals in your history</option>
+	     </param>
+	     <when value="win">
+	      	<param format="interval" name="input2" type="data" label="Choose intervals">
+	      		<validator type="unspecified_build" />
+	    	</param>
+	      </when>
+	      <when value="align" />
+      </conditional>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" metadata_source="input"/>
+  </outputs>
+  
+  <tests>
+    <test>
+      <param name="input" value="Interval2Maf_pairwise_out.maf"/>
+      <param name="type" value="align"/>
+      <output name="out_file1" file="subRates1.out"/>
+    </test>
+  </tests>
+  
+ <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool takes a pairwise MAF file as input and estimates substitution rate according to Jukes-Cantor JC69 model. The 3 new columns appended to the output are explanied below:
+
+- L: number of nucleotides compared
+- N: number of different nucleotides
+- p = N/L
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+Any block/s not containing exactly two sequences, will be omitted. 
+
+  </help>  
+</tool>

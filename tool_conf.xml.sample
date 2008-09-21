@@ -128,6 +128,8 @@
     <tool file="regVariation/getIndels_2way.xml" />
     <tool file="regVariation/getIndels_3way.xml" />
     <tool file="regVariation/getIndelRates_3way.xml" />
+    <tool file="regVariation/substitutions.xml" />
+    <tool file="regVariation/substitution_rates.xml" />
   </section>
   <section name="Multiple regression" id="multReg">
     <tool file="regVariation/linear_regression.xml" />

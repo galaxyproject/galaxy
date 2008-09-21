@@ -1,0 +1,38 @@
+<tool id="substitutions1" name="Fetch substitutions " version="1.0.0">
+  <description> from pairwise alignments</description>
+  <command interpreter="python">
+  	substitutions.py 
+  	$input 
+  	$out_file1
+  </command>
+  <inputs>
+    <param format="maf" name="input" type="data" label="Select pair-wise alignment data"/>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" metadata_source="input"/>
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="Interval2Maf_pairwise_out.maf"/>
+      <output name="out_file1" file="subs.out"/>
+    </test>
+  </tests>
+ <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool takes a pairwise MAF file as input and fetches substitutions per alignment block.
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+Any block/s not containing exactly two sequences, will be omitted. 
+
+  </help>  
+</tool>
