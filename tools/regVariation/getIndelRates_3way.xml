@@ -1,30 +1,30 @@
-<tool id="getIndelRates_3way" name="Estimate Indel Rates" version="1.0.0">
+<tool id="indelRates_3way" name="Estimate Indel Rates" version="1.0.0">
   <description> for 3-way alignments</description>
   <command interpreter="python">
-  	getIndelRates_3way.py $input1 $out_file1 $winsize $species
+    getIndelRates_3way.py $input1 $out_file1 
+    #if $region.type == "align"
+        "None"
+    #else
+        $region.input2 $input2_dbkey $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol
+    #end if
   </command>
   <inputs>
     <page>
-    	<param format="tabular" name="input1" type="data" label="Select data"/>
-    	<param name="winsize" size="10" type="integer" value="1000" label="Estimate rates in windows of size" />
-    	<param name="species" type="select" label="and corresponding to co-ordinates of" multiple="false">
-          <option value="3">Species 1 (Ingroup 1)</option>
-          <option value="7">Species 2 (Ingroup 2)</option>
-          <option value="11">Species 3 (Outgroup)</option>
-        </param>
-    	<!--
-    	<conditional name="region">
-	      <param name="type" type="select" label="Estimate rates per" multiple="false">
-	         <option value="align">Alignment block</option>
-	         <option value="win">Window</option>
-	     </param>
-	     <when value="win">
-	      	<param name="winsize" size="10" type="integer" value="1000" label="of size" />
-
-	      </when>
-	      <when value="align" />
+        <param format="tabular" name="input1" type="data" label="Select dataset containing Indels"/>
+        
+        <conditional name="region">
+          <param name="type" type="select" label="Estimate rates corresponding to" multiple="false">
+            <option value="align" selected="True">Alignment block</option>
+            <option value="win">Intervals in your history</option>
+         </param>
+         <when value="win">
+            <param format="interval" name="input2" type="data" label="Choose intervals">
+                <validator type="unspecified_build" />
+            </param>
+          </when>
+          <when value="align" />
       </conditional>
-      -->
+     
     </page>
   </inputs>
   <outputs>
@@ -34,8 +34,7 @@
   <tests>
     <test>
       <param name="input1" value="indels_3way.tabular"/>
-      <param name="winsize" value="1000"/>
-      <param name="species" value="11"/>
+      <param name="type" value="align"/>
       <output name="out_file1" file="indelrates_3way.tabular"/>
     </test>
   </tests>
@@ -54,8 +53,8 @@ This tool estimates the insertion and deletion rates for alignments in a window 
 
 **Note**
 
-Any block/s not containing exactly 3 species will be omitted. 
-   
+This tool only works on the output of the 'Estimate Indel Rates for 3-way alignments' tool.   
+
 </help>  
 
 

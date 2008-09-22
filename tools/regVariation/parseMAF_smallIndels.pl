@@ -58,7 +58,7 @@ unless (open(OFILE2, ">$ofile2")){
 #print OFILE "#align\tingroup1\tingroup1_coord\tingroup1_orient\tingroup2\tingroup2_coord\tingroup2_orient\toutgroup\toutgroup_coord\toutgroup_orient\tindel_type\n";
 
 #print OFILE2 "# small indels summary, parsed from MAF 3-way alignment file, coords are translated from (-) to (+) if necessary\n";
-print OFILE2 "#block\tindel_type\tindel_length\tingroup1\tingroup1_start\tingroup1_end\tingroup1_orient\tingroup2\tingroup2_start\tingroup2_end\tingroup2_orient\toutgroup\toutgroup_start\toutgroup_end\toutgroup_orient\n";
+print OFILE2 "#block\tindel_type\tindel_length\tingroup1\tingroup1_start\tingroup1_end\tingroup1_alignSize\tingroup1_orient\tingroup2\tingroup2_start\tingroup2_end\tingroup2_alignSize\tingroup2_orient\toutgroup\toutgroup_start\toutgroup_end\toutgroup_alignSize\toutgroup_orient\n";
 
 # main body of program
 while ($record = get_next_record($fh) ){
@@ -348,7 +348,8 @@ sub get_indels_within_block{
 		    		&& (substr($sequence2,$position,1) !~ m/[-*\#$?^@]/)
 	       			&& (substr($sequence3,$position,1) !~ m/[-*\#$?^@]/)){
 					$ABC = join("",($ABC,"X"));
-					$indelType = $seq1."_delete";
+					my @s = split(/:/, $seq1);
+					$indelType = $s[0]."_delete";
 
 					#print OFILE "$count\t$seq1\t$coord1\t$orient1\t$seq2\t$coord2\t$orient2\t$seq3\t$coord3\t$orient3\t$indelType\n";	
 					$indel_line = join("\t",($count,$seq1,$coord1,$orient1,$seq2,$coord2,$orient2,$seq3,$coord3,$orient3,$indelType));
@@ -361,7 +362,8 @@ sub get_indels_within_block{
 				&& (substr($sequence2,$position,1) eq "-")
 				&& (substr($sequence3,$position,1) !~ m/[-*\$?^]/)){
 					$ABC = join("",($ABC,"Y"));
-					$indelType = $seq2."_delete";
+					my @s = split(/:/, $seq2);
+					$indelType = $s[0]."_delete";
 					#print OFILE "$count\t$seq1\t$coord1\t$orient1\t$seq2\t$coord2\t$orient2\t$seq3\t$coord3\t$orient3\t$indelType\n";
 					$indel_line = join("\t",($count,$seq1,$coord1,$orient1,$seq2,$coord2,$orient2,$seq3,$coord3,$orient3,$indelType));
                                         push (@indels,$indel_line);
@@ -375,7 +377,8 @@ sub get_indels_within_block{
 				&& (substr($sequence2,$position,1) eq "-")
 				&& (substr($sequence3,$position,1) eq "-")){
 					$ABC = join("",($ABC,"Z"));
-					$indelType = $seq1."_insert";
+					my @s = split(/:/, $seq1);
+					$indelType = $s[0]."_insert";
 					#print OFILE "$count\t$seq1\t$coord1\t$orient1\t$seq2\t$coord2\t$orient2\t$seq3\t$coord3\t$orient3\t$indelType\n";
 					$indel_line = join("\t",($count,$seq1,$coord1,$orient1,$seq2,$coord2,$orient2,$seq3,$coord3,$orient3,$indelType));
 					push (@indels,$indel_line);
@@ -387,7 +390,8 @@ sub get_indels_within_block{
 				&& (substr($sequence2,$position,1) !~ m/[-*\#$?^@]/)
 				&& (substr($sequence3,$position,1) eq "-")){
 					$ABC = join("",($ABC,"W"));
-					$indelType = $seq2."_insert";
+					my @s = split(/:/, $seq2);
+					$indelType = $s[0]."_insert";
 					#print OFILE "$count\t$seq1\t$coord1\t$orient1\t$seq2\t$coord2\t$orient2\t$seq3\t$coord3\t$orient3\t$indelType\n";
 					$indel_line = join("\t",($count,$seq1,$coord1,$orient1,$seq2,$coord2,$orient2,$seq3,$coord3,$orient3,$indelType));
 					push (@indels,$indel_line);
@@ -399,7 +403,8 @@ sub get_indels_within_block{
 				&& (substr($sequence2,$position,1) !~ m/[-*\#$?^@]/)
 				&& (substr($sequence3,$position,1) eq "-")){
 					$ABC = join("",($ABC,"S"));
-					$indelType = $seq3."_delete";
+					my @s = split(/:/, $seq3);
+					$indelType = $s[0]."_delete";
 					#print OFILE "$count\t$seq1\t$coord1\t$orient1\t$seq2\t$coord2\t$orient2\t$seq3\t$coord3\t$orient3\t$indelType\n";
 					$indel_line = join("\t",($count,$seq1,$coord1,$orient1,$seq2,$coord2,$orient2,$seq3,$coord3,$orient3,$indelType));
 					push (@indels,$indel_line);
@@ -411,7 +416,8 @@ sub get_indels_within_block{
 				&& (substr($sequence2,$position,1) eq "-")
 				&& (substr($sequence3,$position,1) !~ m/[-*\#$?^@]/)){
 					$ABC = join("",($ABC,"T"));
-					$indelType = $seq3."_insert";
+					my @s = split(/:/, $seq3);
+					$indelType = $s[0]."_insert";
 					#print OFILE "$count\t$seq1\t$coord1\t$orient1\t$seq2\t$coord2\t$orient2\t$seq3\t$coord3\t$orient3\t$indelType\n";
 					$indel_line = join("\t",($count,$seq1,$coord1,$orient1,$seq2,$coord2,$orient2,$seq3,$coord3,$orient3,$indelType));
 					push (@indels,$indel_line);
@@ -622,6 +628,9 @@ sub get_final_format{
 		my $event_line = $_;
 		my @events = split(/\t/, $event_line);
 		my $event_type = $events[10];
+		my @name_align1 = split(/:/, $events[1]);
+		my @name_align2 = split(/:/, $events[4]);
+		my @name_align3 = split(/:/, $events[7]);
 		my $seq1_event_start = my $seq1_event_end = my $seq2_event_start = my $seq2_event_end = my $seq3_event_start = my $seq3_event_end = 0;
 		my $final_event_line = "";	
 		# seq1_insert
@@ -634,7 +643,7 @@ sub get_final_format{
 			$seq2_event_end = ($events[5]);
 			$seq3_event_start = ($events[8]-1);
 			$seq3_event_end = ($events[8]);
-			$final_event_line = join("\t",($events[0],$event_type,$events[11],$events[1],$seq1_event_start,$seq1_event_end,$events[3],$events[4],$seq2_event_start,$seq2_event_end,$events[6],$events[7],$seq3_event_start,$seq3_event_end,$events[9]));
+			$final_event_line = join("\t",($events[0],$event_type,$events[11],$name_align1[0],$seq1_event_start,$seq1_event_end,$name_align1[1],$events[3],$name_align2[0],$seq2_event_start,$seq2_event_end,$name_align2[1],$events[6],$name_align3[0],$seq3_event_start,$seq3_event_end,$name_align3[1],$events[9]));
 		}
 		# seq1_delete
 		elsif ($event_type =~ m/$ingroup1/ && $event_type =~ m/delete/){
@@ -646,7 +655,7 @@ sub get_final_format{
                         $seq2_event_end = ($events[5]+$events[11]-1);
                         $seq3_event_start = ($events[8]);
                         $seq3_event_end = ($events[8]+$events[11]-1);
-			$final_event_line = join("\t",($events[0],$event_type,$events[11],$events[1],$seq1_event_start,$seq1_event_end,$events[3],$events[4],$seq2_event_start,$seq2_event_end,$events[6],$events[7],$seq3_event_start,$seq3_event_end,$events[9]));
+			$final_event_line = join("\t",($events[0],$event_type,$events[11],$name_align1[0],$seq1_event_start,$seq1_event_end,$name_align1[1],$events[3],$name_align2[0],$seq2_event_start,$seq2_event_end,$name_align2[1],$events[6],$name_align3[0],$seq3_event_start,$seq3_event_end,$name_align3[1],$events[9]));
 		}
 		# seq2_insert
 		elsif ($event_type =~ m/$ingroup2/ && $event_type =~ m/insert/){	
@@ -658,7 +667,7 @@ sub get_final_format{
                         $seq2_event_end = ($events[5]+$events[11]-1);
                         $seq3_event_start = ($events[8]-1);
 			$seq3_event_end = ($events[8]);			
-			$final_event_line = join("\t",($events[0],$event_type,$events[11],$events[1],$seq1_event_start,$seq1_event_end,$events[3],$events[4],$seq2_event_start,$seq2_event_end,$events[6],$events[7],$seq3_event_start,$seq3_event_end,$events[9]));
+			$final_event_line = join("\t",($events[0],$event_type,$events[11],$name_align1[0],$seq1_event_start,$seq1_event_end,$name_align1[1],$events[3],$name_align2[0],$seq2_event_start,$seq2_event_end,$name_align2[1],$events[6],$name_align3[0],$seq3_event_start,$seq3_event_end,$name_align3[1],$events[9]));
 		}
 		# seq2_delete
 		elsif ($event_type =~ m/$ingroup2/ && $event_type =~ m/delete/){
@@ -670,7 +679,7 @@ sub get_final_format{
 	                $seq2_event_end = ($events[5]);
                         $seq3_event_start = ($events[8]);
                         $seq3_event_end = ($events[8]+$events[11]-1);
-			$final_event_line = join("\t",($events[0],$event_type,$events[11],$events[1],$seq1_event_start,$seq1_event_end,$events[3],$events[4],$seq2_event_start,$seq2_event_end,$events[6],$events[7],$seq3_event_start,$seq3_event_end,$events[9]));
+			$final_event_line = join("\t",($events[0],$event_type,$events[11],$name_align1[0],$seq1_event_start,$seq1_event_end,$name_align1[1],$events[3],$name_align2[0],$seq2_event_start,$seq2_event_end,$name_align2[1],$events[6],$name_align3[0],$seq3_event_start,$seq3_event_end,$name_align3[1],$events[9]));
 		}	
 		# start testing w/seq3_insert
 		elsif ($event_type =~ m/$outgroup/ && $event_type =~ m/insert/){
@@ -682,7 +691,7 @@ sub get_final_format{
 			$seq2_event_end = ($events[5]);
 			$seq3_event_start = ($events[8]);
 			$seq3_event_end = ($events[8]+$events[11]-1);
-			$final_event_line = join("\t",($events[0],$event_type,$events[11],$events[1],$seq1_event_start,$seq1_event_end,$events[3],$events[4],$seq2_event_start,$seq2_event_end,$events[6],$events[7],$seq3_event_start,$seq3_event_end,$events[9]));
+			$final_event_line = join("\t",($events[0],$event_type,$events[11],$name_align1[0],$seq1_event_start,$seq1_event_end,$name_align1[1],$events[3],$name_align2[0],$seq2_event_start,$seq2_event_end,$name_align2[1],$events[6],$name_align3[0],$seq3_event_start,$seq3_event_end,$name_align3[1],$events[9]));
 		}
 		# seq3_delete
 		elsif ($event_type =~ m/$outgroup/ && $event_type =~ m/delete/){
@@ -694,7 +703,7 @@ sub get_final_format{
 			$seq2_event_end = ($events[5]+$events[11]-1);
 			$seq3_event_start = ($events[8]-1);
 			$seq3_event_end = ($events[8]);
-			$final_event_line = join("\t",($events[0],$event_type,$events[11],$events[1],$seq1_event_start,$seq1_event_end,$events[3],$events[4],$seq2_event_start,$seq2_event_end,$events[6],$events[7],$seq3_event_start,$seq3_event_end,$events[9]));
+			$final_event_line = join("\t",($events[0],$event_type,$events[11],$name_align1[0],$seq1_event_start,$seq1_event_end,$name_align1[1],$events[3],$name_align2[0],$seq2_event_start,$seq2_event_end,$name_align2[1],$events[6],$name_align3[0],$seq3_event_start,$seq3_event_end,$name_align3[1],$events[9]));
 
 		}
 		
