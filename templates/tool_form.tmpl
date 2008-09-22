@@ -73,10 +73,12 @@ jQuery( function() {
         #set cls = "form-row"
     #end if
     <div class="$cls">
-        <label>
-            ${param.get_label()}:
-        </label>
-
+        #set label = $param.get_label()
+        #if $label:
+            <label>
+                $label:
+            </label>
+        #end if
         #set field = $param.get_html_field( $caller, $parent_state[ $param.name ], $context )
         #set $field.refresh_on_change = $param.refresh_on_change
         <div style="float: left; width: 250px; margin-right: 10px;">$field.get_html( $prefix )</div>

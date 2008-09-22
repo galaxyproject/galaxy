@@ -332,6 +332,8 @@ class HiddenToolParameter( ToolParameter ):
         return form_builder.HiddenField( self.name, self.value )
     def get_initial_value( self, trans, context ):
         return self.value
+    def get_label( self ):
+        return None
     
 ## This is clearly a HACK, parameters should only be used for things the user
 ## can change, there needs to be a different way to specify this. I'm leaving
@@ -354,6 +356,9 @@ class BaseURLToolParameter( ToolParameter ):
         return form_builder.HiddenField( self.name, self.get_value( trans ) )
     def get_initial_value( self, trans, context ):
         return self.value
+    def get_label( self ):
+        # BaseURLToolParameters are ultimately "hidden" parameters
+        return None
 
 class SelectToolParameter( ToolParameter ):
     """

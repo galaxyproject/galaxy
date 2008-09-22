@@ -68,8 +68,8 @@ class ASync( BaseController ):
                 galaxy_url  = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
                 galaxy_url = params.get("GALAXY_URL",galaxy_url)
                 params = dict( url=URL, GALAXY_URL=galaxy_url )
-                params[tool.outputs.keys()[0]] = data.id #assume there is exactly one output file possible
-                #tool.execute( app=self.app, history=history, incoming=params )
+                # Assume there is exactly one output file possible
+                params[tool.outputs.keys()[0]] = data.id
                 tool.execute( trans, incoming=params )
             else:
                 log.debug('async error -> %s' % STATUS)

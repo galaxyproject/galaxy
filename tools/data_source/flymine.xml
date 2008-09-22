@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<tool name="Flymine" id="flymine">
+    <description>server</description>
+    <command interpreter="python">intermine.py $output</command>
+    <inputs action="http://preview.flymine.org/preview/begin.do" check_values="false" method="get" target="_top"> 
+        <display>go to Flymine server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=flymine" />
+    </inputs>
+    <uihints minwidth="800"/>
+    <code file="flymine_filter_code.py"/>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>
+

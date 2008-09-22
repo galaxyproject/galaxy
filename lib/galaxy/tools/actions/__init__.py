@@ -2,6 +2,8 @@ from galaxy.util.bunch import Bunch
 from galaxy.tools.parameters import *
 from galaxy.util.template import fill_template
 from galaxy.util.none_like import NoneDataset
+from galaxy.web import url_for
+from galaxy.jobs import JOB_OK
 
 import logging
 log = logging.getLogger( __name__ )
@@ -63,7 +65,7 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_datasets
     
-    def execute(self, tool, trans, incoming={}, set_output_hid = True ):
+    def execute(self, tool, trans, incoming={}, set_output_hid=True ):
         out_data = {}
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
@@ -90,15 +92,12 @@ class DefaultToolAction( object ):
             on_text = '%s, %s, and others' % tuple(input_names[0:2])
         else:
             on_text = ""
-        
         # Add the dbkey to the incoming parameters
         incoming[ "dbkey" ] = input_dbkey
-        
         # Keep track of parent / child relationships, we'll create all the 
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
-        
         for name, output in tool.outputs.items():
             if output.parent:
                 parent_to_child_pairs.append( ( output.parent, name ) )
@@ -149,23 +148,19 @@ class DefaultToolAction( object ):
             out_data[ name ] = data
             # Store all changes to database
             trans.app.model.flush()
-            
         # Add all the top-level (non-child) datasets to the history
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming: #don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
                 trans.history.add_dataset( data, set_hid = set_output_hid )
                 data.flush()
-                
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
             parent_dataset = out_data[ parent_name ]
             child_dataset = out_data[ child_name ]
             parent_dataset.children.append( child_dataset )
-            
         # Store data after custom code runs 
         trans.app.model.flush()
-        
         # Create the job object
         job = trans.app.model.Job()
         job.session_id = trans.get_galaxy_session( create=True ).id
@@ -189,8 +184,19 @@ class DefaultToolAction( object ):
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
         trans.app.model.flush()
-        
-        # Queue the job for execution
-        trans.app.job_queue.put( job.id, tool )
-        trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-        return out_data
+        # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
+        # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
+        # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
+        # from being queued.
+        if 'REDIRECT_URL' in incoming:
+            redirect_url = tool.parse_redirect_url( inp_data, incoming )
+            # Job should not be queued, so set state to ok
+            job.state = JOB_OK
+            job.info = "Redirected to: %s" % redirect_url
+            job.flush()
+            trans.response.send_redirect( url_for( controller='tool_runner', action='redirect', redirect_url=redirect_url ) )
+        else:
+            # Queue the job for execution
+            trans.app.job_queue.put( job.id, tool )
+            trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
+            return out_data

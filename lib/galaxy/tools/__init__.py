@@ -239,6 +239,16 @@ class Tool:
                 self.command = interpreter + " " + self.command
         else:
             self.command = ''
+        # Parameters used to build URL for redirection to external app
+        redirect_url_params = root.find( "redirect_url_params" )
+        if redirect_url_params is not None and redirect_url_params.text is not None:
+            # get rid of leading / trailing white space
+            redirect_url_params = redirect_url_params.text.strip()
+            # Replace remaining white space with something we can safely split on later
+            # when we are building the params
+            self.redirect_url_params = redirect_url_params.replace( ' ', '**^**' )
+        else:
+            self.redirect_url_params = ''
         # Short description of the tool
         self.description = util.xml_text(root, "description")
         # Job runner
@@ -677,7 +687,7 @@ class Tool:
                 return "tool_form.tmpl", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
-                out_data = self.execute( trans, params )
+                out_data = self.execute( trans, incoming=params )
                 return 'tool_executed.tmpl', dict( out_data=out_data )
             # Otherwise move on to the next page
             else:
@@ -689,8 +699,8 @@ class Tool:
             # Just a refresh, render the form with updated state and errors.
             return 'tool_form.tmpl', dict( errors=errors, tool_state=state )
       
-    def update_state( self, trans, inputs, state, incoming,
-                      prefix="", context=None, update_only=False, old_errors={}, changed_dependencies={} ):
+    def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
+                      update_only=False, old_errors={}, changed_dependencies={} ):
         """
         Update the tool state in `state` using the user input in `incoming`. 
         This is designed to be called recursively: `inputs` contains the
@@ -877,14 +887,14 @@ class Tool:
                 raise Exception( "Unexpected parameter type" )
         return args
             
-    def execute( self, trans, incoming={}, set_output_hid = True ):
+    def execute( self, trans, incoming={}, set_output_hid=True ):
         """
         Execute the tool using parameter values in `incoming`. This just
         dispatches to the `ToolAction` instance specified by 
         `self.tool_action`. In general this will create a `Job` that 
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
-        return self.tool_action.execute( self, trans, incoming, set_output_hid = set_output_hid )
+        return self.tool_action.execute( self, trans, incoming=incoming, set_output_hid=set_output_hid )
         
     def params_to_strings( self, params, app ):
         return params_to_strings( self.inputs, params, app )
@@ -1045,7 +1055,54 @@ class Tool:
             #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ) )
             raise
         return command_line
-        
+
+    def build_redirect_url_params( self, param_dict ):
+        """Substitute parameter values into self.redirect_url_params"""
+        if not self.redirect_url_params:
+            return
+        redirect_url_params = None            
+        # Substituting parameter values into the url params
+        redirect_url_params = fill_template( self.redirect_url_params, context=param_dict )
+        # Remove newlines
+        redirect_url_params = redirect_url_params.replace( "\n", " " ).replace( "\r", " " )
+        return redirect_url_params
+
+    def parse_redirect_url( self, inp_data, param_dict ):
+        """Parse the REDIRECT_URL tool param"""
+        # Tools that send data to an external application via a redirect must include the following 3
+        # tool params:
+        # REDIRECT_URL - the url to which the data is being sent
+        # DATA_URL - the url to which the receiving application will send an http post to retrieve the Galaxy data
+        # GALAXY_URL - the to which the external application may post data as a response
+        redirect_url = param_dict.get( 'REDIRECT_URL' )
+        redirect_url_params = self.build_redirect_url_params( param_dict )
+        # Add the parameters to the redirect url.  We're splitting the param string on '**^**'
+        # because the self.parse() method replaced white space with that separator.
+        params = redirect_url_params.split( '**^**' )
+        rup_dict = {}
+        for param in params:
+            p_list = param.split( '=' )
+            p_name = p_list[0]
+            p_val = p_list[1]
+            rup_dict[ p_name ] = p_val
+        DATA_URL = param_dict.get( 'DATA_URL', None )
+        assert DATA_URL is not None, "DATA_URL parameter missing in tool config."
+        # Get the dataset - there should only be 1
+        for name in inp_data.keys():
+            data = inp_data[ name ]
+        DATA_URL += "/%s/display" % str( data.id )
+        redirect_url += "?DATA_URL=%s" % DATA_URL
+        # Add the redirect_url_params to redirect_url
+        for p_name in rup_dict:
+            redirect_url += "&%s=%s" % ( p_name, rup_dict[ p_name ] )
+        # Add the current user email to redirect_url
+        if data.history.user:
+             USERNAME = str( data.history.user.email )
+        else:
+             USERNAME = 'Anonymous'
+        redirect_url += "&USERNAME=%s" % USERNAME
+        return redirect_url
+
     def call_hook( self, hook_name, *args, **kwargs ):
         """
         Call the custom code hook function identified by 'hook_name' if any,

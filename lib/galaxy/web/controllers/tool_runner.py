@@ -51,3 +51,10 @@ class ToolRunner( BaseController ):
             add_frame.wiki_url = trans.app.config.wiki_url
             add_frame.from_noframe = True
         return trans.fill_template( template, history=history, toolbox=toolbox, tool=tool, util=util, add_frame=add_frame, **vars )
+
+    @web.expose
+    def redirect( self, trans, redirect_url=None, **kwd ):
+        if not redirect_url:
+            return trans.show_error_message( "Required URL for redirection missing" )
+        trans.log_event( "Redirecting to: %s" % redirect_url )
+        return trans.fill_template( 'root/redirect.mako', redirect_url=redirect_url )
