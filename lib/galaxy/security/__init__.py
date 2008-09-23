@@ -142,7 +142,10 @@ class GalaxyRBACAgent( RBACAgent ):
         return intersect
     def get_group( self, id ):
         return self.model.Group.get( id )
-        raise 'No valid method of retrieving requested group %s' % ( id )    
+        raise 'No valid method of retrieving requested group by id %s' % ( str( id ) )
+    def get_group_by_name( self, name ):
+        return self.model.Group.get_by( name=name )
+        raise 'No valid method of retrieving requested group by name %s' % ( str( name ) )
     def create_group( self, **kwd ):
         rval = self.model.Group( **kwd )
         rval.flush()
@@ -181,14 +184,16 @@ class GalaxyRBACAgent( RBACAgent ):
         if permissions is None:
             permissions = [ ( self.create_private_user_group( user ), self.permitted_actions.__dict__.values() ) ]
         if permissions is not None:
-            for assoc in user.default_groups: #this is the association not the actual group
-                assoc.delete()
-                assoc.flush()
+            # Delete all of the previous DefaultUserGroupAssociation
+            for duga in user.default_groups: #this is the association not the actual group
+                duga.delete()
+                duga.flush()
+            # Add the new DefaultUserGroupAssociation
             for group, permitted_actions in permissions:
-                assoc = self.model.DefaultUserGroupAssociation( user, group, permitted_actions )
-                assoc.flush()
+                duga = self.model.DefaultUserGroupAssociation( user, group, permitted_actions )
+                duga.flush()
         if history:
-            for history in user.histories:
+            for history in user.active_histories:
                 self.history_set_default_access( history, permissions=permissions, dataset=dataset )
     def user_get_default_access( self, user ):
         return [ ( duga.group, duga.permitted_actions ) for duga in user.default_groups ]
@@ -199,22 +204,26 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 permissions = [ ( self.get_public_group(), self.permitted_actions.__dict__.values() ) ]
         if permissions is not None:
-            for assoc in history.default_groups: #this is the association not the actual group
-                assoc.delete()
-                assoc.flush()
+            # Delete all of the previous DefaultHistoryGroupAssociations
+            for dhga in history.default_groups: #this is the association not the actual group
+                dhga.delete()
+                dhga.flush()
+            # Add the new DefaultHistoryGroupAssociations
             for group, permitted_actions in permissions:
-                assoc = self.model.DefaultHistoryGroupAssociation( history, group, permitted_actions )
-                assoc.flush()
+                dhga = self.model.DefaultHistoryGroupAssociation( history, group, permitted_actions )
+                dhga.flush()
         if dataset:
-            for data in history.datasets:
-                for hda in data.dataset.history_associations:
-                    if history.user and hda.history not in history.user.histories:
+            for hda in history.datasets:
+                for hda2 in hda.dataset.history_associations:
+                    if history.user and hda2.history not in history.user.active_histories:
                         # This will occur when a user logs in and has datasets in their previously-public history.
-                        self.set_dataset_permissions( data.dataset, [ ( self.get_public_group(), [ self.permitted_actions.DATASET_ACCESS ] ) ] )
-                        break
+                        self.set_dataset_permissions( hda.dataset, [ ( self.get_public_group(), [ self.permitted_actions.DATASET_ACCESS ] ) ] )
+                        #break
                 else:
-                    if self.allow_action( history.user, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=data.dataset ):
-                        self.set_dataset_permissions( data.dataset, permissions )
+                    # At this point, we will have already created a gda for the public group and delete_assocs
+                    # is set to False in order to preserve it.
+                    if self.allow_action( history.user, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=hda.dataset ):
+                        self.set_dataset_permissions( hda.dataset, permissions, delete_existing_assocs=False )
     def history_get_default_access( self, history ):
         return [ ( dhga.group, dhga.permitted_actions ) for dhga in history.default_groups ]
     def get_public_group( self ):
@@ -223,7 +232,7 @@ class GalaxyRBACAgent( RBACAgent ):
         return self.model.Group.set_public_group( group )
     def guess_public_group( self ):
         return self.model.Group.guess_public_group()
-    def set_dataset_permissions( self, dataset, permissions ):
+    def set_dataset_permissions( self, dataset, permissions, delete_existing_assocs=True ):
         """
         Apply permissions (a list of (group, permitted_action) tuples)
         to a dataset, removing any existing permissions.  permissions can
@@ -231,10 +240,11 @@ class GalaxyRBACAgent( RBACAgent ):
         """
         if isinstance( dataset, self.model.HistoryDatasetAssociation ):
             dataset = dataset.dataset
-        for group_dataset_assoc in dataset.groups:
-            group_dataset_assoc.delete()
-            group_dataset_assoc.flush()
-        if len( permissions ) and isinstance( permissions[0], self.model.GroupDatasetAssociation ):
+        if delete_existing_assocs:
+            for gda in dataset.groups:
+                gda.delete()
+                gda.flush()
+        if permissions and isinstance( permissions[0], self.model.GroupDatasetAssociation ):
             permissions = [ ( gda.group, gda.permitted_actions ) for gda in permissions ]
         for ptuple in permissions:
             self.associate_components( dataset=dataset, permissions=ptuple )
@@ -259,9 +269,9 @@ class GalaxyRBACAgent( RBACAgent ):
         return bool( self.model.GroupDatasetAssociation.get_by( group_id = group_id, dataset_id = dataset_id  )  )
     def check_folder_contents( self, user, entry ):
         """
-	Return true if there are any datasets under 'folder' that the
-	user has access permission on.  We do this a lot and it's a
-	pretty inefficient method, optimizations are welcomed.
+    	Return true if there are any datasets under 'folder' that the
+    	user has access permission on.  We do this a lot and it's a
+    	pretty inefficient method, optimizations are welcomed.
         """
         if isinstance( entry, self.model.Library ):
             return self.check_folder_contents( user, entry.root_folder )

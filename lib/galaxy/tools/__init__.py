@@ -1067,7 +1067,7 @@ class Tool:
         redirect_url_params = redirect_url_params.replace( "\n", " " ).replace( "\r", " " )
         return redirect_url_params
 
-    def parse_redirect_url( self, inp_data, param_dict ):
+    def parse_redirect_url( self, data, param_dict ):
         """Parse the REDIRECT_URL tool param"""
         # Tools that send data to an external application via a redirect must include the following 3
         # tool params:
@@ -1087,9 +1087,6 @@ class Tool:
             rup_dict[ p_name ] = p_val
         DATA_URL = param_dict.get( 'DATA_URL', None )
         assert DATA_URL is not None, "DATA_URL parameter missing in tool config."
-        # Get the dataset - there should only be 1
-        for name in inp_data.keys():
-            data = inp_data[ name ]
         DATA_URL += "/%s/display" % str( data.id )
         redirect_url += "?DATA_URL=%s" % DATA_URL
         # Add the redirect_url_params to redirect_url

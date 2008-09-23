@@ -3,7 +3,8 @@
   <description> Genome analysis and prediction</description>
   <redirect_url_params>GENOME=${input1.dbkey} NAME=${input1.name} INFO=${input1.info}</redirect_url_params>
   <inputs>
-    <param format="bed" name="input1" type="data" label="Send this dataset to EpiGRAPH">
+    <param name="input1" type="data" format="bed" label="Send this dataset to EpiGRAPH" help="Query missing? See TIP below">
+      <security_check group="public" action="access" />
       <validator type="unspecified_build" />
     </param>
     <param name="REDIRECT_URL" type="hidden" value="http://epigraph.mpi-inf.mpg.de/WebGRAPH_Public_Test/faces/DataImport.jsp" />
@@ -12,6 +13,13 @@
   </inputs>
   <outputs/>
   <help>
+
+ .. class:: infomark
+
+**TIP:** Data sent to EpiGRAPH must be "publicly accessible" ( the **public** group must have permission to access the data ).  Click the pencil icon in the history item to change the dataset's permissions if you are permitted to do so.
+
+-----
+
 **What it does**
 
 This tool sends the selected dataset to EpiGRAPH for in-depth analysis and prediction.

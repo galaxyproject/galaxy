@@ -399,6 +399,7 @@ assign_mapper( context, History, History.table,
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user", 
                                          order_by=desc(History.table.c.update_time) ),
+                     active_histories=relation( History, primaryjoin=( ( History.table.c.user_id == User.table.c.id ) & ( not_( History.table.c.deleted ) ) ), order_by=desc( History.table.c.update_time ) ),
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",
                                                             cascade="all, delete-orphan",
                                                             collection_class=ordering_list( 'order_index' ) )
