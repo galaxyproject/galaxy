@@ -19,12 +19,10 @@ expr = sys.argv[3]
 round = sys.argv[4] 
 try:
     in_columns = int( sys.argv[5] )
-    # in_column_types is passed as a string that looks something like:
-    # "[u'str', u'int', u'int', u'str', u'int', u'str']"
-    in_column_types = sys.argv[6].strip( '[' ).strip( ']' ).replace( 'u', '' ).replace( "'", '' ).split( ',' )
+    in_column_types = sys.argv[6].split( ',' )
 except:
     stop_err( "Data does not appear to be tabular.  This tool can only be used with tab-delimited data." )
-
+    
 # Unescape if input has been escaped
 mapped_str = {
     '__lt__': '<',

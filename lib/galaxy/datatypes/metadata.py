@@ -60,10 +60,10 @@ class MetadataParameter( object ):
         if isinstance( value, ListType ):
             for i, elem in enumerate( value ):
                 if type ( elem ) == unicode:
-                    value[i] = str( elem )
+                    value[i] = elem.decode( 'ascii' )
         elif isinstance ( value, basestring ):
             if type( value ) == unicode:
-                value = str( value )
+                value = value.decode( 'ascii' )
         self.value = value
         self.context = context
         self.display = True
@@ -76,7 +76,7 @@ class MetadataParameter( object ):
     @classmethod
     def marshal( cls, value ):
         '''
-        This method should/can be overridden to convert the incomming
+        This method should/can be overridden to convert the incoming
         value to whatever type it is supposed to be.
         '''
         return value
@@ -273,7 +273,6 @@ class ColumnParameter( RangeParameter ):
 class ColumnTypesParameter( MetadataParameter ):
     def __init__( self, spec, value, context ):
         MetadataParameter.__init__( self, spec, value, context )
-
     def __str__(self):
         return ",".join( map( str, self.value ) )
 

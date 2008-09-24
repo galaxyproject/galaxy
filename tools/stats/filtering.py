@@ -26,9 +26,7 @@ out_fname = sys.argv[2]
 cond_text = sys.argv[3]
 try:
     in_columns = int( sys.argv[4] )
-    # in_column_types is passed as a string that looks something like:
-    # "[u'str', u'int', u'int', u'str', u'int', u'str']"
-    in_column_types = sys.argv[5].strip( '[' ).strip( ']' ).replace( 'u', '' ).replace( "'", '' ).split( ',' )
+    in_column_types = sys.argv[5].split( ',' )
 except:
     stop_err( "Data does not appear to be tabular.  This tool can only be used with tab-delimited data." )
 

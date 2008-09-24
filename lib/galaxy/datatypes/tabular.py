@@ -19,8 +19,8 @@ class Tabular( data.Text ):
     """Tab delimited data"""
 
     """Add metadata elements"""
-    MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False )
-    MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False )
+    MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0 )
+    MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
