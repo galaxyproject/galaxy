@@ -134,6 +134,8 @@
     <tool file="regVariation/getIndelRates_3way.xml" />
     <tool file="regVariation/substitutions.xml" />
     <tool file="regVariation/substitution_rates.xml" />
+    <tool file="regVariation/microsats_alignment_level.xml" />
+    <tool file="regVariation/microsats_mutability.xml" />
   </section>
   <section name="Multiple regression" id="multReg">
     <tool file="regVariation/linear_regression.xml" />

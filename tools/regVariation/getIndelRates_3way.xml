@@ -5,7 +5,7 @@
     #if $region.type == "align"
         "None"
     #else
-        $region.input2 $input2_dbkey $input2_chromCol,$input2_startCol,$input2_endCol,$input2_strandCol
+        $region.input2 $input2.dbkey $input2.metadata.chromCol,$input2.metadata.startCol,$input2.metadata.endCol,$input2.metadata.strandCol
     #end if
   </command>
   <inputs>

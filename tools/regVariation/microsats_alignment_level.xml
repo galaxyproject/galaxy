@@ -1,0 +1,61 @@
+<tool id="microsats_align1" name="Extract Orthologous Microsatellites">
+  <description> from pair-wise alignments</description>
+  <command interpreter="python">
+  	microsats_alignment_level.py $input1 $separation $out_file1 "2way" $mono_threshold $non_mono_threshold $allow_different_units
+  </command>
+  <inputs>
+    <page>
+    	<param format="fasta" name="input1" type="data" label="Select data"/>
+    	<param name="separation" size="10" type="integer" value="10" label="Minimum basepair distance between adjacent microsatellites"
+    	help="A value of 10 means: Adjacent microsatellites separated by less than 10 basepairs will be excluded from the output."/>
+    	<param name="mono_threshold" size="10" type="integer" value="9" label="Minimum Threshold for the number of repeats for mononucleotide microsatellites"
+    	help="A value of 9 means: All mononucleotide microsatellites having fewer than 9 repeats will be excluded from the output."/>
+    	<param name="non_mono_threshold" size="10" type="integer" value="4" label="Minimum Threshold for the number of repeats for non-mononucleotide microsatellites"
+    	help="A value of 4 means: All non-mononucleotide microsatellites having fewer than 4 repeats will be excluded from the output."/>
+    	<param name="allow_different_units" size="5" type="select" label="Allow orthologous positions to have different microsatellite repeat units/motifs?">
+    		<option value="0" selected="true">No</option>
+          	<option value="1">Yes</option>
+         </param>
+    </page>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" metadata_source="input1"/>
+  </outputs>
+  <requirements>
+     <requirement type="binary">bx-sputnik</requirement>
+  </requirements>
+  <tests>
+    <test>
+      <param name="input1" value="2way.maf"/>
+      <param name="separation" value="10"/>
+      <param name="mono_threshold" value="9"/>
+      <param name="non_mono_threshold" value="4"/>
+      <param name="allow_different_units" value="0"/>
+      <output name="out_file1" file="ortho_ms.tab"/>
+    </test>
+  </tests>
+
+ <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool uses a modified version of SPUTNIK to fetch microsatellite repeats from the input fasta sequences and extracts orthologous repeats from the sputnik output. The modified version allows detection of mononucleotide microsatellites. More information on SPUTNIK can be found on this website_. The modified version is available here_.
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+- Any block/s not containing exactly 2 species will be omitted. 
+
+- This tool will filter out microsatellites based on the user input values for minimum distance and repeat number thresholds. Further, this tool will also filter out microsatellites that have no orthologous microsatellites in one of the species.
+
+.. _website: http://espressosoftware.com/pages/sputnik.jsp   
+.. _here: http://www.bx.psu.edu/svn/universe/dependencies/sputnik/
+</help>  
+
+
+</tool>

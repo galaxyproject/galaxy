@@ -1,0 +1,117 @@
+<tool id="microsats_mutability1" name="Estimate microsatellite mutability" version="1.0.0">
+  <description>by specified attributes</description>
+  <command interpreter="python">
+  	microsats_mutability.py 
+  	$input1 
+  	$out_file1 
+  	${pri_condition.primary_group} 
+  	#if $pri_condition.primary_group == "6":
+      ${pri_condition.binsize} ${pri_condition.subgroup} -1 
+    #else:
+      0 ${pri_condition.sub_condition.subgroup} 
+      #if $pri_condition.sub_condition.subgroup == "6":
+       ${pri_condition.sub_condition.s_binsize}
+      #else:
+       -1
+      #end if
+    #end if
+  	$gens
+    ${region.type}
+    #if $region.type == "win":
+      ${region.input2} $input2.dbkey $input2.metadata.chromCol,$input2.metadata.startCol,$input2.metadata.endCol,$input2.metadata.strandCol
+    #else:
+      "None"
+    #end if
+  </command>
+  <inputs>
+    <page>
+      <param name="input1" type="data" format="tabular" label="Select dataset containing Orthologous microsatellites"/>
+      <conditional name="region">
+	      <param name="type" type="select" label="Estimate rates corresponding to" multiple="false">
+	         <option value="align">Alignment block</option>
+	         <option value="win">Intervals in your history</option>
+	     </param>
+	     <when value="win">
+	      	<param format="interval" name="input2" type="data" label="Choose intervals">
+	      		<validator type="unspecified_build" />
+	    	</param>
+	      </when>
+	      <when value="align" />
+      </conditional>
+      <param name="gens" size="10" type="integer" value="1" label="Number of generations between the two species in input file"/>
+      <conditional name="pri_condition">
+	      <param name="primary_group" type="select" label="Group by" multiple="false">
+	         <option value="4">Motif type (mono/di/tri etc.)</option>
+	         <option value="7">Repeat Unit (AG, GCT etc.)</option>
+	         <option value="6">Repeat Number </option>
+	      </param>
+	      <when value="6">
+	      	<param name="binsize" size="10" type="integer" value="1" label="Bin-size" help="Bin-size denotes the number of repeat numbers to be considered as a group. Bin-size of 5 will group every 5 consecutive repeat numbers into a group."/>
+	      	<param name="subgroup" type="select" label="Sub-group by" multiple="false">
+		      <option value="-1">None</option>
+			  <option value="4">Motif type (mono/di/tri etc.)</option>
+			  <option value="7">Repeat Unit (AG, GCT etc.)</option>
+			</param>
+	      </when>
+	      <when value="7">
+	        <conditional name="sub_condition">
+	    	   <param name="subgroup" type="select" label="Sub-group by" multiple="false">
+		    	 <option value="-1">None</option>
+				 <option value="4">Motif type (mono/di/tri etc.)</option>
+				 <option value="6">Repeat Number </option>
+			   </param>
+			   <when value="-1"></when>
+		       <when value="4"></when>
+		       <when value="6">
+		      	  <param name="s_binsize" size="10" type="integer" value="1" label="Bin size" help="Bin-size denotes the number of repeat numbers to be considered as a group. Bin-size of 5 will group every 5 consecutive repeat numbers into a group."/>
+		       </when>
+			</conditional>
+	      </when>
+	      <when value="4">
+			<conditional name="sub_condition">
+	    	   <param name="subgroup" type="select" label="Sub-group by" multiple="false">
+		    	 <option value="-1">None</option>
+				 <option value="7">Repeat Unit (AG, GCT etc.)</option>
+				 <option value="6">Repeat Number </option>
+			   </param>
+			   <when value="-1"></when>
+		       <when value="7"></when>
+			   <when value="6">
+		      	  <param name="s_binsize" size="10" type="integer" value="1" label="Bin size" help="Bin-size denotes the number of repeat numbers to be considered as a group. Bin-size of 5 will group every 5 consecutive repeat numbers into a group."/>
+		       </when>
+			</conditional>
+	      </when>
+      </conditional>
+    </page>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" />
+  </outputs>
+  <!-- 
+  <tests>
+    <test>
+      <param name="input1" value="ortho_ms.tab"/>
+      <param name="type" value="align"/>
+      <param name="gens" value="1"/>
+      <param name="primary_group" value="4"/>
+      <param name="sub_condition|subgroup" value="7"/>
+      <output name="out_file1" file="ortho_ms_mut.tab"/>
+    </test>
+  </tests>
+   -->
+<help>
+.. class:: infomark
+
+**What it does**
+
+This tool computes microsatellite mutability for the orthologous microsatellites fetched from  'Extract Orthologous Microsatellites from pair-wise alignments' tool.
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+The user selected group and subgroup by features, the computed mutability and the count of the number of repeats used to compute that mutability are added as columns to the output.
+</help>
+</tool>
