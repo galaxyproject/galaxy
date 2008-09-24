@@ -8,6 +8,7 @@
     <ul>
         <li><a href="${h.url_for( action='change_password' )}">Change your password</a></li>
         <li><a href="${h.url_for( action='change_email' )}">Update your email address</a></li>
+        <li><a href="${h.url_for( action='set_default_permitted_actions' )}">Change default permitted actions</a> for new histories</li>
         <li><a href="${h.url_for( action='logout' )}">Logout</a></li>
     </ul>
 %else:
