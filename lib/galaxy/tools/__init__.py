@@ -1185,6 +1185,7 @@ class Tool:
                 primary_data.info = dataset.info
                 primary_data.state = primary_data.states.OK
                 primary_data.init_meta( copy_from=dataset )
+                primary_data.set_meta()
                 primary_data.set_peek()
                 primary_data.set_size()
                 primary_data.flush()
@@ -1245,6 +1246,8 @@ class DatasetFilenameWrapper( object ):
         def __getattr__( self, name ):
             rval = self.metadata.get( name, None )
             if name in self.metadata.spec:
+                if rval is None:
+                    rval = self.metadata.spec[name].no_value
                 rval = self.metadata.spec[name].wrap( rval, self.metadata.parent )
             return rval
         def __nonzero__( self ):

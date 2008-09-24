@@ -5,7 +5,7 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import os.path, os, errno
+import os.path, os, errno, copy
 import sha
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
@@ -114,7 +114,8 @@ class HistoryDatasetAssociation( object ):
         self.extension = extension
         self.designation = designation
         self.metadata = metadata or dict()
-        self.dbkey = dbkey
+        if dbkey: #dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
+            self.dbkey = dbkey
         self.deleted = deleted
         self.visible = visible
         # Relationships
@@ -164,7 +165,7 @@ class HistoryDatasetAssociation( object ):
         return self._metadata_collection
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
-        self._metadata = dict( bunch.items() )
+        self._metadata = dict( [ ( key, copy.deepcopy( value ) ) for key, value in bunch.items() ] )
     metadata = property( get_metadata, set_metadata )
 
     """

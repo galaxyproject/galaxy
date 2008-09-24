@@ -155,11 +155,8 @@ class MetadataCollection:
         else: self.spec = spec
         
         #set default metadata values
-        if not self.parent._metadata:
+        if self.parent._metadata is None:
             self.parent._metadata = {}
-        for name, value in self.spec.items():
-            if name not in self.bunch:
-                self.bunch[name] = value.default
         
     def __iter__(self):
         return self.bunch.__iter__()
@@ -177,12 +174,10 @@ class MetadataCollection:
     def __getattr__(self, name):
         if name == "bunch":
             return self.parent._metadata
-        rval = self.bunch.get( name )
-        if rval is None:
-            rval = self.spec.get( name, None )
-            if rval:
-                rval = rval.no_value
-        return rval
+        if name in self.bunch:
+            return self.bunch[name]
+        if name in self.spec:
+            return self.spec[name].default
     def __setattr__(self, name, value):
         if name in ["parent","spec"]:
             self.__dict__[name] = value
