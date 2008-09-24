@@ -204,7 +204,10 @@ class DefaultToolAction( object ):
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
         # from being queued.
         if 'REDIRECT_URL' in incoming:
-            redirect_url = tool.parse_redirect_url( inp_data, incoming )
+            # Get the dataset - there should only be 1
+            for name in inp_data.keys():
+                dataset = inp_data[ name ]
+            redirect_url = tool.parse_redirect_url( dataset, incoming )
             # Job should not be queued, so set state to ok
             job.state = JOB_OK
             job.info = "Redirected to: %s" % redirect_url
