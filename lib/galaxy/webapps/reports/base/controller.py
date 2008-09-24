@@ -8,7 +8,6 @@ log = logging.getLogger( __name__ )
 
 class BaseController( object ):
     """Base class for Galaxy webapp application controllers."""
-    beta = False
     def __init__( self, app ):
         """Initialize an interface for application 'app'"""
         self.app = app

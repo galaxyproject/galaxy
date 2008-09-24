@@ -16,8 +16,6 @@ class BaseController( object ):
     """
     Base class for Galaxy web application controllers.
     """
-    
-    beta = False
 
     def __init__( self, app ):
         """Initialize an interface for application 'app'"""

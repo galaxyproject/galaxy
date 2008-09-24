@@ -13,7 +13,6 @@ from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
 
 class WorkflowController( BaseController ):
-    beta = True
     
     @web.expose
     @web.require_login( "use Galaxy workflows" )

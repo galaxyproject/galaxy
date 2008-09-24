@@ -40,7 +40,6 @@ def add_controllers( webapp, app ):
             for key in dir( module ):
                 T = getattr( module, key )
                 if isclass( T ) and T is not BaseController and issubclass( T, BaseController ):
-                    #if app.config.enable_beta_features or not ( T.beta ):
                     webapp.add_controller( name, T( app ) )
 
 def app_factory( global_conf, **kwargs ):
