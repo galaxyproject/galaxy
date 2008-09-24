@@ -5,7 +5,7 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import os.path, os, errno
+import os.path, os, errno, copy
 import sha
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
@@ -103,6 +103,7 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
+<<<<<<< local
 class GroupDatasetAssociation( object ):
     def __init__( self, group, dataset, permitted_actions=[] ):
         if isinstance( group,  GroupDatasetAssociation ) or \
@@ -163,6 +164,26 @@ class DefaultHistoryGroupAssociation( object ):
            isinstance( group, DefaultUserGroupAssociation ) or \
            isinstance( group, DefaultHistoryGroupAssociation ):
             group = group.group
+=======
+class HistoryDatasetAssociation( object ):
+    def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
+                  dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
+                  parent_id=None, copied_from_history_dataset_association = None, validation_errors=None, visible=True, create_dataset = False ):
+        self.name = name or "Unnamed dataset"
+        self.id = id
+        self.hid = hid
+        self.info = info
+        self.blurb = blurb
+        self.peek = peek
+        self.extension = extension
+        self.designation = designation
+        self.metadata = metadata or dict()
+        if dbkey: #dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
+            self.dbkey = dbkey
+        self.deleted = deleted
+        self.visible = visible
+        # Relationships
+>>>>>>> other
         self.history = history
         self.group = group
         self.permitted_actions = permitted_actions
@@ -204,7 +225,7 @@ class DefaultHistoryGroupAssociation( object ):
         return self._metadata_collection
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
-        self._metadata = dict( bunch.items() )
+        self._metadata = dict( [ ( key, copy.deepcopy( value ) ) for key, value in bunch.items() ] )
     metadata = property( get_metadata, set_metadata )
 
     """
