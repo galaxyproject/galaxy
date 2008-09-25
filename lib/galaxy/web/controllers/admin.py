@@ -4,6 +4,7 @@ from galaxy.web.base.controller import *
 from galaxy.datatypes import sniff
 from galaxy.security import RBACAgent
 import galaxy.model
+from galaxy.model.orm import *
 from xml.sax.saxutils import escape, unescape
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
@@ -138,7 +139,7 @@ class Admin( BaseController ):
         if not name:
             msg = "Please enter a name"
             trans.response.send_redirect( '/admin/create_group?msg=%s' % msg )
-        elif len( trans.app.model.Group.select_by( name=name ) ) > 0:
+        elif trans.app.model.Group.filter_by( name=name ).first():
             msg = "A group with that name already exists"
             trans.response.send_redirect( '/admin/create_group?msg=%s' % msg )
         else:
@@ -550,7 +551,7 @@ class Admin( BaseController ):
             message = kwd['message']
         else:
             message = None
-        return trans.fill_template( '/admin/library/browser.mako', libraries=trans.app.model.Library.select_by( deleted = False ), message = message )
+        return trans.fill_template( '/admin/library/browser.mako', libraries=trans.app.model.Library.filter_by( deleted=False ).all(), message = message )
     libraries = library_browser
     @web.expose
     def library( self, trans, id=None, **kwd ):

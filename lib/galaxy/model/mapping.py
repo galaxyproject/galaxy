@@ -604,7 +604,7 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
     # Ensure group named 'public' exists
-    public_group = result.Group.get_by( name='public' )
+    public_group = result.Group.filter_by( name='public' ).first()
     if not public_group:
         public_group = result.security_agent.create_group( name = 'public' )
     # Store public group id
