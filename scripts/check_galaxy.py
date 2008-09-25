@@ -190,7 +190,7 @@ class Browser:
         tc.fv("1", "password", pw)
         tc.submit("Login")
         tc.code(200)
-        if len(tc.get_browser()._browser.forms()) > 0:
+        if len(tc.get_browser().get_all_forms()) > 0:
             # uh ohs, fail
             p = userParser()
             p.feed(tc.browser.get_html())
@@ -210,7 +210,7 @@ class Browser:
         tc.fv("1", "confirm", pw)
         tc.submit("Create")
         tc.code(200)
-        if len(tc.get_browser()._browser.forms()) > 0:
+        if len(tc.get_browser().get_all_forms()) > 0:
             p = userParser()
             p.feed(tc.browser.get_html())
             if p.already_exists:

@@ -64,8 +64,8 @@ class Interval( Tabular ):
         else:
             dataset.blurb = "%s regions" % util.commaify( str( line_count ) )
     
-    def set_meta( self, dataset, first_line_is_header=False, **kwd ):
-        Tabular.set_meta( self, dataset, skip=0 )
+    def set_meta( self, dataset, overwrite = True, first_line_is_header = False, **kwd ):
+        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 0 )
         
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         if dataset.has_data():
@@ -80,7 +80,8 @@ class Interval( Tabular ):
                         for index, col_name in enumerate( elems ):
                             if col_name in valid:
                                 meta_name = valid[col_name]
-                                setattr( dataset.metadata, meta_name, index+1 )
+                                if overwrite or not dataset.metadata.element_is_set( meta_name ):
+                                    setattr( dataset.metadata, meta_name, index+1 )
                                 values = alias_spec[ meta_name ]
                                 start = values.index( col_name )
                                 for lower in values[ start: ]:
@@ -94,26 +95,32 @@ class Interval( Tabular ):
                         if len( elems ) > 2:
                             for str in data.col1_startswith:
                                 if line.lower().startswith( str ):
-                                    dataset.metadata.chromCol = 1
+                                    if overwrite or not dataset.metadata.element_is_set( 'chromCol' ):
+                                        dataset.metadata.chromCol = 1
                                     try:
                                         int( elems[1] )
-                                        dataset.metadata.startCol = 2
+                                        if overwrite or not dataset.metadata.element_is_set( 'startCol' ):
+                                            dataset.metadata.startCol = 2
                                     except:
                                         pass # Metadata default will be used
                                     try:
                                         int( elems[2] )
-                                        dataset.metadata.endCol = 3
+                                        if overwrite or not dataset.metadata.element_is_set( 'endCol' ):
+                                            dataset.metadata.endCol = 3
                                     except:
                                         pass # Metadata default will be used
                                     if len( elems ) > 3:
                                         try:
                                             int( elems[3] )
                                         except:
-                                            dataset.metadata.nameCol = 4 
+                                            if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
+                                                dataset.metadata.nameCol = 4 
                                     if len( elems ) < 6 or elems[5] not in data.valid_strand:
-                                        dataset.metadata.strandCol = 0
+                                        if overwrite or not dataset.metadata.element_is_set(  'strandCol' ):
+                                            dataset.metadata.strandCol = 0
                                     else:
-                                        dataset.metadata.strandCol = 6
+                                        if overwrite or not dataset.metadata.element_is_set( 'strandCol' ):
+                                            dataset.metadata.strandCol = 6
                                     metadata_is_set = True
                                     break
                         if metadata_is_set:
@@ -286,8 +293,9 @@ class Bed( Interval ):
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
+    ###do we need to repeat these? they are the same as should be inherited from interval type
     
-    def set_meta( self, dataset, **kwd ):
+    def set_meta( self, dataset, overwrite = True, **kwd ):
         """Sets the metadata information for datasets previously determined to be in bed format."""
         i = 0
         if dataset.has_data():
@@ -300,15 +308,18 @@ class Bed( Interval ):
                         for startswith in data.col1_startswith:
                             if line.lower().startswith( startswith ):
                                 if len( elems ) > 3:
-                                    dataset.metadata.nameCol = 4
+                                    if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
+                                        dataset.metadata.nameCol = 4
                                 if len(elems) < 6:
-                                    dataset.metadata.strandCol = 0
+                                    if overwrite or not dataset.metadata.element_is_set( 'strandCol' ):
+                                        dataset.metadata.strandCol = 0
                                 else:
-                                    dataset.metadata.strandCol = 6
+                                    if overwrite or not dataset.metadata.element_is_set( 'strandCol' ):
+                                        dataset.metadata.strandCol = 6
                                 metadata_set = True
                                 break
                 if metadata_set: break
-            Tabular.set_meta( self, dataset, skip=i )
+            Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
     
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
@@ -443,7 +454,7 @@ class Gff( Tabular ):
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'elegans', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
@@ -456,7 +467,7 @@ class Gff( Tabular ):
                         break
                     except:
                         pass
-        Tabular.set_meta( self, dataset, skip=i )
+        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
 
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
@@ -589,7 +600,7 @@ class Gff3( Gff ):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
@@ -614,7 +625,7 @@ class Gff3( Gff ):
                     phase = elems[7]
                     if valid_start and valid_end and start < end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
                         break
-        Tabular.set_meta( self, dataset, skip=i )
+        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
 
     def sniff( self, filename ):
         """
@@ -692,7 +703,7 @@ class Wiggle( Tabular ):
     def make_html_table( self, dataset ):
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
@@ -705,7 +716,7 @@ class Wiggle( Tabular ):
                     for str in data.col1_startswith:
                         if elems[0].lower().startswith(str):
                             break
-        Tabular.set_meta( self, dataset, skip=i )
+        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
 
     def sniff( self, filename ):
         """
@@ -746,8 +757,8 @@ class CustomTrack ( Tabular ):
         """Initialize interval datatype, by adding UCSC display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
-    def set_meta( self, dataset, **kwd ):
-        Tabular.set_meta( self, dataset, skip=1 )
+    def set_meta( self, dataset, overwrite = True, **kwd ):
+        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 1 )
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
@@ -858,8 +869,8 @@ class GBrowseTrack ( Tabular ):
         Tabular.__init__(self, **kwd)
         self.add_display_app ('elegans', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
-    def set_meta( self, dataset, **kwd ):
-        Tabular.set_meta( self, dataset, skip=1 )
+    def set_meta( self, dataset, overwrite = True, **kwd ):
+        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 1 )
     
     def make_html_table( self, dataset ):
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )

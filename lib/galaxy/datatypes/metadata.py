@@ -185,6 +185,8 @@ class MetadataCollection:
             self.parent._metadata = value
         else:
             self.bunch[name] = value
+    def element_is_set( self, name ):
+        return bool( self.bunch.get( name, False ) )
 
 MetadataElement = Statement(MetadataElementSpec)
 
