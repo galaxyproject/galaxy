@@ -190,8 +190,7 @@ class Registry( object ):
         # initialization.
         if data.has_data():
             data.init_meta( copy_from=data )
-            if isinstance( data.datatype, tabular.Tabular ):
-                data.set_readonly_meta()
+            data.set_meta( overwrite = False )
             data.set_peek()
         return data
 

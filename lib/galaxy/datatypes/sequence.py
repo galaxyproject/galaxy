@@ -164,7 +164,7 @@ class Maf( Alignment ):
     def init_meta( self, dataset, copy_from=None ):
         Alignment.init_meta( self, dataset, copy_from=copy_from )
     
-    def set_meta( self, dataset, first_line_is_header=False, **kwd ):
+    def set_meta( self, dataset, overwrite = True, **kwd ):
         """
         Parses and sets species and chromosomes from MAF files.
         """
@@ -190,6 +190,7 @@ class Maf( Alignment ):
                 if i > 100000: break
         except: 
             pass
+        #these metadata values are not accessable by users, always overwrite
         dataset.metadata.species = species
         dataset.metadata.species_chromosomes = species_chromosomes
     

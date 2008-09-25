@@ -26,8 +26,8 @@ class Tabular( data.Text ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
     def set_readonly_meta( self, dataset, skip=1, **kwd ):
         """Resets the values of readonly metadata elements."""
-        Tabular.set_meta( self, dataset, skip=skip )
-    def set_meta( self, dataset, skip=1, **kwd ):
+        Tabular.set_meta( self, dataset, overwrite = True, skip = skip )
+    def set_meta( self, dataset, overwrite = True, skip = 1, **kwd ):
         """
         Tries to determine the number of columns as well as those columns
         that contain numerical values in the dataset.  A skip parameter is
@@ -35,6 +35,7 @@ class Tabular( data.Text ):
         their data type classes are responsible to determine how many invalid
         comment lines should be skipped.
         """
+        #we treat 'overwrite' as always True (we always want to set tabular metadata when called)
         if dataset.has_data():
             column_types = []
  

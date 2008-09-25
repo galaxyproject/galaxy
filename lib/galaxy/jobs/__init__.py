@@ -409,12 +409,7 @@ class JobWrapper( object ):
                     dataset.blurb = "error"
                 elif dataset.has_data():
                     # Only set metadata values if they are missing...
-                    if dataset.missing_meta():
-                        dataset.set_meta()
-                    else:
-                        # ...however, some tools add / remove columns,
-                        # so we have to reset the readonly metadata values
-                        dataset.set_readonly_meta()
+                    dataset.set_meta( overwrite_exisiting = False )
                     dataset.set_peek()
                 else:
                     dataset.blurb = "empty"
