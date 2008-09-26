@@ -1,5 +1,5 @@
-
 from galaxy.web.base.controller import *
+from galaxy.model.orm import *
 import logging
 
 log = logging.getLogger( __name__ )
@@ -7,7 +7,7 @@ log = logging.getLogger( __name__ )
 class Library( BaseController ):
     @web.expose
     def browse( self, trans, **kwd ):
-        return trans.fill_template( '/library/browser.mako', libraries=trans.app.model.Library.select_by( deleted = False ) )
+        return trans.fill_template( '/library/browser.mako', libraries=trans.app.model.Library.filter_by( deleted=False ).all() )
     index = browse
     @web.expose
     def import_datasets( self, trans, import_ids=[], **kwd ):

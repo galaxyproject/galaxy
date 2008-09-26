@@ -139,7 +139,7 @@ class Group( object ):
     @classmethod
     def guess_public_group( cls ):
         # Retrieve from database and store public group id
-        group = Group.select_by( name='public' )[0]
+        group = Group.filter_by( name='public' ).first()
         cls.set_public_group( group )
 
 class UserGroupAssociation( object ):

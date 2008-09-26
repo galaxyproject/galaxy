@@ -1,9 +1,8 @@
 """
 Contains the user interface in the Universe class
 """
-
 from galaxy.web.base.controller import *
-
+from galaxy.model.orm import *
 import logging, os, string
 from random import choice
 
@@ -53,7 +52,7 @@ class User( BaseController ):
                 email_err = "Please enter a real email address"
             elif len( email) > 255:
                 email_err = "Email address exceeds maximum allowable length"
-            elif len( trans.app.model.User.select_by( email=email ) ) > 0:
+            elif trans.app.model.User.filter_by( email=email ).first():
                 email_err = "User with that email already exists"
             elif email != conf_email:
                 conf_email_err = "Email addresses do not match."
@@ -73,7 +72,7 @@ class User( BaseController ):
         email_error = password_error = None
         # Attempt login
         if email or password:
-            user = trans.app.model.User.get_by( email = email )
+            user = trans.app.model.User.filter_by( email=email ).first()
             if not user:
                 email_error = "No such user"
             elif user.external:
@@ -108,7 +107,7 @@ class User( BaseController ):
                 email_error = "Please enter a real email address"
             elif len( email) > 255:
                 email_error = "Email address exceeds maximum allowable length"
-            elif len( trans.app.model.User.select_by( email=email ) ) > 0:
+            elif trans.app.model.User.filter_by( email=email ).first():
                 email_error = "User with that email already exists"
             elif len( password ) < 6:
                 password_error = "Please use a password of at least 6 characters"
@@ -144,7 +143,7 @@ class User( BaseController ):
     @web.expose
     def reset_password(self, trans, email=None, **kwd):
         error = ''
-        reset_user = trans.app.model.User.get_by( email = email )
+        reset_user = trans.app.model.User.filter_by( email=email ).first()
         user = trans.get_user()
         if reset_user:
             if user and user.id != reset_user.id:

@@ -59,7 +59,7 @@ class TestHistory( TwillTestCase ):
     # twill version 0.9 still does not allow for the following test
     #def test_15_add_group_member( self ):
     #    """Testing adding a member to an existing group"""
-    #    group = galaxy.model.Group.get_by( name='New Test Group' )
+    #    group = galaxy.model.Group.filter_by( name='New Test Group' ).all()[0]
     #    group_id = str( group.id )
     #    group_name = group.name.replace( ' ', '+' )
     #    self.add_group_member( group_id=group_id, group_name=group_name )
@@ -70,17 +70,17 @@ class TestHistory( TwillTestCase ):
         """Testing deleting a group"""
         self.visit_page( "admin/groups" )
         self.check_page_for_string( "group_name=New+Test+Group" )
-        group = galaxy.model.Group.get_by( name='New Test Group' )
+        group = galaxy.model.Group.filter_by( name='New Test Group' ).all()[0]
         group_id = str( group.id )
         self.mark_group_deleted( group_id=group_id )
     def test_25_undelete_group( self ):
         """Testing undeleting a deleted group"""
-        group = galaxy.model.Group.get_by( name='New Test Group' )
+        group = galaxy.model.Group.filter_by( name='New Test Group' ).all()[0]
         group_id = str( group.id )
         self.undelete_group( group_id=group_id )
     def test_30_purge_group( self ):
         """Testing purging a group"""
-        group = galaxy.model.Group.get_by( name='New Test Group' )
+        group = galaxy.model.Group.filter_by( name='New Test Group' ).all()[0]
         self.purge_group( group=group )
 
     def test_20_create_library( self ):

@@ -144,7 +144,7 @@ class GalaxyRBACAgent( RBACAgent ):
         return self.model.Group.get( id )
         raise 'No valid method of retrieving requested group by id %s' % ( str( id ) )
     def get_group_by_name( self, name ):
-        return self.model.Group.get_by( name=name )
+        return self.model.Group.filter_by( name=name ).first()
         raise 'No valid method of retrieving requested group by name %s' % ( str( name ) )
     def create_group( self, **kwd ):
         rval = self.model.Group( **kwd )
@@ -260,13 +260,13 @@ class GalaxyRBACAgent( RBACAgent ):
         assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to check for associations.'
         if 'dataset' in kwd:
             if 'group' in kwd:
-                return self.model.GroupDatasetAssociation.get_by( group_id = kwd['group'].id, dataset_id = kwd['dataset'].id )
+                return self.model.GroupDatasetAssociation.filter_by( group_id=kwd['group'].id, dataset_id=kwd['dataset'].id ).first()
         elif 'user' in kwd:
             if 'group' in kwd:
-                return self.model.UserGroupAssociation.get_by( group_id = kwd['group'].id, user_id = kwd['user'].id )
+                return self.model.UserGroupAssociation.filter_by( group_id=kwd['group'].id, user_id=kwd['user'].id ).first()
         raise 'No valid method of associating provided components: %s' % kwd
     def dataset_has_group( self, dataset_id, group_id ):
-        return bool( self.model.GroupDatasetAssociation.get_by( group_id = group_id, dataset_id = dataset_id  )  )
+        return bool( self.model.GroupDatasetAssociation.filter_by( group_id=group_id, dataset_id=dataset_id  ).first() )
     def check_folder_contents( self, user, entry ):
         """
     	Return true if there are any datasets under 'folder' that the

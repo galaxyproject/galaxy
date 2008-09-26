@@ -1,15 +1,11 @@
 """
 Contains the main interface in the Universe class
 """
-from galaxy.web.base.controller import *
-
-import logging, os, sets, string, shutil
-import re, socket
-
-from galaxy import util, datatypes, jobs, web, util
-
+import logging, os, sets, string, shutil, urllib, re, socket
 from cgi import escape, FieldStorage
-import urllib
+from galaxy import util, datatypes, jobs, web, util
+from galaxy.web.base.controller import *
+from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
@@ -449,13 +445,13 @@ class RootController( BaseController ):
         if not email:
             return trans.fill_template("/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
         user = trans.get_user()  
-        send_to_user = trans.app.model.User.get_by( email = email )
+        send_to_user = trans.app.model.User.filter_by( email=email ).first()
         p = util.Params( kwd )
         if p.action:
             if p.action == "no_share":
                 trans.response.send_redirect( url_for( action='history_options' ) )
             try:
-                send_to_group = trans.app.model.Group.select_by( name = send_to_user.email + ' private group' )[0]
+                send_to_group = trans.app.model.Group.filter_by( name=send_to_user.email+' private group' ).first()
             except:
                 send_to_group = None
             if not send_to_group:
@@ -532,7 +528,7 @@ class RootController( BaseController ):
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.app.model.GalaxySessionToHistoryAssociation.selectone_by( session_id=galaxy_session.id, history_id=new_history.id )
+                association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
@@ -549,7 +545,7 @@ class RootController( BaseController ):
             new_history.user_id = None
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.app.model.GalaxySessionToHistoryAssociation.selectone_by( session_id=galaxy_session.id, history_id=new_history.id )
+                association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
@@ -574,7 +570,7 @@ class RootController( BaseController ):
             if new_history:
                 galaxy_session = trans.get_galaxy_session()
                 try:
-                    association = trans.app.model.GalaxySessionToHistoryAssociation.selectone_by( session_id=galaxy_session.id, history_id=new_history.id )
+                    association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
                 except:
                     association = None
                 new_history.add_galaxy_session( galaxy_session, association=association )
