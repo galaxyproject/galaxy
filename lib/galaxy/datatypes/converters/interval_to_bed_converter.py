@@ -38,6 +38,7 @@ def __main__():
     skipped_lines = 0
     first_skipped_line = 0
     out = open( output_name,'w' )
+    count = 0
     for count, region in enumerate( bx.intervals.io.NiceReaderWrapper( open( input_name, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False ) ):
         try:
             if nameCol >= 0:
