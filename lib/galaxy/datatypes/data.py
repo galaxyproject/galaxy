@@ -185,6 +185,10 @@ class Data( object ):
         """Returns available converters by type for this dataset"""
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
     
+    def find_conversion_destination( self, dataset, accepted_formats, datatypes_registry, **kwd ):
+        """Returns ( target_ext, exisiting converted dataset )"""
+        return datatypes_registry.find_conversion_destination_for_dataset_by_extensions( dataset, accepted_formats, **kwd )
+    
     def convert_dataset(self, trans, original_dataset, target_type, return_output = False, visible = True ):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type( original_dataset.ext, target_type )

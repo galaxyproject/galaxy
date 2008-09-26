@@ -29,22 +29,21 @@ class DefaultToolAction( object ):
         def visitor( prefix, input, value, parent = None ):
             def process_dataset( data ):
                 if data and not isinstance( data.datatype, input.formats ):
-                    for target_ext in input.extensions:
-                        if target_ext in data.get_converter_types():
-                            data.refresh() #need to refresh incase this conversion just took place, i.e. input above in tool performed the same conversion
-                            datasets = data.get_converted_files_by_type( target_ext )
-                            if datasets: data = datasets[0]
-                            elif input.converter_safe( param_values, trans ):
-                                #run converter here
-                                assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = data, file_type = target_ext, metadata_safe = False )
-                                new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
-                                new_data.hid = data.hid
-                                new_data.name = data.name
-                                new_data.flush()
-                                assoc.dataset = new_data
-                                assoc.flush()
-                                data = new_data
-                            break
+                    data.refresh() #need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
+                    target_ext, converted_dataset = data.find_conversion_destination( input.formats, converter_safe = input.converter_safe( param_values, trans ) )
+                    if target_ext:
+                        if converted_dataset:
+                            data = converted_dataset
+                        else:
+                            #run converter here
+                            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = data, file_type = target_ext, metadata_safe = False )
+                            new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
+                            new_data.hid = data.hid
+                            new_data.name = data.name
+                            new_data.flush()
+                            assoc.dataset = new_data
+                            assoc.flush()
+                            data = new_data
                 return data
             if isinstance( input, DataToolParameter ):
                 if isinstance( value, list ):

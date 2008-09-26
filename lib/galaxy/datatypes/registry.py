@@ -233,3 +233,16 @@ class Registry( object ):
         if target_ext in converters.keys():
             return converters[target_ext]
         return None
+    def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe = True ):
+        """Returns ( target_ext, exisiting converted dataset )"""
+        for convert_ext in self.get_converters_by_datatype( dataset.ext ):
+            if isinstance( self.get_datatype_by_extension( convert_ext ), accepted_formats ):
+                datasets = dataset.get_converted_files_by_type( convert_ext )
+                if datasets:
+                    ret_data = datasets[0]
+                elif not converter_safe:
+                    continue
+                else:
+                    ret_data = None
+                return ( convert_ext, ret_data )
+        return ( None, None )

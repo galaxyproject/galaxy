@@ -1059,16 +1059,12 @@ class DataToolParameter( ToolParameter ):
                         selected = ( value and ( data in value ) )
                         field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
                     else:
-                        for target_ext in self.extensions:
-                            if target_ext in data.get_converter_types():
-                                datasets = data.get_converted_files_by_type( target_ext )
-                                if datasets:
-                                    data = datasets[0]
-                                elif not self.converter_safe( other_values, trans ):
-                                    continue
-                                selected = ( value and ( data in value ) )
-                                field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
-                                break #we only report the first valid converter, assume self.extensions is a priority list
+                        target_ext, converted_dataset = data.find_conversion_destination( self.formats, converter_safe = self.converter_safe( other_values, trans ) )
+                        if target_ext:
+                            if converted_dataset:
+                                data = converted_dataset
+                            selected = ( value and ( data in value ) )
+                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
                 # Also collect children via association object
                 dataset_collector( data.children, hid )
         dataset_collector( history.datasets, None )
@@ -1111,9 +1107,9 @@ class DataToolParameter( ToolParameter ):
                 pass #no valid options
         def dataset_collector( datasets ):
             def is_convertable( dataset ):
-                for target_ext in self.extensions:
-                    if target_ext in data.get_converter_types():
-                        return True
+                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats, converter_safe = True ) #need to assume converter_safe = True, since we don't know about other parameter values here
+                if target_ext is not None:
+                    return True
                 return False
             for i, data in enumerate( datasets ):
                 if data.visible and not data.deleted and data.state not in [data.states.ERROR] and ( isinstance( data.datatype, self.formats) or is_convertable( data ) ):
@@ -1184,7 +1180,7 @@ class DataToolParameter( ToolParameter ):
             return []
 
     def converter_safe( self, other_values, trans ):
-        if trans.workflow_building_mode:
+        if not hasattr( trans, 'workflow_building_mode' ) or trans.workflow_building_mode:
             return False
         converter_safe = [True]
         def visitor( prefix, input, value, parent = None ):

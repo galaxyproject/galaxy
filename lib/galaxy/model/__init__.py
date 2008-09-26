@@ -255,6 +255,10 @@ class HistoryDatasetAssociation( object ):
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
     
+    def find_conversion_destination( self, accepted_formats, **kwd ):
+        """Returns ( target_ext, exisiting converted dataset )"""
+        return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
+    
     def copy( self, copy_children = False, parent_id = None ):
         des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
         des.flush()
