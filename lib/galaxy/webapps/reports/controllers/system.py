@@ -157,13 +157,15 @@ class System( BaseController ):
         disk_usage = self.get_disk_usage( file_path )
         min_file_size = 2**32 # 4 Gb
         file_size_str = nice_size( min_file_size )
+        hda = trans.model.HistoryDatasetAssociation
         d = trans.model.Dataset
         datasets = []
         where = ( d.table.c.file_size > min_file_size )
         dataset_rows = d.query().filter( where ).order_by( desc( d.table.c.file_size ) )
 
         for dataset in dataset_rows:
-            datasets.append( ( dataset.id, str( dataset.update_time )[0:10], dataset.history_id, dataset.deleted, dataset.file_size ) )
+            history_dataset_assoc = hda.filter_by( dataset_id=dataset.id ).order_by( desc( hda.table.c.history_id ) ).all()[0]
+            datasets.append( ( dataset.id, str( dataset.update_time )[0:10], history_dataset_assoc.history_id, dataset.deleted, dataset.file_size ) )
         return file_path, disk_usage, datasets, file_size_str
 
 def nice_size( size ):
