@@ -36,12 +36,24 @@ class UploadToolAction( object ):
                 return self.upload_empty( trans, "Error:", str( e ) )
         if url_paste not in [ None, "" ]:
             if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
+                # If we were sent a DATA_URL from an external application in a post, NAME and INFO
+                # values should be in the request
+                if 'NAME' in incoming and incoming[ 'NAME' ] not in [ "None", None ]:
+                    NAME = incoming[ 'NAME' ]
+                else:
+                    NAME = ''
+                if 'INFO' in incoming and incoming[ 'INFO' ] not in [ "None", None ]:
+                    INFO = incoming[ 'INFO' ]
+                else:
+                    INFO = "uploaded url"
                 url_paste = url_paste.replace( '\r', '' ).split( '\n' )
                 for line in url_paste:
                     line = line.rstrip( '\r\n' )
                     if line:
+                        if not NAME:
+                            NAME = line
                         try:
-                            data_list.append( self.add_file( trans, urllib.urlopen( line ), line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
+                            data_list.append( self.add_file( trans, urllib.urlopen( line ), NAME, file_type, dbkey, info=INFO, space_to_tab=space_to_tab ) )
                         except Exception, e:
                             return self.upload_empty( trans, "Error:", str( e ) )
             else:

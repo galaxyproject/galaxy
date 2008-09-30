@@ -87,7 +87,39 @@ class RootController( BaseController ):
             return trans.fill_template("root/history_item.mako", data=data, hid=hid)
         else:
             return trans.show_error_message( "Must specify a dataset id.")
-        
+
+    @web.expose
+    def dataset_import( self, trans, **kwd ):
+        """
+        External applications (e.g., EpiGRAPH) can import data to Galaxy by passing the following:
+        1. DATA_URL - the url to which Galaxy should post a request to retrieve the data
+        2. GENOME - the name of the UCSC genome assembly (e.g. hg18), dbkey in Galaxy
+        3. NAME - data.name in Galaxy
+        4. INFO - data.info in Galaxy
+        This method will create the tool parameters expected by the upload tool so that it
+        can be executed to retrieve the data from the external application.
+        """
+        params_dict = {}
+        params = util.Params( kwd )
+        DATA_URL = params.get( 'DATA_URL', None )
+        assert DATA_URL is not None, "Required DATA_URL parameter missing from request"
+        params_dict[ 'url_paste' ] = DATA_URL
+        params_dict[ 'dbkey' ] = params.get( 'GENOME', '?' )
+        NAME = params.get( 'NAME', None )
+        assert NAME is not None, "Required NAME parameter missing from request"
+        params_dict[ 'NAME' ] = NAME
+        INFO = params.get( 'INFO', None )
+        assert INFO is not None, "Required INFO parameter missing from request"
+        params_dict[ 'INFO' ] = INFO
+        params_dict[ 'runtool_btn' ] = 'Execute'
+        tool_id = 'upload1'
+        history = trans.get_history()
+        trans.ensure_valid_galaxy_session()
+        tool = trans.get_toolbox().tools_by_id.get( tool_id )
+        template, vars = tool.handle_input( trans, params_dict )
+        trans.log_event( "/root/dataset_import tool params: %s" % ( str( params_dict ) ), tool_id=tool_id )
+        trans.response.send_redirect( url_for( "/index" ) )
+
     @web.json
     def history_item_updates( self, trans, ids=None, states=None ):
         # Avoid caching
