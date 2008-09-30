@@ -16,9 +16,12 @@
     <param name="table_names" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true" label="Choose Tables to Use" help="Selecting no tables will result in using all tables." from_file="annotation_profiler_options.xml"/>
    </inputs>
    <outputs>
-     <data format="input" name="out_file1"/>
+     <data format="input" name="out_file1">
+       <change_format>
+         <when input="summary" value="-S" format="tabular" />
+       </change_format>
+     </data>
    </outputs>
-   <code file="annotation_profiler_code.py" />  
    <tests>
      <test>
        <param name="input1" value="4.bed" dbkey="hg18"/>

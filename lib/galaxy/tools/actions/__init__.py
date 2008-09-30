@@ -126,6 +126,21 @@ class DefaultToolAction( object ):
                 ext = output.format
                 if ext == "input":
                     ext = input_ext
+                #process change_format tags
+                if output.change_format:
+                    for change_elem in output.change_format:
+                        for when_elem in change_elem.findall( 'when' ):
+                            check = incoming.get( when_elem.get( 'input' ), None )
+                            if check is not None:
+                                if check == when_elem.get( 'value', None ):
+                                    ext = when_elem.get( 'format', ext )
+                            else:
+                                check = when_elem.get( 'input_dataset', None )
+                                if check is not None:
+                                    check = inp_data.get( check, None )
+                                    if check is not None:
+                                        if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
+                                            ext = when_elem.get( 'format', ext )
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
                 # Commit the dataset immediately so it gets database assigned unique id
                 data.flush()

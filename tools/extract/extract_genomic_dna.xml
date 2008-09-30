@@ -12,9 +12,12 @@
 	</param>
   </inputs>
   <outputs>
-    <data format="fasta" name="out_file1" />
+    <data format="fasta" name="out_file1">
+      <change_format>
+        <when input="out_format" value="interval" format="interval" />
+      </change_format>
+    </data>
   </outputs>
-  <code file="extract_genomic_dna_code.py" />  
   <tests>
     <test>
       <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />

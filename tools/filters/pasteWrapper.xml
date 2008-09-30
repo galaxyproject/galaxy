@@ -15,7 +15,11 @@
     </param>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input1" />
+    <data format="input" name="out_file1" metadata_source="input1">
+      <change_format>
+        <when input_dataset="input1" attribute="ext" value="bed" format="interval"/>
+      </change_format>
+    </data>
   </outputs>
   <tests>
     <test>
@@ -60,5 +64,4 @@ Pasting them together will produce::
     a 3 40
 
 </help>
-<code file="pasteWrapper_code.py"/>
 </tool>

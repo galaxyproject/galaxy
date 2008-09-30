@@ -44,7 +44,11 @@
     </param>
   </inputs>
   <outputs>
-    <data format="interval" name="out_file1" metadata_source="input1"/>
+    <data format="interval" name="out_file1" metadata_source="input1">
+      <change_format>
+        <when input="summary" value="true" format="tabular" />
+      </change_format>
+    </data>
   </outputs>
   <requirements>
     <requirement type="python-module">numpy</requirement>
@@ -95,5 +99,4 @@ Alternatively, you can request only summary information for a set of intervals:
 
   where **coverage** is the number of nucleotides divided by the total length of the provided intervals.
   </help>
-  <code file="maf_stats_code.py"/>
 </tool>
