@@ -207,6 +207,11 @@ class DefaultToolAction( object ):
             for name in inp_data.keys():
                 dataset = inp_data[ name ]
             redirect_url = tool.parse_redirect_url( dataset, incoming )
+            # GALAXY_URL should be include in the tool params to enable the external application 
+            # to send back to the current Galaxy instance
+            GALAXY_URL = incoming.get( 'GALAXY_URL', None )
+            assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
+            redirect_url += "&GALAXY_URL=%s" % GALAXY_URL
             # Job should not be queued, so set state to ok
             job.state = JOB_OK
             job.info = "Redirected to: %s" % redirect_url
