@@ -1104,14 +1104,14 @@ class DataToolParameter( ToolParameter ):
                         selected = ( value and ( hda in value ) )
                         field.add_option( "%s: %s" % ( hid, hda.name[:30] ), hda.id, selected )
                     else:
-                        target_ext, converted_dataset = data.find_conversion_destination( self.formats, converter_safe = self.converter_safe( other_values, trans ) )
+                        target_ext, converted_dataset = hda.find_conversion_destination( self.formats, converter_safe = self.converter_safe( other_values, trans ) )
                         if target_ext:
                             if converted_dataset:
-                                data = converted_dataset
+                                hda = converted_dataset
                             if not trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=hda.dataset ):
                                 continue
-                            selected = ( value and ( data in value ) )
-                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
+                            selected = ( value and ( hda in value ) )
+                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda.name[:30] ), hda.id, selected )
                 # Also collect children via association object
                 dataset_collector( hda.children, hid )
         dataset_collector( history.active_datasets, None )

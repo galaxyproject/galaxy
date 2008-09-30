@@ -167,158 +167,6 @@ class DefaultHistoryGroupAssociation( object ):
         self.group = group
         self.permitted_actions = permitted_actions
     
-    @property
-    def ext( self ):
-        return self.extension
-    
-    @property
-    def states( self ):
-        return self.dataset.states
-    
-    def get_dataset_state( self ):
-        return self.dataset.state
-    def set_dataset_state ( self, state ):
-        self.dataset.state = state
-        self.dataset.flush() #flush here, because hda.flush() won't flush the Dataset object
-    state = property( get_dataset_state, set_dataset_state )
-    
-    def get_file_name( self ):
-        return self.dataset.get_file_name()
-            
-    def set_file_name (self, filename):
-        return self.dataset.set_file_name( filename )
-        
-    file_name = property( get_file_name, set_file_name )
-    
-    @property
-    def extra_files_path( self ):
-        return self.dataset.extra_files_path
-    
-    @property
-    def datatype( self ):
-        return datatypes_registry.get_datatype_by_extension( self.extension )
-
-    def get_metadata( self ):
-        if not hasattr( self, '_metadata_collection' ):
-            self._metadata_collection = MetadataCollection( self, self.datatype.metadata_spec )
-        return self._metadata_collection
-    def set_metadata( self, bunch ):
-        # Needs to accept a MetadataCollection, a bunch, or a dict
-        self._metadata = dict( [ ( key, copy.deepcopy( value ) ) for key, value in bunch.items() ] )
-    metadata = property( get_metadata, set_metadata )
-
-    """
-    This provide backwards compatibility with using the old dbkey
-    field in the database.  That field now maps to "old_dbkey" (see mapping.py).
-    """
-    def get_dbkey( self ):
-        dbkey = self.metadata.dbkey
-        if not isinstance(dbkey, list): dbkey = [dbkey]
-        #if dbkey in [["?"], [None], []]: dbkey = [self.old_dbkey]
-        if dbkey in [[None], []]: return "?"
-        return dbkey[0]
-    def set_dbkey( self, value ):
-        if "dbkey" in self.datatype.metadata_spec:
-            if not isinstance(value, list): 
-                self.metadata.dbkey = [value]
-            else: 
-                self.metadata.dbkey = value
-        #if isinstance(value, list): 
-        #    self.old_dbkey = value[0]
-        #else:
-        #    self.old_dbkey = value
-    dbkey = property( get_dbkey, set_dbkey )
-
-    def change_datatype( self, new_ext ):
-        self.clear_associated_files()
-        if hasattr( self, '_metadata_collection' ):
-            del self._metadata_collection
-        datatypes_registry.change_datatype( self, new_ext )
-    def get_size( self ):
-        """Returns the size of the data on disk"""
-        return self.dataset.get_size()
-    def set_size( self ):
-        """Returns the size of the data on disk"""
-        return self.dataset.set_size()
-    def has_data( self ):
-        """Detects whether there is any data"""
-        return self.dataset.has_data()
-    def get_raw_data( self ):
-        """Returns the full data. To stream it open the file_name and read/write as needed"""
-        return self.datatype.get_raw_data( self )
-    def write_from_stream( self, stream ):
-        """Writes data from a stream"""
-        self.datatype.write_from_stream(self, stream)
-    def set_raw_data( self, data ):
-        """Saves the data on the disc"""
-        self.datatype.set_raw_data(self, data)
-    def get_mime( self ):
-        """Returns the mime type of the data"""
-        return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
-    def set_peek( self ):
-        return self.datatype.set_peek( self )
-    def init_meta( self, copy_from=None ):
-        return self.datatype.init_meta( self, copy_from=copy_from )
-    def set_meta( self, **kwd ):
-        self.clear_associated_files( metadata_safe = True )
-        return self.datatype.set_meta( self, **kwd )
-    def set_readonly_meta( self, **kwd ):
-        return self.datatype.set_readonly_meta( self, **kwd )
-    def missing_meta( self ):
-        return self.datatype.missing_meta( self )
-    def as_display_type( self, type, **kwd ):
-        return self.datatype.as_display_type( self, type, **kwd )
-    def display_peek( self ):
-        return self.datatype.display_peek( self )
-    def display_name( self ):
-        return self.datatype.display_name( self )
-    def display_info( self ):
-        return self.datatype.display_info( self )
-    def get_converted_files_by_type( self, file_type ):
-        valid = []
-        for assoc in self.implicitly_converted_datasets:
-            if not assoc.deleted and assoc.type == file_type:
-                valid.append( assoc.dataset )
-        return valid
-    def clear_associated_files( self, metadata_safe = False, purge = False ):
-        #metadata_safe = True means to only clear when assoc.metadata_safe == False
-        for assoc in self.implicitly_converted_datasets:
-            if not metadata_safe or not assoc.metadata_safe:
-                assoc.clear( purge = purge )
-    def get_child_by_designation(self, designation):
-        for child in self.children:
-            if child.designation == designation:
-                return child
-        return None
-
-    def get_converter_types(self):
-        return self.datatype.get_converter_types( self, datatypes_registry)
-    
-    def find_conversion_destination( self, accepted_formats, **kwd ):
-        """Returns ( target_ext, exisiting converted dataset )"""
-        return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
-    
-    def copy( self, copy_children = False, parent_id = None ):
-        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
-        des.flush()
-        if copy_children:
-            for child in self.children:
-                child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
-        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        des.flush()
-        return des
-
-    def add_validation_error( self, validation_error ):
-        self.validation_errors.append( validation_error )
-
-    def extend_validation_errors( self, validation_errors ):
-        self.validation_errors.extend(validation_errors)
-
-    def mark_deleted( self, include_children=True ):
-        self.deleted = True
-        if include_children:
-            for child in self.children:
-                child.mark_deleted()
 
 class History( object ):
     def __init__( self, id=None, name=None, user=None ):
@@ -536,7 +384,7 @@ class DatasetInstance( object ):
         return self._metadata_collection
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
-        self._metadata = dict( bunch.items() )
+        self._metadata = dict( [ ( key, copy.deepcopy( value ) ) for key, value in bunch.items() ] )
     metadata = property( get_metadata, set_metadata )
     # This provide backwards compatibility with using the old dbkey
     # field in the database.  That field now maps to "old_dbkey" (see mapping.py).
@@ -617,6 +465,9 @@ class DatasetInstance( object ):
         return None
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
+    def find_conversion_destination( self, accepted_formats, **kwd ):
+        """Returns ( target_ext, exisiting converted dataset )"""
+        return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
     def extend_validation_errors( self, validation_errors ):
