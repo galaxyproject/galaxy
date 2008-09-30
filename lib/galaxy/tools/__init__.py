@@ -299,6 +299,7 @@ class Tool:
             for data_elem in out_elem.findall("data"):
                 output = ToolOutput( data_elem.get("name") )
                 output.format = data_elem.get("format", "data")
+                output.change_format = data_elem.findall("change_format")
                 output.metadata_source = data_elem.get("metadata_source", "")
                 output.parent = data_elem.get("parent", None)
                 output.label = util.xml_text( data_elem, "label" )

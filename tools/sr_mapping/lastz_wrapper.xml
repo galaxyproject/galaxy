@@ -77,13 +77,16 @@
     <param name="min_cvrg"  type="integer" size="3" value="0"   label="Do not report matches that cover less than this fraction (%) of each read"/>
   </inputs>
     <outputs>
-    <data format="tabular" name="output1" />
+    <data format="tabular" name="output1">
+      <change_format>
+        <when input="out_format" value="maf" format="maf" />
+      </change_format>
+    </data>
     <data format="tabular" name="output2" />
   </outputs>
   	<requirements>
 	  <requirement type="binary">lastz</requirement>
 	</requirements>
-	<code file="lastz_code.py" />  
   <tests>
     <test>
       <param name="input1" value="phiX.fa" ftype="fasta"  />
