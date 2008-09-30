@@ -1,15 +1,21 @@
 #! /usr/bin/python
 
 """
+TODO
+1. decrease memory usage
+2. multi-fasta fastq file, ex. 454
+3. split reads into small chuncks?
+
 SHRiMP wrapper
 
 Inputs: 
-    reference seq and reads
+1. reference seq 
+2. reads
 
 Outputs: 
-    table of 8 columns:
+1. table of 8 columns:
          chrom   ref_loc     read_id     read_loc    ref_nuc     read_nuc    quality     coverage
-    SHRiMP output
+2. SHRiMP output
          
 Parameters:
     -s    Spaced Seed                             (default: 111111011111)
@@ -37,13 +43,9 @@ SHRiMP output:
 >7:2:1147:982/1 chr3    +   95338194    95338225    4   35  36  2700    9T7C14
 >7:2:587:93/1   chr3    +   14913541    14913577    1   35  36  2960    19--16
 
-Testing:
-%python shrimp_wrapper.py single ~/Desktop/shrimp_wrapper/phix_anc.fa tmp tmp1 ~/Desktop/shrimp_wrapper/phix.10.solexa.fastq
-%python shrimp_wrapper.py paired ~/Desktop/shrimp_wrapper/eca_ref_chrMT.fa tmp tmp1 ~/Desktop/shrimp_wrapper/eca.5.solexa_1.fastq ~/Desktop/shrimp_wrapper/eca.5.solexa_2.fastq
-
 """
 
-import os, sys, tempfile, os.path
+import os, sys, tempfile, os.path, re
 
 assert sys.version_info[:2] >= (2.4)
 
@@ -575,6 +577,29 @@ def __main__():
             if os.path.exists(query_qual_end1): os.remove(query_qual_end1)
             if os.path.exists(query_qual_end2): os.remove(query_qual_end2)
             stop_err(str(e))
+    
+    # check SHRiMP output: count number of lines
+    num_hits = 0
+    if shrimp_outfile:
+        for i, line in enumerate(file(shrimp_outfile)):
+            line = line.rstrip('\r\n')
+            if not line or line.startswith('#'): continue
+            try:
+                fields = line.split()
+                num_hits += 1
+            except Exception, e:
+                stop_err(str(e))
+                
+    if num_hits == 0:   # no hits generated
+        err_msg = ''
+        if shrimp_log:
+            for i, line in enumerate(file(shrimp_log)):
+                if line.startswith('error'):            # deal with memory error: 
+                    err_msg += line                     # error: realloc failed: Cannot allocate memory
+                if re.search('Reads Matched', line):    # deal with zero hits
+                    if int(line[8:].split()[2]) == 0:
+                        err_msg = 'Zero hits found.\n' 
+        stop_err('SHRiMP Failed due to:\n' + err_msg)
         
     # convert to table
     if type_of_reads == 'single':

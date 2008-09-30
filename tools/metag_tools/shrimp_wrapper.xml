@@ -1,5 +1,5 @@
 <tool id="shrimp_wrapper" name="SHRiMP" version="1.0.0">
-  <description>SHort Read Mapping Package</description>
+  <description>: SHort Read Mapping Package</description>
   <command interpreter="python">
     #if     ($type_of_reads.single_or_paired=="single" and $param.skip_or_full=="skip"):#shrimp_wrapper.py $input_target $output1 $output2 $input_query
     #elif   ($type_of_reads.single_or_paired=="paired" and $param.skip_or_full=="skip"):#shrimp_wrapper.py $input_target $output1 $output2 $type_of_reads.input1,$type_of_reads.input2,$type_of_reads.insertion_size

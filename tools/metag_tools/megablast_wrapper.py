@@ -55,7 +55,9 @@ def __main__():
     chunk = db[(db_build)]
     megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s > /dev/null 2>&1 " \
         % ( chunk, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, mega_filter ) 
-        
+    
+    print megablast_command
+       
     try:
         os.system( megablast_command )
     except Exception, e:
@@ -67,8 +69,12 @@ def __main__():
         line = line.rstrip( '\r\n' )
         fields = line.split()
         try:
+            # get gi and length of that gi seq
             gi, gi_len = fields[1].split('_')
-            new_line = "%s\t%s\t%s\t%s" % ( fields[0], gi, gi_len, '\t'.join( fields[2:] ) )
+            # convert the last column (causing problem in filter tool) to float
+            fields[-1] = float(fields[-1])
+            
+            new_line = "%s\t%s\t%s\t%s\t%0.1f" % ( fields[0], gi, gi_len, '\t'.join( fields[2:-1] ), fields[-1] )
         except:
             new_line = line
             invalid_lines += 1
