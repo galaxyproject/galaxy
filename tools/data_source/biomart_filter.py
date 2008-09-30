@@ -14,41 +14,16 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
         data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order )
     data = app.datatypes_registry.change_datatype(data, data_type)
     data.name = data_name
+    #store BIOMART parameters temporarily in output file
+    out = open(data.file_name,'w')
+    for key, value in param_dict.items():
+        print >> out, "%s\t%s" % (key,value)
+    out.close()     
     out_data[name] = data
+    
 
 def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
-    """Verifies the data after the run"""
-    URL = param_dict.get( 'URL', None )
-    if not URL:
-        raise Exception('Datasource has not sent back a URL parameter')
-    URL = URL + '&_export=1&GALAXY_URL=0'
-    CHUNK_SIZE = 2**20 # 1Mb 
-    MAX_SIZE   = CHUNK_SIZE * 100
-    try:
-        page = urllib.urlopen(URL)
-    except Exception, exc:
-        raise Exception('Problems connecting to %s (%s)' % (URL, exc) )
     name, data = out_data.items()[0]
-    fp = open(data.file_name, 'wb')
-    size = 0
-    max_size_exceeded = False
-
-    while 1:
-        chunk = page.read(CHUNK_SIZE)
-        if not chunk:
-            break
-        size += len(chunk)
-        if size > MAX_SIZE:
-            max_size_exceeded = True
-            break
-        fp.write(chunk)
-    fp.close()
-    
-    if max_size_exceeded:
-        data.info = 'Maximum data size of 100 MB exceeded, incomplete data retrieval.'
-    else:
-        data.info = data.name
-
     if not isinstance(data.datatype, datatypes.interval.Bed) and isinstance(data.datatype, datatypes.interval.Interval):
         #Set meta data, format file to be valid interval type
         data.set_meta(first_line_is_header=True)

@@ -3,7 +3,10 @@
 	
 	<description>Test server</description>
 	
-	<command/>
+	<command interpreter="python">
+        biomart.py 
+        $output
+    </command>
 	
 	<inputs action="http://test.biomart.org/biomart/martview" check_values="false" method="get" target="_top">
 		<display>go to BioMart Central $GALAXY_URL</display>

@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <tool name="BioMart" id="biomart">
-	
 	<description>Central server</description>
-	
-	<command/>
-	
+	<command interpreter="python">
+        biomart.py 
+        $output
+    </command>
 	<inputs action="http://www.biomart.org/biomart/martview" check_values="false" method="get" target="_top">
 		<display>go to BioMart Central $GALAXY_URL</display>
 		<param name="GALAXY_URL" type="baseurl" value="/tool_runner/biomart" />
-	</inputs>
+    </inputs>
 	
 	<uihints minwidth="800"/>
 	
