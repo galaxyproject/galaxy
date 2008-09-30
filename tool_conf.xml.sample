@@ -123,7 +123,6 @@
     <tool file="visualization/GMAJ.xml" />
     <tool file="visualization/LAJ.xml" />
     <tool file="visualization/build_ucsc_custom_track.xml" />
-    <tool file="visualization/build_gbrowse_custom_track.xml" />
   </section>
   <section name="Regional Variation" id="regVar">
     <tool file="regVariation/windowSplitter.xml" />
@@ -156,8 +155,8 @@
     <tool file="taxonomy/poisson2test.xml" />
   </section>
   <section name="Solexa tools" id="solexa_tools">
-    <tool file="solexa/fastq_statistics.xml" />
-    <tool file="solexa/lastz_wrapper.xml" />
+    <tool file="sr_mapping/fastq_statistics.xml" />
+    <tool file="sr_mapping/lastz_wrapper.xml" />
   </section> 
   <!--
   TODO: uncomment the following EMBOSS section whenever 
