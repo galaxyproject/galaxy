@@ -57,6 +57,7 @@ def main():
     tmp_file.write( "%s\n" % hdr_str )
     skipped_lines = 0
     first_invalid_line = 0
+    i = 0
     for i, line in enumerate( file( datafile ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
