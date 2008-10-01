@@ -125,36 +125,37 @@ class RootController( BaseController ):
             except:
                 return "hid '%s' is invalid" %str( hid )
             history = trans.get_history()
-            for dataset in history.datasets:
-                if dataset.hid == hid:
-                    data = dataset
+            for hda in history.datasets:
+                if hda.hid == hid:
+                    history_dataset_assoc = hda
                     break
             else:
-                raise Exception( "No dataset with hid '%d'" % hid )
+                raise Exception( "History_dataset_association with hid '%s' does not exist." % str( hid ) )
         else:
             try:
-                data = self.app.model.HistoryDatasetAssociation.get( id )
+                id = int( id )
+                history_dataset_assoc = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
             except:
-                return "Dataset id '%s' is invalid" %str( id )
-        if data:
-            mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
+                return "Dataset id '%s' is invalid." %str( id )
+        if history_dataset_assoc:
+            mime = trans.app.datatypes_registry.get_mimetype_by_extension( history_dataset_assoc.extension.lower() )
             trans.response.set_content_type(mime)
             if tofile:
-                fStat = os.stat(data.file_name)
+                fStat = os.stat(history_dataset_assoc.file_name)
                 trans.response.headers['Content-Length'] = int(fStat.st_size)
                 if toext[0:1] != ".":
                     toext = "." + toext
                 valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                fname = data.name
+                fname = history_dataset_assoc.name
                 fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
-                trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, toext)
-            trans.log_event( "Display dataset id: %s" % str(id) )
+                trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (history_dataset_assoc.hid, fname, toext)
+            trans.log_event( "Display dataset id: '%s'." % str(id) )
             try:
-                return open( data.file_name )
+                return open( history_dataset_assoc.file_name )
             except: 
-                return "This dataset contains no content"
+                return "Dataset id '%s' contains no content." % str( id )
         else:
-            return "No dataset with id '%s'" % str( id )
+            return "Dataset id '%s' does not exist." % str( id )
 
     @web.expose
     def display_child(self, trans, parent_id=None, designation=None, tofile=None, toext=".txt"):
