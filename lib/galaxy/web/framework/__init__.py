@@ -24,7 +24,7 @@ import mako.lookup
 pkg_resources.require( "simplejson" )
 import simplejson
 
-pkg_resources.require( "sqlalchemy>=0.3" )
+pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import desc
             
 import logging
@@ -172,7 +172,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             if secure_id:
                 session_key = self.security.decode_session_key( secure_id )
                 try:
-                    galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                    galaxy_session = self.app.model.GalaxySession.filter_by( session_key=session_key ).first()
                     if galaxy_session and galaxy_session.is_valid and galaxy_session.current_history_id:
                         history = self.app.model.History.get( galaxy_session.current_history_id )
                         if history and not history.deleted:
@@ -197,9 +197,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             return self.new_history()
         return self.__history          
     def new_history( self ):
-        history = self.app.model.History()
+        history = self.app.model.History( user = self.user )
         # Make sure we have an id
         history.flush()
+        self.app.security_agent.history_set_default_access( history )
         # Immediately associate the new history with self
         self.__history = history
         # Make sure we have a valid session to associate with the new history
@@ -216,7 +217,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             galaxy_session.user_id = self.user.id
         try:
             # See if we have already associated the history with the session
-            association = self.app.model.GalaxySessionToHistoryAssociation.select_by( session_id=galaxy_session.id, history_id=history.id )[0]
+            association = self.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=history.id ).first()
         except:
             association = None
         history.add_galaxy_session( galaxy_session, association=association )
@@ -265,12 +266,13 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """Return the user in $HTTP_REMOTE_USER and create if necessary"""
         # remote_user middleware ensures HTTP_REMOTE_USER exists
         try:
-            user = self.app.model.User.selectone_by( email=self.environ[ 'HTTP_REMOTE_USER' ] )
+            user = self.app.model.User.filter_by( email=self.environ[ 'HTTP_REMOTE_USER' ] ).first()
         except:
             user = self.app.model.User( email=self.environ[ 'HTTP_REMOTE_USER' ] )
             user.set_password_cleartext( 'external' )
             user.external = True
             user.flush()
+            self.app.security_agent.setup_new_user( user )
             self.log_event( "Automatically created account '%s'" % user.email )
         return user
     def get_cookie_user( self ):
@@ -281,7 +283,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if secure_id:
             session_key = self.security.decode_session_key( secure_id )
             try:
-                galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                galaxy_session = self.app.model.GalaxySession.filter_by( session_key=session_key ).first()
                 if galaxy_session and galaxy_session.is_valid and galaxy_session.user_id:
                     user = self.app.model.User.get( galaxy_session.user_id )
                     if user:
@@ -321,7 +323,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                 session_key = self.security.decode_session_key( secure_id )
                 try:
                     # Retrive the galaxy_session id via the unique session_key
-                    galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                    galaxy_session = self.app.model.GalaxySession.filter_by( session_key=session_key ).first()
                     if galaxy_session and galaxy_session.is_valid:
                         self.__galaxy_session = galaxy_session
                 except:
@@ -382,7 +384,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if self.history is not None:
             # See if we have already associated the session with the history
             try:
-                association = self.app.model.GalaxySessionToHistoryAssociation.select_by( session_id=galaxy_session.id, history_id=self.history.id )[0]
+                association = self.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=self.history.id ).first()
             except:
                 association = None
             galaxy_session.add_history( self.history, association=association )
@@ -431,6 +433,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             galaxy_session.flush()
             self.__galaxy_session = galaxy_session
         if history is not None and user is not None:
+            if not history.user:
+                # This user will now acquire previously non-owned history, so set permitted actions to user's default
+                history.user = user
+                self.app.security_agent.history_set_default_access( history, dataset=True )
             history.user_id = user.id
             history.flush()
             self.__history = history
@@ -522,8 +528,8 @@ class FormBuilder( object ):
         self.action = action
         self.submit_text = submit_text
         self.inputs = []
-    def add_input( self, type, name, label, value=None, error=None, help=None  ):
-        self.inputs.append( FormInput( type, label, name, value, error, help ) )
+    def add_input( self, type, name, label, value=None, error=None, help=None, use_label=True  ):
+        self.inputs.append( FormInput( type, label, name, value, error, help, use_label ) )
         return self
     def add_text( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'text', label, name, value, error, help )
@@ -534,13 +540,14 @@ class FormInput( object ):
     """
     Simple class describing a form input element
     """
-    def __init__( self, type, name, label, value=None, error=None, help=None ):
+    def __init__( self, type, name, label, value=None, error=None, help=None, use_label=True ):
         self.type = type
         self.name = name
         self.label = label
         self.value = value
         self.error = error
         self.help = help
+        self.use_label = use_label
     
 class FormData( object ):
     """
