@@ -281,7 +281,6 @@ class RootController( BaseController ):
                 except:
                     continue
                 hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
-                log.debug("***hda.dataset_id: %s" % str( hda.dataset_id))
                 if hda:
                     # Walk up parent hdas to find the containing history
                     topmost_parent = hda
