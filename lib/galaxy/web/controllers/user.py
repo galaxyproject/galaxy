@@ -1,9 +1,8 @@
 """
 Contains the user interface in the Universe class
 """
-
 from galaxy.web.base.controller import *
-
+from galaxy.model.orm import *
 import logging, os, string
 from random import choice
 
@@ -53,7 +52,7 @@ class User( BaseController ):
                 email_err = "Please enter a real email address"
             elif len( email) > 255:
                 email_err = "Email address exceeds maximum allowable length"
-            elif len( trans.app.model.User.select_by( email=email ) ) > 0:
+            elif trans.app.model.User.filter_by( email=email ).first():
                 email_err = "User with that email already exists"
             elif email != conf_email:
                 conf_email_err = "Email addresses do not match."
@@ -73,7 +72,7 @@ class User( BaseController ):
         email_error = password_error = None
         # Attempt login
         if email or password:
-            user = trans.app.model.User.get_by( email = email )
+            user = trans.app.model.User.filter_by( email=email ).first()
             if not user:
                 email_error = "No such user"
             elif user.external:
@@ -108,7 +107,7 @@ class User( BaseController ):
                 email_error = "Please enter a real email address"
             elif len( email) > 255:
                 email_error = "Email address exceeds maximum allowable length"
-            elif len( trans.app.model.User.select_by( email=email ) ) > 0:
+            elif trans.app.model.User.filter_by( email=email ).first():
                 email_error = "User with that email already exists"
             elif len( password ) < 6:
                 password_error = "Please use a password of at least 6 characters"
@@ -118,6 +117,7 @@ class User( BaseController ):
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
                 user.flush()
+                trans.app.security_agent.setup_new_user( user )
                 trans.set_user( user )
                 trans.ensure_valid_galaxy_session()
                 """
@@ -143,7 +143,7 @@ class User( BaseController ):
     @web.expose
     def reset_password(self, trans, email=None, **kwd):
         error = ''
-        reset_user = trans.app.model.User.get_by( email = email )
+        reset_user = trans.app.model.User.filter_by( email=email ).first()
         user = trans.get_user()
         if reset_user:
             if user and user.id != reset_user.id:
@@ -166,3 +166,27 @@ class User( BaseController ):
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Reset Password", submit_text="Submit" )
                 .add_text( "email", "Email", value=email, error=error ) )
+    
+    @web.expose
+    def set_default_permitted_actions( self, trans, **kwd ):
+        """Sets the user's default permitted actions for the new histories"""
+        if trans.user:
+            if 'set_permitted_actions' in kwd:
+                """The user clicked the set_permitted_actions button on the set_permitted_actions form"""
+                group_args = [ k.replace('group_', '', 1) for k in kwd if k.startswith('group_') ]
+                group_ids_checked = filter( lambda x: not x.count('_'), group_args )
+                if not group_ids_checked:
+                    return trans.show_error_message( "You must specify at least one default group." ) 
+                permissions = []
+                for group_id in group_ids_checked:
+                    group = trans.app.security_agent.get_group( group_id )
+                    if not group:
+                        return trans.show_error_message( 'You have specified an invalid group.' )
+                    action_strings = [ action.replace(group_id + '_', '', 1) for action in group_args if action.startswith(group_id + '_') ]
+                    permissions.append( ( group, trans.app.security_agent.convert_permitted_action_strings( action_strings ) ) )
+                trans.app.security_agent.user_set_default_access( trans.user, permissions )
+                return trans.show_ok_message( 'Default new history permitted actions have been changed.' )
+            return trans.fill_template( 'user/permissions.mako' )
+        else:
+            # User not logged in, history group must be only public
+            return trans.show_error_message( "You must be logged in to change your default permitted actions." )
