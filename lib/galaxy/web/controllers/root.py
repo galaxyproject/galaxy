@@ -236,21 +236,20 @@ class RootController( BaseController ):
             # TODO: hid handling
             hda = history.datasets[ int( hid ) - 1 ]
         elif lid is not None:
-            # TODO: this should actually be an lda
+            # This should actually be an lda
             hda = self.app.model.LibraryFolderDatasetAssociation.get( lid )
         elif id is not None: 
             hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
         else:
-            trans.log_event( "Problem loading dataset id %s with history id %s and library id %s." % ( str( id ), str( hid ), str( lid ) ) )
+            trans.log_event( "Problem loading dataset id '%s' with history id '%s' and library id '%s'." % ( str( id ), str( hid ), str( lid ) ) )
             return trans.show_error_message( "Problem loading dataset." )
         if hda is None:
-            trans.log_event( "Problem retrieving dataset id %s with history id %s and library id %s." % ( str( id ), str( hid ), str( lid ) ) )
+            trans.log_event( "Problem retrieving dataset id '%s' with history id '%s' and library id '%s'." % ( str( id ), str( hid ), str( lid ) ) )
             return trans.show_error_message( "Problem retrieving dataset." )
         if id is not None and hda.history.user is not None and hda.history.user != trans.user:
-            return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( hda.dataset.id ) )
+            return trans.show_error_message( "This instance of dataset id '%s' in a history does not belong to you." % str( hda.dataset_id ) )
         if trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset = hda ):
             p = util.Params(kwd, safe=False)
-            
             can_edit_metadata = lid is None or trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_EDIT_METADATA, dataset = hda )
             if p.change:
                 # The user clicked the Save button on the 'Change data type' form
@@ -294,7 +293,7 @@ class RootController( BaseController ):
             elif p.convert_data:
                 if lid is not None:
                     return trans.show_error_message( "Data in the library cannot be converted.  Please import it to a history and covert it." )
-                """The user clicked the Convert button on the 'Convert to new format' form"""
+                # The user clicked the Convert button on the 'Convert to new format' form
                 if not can_edit_metadata:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 target_type = kwd.get("target_type", None)
@@ -302,7 +301,7 @@ class RootController( BaseController ):
                     msg = hda.datatype.convert_dataset(trans, hda, target_type)
                     return trans.show_ok_message( msg, refresh_frames=['history'] )
             elif p.change_permission:
-                """The user clicked the change_permission button on the 'Change permissions' form"""
+                # The user clicked the change_permission button on the 'Change permissions' form
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change dataset permitted actions." )
                 if trans.app.security_agent.allow_action( trans.user, hda.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = hda.dataset ):
@@ -317,28 +316,28 @@ class RootController( BaseController ):
                     return trans.show_ok_message( "Dataset permissions have been set.", refresh_frames=['history'] )
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
-            data.datatype.before_edit( data )
+            hda.datatype.before_edit( hda )
             
-            if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
+            if "dbkey" in hda.datatype.metadata_spec and not hda.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
                 # This looks like it does nothing, but getting the dbkey
                 # returns the metadata dbkey unless it is None, in which
                 # case it resorts to the old dbkey.  Setting the dbkey
                 # sets it properly in the metadata
-                data.metadata.dbkey = data.dbkey
+                hda.metadata.dbkey = hda.dbkey
             metadata = list()
             # a list of MetadataParemeters
-            for name, spec in data.datatype.metadata_spec.items():
+            for name, spec in hda.datatype.metadata_spec.items():
                 if spec.visible:
-                    metadata.append( spec.wrap( data.metadata.get(name), data ) )
+                    metadata.append( spec.wrap( hda.metadata.get(name), hda ) )
             # let's not overwrite the imported datatypes module with the variable datatypes?
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
-            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, metadata=metadata,
-                                        datatypes=ldatatypes, err=None )
+            return trans.fill_template( "/dataset/edit_attributes.mako", data=hda, metadata=metadata, datatypes=ldatatypes, err=None )
         else:
-            return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % id )
+            return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % str( id ) )
+
     @web.expose
     def delete( self, trans, id = None, **kwd):
         if id:
