@@ -163,7 +163,7 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid." %str( id )
         if history_dataset_assoc:
-            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=history_dataset_assoc.dataset ):
+            if trans.app.security_agent.allow_action( trans.user, history_dataset_assoc.permitted_actions.DATASET_ACCESS, dataset=history_dataset_assoc.dataset ):
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( history_dataset_assoc.extension.lower() )
                 trans.response.set_content_type(mime)
                 if tofile:
@@ -208,7 +208,7 @@ class RootController( BaseController ):
         """Returns a file in a format that can successfully be displayed in display_app"""
         hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
         if hda:
-            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
+            if trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset = data ):
                 trans.response.set_content_type( hda.get_mime() )
                 trans.log_event( "Formatted dataset id %s for display at %s" % ( str(id), display_app ) )
                 return hda.as_display_type( display_app, **kwd )
