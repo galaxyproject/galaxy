@@ -1068,7 +1068,7 @@ class Tool:
         redirect_url_params = redirect_url_params.replace( "\n", " " ).replace( "\r", " " )
         return redirect_url_params
 
-    def parse_redirect_url( self, inp_data, param_dict ):
+    def parse_redirect_url( self, data, param_dict ):
         """Parse the REDIRECT_URL tool param"""
         # Tools that send data to an external application via a redirect must include the following 3
         # tool params:
@@ -1088,9 +1088,6 @@ class Tool:
             rup_dict[ p_name ] = p_val
         DATA_URL = param_dict.get( 'DATA_URL', None )
         assert DATA_URL is not None, "DATA_URL parameter missing in tool config."
-        # Get the dataset - there should only be 1
-        for name in inp_data.keys():
-            data = inp_data[ name ]
         DATA_URL += "/%s/display" % str( data.id )
         redirect_url += "?DATA_URL=%s" % DATA_URL
         # Add the redirect_url_params to redirect_url
@@ -1143,6 +1140,7 @@ class Tool:
                 else: visible = False
                 ext = fields.pop(0).lower()
                 child_dataset = self.app.model.HistoryDatasetAssociation( extension=ext, parent_id=outdata.id, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
+                self.app.security_agent.set_dataset_permissions( child_dataset.dataset, outdata.dataset.groups )
                 # Move data from temp location to dataset location
                 shutil.move( filename, child_dataset.file_name )
                 child_dataset.flush()
@@ -1179,6 +1177,7 @@ class Tool:
                 ext = fields.pop(0).lower()
                 # Create new primary dataset
                 primary_data = self.app.model.HistoryDatasetAssociation( extension=ext, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
+                self.app.security_agent.set_dataset_permissions( primary_data.dataset, outdata.dataset.groups )
                 primary_data.flush()
                 # Move data from temp location to dataset location
                 shutil.move( filename, primary_data.file_name )
