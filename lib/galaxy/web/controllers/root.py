@@ -17,7 +17,9 @@ class RootController( BaseController ):
     
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, m_c=None, m_a=None, **kwd):
-        return trans.fill_template( "root/index.mako", tool_id=tool_id, m_c=m_c, m_a=m_a )
+        return trans.fill_template( "root/index.mako",
+                                    tool_id=tool_id,
+                                    m_c=m_c, m_a=m_a )
         
     ## ---- Tool related -----------------------------------------------------
     
@@ -62,10 +64,10 @@ class RootController( BaseController ):
     @web.expose
     def dataset_state ( self, trans, id=None, stamp=None ):
         if id is not None:
-            try:
-                data = self.app.model.Dataset.get( id )
+            try: 
+                data = self.app.model.HistoryDatasetAssociation.get( id )
             except: 
-                return trans.show_error_message( "Unable to check dataset id %s." %str( id ) )
+                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
             trans.response.headers['X-Dataset-State'] = data.state
             trans.response.headers['Pragma'] = 'no-cache'
             trans.response.headers['Expires'] = '0'
@@ -76,13 +78,13 @@ class RootController( BaseController ):
     @web.expose
     def dataset_code( self, trans, id=None, hid=None, stamp=None ):
         if id is not None:
-            try:
-                hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
+            try: 
+                data = self.app.model.HistoryDatasetAssociation.get( id )
             except: 
-                return trans.show_error_message( "Unable to check dataset id %s." % str( id ) )
+                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
             trans.response.headers['Pragma'] = 'no-cache'
             trans.response.headers['Expires'] = '0'
-            return trans.fill_template( "root/history_item.mako", data=hda.dataset, hid=hid )
+            return trans.fill_template("root/history_item.mako", data=data, hid=hid)
         else:
             return trans.show_error_message( "Must specify a dataset id.")
 
@@ -129,11 +131,11 @@ class RootController( BaseController ):
             ids = map( int, ids.split( "," ) )
             states = states.split( "," )
             for id, state in zip( ids, states ):
-                hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
-                if hda.dataset.state != state:
+                data = self.app.model.HistoryDatasetAssociation.get( id )
+                if data.state != state:
                     rval[id] = {
-                        "state": hda.dataset.state,
-                        "html": trans.fill_template( "root/history_item.mako", data=hda, hid=hda.hid )
+                        "state": data.state,
+                        "html": trans.fill_template( "root/history_item.mako", data=data, hid=data.hid )
                     }
         return rval
 
@@ -151,39 +153,39 @@ class RootController( BaseController ):
             except:
                 return "hid '%s' is invalid" %str( hid )
             history = trans.get_history()
-            for hda in history.datasets:
-                if hda.hid == hid:
-                    history_dataset_assoc = hda
+            for dataset in history.datasets:
+                if dataset.hid == hid:
+                    data = dataset
                     break
             else:
-                raise Exception( "History_dataset_association with hid '%s' does not exist." % str( hid ) )
+                raise Exception( "No dataset with hid '%d'" % hid )
         else:
             try:
-                history_dataset_assoc = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
+                data = self.app.model.HistoryDatasetAssociation.get( id )
             except:
-                return "Dataset id '%s' is invalid." %str( id )
-        if history_dataset_assoc:
-            if trans.app.security_agent.allow_action( trans.user, history_dataset_assoc.permitted_actions.DATASET_ACCESS, dataset=history_dataset_assoc.dataset ):
-                mime = trans.app.datatypes_registry.get_mimetype_by_extension( history_dataset_assoc.extension.lower() )
+                return "Dataset id '%s' is invalid" %str( id )
+        if data:
+            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
                 if tofile:
-                    fStat = os.stat(history_dataset_assoc.file_name)
+                    fStat = os.stat(data.file_name)
                     trans.response.headers['Content-Length'] = int(fStat.st_size)
                     if toext[0:1] != ".":
                         toext = "." + toext
                     valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                    fname = history_dataset_assoc.name
+                    fname = data.name
                     fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
-                    trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (history_dataset_assoc.hid, fname, toext)
+                    trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, toext)
                 trans.log_event( "Display dataset id: %s" % str(id) )
                 try:
-                    return open( history_dataset_assoc.file_name )
+                    return open( data.file_name )
                 except: 
-                    return "Dataset id '%s' contains no content." % str( id )
+                    return "This dataset contains no content"
             else:
-                return "You are not allowed to view dataset id '%s'." % str( id )
+                return "You are not privileged to view this dataset."
         else:
-            return "Dataset id '%s' does not exist." % str( id )
+            return "No dataset with id '%s'" % str( id )
 
     @web.expose
     def display_child(self, trans, parent_id=None, designation=None, tofile=None, toext=".txt"):
@@ -191,9 +193,9 @@ class RootController( BaseController ):
         Returns child data directly into the browser, based upon parent_id and designation.
         """
         try:
-            hda = self.app.model.HistoryDatasetAssociation.get( parent_id )
-            if hda:
-                child = hda.get_child_by_designation( designation )
+            data = self.app.model.HistoryDatasetAssociation.get( parent_id )
+            if data:
+                child = data.get_child_by_designation( designation )
                 if child:
                     if trans.app.security_agent.allow_action( trans.user, child.permitted_actions.DATASET_ACCESS, dataset = child ):
                         return self.display( trans, id=child.id, tofile=tofile, toext=toext )
@@ -201,32 +203,32 @@ class RootController( BaseController ):
                         return "You are not privileged to access this dataset."
         except Exception:
             pass
-        return "A child named '%s' could not be found for history_dataset_association id '%s'" % ( designation, str( parent_id ) )
+        return "A child named %s could not be found for data %s" % ( designation, parent_id )
 
     @web.expose
     def display_as( self, trans, id=None, display_app=None, **kwd ):
         """Returns a file in a format that can successfully be displayed in display_app"""
-        hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
-        if hda:
-            if trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset = data ):
-                trans.response.set_content_type( hda.get_mime() )
-                trans.log_event( "Formatted dataset id %s for display at %s" % ( str(id), display_app ) )
-                return hda.as_display_type( display_app, **kwd )
+        data = self.app.model.HistoryDatasetAssociation.get( id )
+        if data:
+            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
+                trans.response.set_content_type( data.get_mime() )
+                trans.log_event( "Formatted dataset id %s for display at %s" % ( str( id ), display_app ) )
+                return data.as_display_type( display_app, **kwd )
             else:
                 return "You are not privileged to access this dataset."
         else:
-            return "Dataset 'id' %s does not exist." % str( id )
+            return "No data with id=%d" % id
 
     @web.expose
     def peek(self, trans, id=None):
         """Returns a 'peek' at the data"""
-        hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
-        if hda:
+        data = self.app.model.HistoryDatasetAssociation.get( id )
+        if data:
             yield "<html><body><pre>"
-            yield hda.peek
+            yield data.peek
             yield "</pre></body></html>"
         else:
-            yield "Dataset 'id' %s does not exist." % str( id )
+            yield "No data with id=%d" % id
 
     @web.expose
     def edit(self, trans, id=None, hid=None, lid=None, **kwd):
@@ -234,77 +236,78 @@ class RootController( BaseController ):
         if hid is not None:
             history = trans.get_history()
             # TODO: hid handling
-            hda = history.datasets[ int( hid ) - 1 ]
+            data = history.datasets[ int( hid ) - 1 ]
         elif lid is not None:
-            # This should actually be an lda
-            hda = self.app.model.LibraryFolderDatasetAssociation.get( lid )
+            data = self.app.model.LibraryFolderDatasetAssociation.get( lid )
         elif id is not None: 
-            hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
+            data = self.app.model.HistoryDatasetAssociation.get( id )
         else:
-            trans.log_event( "Problem loading dataset id '%s' with history id '%s' and library id '%s'." % ( str( id ), str( hid ), str( lid ) ) )
+            trans.log_event( "Problem loading dataset id %s with history id %s and library id %s." % ( str( id ), str( hid ), str( lid ) ) )
             return trans.show_error_message( "Problem loading dataset." )
-        if hda is None:
-            trans.log_event( "Problem retrieving dataset id '%s' with history id '%s' and library id '%s'." % ( str( id ), str( hid ), str( lid ) ) )
+        if data is None:
+            trans.log_event( "Problem retrieving dataset id %s with history id %s and library id %s." % ( str( id ), str( hid ), str( lid ) ) )
             return trans.show_error_message( "Problem retrieving dataset." )
-        if id is not None and hda.history.user is not None and hda.history.user != trans.user:
-            return trans.show_error_message( "This instance of dataset id '%s' in a history does not belong to you." % str( hda.dataset_id ) )
-        if trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset = hda ):
+        if id is not None and data.history.user is not None and data.history.user != trans.user:
+            return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
+        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
             p = util.Params(kwd, safe=False)
-            can_edit_metadata = lid is None or trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_EDIT_METADATA, dataset = hda )
+            
+            can_edit_metadata = lid is None or trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_EDIT_METADATA, dataset = data )
             if p.change:
                 # The user clicked the Save button on the 'Change data type' form
                 if not can_edit_metadata:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
-                trans.app.datatypes_registry.change_datatype( hda, p.datatype )
+                trans.app.datatypes_registry.change_datatype( data, p.datatype )
                 trans.app.model.flush()
             elif p.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
                 if not can_edit_metadata:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
-                hda.name  = p.name
-                hda.info  = p.info
+                data.name  = p.name
+                data.info  = p.info
                 
                 # The following for loop will save all metadata_spec items
-                for name, spec in hda.datatype.metadata_spec.items():
+                for name, spec in data.datatype.metadata_spec.items():
                     if spec.get("readonly"):
                         continue
                     optional = p.get("is_"+name, None)
                     if optional and optional == 'true':
                         # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
-                        setattr(hda.metadata,name,None)
+                        setattr(data.metadata,name,None)
                     else:
-                        setattr(hda.metadata,name,spec.unwrap(p.get(name, None), p))
-                hda.datatype.after_edit( hda )
+                        setattr(data.metadata,name,spec.unwrap(p.get(name, None), p))
+
+                data.datatype.after_edit( data )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
             elif p.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
                 if not can_edit_metadata:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
-                for name, spec in hda.datatype.metadata_spec.items():
+                for name, spec in data.datatype.metadata_spec.items():
                     # We need to be careful about the attributes we are resetting
                     if name != 'name' and name != 'info' and name != 'dbkey':
                         if spec.get( 'default' ):
-                            setattr( hda.metadata,name,spec.unwrap( spec.get( 'default' ), spec ))
-                hda.datatype.set_meta( hda )
-                hda.datatype.after_edit( hda )
+                            setattr( data.metadata,name,spec.unwrap( spec.get( 'default' ), spec ))
+                data.datatype.set_meta( data )
+                data.datatype.after_edit( data )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
             elif p.convert_data:
                 if lid is not None:
                     return trans.show_error_message( "Data in the library cannot be converted.  Please import it to a history and covert it." )
-                # The user clicked the Convert button on the 'Convert to new format' form
+                """The user clicked the Convert button on the 'Convert to new format' form"""
                 if not can_edit_metadata:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 target_type = kwd.get("target_type", None)
                 if target_type:
-                    msg = hda.datatype.convert_dataset(trans, hda, target_type)
+                    msg = data.datatype.convert_dataset(trans, data, target_type)
                     return trans.show_ok_message( msg, refresh_frames=['history'] )
             elif p.change_permission:
-                # The user clicked the change_permission button on the 'Change permissions' form
+                """The user clicked the change_permission button on the 'Change permissions' form"""
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change dataset permitted actions." )
-                if trans.app.security_agent.allow_action( trans.user, hda.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = hda.dataset ):
+                if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data.dataset ):
                     group_args = [ k.replace('group_', '', 1) for k in kwd if k.startswith('group_') ]
                     group_ids_checked = filter( lambda x: not x.count('_'), group_args )
                     permissions = []
@@ -312,31 +315,33 @@ class RootController( BaseController ):
                         action_strings = [ action.replace(group_id + '_', '', 1) for action in group_args if action.startswith(group_id + '_') ]
                         actions = trans.app.security_agent.convert_permitted_action_strings( action_strings )
                         permissions.append( ( trans.app.security_agent.get_group( group_id ), actions ) )
-                    trans.app.security_agent.set_dataset_permissions( hda.dataset, permissions )
+                    trans.app.security_agent.set_dataset_permissions( data.dataset, permissions )
                     return trans.show_ok_message( "Dataset permissions have been set.", refresh_frames=['history'] )
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
-            hda.datatype.before_edit( hda )
             
-            if "dbkey" in hda.datatype.metadata_spec and not hda.metadata.dbkey:
+            data.datatype.before_edit( data )
+            
+            if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
                 # This looks like it does nothing, but getting the dbkey
                 # returns the metadata dbkey unless it is None, in which
                 # case it resorts to the old dbkey.  Setting the dbkey
                 # sets it properly in the metadata
-                hda.metadata.dbkey = hda.dbkey
+                data.metadata.dbkey = data.dbkey
             metadata = list()
             # a list of MetadataParemeters
-            for name, spec in hda.datatype.metadata_spec.items():
+            for name, spec in data.datatype.metadata_spec.items():
                 if spec.visible:
-                    metadata.append( spec.wrap( hda.metadata.get(name), hda ) )
+                    metadata.append( spec.wrap( data.metadata.get(name), data ) )
             # let's not overwrite the imported datatypes module with the variable datatypes?
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
-            return trans.fill_template( "/dataset/edit_attributes.mako", data=hda, metadata=metadata, datatypes=ldatatypes, err=None )
+            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, metadata=metadata,
+                                        datatypes=ldatatypes, err=None )
         else:
-            return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % str( id ) )
+            return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % id )
 
     @web.expose
     def delete( self, trans, id = None, **kwd):
@@ -351,21 +356,21 @@ class RootController( BaseController ):
                     int( id )
                 except:
                     continue
-                hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
-                if hda:
-                    # Walk up parent hdas to find the containing history
-                    topmost_parent = hda
+                data = self.app.model.HistoryDatasetAssociation.get( id )
+                if data:
+                    # Walk up parent datasets to find the containing history
+                    topmost_parent = data
                     while topmost_parent.parent:
                         topmost_parent = topmost_parent.parent
                     assert topmost_parent in history.datasets, "Data does not belong to current history"
                     # Mark deleted and cleanup
-                    hda.mark_deleted()
-                    hda.clear_associated_files()
+                    data.mark_deleted()
+                    data.clear_associated_files()
                     self.app.model.flush()
-                    trans.log_event( "Dataset id '%s' marked as deleted" % str( id ) )
-                    if hda.parent_id is None:
+                    trans.log_event( "Dataset id %s marked as deleted" % str(id) )
+                    if data.parent_id is None:
                         try:
-                            self.app.job_stop_queue.put( hda.creating_job_associations[0].job )
+                            self.app.job_stop_queue.put( data.creating_job_associations[0].job )
                         except IndexError:
                             pass    # upload tool will cause this since it doesn't have a job
         return self.history( trans )
@@ -378,21 +383,21 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid" %str( id )
             history = trans.get_history()
-            hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
-            if hda:
+            data = self.app.model.HistoryDatasetAssociation.get( id )
+            if data:
                 # Walk up parent datasets to find the containing history
-                topmost_parent = hda
+                topmost_parent = data
                 while topmost_parent.parent:
                     topmost_parent = topmost_parent.parent
                 assert topmost_parent in history.datasets, "Data does not belong to current history"
                 # Mark deleted and cleanup
-                hda.mark_deleted()
-                hda.clear_associated_files()
+                data.mark_deleted()
+                data.clear_associated_files()
                 self.app.model.flush()
-                trans.log_event( "Dataset id '%s' marked as deleted async" % str( id ) )
-                if hda.parent_id is None:
+                trans.log_event( "Dataset id %s marked as deleted async" % str(id) )
+                if data.parent_id is None:
                     try:
-                        self.app.job_stop_queue.put( hda.creating_job_associations[0].job )
+                        self.app.job_stop_queue.put( data.creating_job_associations[0].job )
                     except IndexError:
                         pass    # upload tool will cause this since it doesn't have a job
             else:
@@ -404,7 +409,8 @@ class RootController( BaseController ):
     @web.expose
     def history_options( self, trans ):
         """Displays a list of history related actions"""            
-        return trans.fill_template( "/history/options.mako", user=trans.get_user(), history=trans.get_history() )
+        return trans.fill_template( "/history/options.mako",
+                                    user = trans.get_user(), history = trans.get_history() )
 
     @web.expose
     def history_delete( self, trans, id=None, **kwd):
@@ -441,16 +447,16 @@ class RootController( BaseController ):
                 trans.log_event( "History id %s marked as deleted" % str(hid) )
         else:
             return trans.show_message( "You must select at least one history to delete." )
-        return trans.show_message( "History deleted: %s" % ",".join(history_names), refresh_frames=['history'] )
+        return trans.show_message( "History deleted: %s" % ",".join(history_names),
+                                           refresh_frames=['history'])
 
     @web.expose
     def clear_history( self, trans ):
         """Clears the history for a user"""
         history = trans.get_history()
-        for hda in history.datasets:
-            hda.deleted = True
-            hda.dataset.deleted = True
-            hda.clear_associated_files()
+        for dataset in history.datasets:
+            dataset.deleted = True
+            dataset.clear_associated_files()
         self.app.model.flush()
         trans.log_event( "History id %s cleared" % (str(history.id)) )
         trans.response.send_redirect( url_for("/index" ) )
@@ -532,7 +538,9 @@ class RootController( BaseController ):
         if not isinstance( id, list ):
             id = [ id ]
         trans.log_event( "History id %s available" % str( id ) )
-        return trans.fill_template( "/history/list.mako", ids=id, user=trans.get_user(), current_history=trans.get_history() )
+        return trans.fill_template( "/history/list.mako", ids=id,
+                                    user=trans.get_user(),
+                                    current_history=trans.get_history() )
         
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
@@ -662,24 +670,24 @@ class RootController( BaseController ):
             if copy_access_from:
                 copy_access_from = trans.app.model.HistoryDatasetAssociation.get( copy_access_from )
                 group_dataset_associations = copy_access_from.dataset.groups
-            hda = trans.app.model.HistoryDatasetAssociation( name=name, info=info, extension=ext, dbkey=dbkey, create_dataset=True )
-            trans.app.security_agent.set_dataset_permissions( hda.dataset, group_dataset_associations )
-            hda.flush()
-            data_file = open( hda.file_name, "wb" )
+            data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
+            trans.app.security_agent.set_dataset_permissions( data.dataset, group_dataset_associations )
+            data.flush()
+            data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )
             data_file.write( file_data.file.read() )
             data_file.close()
-            hda.dataset.state = hda.dataset.states.OK
-            hda.init_meta()
-            hda.set_meta()
-            hda.flush()
-            history.add_dataset( hda )
+            data.state = data.states.OK
+            data.init_meta()
+            data.set_meta()
+            data.flush()
+            history.add_dataset( data )
             history.flush()
-            hda.set_peek()
-            hda.set_size()
-            hda.flush()
-            trans.log_event( "Added dataset id '%s' to history id '%s'." % ( str( hda.dataset_id ),  str( history_id ) ) )
-            return trans.show_ok_message( "Dataset id " + str( hda.dataset_id ) + " added to history id " + str( history_id ) + "." )
+            data.set_peek()
+            data.set_size()
+            data.flush()
+            trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id))
+            return trans.show_ok_message("Dataset "+str(data.hid)+" added to history "+str(history_id)+".")
         except Exception, e:
             trans.log_event( "Failed to add dataset to history: %s" % ( e ) )
             return trans.show_error_message("Adding File to History has Failed")
@@ -713,11 +721,13 @@ class RootController( BaseController ):
     def dataset_make_primary( self, trans, id=None):
         """Copies a dataset and makes primary"""
         try:
-            old_hda = self.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
-            new_hda = old_hda.copy()
+            old_data = self.app.model.HistoryDatasetAssociation.get( id )
+            new_data = old_data.copy()
+            ## new_data.parent = None
+            ## history = trans.app.model.History.get( old_data.history_id )
             history = trans.get_history()
-            history.add_dataset( new_hda )
-            new_hda.flush()
+            history.add_dataset(new_data)
+            new_data.flush()
             return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] ) 
         except:
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" ) 
@@ -744,7 +754,7 @@ class RootController( BaseController ):
     @web.expose
     def dataset_errors( self, trans, id=None, **kwd ):
         """View/fix errors associated with dataset"""
-        hda = trans.app.model.HistoryDatasetAssociation.filter_by( dataset_id=id ).first()
+        data = trans.app.model.HistoryDatasetAssociation.get( id )
         p = kwd
         if p.get("fix_errors", None):
             # launch tool to create new, (hopefully) error free dataset
@@ -752,19 +762,18 @@ class RootController( BaseController ):
             tool_params["tool_id"] = 'fix_errors'
             tool_params["runtool_btn"] = 'T'
             tool_params["input"] = id
-            tool_params["ext"] = hda.ext
+            tool_params["ext"] = data.ext
             # send methods selected
-            repair_methods = hda.datatype.repair_methods( hda )
+            repair_methods = data.datatype.repair_methods( data )
             methods = []
             for method, description in repair_methods:
-                if method in p:
-                    methods.append( method )
+                if method in p: methods.append(method)
             tool_params["methods"] = ",".join(methods)
             url = "/tool_runner/index?" + urllib.urlencode(tool_params)
             trans.response.send_redirect(url)                
         else:
-            history = trans.app.model.History.get( hda.history_id )
-            return trans.fill_template('dataset/validation.tmpl', data=hda, history=history)
+            history = trans.app.model.History.get( data.history_id )
+            return trans.fill_template('dataset/validation.tmpl', data=data, history=history)
 
     # ---- Debug methods ----------------------------------------------------
 
