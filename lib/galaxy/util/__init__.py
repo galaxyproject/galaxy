@@ -206,7 +206,7 @@ def xml_text(root, name):
     return ''
     
 def string_as_bool( string ):
-    if string.lower() in ( 'true', 'yes', 'on' ):
+    if str( string ).lower() in ( 'true', 'yes', 'on' ):
         return True
     else:
         return False

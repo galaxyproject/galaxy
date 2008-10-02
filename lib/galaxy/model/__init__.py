@@ -281,7 +281,15 @@ class HistoryDatasetAssociation( object ):
             for child in self.children:
                 child.mark_deleted()
 
-
+    def mark_undeleted( self, include_children=True ):
+        self.deleted = False
+        if include_children:
+            for child in self.children:
+                child.mark_undeleted()
+    def undeletable( self ):
+        if self.purged:
+            return False
+        return True
 
 class History( object ):
     def __init__( self, id=None, name=None, user=None ):

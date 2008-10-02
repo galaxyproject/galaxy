@@ -209,7 +209,10 @@ div#footer {
 <body class="historyPage">
 
 <div id="top-links" class="historyLinks">
-    <a href="${h.url_for('history')}">refresh</a> 
+    <a href="${h.url_for('history', show_deleted=show_deleted)}">refresh</a> 
+    %if show_deleted:
+    | <a href="${h.url_for('history', show_deleted=False)}">hide deleted</a> 
+    %endif
 </div>
 
 %if history.deleted:
@@ -221,11 +224,19 @@ div#footer {
 
 <%namespace file="history_common.mako" import="render_dataset" />
 
-%if len(history.active_datasets) < 1:
+%if ( show_deleted and len( history.datasets ) < 1 ) or len( history.active_datasets ) < 1:
     <div class="infomessagesmall" id="emptyHistoryMessage">
 %else:    
-    ## Render all active (not deleted) datasets, ordered from newest to oldest
-    %for data in reversed( history.active_datasets ):
+    <%
+    if show_deleted:
+        #all datasets
+        datasets_to_show = history.activatable_datasets
+    else:
+        #active (not deleted)
+        datasets_to_show = history.active_datasets
+    %>
+    ## Render requested datasets, ordered from newest to oldest
+    %for data in reversed( datasets_to_show ):
         %if data.visible:
             <div class="historyItemContainer" id="historyItemContainer-${data.id}">
                 ${render_dataset( data, data.hid )}

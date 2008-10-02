@@ -48,7 +48,7 @@ class RootController( BaseController ):
     ## ---- Root history display ---------------------------------------------
 
     @web.expose
-    def history( self, trans, as_xml=False ):
+    def history( self, trans, as_xml=False, show_deleted=False ):
         """
         Display the current history, creating a new history if neccesary.
         
@@ -63,7 +63,7 @@ class RootController( BaseController ):
             return trans.fill_template_mako( "root/history_as_xml.mako", history=history )
         else:
             template = "root/history.mako"
-            return trans.fill_template( "root/history.mako", history=history )
+            return trans.fill_template( "root/history.mako", history = history, show_deleted = util.string_as_bool( show_deleted ) )
 
     @web.expose
     def dataset_state ( self, trans, id=None, stamp=None ):
@@ -271,7 +271,7 @@ class RootController( BaseController ):
                                     datatypes=ldatatypes, err=None )
 
     @web.expose
-    def delete( self, trans, id = None, **kwd):
+    def delete( self, trans, id = None, show_deleted_on_refresh = False, **kwd):
         if id:
             if isinstance( id, list ):
                 dataset_ids = id
@@ -300,7 +300,7 @@ class RootController( BaseController ):
                             self.app.job_stop_queue.put( data.creating_job_associations[0].job )
                         except IndexError:
                             pass    # upload tool will cause this since it doesn't have a job
-        return self.history( trans )
+        return self.history( trans, show_deleted = show_deleted_on_refresh )
         
     @web.expose
     def delete_async( self, trans, id = None, **kwd):
