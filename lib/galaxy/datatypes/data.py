@@ -47,6 +47,9 @@ class Data( object ):
     """Stores the set of display applications, and viewing methods, supported by this datatype """
     supported_display_apps = {}
     
+    """If False, the peek is regenerated whenever a dataset of this type is copied"""
+    copy_safe_peek = True
+    
     def __init__(self, **kwd):
         """Initialize the datatype"""
         object.__init__(self, **kwd)
