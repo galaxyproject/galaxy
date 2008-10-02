@@ -166,7 +166,6 @@ class DefaultHistoryGroupAssociation( object ):
         self.history = history
         self.group = group
         self.permitted_actions = permitted_actions
-    
 
 class History( object ):
     def __init__( self, id=None, name=None, user=None ):
@@ -477,6 +476,15 @@ class DatasetInstance( object ):
         if include_children:
             for child in self.children:
                 child.mark_deleted()
+    def mark_undeleted( self, include_children=True ):
+        self.deleted = False
+        if include_children:
+            for child in self.children:
+                child.mark_undeleted()
+    def undeletable( self ):
+        if self.purged:
+            return False
+        return True
 
 class HistoryDatasetAssociation( DatasetInstance ):
     def __init__( self, 

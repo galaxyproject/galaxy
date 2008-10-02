@@ -20,6 +20,7 @@
     <li><a href="${h.url_for( action='history_set_default_permitted_actions' )}">Change default permitted actions</a> for the current history</li>
     <li><a href="${h.url_for( action='history_share' )}" target="galaxy_main">Share</a> current history</div>
 %endif
+    <li><a href="${h.url_for( action='history', show_deleted=True)}" target="galaxy_history">Show deleted</a> datasets in history</li>
     <li><a href="${h.url_for( action='history_delete', id=history.id )}" confirm="Are you sure you want to delete the current history?">Delete</a> current history</div>
 </ul>
 

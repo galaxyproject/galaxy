@@ -12,8 +12,12 @@
         <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
     %endif
         
+    %if data.deleted:
+        <div class="warningmessagesmall">
+            <strong>This dataset has been deleted. Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" target="galaxy_history">here</a> to undelete.</strong>
+        </div>
+    %endif
         ## Header row for history items (name, state, action buttons)
-        
 	<div style="overflow: hidden;" class="historyItemTitleBar">
 	    <div style="float: left; padding-right: 3px;">
 		<div style='display: none;' id="progress-${data.id}">
@@ -28,7 +32,7 @@
 	    <div style="float: right;">
 	    <a href="${h.url_for( controller='dataset', dataset_id=data.id, action='display', filename='index')}" target="galaxy_main"><img src="${h.url_for('/static/images/eye_icon.png')}" rollover="${h.url_for('/static/images/eye_icon_dark.png')}" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>
 	    <a href="${h.url_for( action='edit', id=data.id )}" target="galaxy_main"><img src="${h.url_for('/static/images/pencil_icon.png')}" rollover="${h.url_for('/static/images/pencil_icon_dark.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>
-	    <a href="${h.url_for( action='delete', id=data.id )}" class="historyItemDelete" id="historyItemDelter-${data.id}"><img src="${h.url_for('/static/images/delete_icon.png')}" rollover="${h.url_for('/static/images/delete_icon_dark.png')}" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
+	    <a href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted )}" class="historyItemDelete" id="historyItemDelter-${data.id}"><img src="${h.url_for('/static/images/delete_icon.png')}" rollover="${h.url_for('/static/images/delete_icon_dark.png')}" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
 	    </div>
 	    <span class="historyItemTitle"><b>${hid}: ${data.display_name()}</b></span>
 	</div>
