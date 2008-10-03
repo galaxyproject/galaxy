@@ -1,5 +1,5 @@
 ## Render the dataset `data` as history item, using `hid` as the displayed id
-<%def name="render_dataset( data, hid )">
+<%def name="render_dataset( data, hid, show_deleted_on_refresh = False )">
     <%
 	if data.state in ['no state','',None]:
 	    data_state = "queued"
@@ -10,7 +10,7 @@
         
     %if data.deleted:
         <div class="warningmessagesmall">
-            <strong>This dataset has been deleted. Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" target="galaxy_history">here</a> to undelete.</strong>
+            <strong>This dataset has been deleted. Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" class="historyItemUndelete" id="historyItemUndeleter-${data.id}" target="galaxy_history">here</a> to undelete.</strong>
         </div>
     %endif
         ## Header row for history items (name, state, action buttons)
@@ -28,7 +28,7 @@
 	    <div style="float: right;">
 	    <a href="${h.url_for( controller='dataset', dataset_id=data.id, action='display', filename='index')}" target="galaxy_main"><img src="${h.url_for('/static/images/eye_icon.png')}" rollover="${h.url_for('/static/images/eye_icon_dark.png')}" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>
 	    <a href="${h.url_for( action='edit', id=data.id )}" target="galaxy_main"><img src="${h.url_for('/static/images/pencil_icon.png')}" rollover="${h.url_for('/static/images/pencil_icon_dark.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>
-	    <a href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted )}" class="historyItemDelete" id="historyItemDelter-${data.id}"><img src="${h.url_for('/static/images/delete_icon.png')}" rollover="${h.url_for('/static/images/delete_icon_dark.png')}" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
+	    <a href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" class="historyItemDelete" id="historyItemDeleter-${data.id}"><img src="${h.url_for('/static/images/delete_icon.png')}" rollover="${h.url_for('/static/images/delete_icon_dark.png')}" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
 	    </div>
 	    <span class="historyItemTitle"><b>${hid}: ${data.display_name()}</b></span>
 	</div>
@@ -44,6 +44,10 @@
                 <div>
                     An error occurred running this job: <i>${data.display_info().strip()}</i>, 
                     <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main">report this error</a>
+                </div>
+            %elif data_state == "discarded":
+                <div>
+                    The job creating this dataset was cancelled before completion.
                 </div>
             %elif data_state == "empty":
                 <div>No data: <i>${data.display_info()}</i></div>
@@ -95,7 +99,7 @@
                     <div>
                         There are ${len( children )} secondary datasets.
                         %for idx, child in enumerate(children):
-                            ${render_dataset( child, idx + 1 )}
+                            ${render_dataset( child, idx + 1, show_deleted_on_refresh = show_deleted_on_refresh )}
                         %endfor
                     </div>
                 %endif

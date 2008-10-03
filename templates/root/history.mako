@@ -91,17 +91,41 @@
 			url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
 			error: function() { alert( "Delete failed" ) },
 			success: function() {
-			    q( "#historyItem-" + data_id ).fadeOut( "fast", function() {
-				q( "div#historyItemContainer-" + data_id ).remove();
-				if ( q( "div.historyItemContainer" ).length < 1 ) {
-				    q ( "div#emptyHistoryMessage" ).show();
+			    	if ( "${show_deleted}" == "True" ){
+					var to_update = {};
+					to_update[data_id] = "none";
+					updater( to_update );
 				}
-			    });
+			    else {
+			    	q( "#historyItem-" + data_id ).fadeOut( "fast", function() {
+					q( "div#historyItemContainer-" + data_id ).remove();
+					if ( q( "div.historyItemContainer" ).length < 1 ) {
+				    	q ( "div#emptyHistoryMessage" ).show();
+					}
+			    	});
+			    }
 			}
 		    });
 		    return false;
 		});
 	    });
+            // Undelete link
+            q(this).find( "a.historyItemUndelete" ).each( function() {
+		var data_id = this.id.split( "-" )[1];
+		q(this).click( function() {
+		    q( '#progress-' + data_id ).show();
+		    q.ajax({
+			url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
+			error: function() { alert( "Undelete failed" ) },
+			success: function() {
+			    var to_update = {};
+			    to_update[data_id] = "none";
+			    updater( to_update );
+			}
+		    });
+		    return false;
+		});
+		});
         });
     };
     // Looks for changes in dataset state using an async request. Keeps
@@ -143,7 +167,7 @@
                     setupHistoryItem( container.children( ".historyItemWrapper" ) );
                     initShowHide();
                     // If new state was terminal, stop tracking
-                    if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty") || ( val.state == "deleted" )) {
+                    if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty") || ( val.state == "deleted" ) || ( val.state == "discarded" )) {
                         delete tracked_datasets[ parseInt(id) ];
                     } else {
                         tracked_datasets[ parseInt(id) ] = val.state;
@@ -239,7 +263,7 @@ div#footer {
     %for data in reversed( datasets_to_show ):
         %if data.visible:
             <div class="historyItemContainer" id="historyItemContainer-${data.id}">
-                ${render_dataset( data, data.hid )}
+                ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted )}
             </div>
         %endif
     %endfor

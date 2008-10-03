@@ -1052,7 +1052,7 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( data.hid )
-                if not data.deleted and data.state not in [data.states.ERROR] and data.visible:
+                if not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED] and data.visible:
                     if self.options and data.get_dbkey() != filter_value:
                         continue
                     if isinstance( data.datatype, self.formats):
@@ -1112,7 +1112,7 @@ class DataToolParameter( ToolParameter ):
                     return True
                 return False
             for i, data in enumerate( datasets ):
-                if data.visible and not data.deleted and data.state not in [data.states.ERROR] and ( isinstance( data.datatype, self.formats) or is_convertable( data ) ):
+                if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED] and ( isinstance( data.datatype, self.formats) or is_convertable( data ) ):
                     if self.options and data.get_dbkey() != filter_value:
                         continue
                     most_recent_dataset[0] = data

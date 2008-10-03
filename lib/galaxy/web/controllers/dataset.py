@@ -129,8 +129,7 @@ class DatasetInterface( BaseController ):
             except:
                 raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % (filename) )
     
-    @web.expose
-    def undelete( self, trans, id ):
+    def _undelete( self, trans, id ):
         history = trans.get_history()
         data = self.app.model.HistoryDatasetAssociation.get( id )
         if data and data.undeletable:
@@ -143,4 +142,16 @@ class DatasetInterface( BaseController ):
             data.mark_undeleted()
             self.app.model.flush()
             trans.log_event( "Dataset id %s has been undeleted" % str(id) )
+            return True
+        return False
+    
+    @web.expose
+    def undelete( self, trans, id ):
+        self._undelete( trans, id )
         return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True ) )
+    
+    @web.expose
+    def undelete_async( self, trans, id ):
+        if self._undelete( trans, id ):
+            return "OK"
+        raise "Error undeleting"
