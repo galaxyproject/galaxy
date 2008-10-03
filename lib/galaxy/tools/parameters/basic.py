@@ -1077,7 +1077,7 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( hda.hid )
-                if not hda.dataset.state == galaxy.model.Dataset.states.ERROR and hda.visible and trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
+                if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and hda.visible and trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
                     if self.security_dict:
                         passed_security_check = True
                         for group_name, permitted_actions in self.security_dict.items():
@@ -1159,7 +1159,7 @@ class DataToolParameter( ToolParameter ):
                     return True
                 return False
             for i, data in enumerate( datasets ):
-                if data.visible and not data.deleted and data.state not in [data.states.ERROR] and ( isinstance( data.datatype, self.formats) or is_convertable( data ) ):
+                if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED] and ( isinstance( data.datatype, self.formats) or is_convertable( data ) ):
                     if self.options and data.get_dbkey() != filter_value:
                         continue
                     most_recent_dataset[0] = data
