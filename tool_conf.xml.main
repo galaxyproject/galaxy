@@ -122,14 +122,22 @@
     <tool file="visualization/build_ucsc_custom_track.xml" />
   </section>
   <section name="Regional Variation" id="regVar">
-  	<tool file="regVariation/windowSplitter.xml" />
-  	<tool file="regVariation/featureCounter.xml" />
-	<tool file="regVariation/quality_filter.xml" />
+    <tool file="regVariation/windowSplitter.xml" />
+    <tool file="regVariation/featureCounter.xml" />
+    <tool file="regVariation/quality_filter.xml" />
     <tool file="regVariation/maf_cpg_filter.xml" />
-	<!--
-	<tool file="regVariation/getIndels_2way.xml" />
-	<tool file="regVariation/getIndels_3way.xml" />
-	-->
+    <tool file="regVariation/getIndels_2way.xml" />
+    <tool file="regVariation/getIndels_3way.xml" />
+    <tool file="regVariation/getIndelRates_3way.xml" />
+    <tool file="regVariation/substitutions.xml" />
+    <tool file="regVariation/substitution_rates.xml" />
+    <tool file="regVariation/microsats_alignment_level.xml" />
+    <tool file="regVariation/microsats_mutability.xml" />
+  </section>
+  <section name="Multiple regression" id="multReg">
+    <tool file="regVariation/linear_regression.xml" />
+    <tool file="regVariation/best_regression_subsets.xml" />
+    <tool file="regVariation/rcve.xml" />
   </section>
  <section name="Evolution: HyPhy" id="hyphy">
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
