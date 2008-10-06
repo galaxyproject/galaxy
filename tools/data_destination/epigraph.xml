@@ -1,9 +1,5 @@
 <?xml version="1.0"?>
-<<<<<<< local
 <tool name="Perform genome" id="epigraph_export">
-=======
-<tool name="Perform genome" id="epigraph">
->>>>>>> other
   <description> analysis and prediction with EpiGRAPH</description>
   <redirect_url_params>GENOME=${input1.dbkey} NAME=${input1.name} INFO=${input1.info}</redirect_url_params>
   <inputs>
@@ -13,7 +9,7 @@
     </param>
     <param name="REDIRECT_URL" type="hidden" value="http://epigraph.mpi-inf.mpg.de/WebGRAPH_Public_Test/faces/DataImport.jsp" />
     <param name="DATA_URL" type="baseurl" value="/datasets" />
-    <param name="GALAXY_URL" type="baseurl" value="/dataset_import" />
+    <param name="GALAXY_URL" type="baseurl"  value="/tool_runner?tool_id=epigraph_import"/>
   </inputs>
   <outputs/>
   <help>
