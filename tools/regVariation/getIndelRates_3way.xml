@@ -14,8 +14,8 @@
         
         <conditional name="region">
           <param name="type" type="select" label="Estimate rates corresponding to" multiple="false">
-            <option value="align" selected="True">Alignment block</option>
-            <option value="win">Intervals in your history</option>
+            <option value="win" selected="True">Intervals in your history</option>
+            <option value="align">Alignment block</option>
          </param>
          <when value="win">
             <param format="interval" name="input2" type="data" label="Choose intervals">
@@ -45,8 +45,8 @@
 
 **What it does**
 
-This tool estimates the insertion and deletion rates for alignments in a window of specified size. 
-
+This tool estimates the insertion and deletion rates for alignments in a window of specified size. Rates are computed over the total adjusted lengths (adjusted by disregarding masked bases) of all the alignments blocks from the indel file that fall within that window.
+  
 -----
 
 .. class:: warningmark
