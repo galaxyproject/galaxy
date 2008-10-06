@@ -1070,11 +1070,10 @@ class Tool:
 
     def parse_redirect_url( self, inp_data, param_dict ):
         """Parse the REDIRECT_URL tool param"""
-        # Tools that send data to an external application via a redirect must include the following 3
-        # tool params:
+        # Tools that send data to an external application via a redirect must include the following 3 tool params:
         # REDIRECT_URL - the url to which the data is being sent
         # DATA_URL - the url to which the receiving application will send an http post to retrieve the Galaxy data
-        # GALAXY_URL - the to which the external application may post data as a response
+        # GALAXY_URL - the url to which the external application may post data as a response
         redirect_url = param_dict.get( 'REDIRECT_URL' )
         redirect_url_params = self.build_redirect_url_params( param_dict )
         # Add the parameters to the redirect url.  We're splitting the param string on '**^**'

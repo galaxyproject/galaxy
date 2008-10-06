@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<tool name="EpiGRAPH" id="epigraph_import">
+  <description> server</description>
+  <command interpreter="python">epigraph.py $output</command>
+  <inputs action="http://epigraph.mpi-inf.mpg.de/WebGRAPH_Public_Test/faces/Login.jsp" check_values="false" method="get">
+    <display>go to EpiGRAPH server $GALAXY_URL</display>
+    <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=epigraph_import" />
+  </inputs>
+  <uihints minwidth="800"/>  
+  <code file="epigraph_code.py"/>
+  <outputs>
+    <data name="output" format="txt" />
+  </outputs>
+  <options sanitize="False" refresh="True"/>
+</tool>

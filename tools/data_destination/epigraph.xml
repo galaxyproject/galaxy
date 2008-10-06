@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<tool name="Perform EpiGRAPH" id="epigraph">
-  <description> Genome analysis and prediction</description>
+<tool name="Perform genome" id="epigraph_export">
+  <description> analysis and prediction with EpiGRAPH</description>
   <redirect_url_params>GENOME=${input1.dbkey} NAME=${input1.name} INFO=${input1.info}</redirect_url_params>
   <inputs>
     <param format="bed" name="input1" type="data" label="Send this dataset to EpiGRAPH">
