@@ -91,19 +91,18 @@
 			url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
 			error: function() { alert( "Delete failed" ) },
 			success: function() {
-			    	if ( "${show_deleted}" == "True" ){
-					var to_update = {};
-					to_update[data_id] = "none";
-					updater( to_update );
+			%if show_deleted:
+				var to_update = {};
+				to_update[data_id] = "none";
+				updater( to_update );
+			%else:
+			    q( "#historyItem-" + data_id ).fadeOut( "fast", function() {
+				q( "div#historyItemContainer-" + data_id ).remove();
+				if ( q( "div.historyItemContainer" ).length < 1 ) {
+				   	q ( "div#emptyHistoryMessage" ).show();
 				}
-			    else {
-			    	q( "#historyItem-" + data_id ).fadeOut( "fast", function() {
-					q( "div#historyItemContainer-" + data_id ).remove();
-					if ( q( "div.historyItemContainer" ).length < 1 ) {
-				    	q ( "div#emptyHistoryMessage" ).show();
-					}
-			    	});
-			    }
+			    });
+			%endif
 			}
 		    });
 		    return false;
