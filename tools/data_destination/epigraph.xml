@@ -9,7 +9,7 @@
     </param>
     <param name="REDIRECT_URL" type="hidden" value="http://epigraph.mpi-inf.mpg.de/WebGRAPH_Public_Test/faces/DataImport.jsp" />
     <param name="DATA_URL" type="baseurl" value="/datasets" />
-    <param name="GALAXY_URL" type="baseurl" value="/dataset_import" />
+    <param name="GALAXY_URL" type="baseurl"  value="/tool_runner?tool_id=epigraph_import"/>
   </inputs>
   <outputs/>
   <help>
