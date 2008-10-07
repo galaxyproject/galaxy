@@ -155,3 +155,67 @@ class DatasetInterface( BaseController ):
         if self._undelete( trans, id ):
             return "OK"
         raise "Error undeleting"
+        
+    
+    @web.expose
+    def copy_datasets( self, trans, source_dataset_ids = "", target_history_ids = "", new_history_name="", do_copy = False ):
+        user = trans.get_user()
+        history = trans.get_history()
+        create_new_history = False
+        if source_dataset_ids:
+            if not isinstance( source_dataset_ids, list ):
+            	source_dataset_ids = source_dataset_ids.split( "," )
+            source_dataset_ids = map( int, source_dataset_ids )
+        else:
+            source_dataset_ids = []
+        if target_history_ids:
+            if not isinstance( target_history_ids, list ):
+                target_history_ids = target_history_ids.split( "," )
+            if "create_new_history" in target_history_ids:
+                create_new_history = True
+                target_history_ids.remove( "create_new_history" )
+            target_history_ids = map( int, target_history_ids )
+        else:
+            target_history_ids = []
+        done_msg = error_msg = ""
+        if do_copy:
+            invalid_datasets = 0
+            if not source_dataset_ids or not ( target_history_ids or create_new_history ):
+                error_msg = "You must provide both source datasets and target histories."
+                if create_new_history:
+                    target_history_ids.append( "create_new_history" )
+            else:
+                if create_new_history:
+                    new_history = trans.app.model.History()
+                    if new_history_name:
+                        new_history.name = new_history_name
+                    new_history.user = user
+                    new_history.flush()
+                    target_history_ids.append( new_history.id )
+                if user:
+                    target_histories = [ hist for hist in map( trans.app.model.History.get, target_history_ids ) if ( hist is not None and hist.user == user )]
+                else:
+                    target_histories = [ history ]
+                if len( target_histories ) != len( target_history_ids ):
+                    error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_history_ids ) - len( target_histories ) )
+                for data in map( trans.app.model.HistoryDatasetAssociation.get, source_dataset_ids ):
+                    if data is None:
+                        error_msg = error_msg + "You tried to copy a non-existant dataset.  "
+                        invalid_datasets += 1
+                    elif data.history != history:
+                        error_msg = error_msg + "You tried to copy a dataset which is not in your current history.  "
+                        invalid_datasets += 1
+                    else:
+                        for hist in target_histories:
+                            hist.add_dataset( data.copy( copy_children = True ) )
+                trans.app.model.flush()
+                done_msg = "%i datasets copied to %i histories." % ( len( source_dataset_ids ) - invalid_datasets, len( target_histories ) )
+                history.refresh()
+        elif create_new_history:
+            target_history_ids.append( "create_new_history" )
+        source_datasets = history.active_datasets
+        target_histories = [history]
+        if user:
+           target_histories = user.histories 
+        
+        return trans.fill_template( "/dataset/copy_view.mako", source_dataset_ids = source_dataset_ids, target_history_ids = target_history_ids, source_datasets = source_datasets, target_histories = target_histories, new_history_name = new_history_name, done_msg = done_msg, error_msg = error_msg )
