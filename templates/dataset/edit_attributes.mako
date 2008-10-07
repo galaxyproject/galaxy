@@ -243,3 +243,12 @@ elif isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
   </div>
   </div>
 %endif
+  
+  <p>
+  <div class="toolForm">
+  <div class="toolFormTitle">Copy History Item</div>
+  <div class="toolFormBody">
+      Click <a href="${h.url_for( controller='dataset', action='copy_datasets', source_dataset_ids=data.id, target_history_ids=data.history_id )}" target="galaxy_main">here</a> to make a copy of this history item.
+  </div>
+  </div>
+  </p>
