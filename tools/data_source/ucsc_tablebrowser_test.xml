@@ -1,10 +1,7 @@
 <?xml version="1.0"?>
-<tool name="UCSC Test" id="ucsc_table_direct_test1">
-	
+<tool name="UCSC Test" id="ucsc_table_direct_test1" tool_type="data_source">
 	<description>table browser</description>
-	
-	<command interpreter="python">ucsc_tablebrowser.py $output</command>
-	
+	<command interpreter="python">data_source.py $output</command>
 	<inputs action="http://genome-test.cse.ucsc.edu/cgi-bin/hgTables" check_values="false" method="get">
 		<display>go to UCSC Table Browser $GALAXY_URL</display>
 		<param name="GALAXY_URL" type="baseurl" value="/tool_runner" />
@@ -13,15 +10,17 @@
 		<param name="hgta_compressType" type="hidden" value="none" />
 		<param name="hgta_outputType" type="hidden" value="bed" />
 	</inputs>
-	
+    <request_param_translation>
+        <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="dbkey" remote_name="db" missing="?" />
+        <request_param galaxy_name="organism" remote_name="org" missing="unknown species" />
+        <request_param galaxy_name="table" remote_name="hgta_track" missing="" />
+        <request_param galaxy_name="description" remote_name="hgta_regionType" missing="" />
+        <request_param galaxy_name="data_type" remote_name="hgta_outputType" missing="interval" />
+    </request_param_translation>
 	<uihints minwidth="800"/>
-	
-	<code file="ucsc_tablebrowser_code.py"/>
-	
 	<outputs>
 		<data name="output" format="bed" />
 	</outputs>
 	<options sanitize="False" refresh="True"/>
-
 </tool>
-

@@ -1,15 +1,24 @@
 <?xml version="1.0"?>
-<tool name="EpiGRAPH" id="epigraph_import">
-  <description> server</description>
-  <command interpreter="python">epigraph.py $output</command>
-  <inputs action="http://epigraph.mpi-inf.mpg.de/WebGRAPH_Public_Test/faces/Login.jsp" check_values="false" method="get">
-    <display>go to EpiGRAPH server $GALAXY_URL</display>
-    <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=epigraph_import" />
-  </inputs>
-  <uihints minwidth="800"/>  
-  <code file="epigraph_code.py"/>
-  <outputs>
-    <data name="output" format="txt" />
-  </outputs>
-  <options sanitize="False" refresh="True"/>
+<tool name="EpiGRAPH" id="epigraph_import" tool_type="data_source">
+    <description> server</description>
+    <command interpreter="python">data_source.py $output</command>
+    <inputs action="http://epigraph.mpi-inf.mpg.de/WebGRAPH_Public_Test/faces/Login.jsp" check_values="false" method="get">
+        <display>go to EpiGRAPH server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=epigraph_import" />
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="dbkey" remote_name="GENOME" missing="?" />
+        <request_param galaxy_name="organism" remote_name="organism" missing="" />
+        <request_param galaxy_name="table" remote_name="table" missing="" />
+        <request_param galaxy_name="description" remote_name="description" missing="" />
+        <request_param galaxy_name="name" remote_name="NAME" missing="EpiGRAPH query" />
+        <request_param galaxy_name="info" remote_name="INFO" missing="" />
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="txt" />
+    </request_param_translation>
+    <uihints minwidth="800"/>  
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
 </tool>

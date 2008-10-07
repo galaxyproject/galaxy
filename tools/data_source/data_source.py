@@ -21,27 +21,23 @@ def check_gzip( filename ):
 def __main__():
     filename = sys.argv[1]
     params = {}
-    
-    for line in open(filename, 'r'):
+    for line in open( filename, 'r' ):
         try:
             line = line.strip()
-            fields = line.split('\t')
-            params[fields[0]] = fields[1]
+            fields = line.split( '\t' )
+            params[ fields[0] ] = fields[1]
         except:
             continue
-    
     URL = params.get( 'URL', None )
     if not URL:
         open( filename, 'w' ).write( "" )
-        #raise Exception('Datasource has not sent back a URL parameter')
-        stop_err( 'Datasource has not sent back a URL parameter.' )
+        stop_err( 'The remote data source application has not sent back a URL parameter in the request.' )
     out = open( filename, 'w' )
     CHUNK_SIZE = 2**20 # 1Mb 
     try:
         page = urllib.urlopen( URL, urllib.urlencode( params ) )
     except:
-        stop_err( 'It appears that the UCSC Table Browser is currently offline. Please try again later.' )
-    
+        stop_err( 'It appears that the remote data source application is currently off line. Please try again later.' )
     while 1:
         chunk = page.read( CHUNK_SIZE )
         if not chunk:
@@ -58,13 +54,13 @@ def __main__():
                 os.close( fd )
                 os.remove( uncompressed )
                 gzipped_file.close()
-                stop_err( 'Problem decompressing gzipped data, please try retrieving the data uncompressed.' )
+                stop_err( 'Problem uncompressing gzipped data, please try retrieving the data uncompressed.' )
             if not chunk:
                 break
             os.write( fd, chunk )
         os.close( fd )
         gzipped_file.close()
-        # Replace the gzipped file with the decompressed file
+        # Replace the gzipped file with the uncompressed file
         shutil.move( uncompressed, filename )        
     
 if __name__ == "__main__": __main__()

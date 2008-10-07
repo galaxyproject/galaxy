@@ -1,13 +1,22 @@
 <?xml version="1.0"?>
-<tool name="Flymine" id="flymine">
+<tool name="Flymine" id="flymine" tool_type="data_source">
     <description>server</description>
-    <command interpreter="python">intermine.py $output</command>
+    <command interpreter="python">data_source.py $output</command>
     <inputs action="http://preview.flymine.org/preview/begin.do" check_values="false" method="get" target="_top"> 
         <display>go to Flymine server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=flymine" />
     </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="dbkey" remote_name="db" missing="?" />
+        <request_param galaxy_name="organism" remote_name="organism" missing="" />
+        <request_param galaxy_name="table" remote_name="table" missing="" />
+        <request_param galaxy_name="description" remote_name="description" missing="" />
+        <request_param galaxy_name="name" remote_name="name" missing="FlyMine query" />
+        <request_param galaxy_name="info" remote_name="info" missing="" />
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="interval" />
+    </request_param_translation>
     <uihints minwidth="800"/>
-    <code file="flymine_filter_code.py"/>
     <outputs>
         <data name="output" format="txt" />
     </outputs>

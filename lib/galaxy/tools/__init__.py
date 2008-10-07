@@ -225,8 +225,22 @@ class Tool:
         if not self.version: 
             # For backward compatibility, some tools may not have versions yet.
             self.version = "1.0.0"
-        # Command line (template). Optional for tools that do not invoke a 
-        # local program  
+        # Type of tool
+        self.tool_type = root.get( "tool_type", None )
+        if self.tool_type is not None:
+            # data_source tool
+            if self.tool_type == "data_source":
+                self.param_trans_dict = {}
+                req_param_trans = root.find( "request_param_translation" )
+                if req_param_trans is not None:
+                    for req_param in req_param_trans.findall( "request_param" ):
+                        # req_param tags must look like <request_param galaxy_name="dbkey" remote_name="GENOME" missing="" />
+                        trans_list = []
+                        remote_name = req_param.get( "remote_name" )
+                        trans_list.append( req_param.get( "galaxy_name" ) )
+                        trans_list.append( req_param.get( "missing" ) )
+                        self.param_trans_dict[ remote_name ] = trans_list
+        # Command line (template). Optional for tools that do not invoke a local program  
         command = root.find("command")
         if command is not None and command.text is not None:
             self.command = command.text.lstrip() # get rid of leading whitespace
@@ -1115,7 +1129,56 @@ class Tool:
         except Exception, e:
             e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ) )
             raise
-    
+
+    def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
+        if self.tool_type == 'data_source':
+            # List for converting UCSC to Galaxy exts, if not in following dictionary, use provided datatype
+            data_type_to_ext = { 'wigdata':'wig', 'tab':'interval', 'hyperlinks':'html', 'sequence':'fasta' }
+            dbkey = param_dict.get( 'dbkey ' )
+            organism = param_dict.get( 'organism' )
+            table = param_dict.get( 'table' )
+            description = param_dict.get( 'description' )
+            if description == 'range':
+                description = param_dict.get( 'position', '' )
+                if not description:
+                    description = 'unknown position'
+            data_type = param_dict.get( 'data_type ')
+            items = out_data.items()
+            for name, data in items:
+                if organism and table and description:
+                    data.name  = '%s on %s: %s (%s)' % ( data.name, organism, table, description )
+                data.dbkey = dbkey
+                ext = data_type
+                try: 
+                    ext = data_type_to_ext[ data_type ]
+                except: 
+                    pass
+                if ext not in app.datatypes_registry.datatypes_by_extension: 
+                    ext = 'interval'
+                data = app.datatypes_registry.change_datatype( data, ext )
+                # store external data source's request parameters temporarily in output file
+                out = open( data.file_name, 'w' )
+                for key, value in param_dict.items():
+                    print >> out, '%s\t%s' % ( key, value )
+                out.close()
+                out_data[ name ] = data
+            return out_data
+
+    def exec_after_process( self, app, inp_data, out_data, param_dict ):
+        # TODO: for data_source tools at least, this code can probably be handled more optimally by adding a new
+        # tag set in the tool config.
+        if self.tool_type == 'data_source':
+            name, data = out_data.items()[0]
+            if data.state == data.states.OK:
+                data.info = data.name
+            if not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
+                data.set_meta()
+                if data.missing_meta(): 
+                    data = app.datatypes_registry.change_datatype( data, 'tabular' )
+            data.set_peek()
+            data.set_size()
+            data.flush()
+
     def collect_associated_files( self, output ):
         for name, outdata in output.items():
             temp_file_path = os.path.join( self.app.config.new_file_path, "dataset_%s_files" % ( outdata.id ) )
