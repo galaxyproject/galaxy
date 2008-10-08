@@ -1,67 +1,65 @@
 <%inherit file="/base.mako"/>
 <%def name="title()">Your saved histories</%def>
 
-<%def name="javascripts()">
-${parent.javascripts()}
-<script type="text/javascript">  
-    ## FIXME: This depends on javascript, could be moved into controller
-    function OnSubmitForm()
-    {
-      if(document.history_actions.operation[0].checked == true)
-      {
-	document.history_actions.action = "${h.url_for( action="history_share") }";
-      }
-      else if(document.history_actions.operation[1].checked == true)
-      {
-    
-	document.history_actions.action = "${h.url_for( action="history_rename") }";
-      }
-      else if(document.history_actions.operation[2].checked == true)
-      {
-	if (confirm("Are you sure you want to delete these histories?"))
-	{
-	    document.history_actions.action = "${h.url_for( action="history_delete" )}";
-	}
-      }
-    
-      return true;
-    }
-</script>
-</%def>
-  	
+%if error_msg:
+<p>
+<div class="errormessage">${error_msg}</div>
+<div style="clear: both"></div>
+</p>
+%endif
+%if ok_msg:
+<p>
+<div class="donemessage">${ok_msg}</div>
+<div style="clear: both"></div>
+</p>
+%endif
+
 %if user.histories:
-  <h1>Stored Histories</h1>
-  <form name="history_actions" onSubmit="return OnSubmitForm();" method="post" >
+  <h1 style="margin-bottom:0px;">Stored Histories</h1>
+  %if show_deleted:
+  <div><a href="${h.url_for( action='history_available', id=','.join( ids ), show_deleted=False )}">hide deleted</a></div>
+  %else:
+  <div><a href="${h.url_for( action='history_available', id=','.join( ids ), show_deleted=True )}">show deleted</a></div>
+  %endif
+  <form name="history_actions" action="${h.url_for( action='history_available')}" method="post" >
       <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-          <tr class="header" align="center"><td></td><td>Name</td><td>Size</td><td>Last modified</td><td>Actions</td></tr>
+          <tr class="header" align="center"><td>Name</td><td>Size</td><td>Last modified</td><td>Actions</td></tr>
       %for history in user.histories:
-        %if not( history.deleted ):
+        %if ( show_deleted and not history.purged ) or not( history.deleted ):
           <tr>
-            <td><input type=checkbox name="id" value="${history.id}"
+            <td>
+            <input type=checkbox name="id" value="${history.id}"
           %if str(history.id) in ids:
           checked 
           %endif
-          ></td><td>${history.name} 
-          %if history.deleted:
-          (deleted)
+          >${history.name} 
+          %if history == trans.get_history():
+          (current history)
           %endif
           </td>
           <td>${len(history.active_datasets)}</td>
           <td>${str(history.update_time)[:19]}</td>
           <td>
+          %if not history.deleted:
             <a href="${h.url_for( action='history_rename', id=history.id )}">rename</a><br />
             <a href="${h.url_for( action='history_switch', id=history.id )}">switch to</a><br />
-            <a href="${h.url_for( action='history_delete', id=history.id )}" confirm="Are you sure you want to delete this history?">delete</a>
+            <a href="${h.url_for( action='history_delete', id=history.id )}" confirm="Are you sure you want to delete this history?">delete</a><br />
+          %else:
+            <a href="${h.url_for( action='history_undelete', id=history.id )}">undelete</a><br />
+          %endif
           </td>
           </tr>
         %endif
       %endfor
    <tr><th colspan="100%">Action</th></tr>
-   <tr><td colspan="100%" align="center"><input type="radio" name="operation" value="1" checked>Share <input type="radio" name="operation" value="2">Rename <input type="radio" name="operation" value="3">Delete </td></tr>
+   <tr><td colspan="100%" align="center"><input type="radio" name="do_operation" value="share" checked>Share <input type="radio" name="do_operation" value="rename">Rename <input type="radio" name="do_operation" value="delete">Delete 
+   %if show_deleted:
+   <input type="radio" name="do_operation" value="undelete">Undelete 
+   %endif
+   </td></tr>
    <tr><td colspan="100%" align="center"><input type="submit" name="submit" value="Perform Action"></td></tr>
       </table>
   </form>
 %else:
   You have no stored histories
 %endif
-  
