@@ -371,6 +371,42 @@ class RootController( BaseController ):
                                            refresh_frames=['history'])
 
     @web.expose
+    def history_undelete( self, trans, id=[], **kwd):
+        """Undeletes a list of histories, ensures that histories are owned by current user"""
+        history_names = []
+        errors = []
+        ok_msg = ""
+        if id:
+            if not isinstance( id, list ):
+                id = id.split( "," )
+            user = trans.get_user()
+            for hid in id:
+                try:
+                    int( hid )
+                except:
+                    errors.append( "Invalid history: %s" % str( hid ) )
+                    continue
+                history = self.app.model.History.get( hid )
+                if history:
+                    if history.user != user:
+                        errors.append( "History does not belong to current user." )
+                        continue
+                    if history.purged:
+                        errors.append( "History has already been purged and can not be undeleted." )
+                        continue
+                    history_names.append( history.name )
+                    history.deleted = False
+                else:
+                    errors.append( "Not able to find history %s." % str( hid ) )
+                trans.log_event( "History id %s marked as undeleted" % str(hid) )
+            self.app.model.flush()
+            if history_names:
+                ok_msg = "Histories (%s) have been undeleted." % ", ".join( history_names )
+        else:
+            errors.append( "You must select at least one history to undelete." )
+        return self.history_available( trans, id=','.join( id ), show_deleted=True, ok_msg = ok_msg, error_msg = "  ".join( errors )  )
+    
+    @web.expose
     def clear_history( self, trans ):
         """Clears the history for a user"""
         history = trans.get_history()
@@ -414,7 +450,7 @@ class RootController( BaseController ):
 
     @web.expose
     @web.require_login( "work with multiple histories" )
-    def history_available( self, trans, id=None, as_xml=False, **kwd ):
+    def history_available( self, trans, id=[], do_operation = "view", show_deleted = False, ok_msg = "", error_msg="", as_xml=False, **kwd ):
         """
         List all available histories
         """
@@ -422,11 +458,21 @@ class RootController( BaseController ):
             trans.response.set_content_type('text/xml')
             return trans.fill_template( "/history/list_as_xml.mako" )
         if not isinstance( id, list ):
-            id = [ id ]
+            id = id.split( "," )
         trans.log_event( "History id %s available" % str( id ) )
+        
+        history_operations = dict( share=self.history_share, rename=self.history_rename, delete=self.history_delete, undelete=self.history_undelete )
+        
+        if do_operation in history_operations:
+            return history_operations[do_operation]( trans, id=id, show_deleted=show_deleted, ok_msg=ok_msg, error_msg=error_msg, **kwd  )
+
         return trans.fill_template( "/history/list.mako", ids=id,
                                     user=trans.get_user(),
-                                    current_history=trans.get_history() )
+                                    current_history=trans.get_history(),
+                                    show_deleted=util.string_as_bool( show_deleted ),
+                                    ok_msg=ok_msg, error_msg=error_msg )
+        
+        
         
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
