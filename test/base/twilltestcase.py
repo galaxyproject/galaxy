@@ -530,20 +530,19 @@ class TwillTestCase( unittest.TestCase ):
         self.assertNotEqual(count, maxiter)
 
     # Dataset Security stuff
-    def create_group( self, name='New Test Group', priority='10' ):
+    def create_group( self, name='New Test Group' ):
         """Create a new group with 1 member"""
         self.visit_url( "%s/admin/create_group" % self.url )
         form = tc.show()
         self.check_page_for_string( "Create Group" )
         try: 
             tc.fv( "1", "name", name )
-            tc.fv( "1", "priority", priority )
             # twill version 0.9 still does not allow for easily testing forms that contain
             # multiple fields with the same name ( e.g., check boxes ).  We could attempt to determine
             # the number of the field on the form and use it instead of the name of the field, but we
             # would be forced to drop and recreate the database every time we test in order to ensure
             # the fields will be the same on the form ( since it is dynamically rendered from the database ).
-            tc.fv( "1", "3", "1" ) # 1-based form field 3 is the 1st check box named 'members', user id 1 is test@bx.psu.edu
+            tc.fv( "1", "2", "1" ) # 1-based form field 3 is the 1st check box named 'members', user id 1 is test@bx.psu.edu
             tc.submit( "create_group_button" )
         except AssertionError, err:
             errmsg = 'Exception caught attempting to create group: %s' % str( err )

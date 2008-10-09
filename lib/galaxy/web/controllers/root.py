@@ -271,6 +271,8 @@ class RootController( BaseController ):
                 if target_type:
                     msg = data.datatype.convert_dataset(trans, data, target_type)
                     return trans.show_ok_message( msg, refresh_frames=['history'] )
+            '''
+            Form removed from template, needs to be remade
             elif p.change_permission:
                 """The user clicked the change_permission button on the 'Change permissions' form"""
                 if not trans.user:
@@ -287,6 +289,7 @@ class RootController( BaseController ):
                     return trans.show_ok_message( "Dataset permissions have been set.", refresh_frames=['history'] )
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permitted actions." )
+            '''
             
             data.datatype.before_edit( data )
             
@@ -399,10 +402,10 @@ class RootController( BaseController ):
                 if history:
                     if history.user_id != None and user:
                         assert user.id == history.user_id, "History does not belong to current user"
-                    # Delete DefaultHistoryGroupAssociations
-                    for default_history_group_association in history.default_groups:
-                        default_history_group_association.delete()
-                        default_history_group_association.flush()
+                    # Delete DefaultHistoryPermissions
+                    for dhp in history.default_permissions:
+                        dhp.delete()
+                        dhp.flush()
                     # Mark history as deleted in db
                     history.deleted = True
                     history_names.append(history.name)
@@ -418,6 +421,42 @@ class RootController( BaseController ):
         return trans.show_message( "History deleted: %s" % ",".join(history_names),
                                            refresh_frames=['history'])
 
+    @web.expose
+    def history_undelete( self, trans, id=[], **kwd):
+        """Undeletes a list of histories, ensures that histories are owned by current user"""
+        history_names = []
+        errors = []
+        ok_msg = ""
+        if id:
+            if not isinstance( id, list ):
+                id = id.split( "," )
+            user = trans.get_user()
+            for hid in id:
+                try:
+                    int( hid )
+                except:
+                    errors.append( "Invalid history: %s" % str( hid ) )
+                    continue
+                history = self.app.model.History.get( hid )
+                if history:
+                    if history.user != user:
+                        errors.append( "History does not belong to current user." )
+                        continue
+                    if history.purged:
+                        errors.append( "History has already been purged and can not be undeleted." )
+                        continue
+                    history_names.append( history.name )
+                    history.deleted = False
+                else:
+                    errors.append( "Not able to find history %s." % str( hid ) )
+                trans.log_event( "History id %s marked as undeleted" % str(hid) )
+            self.app.model.flush()
+            if history_names:
+                ok_msg = "Histories (%s) have been undeleted." % ", ".join( history_names )
+        else:
+            errors.append( "You must select at least one history to undelete." )
+        return self.history_available( trans, id=','.join( id ), show_deleted=True, ok_msg = ok_msg, error_msg = "  ".join( errors )  )
+    
     @web.expose
     def history_undelete( self, trans, id=[], **kwd):
         """Undeletes a list of histories, ensures that histories are owned by current user"""
@@ -680,12 +719,13 @@ class RootController( BaseController ):
         """Adds a POSTed file to a History"""
         try:
             history = trans.app.model.History.get( history_id )
-            groups = trans.app.security_agent.history_get_default_access( history )
+            data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
             if copy_access_from:
                 copy_access_from = trans.app.model.HistoryDatasetAssociation.get( copy_access_from )
-                group_dataset_associations = copy_access_from.dataset.groups
-            data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
-            trans.app.security_agent.set_dataset_permissions( data.dataset, group_dataset_associations )
+                trans.app.security_agent.copy_dataset_permissions( copy_access_from.dataset, data.dataset )
+            else:
+                permissions = trans.app.security_agent.history_get_default_permissions( history )
+                trans.app.security_agent.set_dataset_permissions( data.dataset, permissions )
             data.flush()
             data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )
@@ -710,6 +750,8 @@ class RootController( BaseController ):
     def history_set_default_permitted_actions( self, trans, **kwd ):
         """Sets the user's default permitted_actions for the current history"""
         if trans.user:
+            return trans.show_error_message( "This function is not implemented" )
+            # TODO: reimplement
             if 'set_permitted_actions' in kwd:
                 """The user clicked the set_permitted_actions button on the set_permitted_actions form"""
                 history = trans.get_history()

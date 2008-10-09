@@ -8,22 +8,7 @@
 ## Render a row
 <%def name="render_row( group_name, group )">
    <td>${group_name}</td>
-   <td>${group[2]}</td>
-   <td><a href="${h.url_for( controller='admin', action='group_members', group_id=group[0], group_name=group[1] )}">${group[3]}</a></td>
-   %if group[4] > 0:
-     <td><a href="${h.url_for( controller='admin', action='group_dataset_permitted_actions', group_id=group[0], group_name=group[1] )}">${group[4]}</a></td>
-   %else:
-     <td>${group[4]}</td>
-   %endif
-   <td>
-     %if len( group[5] ) == 1:
-       ${group[5][0]}
-     %elif len( group[5] ) > 1:
-       %for da in group[5]:
-         ${da}<br/>  
-       %endfor
-     %endif
-   </td>
+   <td><a href="${h.url_for( controller='admin', action='group_members', group_id=group[0], group_name=group[1] )}">${group[2]}</a></td>
    <td><a href="${h.url_for( controller='admin', action='mark_group_deleted', group_id=group[0] )}">Mark group deleted</a></td>
 </%def>
 
@@ -75,10 +60,7 @@
       %endif
       <tr class="header">
         <td>Name</td>
-        <td>Priority</td>
         <td>Members</td>
-        <td>Datasets</td>
-        <td>Group Permitted Actions on Datasets</td>
         <td>&nbsp;</td>
       </tr>
       %for group in groups:

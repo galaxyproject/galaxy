@@ -7,51 +7,54 @@ from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
 
+class Action( object ):
+    def __init__( self, action, description, model ):
+        self.action = action
+        self.description = description
+        self.model = model
+
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
-        # The ability to edit the metadata of the associated dataset 
-        DATASET_EDIT_METADATA = 'edit metadata',
-        # The ability to change the permissions of a dataset (so specifically, to add and modify 
-        # group_dataset_association rows where the dataset is the dataset for which the permission is set). 
-        DATASET_MANAGE_PERMISSIONS = 'manage permissions',
-        # The ability to perform any read only operation on the dataset (view, display at external site,
-        # use in a job, etc).
-        DATASET_ACCESS = 'access'
+        DATASET_EDIT_METADATA = Action(
+            "edit metadata", "Role members can edit this dataset's metadata in the library", "grant" ),
+        DATASET_MANAGE_PERMISSIONS = Action(
+            "manage permissions", "Role members can manage the groups and group permitted actions associated with this dataset", "grant" ),
+        DATASET_ACCESS = Action(
+            "access", "Role members can import this dataset into their history for analysis", "restrict" )
     )
-    permitted_action_descriptions = Bunch(
-        DATASET_EDIT_METADATA = "User can edit this dataset's metadata in the library",
-        DATASET_MANAGE_PERMISSIONS = "User can manage the groups and group permitted actions associated with this dataset",
-        DATASET_ACCESS = "User can import this dataset into their history for analysis"
-    )
+    def get_action( self, name, default=None ):
+        """
+        Get a permitted action by its dict key or action name
+        """
+        for k, v in self.permitted_actions.items():
+            if k == name or v.action == name:
+                return v
+        return default
+    def get_actions( self ):
+        """
+        Get all permitted actions as a list
+        """
+        return self.permitted_actions.__dict__.values()
     def allow_action( self, user, action, **kwd ):
         raise 'No valid method of checking action (%s) on %s for user %s.' % ( action, kwd, user )
     def guess_derived_permissions_for_datasets( self, datasets = [] ):
         raise "Unimplemented Method"
     def associate_components( self, **kwd ):
         raise 'No valid method of associating provided components: %s' % kwd
-    def get_group( self, id ):
-        raise 'No valid method of retrieving group %s' % ( id )
-    def create_group( self, **kwd ):
-        raise 'No valid method of creating group with %s' % ( kwd )
-    def create_private_user_group( self, user ):
+    def create_private_user_role( self, user ):
         raise "Unimplemented Method"
-    def user_set_default_access( self, user, permissions = None, history = False, dataset = False ):
+    def get_private_user_role( self, user ):
+        raise "Unimplemented Method"
+    def user_set_default_permissions( self, user, permissions = None, history = False, dataset = False ):
         raise "Unimplemented Method"
     def setup_new_user( self, user ):
-        self.user_set_default_access( user, history = True, dataset = True )
-        self.associate_components( user=user, group=self.get_public_group() )
-    def history_set_default_access( self, history, permissions=None, dataset=False ):
-        raise "Unimplemented Method"
-    def set_public_group( self, group ):
-        raise "Unimplemented Method"
-    def get_public_group( self ):
-        raise "Unimplemented Method"
-    def guess_public_group( self ):
+        self.create_private_user_role( user )
+        self.user_set_default_permissions( user, history = True, dataset = True )
+        #self.associate_components( user=user, group=self.get_public_group() )
+    def history_set_default_permissions( self, history, permissions=None, dataset=False, bypass_manage_permission=False ):
         raise "Unimplemented Method"
     def set_dataset_permissions( self, dataset, permissions ):
-        raise "Unimplemented Method"
-    def set_dataset_permitted_actions( self, dataset ):
         raise "Unimplemented Method"
     def get_component_associations( self, **kwd ):
         raise "Unimplemented Method"
@@ -63,18 +66,6 @@ class RBACAgent:
         form, ensure that they match our actual permitted actions.
         """
         return filter( lambda x: x is not None, [ self.permitted_actions.get( action_string ) for action_string in permitted_action_strings ] )
-    def get_permitted_action_description( self, permitted_action ):
-        """
-        Return the description of a permitted_action, regardless of
-        whether permitted_action is a key or value.
-        """
-        if self.permitted_action_descriptions.get( permitted_action ) is not None:
-            return self.permitted_action_descriptions.get( permitted_action )
-        else:
-            for k, v in self.permitted_actions.items():
-                if v == permitted_action:
-                    return self.permitted_action_descriptions.get( k )
-            return permitted_action # so at least something useful is printable
 
 class GalaxyRBACAgent( RBACAgent ):
     def __init__( self, model, permitted_actions=None ):
@@ -89,184 +80,212 @@ class GalaxyRBACAgent( RBACAgent ):
         """Returns true when user has permission to perform an action"""
         if not isinstance( dataset, self.model.Dataset ):
             dataset = dataset.dataset
-        if user is None:
-            try:
-                public_assoc = [ gda for gda in dataset.groups if gda.group == self.get_public_group() ][0]
-            except:
-                # There'll be an IndexError if the dataset doesn't have a gda with public
-                return False
-            if action in public_assoc.permitted_actions:
-                return True
-        elif user is not None:
-            # Loop through permitted_actions and if allowed return true:
-            # Check permitted_actions associated with dataset through groups
-            for group_dataset_assoc in dataset.groups:
-                if self.components_are_associated( user = user, group = group_dataset_assoc.group ):
-                    if action in group_dataset_assoc.permitted_actions:
-                        return True
-        return False # No user and dataset not in public group, or user lacks permission
+        if not user:
+            if action == self.permitted_actions.DATASET_ACCESS and action.action not in [ adra.action for adra in dataset.actions ]:
+                return True # anons only get access, and only if there are no roles required for the access action
+            # other actions (or if the dataset has roles defined for the access action) fall through to the false below
+        elif action.action not in [ adra.action for adra in dataset.actions ]:
+            if action.model == 'restrict':
+                return True # implicit access to restrict-style actions if the dataset does not have the action
+            # grant-style actions fall through to the false below
+        else:
+            # collect a user's roles and their groups' roles
+            user_roles = [ ura.role for ura in user.roles ]
+            for group in [ uga.group for uga in user.groups ]:
+                for role in [ gra.role for gra in group.roles ]:
+                    if role not in user_roles:
+                        user_roles.append( role )
+            user_role_ids = sorted( [ r.id for r in user_roles ] )
+            for adra in dataset.actions:
+                if action.action != adra.action:
+                    continue
+		# the filter() returns a list of the dataset's role ids
+		# of which the user is not a member.  so an empty list
+		# means the user has all of the required roles.
+                if not filter( lambda x: x not in user_role_ids, adra.role_ids ):
+                    return True # user has all of the roles required to perform the action
+                break # fall through to the false.  user is missing at least one required role
+        return False # default is to reject
     def guess_derived_permissions_for_datasets( self, datasets=[] ):
-        """Returns a list of group/action tuples for the output dataset based upon provided datasets"""
-        intersect = None
-        priority_access_perms = None
+        """Returns a dict of { action : [ role, role, ... ] } for the output dataset based upon provided datasets"""
+        perms = {}
         for dataset in datasets:
-            # Determine access groups for output datasets - these groups are the 
-            # intersection across all inputs.  If we end up with no intersection 
-            # between inputs, then we rely on priorities
-            if isinstance( dataset, self.model.HistoryDatasetAssociation ):
+            if not isinstance( dataset, self.model.Dataset ):
                 dataset = dataset.dataset
-            assocs = [ assoc for assoc in dataset.groups ]
-            for assoc in assocs:
-                if priority_access_perms is None or priority_access_perms[0].priority < assoc.group.priority:
-                    priority_access_perms = ( assoc.group, assoc.permitted_actions )
-            if intersect is None:
-                intersect = [ (a.group, a.permitted_actions) for a in assocs ]
-            else:
-                # Intersect existing perms with new perms
-                #access_assocs = filter( lambda x: x.group in [ a.group for a in access_assocs ], assocs )
-                new_intersect = []
-                for group, actions in intersect:
-                    matches = filter( lambda x: x.group == group, assocs )
-                    # Could a dataset ever have more than one GDA with the same group id?
-                    if len( matches ) > 1:
-                        log.error( "Unable to derive permissions, duplicate group_dataset_association rows exist for group %d, dataset %d" % (group.id, dataset.id) )
-                    elif len( matches ) == 1:
-                        # compare permitted_actions
-                        pa_intersect = filter( lambda x: x in actions, matches[0].permitted_actions )
-                        new_intersect.append( ( group, pa_intersect ) )
-                intersect = new_intersect
-        # If we have no groups left after intersection, take the highest priority group
-        if not intersect:
-            if priority_access_perms:
-                intersect = [ priority_access_perms ]
-        return intersect
-    def get_group( self, id ):
-        return self.model.Group.get( id )
-        raise 'No valid method of retrieving requested group by id %s' % ( str( id ) )
-    def get_group_by_name( self, name ):
-        return self.model.Group.filter_by( name=name ).first()
-        raise 'No valid method of retrieving requested group by name %s' % ( str( name ) )
-    def create_group( self, **kwd ):
-        rval = self.model.Group( **kwd )
-        rval.flush()
-        return rval
-        raise 'No valid method of creating group with %s' % ( kwd )
+            these_perms = {}
+            # initialize blank perms
+            for a in self.get_actions():
+                these_perms[ a.action ] = []
+            # collect this dataset's perms
+            for adra in dataset.actions:
+                these_perms[ adra.action ] = adra.role_ids
+            # join or intersect this dataset's permissions with others
+            for action_name, role_ids in these_perms.items():
+                if action_name not in perms.keys():
+                    perms[ action_name ] = role_ids
+                else:
+                    if self.get_action( action_name ).model == 'grant':
+                        # intersect existing roles with new roles
+                        perms[ action_name ] = filter( lambda x: x in perms[ action_name ], role_ids )
+                    elif self.get_action( action_name ).model == 'restrict':
+                        # join existing roles with new roles
+                        perms[ action_name ].extend( filter( lambda x: x not in perms[ action_name ], role_ids ) )
+        ##perms = [ ( k, tuple( v ) ) for k, v in perms.items() ] # a list of ( action, ( role_id, role_id, ... ) ) tuples
+        return perms
     def associate_components( self, **kwd ):
-        assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to associate.'
-        if 'dataset' in kwd:
-            if 'group' in kwd:
-                return self.associate_group_dataset( kwd['group'], kwd['dataset'] )
-            elif 'permissions' in kwd:
-                return self.associate_group_dataset( kwd['permissions'][0], kwd['dataset'], kwd['permissions'][1] )
-        elif 'user' in kwd:
+        ##assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to associate.'
+        if 'user' in kwd:
             if 'group' in kwd:
                 return self.associate_user_group( kwd['user'], kwd['group'] )
+            elif 'role' in kwd:
+                return self.associate_user_role( kwd['user'], kwd['role'] )
+        elif 'role' in kwd:
+            if 'group' in kwd:
+                return self.associate_group_role( kwd['group'], kwd['role'] )
+        if 'action' in kwd:
+            if 'dataset' in kwd and 'roles' in kwd:
+                return self.associate_action_dataset_roles( kwd['action'], kwd['dataset'], kwd['roles'] )
         raise 'No valid method of associating provided components: %s' % kwd
-    def associate_group_dataset( self, group, dataset, permitted_actions=[ RBACAgent.permitted_actions.DATASET_ACCESS ] ):
-        # HACK: The default permitted_actions should really not be used... need to find cases where this is done and correct it
-        assoc = self.model.GroupDatasetAssociation( group, dataset, permitted_actions )
-        assoc.flush()
-        return assoc
     def associate_user_group( self, user, group ):
         assoc = self.model.UserGroupAssociation( user, group )
         assoc.flush()
         return assoc
-    def create_private_user_group( self, user ):
-        # Create private group
-        group_name = "%s private group" % user.email
-        group = self.model.Group( name=group_name, priority=10 )
-        group.flush()        
-        # Add user to group
-        self.associate_components( group=group, user=user )
-        group.flush()
-        return group
-    def user_set_default_access( self, user, permissions = None, history = False, dataset = False ):
-        if permissions is None:
-            permissions = [ ( self.create_private_user_group( user ), self.permitted_actions.__dict__.values() ) ]
-        if permissions is not None:
-            # Delete all of the previous DefaultUserGroupAssociation
-            for duga in user.default_groups: #this is the association not the actual group
-                duga.delete()
-                duga.flush()
-            # Add the new DefaultUserGroupAssociation
-            for group, permitted_actions in permissions:
-                duga = self.model.DefaultUserGroupAssociation( user, group, permitted_actions )
-                duga.flush()
+    def associate_user_role( self, user, role ):
+        assoc = self.model.UserRoleAssociation( user, role )
+        assoc.flush()
+        return assoc
+    def associate_group_role( self, group, role ):
+        assoc = self.model.GroupRoleAssociation( group, role )
+        assoc.flush()
+        return assoc
+    def associate_action_dataset_roles( self, action, dataset, roles ):
+        assoc = self.model.ActionDatasetRolesAssociation( action, dataset, roles )
+        assoc.flush()
+        return assoc
+    def create_private_user_role( self, user ):
+        # Create private role
+        role = self.model.Role( name=user.email, description='Private Role for ' + user.email, type=self.model.Role.types.PRIVATE )
+        role.flush()
+        # Add user to role
+        self.associate_components( role=role, user=user )
+        return role
+    def get_private_user_role( self, user, auto_create=False ):
+        role = self.model.Role.get_by( name=user.email, type=self.model.Role.types.PRIVATE )
+        if not role:
+            if auto_create:
+                return self.create_private_user_role( user )
+            else:
+                return None
+    def user_set_default_permissions( self, user, permissions = {}, history = False, dataset = False ):
+        if user is None:
+            return None
+        if not permissions:
+            permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS : [ self.get_private_user_role( user, auto_create=True ) ] }
+        # Delete all of the previous defaults
+        for dup in user.default_permissions:
+            dup.delete()
+            dup.flush()
+        # Add the new defaults (if any)
+        for action, roles in permissions.items():
+            if isinstance( action, Action ):
+                action = action.action
+            dup = self.model.DefaultUserPermissions( user, action, roles )
+            dup.flush()
         if history:
             for history in user.active_histories:
-                self.history_set_default_access( history, permissions=permissions, dataset=dataset )
-    def user_get_default_access( self, user ):
-        return [ ( duga.group, duga.permitted_actions ) for duga in user.default_groups ]
-    def history_set_default_access( self, history, permissions=None, dataset=False ):
-        if permissions is None:
-            if history.user:
-                permissions = self.user_get_default_access( history.user )
-            else:
-                permissions = [ ( self.get_public_group(), self.permitted_actions.__dict__.values() ) ]
-        if permissions is not None:
-            # Delete all of the previous DefaultHistoryGroupAssociations
-            for dhga in history.default_groups: #this is the association not the actual group
-                dhga.delete()
-                dhga.flush()
-            # Add the new DefaultHistoryGroupAssociations
-            for group, permitted_actions in permissions:
-                dhga = self.model.DefaultHistoryGroupAssociation( history, group, permitted_actions )
-                dhga.flush()
+                self.history_set_default_permissions( history, permissions=permissions, dataset=dataset )
+    def user_get_default_permissions( self, user ):
+        perms = {}
+        for dup in user.default_permissions:
+            perms[ dup.action ] = dup.role_ids
+        return perms
+    def history_set_default_permissions( self, history, permissions = {}, dataset = False, bypass_manage_permission = False ):
+        if not history.user:
+            return None # default permissions on a userless history are none
+        if not permissions:
+            permissions = self.user_get_default_permissions( history.user )
+        for dhp in history.default_permissions:
+            dhp.delete()
+            dhp.flush()
+        for action, roles in permissions.items():
+            if isinstance( action, Action ):
+                action = action.action
+            dhp = self.model.DefaultHistoryPermissions( history, action, roles )
+            dhp.flush()
         if dataset:
-            for hda in history.datasets:
-                for hda2 in hda.dataset.history_associations:
-                    if history.user and hda2.history not in history.user.active_histories:
-                        # This will occur when a user logs in and has datasets in their previously-public history.
-                        self.set_dataset_permissions( hda.dataset, [ ( self.get_public_group(), [ self.permitted_actions.DATASET_ACCESS ] ) ] )
-                        #break
+            for hda_in_history in history.datasets:
+                if len( hda_in_history.dataset.library_associations ):
+                    continue # dataset has a library association, don't change the permissions
+                if len( [ hda for hda in hda_in_history.dataset.history_associations if hda.history not in history.user.histories ] ):
+                    continue # dataset has a history association in a history the user doesn't own, don't change the permissions
+                # bypass is used to change permissions of datasets in a userless history when logging in
+                if bypass_manage_permission or self.allow_action( history.user, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=hda_in_history.dataset ):
+                    self.set_dataset_permissions( hda_in_history.dataset, permissions )
+    def history_get_default_permissions( self, history ):
+        perms = {}
+        for dhp in history.default_permissions:
+            perms[ dhp.action ] = dhp.role_ids
+        return perms
+    def set_dataset_permissions( self, dataset, permissions={} ):
+        # to delete permission on an action, pass in a blank list of role ids with that action
+        for action, role_ids in permissions.items():
+            if isinstance( action, Action ):
+                action = action.action
+            for adra in dataset.actions:
+                if adra.action != action:
+                    continue
+                if not role_ids:
+                    adra.delete()
                 else:
-                    # At this point, we will have already created a gda for the public group and delete_assocs
-                    # is set to False in order to preserve it.
-                    if self.allow_action( history.user, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=hda.dataset ):
-                        self.set_dataset_permissions( hda.dataset, permissions, delete_existing_assocs=False )
-    def history_get_default_access( self, history ):
-        return [ ( dhga.group, dhga.permitted_actions ) for dhga in history.default_groups ]
-    def get_public_group( self ):
-        return self.model.Group.get_public_group()
-    def set_public_group( self, group ):
-        return self.model.Group.set_public_group( group )
-    def guess_public_group( self ):
-        return self.model.Group.guess_public_group()
-    def set_dataset_permissions( self, dataset, permissions, delete_existing_assocs=True ):
-        """
-        Apply permissions (a list of (group, permitted_action) tuples)
-        to a dataset, removing any existing permissions.  permissions can
-        also be a list of GroupDatasetAssociations (for simplicity).
-        """
-        if isinstance( dataset, self.model.HistoryDatasetAssociation ):
-            dataset = dataset.dataset
-        if delete_existing_assocs:
-            for gda in dataset.groups:
-                gda.delete()
-                gda.flush()
-        if permissions and isinstance( permissions[0], self.model.GroupDatasetAssociation ):
-            permissions = [ ( gda.group, gda.permitted_actions ) for gda in permissions ]
-        for ptuple in permissions:
-            self.associate_components( dataset=dataset, permissions=ptuple )
-    def get_dataset_permissions( self, dataset, group_id=None ):
+                    adra.set_roles( role_ids )
+                adra.flush()
+                break
+            else:
+                if role_ids:
+                    self.associate_components( action=action, dataset=dataset, roles=role_ids )
+    def get_dataset_permissions( self, dataset ):
         if not isinstance( dataset, self.model.Dataset ):
             dataset = dataset.dataset
-        if group_id is not None:
-            return [ ( gda.group, gda.permitted_actions ) for gda in dataset.groups if gda.group_id == int(group_id) ][0]
-        else:
-            return [ ( gda.group, gda.permitted_actions ) for gda in dataset.groups ]
+        perms = {}
+        for k, v in self.model.Dataset.permitted_actions.items():
+            for adra in dataset.actions:
+                if adra.action != v.action:
+                    continue
+                perms[ v.action ] = adra.role_ids
+                break
+            else:
+                perms[ v.action ] = []
+        return perms
+    def copy_dataset_permissions( self, src, dst ):
+        if not isinstance( src, self.model.Dataset ):
+            src = src.dataset
+        if not isinstance( dst, self.model.Dataset ):
+            dst = dst.dataset
+        self.set_dataset_permissions( dst, self.get_dataset_permissions( src ) )
+    def set_entity_role_associations( self, roles=[], users=[], groups=[], delete_existing_assocs=True ):
+        for role in roles:
+            if delete_existing_assocs:
+                for a in role.users + role.groups:
+                    a.delete()
+                    a.flush()
+            for user in users:
+                self.associate_components( user=user, role=role )
+            for group in groups:
+                self.associate_components( group=group, role=role )
     def get_component_associations( self, **kwd ):
-        # TODO, Nate: Make sure this method is functionally correct.
         assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to check for associations.'
         if 'dataset' in kwd:
-            if 'group' in kwd:
-                return self.model.GroupDatasetAssociation.filter_by( group_id=kwd['group'].id, dataset_id=kwd['dataset'].id ).first()
+            if 'action' in kwd:
+                return self.model.ActionDatasetRolesAssociation.filter_by( action = kwd['action'].action, dataset_id = kwd['dataset'].id ).first()
         elif 'user' in kwd:
             if 'group' in kwd:
-                return self.model.UserGroupAssociation.filter_by( group_id=kwd['group'].id, user_id=kwd['user'].id ).first()
+                return self.model.UserGroupAssociation.filter_by( group_id = kwd['group'].id, user_id = kwd['user'].id ).first()
+            elif 'role' in kwd:
+                return self.model.UserRoleAssociation.filter_by( role_id = kwd['role'].id, user_id = kwd['user'].id ).first()
+        elif 'group' in kwd:
+            if 'role' in kwd:
+                return self.model.GroupRoleAssociation.filter_by( role_id = kwd['role'].id, group_id = kwd['group'].id ).first()
         raise 'No valid method of associating provided components: %s' % kwd
-    def dataset_has_group( self, dataset_id, group_id ):
-        return bool( self.model.GroupDatasetAssociation.filter_by( group_id=group_id, dataset_id=dataset_id  ).first() )
     def check_folder_contents( self, user, entry ):
         """
     	Return true if there are any datasets under 'folder' that the
@@ -287,7 +306,6 @@ class GalaxyRBACAgent( RBACAgent ):
             return False
         else:
             raise 'Passed an illegal object to check_folder_contents: %s' % type( entry )
-
 
 def get_permitted_actions( self, filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''

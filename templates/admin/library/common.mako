@@ -1,3 +1,33 @@
+<%def name="render_select( dataset, action_key, action )">
+    <%
+        in_roles = []
+        for a in dataset.actions:
+            if a.action == action.action:
+                for role_id in a.role_ids:
+                    in_roles.append( trans.app.model.Role.get( role_id ) )
+        out_roles = filter( lambda x: x not in in_roles, trans.app.model.Role.select() )
+    %>
+    <p><label>${action.description}</label></p>
+    <div style="float: left; margin-right: 10px;">
+        Roles associated:<br/>
+        <select name="${action_key}_in" id="${action_key}_in_select" class="in_select" style="min-width: 250px;" multiple>
+            %for role in in_roles:
+                <option value="${role.id}">${role.name}</option>
+            %endfor
+        </select> <br/>
+        <input type="submit" id="${action_key}_remove_button" class="role_remove_button" value=">>"/>
+    </div>
+    <div>
+        Roles not associated:<br/>
+        <select name="${action_key}_out" id="${action_key}_out_select" style="min-width: 250px;" multiple>
+            %for role in out_roles:
+                <option value="${role.id}">${role.name}</option>
+            %endfor
+        </select> <br/>
+        <input type="submit" id="${action_key}_add_button" class="role_add_button" value="<<"/>
+    </div>
+</%def>
+
 <%def name="render_permissions_forms( data_obj )">
 <script type="text/javascript">
     var q = jQuery.noConflict();
@@ -13,6 +43,23 @@
             } else {
                 q("div#group_" + this.value).slideUp("fast");
             }
+        });
+        q('.role_add_button').click(function() {
+            var action = this.id.substring( 0, this.id.lastIndexOf( '_add_button' ) )
+            var in_select = '#' + action + '_in_select';
+            var out_select = '#' + action + '_out_select';
+            return !q(out_select + ' option:selected').remove().appendTo(in_select);
+        });
+        q('.role_remove_button').click(function() {
+            var action = this.id.substring( 0, this.id.lastIndexOf( '_remove_button' ) )
+            var in_select = '#' + action + '_in_select';
+            var out_select = '#' + action + '_out_select';
+            return !q(in_select + ' option:selected').remove().appendTo(out_select);
+        });
+        q('form#edit_role_associations').submit(function() {
+            q('.in_select option').each(function(i) {
+                q(this).attr("selected", "selected");
+            });
         });
     });
 </script>
@@ -32,118 +79,30 @@
         trans.show_error_message( "Unknown object passed to render_permissions_forms" )
     if id is None:
         id = dataset.id
+
 %>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Change Existing Permissions</div>
+    <div class="toolFormTitle">Associate with roles and set permissions</div>
     <div class="toolFormBody">
-        <form name="edit_group_associations" action="${h.url_for( controller='admin', action='dataset_permissions' )}" method="post">
+        <form name="edit_role_associations" id="edit_role_associations" action="${h.url_for( action='dataset' )}" method="post">
             <input type="hidden" name="id" value="${id}">
             %if redirect:
                 <input type="hidden" name="${redirect[0]}" value="${redirect[1]}">
             %endif
             <div class="form-row">
-                <%
-                    user_permissions = [ p for p in trans.app.security_agent.get_dataset_permissions( dataset ) if p[0].name.endswith( ' private group' ) ]
-                    real_permissions = [ p for p in trans.app.security_agent.get_dataset_permissions( dataset ) if not p[0].name.endswith( ' private group' ) and p[0].name != 'public' ]
-                %>
-                <div class="toolParamHelp" style="clear: both;">
-                    Update the permissions for the users and groups currently associated with this dataset.
-                </div>
-                <br/>
-                %if trans.app.security_agent.dataset_has_group( dataset.id, trans.app.security_agent.get_public_group().id ):
-                    <label>Allow public access:</label><br/>
-                    <input type="checkbox" name="public" value="Yes" checked>  This dataset can be accessed by anyone (it is public).<br/>
-                %endif
-                <br/>
-                <label>Users with permissions on this dataset:</label><br/>
-                %if not len( user_permissions ):
-                    &nbsp;&nbsp;None<br/>
-                %endif
-                %for p in user_permissions:
-                    <input type="checkbox" name="users" class="groupCheckbox" value="${p[0].id}" checked/> ${p[0].name.replace( ' private group', '' )} <br/>
-                    <div class="permissionContainer" id="group_${p[0].id}">
-                        %for k, v in trans.app.security_agent.permitted_actions.items():
-                            <input type="checkbox" name="actions" value="${p[0].id},${k}"
-                            %if v in p[1]:
-                                checked
-                            %endif
-                            /> ${trans.app.security_agent.get_permitted_action_description(k)} <br/>
-                        %endfor
-                    </div>
-                %endfor
-                <br/>
-                <label>Groups with permissions on this dataset:</label><br/>
-                %if not len( real_permissions ):
-                    &nbsp;&nbsp;None<br/>
-                %endif
-                %for p in real_permissions:
-                    <input type="checkbox" name="groups" class="groupCheckbox" value="${p[0].id}" checked/> ${p[0].name} <br/>
-                    <div class="permissionContainer" id="group_${p[0].id}">
-                        %for k, v in trans.app.security_agent.permitted_actions.items():
-                            <input type="checkbox" name="actions" value="${p[0].id},${k}"
-                            %if v in p[1]:
-                                checked
-                            %endif
-                            /> ${trans.app.security_agent.get_permitted_action_description(k)} <br/>
-                        %endfor
-                    </div>
-                %endfor
-                <br/>
+                <label>
+                    Choose which roles are required to perform each action on this dataset.
+                </label>
             </div>
-            <div class="form-row"><input type="submit" name="change_permitted_actions" value="Save"></div>
-        </form>
-    </div>
-</div>
-<p/>
-
-<div class="toolForm">
-    <div class="toolFormTitle">Add New Users and Groups</div>
-    <div class="toolFormBody">
-        <form name="make_new_group_associations" action="${h.url_for( controller='admin', action='dataset_permissions' )}" method="post">
-            <input type="hidden" name="id" value="${id}">
-            %if redirect:
-                <input type="hidden" name="${redirect[0]}" value="${redirect[1]}">
-            %endif
+            %for k, v in trans.app.model.Dataset.permitted_actions.items():
+                <div class="form-row">
+                    ${render_select( dataset, k, v )}
+                </div>
+            %endfor
             <div class="form-row">
-                <div class="toolParamHelp" style="clear: both;">
-                    Select new users and groups to associate with this dataset (you can assign permissions after creating the association).
-                </div>
-                ## Don't display the public access checkbox if it's already public (it's shown above instead)
-                %if not trans.app.security_agent.dataset_has_group( dataset.id, trans.app.security_agent.get_public_group().id ):
-                    <label>Allow public access:</label><br/>
-                    <input type="checkbox" name="public" value="Yes">  This dataset can be accessed by anyone (make it public).<br/>
-                %endif
-                <br/>
-                <%
-                    all_groups = trans.app.model.Group.select()
-                    user_groups = [ g for g in all_groups if g.name.endswith( ' private group' ) ]
-                    real_groups = [ g for g in all_groups if not g.name.endswith( ' private group' ) and g.name != 'public' ]
-                %>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    <label>Associate with users:</label>
-                    <select name="users" multiple="true" size="5">
-                        %for group in user_groups:
-                            %if not trans.app.security_agent.dataset_has_group( dataset.id, group.id ):
-                                <option value="${group.id}">${group.name.replace( ' private group', '' )}</option>
-                            %endif 
-                        %endfor
-                    </select>
-                    <p/>
-                    <label>Associate with groups:</label>
-                    <select name="groups" multiple="true" size="5">
-                        %for group in real_groups:
-                            %if dataset and not trans.app.security_agent.dataset_has_group( dataset.id, group.id ):
-                                <option value="${group.id}">${group.name}</option>
-                            %endif
-                        %endfor
-                    </select>
-                </div>
-                <div class="toolParamHelp" style="clear: both;">
-                    To select multiple users or groups, hold ctrl or command while clicking.
-                </div>
+                <input type="submit" name="update_roles" value="Save"/>
             </div>
-            <div class="form-row"><input type="submit" name="create_group_associations" value="Save"></div>
         </form>
     </div>
 </div>
@@ -164,11 +123,11 @@
 	else:
 	    data_state = data.state
     %>
-    %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
-        <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">
-    %else:
+    ##%if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
+    ##    <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">
+    ##%else:
         <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
-    %endif
+    ##%endif
         
         ## Header row for history items (name, state, action buttons)
         

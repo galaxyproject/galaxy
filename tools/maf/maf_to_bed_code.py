@@ -32,7 +32,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.name = basic_name + " (" + dbkey + ")"
             newdata.flush()
             history.add_dataset( newdata )
-            app.security_agent.set_dataset_permissions( newdata.dataset, output_data.dataset.groups )
+            app.security_agent.copy_dataset_permissions( output_data.dataset, newdata.dataset )
             newdata.flush()
             history.flush()
             app.model.flush()

@@ -141,6 +141,7 @@
 </ul>
 <form name="update_multiple_datasets" action="${h.url_for( action='datasets' )}" onSubmit="javascript:return checkForm();" method="post">
 <ul>
+%if libraries:
 %for library in libraries:
   ##%if trans.app.security_agent.check_folder_contents( trans.user, library ):
   <li class="libraryRow libraryOrFolderRow" id="libraryRow"><div class="rowTitle"><table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle"><tr>
@@ -177,3 +178,6 @@
     <input type="submit" class="primary-button" name="with-selected" id="with-selected-submit" value="go"/>
 </div>
 </form>
+%else:
+There are no libraries.
+%endif

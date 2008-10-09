@@ -84,13 +84,13 @@ class DefaultToolAction( object ):
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
         
-        # Determine output dataset permitted_actions list
+        # Determine output dataset permission/roles list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]
         if existing_datasets:
             output_permissions = trans.app.security_agent.guess_derived_permissions_for_datasets( existing_datasets )
         else:
             # No valid inputs, we will use history defaults
-            output_permissions = trans.app.security_agent.history_get_default_access( trans.history )
+            output_permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
         # Build name for output datasets based on tool name and input names
         if len( input_names ) == 1:
             on_text = input_names[0]

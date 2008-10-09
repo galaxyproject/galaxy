@@ -80,30 +80,16 @@
         <div style="clear: both"></div>
       </div>
       <div class="form-row">
-        <label>Allow public access:</label>
-        <input type="checkbox" name="public" value="Yes">  This dataset can be accessed by anyone (make it public).<br/>
-        <p/>
-        <% user_groups = [ g for g in groups if g[1].endswith( ' private group' ) ] %>
-        <% real_groups = [ g for g in groups if not g[1].endswith( ' private group' ) and g[1] != 'public' ] %>
         <div style="float: left; width: 250px; margin-right: 10px;">
-          <label>Associate with users:</label>
-          <select name="users" multiple="true" size="5">
-            %for group in user_groups:
-              <option value="${group[0]}">${group[1].replace( ' private group', '' )}</option>
+          <label>Restrict dataset access to specific roles:</label>
+          <select name="roles" multiple="true" size="5">
+            %for role in roles:
+              <option value="${role.id}">${role.name}</option>
             %endfor
           </select>
-          %if len( real_groups ):
-            <p/>
-            <label>Associate with groups:</label>
-            <select name="groups" multiple="true" size="5">
-              %for group in real_groups:
-                <option value="${group[0]}">${group[1]}</option>
-              %endfor
-            </select>
-          %endif
         </div>
         <div class="toolParamHelp" style="clear: both;">
-          To select multiple users or groups, hold ctrl or command while clicking.
+          To select multiple roles, hold ctrl or command while clicking.  More permissions can be set after the upload is complete.  Selecting no roles makes a dataset public.
         </div>
       </div>
       <div style="clear: both"></div>

@@ -59,6 +59,71 @@ class Admin( BaseController ):
         msg = params.msg
         return trans.fill_template( '/admin/dataset_security/index.mako', msg=msg )
     
+    # Galaxy Role Stuff
+    @web.expose
+    def roles( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        p = util.Params( kwd )
+        msg = p.msg
+        if 'create' in kwd:
+            if p.create == 'submitted':
+                role = trans.app.model.Role( name = util.restore_text( p.name ),
+                                             description = util.restore_text( p.description ),
+                                             type = trans.app.model.Role.types.ADMIN )
+                role.flush()
+                trans.response.send_redirect( url_for( action='roles', associate=True ) )
+            return trans.show_form( 
+                web.FormBuilder( action = web.url_for(), title = "Create a new role", name="role", submit_text = "Create" )
+                    .add_text( name = "name", label = "Name", value = "New Role" )
+                    .add_text( name = "description", label = "Description", value = "" )
+                    .add_input( 'hidden', '', 'create', 'submitted', use_label = False  )
+                    .add_input( 'hidden', '', 'id', id, use_label = False  ) )
+        return trans.fill_template( '/admin/dataset_security/roles.mako',
+                                    roles=trans.app.model.Role.select(),
+                                    msg=msg )
+
+    @web.expose
+    def role( self, trans, id=None, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        p = util.Params( kwd )
+        msg = p.msg
+        if not id:
+            return trans.show_error_message( "Galaxy can't associate roles unless you provide a role id" )
+        role = trans.app.model.Role.get( id )
+        if not role:
+            return trans.show_error_message( "The selected role is invalid" )
+        if role.type == role.types.PRIVATE:
+            return trans.show_error_message( "The Public Access Role cannot be modified" )
+        if 'submitted' in kwd:
+            if p.submitted == 'associate':
+                in_users = [ trans.app.model.User.get( x ) for x in listify( p.in_users ) ]
+                in_groups = [ trans.app.model.Group.get( x ) for x in listify( p.in_groups ) ]
+                trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
+                role.refresh()
+        in_users = []
+        out_users = []
+        in_groups = []
+        out_groups = []
+        for user in sorted( trans.app.model.User.select(), lambda x,y: cmp( x.email, y.email ) ):
+            if user in [ x.user for x in role.users ]:
+                in_users.append( ( user.id, user.email ) )
+            else:
+                out_users.append( ( user.id, user.email ) )
+        for group in sorted( trans.app.model.Group.select(), lambda x,y: cmp( x.name, y.name ) ):
+            if group in [ x.group for x in role.groups ]:
+                in_groups.append( ( group.id, group.name ) )
+            else:
+                out_groups.append( ( group.id, group.name ) )
+        return trans.fill_template( '/admin/dataset_security/role.mako',
+                                    role = role,
+                                    in_users = in_users,
+                                    out_users = out_users,
+                                    in_groups = in_groups,
+                                    out_groups = out_groups
+                                  )
+
     # Galaxy Group Stuff
     @web.expose
     def groups( self, trans, **kwd ):
@@ -69,46 +134,19 @@ class Admin( BaseController ):
         # This query retrieves groups that are not deleted and members of each group
         q = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
                          ( galaxy.model.Group.table.c.name ).label( 'group_name' ),
-                         ( galaxy.model.Group.table.c.priority ).label( 'group_priority' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'total_members' ) ),
                        whereclause = galaxy.model.Group.table.c.deleted == False,
                        from_obj = [ sa.outerjoin( galaxy.model.Group.table, 
                                                   galaxy.model.UserGroupAssociation.table
                                                 ).outerjoin( galaxy.model.User.table ) ],
                        group_by = [ galaxy.model.Group.table.c.id,
-                                    galaxy.model.Group.table.c.name,
-                                    galaxy.model.Group.table.c.priority ],
+                                    galaxy.model.Group.table.c.name ],
                        order_by = [ galaxy.model.Group.table.c.name ] )
         groups = []
         for row in q.execute():
-            total_datasets = 0
-            permitted_actions = []
-            # This 2nd query retrieves the number of datasets and dataset permitted_actions associated with each group
-            q2 = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
-                              ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ),
-                              sa.func.count( galaxy.model.Dataset.table.c.id ).label( 'total_datasets' ) ),
-                            whereclause = sa.and_( galaxy.model.Group.table.c.id == row.group_id,
-                                                   galaxy.model.Dataset.table.c.deleted == False ),
-                            from_obj = [ sa.outerjoin( galaxy.model.Group.table,
-                                                       galaxy.model.GroupDatasetAssociation.table
-                                                     ).outerjoin( galaxy.model.Dataset.table ) ],
-                            group_by = [ galaxy.model.Group.table.c.id,
-                                         galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ] )
-            for row2 in q2.execute():
-                total_datasets = row2.total_datasets
-                permitted_actions = []
-                # There may not yet be any GroupDatasetAssociations, in which case no
-                # actions will be found
-                if row2.permitted_actions:
-                    for action in row2.permitted_actions:
-                        permitted_actions.append( action.encode( 'ascii' ) )
-                    permitted_actions.sort()
             groups.append( ( row.group_id,
                              escape( row.group_name, entities ),
-                             row.group_priority,
-                             row.total_members,
-                             total_datasets,
-                             permitted_actions ) )
+                             row.total_members ) )
         return trans.fill_template( '/admin/dataset_security/groups.mako', 
                                     groups=groups, 
                                     msg=msg )
@@ -143,12 +181,8 @@ class Admin( BaseController ):
             msg = "A group with that name already exists"
             trans.response.send_redirect( '/admin/create_group?msg=%s' % msg )
         else:
-            try:
-                priority = int( params.priority )
-            except:
-                priority = 0
             # Create the group
-            group = galaxy.model.Group( name, priority )
+            group = galaxy.model.Group( name )
             group.flush()
             # Add the members
             members = params.members
@@ -163,7 +197,7 @@ class Admin( BaseController ):
                 # Create the UserGroupAssociation
                 user_group_association = galaxy.model.UserGroupAssociation( user, group )
                 user_group_association.flush()
-            msg = "The new group has been created with priority %s and %s members" % ( str( priority ), str( len( members ) ) )
+            msg = "The new group has been created with %s members" % str( len( members ) )
             trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
     @web.expose
     def group_members( self, trans, **kwd ):
@@ -279,50 +313,6 @@ class Admin( BaseController ):
         msg = "Group membership has been updated with a total of %s members" % len( members )
         trans.response.send_redirect( '/admin/group_members?group_id=%s&group_name=%s&msg=%s' % ( str( group_id ), params.group_name, msg ) )
     @web.expose
-    def group_dataset_permitted_actions( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
-        params = util.Params( kwd )
-        msg = params.msg
-        group_id = int( params.group_id )
-        gdas = []
-        permitted_actions = []
-        group = galaxy.model.Group.get( group_id )
-        return trans.fill_template( '/admin/dataset_security/group_dataset_permitted_actions_edit.mako', 
-                                    group=group,
-                                    gdas=group.datasets,
-                                    msg=msg )
-    @web.expose
-    def group_dataset_permitted_actions_edit( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
-        params = util.Params( kwd )
-        group_id = int( params.group_id )
-        permissions = {}
-        for gda_id in params.gdas.split(','):
-            permissions[gda_id] = params.get('gda_actions_%s' % gda_id, None)
-            if isinstance( permissions[gda_id], str ):
-                permissions[gda_id] = [ permissions[gda_id] ]
-        for gda_id, permitted_actions in permissions.items():
-            if permitted_actions is None:
-                gda = trans.app.model.GroupDatasetAssociation.get( int( gda_id ) )
-                if gda.permitted_actions is not []:
-                    log.debug( "gda %s: permitted_actions emptied (set to none)" % gda_id )
-                    gda.permitted_actions = []
-                    gda.flush()
-            else:
-                valid_pas = trans.app.model.security_agent.convert_permitted_action_strings( permitted_actions )
-                if not valid_pas:
-                    continue # this shouldn't happen, but might as well check
-                gda = trans.app.model.GroupDatasetAssociation.get( int( gda_id ) )
-                if sorted(gda.permitted_actions) != sorted(valid_pas):
-                    log.debug( "gda %s: permitted_actions changed to %s" % ( gda_id, valid_pas ) )
-                    gda = trans.app.model.GroupDatasetAssociation.get( int( gda_id ) )
-                    gda.permitted_actions = valid_pas
-                    gda.flush()
-        msg = "The dataset permitted actions have been updated"
-        trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
-    @web.expose
     def mark_group_deleted( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
@@ -343,45 +333,19 @@ class Admin( BaseController ):
         # This query retrieves groups that are not deleted and members of each group
         q = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
                          ( galaxy.model.Group.table.c.name ).label( 'group_name' ),
-                         ( galaxy.model.Group.table.c.priority ).label( 'group_priority' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'total_members' ) ),
                        whereclause = galaxy.model.Group.table.c.deleted == True,
                        from_obj = [ sa.outerjoin( galaxy.model.Group.table, 
                                                   galaxy.model.UserGroupAssociation.table
                                                 ).outerjoin( galaxy.model.User.table ) ],
                        group_by = [ galaxy.model.Group.table.c.id,
-                                    galaxy.model.Group.table.c.name,
-                                    galaxy.model.Group.table.c.priority ],
+                                    galaxy.model.Group.table.c.name ],
                        order_by = [ galaxy.model.Group.table.c.name ] )
         groups = []
         for row in q.execute():
-            total_datasets = 0
-            permitted_actions = []
-            # This 2nd query retrieves the number of datasets and dataset permitted_actions associated with each group
-            q2 = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
-                              ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ),
-                              sa.func.count( galaxy.model.Dataset.table.c.id ).label( 'total_datasets' ) ),
-                            whereclause = sa.and_( galaxy.model.Group.table.c.id == row.group_id,
-                                                   galaxy.model.Dataset.table.c.deleted == False ),
-                            from_obj = [ sa.outerjoin( galaxy.model.Group.table,
-                                                       galaxy.model.GroupDatasetAssociation.table
-                                                     ).outerjoin( galaxy.model.Dataset.table ) ],
-                            group_by = [ galaxy.model.Group.table.c.id,
-                                         galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ] )
-            for row2 in q2.execute():
-                total_datasets = row2.total_datasets
-                permitted_actions = []
-                # There may not yet be any GroupDatasetAssociations, in which case no actions will be found
-                if row2.permitted_actions:
-                    for action in row2.permitted_actions:
-                        permitted_actions.append( action.encode( 'ascii' ) )
-                    permitted_actions.sort()
             groups.append( ( row.group_id,
                              escape( row.group_name, entities ),
-                             row.group_priority,
-                             row.total_members,
-                             total_datasets,
-                             permitted_actions ) )
+                             row.total_members ) )
         return trans.fill_template( '/admin/dataset_security/deleted_groups.mako', 
                                     groups=groups, 
                                     msg=msg )
@@ -449,25 +413,6 @@ class Admin( BaseController ):
                                     msg=msg )
     @web.expose
     def specified_users_groups( self, trans, **kwd ):
-        def renderable( component, group_id ):
-            #return True if component or at least one of components contents is 
-            #associated with group_id
-            if isinstance( component, trans.app.model.LibraryFolder ):
-                # Check the folder's datasets to see what can be rendered
-                for library_folder_dataset_assoc in component.active_datasets:
-                    if renderable( library_folder_dataset_assoc, group_id ):
-                        return True
-                # Check the folder's sub-folders to see what can be rendered
-                for library_folder in component.active_folders:
-                    if renderable( library_folder, group_id ):
-                        return True
-            elif isinstance( component, trans.app.model.LibraryFolderDatasetAssociation ):
-                dataset = trans.app.model.Dataset.get( component.dataset_id )
-                for group_dataset_assoc in dataset.groups:
-                    if group_dataset_assoc.group_id == group_id:
-                        return True
-            return False
-        
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
@@ -476,49 +421,15 @@ class Admin( BaseController ):
         user_email = unescape( params.user_email, unentities )
         # Get the groups to which the user belongs
         q = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
-                         ( galaxy.model.Group.table.c.name ).label( 'group_name' ),
-                         ( galaxy.model.Group.table.c.priority ).label( 'group_priority' ) ),
+                         ( galaxy.model.Group.table.c.name ).label( 'group_name' ) ),
                        whereclause = galaxy.model.User.table.c.id == user_id,
                        from_obj = [ sa.outerjoin( galaxy.model.User.table, 
                                                   galaxy.model.UserGroupAssociation.table ).outerjoin( galaxy.model.Group.table ) ],
                        order_by = [ 'group_name' ] )
+        groups = []
         for row in q.execute():
-            libraries = []
-            groups = []
-            permitted_actions = []
-            total_datasets = 0
-            # Perform a 2nd query to get datasets associated with each group
-            q2 = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
-                              ( galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ).label( 'permitted_actions' ),
-                              sa.func.count( galaxy.model.Dataset.table.c.id ).label( 'total_datasets' ) ),
-                            whereclause = sa.and_( galaxy.model.Group.table.c.id == row.group_id,
-                                                   galaxy.model.Dataset.table.c.deleted == False ),
-                            from_obj = [ sa.outerjoin( galaxy.model.Group.table,
-                                                       galaxy.model.GroupDatasetAssociation.table
-                                                     ).outerjoin( galaxy.model.Dataset.table ) ],
-                            group_by = [ galaxy.model.Group.table.c.id,
-                                         galaxy.model.GroupDatasetAssociation.table.c.permitted_actions ] )
-            for row2 in q2.execute():
-                libraries = []
-                permitted_actions = []
-                total_datasets = row2.total_datasets
-                # There may not yet be any GroupDatasetAssociations, in which case no
-                # actions will be found
-                if row2.permitted_actions:
-                    for action in row2.permitted_actions:
-                        permitted_actions.append( action.encode( 'ascii' ) )
-                    permitted_actions.sort()
-                    # If we have permitted actions, then we have at least 1 GroupDatasetAssociation, in
-                    # which case, we can see if we have any Libraries that the user can access
-                    
-                    libraries = [ library for library in trans.app.model.Library.select() if renderable( library.root_folder, row2.group_id ) ]
-                    
             groups.append( ( row.group_id,
-                             escape( row.group_name, entities ),
-                             row.group_priority,
-                             total_datasets,
-                             permitted_actions, 
-                             libraries ) )
+                             escape( row.group_name, entities ) ) )
         return trans.fill_template( '/admin/dataset_security/specified_users_groups.mako', 
                                     user_id=user_id, 
                                     user_email=escape( user_email, entities ),
@@ -672,7 +583,7 @@ class Admin( BaseController ):
         msg = params.msg
 
         # add_file method
-        def add_file( file_obj, name, extension, dbkey, last_used_build, groups, info='no info', space_to_tab=False ):
+        def add_file( file_obj, name, extension, dbkey, last_used_build, roles, info='no info', space_to_tab=False ):
             data_type = None
             temp_name = sniff.stream_to_file( file_obj )
 
@@ -718,14 +629,9 @@ class Admin( BaseController ):
             folder = trans.app.model.LibraryFolder.get( folder_id )
             folder.add_dataset( dataset, genome_build=last_used_build )
             dataset.flush()
-            # GroupDatasetAssociations will enable security on the dataset based on the permitted_actions
-            # associated with the GroupDatasetAssociation.  The default permitted_actions at this point
-            # will be DATASET_ACCESS, but the user can change this after the file is uploaded.
-            permitted_actions = [ RBACAgent.permitted_actions.DATASET_ACCESS ]
-            for group_id in groups:
-                group = galaxy.model.Group.get( group_id )
-                group_dataset_assoc = galaxy.model.GroupDatasetAssociation( group, dataset.dataset, permitted_actions )
-                group_dataset_assoc.flush()
+            if roles:
+                adra = galaxy.model.ActionDatasetRolesAssociation( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, roles )
+                adra.flush()
             shutil.move( temp_name, dataset.dataset.file_name )
             dataset.dataset.state = dataset.dataset.states.OK
             dataset.init_meta()
@@ -760,16 +666,9 @@ class Admin( BaseController ):
             if 'space_to_tab' in kwd:
                 if kwd['space_to_tab'] not in ["None", None]:
                     space_to_tab = True
-            if 'groups' not in kwd and 'users' not in kwd and 'public' not in kwd:
-                msg = 'The dataset must be associated with at least 1 user or group, or be set public.'
-                trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=msg ) )
-            groups = []
-            if 'groups' in kwd:
-                groups.extend( listify(kwd['groups']) )
-            if 'users' in kwd:
-                groups.extend( listify(kwd['users']) )
-            if 'public' in kwd:
-                groups.extend( [ trans.app.security_agent.get_public_group().id ] )
+            roles = []
+            if 'roles' in kwd:
+                roles = listify( kwd['roles'] )
             temp_name = ""
             data_list = []
             created_datasets = []
@@ -782,7 +681,7 @@ class Admin( BaseController ):
                                                  extension,
                                                  dbkey,
                                                  last_used_build,
-                                                 groups,
+                                                 roles,
                                                  info="uploaded file",
                                                  space_to_tab=space_to_tab )
             elif url_paste not in [ None, "" ]:
@@ -796,7 +695,7 @@ class Admin( BaseController ):
                                                              extension,
                                                              dbkey,
                                                              last_used_build,
-                                                             groups,
+                                                             roles,
                                                              info="uploaded url",
                                                              space_to_tab=space_to_tab )
                             created_datasets.append( last_dataset_created )
@@ -813,7 +712,7 @@ class Admin( BaseController ):
                                                          extension,
                                                          dbkey,
                                                          last_used_build,
-                                                         groups,
+                                                         roles,
                                                          info="pasted entry",
                                                          space_to_tab=space_to_tab )
             elif server_dir not in [ None, "", "None" ]:
@@ -831,7 +730,7 @@ class Admin( BaseController ):
                                                      extension,
                                                      dbkey,
                                                      last_used_build,
-                                                     groups,
+                                                     roles,
                                                      info="imported file",
                                                      space_to_tab=space_to_tab )
                     created_datasets.append( last_dataset_created )
@@ -862,19 +761,14 @@ class Admin( BaseController ):
                     yield build_name, dbkey, ( dbkey==last_used_build )
             dbkeys = get_dbkey_options( last_used_build )
             # Send list of groups to the form so the dataset can be associated with 1 or more of them.
-            groups = []
-            q = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
-                             ( galaxy.model.Group.table.c.name ).label( 'group_name' ) ),
-                            order_by = [ galaxy.model.Group.table.c.name ] )
-            for row in q.execute():
-                groups.append( ( row.group_id, row.group_name ) )
-            groups = sorted( groups, key=operator.itemgetter(1) )
+            #roles = trans.app.model.Role.select().order_by( 'role_id' )
+            roles = trans.app.model.Role.select( order_by=trans.app.model.Role.c.name )
             return trans.fill_template( '/admin/library/new_dataset.mako', 
                                         folder_id=folder_id,
                                         file_formats=file_formats,
                                         dbkeys=dbkeys,
                                         last_used_build=last_used_build,
-                                        groups=groups,
+                                        roles=roles,
                                         msg=msg )
         else:
             if id.count( ',' ):
@@ -884,92 +778,111 @@ class Admin( BaseController ):
                 ids = None
         # id specified, display attributes form
         if id:
-            dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-            if not dataset:
+            lda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+            if not lda:
                 return trans.show_error_message( "Invalid dataset specified" )
 
             # Copied from edit attributes for 'regular' datasets with some additions
             p = util.Params(kwd, safe=False)
-            if p.change:
+            if p.update_roles:
+                # The user clicked the Save button on the 'Associate With Roles' form
+                permissions = {}
+                for k, v in trans.app.model.Dataset.permitted_actions.items():
+                    in_roles = [ trans.app.model.Role.get( x ) for x in listify( p.get( k + '_in', [] ) ) ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                trans.app.security_agent.set_dataset_permissions( lda.dataset, permissions )
+                lda.dataset.refresh()
+            elif p.change:
                 # The user clicked the Save button on the 'Change data type' form
-                trans.app.datatypes_registry.change_datatype( dataset, p.datatype )
+                trans.app.datatypes_registry.change_datatype( lda, p.datatype )
                 trans.app.model.flush()
             elif p.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
-                dataset.name  = name
-                dataset.info  = info
+                lda.name  = name
+                lda.info  = info
                 # The following for loop will save all metadata_spec items
-                for name, spec in dataset.datatype.metadata_spec.items():
+                for name, spec in lda.datatype.metadata_spec.items():
                     if spec.get("readonly"):
                         continue
                     optional = p.get("is_"+name, None)
                     if optional and optional == 'true':
                         # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
-                        setattr(dataset.metadata,name,None)
+                        setattr(lda.metadata,name,None)
                     else:
-                        setattr(dataset.metadata,name,spec.unwrap(p.get(name, None), p))
+                        setattr(lda.metadata,name,spec.unwrap(p.get(name, None), p))
     
-                dataset.metadata.dbkey = dbkey
-                dataset.datatype.after_edit( dataset )
+                lda.metadata.dbkey = dbkey
+                lda.datatype.after_edit( lda )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated" )
             elif p.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
-                for name, spec in dataset.datatype.metadata_spec.items():
+                for name, spec in lda.datatype.metadata_spec.items():
                     # We need to be careful about the attributes we are resetting
                     if name != 'name' and name != 'info' and name != 'dbkey':
                         if spec.get( 'default' ):
-                            setattr( dataset.metadata,name,spec.unwrap( spec.get( 'default' ), spec ))
-                dataset.datatype.set_meta( dataset )
-                dataset.datatype.after_edit( dataset )
+                            setattr( lda.metadata,name,spec.unwrap( spec.get( 'default' ), spec ))
+                lda.datatype.set_meta( lda )
+                lda.datatype.after_edit( lda )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated" )
             elif p.delete:
-                dataset.deleted = True
-                dataset.flush()
+                lda.deleted = True
+                lda.flush()
                 trans.response.send_redirect( web.url_for( action='library_browser' ) )
-            dataset.datatype.before_edit( dataset )
-            if "dbkey" in dataset.datatype.metadata_spec and not dataset.metadata.dbkey:
+            lda.datatype.before_edit( lda )
+            if "dbkey" in lda.datatype.metadata_spec and not lda.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
                 # This looks like it does nothing, but getting the dbkey
                 # returns the metadata dbkey unless it is None, in which
                 # case it resorts to the old dbkey.  Setting the dbkey
                 # sets it properly in the metadata
-                dataset.metadata.dbkey = dataset.dbkey
+                lda.metadata.dbkey = lda.dbkey
             metadata = list()
             # a list of MetadataParemeters
-            for name, spec in dataset.datatype.metadata_spec.items():
+            for name, spec in lda.datatype.metadata_spec.items():
                 if spec.visible:
-                    metadata.append( spec.wrap( dataset.metadata.get(name), dataset ) )
+                    metadata.append( spec.wrap( lda.metadata.get(name), lda ) )
             # let's not overwrite the imported datatypes module with the variable datatypes?
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
             return trans.fill_template( "/admin/library/dataset.mako", 
-                                        dataset=dataset, 
+                                        dataset=lda, 
                                         metadata=metadata,
                                         datatypes=ldatatypes,
                                         err=None,
                                         msg=msg )
         # multiple ids specfied, display multi permission form
         elif ids:
-            datasets = []
+            ldas = []
             for id in [ int( id ) for id in ids ]:
-                d = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-                if d is None:
+                lda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+                if lda is None:
                     return trans.show_error_message( 'You specified an invalid dataset' )
-                datasets.append( d )
-            if len( datasets ) < 2:
+                ldas.append( lda )
+            if len( ldas ) < 2:
                 return trans.show_error_message( 'You must specify at least two datasets to modify permissions on' )
-            # If the permissions on the first dataset don't match the intersection
-            # of permissions, the permissions across all datasets are not
-            # identical.  Although, should we care, or should we just let the admin
-            # overwrite permissions regardless?
-            if trans.app.security_agent.get_dataset_permissions( datasets[0] ) != \
-            trans.app.security_agent.guess_derived_permissions_for_datasets( [ d.dataset for d in datasets ] ):
+            if 'update_roles' in kwd:
+                p = util.Params( kwd )
+                permissions = {}
+                for k, v in trans.app.model.Dataset.permitted_actions.items():
+                    in_roles = [ trans.app.model.Role.get( x ) for x in listify( p.get( k + '_in', [] ) ) ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                for lda in ldas:
+                    trans.app.security_agent.set_dataset_permissions( lda.dataset, permissions )
+                    lda.dataset.refresh()
+	    # Ensure that the permissions across all datasets are
+	    # identical.  Otherwise, we can't update together.
+            tmp = []
+            for lda in ldas:
+                perms = trans.app.security_agent.get_dataset_permissions( lda.dataset )
+                if perms not in tmp:
+                    tmp.append( perms )
+            if len( tmp ) != 1:
                 return trans.show_error_message( "The datasets you selected do not have identical permissions, so they can not be updated together" )
             else:
                 return trans.fill_template( "/admin/library/dataset.mako",
-                                            dataset=datasets )
+                                            dataset=ldas )
     def check_gzip( self, temp_name ):
         """
         Utility method to check gzipped uploads
@@ -1042,6 +955,9 @@ class Admin( BaseController ):
             trans.response.send_redirect( web.url_for( action='library_browser' ) )
     @web.expose
     def datasets( self, trans, **kwd ):
+        """
+        The datasets method is used by the dropdown box on the admin-side library browser.
+        """
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
@@ -1085,18 +1001,6 @@ class Admin( BaseController ):
         ### For Now, I am commenting out logic that acts on the dataset directly
         ### -- Dan:
         
-        
-        # Delete any GroupDatasetAssociations #perhaps group assocs should only be deleted when the Dataset object is purged?
-        #for group_dataset_assoc in dataset.groups:
-        #    group_dataset_assoc.delete()
-        #    group_dataset_assoc.flush()
-        # Delete any HistoryDatasetAssociations #Just because we delete this Library Dataset Association from the library, doesn't mean we want to remove it from a user's history (without their knowledge even)
-        #for history_dataset_assoc in dataset.history_associations:
-        #    history_dataset_assoc.deleted = True #set deleted flag to True, do not delete row
-        #    history_dataset_assoc.flush()
-        # Delete the dataset
-        #dataset.deleted = True
-        #dataset.flush()
         
         # Delete the LibraryFolderDatasetAssociation
         library_folder_dataset_assoc.deleted = True
@@ -1144,11 +1048,13 @@ class Admin( BaseController ):
             trans.response.send_redirect( web.url_for( action = 'libraries', msg = 'You have deleted the library %s.' % library.id ) )
         return trans.show_error_message( "You did not specify a library to delete." )
 
-def listify( item ):
+def listify( item, return_none=False ):
     """
     Since single params are not a single item list
     """
-    if isinstance( item, list ):
+    if item is None:
+        return []
+    elif isinstance( item, list ):
         return item
     else:
         return [ item ]

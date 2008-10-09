@@ -117,7 +117,6 @@ Group.table = Table( "galaxy_group", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TEXT, index=True, unique=True ),
-    Column( "priority", Integer ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 UserGroupAssociation.table = Table( "user_group_association", metadata, 
@@ -127,32 +126,49 @@ UserGroupAssociation.table = Table( "user_group_association", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ) )
 
-GroupDatasetAssociation.table = Table( "group_dataset_association", metadata, 
+UserRoleAssociation.table = Table( "user_role_association", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "permitted_actions", JSONType(), default=[] ) )
-
-# The following table stores the permissions that are considered the defaults for new histories when they are created by a user
-DefaultUserGroupAssociation.table = Table( "default_user_group_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "permitted_actions", JSONType(), default=[] ) )
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
 
-# The following table stores the default permissions assigned to histories for datasets 
-# that need permissions ( dataset permissions that cannot be determined based on ancestor ) 
-DefaultHistoryGroupAssociation.table = Table( "default_history_group_association", metadata, 
+GroupRoleAssociation.table = Table( "group_role_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
-    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+Role.table = Table( "role", metadata,
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "permitted_actions", JSONType(), default=[] ) )
+    Column( "name", TEXT, index=True, unique=True ),
+    Column( "description", TEXT ),
+    Column( "type", TEXT, index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+# TODO: should role_ids be made in to another association table?
+ActionDatasetRolesAssociation.table = Table( "action_dataset_roles_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "action", TEXT ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "role_ids", JSONType(), default=[] ) )
+
+DefaultUserPermissions.table = Table( "default_user_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "action", TEXT ),
+    Column( "role_ids", JSONType(), default=[] ) )
+
+DefaultHistoryPermissions.table = Table( "default_history_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "action", TEXT ),
+    Column( "role_ids", JSONType(), default=[] ) )
 
 LibraryFolderDatasetAssociation.table = Table( "library_folder_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
@@ -399,7 +415,7 @@ assign_mapper( context, History, History.table,
                       ) )
 
 assign_mapper( context, User, User.table, 
-    properties=dict( histories=relation( History, backref="user", 
+    properties=dict( histories=relation( History, backref="user",
                                          order_by=desc(History.table.c.update_time) ),
                      active_histories=relation( History, primaryjoin=( ( History.table.c.user_id == User.table.c.id ) & ( not_( History.table.c.deleted ) ) ), order_by=desc( History.table.c.update_time ) ),
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",
@@ -408,29 +424,49 @@ assign_mapper( context, User, User.table,
                      ) )
 
 assign_mapper( context, Group, Group.table,
-    properties=dict( users=relation( UserGroupAssociation ),
-                     datasets=relation( GroupDatasetAssociation ) ) )
+    properties=dict( users=relation( UserGroupAssociation ) ) )
 
 assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
     properties=dict( user=relation( User, backref = "groups" ),
                      group=relation( Group, backref = "members" ) ) )
 
-assign_mapper( context, GroupDatasetAssociation, GroupDatasetAssociation.table,
-    properties=dict( dataset=relation( Dataset, backref = "groups" ),
-                     group=relation( Group, backref = "group_datasets" ) ) )
+assign_mapper( context, DefaultUserPermissions, DefaultUserPermissions.table,
+    properties=dict( user=relation( User, backref = "default_permissions" ) ) )
 
-assign_mapper( context, DefaultUserGroupAssociation, DefaultUserGroupAssociation.table,
-    properties=dict( user=relation( User, backref = "default_groups" ),
-                     group=relation( Group ) ) )
+assign_mapper( context, DefaultHistoryPermissions, DefaultHistoryPermissions.table,
+    properties=dict( history=relation( History, backref = "default_permissions" ) ) )
 
-assign_mapper( context, DefaultHistoryGroupAssociation, DefaultHistoryGroupAssociation.table,
-    properties=dict( history=relation( History, backref = "default_groups" ),
-                     group=relation( Group ) ) )
+assign_mapper( context, Role, Role.table,
+    properties=dict(
+        users=relation( UserRoleAssociation ),
+        groups=relation( GroupRoleAssociation )
+    )
+)
+
+assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
+    properties=dict(
+        user=relation( User, backref="roles" ),
+        role=relation( Role )
+    )
+)
+
+assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
+    properties=dict(
+        group=relation( Group, backref="roles" ),
+        role=relation( Role )
+    )
+)
+
+assign_mapper( context, ActionDatasetRolesAssociation, ActionDatasetRolesAssociation.table,
+    properties=dict(
+        dataset=relation( Dataset, backref="actions" )
+    )
+)
 
 assign_mapper( context, Library, Library.table,
     properties=dict(
         root_folder=relation( LibraryFolder,
-        backref = backref( "library_root" ) )
+        backref=backref( "library_root" ) )
         ) )
 
 assign_mapper( context, LibraryFolder, LibraryFolder.table,
@@ -605,13 +641,13 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.create_tables = create_tables
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
-    # Ensure group named 'public' exists
-    public_group = result.Group.filter_by( name='public' ).first()
-    if not public_group:
-        public_group = result.security_agent.create_group( name = 'public' )
-    # Store public group id
-    result.security_agent.set_public_group( public_group )
-    log.debug( "Public Group identified as id = %s." % ( public_group.id ) )
+    # Create private roles if necessary.
+    if not len( result.Role.select() ):
+        for user in result.User.select():
+            role = Role( name = user.email, description = 'Private Role for ' + user.email, type = 'private' )
+            role.flush()
+            ura = UserRoleAssociation( user = user, role = role )
+            ura.flush()
     return result
     
 def get_suite():

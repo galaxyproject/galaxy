@@ -9,7 +9,6 @@
 <%def name="render_row( group_name, group )">
    <td><a href="${h.url_for( controller='admin', action='undelete_group', group_id=group[0] )}">Undelete</a></td>
    <td>${group_name}</td>
-   <td>${group[2]}</td>
    <td><a href="${h.url_for( controller='admin', action='group_members', group_id=group[0], group_name=group[1] )}">${group[3]}</a></td>
    %if group[4] > 0:
      <td><a href="${h.url_for( controller='admin', action='group_dataset_permitted_actions', group_id=group[0], group_name=group[1] )}">${group[4]}</a></td>
@@ -71,7 +70,6 @@
       <tr class="header">
         <td>&nbsp;</td>
         <td>Group</td>
-        <td>Priority</td>
         <td>Members</td>
         <td>Datasets</td>
         <td>Group Permitted Actions on Datasets</td>

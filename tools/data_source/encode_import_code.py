@@ -38,7 +38,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.extension = file_type
             newdata.name = basic_name + " (" + description + ")"
             history.add_dataset( newdata )
-            app.security_agent.set_dataset_permissions( newdata.dataset, base_dataset.dataset.groups )
+            app.security_agent.copy_dataset_permissions( base_dataset.dataset, newdata.dataset )
             app.model.flush()
             try:
                 copyfile(filepath,newdata.file_name)

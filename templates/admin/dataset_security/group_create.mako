@@ -22,7 +22,7 @@
         <table border="0">            
           <form name="group_create" action="${h.url_for( controller='admin', action='new_group' )}" method="post" >
             <tr>
-              <td>Name: <input  name="name" type="textfield" value="" size=40">&nbsp;&nbsp;Priority: <input  name="priority" type="textfield" value="0" size=3"></td>
+              <td>Name: <input  name="name" type="textfield" value="" size=40"></td>
             </tr>
             %if len( users ) == 0:
               <tr><td>There are no Galaxy users</td></tr>

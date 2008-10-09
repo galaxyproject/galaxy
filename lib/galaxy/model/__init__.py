@@ -103,69 +103,15 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
-class GroupDatasetAssociation( object ):
-    def __init__( self, group, dataset, permitted_actions=[] ):
-        if isinstance( group,  GroupDatasetAssociation ) or \
-           isinstance( group, DefaultUserGroupAssociation ) or \
-           isinstance( group, DefaultHistoryGroupAssociation ):
-            group = group.group
-        self.group = group
-        if isinstance( dataset, HistoryDatasetAssociation ):
-            dataset = dataset.dataset
-        self.dataset = dataset
-        self.permitted_actions = permitted_actions
-    def add_permitted_action( self, action ):
-        if action not in self.permitted_actions:
-            return self.permitted_actions.append( action )
-        raise 'action (%s) already exists in permitted actions list (%s: %s).' % ( action, str( self.id ), str( self.permitted_actions ) )
-    def remove_permitted_action( self, action ):
-        return self.permitted_actions.remove( action )
-
 class Group( object ):
-    public_id = None
     permitted_actions = galaxy.security.get_permitted_actions( 'GROUP' )
-    def __init__( self, name = None, priority = 0 ):
+    def __init__( self, name = None ):
         self.name = name
-        self.priority = priority
-    @classmethod
-    def get_public_group( cls ):
-        return Group.get( cls.public_id )
-    @classmethod
-    def set_public_group( cls, group ):
-        # We store the id instead of the object, because of alchemy sessions
-        if isinstance( group, Group ):
-            group = group.id
-        cls.public_id = group
-    @classmethod
-    def guess_public_group( cls ):
-        # Retrieve from database and store public group id
-        group = Group.filter_by( name='public' ).first()
-        cls.set_public_group( group )
 
 class UserGroupAssociation( object ):
     def __init__( self, user, group ):
         self.user = user
         self.group = group
-
-class DefaultUserGroupAssociation( object ):
-    def __init__( self, user, group, permitted_actions ):
-        if isinstance( group, GroupDatasetAssociation ) or \
-           isinstance( group, DefaultUserGroupAssociation ) or \
-           isinstance( group, DefaultHistoryGroupAssociation ):
-            group = group.group
-        self.user = user
-        self.group = group
-        self.permitted_actions = permitted_actions
-
-class DefaultHistoryGroupAssociation( object ):
-    def __init__( self, history, group, permitted_actions ):
-        if isinstance( group, GroupDatasetAssociation ) or \
-           isinstance( group, DefaultUserGroupAssociation ) or \
-           isinstance( group, DefaultHistoryGroupAssociation ):
-            group = group.group
-        self.history = history
-        self.group = group
-        self.permitted_actions = permitted_actions
 
 class History( object ):
     def __init__( self, id=None, name=None, user=None ):
@@ -238,6 +184,64 @@ class History( object ):
 #         # Relationships
 #         self.history = history
 #         self.datasets = []
+
+class UserRoleAssociation( object ):
+    def __init__( self, user, role ):
+        self.user = user
+        self.role = role
+
+class GroupRoleAssociation( object ):
+    def __init__( self, group, role ):
+        self.group = group
+        self.role = role
+
+class Role( object ):
+    private_id = None
+    types = Bunch( 
+        PRIVATE = 'private',
+        SYSTEM = 'system',
+        USER = 'user',
+        ADMIN = 'admin'
+    )
+    def __init__( self, name="", description="", type="system", deleted=False ):
+        self.name = name
+        self.description = description
+        self.type = type
+        self.deleted = deleted
+
+class ActionObjectRolesAssociation( object ):
+    """
+    Base class for an action->something->roles association, so set_roles
+    doesn't have to be a member of each class that uses it.
+    """
+    def set_roles( self, roles ):
+        """
+        Convenience method to allow roles to be a list of Roles or role ids.
+        """
+        def get_id( x ):
+            if isinstance( x, Role ):
+                return x.id
+            else:
+                return x
+        self.role_ids = map( get_id, roles )
+
+class ActionDatasetRolesAssociation( ActionObjectRolesAssociation ):
+    def __init__( self, action, dataset, roles ):
+        self.action = action
+        self.dataset = dataset
+        self.set_roles( roles )
+
+class DefaultUserPermissions( ActionObjectRolesAssociation ):
+    def __init__( self, user, action, roles ):
+        self.user = user
+        self.action = action
+        self.set_roles( roles )
+
+class DefaultHistoryPermissions( ActionObjectRolesAssociation ):
+    def __init__( self, history, action, roles ):
+        self.history = history
+        self.action = action
+        self.set_roles( roles )
 
 class Dataset( object ):
     states = Bunch( NEW = 'new',

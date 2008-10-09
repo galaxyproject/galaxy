@@ -171,6 +171,8 @@ class User( BaseController ):
     def set_default_permitted_actions( self, trans, **kwd ):
         """Sets the user's default permitted actions for the new histories"""
         if trans.user:
+            return trans.show_error_message( "This function is not implemented" )
+            # TODO: reimplement
             if 'set_permitted_actions' in kwd:
                 """The user clicked the set_permitted_actions button on the set_permitted_actions form"""
                 group_args = [ k.replace('group_', '', 1) for k in kwd if k.startswith('group_') ]

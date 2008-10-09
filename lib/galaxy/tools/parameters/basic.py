@@ -984,38 +984,6 @@ class DataToolParameter( ToolParameter ):
 
     TODO: The following must be fixed to test correctly for the new security_check tag in the DataToolParameter ( the last test below is broken )
     Nate's next passs at the dataset security stuff will dramatically alter this anyway.
-
-    >>> # Mock up a history (not connected to database)
-    >>> from galaxy.model import History, HistoryDatasetAssociation, User, Group
-    >>> from galaxy.util.bunch import Bunch
-    >>> from galaxy.security import GalaxyRBACAgent
-    >>> import galaxy.model
-    >>> security_agent = GalaxyRBACAgent( galaxy.model )
-    >>> hist = History()
-    >>> hist.flush()
-    >>> group = Group( 'test' )
-    >>> group.flush()
-    >>> Group.public_id = group.id
-    >>> dataset1 = HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True )
-    >>> dataset2 = HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True )
-    >>> security_agent.set_dataset_permissions( dataset2, [ ( group, security_agent.permitted_actions.__dict__.values() ) ] )
-    >>> dataset3 = HistoryDatasetAssociation( id=3, extension='fasta', create_dataset=True )
-    >>> dataset4 = HistoryDatasetAssociation( id=4, extension='png', create_dataset=True )
-    >>> dataset5 = HistoryDatasetAssociation( id=5, extension='interval', create_dataset=True )
-    >>> security_agent.set_dataset_permissions( dataset5, [ ( group, security_agent.permitted_actions.__dict__.values() ) ] )
-    >>> hist.add_dataset( dataset1 )
-    >>> hist.add_dataset( dataset2 )
-    >>> hist.add_dataset( dataset3 )
-    >>> hist.add_dataset( dataset4 )
-    >>> hist.add_dataset( dataset5 )
-    >>> p = DataToolParameter( None, XML( '<param name="blah" type="data" format="txt"><security_check group="test" action="access"/></param>' ) )
-    >>> print p.name
-    blah
-    >>> print p.security_dict
-    {'test': ['access']}
-    >>> print p.get_html( trans=Bunch( history=hist, user=None, app=Bunch( security_agent = security_agent ) ) )
-    <select name="blah">
-    </select>
     """
 
     def __init__( self, tool, elem ):
@@ -1077,6 +1045,7 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( hda.hid )
+                # FIXME: This needs to be rewritten to use the new permissions model
                 if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and hda.visible and trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
                     if self.security_dict:
                         passed_security_check = True

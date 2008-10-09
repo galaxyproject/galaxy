@@ -53,7 +53,7 @@ class TestHistory( TwillTestCase ):
         self.visit_page( "admin/groups" )
          # the following should have been created when account was created.
         self.check_page_for_string( 'test@bx.psu.edu private group' )
-        self.create_group( name='New Test Group', priority='10' )
+        self.create_group( name='New Test Group' )
         self.visit_page( "admin/groups" )
         self.check_page_for_string( "group_name=New+Test+Group" )
     # twill version 0.9 still does not allow for the following test
