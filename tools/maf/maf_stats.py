@@ -8,7 +8,7 @@ import sys
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.intervals.io
-from numpy import zeros
+from bx.bitset import BitSet
 from galaxy.tools.util import maf_utilities
 
 assert sys.version_info[:2] >= ( 2, 4 )
@@ -56,32 +56,35 @@ def __main__():
     #loop through interval file
     for num_region, region in enumerate( bx.intervals.io.NiceReaderWrapper( open( input_interval_filename, 'r' ), chrom_col = chr_col, start_col = start_col, end_col = end_col, fix_strand = True, return_header = False, return_comments = False ) ):
         src = "%s.%s" % ( dbkey, region.chrom )
-        total_length += ( region.end - region.start )
-        coverage = { dbkey: zeros( region.end - region.start, dtype = bool ) }
+        region_length = region.end - region.start
+        total_length += region_length
+        coverage = { dbkey: BitSet( region_length ) }
         
         for block in maf_utilities.get_chopped_blocks_for_region( index, src, region, force_strand='+' ):
             #make sure all species are known
             for c in block.components:
                 spec = c.src.split( '.' )[0]
-                if spec not in coverage: coverage[spec] = zeros( region.end - region.start, dtype = bool )
+                if spec not in coverage: coverage[spec] = BitSet( region_length )
             start_offset, alignment = maf_utilities.reduce_block_by_primary_genome( block, dbkey, region.chrom, region.start )
             for i in range( len( alignment[dbkey] ) ):
                 for spec, text in alignment.items():
                     if text[i] != '-':
-                        coverage[spec][start_offset + i] = True
+                        coverage[spec].set( start_offset + i )
         if summary:
             #record summary
             for key in coverage.keys():
                 if key not in species_summary: species_summary[key] = 0
-                species_summary[key] = species_summary[key] + sum( coverage[key] )
+                species_summary[key] = species_summary[key] + coverage[key].count_range()
         else:
             #print coverage for interval
-            out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), dbkey, sum( coverage[dbkey] ), len(coverage[dbkey]) - sum( coverage[dbkey] ) ) )
+            coverage_sum = coverage[dbkey].count_range()
+            out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), dbkey, coverage_sum, region_length - coverage_sum ) )
             keys = coverage.keys()
             keys.remove( dbkey )
             keys.sort()
             for key in keys:
-                out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), key, sum( coverage[key] ), len(coverage[key]) - sum( coverage[key] ) ) )
+                coverage_sum = coverage[key].count_range()
+                out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), key, coverage_sum, region_length - coverage_sum ) )
     if summary:
         out.write( "#species\tnucleotides\tcoverage\n" )
         for spec in species_summary:
