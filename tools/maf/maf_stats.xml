@@ -61,6 +61,13 @@
       <output name="out_file1" file="maf_stats_interval_out.dat"/>
       <param name="summary" value="false"/>
     </test>
+    <test>
+      <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>
+      <param name="maf_source" value="cached"/>
+      <param name="mafType" value="8_WAY_MULTIZ_hg17"/>
+      <output name="out_file1" file="maf_stats_summary_out.dat"/>
+      <param name="summary" value="true"/>
+    </test>
   </tests>
   <help>
 
