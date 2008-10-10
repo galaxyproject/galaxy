@@ -526,6 +526,32 @@ class HistoryDatasetAssociation( DatasetInstance ):
             des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
         return des
+        
+    def to_library_dataset_folder_association( self, parent_id = None, target_folder = None ):
+
+        des = LibraryFolderDatasetAssociation( name=self.name, 
+                                         info=self.info, 
+                                         blurb=self.blurb, 
+                                         peek=self.peek, 
+                                         extension=self.extension, 
+                                         dbkey=self.dbkey, 
+                                         metadata=self._metadata, 
+                                         dataset = self.dataset, 
+                                         visible=self.visible, 
+                                         deleted=self.deleted, 
+                                         parent_id=parent_id,
+                                         copied_from_history_dataset_association = self,
+                                         folder = target_folder )
+        des.flush()
+        if target_folder:
+            target_folder.add_dataset( des )
+        for child in self.children:
+            child_copy = child.to_library_dataset_folder_association( parent_id = des.id )
+        if not self.datatype.copy_safe_peek:
+            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        des.flush()
+        return des
+        
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         #metadata_safe = True means to only clear when assoc.metadata_safe == False
         for assoc in self.implicitly_converted_datasets:

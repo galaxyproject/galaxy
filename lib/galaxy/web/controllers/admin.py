@@ -883,6 +883,33 @@ class Admin( BaseController ):
             else:
                 return trans.fill_template( "/admin/library/dataset.mako",
                                             dataset=ldas )
+    @web.expose
+    def add_dataset_to_folder_from_history( self, trans, ids="", folder_id=None, **kwd ):
+        if not isinstance( ids, list ):
+            if ids:
+                ids = ids.split( "," )
+            else:
+                ids = []
+        try:
+            folder = trans.app.model.LibraryFolder.get( folder_id )
+        except:
+            folder = None
+        if folder is None:
+            return trans.show_error_message( "You must provide a valid target folder." )
+        error_msg = ok_msg = ""
+        dataset_names = []
+        if ids:
+            for data_id in ids:
+                data = trans.app.model.HistoryDatasetAssociation.get( data_id )
+                if data:
+                    data.to_library_dataset_folder_association( target_folder = folder )
+                    dataset_names.append( data.name )
+                else:
+                    error_msg += "A requested dataset (%s) was invalid.  " % ( data_id )
+        if dataset_names:
+            ok_msg = "Added datasets (%s) to the library folder." % ( ", ".join( dataset_names ) )
+        return trans.fill_template( "/admin/library/add_dataset_from_history.mako", history=trans.get_history(), folder=folder, ok_msg=ok_msg, error_msg=error_msg )
+        
     def check_gzip( self, temp_name ):
         """
         Utility method to check gzipped uploads

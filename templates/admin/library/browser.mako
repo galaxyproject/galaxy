@@ -92,6 +92,7 @@
     </div>
     <div popupmenu="folder-${parent.id}-popup">
       <a class="action-button" href="${h.url_for( action='dataset', folder_id=parent.id )}">Add new dataset to this folder</a>
+      <a class="action-button" href="${h.url_for( action='add_dataset_to_folder_from_history', folder_id=parent.id )}">Copy a dataset from your history to this folder</a>
       <a class="action-button" href="${h.url_for( action='folder', new=True, id=parent.id )}">Create a new subfolder in this folder</a>
       <a class="action-button" href="${h.url_for( action='folder', rename=True, id=parent.id )}">Rename this folder</a>
       %if subfolder:
