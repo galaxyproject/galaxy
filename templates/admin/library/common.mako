@@ -66,20 +66,14 @@
 
 <%
     redirect = None
-    id = None
     if isinstance( data_obj, trans.app.model.LibraryFolderDatasetAssociation ):
         dataset = data_obj.dataset
-        redirect = ("lid", data_obj.id)
+        id = data_obj.id
     elif isinstance( data_obj, list ):
         dataset = data_obj[0].dataset
         id = ",".join( [ str(d.dataset.id) for d in data_obj ] )
-        if isinstance( data_obj[0], trans.app.model.LibraryFolderDatasetAssociation ):
-            redirect = ("lid", ",".join( [ str(d.id) for d in data_obj ] ) )
     else:
         trans.show_error_message( "Unknown object passed to render_permissions_forms" )
-    if id is None:
-        id = dataset.id
-
 %>
 
 <div class="toolForm">
@@ -87,9 +81,6 @@
     <div class="toolFormBody">
         <form name="edit_role_associations" id="edit_role_associations" action="${h.url_for( action='dataset' )}" method="post">
             <input type="hidden" name="id" value="${id}">
-            %if redirect:
-                <input type="hidden" name="${redirect[0]}" value="${redirect[1]}">
-            %endif
             <div class="form-row">
                 <label>
                     Choose which roles are required to perform each action on this dataset.

@@ -927,60 +927,6 @@ class Admin( BaseController ):
         #    return( True, False )
         return ( True, True )
     @web.expose
-    def dataset_permissions( self, trans, id=None, **kwd ):
-        '''
-        In this method, id is an actual Dataset object, not an association.
-        '''
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
-        if not id:
-            return trans.show_error_message( 'You must specify at least one dataset to modify permissions on' )
-        params = util.Params( kwd )
-        # id can be a list of comma separated datasets, too.
-        if id.count( ',' ):
-            ids = id.split( ',' )
-        else:
-            ids = [ id ]
-        datasets = []
-        for d_id in ids:
-            d = trans.app.model.Dataset.get( d_id )
-            if not d:
-                return trans.show_error_message( 'You specified an invalid dataset' )
-            datasets.append( d ) 
-        if 'change_permitted_actions' in kwd:
-            users = []
-            groups = []
-            if params.users:
-                users = listify( params.users )
-            if params.groups:
-                groups = listify( params.groups )
-            permissions = []
-            for group_id in users + groups:
-                permitted_actions = [ pa.replace( group_id + ',', '' ) for pa in params.actions if pa.startswith( group_id + ',' ) ]
-                permitted_actions = trans.app.security_agent.convert_permitted_action_strings( permitted_actions )
-                permissions.append( ( trans.app.model.Group.get( int( group_id ) ), permitted_actions ) )
-            if params.public:
-                permissions.append( ( trans.app.security_agent.get_public_group(), trans.app.security_agent.permitted_actions.DATASET_ACCESS ) )
-            for dataset in datasets:
-                trans.app.security_agent.set_dataset_permissions( dataset, permissions )
-        elif 'create_group_associations' in kwd:
-            users = []
-            groups = []
-            if params.users:
-                users = listify( params.users )
-            if params.groups:
-                groups = listify( params.groups )
-            if params.public:
-                for dataset in datasets:
-                    trans.app.security_agent.associate_components( group=trans.app.security_agent.get_public_group(), dataset=dataset )
-            for group_id in users + groups:
-                for dataset in datasets:
-                    trans.app.security_agent.associate_components( group=trans.app.model.Group.get( int( group_id ) ), dataset=dataset )
-        if params.lid:
-            trans.response.send_redirect( web.url_for( action='dataset', id=params.lid ) )
-        else:
-            trans.response.send_redirect( web.url_for( action='library_browser' ) )
-    @web.expose
     def datasets( self, trans, **kwd ):
         """
         The datasets method is used by the dropdown box on the admin-side library browser.
