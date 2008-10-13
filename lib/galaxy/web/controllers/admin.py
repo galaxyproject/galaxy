@@ -80,7 +80,7 @@ class Admin( BaseController ):
                     .add_input( 'hidden', '', 'create', 'submitted', use_label = False  )
                     .add_input( 'hidden', '', 'id', id, use_label = False  ) )
         return trans.fill_template( '/admin/dataset_security/roles.mako',
-                                    roles=trans.app.model.Role.select(),
+                                    roles=trans.app.model.Role.query().all(),
                                     msg=msg )
 
     @web.expose
@@ -106,12 +106,12 @@ class Admin( BaseController ):
         out_users = []
         in_groups = []
         out_groups = []
-        for user in sorted( trans.app.model.User.select(), lambda x,y: cmp( x.email, y.email ) ):
+        for user in sorted( trans.app.model.User.query().all(), lambda x,y: cmp( x.email, y.email ) ):
             if user in [ x.user for x in role.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
                 out_users.append( ( user.id, user.email ) )
-        for group in sorted( trans.app.model.Group.select(), lambda x,y: cmp( x.name, y.name ) ):
+        for group in sorted( trans.app.model.Group.query().all(), lambda x,y: cmp( x.name, y.name ) ):
             if group in [ x.group for x in role.groups ]:
                 in_groups.append( ( group.id, group.name ) )
             else:
@@ -760,9 +760,8 @@ class Admin( BaseController ):
                 for dbkey, build_name in util.dbnames:
                     yield build_name, dbkey, ( dbkey==last_used_build )
             dbkeys = get_dbkey_options( last_used_build )
-            # Send list of groups to the form so the dataset can be associated with 1 or more of them.
-            #roles = trans.app.model.Role.select().order_by( 'role_id' )
-            roles = trans.app.model.Role.select( order_by=trans.app.model.Role.c.name )
+            # Send list of roles to the form so the dataset can be associated with 1 or more of them.
+            roles = trans.app.model.Role.query().order_by( trans.app.model.Role.c.name ).all()
             return trans.fill_template( '/admin/library/new_dataset.mako', 
                                         folder_id=folder_id,
                                         file_formats=file_formats,

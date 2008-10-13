@@ -642,8 +642,8 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
     # Create private roles if necessary.
-    if not len( result.Role.select() ):
-        for user in result.User.select():
+    if not result.Role.query().all():
+        for user in result.User.query().all():
             role = Role( name = user.email, description = 'Private Role for ' + user.email, type = 'private' )
             role.flush()
             ura = UserRoleAssociation( user = user, role = role )

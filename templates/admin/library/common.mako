@@ -5,7 +5,7 @@
             if a.action == action.action:
                 for role_id in a.role_ids:
                     in_roles.append( trans.app.model.Role.get( role_id ) )
-        out_roles = filter( lambda x: x not in in_roles, trans.app.model.Role.select() )
+        out_roles = filter( lambda x: x not in in_roles, trans.app.model.Role.query().all() )
     %>
     <p><label>${action.description}</label></p>
     <div style="float: left; margin-right: 10px;">
