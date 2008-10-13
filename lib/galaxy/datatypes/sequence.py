@@ -90,6 +90,38 @@ class Fasta( Sequence ):
         except:
             return False
 
+class csFasta( Sequence ):
+    """ Class representing the SOLID Color-Space sequence ( csfasta ) """
+    file_ext = "csfasta"
+    
+    def set_peek( self, dataset ):
+        dataset.peek = data.get_file_peek( dataset.file_name )
+        count = size = 0
+        for line in file( dataset.file_name ):
+            if line and line[0] == ">":
+                count += 1
+            else:
+                line = line.strip()
+                size += len(line)
+        if count == 1:
+            dataset.blurb = '%d bases' % size
+        else:
+            dataset.blurb = '%d sequences' % count
+
+    def sniff( self, filename ):
+        """
+        Color-space sequence: 
+            >2_15_85_F3
+            T213021013012303002332212012112221222112212222
+        
+        TODO:
+            add sniff function
+        """
+        
+        return False
+        
+
+                
 class FastqSolexa( Sequence ):
     """Class representing a FASTQ sequence ( the Solexa variant )"""
     file_ext = "fastqsolexa"
