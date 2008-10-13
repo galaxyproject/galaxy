@@ -1134,10 +1134,11 @@ class Tool:
         if self.tool_type == 'data_source':
             # List for converting UCSC to Galaxy exts, if not in following dictionary, use provided datatype
             data_type_to_ext = { 'wigdata':'wig', 'tab':'interval', 'hyperlinks':'html', 'sequence':'fasta' }
-            dbkey = param_dict.get( 'dbkey ' )
+            dbkey = param_dict.get( 'dbkey' )
             organism = param_dict.get( 'organism' )
             table = param_dict.get( 'table' )
             description = param_dict.get( 'description' )
+            info = param_dict.get( 'info' )
             if description == 'range':
                 description = param_dict.get( 'position', '' )
                 if not description:
@@ -1147,6 +1148,7 @@ class Tool:
             for name, data in items:
                 if organism and table and description:
                     data.name  = '%s on %s: %s (%s)' % ( data.name, organism, table, description )
+                data.info = info
                 data.dbkey = dbkey
                 ext = data_type
                 try: 
@@ -1169,7 +1171,7 @@ class Tool:
         # tag set in the tool config.
         if self.tool_type == 'data_source':
             name, data = out_data.items()[0]
-            if data.state == data.states.OK:
+            if data.state == data.states.OK and not data.info:
                 data.info = data.name
             if not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
                 data.set_meta()
