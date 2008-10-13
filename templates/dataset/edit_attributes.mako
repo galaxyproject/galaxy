@@ -165,3 +165,10 @@ elif isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
 
 <p />
 %endif
+
+%if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data ):
+
+<%namespace file="/dataset/security_common.mako" import="render_permission_form" />
+${render_permission_form( data.dataset, h.url_for( action='edit' ), 'update_roles', id_name, data.id, trans.user.all_roles() )}
+
+%endif

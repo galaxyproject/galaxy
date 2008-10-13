@@ -95,8 +95,9 @@ class Admin( BaseController ):
         if not role:
             return trans.show_error_message( "The selected role is invalid" )
         if role.type == role.types.PRIVATE:
-            return trans.show_error_message( "The Public Access Role cannot be modified" )
+            return trans.show_error_message( "You cannot modify the members of a private role" )
         if 'submitted' in kwd:
+            # TODO: remove dups and dhps for any users who've just been disassociated
             if p.submitted == 'associate':
                 in_users = [ trans.app.model.User.get( x ) for x in listify( p.in_users ) ]
                 in_groups = [ trans.app.model.Group.get( x ) for x in listify( p.in_groups ) ]
@@ -288,19 +289,6 @@ class Admin( BaseController ):
         # First remove existing members that are not in the received members param
         for user_group_assoc in group.members:
             if user_group_assoc.user_id not in members:
-                user = galaxy.model.User.get( user_group_assoc.user_id )
-                # Delete DefaultUserGroupAssociations
-                for default_user_group_association in user.default_groups:
-                    if default_user_group_association.group_id == group_id:
-                        default_user_group_association.delete()
-                        default_user_group_association.flush()
-                        break # Should only be 1 record
-                # Delete DefaultHistoryGroupAssociations
-                for history in user.histories:
-                    for default_history_group_association in history.default_groups:
-                        if default_history_group_association.group_id == group_id:
-                            default_history_group_association.delete()
-                            default_history_group_association.flush()
                 # Delete the UserGroupAssociation
                 user_group_assoc.delete()
                 user_group_assoc.flush()

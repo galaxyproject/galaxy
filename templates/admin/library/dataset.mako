@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
-<%namespace file="common.mako" import="render_permissions_forms" />
+<%namespace file="/dataset/security_common.mako" import="render_permission_form" />
+
 
 <%def name="title()">Edit Dataset Attributes</%def>
 
@@ -16,7 +17,11 @@
   </select>
 </%def>
 
-${render_permissions_forms( dataset )}
+%if isinstance( dataset, list ):
+    ${render_permission_form( dataset[0].dataset, h.url_for( action='dataset' ), 'id', ",".join( [ str(d.id) for d in dataset ] ), trans.app.model.Role.query().all() )}
+%else:
+    ${render_permission_form( dataset.dataset, h.url_for( action='dataset' ), 'id', dataset.id, trans.app.model.Role.query().all() )}
+%endif
 
 %if not isinstance( dataset, list ):
 <div class="toolForm">

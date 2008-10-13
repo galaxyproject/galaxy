@@ -89,13 +89,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 return True # implicit access to restrict-style actions if the dataset does not have the action
             # grant-style actions fall through to the false below
         else:
-            # collect a user's roles and their groups' roles
-            user_roles = [ ura.role for ura in user.roles ]
-            for group in [ uga.group for uga in user.groups ]:
-                for role in [ gra.role for gra in group.roles ]:
-                    if role not in user_roles:
-                        user_roles.append( role )
-            user_role_ids = sorted( [ r.id for r in user_roles ] )
+            user_role_ids = sorted( [ r.id for r in user.all_roles() ] )
             for adra in dataset.actions:
                 if action.action != adra.action:
                     continue
@@ -176,6 +170,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 return self.create_private_user_role( user )
             else:
                 return None
+        return role
     def user_set_default_permissions( self, user, permissions = {}, history = False, dataset = False ):
         if user is None:
             return None

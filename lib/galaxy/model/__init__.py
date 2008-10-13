@@ -41,6 +41,13 @@ class User( object ):
     def check_password( self, cleartext ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
         return self.password == sha.new( cleartext ).hexdigest()
+    def all_roles( self ):
+        roles = [ ura.role for ura in self.roles ]
+        for group in [ uga.group for uga in self.groups ]:
+            for role in [ gra.role for gra in group.roles ]:
+                if role not in roles:
+                    roles.append( role )
+        return roles
     
 class Job( object ):
     """

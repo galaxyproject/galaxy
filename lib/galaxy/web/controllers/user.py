@@ -3,6 +3,7 @@ Contains the user interface in the Universe class
 """
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
+from galaxy import util
 import logging, os, string
 from random import choice
 
@@ -168,26 +169,20 @@ class User( BaseController ):
                 .add_text( "email", "Email", value=email, error=error ) )
     
     @web.expose
-    def set_default_permitted_actions( self, trans, **kwd ):
-        """Sets the user's default permitted actions for the new histories"""
+    def set_default_permissions( self, trans, **kwd ):
+        """Sets the user's default permissions for the new histories"""
         if trans.user:
-            return trans.show_error_message( "This function is not implemented" )
-            # TODO: reimplement
-            if 'set_permitted_actions' in kwd:
-                """The user clicked the set_permitted_actions button on the set_permitted_actions form"""
-                group_args = [ k.replace('group_', '', 1) for k in kwd if k.startswith('group_') ]
-                group_ids_checked = filter( lambda x: not x.count('_'), group_args )
-                if not group_ids_checked:
-                    return trans.show_error_message( "You must specify at least one default group." ) 
-                permissions = []
-                for group_id in group_ids_checked:
-                    group = trans.app.security_agent.get_group( group_id )
-                    if not group:
-                        return trans.show_error_message( 'You have specified an invalid group.' )
-                    action_strings = [ action.replace(group_id + '_', '', 1) for action in group_args if action.startswith(group_id + '_') ]
-                    permissions.append( ( group, trans.app.security_agent.convert_permitted_action_strings( action_strings ) ) )
-                trans.app.security_agent.user_set_default_access( trans.user, permissions )
-                return trans.show_ok_message( 'Default new history permitted actions have been changed.' )
+            if 'update_roles' in kwd:
+                p = util.Params( kwd )
+                permissions = {}
+                for k, v in trans.app.model.Dataset.permitted_actions.items():
+                    in_roles = p.get( k + '_in', [] )
+                    if not isinstance( in_roles, list ):
+                        in_roles = [ in_roles ]
+                    in_roles = [ trans.app.model.Role.get( x ) for x in in_roles ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
+                return trans.show_ok_message( 'Default new history permissions have been changed.' )
             return trans.fill_template( 'user/permissions.mako' )
         else:
             # User not logged in, history group must be only public
