@@ -648,6 +648,8 @@ def init( file_path, url, engine_options={}, create_tables=False ):
             role.flush()
             ura = UserRoleAssociation( user = user, role = role )
             ura.flush()
+            dup = DefaultUserPermissions( user = user, action = result.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action, roles = [ role ] )
+            dup.flush()
     return result
     
 def get_suite():
