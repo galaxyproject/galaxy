@@ -19,14 +19,14 @@
     <td>
         <ul>
             %for x in role.users:
-                <li>${x.user.email}</li>
+                <li><a href="${h.url_for( action='user_groups_roles', user_id=x.user.id, user_email=x.user.email )}">${x.user.email}</a></li>
             %endfor
         </ul>
     </td>
     <td>
         <ul>
             %for x in role.groups:
-                <li>${x.group.name}</li>
+                <li><a href="${h.url_for( action='group_members', group_id=x.group.id, group_name=escape( x.group.name, entities ) )}">${x.group.name}</a></li>
             %endfor
         </ul>
     </td>
