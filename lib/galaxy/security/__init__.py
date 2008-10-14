@@ -222,7 +222,9 @@ class GalaxyRBACAgent( RBACAgent ):
             perms[ dhp.action ] = dhp.role_ids
         return perms
     def set_dataset_permissions( self, dataset, permissions={} ):
-        # to delete permission on an action, pass in a blank list of role ids with that action
+	# to delete permission on an action, pass in a blank list of
+	# role ids with that action.  leaving an action out of the perm
+	# dict simply leaves those perms untouched (if they exist)
         for action, role_ids in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
@@ -257,6 +259,32 @@ class GalaxyRBACAgent( RBACAgent ):
         if not isinstance( dst, self.model.Dataset ):
             dst = dst.dataset
         self.set_dataset_permissions( dst, self.get_dataset_permissions( src ) )
+    def privately_share_dataset( self, dataset, users = [] ):
+        intersect = None
+        for user in users:
+            roles = [ ura.role for ura in user.roles if ura.role.type == self.model.Role.types.SHARING ]
+            if intersect is None:
+                intersect = roles
+            else:
+                new_intersect = []
+                for role in roles:
+                    if role in intersect:
+                        new_intersect.append( role )
+                intersect = new_intersect
+        sharing_role = None
+        if intersect:
+            for role in intersect:
+                if not filter( lambda x: x not in users, [ ura.user for ura in role.users ] ):
+                    # only use a role if it contains ONLY the users we're sharing with
+                    sharing_role = role
+                    break
+        if sharing_role is None:
+            sharing_role = self.model.Role( name = "Sharing role for: " + ", ".join( [ u.email for u in users ] ),
+                                            type = self.model.Role.types.SHARING )
+            sharing_role.flush()
+            for user in users:
+                self.associate_components( user=user, role=sharing_role )
+        self.set_dataset_permissions( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
     def set_entity_role_associations( self, roles=[], users=[], groups=[], delete_existing_assocs=True ):
         for role in roles:
             if delete_existing_assocs:

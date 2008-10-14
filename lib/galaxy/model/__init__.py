@@ -208,7 +208,8 @@ class Role( object ):
         PRIVATE = 'private',
         SYSTEM = 'system',
         USER = 'user',
-        ADMIN = 'admin'
+        ADMIN = 'admin',
+        SHARING = 'sharing'
     )
     def __init__( self, name="", description="", type="system", deleted=False ):
         self.name = name

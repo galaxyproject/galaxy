@@ -93,7 +93,12 @@
         <b>How would you like to proceed?</b>
         <p/>
         %if can_change:
-            <input type="radio" name="action" value="update"> Change permissions
+            <input type="radio" name="action" value="public"> Set datasets above to public access
+            %if cannot_change:
+                (where possible)
+            %endif
+            <br/>
+            <input type="radio" name="action" value="private"> Set datasets above to private access for me and the user(s) with whom I am sharing
             %if cannot_change:
                 (where possible)
             %endif
