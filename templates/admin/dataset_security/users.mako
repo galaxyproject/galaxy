@@ -36,7 +36,7 @@
           </td>
         </tr>
       %endif
-      <tr class="header"><td>Email address</td></tr>
+      <tr class="header"><td>Email</td></tr>
       %for ctr, user in enumerate( users ):
         <% email = unescape( user[1], unentities ) %>
         %if render_quick_find and not email.upper().startswith( curr_anchor ):
@@ -54,7 +54,7 @@
                 <div style="float: right;"><a href="#TOP">top</a></div>
                 <% anchored = True %>
               %endif
-              <a href="${h.url_for( controller='admin', action='specified_users_groups', user_id=user[0], user_email=user[1] )}">${email}</a>
+              <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user[0], user_email=user[1] )}">${email}</a>
             %elif render_quick_find:
               %for anchor in anchors[ anchor_loc: ]:
                 %if email.upper().startswith( anchor ):
@@ -66,7 +66,7 @@
                       anchored = True 
                     %>
                   %endif
-                  <a href="${h.url_for( controller='admin', action='specified_users_groups', user_id=user[0], user_email=user[1] )}">${email}</a>
+                  <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user[0], user_email=user[1] )}">${email}</a>
                   <% 
                     anchor_loc = anchors.index( anchor )
                     break 
@@ -74,7 +74,7 @@
                 %endif
               %endfor
             %else:
-              <a href="${h.url_for( controller='admin', action='specified_users_groups', user_id=user[0], user_email=user[1] )}">${email}</a>
+              <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user[0], user_email=user[1] )}">${email}</a>
             %endif
           </td>
         </tr>

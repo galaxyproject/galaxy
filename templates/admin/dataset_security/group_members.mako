@@ -7,8 +7,6 @@
 
 <% gn = unescape( group_name, unentities ) %>
 
-<%def name="title()">Group Members</%def>
-
 %if msg:
 <div class="donemessage">${msg}</div>
 %endif
@@ -33,7 +31,7 @@
 %else:
   
   <table cellpadding="0" cellspacing="0" width="100%" class="colored">
-      <tr class="header"><td>Username</td></tr>
+      <tr class="header"><td>User Name</td></tr>
       <% ctr = 0 %>
       %for member in members:
         <% email = unescape( member[1], unentities ) %>
@@ -43,7 +41,7 @@
           <tr class="tr">
         %endif
           <td><a href="${h.url_for( controller='admin', 
-                                    action='specified_users_groups', 
+                                    action='user_groups_roles', 
                                     user_id=member[0], 
                                     user_email=member[1] )}">${email}</a></td>
         </tr>

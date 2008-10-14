@@ -83,4 +83,3 @@ $().ready(function() {
   </div>
 </div>
 <p/>
-<a href="${h.url_for( action='roles' )}">Return to roles administration</a>

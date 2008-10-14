@@ -51,13 +51,6 @@ class Admin( BaseController ):
         self.app.toolbox.reload( tool_id )
         msg = 'Reloaded tool: ' + tool_id
         return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, msg=msg )
-    @web.expose
-    def dataset_security( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
-        params = util.Params( kwd )
-        msg = params.msg
-        return trans.fill_template( '/admin/dataset_security/index.mako', msg=msg )
     
     # Galaxy Role Stuff
     @web.expose
@@ -82,7 +75,6 @@ class Admin( BaseController ):
         return trans.fill_template( '/admin/dataset_security/roles.mako',
                                     roles=trans.app.model.Role.query().all(),
                                     msg=msg )
-
     @web.expose
     def role( self, trans, id=None, **kwd ):
         if not self.user_is_admin( trans ):
@@ -90,10 +82,10 @@ class Admin( BaseController ):
         p = util.Params( kwd )
         msg = p.msg
         if not id:
-            return trans.show_error_message( "Galaxy can't associate roles unless you provide a role id" )
+            return trans.show_error_message( "Required role id was not received in the request parameters" )
         role = trans.app.model.Role.get( id )
         if not role:
-            return trans.show_error_message( "The selected role is invalid" )
+            return trans.show_error_message( "Invalid role id '%s' received in the request parameters" % str( id ) )
         if role.type == role.types.PRIVATE:
             return trans.show_error_message( "You cannot modify the members of a private role" )
         if 'submitted' in kwd:
@@ -107,7 +99,7 @@ class Admin( BaseController ):
         out_users = []
         in_groups = []
         out_groups = []
-        for user in sorted( trans.app.model.User.query().all(), lambda x,y: cmp( x.email, y.email ) ):
+        for user in sorted( trans.app.model.User.query().all(), lambda x, y: cmp( x.email, y.email ) ):
             if user in [ x.user for x in role.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
@@ -118,12 +110,11 @@ class Admin( BaseController ):
             else:
                 out_groups.append( ( group.id, group.name ) )
         return trans.fill_template( '/admin/dataset_security/role.mako',
-                                    role = role,
-                                    in_users = in_users,
-                                    out_users = out_users,
-                                    in_groups = in_groups,
-                                    out_groups = out_groups
-                                  )
+                                    role=role,
+                                    in_users=in_users,
+                                    out_users=out_users,
+                                    in_groups=in_groups,
+                                    out_groups=out_groups )
 
     # Galaxy Group Stuff
     @web.expose
@@ -388,41 +379,47 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        q = sa.select( ( ( galaxy.model.User.table.c.id ).label( 'user_id' ),
-                         ( galaxy.model.User.table.c.email ).label( 'user_email') ),
-                       from_obj = [ galaxy.model.User.table ],
-                       order_by = [ galaxy.model.User.table.c.email ] )
+        # Get all users
         users = []
-        for row in q.execute():
-            users.append( ( row.user_id,
-                            escape( row.user_email, entities ) ) )
+        for user in sorted( trans.app.model.User.query().all(), lambda x, y: cmp( x.email, y.email ) ):
+            users.append( ( user.id,
+                            escape( user.email, entities ) ) )
         return trans.fill_template( '/admin/dataset_security/users.mako',
                                     users=users,
                                     msg=msg )
     @web.expose
-    def specified_users_groups( self, trans, **kwd ):
+    def user_groups_roles( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         user_id = int( params.user_id )
         user_email = unescape( params.user_email, unentities )
+        # Get the user
+        user = trans.app.model.User.get( user_id )
         # Get the groups to which the user belongs
-        q = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
-                         ( galaxy.model.Group.table.c.name ).label( 'group_name' ) ),
-                       whereclause = galaxy.model.User.table.c.id == user_id,
-                       from_obj = [ sa.outerjoin( galaxy.model.User.table, 
-                                                  galaxy.model.UserGroupAssociation.table ).outerjoin( galaxy.model.Group.table ) ],
-                       order_by = [ 'group_name' ] )
         groups = []
-        for row in q.execute():
-            groups.append( ( row.group_id,
-                             escape( row.group_name, entities ) ) )
-        return trans.fill_template( '/admin/dataset_security/specified_users_groups.mako', 
-                                    user_id=user_id, 
-                                    user_email=escape( user_email, entities ),
+        for group in sorted( trans.app.model.Group.query() \
+                             .select_from( ( outerjoin( trans.app.model.Group, trans.app.model.UserGroupAssociation ) ) \
+                                           .outerjoin( trans.app.model.User ) ) \
+                            .filter( and_( trans.app.model.Group.deleted == False, trans.app.model.User.id == user_id ) ).all(), \
+                            lambda x, y: cmp( x.name, y.name ) ):
+            groups.append( ( group.id,
+                             escape( group.name, entities ) ) )
+        # Get the roles associated with the user
+        roles = []
+        for role in user.all_roles():
+            roles.append( ( role.id,
+                            escape( role.name, entities ),
+                            escape( role.description, entities ),
+                            role.type ) )
+        return trans.fill_template( '/admin/dataset_security/user_groups_roles.mako', 
+                                    user_id=params.user_id, 
+                                    user_email=params.user_email,
                                     groups=groups,
+                                    roles=roles,
                                     msg=msg )
+
     @web.expose
     def specified_users_group_libraries( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
