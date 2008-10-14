@@ -2,8 +2,9 @@ from datetime import *
 import calendar
 from galaxy.webapps.reports.base.controller import *
 import galaxy.model
+from galaxy.model.orm import *
 import pkg_resources
-pkg_resources.require( "sqlalchemy>=0.3" )
+pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 import logging
 log = logging.getLogger( __name__ )
@@ -13,15 +14,7 @@ class Users( BaseController ):
     def registered_users( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = ''
-        engine = galaxy.model.mapping.metadata.engine
-        s = """
-        SELECT
-            count(id) AS num_users
-        FROM
-            galaxy_user
-         """
-        rows = engine.text( s ).execute().fetchall()
-        num_users = rows[0].num_users
+        num_users = galaxy.model.User.query().count()
         return trans.fill_template( 'registered_users.mako', num_users=num_users, msg=msg )
     @web.expose
     def registered_users_per_month( self, trans, **kwd ):

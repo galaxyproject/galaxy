@@ -22,13 +22,13 @@ class MappingTests( unittest.TestCase ):
         model.context.current.flush()
         model.context.current.clear()
         # Check
-        users = model.User.select()
+        users = model.User.query().all()
         assert len( users ) == 1
         assert users[0].email == "james@foo.bar.baz"
         assert users[0].password == "password"
         assert len( users[0].histories ) == 1
         assert users[0].histories[0].name == "History 1"    
-        hists = model.History.select()
+        hists = model.History.query().all()
         assert hists[0].name == "History 1"
         assert hists[1].name == ( "H" * 255 )
         assert hists[0].user == users[0]
@@ -40,7 +40,7 @@ class MappingTests( unittest.TestCase ):
         hists[1].name = "History 2b"
         model.context.current.flush()
         model.context.current.clear()
-        hists = model.History.select()
+        hists = model.History.query().all()
         assert hists[0].name == "History 1"
         assert hists[1].name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.

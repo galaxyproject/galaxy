@@ -5,23 +5,21 @@ are encapsulated here.
 import logging
 log = logging.getLogger( __name__ )
 
-import pkg_resources
-pkg_resources.require( "sqlalchemy>=0.3" )
-
 import sys
 import datetime
 
-from sqlalchemy.ext.sessioncontext import SessionContext
-from sqlalchemy.ext.assignmapper import assign_mapper
-from sqlalchemy.ext.orderinglist import ordering_list
-
-from sqlalchemy import *
 from galaxy.model import *
+from galaxy.model.orm import *
+from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
+from galaxy.security import GalaxyRBACAgent
 
-metadata = DynamicMetaData( threadlocal=False )
-context = SessionContext( create_session ) 
+metadata = MetaData()
+context = Session = scoped_session( sessionmaker( autoflush=False, transactional=False ) )
+
+# For backward compatibility with "context.current"
+context.current = Session
 
 dialect_to_egg = { 
     "sqlite"   : "pysqlite>=2",
@@ -65,7 +63,6 @@ History.table = Table( "history", metadata,
 #             Column( "state", String( 64 ) ),
 #             Column( "tool_parameters", Pickle() ) )
 
-
 HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
@@ -73,6 +70,7 @@ HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
+    Column( "copied_from_library_folder_dataset_association_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), nullable=True ),
     Column( "hid", Integer ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
@@ -114,21 +112,140 @@ ValidationError.table = Table( "validation_error", metadata,
     Column( "err_type", TrimmedString( 64 ) ),
     Column( "attributes", TEXT ) )
 
+Group.table = Table( "galaxy_group", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TEXT, index=True, unique=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+UserGroupAssociation.table = Table( "user_group_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+UserRoleAssociation.table = Table( "user_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+GroupRoleAssociation.table = Table( "group_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+Role.table = Table( "role", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TEXT, index=True, unique=True ),
+    Column( "description", TEXT ),
+    Column( "type", TEXT, index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+# TODO: should role_ids be made in to another association table?
+ActionDatasetRolesAssociation.table = Table( "action_dataset_roles_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "action", TEXT ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "role_ids", JSONType(), default=[] ) )
+
+DefaultUserPermissions.table = Table( "default_user_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "action", TEXT ),
+    Column( "role_ids", JSONType(), default=[] ) )
+
+DefaultHistoryPermissions.table = Table( "default_history_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "action", TEXT ),
+    Column( "role_ids", JSONType(), default=[] ) )
+
+LibraryFolderDatasetAssociation.table = Table( "library_folder_dataset_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
+    Column( "order_id", Integer ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey' ), nullable=True ),
+    Column( "copied_from_library_folder_dataset_association_id", Integer, ForeignKey( "library_folder_dataset_association.id", use_alter=True, name='library_folder_dataset_association_id_fkey' ), nullable=True ),
+    Column( "name", TrimmedString( 255 ) ),
+    Column( "info", TrimmedString( 255 ) ),
+    Column( "blurb", TrimmedString( 255 ) ),
+    Column( "peek" , TEXT ),
+    Column( "extension", TrimmedString( 64 ) ),
+    Column( "metadata", MetadataType(), key="_metadata" ),
+    Column( "parent_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), nullable=True ),
+    Column( "designation", TrimmedString( 255 ) ),
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "visible", Boolean ) )
+
+Library.table = Table( "library", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "root_folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TEXT, index=True ),
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "description", TEXT ) )
+
+LibraryFolder.table = Table( "library_folder", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "parent_id", Integer, ForeignKey( "library_folder.id" ), nullable = True, index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TEXT ),
+    Column( "description", TEXT ),
+    Column( "order_id", Integer ),
+    Column( "item_count", Integer ),
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "genome_build", TrimmedString( 40 ) ) )
+
+LibraryTag.table = Table( "library_tag", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "text", TEXT ) )
+
+LibraryTagFolderAssociation.table = Table( "library_tag_folder_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "library_tag.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+LibraryTagDatasetAssociation.table = Table( "library_tag_dataset_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "dataset_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "library_tag.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "tool_id", String( 255 ) ),
-    Column( "tool_version", String, default="1.0.0" ),
+    Column( "tool_version", TEXT, default="1.0.0" ),
     Column( "state", String( 64 ) ),
     Column( "info", TrimmedString( 255 ) ),
-    Column( "command_line", String() ), 
+    Column( "command_line", TEXT ), 
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
-    Column( "stdout", String() ),
-    Column( "stderr", String() ),
-    Column( "traceback", String() ),
+    Column( "stdout", TEXT ),
+    Column( "stderr", TEXT ),
+    Column( "traceback", TEXT ),
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True, nullable=True ),
     Column( "job_runner_name", String( 255 ) ),
     Column( "job_runner_external_id", String( 255 ) ) )
@@ -188,7 +305,7 @@ StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
     Column( "latest_workflow_id", Integer,
             ForeignKey( "workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk' ), index=True ),
-    Column( "name", String ),
+    Column( "name", TEXT ),
     Column( "deleted", Boolean, default=False ),
     )
 
@@ -197,7 +314,7 @@ Workflow.table = Table( "workflow", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True, nullable=False ),
-    Column( "name", String ),
+    Column( "name", TEXT ),
     Column( "has_cycles", Boolean ),
     Column( "has_errors", Boolean )
     )
@@ -208,8 +325,8 @@ WorkflowStep.table = Table( "workflow_step", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), index=True, nullable=False ),
     Column( "type", String(64) ),
-    Column( "tool_id", String ),
-    Column( "tool_version", String ), # Reserved for future
+    Column( "tool_id", TEXT ),
+    Column( "tool_version", TEXT ), # Reserved for future
     Column( "tool_inputs", JSONType ),
     Column( "tool_errors", JSONType ),
     Column( "position", JSONType ),
@@ -222,8 +339,8 @@ WorkflowStepConnection.table = Table( "workflow_step_connection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "output_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
     Column( "input_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
-    Column( "output_name", String ),
-    Column( "input_name", String)
+    Column( "output_name", TEXT ),
+    Column( "input_name", TEXT)
     )
 
 StoredWorkflowUserShareAssociation.table = Table( "stored_workflow_user_share_connection", metadata,
@@ -248,27 +365,32 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
         dataset=relation( 
             Dataset, 
             primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ), lazy=False ),
-        history=relation( 
-            History, 
-            primaryjoin=( History.table.c.id == HistoryDatasetAssociation.table.c.history_id ) ),
+        # .history defined in History mapper
         copied_to_history_dataset_associations=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id] ) ),
+            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
+        copied_to_library_folder_dataset_associations=relation( 
+            LibraryFolderDatasetAssociation, 
+            primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ),
+            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id], uselist=False ) ),
         implicitly_converted_datasets=relation( 
             ImplicitlyConvertedDatasetAssociation, 
             primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
         children=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ),
-            backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id] ) )
+            backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) )
             ) )
 
 assign_mapper( context, Dataset, Dataset.table,
     properties=dict( 
         history_associations=relation( 
             HistoryDatasetAssociation, 
-            primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) )
+            primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
+        library_associations=relation( 
+            LibraryFolderDatasetAssociation, 
+            primaryjoin=( Dataset.table.c.id == LibraryFolderDatasetAssociation.table.c.dataset_id ) )
             ) )
 
 
@@ -293,12 +415,111 @@ assign_mapper( context, History, History.table,
                       ) )
 
 assign_mapper( context, User, User.table, 
-    properties=dict( histories=relation( History, backref="user", 
+    properties=dict( histories=relation( History, backref="user",
                                          order_by=desc(History.table.c.update_time) ),
+                     active_histories=relation( History, primaryjoin=( ( History.table.c.user_id == User.table.c.id ) & ( not_( History.table.c.deleted ) ) ), order_by=desc( History.table.c.update_time ) ),
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",
                                                             cascade="all, delete-orphan",
                                                             collection_class=ordering_list( 'order_index' ) )
                      ) )
+
+assign_mapper( context, Group, Group.table,
+    properties=dict( users=relation( UserGroupAssociation ) ) )
+
+assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
+    properties=dict( user=relation( User, backref = "groups" ),
+                     group=relation( Group, backref = "members" ) ) )
+
+assign_mapper( context, DefaultUserPermissions, DefaultUserPermissions.table,
+    properties=dict( user=relation( User, backref = "default_permissions" ) ) )
+
+assign_mapper( context, DefaultHistoryPermissions, DefaultHistoryPermissions.table,
+    properties=dict( history=relation( History, backref = "default_permissions" ) ) )
+
+assign_mapper( context, Role, Role.table,
+    properties=dict(
+        users=relation( UserRoleAssociation ),
+        groups=relation( GroupRoleAssociation )
+    )
+)
+
+assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
+    properties=dict(
+        user=relation( User, backref="roles" ),
+        role=relation( Role )
+    )
+)
+
+assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
+    properties=dict(
+        group=relation( Group, backref="roles" ),
+        role=relation( Role )
+    )
+)
+
+assign_mapper( context, ActionDatasetRolesAssociation, ActionDatasetRolesAssociation.table,
+    properties=dict(
+        dataset=relation( Dataset, backref="actions" )
+    )
+)
+
+assign_mapper( context, Library, Library.table,
+    properties=dict(
+        root_folder=relation( LibraryFolder,
+        backref=backref( "library_root" ) )
+        ) )
+
+assign_mapper( context, LibraryFolder, LibraryFolder.table,
+    properties=dict( 
+        folders=relation( 
+            LibraryFolder, 
+            primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ),
+            backref=backref( "parent", primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ), remote_side=[LibraryFolder.table.c.id] ) ),
+        active_folders=relation( LibraryFolder, 
+            primaryjoin=( ( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolder.table.c.deleted ) ) ), 
+            order_by=asc( LibraryFolder.table.c.order_id ), 
+            lazy=True, #"""sqlalchemy.exceptions.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
+            viewonly=True ),
+        active_datasets=relation( LibraryFolderDatasetAssociation,
+            primaryjoin=( ( LibraryFolderDatasetAssociation.table.c.folder_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolderDatasetAssociation.table.c.deleted ) ) ), 
+            order_by=asc( LibraryFolderDatasetAssociation.table.c.order_id ), 
+            lazy=False, 
+            viewonly=True ),
+        tags=relation( 
+            LibraryTagFolderAssociation, 
+            primaryjoin=( LibraryFolder.table.c.id == LibraryTagFolderAssociation.table.c.folder_id ),
+            backref=backref( "folders" ) )
+    ) )
+
+assign_mapper( context, LibraryFolderDatasetAssociation, LibraryFolderDatasetAssociation.table,
+    properties=dict( 
+        dataset=relation( Dataset ),
+        folder=relation( 
+            LibraryFolder,
+            backref=backref( "datasets" ) ),
+        copied_to_library_folder_dataset_associations=relation( 
+            LibraryFolderDatasetAssociation, 
+            primaryjoin=( LibraryFolderDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ),
+            backref=backref( "copied_from_library_folder_dataset_association", primaryjoin=( LibraryFolderDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id] ) ),
+        children=relation( 
+            LibraryFolderDatasetAssociation, 
+            primaryjoin=( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ),
+            backref=backref( "parent", primaryjoin=( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id] ) ),
+        tags=relation( 
+            LibraryTagDatasetAssociation, 
+            primaryjoin=( LibraryFolderDatasetAssociation.table.c.id == LibraryTagDatasetAssociation.table.c.dataset_id ),
+            backref=backref( "datasets" ) )
+        ) )
+
+assign_mapper( context, LibraryTag, LibraryTag.table )
+                     
+assign_mapper( context, LibraryTagFolderAssociation, LibraryTagFolderAssociation.table,
+    properties=dict( tag=relation( LibraryTag ),
+                     folder=relation( LibraryFolder ) ) )
+
+assign_mapper( context, LibraryTagDatasetAssociation, LibraryTagDatasetAssociation.table,
+    properties=dict( tag=relation( LibraryTag ),
+                     dataset=relation( LibraryFolderDatasetAssociation ) ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation ) ) )
@@ -368,11 +589,12 @@ def db_next_hid( self ):
     Override __next_hid to generate from the database in a concurrency
     safe way.
     """
-    conn = self.table.engine.contextual_connect()
+    conn = object_session( self ).connection()
+    table = self.table
     trans = conn.begin()
     try:
-        next_hid = select( [self.c.hid_counter], self.c.id == self.id, for_update=True ).scalar()
-        self.table.update( self.c.id == self.id ).execute( hid_counter = ( next_hid + 1 ) )
+        next_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
+        table.update( table.c.id == self.id ).execute( hid_counter = ( next_hid + 1 ) )
         trans.commit()
         return next_hid
     except:
@@ -401,18 +623,31 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     # Create the database engine
     engine = create_engine( url, **engine_options )
     # Connect the metadata to the database.
-    metadata.connect( engine )
-    ## metadata.engine.echo = True
+    metadata.bind = engine
+    # Clear any existing contextual sessions and reconfigure
+    Session.remove()
+    Session.configure( bind=engine )
     # Create tables if needed
     if create_tables:
         metadata.create_all()
         # metadata.engine.commit()
     # Pack everything into a bunch
     result = Bunch( **globals() )
-    result.engine = metadata.engine
-    result.flush = lambda *args, **kwargs: context.current.flush( *args, **kwargs )
-    result.context = context
+    result.engine = engine
+    result.flush = lambda *args, **kwargs: Session.flush( *args, **kwargs )
+    result.session = Session
+    # For backward compatibility with "model.context.current"
+    result.context = Session
     result.create_tables = create_tables
+    #load local galaxy security policy
+    result.security_agent = GalaxyRBACAgent( result )
+    # Create private roles if necessary.
+    if not result.Role.query().all():
+        for user in result.User.query().all():
+            role = Role( name = user.email, description = 'Private Role for ' + user.email, type = 'private' )
+            role.flush()
+            ura = UserRoleAssociation( user = user, role = role )
+            ura.flush()
     return result
     
 def get_suite():
