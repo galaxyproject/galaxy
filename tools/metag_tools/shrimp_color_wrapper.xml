@@ -1,5 +1,5 @@
-<tool id="shrimp_color_wrapper" name="SHRiMP : Color space" version="1.0.0">
-  <description> </description>
+<tool id="shrimp_color_wrapper" name="SHRiMP for Color-space" version="1.0.0">
+  <description>reads mapping against reference sequence </description>
   <command interpreter="python">
     #if     $param.skip_or_full=="skip":#shrimp_color_wrapper.py $input_target $input_query $output1 
     #else   #shrimp_color_wrapper.py $input_target $input_query $output1 $param.spaced_seed $param.seed_matches_per_window $param.seed_hit_taboo_length $param.seed_generation_taboo_length $param.seed_window_length $param.max_hits_per_read $param.max_read_length $param.kmer $param.sw_match_value $param.sw_mismatch_value $param.sw_gap_open_ref $param.sw_gap_open_query $param.sw_gap_ext_ref $param.sw_gap_ext_query $param.sw_crossover_penalty $param.sw_full_hit_threshold $param.sw_vector_hit_threshold  
@@ -7,7 +7,7 @@
   </command>
     <inputs>
         <page>
-        <param name="input_query" type="data" format="csfasta" label="Align sequencing reads" />
+        <param name="input_query" type="data" format="csfasta" label="Align sequencing reads" help="No dataset? Read tip below"/>
         <param name="input_target" type="data" format="fasta" label="against reference" />
         <conditional name="param">
             <param name="skip_or_full" type="select" label="SHRiMP settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full List">
@@ -55,7 +55,7 @@
     
 .. class:: warningmark 
 
-Please note that only **color-space** sequences can be used as query.   
+To use this tool your dataset needs to be in *csfasta* (as ABI SOLiD color-space sequences) format. Click pencil icon next to your dataset to set datatype to *csfasta*.   
 
 
 -----

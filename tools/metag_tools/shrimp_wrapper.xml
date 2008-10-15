@@ -1,5 +1,5 @@
-<tool id="shrimp_wrapper" name="SHRiMP" version="1.0.0">
-  <description>: SHort Read Mapping Package</description>
+<tool id="shrimp_wrapper" name="SHRiMP for Letter-space" version="1.0.0">
+  <description>reads mapping against reference sequence </description>
   <command interpreter="python">
     #if     ($type_of_reads.single_or_paired=="single" and $param.skip_or_full=="skip"):#shrimp_wrapper.py $input_target $output1 $output2 $input_query
     #elif   ($type_of_reads.single_or_paired=="paired" and $param.skip_or_full=="skip"):#shrimp_wrapper.py $input_target $output1 $output2 $type_of_reads.input1,$type_of_reads.input2,$type_of_reads.insertion_size
@@ -15,7 +15,7 @@
                 <option value="paired">Paired-end</option>
             </param>
             <when value="single">
-                <param name="input_query" type="data" format="fastqsolexa" label="Align sequencing reads" />
+                <param name="input_query" type="data" format="fastqsolexa" label="Align sequencing reads" help="No dataset? Read tip below"/>
             </when>
             <when value="paired">
                 <param name="insertion_size" type="integer" size="5" value="600" label="Insertion length between two ends" help="bp" />
@@ -124,10 +124,11 @@
         -->
     </tests>
 <help>
-    
-.. class:: warningmark 
 
-Please note that only **nucleotide** sequences (letter-space) can be used as query.   
+.. class:: warningmark
+
+IMPORTANT: This tool currently only supports data where the quality scores are integers or ASCII quality scores with base 64. Click pencil icon next to your dataset to set datatype to *fastqsolexa*.
+
 
 -----
     

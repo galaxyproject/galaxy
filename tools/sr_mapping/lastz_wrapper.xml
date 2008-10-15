@@ -1,5 +1,5 @@
 <tool id="lastz_wrapper_1" name="Lastz" version="1.0.0">
-  <description>: map short reads against reference sequence</description>
+  <description> map short reads against reference sequence</description>
   <command>
     #if   ($params.source_select=="pre_set" and $seq_name.how_to_name=="No"  and $out_format.value=="diffs"):#lastz                     $input1 ${input2}[fullnames] --${params.pre_set_options} --ambiguousn --nolaj --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format  > $output1
     #elif ($params.source_select=="pre_set" and $seq_name.how_to_name=="Yes" and $out_format.value=="diffs"):#lastz $seq_name.ref_name::$input1 ${input2}[fullnames] --${params.pre_set_options} --ambiguousn --nolaj --identity=${min_ident}..${max_ident} --census=$output2 --coverage=$min_cvrg --format=$out_format  > $output1
