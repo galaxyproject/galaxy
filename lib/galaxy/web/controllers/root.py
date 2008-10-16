@@ -241,9 +241,9 @@ class RootController( BaseController ):
                     optional = p.get("is_"+name, None)
                     if optional and optional == 'true':
                         # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
-                        setattr(data.metadata,name,None)
+                        setattr(data.metadata, name, None)
                     else:
-                        setattr(data.metadata,name,spec.unwrap(p.get(name, None), p))
+                        setattr( data.metadata, name, spec.unwrap( p.get (name, None) ) )
 
                 data.datatype.after_edit( data )
                 trans.app.model.flush()
@@ -252,11 +252,11 @@ class RootController( BaseController ):
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
                 if not can_edit_metadata:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
-                for name, spec in data.datatype.metadata_spec.items():
+                for name, spec in data.metadata.spec.items():
                     # We need to be careful about the attributes we are resetting
-                    if name != 'name' and name != 'info' and name != 'dbkey':
+                    if name not in [ 'name', 'info', 'dbkey' ]:
                         if spec.get( 'default' ):
-                            setattr( data.metadata,name,spec.unwrap( spec.get( 'default' ), spec ))
+                            setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
                 data.datatype.set_meta( data )
                 data.datatype.after_edit( data )
                 trans.app.model.flush()
@@ -286,7 +286,6 @@ class RootController( BaseController ):
                     data.dataset.refresh()
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permissions" )
-            
             data.datatype.before_edit( data )
             
             if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
@@ -296,16 +295,12 @@ class RootController( BaseController ):
                 # case it resorts to the old dbkey.  Setting the dbkey
                 # sets it properly in the metadata
                 data.metadata.dbkey = data.dbkey
-            metadata = list()
-            # a list of MetadataParemeters
-            for name, spec in data.datatype.metadata_spec.items():
-                if spec.visible:
-                    metadata.append( spec.wrap( data.metadata.get(name), data ) )
             # let's not overwrite the imported datatypes module with the variable datatypes?
+            ### the built-in 'id' is overwritten in lots of places as well
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
-            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, metadata=metadata,
+            return trans.fill_template( "/dataset/edit_attributes.mako", data=data,
                                         datatypes=ldatatypes, err=None )
         else:
             return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % id )

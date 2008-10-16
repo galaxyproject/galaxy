@@ -43,15 +43,19 @@
         </div>
         <div style="clear: both"></div>
       </div> 
-      %for element in metadata:
-        <div class="form-row">
-          <label>${element.spec.desc}:</label>
-          <div style="float: left; width: 250px; margin-right: 10px;">
-            ${element.get_html()}
-          </div>
-          <div style="clear: both"></div>
-        </div>
-      %endfor
+      %for name, spec in dataset.metadata.spec.items():
+          %if spec.visible:
+            <div class="form-row">
+              <label>
+                  ${spec.desc}:
+              </label>
+              <div style="float: left; width: 250px; margin-right: 10px;">
+                  ${data.metadata.get_html_by_name( name )}
+              </div>
+              <div style="clear: both"></div>
+            </div>
+          %endif
+          %endfor
       <div class="form-row">
         <input type="submit" name="save" value="Save">
       </div>

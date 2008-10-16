@@ -251,7 +251,7 @@ class MetadataInFileColumnValidator( Validator ):
     def validate( self, value, history = None ):
         if not value: return
         if hasattr( value, "metadata" ):
-            if str( getattr( value.datatype.metadata_spec, self.metadata_name ).wrap( value.metadata.get( self.metadata_name ), value ) ) in self.valid_values:
+            if value.metadata.spec[self.metadata_name].param.to_string( value.metadata.get( self.metadata_name ) ) in self.valid_values:
                 return
         raise ValueError( self.message )
 

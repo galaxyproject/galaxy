@@ -1312,7 +1312,8 @@ class DatasetFilenameWrapper( object ):
             if name in self.metadata.spec:
                 if rval is None:
                     rval = self.metadata.spec[name].no_value
-                rval = self.metadata.spec[name].wrap( rval, self.metadata.parent )
+                rval = self.metadata.spec[name].param.to_string( rval )
+                setattr( self, name, rval ) #lets store this value, so we don't need to recalculate if needed again
             return rval
         def __nonzero__( self ):
             return self.metadata.__nonzero__()

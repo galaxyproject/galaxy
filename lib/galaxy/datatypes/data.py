@@ -1,9 +1,8 @@
 import logging, os, sys, time, sets, tempfile
 from galaxy import util
 from cgi import escape
-from galaxy.datatypes.metadata import *
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes import metadata
+import metadata
+from metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
 
 log = logging.getLogger(__name__)
 
@@ -17,11 +16,11 @@ class DataMeta( type ):
     Metaclass for Data class.  Sets up metadata spec.
     """
     def __init__( cls, name, bases, dict_ ):
-        cls.metadata_spec = MetadataSpecCollection()
-        for base in bases:
-            if hasattr(base, "metadata_spec"):
-                cls.metadata_spec.update(base.metadata_spec)
-        Statement.process( cls )
+        cls.metadata_spec = metadata.MetadataSpecCollection()
+        for base in bases: #loop through bases (class/types) of cls
+            if hasattr( base, "metadata_spec" ): #base of class Data (object) has no metadata
+                cls.metadata_spec.update( base.metadata_spec ) #add contents of metadata spec of base class to cls
+        metadata.Statement.process( cls )
 
 class Data( object ):
     """

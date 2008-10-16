@@ -791,9 +791,9 @@ class Admin( BaseController ):
                     optional = p.get("is_"+name, None)
                     if optional and optional == 'true':
                         # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
-                        setattr(lda.metadata,name,None)
+                        setattr( lda.metadata, name, None )
                     else:
-                        setattr(lda.metadata,name,spec.unwrap(p.get(name, None), p))
+                        setattr( lda.metadata, name, spec.unwrap( p.get ( name, None ) ) )
     
                 lda.metadata.dbkey = dbkey
                 lda.datatype.after_edit( lda )
@@ -803,9 +803,9 @@ class Admin( BaseController ):
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
                 for name, spec in lda.datatype.metadata_spec.items():
                     # We need to be careful about the attributes we are resetting
-                    if name != 'name' and name != 'info' and name != 'dbkey':
+                    if name not in [ 'name', 'info', 'dbkey' ]:
                         if spec.get( 'default' ):
-                            setattr( lda.metadata,name,spec.unwrap( spec.get( 'default' ), spec ))
+                            setattr( lda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
                 lda.datatype.set_meta( lda )
                 lda.datatype.after_edit( lda )
                 trans.app.model.flush()
@@ -822,17 +822,12 @@ class Admin( BaseController ):
                 # case it resorts to the old dbkey.  Setting the dbkey
                 # sets it properly in the metadata
                 lda.metadata.dbkey = lda.dbkey
-            metadata = list()
-            # a list of MetadataParemeters
-            for name, spec in lda.datatype.metadata_spec.items():
-                if spec.visible:
-                    metadata.append( spec.wrap( lda.metadata.get(name), lda ) )
             # let's not overwrite the imported datatypes module with the variable datatypes?
+            ### the built-in 'id' is overwritten in lots of places as well
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
             return trans.fill_template( "/admin/library/dataset.mako", 
                                         dataset=lda, 
-                                        metadata=metadata,
                                         datatypes=ldatatypes,
                                         err=None,
                                         msg=msg )

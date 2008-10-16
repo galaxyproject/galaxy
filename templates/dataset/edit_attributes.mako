@@ -46,14 +46,14 @@ elif isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
             </div>
             <div style="clear: both"></div>
           </div> 
-          %for element in metadata:
-              %if element.display:
+          %for name, spec in data.metadata.spec.items():
+              %if spec.visible:
                 <div class="form-row">
                   <label>
-                      ${element.spec.desc}:
+                      ${spec.desc}:
                   </label>
                   <div style="float: left; width: 250px; margin-right: 10px;">
-                      ${element.get_html()}
+                      ${data.metadata.get_html_by_name( name )}
                   </div>
                   <div style="clear: both"></div>
                 </div>
