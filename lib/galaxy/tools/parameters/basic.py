@@ -1013,16 +1013,6 @@ class DataToolParameter( ToolParameter ):
         else:
             self.options = dynamic_options.DynamicOptions( options, self )
         self.is_dynamic = self.options is not None
-        self.security_dict = {}
-        for security_check in elem.findall( "security_check" ):
-            group = security_check.get( 'group', None )
-            assert group is not None, "security_check elements require a group attribute"
-            action = security_check.get( 'action', None )
-            assert action is not None, "security_check elements require an action attribute"
-            try:
-                self.security_dict[ group ].append( action )
-            except:
-                self.security_dict[ group ] = [ action ]
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         filter_value = None
@@ -1045,27 +1035,14 @@ class DataToolParameter( ToolParameter ):
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( hda.hid )
-                # FIXME: This needs to be rewritten to use the new permissions model
-                if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and hda.visible and trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
-                    if self.security_dict:
-                        passed_security_check = True
-                        for group_name, permitted_actions in self.security_dict.items():
-                            # Make sure the dataset belongs to the group
-                            group = trans.app.security_agent.get_group_by_name( group_name )
-                            if not trans.app.security_agent.dataset_has_group( hda.dataset_id, group.id ):
-                                passed_security_check = False
-                                break
-                            # Make sure the permitted_actions are available on the dataset for the group
-                            group_dataset_permitted_actions = trans.app.security_agent.get_dataset_permissions( hda.dataset, group_id=group.id )[1]
-                            actions_allowed = True
-                            for action in permitted_actions:
-                                if not action in group_dataset_permitted_actions:
-                                    actions_allowed = False
-                                    break
-                            if not actions_allowed:
-                                passed_security_check = False
-                                break
-                        if not passed_security_check:
+                if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
+                    hda.visible and \
+                    trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
+                    # If we are sending data to an external application, then we need to make sure there are no roles
+                    # associated with the dataset that restrict it's access from "public".  We determine this by sending
+                    # None as the user to the allow_action method.
+                    if self.tool.tool_type == 'data_destination':
+                        if not trans.app.security_agent.allow_action( None, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
                             continue
                     if self.options and hda.get_dbkey() != filter_value:
                         continue
