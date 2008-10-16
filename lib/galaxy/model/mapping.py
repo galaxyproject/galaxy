@@ -149,26 +149,25 @@ Role.table = Table( "role", metadata,
     Column( "type", TEXT, index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-# TODO: should role_ids be made in to another association table?
-ActionDatasetRolesAssociation.table = Table( "action_dataset_roles_association", metadata,
+ActionDatasetRoleAssociation.table = Table( "action_dataset_role_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "action", TEXT ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "role_ids", JSONType(), default=[] ) )
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
 DefaultUserPermissions.table = Table( "default_user_permissions", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "action", TEXT ),
-    Column( "role_ids", JSONType(), default=[] ) )
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
 DefaultHistoryPermissions.table = Table( "default_history_permissions", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "action", TEXT ),
-    Column( "role_ids", JSONType(), default=[] ) )
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
 LibraryFolderDatasetAssociation.table = Table( "library_folder_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
@@ -431,10 +430,12 @@ assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
                      group=relation( Group, backref = "members" ) ) )
 
 assign_mapper( context, DefaultUserPermissions, DefaultUserPermissions.table,
-    properties=dict( user=relation( User, backref = "default_permissions" ) ) )
+    properties=dict( user=relation( User, backref = "default_permissions" ),
+                     role=relation( Role ) ) )
 
 assign_mapper( context, DefaultHistoryPermissions, DefaultHistoryPermissions.table,
-    properties=dict( history=relation( History, backref = "default_permissions" ) ) )
+    properties=dict( history=relation( History, backref = "default_permissions" ),
+                     role=relation( Role ) ) )
 
 assign_mapper( context, Role, Role.table,
     properties=dict(
@@ -457,9 +458,10 @@ assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
     )
 )
 
-assign_mapper( context, ActionDatasetRolesAssociation, ActionDatasetRolesAssociation.table,
+assign_mapper( context, ActionDatasetRoleAssociation, ActionDatasetRoleAssociation.table,
     properties=dict(
-        dataset=relation( Dataset, backref="actions" )
+        dataset=relation( Dataset, backref="actions" ),
+        role=relation( Role, backref="actions" )
     )
 )
 
@@ -648,7 +650,7 @@ def init( file_path, url, engine_options={}, create_tables=False ):
             role.flush()
             ura = UserRoleAssociation( user = user, role = role )
             ura.flush()
-            dup = DefaultUserPermissions( user = user, action = result.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action, roles = [ role ] )
+            dup = DefaultUserPermissions( user = user, action = result.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action, role = role )
             dup.flush()
     return result
     

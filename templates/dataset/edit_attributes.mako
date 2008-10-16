@@ -171,4 +171,30 @@ elif isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 ${render_permission_form( data.dataset, h.url_for( action='edit' ), id_name, data.id, trans.user.all_roles() )}
 
+%elif trans.user:
+
+<div class="toolForm">
+    <div class="toolFormTitle">View permissions</div>
+    <div class="toolFormBody">
+        <div class="form-row">
+            %if data.dataset.actions:
+                <ul>
+                    %for action, roles in trans.app.security_agent.get_dataset_permissions( data.dataset ).items():
+                        %if roles:
+                            <li>${action.description}</li>
+                            <ul>
+                                %for role in roles:
+                                    <li>${role.name}</li>
+                                %endfor
+                            </ul>
+                        %endif
+                    %endfor
+                </ul>
+            %else:
+                <p>This dataset is accessible by everyone (it is public).</p>
+            %endif
+        </div>
+    </div>
+</div>
+
 %endif

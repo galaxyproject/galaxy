@@ -19,7 +19,7 @@ class RBACAgent:
         DATASET_EDIT_METADATA = Action(
             "edit metadata", "Role members can edit this dataset's metadata in the library", "grant" ),
         DATASET_MANAGE_PERMISSIONS = Action(
-            "manage permissions", "Role members can manage the groups and group permitted actions associated with this dataset", "grant" ),
+            "manage permissions", "Role members can manage the roles associated with this dataset", "grant" ),
         DATASET_ACCESS = Action(
             "access", "Role members can import this dataset into their history for analysis", "restrict" )
     )
@@ -90,15 +90,14 @@ class GalaxyRBACAgent( RBACAgent ):
             # grant-style actions fall through to the false below
         else:
             user_role_ids = sorted( [ r.id for r in user.all_roles() ] )
-            for adra in dataset.actions:
-                if action.action != adra.action:
-                    continue
+            perms = self.get_dataset_permissions( dataset )
+            if action in perms.keys():
 		# the filter() returns a list of the dataset's role ids
 		# of which the user is not a member.  so an empty list
 		# means the user has all of the required roles.
-                if not filter( lambda x: x not in user_role_ids, adra.role_ids ):
+                if not filter( lambda x: x not in user_role_ids, [ r.id for r in perms[ action ] ] ):
                     return True # user has all of the roles required to perform the action
-                break # fall through to the false.  user is missing at least one required role
+                # fall through to the false.  user is missing at least one required role
         return False # default is to reject
     def guess_derived_permissions_for_datasets( self, datasets=[] ):
         """Returns a dict of { action : [ role, role, ... ] } for the output dataset based upon provided datasets"""
@@ -108,26 +107,23 @@ class GalaxyRBACAgent( RBACAgent ):
                 dataset = dataset.dataset
             these_perms = {}
             # initialize blank perms
-            for a in self.get_actions():
-                these_perms[ a.action ] = []
+            for action in self.get_actions():
+                these_perms[ action ] = []
             # collect this dataset's perms
-            for adra in dataset.actions:
-                these_perms[ adra.action ] = adra.role_ids
+            these_perms = self.get_dataset_permissions( dataset )
             # join or intersect this dataset's permissions with others
-            for action_name, role_ids in these_perms.items():
-                if action_name not in perms.keys():
-                    perms[ action_name ] = role_ids
+            for action, roles in these_perms.items():
+                if action not in perms.keys():
+                    perms[ action ] = roles
                 else:
-                    if self.get_action( action_name ).model == 'grant':
+                    if action.model == 'grant':
                         # intersect existing roles with new roles
-                        perms[ action_name ] = filter( lambda x: x in perms[ action_name ], role_ids )
-                    elif self.get_action( action_name ).model == 'restrict':
+                        perms[ action ] = filter( lambda x: x in perms[ action ], roles )
+                    elif action.model == 'restrict':
                         # join existing roles with new roles
-                        perms[ action_name ].extend( filter( lambda x: x not in perms[ action_name ], role_ids ) )
-        ##perms = [ ( k, tuple( v ) ) for k, v in perms.items() ] # a list of ( action, ( role_id, role_id, ... ) ) tuples
+                        perms[ action ].extend( filter( lambda x: x not in perms[ action ], roles ) )
         return perms
     def associate_components( self, **kwd ):
-        ##assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to associate.'
         if 'user' in kwd:
             if 'group' in kwd:
                 return self.associate_user_group( kwd['user'], kwd['group'] )
@@ -137,8 +133,8 @@ class GalaxyRBACAgent( RBACAgent ):
             if 'group' in kwd:
                 return self.associate_group_role( kwd['group'], kwd['role'] )
         if 'action' in kwd:
-            if 'dataset' in kwd and 'roles' in kwd:
-                return self.associate_action_dataset_roles( kwd['action'], kwd['dataset'], kwd['roles'] )
+            if 'dataset' in kwd and 'role' in kwd:
+                return self.associate_action_dataset_role( kwd['action'], kwd['dataset'], kwd['role'] )
         raise 'No valid method of associating provided components: %s' % kwd
     def associate_user_group( self, user, group ):
         assoc = self.model.UserGroupAssociation( user, group )
@@ -152,8 +148,8 @@ class GalaxyRBACAgent( RBACAgent ):
         assoc = self.model.GroupRoleAssociation( group, role )
         assoc.flush()
         return assoc
-    def associate_action_dataset_roles( self, action, dataset, roles ):
-        assoc = self.model.ActionDatasetRolesAssociation( action, dataset, roles )
+    def associate_action_dataset_role( self, action, dataset, role ):
+        assoc = self.model.ActionDatasetRoleAssociation( action, dataset, role )
         assoc.flush()
         return assoc
     def create_private_user_role( self, user ):
@@ -184,15 +180,18 @@ class GalaxyRBACAgent( RBACAgent ):
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
-            dup = self.model.DefaultUserPermissions( user, action, roles )
-            dup.flush()
+            for role in roles:
+                dup = self.model.DefaultUserPermissions( user, action, role )
+                dup.flush()
         if history:
             for history in user.active_histories:
                 self.history_set_default_permissions( history, permissions=permissions, dataset=dataset )
     def user_get_default_permissions( self, user ):
         perms = {}
+        for action in self.get_actions():
+            perms[ action ] = []
         for dup in user.default_permissions:
-            perms[ dup.action ] = dup.role_ids
+            perms[ self.get_action( dup.action ) ].append( dup.role )
         return perms
     def history_set_default_permissions( self, history, permissions = {}, dataset = False, bypass_manage_permission = False ):
         if not history.user:
@@ -205,8 +204,9 @@ class GalaxyRBACAgent( RBACAgent ):
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
-            dhp = self.model.DefaultHistoryPermissions( history, action, roles )
-            dhp.flush()
+            for role in roles:
+                dhp = self.model.DefaultHistoryPermissions( history, action, role )
+                dhp.flush()
         if dataset:
             for hda_in_history in history.datasets:
                 if len( hda_in_history.dataset.library_associations ):
@@ -218,40 +218,37 @@ class GalaxyRBACAgent( RBACAgent ):
                     self.set_dataset_permissions( hda_in_history.dataset, permissions )
     def history_get_default_permissions( self, history ):
         perms = {}
+        for action in self.get_actions():
+            perms[ action ] = []
         for dhp in history.default_permissions:
-            perms[ dhp.action ] = dhp.role_ids
+            perms[ self.get_action( dhp.action ) ].append( dhp.role )
         return perms
     def set_dataset_permissions( self, dataset, permissions={} ):
 	# to delete permission on an action, pass in a blank list of
-	# role ids with that action.  leaving an action out of the perm
+	# roles with that action.  leaving an action out of the perm
 	# dict simply leaves those perms untouched (if they exist)
-        for action, role_ids in permissions.items():
+        incoming_actions = []
+        for action in permissions.keys():
             if isinstance( action, Action ):
                 action = action.action
-            for adra in dataset.actions:
-                if adra.action != action:
-                    continue
-                if not role_ids:
-                    adra.delete()
-                else:
-                    adra.set_roles( role_ids )
+            incoming_actions.append( action )
+        for adra in dataset.actions:
+            if adra.action in incoming_actions:
+                adra.delete()
                 adra.flush()
-                break
-            else:
-                if role_ids:
-                    self.associate_components( action=action, dataset=dataset, roles=role_ids )
+        for action, roles in permissions.items():
+            if isinstance( action, Action ):
+                action = action.action
+            for role in roles:
+                self.associate_components( action=action, dataset=dataset, role=role )
     def get_dataset_permissions( self, dataset ):
         if not isinstance( dataset, self.model.Dataset ):
             dataset = dataset.dataset
         perms = {}
-        for k, v in self.model.Dataset.permitted_actions.items():
-            for adra in dataset.actions:
-                if adra.action != v.action:
-                    continue
-                perms[ v.action ] = adra.role_ids
-                break
-            else:
-                perms[ v.action ] = []
+        for action in self.model.Dataset.permitted_actions.__dict__.values():
+            perms[ action ] = []
+        for adra in dataset.actions:
+            perms[ self.get_action( adra.action ) ].append( adra.role )
         return perms
     def copy_dataset_permissions( self, src, dst ):
         if not isinstance( src, self.model.Dataset ):

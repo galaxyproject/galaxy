@@ -3,8 +3,7 @@
         in_roles = []
         for a in current_actions:
             if a.action == action.action:
-                for role_id in a.role_ids:
-                    in_roles.append( trans.app.model.Role.get( role_id ) )
+                in_roles.append( a.role )
         out_roles = filter( lambda x: x not in in_roles, all_roles )
     %>
     <p><label>${action.description}</label></p>

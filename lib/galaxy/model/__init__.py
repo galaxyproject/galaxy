@@ -217,39 +217,23 @@ class Role( object ):
         self.type = type
         self.deleted = deleted
 
-class ActionObjectRolesAssociation( object ):
-    """
-    Base class for an action->something->roles association, so set_roles
-    doesn't have to be a member of each class that uses it.
-    """
-    def set_roles( self, roles ):
-        """
-        Convenience method to allow roles to be a list of Roles or role ids.
-        """
-        def get_id( x ):
-            if isinstance( x, Role ):
-                return x.id
-            else:
-                return x
-        self.role_ids = map( get_id, roles )
-
-class ActionDatasetRolesAssociation( ActionObjectRolesAssociation ):
-    def __init__( self, action, dataset, roles ):
+class ActionDatasetRoleAssociation( object ):
+    def __init__( self, action, dataset, role ):
         self.action = action
         self.dataset = dataset
-        self.set_roles( roles )
+        self.role = role
 
-class DefaultUserPermissions( ActionObjectRolesAssociation ):
-    def __init__( self, user, action, roles ):
+class DefaultUserPermissions( object ):
+    def __init__( self, user, action, role ):
         self.user = user
         self.action = action
-        self.set_roles( roles )
+        self.role = role
 
-class DefaultHistoryPermissions( ActionObjectRolesAssociation ):
-    def __init__( self, history, action, roles ):
+class DefaultHistoryPermissions( object ):
+    def __init__( self, history, action, role ):
         self.history = history
         self.action = action
-        self.set_roles( roles )
+        self.role = role
 
 class Dataset( object ):
     states = Bunch( NEW = 'new',
