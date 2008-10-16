@@ -161,7 +161,7 @@ class HistoryDatasetAssociation( object ):
 
     def get_metadata( self ):
         if not hasattr( self, '_metadata_collection' ):
-            self._metadata_collection = MetadataCollection( self, self.datatype.metadata_spec )
+            self._metadata_collection = MetadataCollection( self )
         return self._metadata_collection
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
@@ -192,8 +192,6 @@ class HistoryDatasetAssociation( object ):
 
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
-        if hasattr( self, '_metadata_collection' ):
-            del self._metadata_collection
         datatypes_registry.change_datatype( self, new_ext )
     def get_size( self ):
         """Returns the size of the data on disk"""

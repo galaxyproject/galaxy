@@ -24,7 +24,7 @@ class Alignment( Sequence ):
 
     """Add metadata elements"""
     MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
-    MetadataElement( name="species_chromosomes", desc="Species Chromosomes", value={}, param=metadata.PythonObjectParameter, readonly=True, no_value={}, to_string=str )
+    MetadataElement( name="species_chromosomes", desc="Species Chromosomes", value={}, param=metadata.PythonObjectParameter, readonly=True, no_value={}, to_string=str, visible=False )
 
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
