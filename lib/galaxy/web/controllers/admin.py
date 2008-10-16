@@ -73,7 +73,7 @@ class Admin( BaseController ):
                     .add_input( 'hidden', '', 'create', 'submitted', use_label = False  )
                     .add_input( 'hidden', '', 'id', id, use_label = False  ) )
         return trans.fill_template( '/admin/dataset_security/roles.mako',
-                                    roles=trans.app.model.Role.query().all(),
+                                    roles=trans.app.model.Role.query().order_by( trans.app.model.Role.table.c.name ).all(),
                                     msg=msg )
     @web.expose
     def role( self, trans, id=None, **kwd ):
@@ -99,12 +99,12 @@ class Admin( BaseController ):
         out_users = []
         in_groups = []
         out_groups = []
-        for user in sorted( trans.app.model.User.query().all(), lambda x, y: cmp( x.email, y.email ) ):
+        for user in sorted( trans.app.model.User.query().all(), lambda x, y: cmp( x.email.lower(), y.email.lower() ) ):
             if user in [ x.user for x in role.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
                 out_users.append( ( user.id, user.email ) )
-        for group in sorted( trans.app.model.Group.query().all(), lambda x,y: cmp( x.name, y.name ) ):
+        for group in sorted( trans.app.model.Group.query().all(), lambda x,y: cmp( x.name.lower(), y.name.lower() ) ):
             if group in [ x.group for x in role.groups ]:
                 in_groups.append( ( group.id, group.name ) )
             else:
@@ -381,7 +381,7 @@ class Admin( BaseController ):
         msg = params.msg
         # Get all users
         users = []
-        for user in sorted( trans.app.model.User.query().all(), lambda x, y: cmp( x.email, y.email ) ):
+        for user in sorted( trans.app.model.User.query().all(), lambda x, y: cmp( x.email.lower(), y.email.lower() ) ):
             users.append( ( user.id,
                             escape( user.email, entities ) ) )
         return trans.fill_template( '/admin/dataset_security/users.mako',
@@ -403,7 +403,7 @@ class Admin( BaseController ):
                              .select_from( ( outerjoin( trans.app.model.Group, trans.app.model.UserGroupAssociation ) ) \
                                            .outerjoin( trans.app.model.User ) ) \
                             .filter( and_( trans.app.model.Group.deleted == False, trans.app.model.User.id == user_id ) ).all(), \
-                            lambda x, y: cmp( x.name, y.name ) ):
+                            lambda x, y: cmp( x.name.lower(), y.name.lower() ) ):
             groups.append( ( group.id,
                              escape( group.name, entities ) ) )
         # Get the roles associated with the user

@@ -7,44 +7,50 @@
 %>
 
 ## Render a row
-<%def name="render_row( role )">
-    <td>
-        %if not role.type == galaxy.model.Role.types.PRIVATE:
-            <a href="${h.url_for( action='role', id=role.id, edit=True )}">${role.name}</a>
-        %else:
-            ${role.name}
-        %endif
-    </td>
-    <td>${role.type}</td>
-    <td>
-        <ul>
-            %for x in role.users:
-                <li><a href="${h.url_for( action='user_groups_roles', user_id=x.user.id, user_email=x.user.email )}">${x.user.email}</a></li>
-            %endfor
-        </ul>
-    </td>
-    <td>
-        <ul>
-            %for x in role.groups:
-                <li><a href="${h.url_for( action='group_members', group_id=x.group.id, group_name=escape( x.group.name, entities ) )}">${x.group.name}</a></li>
-            %endfor
-        </ul>
-    </td>
+<%def name="render_row( role, ctr, anchored, curr_anchor )">
+    %if ctr % 2 == 1:
+        <tr class="odd_row">
+    %else:
+        <tr>
+    %endif
+        <td>
+            %if not role.type == galaxy.model.Role.types.PRIVATE:
+                <a href="${h.url_for( action='role', id=role.id, edit=True )}">${role.name}</a>
+            %else:
+                ${role.name}
+            %endif
+        </td>
+        <td>${role.type}</td>
+        <td>
+            <ul>
+                %for x in role.users:
+                    <li><a href="${h.url_for( action='user_groups_roles', user_id=x.user.id, user_email=x.user.email )}">${x.user.email}</a></li>
+                %endfor
+            </ul>
+        </td>
+        <td>
+            <ul>
+                %for x in role.groups:
+                    <li><a href="${h.url_for( action='group_members', group_id=x.group.id, group_name=escape( x.group.name, entities ) )}">${x.group.name}</a></li>
+                %endfor
+            </ul>
+            %if not anchored:
+                <a name="${curr_anchor}"></a>
+                <div style="float: right;"><a href="#TOP">top</a></div>
+            %endif
+        </td>
+    </tr>
 </%def>
 
 %if msg:
     <div class="donemessage">${msg}</div>
 %endif
 
-<h2>Roles</h2>
+<a name="TOP"><h2>Roles</h2></a>
 
 <ul class="manage-table-actions">
-    <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='roles', create=True )}">Create a new role</a>
-    </li>
-    <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='deleted_roles' )}">Manage deleted roles</a>
-    </li>
+    <li><a class="action-button" href="${h.url_for( controller='admin', action='roles', create=True )}">Create a new role</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='admin', action='deleted_roles' )}">Manage deleted roles</a></li>
 </ul>
 
 %if len( roles ) == 0:
@@ -77,40 +83,27 @@
             <td>Users</td>
             <td>Groups</td>
         </tr>
-        %for role in roles:
+        %for ctr, role in enumerate( roles ):
             %if render_quick_find and not role.name.upper().startswith( curr_anchor ):
                 <% anchored = False %>
             %endif
-            %if ctr % 2 == 1:
-                <div class="odd_row">
-            %endif
             %if render_quick_find and role.name.upper().startswith( curr_anchor ):
                 %if not anchored:
-                    <tr>
-                        <td colspan="4" class=panel-body">
-                            <a name="${curr_anchor}"></a>
-                            <div style="float: right;"><a href="#TOP">quick find</a></div>
-                            <% anchored = True %>
-                        </td>
-                    </tr>
+                    ${render_row( role, ctr, anchored, curr_anchor )}
+                    <% anchored = True %>
+                %else:
+                    ${render_row( role, ctr, anchored, curr_anchor )}
                 %endif
-                <tr>${render_row( role )}</tr>
             %elif render_quick_find:
                 %for anchor in anchors[ anchor_loc: ]:
                     %if role.name.upper().startswith( anchor ):
                         %if not anchored:
-                            <tr>
-                                <td colspan="6" class="panel-body">
-                                    <a name="${anchor}"></a>
-                                    <div style="float: right;"><a href="#TOP">quick find</a></div>
-                                    <% 
-                                        curr_anchor = anchor
-                                        anchored = True 
-                                    %>
-                                </td>
-                            </tr>
+                            <% curr_anchor = anchor %>
+                            ${render_row( role, ctr, anchored, curr_anchor )}
+                            <% anchored = True %>
+                        %else:
+                            ${render_row( role, ctr, anchored, curr_anchor )}
                         %endif
-                        <tr>${render_row( role )}</tr>
                         <% 
                             anchor_loc = anchors.index( anchor )
                             break 
@@ -118,13 +111,8 @@
                     %endif
                 %endfor
             %else:
-                <tr>${render_row( role )}</tr>
+                ${render_row( role, ctr, True, '' )}
             %endif
-            %if ctr % 2 == 1:
-                </div>
-            %endif
-            <% ctr += 1 %>
         %endfor
     </table>
 %endif
-</div>
