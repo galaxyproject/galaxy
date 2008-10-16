@@ -11,7 +11,7 @@ $(function(){
 </%def>
 
 <%def name="render_select( name, options )">
-    <select name="${name}" id="${name}" style="min-width: 250px;" multiple>
+    <select name="${name}" id="${name}" style="min-width: 250px; height: 150px;" multiple>
         %for option in options:
             <option value="${option[0]}">${option[1]}</option>
         %endfor

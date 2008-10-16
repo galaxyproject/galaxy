@@ -6,10 +6,10 @@
                 in_roles.append( a.role )
         out_roles = filter( lambda x: x not in in_roles, all_roles )
     %>
-    <p><label>${action.description}</label></p>
+    <p><label>${action.action}:</label> ${action.description}</p>
     <div style="float: left; margin-right: 10px;">
         Roles associated:<br/>
-        <select name="${action_key}_in" id="${action_key}_in_select" class="in_select" style="min-width: 250px;" multiple>
+        <select name="${action_key}_in" id="${action_key}_in_select" class="in_select" style="width: 200px; height: 150px;" multiple>
             %for role in in_roles:
                 <option value="${role.id}">${role.name}</option>
             %endfor
@@ -18,7 +18,7 @@
     </div>
     <div>
         Roles not associated:<br/>
-        <select name="${action_key}_out" id="${action_key}_out_select" style="min-width: 250px;" multiple>
+        <select name="${action_key}_out" id="${action_key}_out_select" style="width: 200px; height: 150px;" multiple>
             %for role in out_roles:
                 <option value="${role.id}">${role.name}</option>
             %endfor
@@ -68,9 +68,6 @@
         <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
             <input type="hidden" name="${id_name}" value="${id}">
             <div class="form-row">
-                <label>
-                    To perform these actions on datasets associated with them, a user must be a member of all selected roles.
-                </label>
             </div>
             %for k, v in trans.app.model.Dataset.permitted_actions.items():
                 <div class="form-row">

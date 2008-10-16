@@ -36,6 +36,11 @@ class Admin( BaseController ):
         msg = params.msg
         return trans.fill_template( '/admin/index.mako', msg=msg )
     @web.expose
+    def center( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        return trans.fill_template( '/admin/center.mako' )
+    @web.expose
     def reload_tool( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
