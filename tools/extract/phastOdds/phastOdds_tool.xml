@@ -4,6 +4,7 @@
   <inputs>
     <param format="interval" name="input" type="data" label="Interval file">
       <validator type="unspecified_build" message="Unspecified build, this tool works with data from genome builds hg17. Click the pencil icon in your history item to set the genome build."/>
+      <validator type="dataset_metadata_in_file" filename="phastOdds.loc" metadata_name="dbkey" metadata_column="0" message="Sequences are currently unavailable for the specified build." />
     </param>
     <param name="score_file" type="select" label="Available datasets">
       <options from_file="phastOdds.loc">
