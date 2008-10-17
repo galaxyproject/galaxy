@@ -14,7 +14,7 @@
         <request_param galaxy_name="description" remote_name="description" missing="" />
         <request_param galaxy_name="name" remote_name="name" missing="FlyMine query" />
         <request_param galaxy_name="info" remote_name="info" missing="" />
-        <request_param galaxy_name="data_type" remote_name="data_type" missing="interval" />
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="txt" />
     </request_param_translation>
     <uihints minwidth="800"/>
     <outputs>

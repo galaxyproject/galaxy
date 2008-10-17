@@ -4,6 +4,7 @@
   <inputs>
     <param format="interval" name="input" type="data" label="Convert coordinates of">
       <validator type="unspecified_build" />
+      <validator type="dataset_metadata_in_file" filename="liftOver.loc" metadata_name="dbkey" metadata_column="0" message="Liftover mappings are currently not available for the specified build." />
     </param>
     <param name="to_dbkey" type="select" label="To">
       <options from_file="liftOver.loc">
@@ -39,11 +40,7 @@ Make sure that the genome build of the input dataset is specified (click the pen
 
 .. class:: warningmark
 
-The **To** list will be empty if we don't carry any liftover mappings corresponding to the genome build of the input dataset. 
-
-.. class:: warningmark
-
-This tool will only work on interval datasets with chromosome in column 1, start co-ordinate in column 2 and end co-ordinate in column 3. If this is not the case, it will return empty output datasets.
+This tool will only work on interval datasets with chromosome in column 1, start co-ordinate in column 2 and end co-ordinate in column 3. If this is not the case with any line of the input dataset, the tool will return empty output datasets.
 
 -----
 

@@ -150,7 +150,6 @@
     <sniffer order="05" type="galaxy.datatypes.sequence:Maf"/>
     <sniffer order="10" type="galaxy.datatypes.sequence:Lav"/>
     <sniffer order="15" type="galaxy.datatypes.sequence:Fasta"/>
-    <sniffer order="20" type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer order="25" type="galaxy.datatypes.sequence:FastqSolexa"/>
     <sniffer order="30" type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer order="35" type="galaxy.datatypes.images:Html"/>

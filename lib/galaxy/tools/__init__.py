@@ -23,6 +23,7 @@ from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.model import directory_hash_id
 from galaxy.util.none_like import NoneDataset
+from galaxy.datatypes import sniff
 
 log = logging.getLogger( __name__ )
 
@@ -1140,22 +1141,21 @@ class Tool:
                 description = param_dict.get( 'position', '' )
                 if not description:
                     description = 'unknown position'
-            data_type = param_dict.get( 'data_type ')
+            data_type = param_dict.get( 'data_type' )
             items = out_data.items()
             for name, data in items:
                 if organism and table and description:
                     data.name  = '%s on %s: %s (%s)' % ( data.name, organism, table, description )
                 data.info = info
                 data.dbkey = dbkey
-                ext = data_type
-                try: 
-                    ext = data_type_to_ext[ data_type ]
+                try:
+                    data_type = data_type_to_ext[ data_type ]
                 except: 
                     pass
-                if ext not in app.datatypes_registry.datatypes_by_extension: 
-                    ext = 'interval'
-                data = app.datatypes_registry.change_datatype( data, ext )
-                # store external data source's request parameters temporarily in output file
+                if data_type not in app.datatypes_registry.datatypes_by_extension: 
+                    data_type = 'interval'
+                data = app.datatypes_registry.change_datatype( data, data_type )
+                # Store external data source's request parameters temporarily in output file
                 out = open( data.file_name, 'w' )
                 for key, value in param_dict.items():
                     print >> out, '%s\t%s' % ( key, value )
@@ -1168,9 +1168,15 @@ class Tool:
         # tag set in the tool config.
         if self.tool_type == 'data_source':
             name, data = out_data.items()[0]
-            if data.state == data.states.OK and not data.info:
-                data.info = data.name
-            if not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
+            if data.state == data.states.OK:
+                data.name = param_dict.get( 'name', data.name )
+                data.info = param_dict.get( 'info', data.name )
+                data.dbkey = param_dict.get( 'dbkey', data.dbkey )
+                data.extension = param_dict.get( 'data_type', data.extension )
+            if data.extension == 'txt':
+                data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order )
+                data = app.datatypes_registry.change_datatype( data, data_type )
+            elif not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
                 data.set_meta()
                 if data.missing_meta(): 
                     data = app.datatypes_registry.change_datatype( data, 'tabular' )
