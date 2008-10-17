@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 
 ## Render a row
-<%def name="render_row( user, ctr, anchored, curr_anchor, check )">
+<%def name="render_row( role, ctr, anchored, curr_anchor, check )">
     %if ctr % 2 == 1:
         <tr class="odd_row">
     %else:
@@ -9,9 +9,9 @@
     %endif
         <td>
             %if check:
-                <input type="checkbox" name="members" value="${user.id}" checked/> ${user.email}
+                <input type="checkbox" name="roles" value="${role.id}" checked/> ${role.name}
             %else:
-                <input type="checkbox" name="members" value="${user.id}"/> ${user.email}
+                <input type="checkbox" name="roles" value="${role.id}"/> ${role.name}
             %endif
         </td>
     </tr>
@@ -21,15 +21,15 @@
     <div class="donemessage">${msg}</div>
 %endif
 
-<a name="TOP"><h2>Members of group '${group.name}'</h2></a>
+<a name="TOP"><h2>Roles associated with group '${group.name}'</h2></a>
 
-%if len( users ) == 0:
-    <tr><td>There are no Galaxy users</td></tr>
+%if len( roles ) == 0:
+    <tr><td>There are no Galaxy roles</td></tr>
 %else:
-    <form name="update_group_members" action="${h.url_for( controller='admin', action='update_group_members', group_id=group.id )}" method="post" >
+    <form name="update_group_roles" action="${h.url_for( controller='admin', action='update_group_roles', group_id=group.id )}" method="post" >
         <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
             <%
-                render_quick_find = len( users ) > 50
+                render_quick_find = len( roles ) > 50
                 ctr = 0
             %>
             %if render_quick_find:
@@ -48,36 +48,36 @@
                     </td>
                 </tr>
             %endif
-            <tr class="header"><td>Check to add member</td></tr>
-            %for ctr, user in enumerate( users ):
+            <tr class="header"><td>Check to add role</td></tr>
+            %for ctr, role in enumerate( roles ):
                 <% check = False %>
-                %for member in members:
-                    %if member.email == user.email:
+                %for group_role in group_roles:
+                    %if group_role.name == role.name:
                         <% 
                             check = True
                             break
                         %>
                     %endif
                 %endfor
-                %if render_quick_find and not user.email.upper().startswith( curr_anchor ):
+                %if render_quick_find and not role.name.upper().startswith( curr_anchor ):
                   <% anchored = False %>
                 %endif 
-                %if render_quick_find and user.email.upper().startswith( curr_anchor ):
+                %if render_quick_find and role.name.upper().startswith( curr_anchor ):
                     %if not anchored:
-                        ${render_row( user, ctr, anchored, curr_anchor, check )}
+                        ${render_row( role, ctr, anchored, curr_anchor, check )}
                         <% anchored = True %>
                     %else:
-                        ${render_row( user, ctr, anchored, curr_anchor, check )}
+                        ${render_row( role, ctr, anchored, curr_anchor, check )}
                     %endif
                 %elif render_quick_find:
                     %for anchor in anchors[ anchor_loc: ]:
-                        %if user.email.upper().startswith( anchor ):
+                        %if role.name.upper().startswith( anchor ):
                             %if not anchored:
                                 <% curr_anchor = anchor %>
-                                ${render_row( user, ctr, anchored, curr_anchor, check )}
+                                ${render_row( role, ctr, anchored, curr_anchor, check )}
                                 <% anchored = True %>
                             %else:
-                                ${render_row( user, ctr, anchored, curr_anchor, check )}
+                                ${render_row( role, ctr, anchored, curr_anchor, check )}
                             %endif
                             <% 
                                 anchor_loc = anchors.index( anchor )
@@ -86,10 +86,10 @@
                         %endif
                     %endfor
                 %else:
-                    ${render_row( user, ctr, True, '', check )}
+                    ${render_row( role, ctr, True, '', check )}
                 %endif
             %endfor
-            <tr><td><button name="group_members_edit_button" value="update_group_members">Update Members</button></td></tr>
+            <tr><td><button name="group_roles_edit_button" value="update_group_roles">Update Role Associations</button></td></tr>
         </table>
     </form>
 %endif

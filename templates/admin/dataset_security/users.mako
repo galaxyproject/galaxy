@@ -1,10 +1,5 @@
 <%inherit file="/base.mako"/>
 
-<% 
-    from galaxy.web.controllers.admin import entities, unentities
-    from xml.sax.saxutils import escape, unescape 
-%>
-
 %if msg:
     <div class="donemessage">${msg}</div>
 %endif
@@ -37,8 +32,7 @@
         %endif
         <tr class="header"><td>Email</td></tr>
         %for ctr, user in enumerate( users ):
-            <% email = unescape( user[1], unentities ) %>
-            %if render_quick_find and not email.upper().startswith( curr_anchor ):
+            %if render_quick_find and not user.email.upper().startswith( curr_anchor ):
                 <% anchored = False %>
             %endif
             %if ctr % 2 == 0:
@@ -47,13 +41,13 @@
                 <tr>
             %endif
                 <td>
-                    %if render_quick_find and email.upper().startswith( curr_anchor ):
+                    %if render_quick_find and user.email.upper().startswith( curr_anchor ):
                         %if not anchored:
                             <a name="${curr_anchor}"></a>
                             <div style="float: right;"><a href="#TOP">top</a></div>
                             <% anchored = True %>
                         %endif
-                        <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user[0], user_email=user[1] )}">${email}</a>
+                        <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user.id )}">${user.email}</a>
                     %elif render_quick_find:
                         %for anchor in anchors[ anchor_loc: ]:   
                             %if email.upper().startswith( anchor ):
@@ -65,7 +59,7 @@
                                         anchored = True 
                                     %>
                                 %endif
-                                <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user[0], user_email=user[1] )}">${email}</a>
+                                <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user.id )}">${user.email}</a>
                                 <% 
                                     anchor_loc = anchors.index( anchor )
                                     break 
@@ -73,7 +67,7 @@
                             %endif
                         %endfor
                     %else:
-                        <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user[0], user_email=user[1] )}">${email}</a>
+                        <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user.id )}">${user.email}</a>
                     %endif
                 </td>
             </tr>

@@ -128,24 +128,23 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        # This query retrieves groups that are not deleted and members of each group
-        q = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
-                         ( galaxy.model.Group.table.c.name ).label( 'group_name' ),
-                         sa.func.count( galaxy.model.User.table.c.id ).label( 'total_members' ) ),
-                       whereclause = galaxy.model.Group.table.c.deleted == False,
-                       from_obj = [ sa.outerjoin( galaxy.model.Group.table, 
-                                                  galaxy.model.UserGroupAssociation.table
-                                                ).outerjoin( galaxy.model.User.table ) ],
-                       group_by = [ galaxy.model.Group.table.c.id,
-                                    galaxy.model.Group.table.c.name ],
-                       order_by = [ galaxy.model.Group.table.c.name ] )
-        groups = []
-        for row in q.execute():
-            groups.append( ( row.group_id,
-                             escape( row.group_name, entities ),
-                             row.total_members ) )
+        # Build a list of tuples which are groups followed by lists of members and roles
+        # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
+        groups_members_roles = []
+        groups = galaxy.model.Group.query() \
+            .filter( galaxy.model.Group.table.c.deleted==False ) \
+            .order_by( galaxy.model.Group.table.c.name ) \
+            .all()
+        for group in groups:
+            members = []
+            for uga in group.members:
+                members.append( galaxy.model.User.get( uga.user_id ) )
+            roles = []
+            for gra in group.roles:
+                roles.append( galaxy.model.Role.get( gra.role_id ) )
+            groups_members_roles.append( ( group, members, roles ) )
         return trans.fill_template( '/admin/dataset_security/groups.mako', 
-                                    groups=groups, 
+                                    groups_members_roles=groups_members_roles, 
                                     msg=msg )
     @web.expose
     def create_group( self, trans, **kwd ):
@@ -153,24 +152,22 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        q = sa.select( ( ( galaxy.model.User.table.c.id ).label( 'user_id' ),
-                         ( galaxy.model.User.table.c.email ).label( 'user_email') ),
-                       from_obj = [ galaxy.model.User.table ],
-                       order_by = [ galaxy.model.User.table.c.email ] )
-        users = []
-        for row in q.execute():
-            users.append( ( row.user_id,
-                            escape( row.user_email, entities ) ) )
-        if users:
-            users = sorted( users, key=operator.itemgetter(1) )
-        return trans.fill_template( '/admin/dataset_security/group_create.mako', users=users, msg=msg )
+        users=trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all()
+        roles = trans.app.model.Role.query() \
+                .filter( galaxy.model.Role.table.c.deleted==False ) \
+                .order_by( trans.app.model.Role.table.c.name ) \
+                .all()
+        return trans.fill_template( '/admin/dataset_security/group_create.mako', 
+                                    users=users,
+                                    roles=roles,
+                                    msg=msg )
     @web.expose
     def new_group( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        name = unescape( params.name, unentities )
+        name = params.name
         if not name:
             msg = "Please enter a name"
             trans.response.send_redirect( '/admin/create_group?msg=%s' % msg )
@@ -186,82 +183,40 @@ class Admin( BaseController ):
             if members and not isinstance( members, list ):
                 # mako passes singleton lists as strings for some reason
                 members = [ members ]
-            # Handle case where admin removed all members from group
             elif members is None:
                 members = []
             for user_id in members:
                 user = galaxy.model.User.get( user_id )
                 # Create the UserGroupAssociation
-                user_group_association = galaxy.model.UserGroupAssociation( user, group )
-                user_group_association.flush()
-            msg = "The new group has been created with %s members" % str( len( members ) )
+                uga = galaxy.model.UserGroupAssociation( user, group )
+                uga.flush()
+            # Add the roles
+            roles = params.roles
+            if roles and not isinstance( roles, list ):
+                roles = [ roles ]
+            elif roles is None:
+                roles = []
+            for role_id in roles:
+                role = galaxy.model.Role.get( role_id )
+                # Create the GroupRoleAssociation
+                gra = galaxy.model.GroupRoleAssociation( group, role )
+                gra.flush()
+            msg = "The new group has been created with %s members and %s associated roles" % ( str( len( members ) ), str( len( roles ) ) )
             trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
-    @web.expose
-    def group_members( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
-        params = util.Params( kwd )
-        msg = params.msg
-        group_id = int( params.group_id )
-        group_name = unescape( params.group_name, unentities )
-        group = galaxy.model.Group.get( group_id )
-        deleted = group.deleted
-        # This query retrieves all members of the group
-        q = sa.select( ( ( galaxy.model.User.table.c.id ).label( 'user_id' ),
-                         ( galaxy.model.User.table.c.email ).label( 'user_email' ) ),
-                       whereclause = galaxy.model.UserGroupAssociation.table.c.group_id == group_id,
-                       from_obj = [ sa.outerjoin( galaxy.model.UserGroupAssociation.table, 
-                                                  galaxy.model.User.table ) ],
-                       order_by = [ 'user_email' ] )
-        members = []
-        for row in q.execute():
-            members.append( ( row.user_id,
-                              escape( row.user_email, entities ) ) )
-        if members:
-            members = sorted( members, key=operator.itemgetter(1) )
-        return trans.fill_template( '/admin/dataset_security/group_members.mako', 
-                                    group_id=group_id, 
-                                    group_name=escape( group_name, entities ),
-                                    deleted=deleted,
-                                    members=members,
-                                    msg=msg )
     @web.expose
     def group_members_edit( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        group_id = params.group_id
-        group_name = unescape( params.group_name, unentities )
-        members = params.members
-        # First get all users
-        q = sa.select( ( ( galaxy.model.User.table.c.id ).label( 'user_id' ),
-                         ( galaxy.model.User.table.c.email ).label( 'user_email' ) ),
-                       order_by = [ 'user_email' ] )
-        users = []
-        for row in q.execute():
-            users.append( ( row.user_id,
-                            escape( row.user_email, entities ) ) )
-        if users:
-            users = sorted( users, key=operator.itemgetter(1) )
-        # Then get members of the group
-        q = sa.select( ( ( galaxy.model.User.table.c.id ).label( 'user_id' ),
-                         ( galaxy.model.User.table.c.email ).label( 'user_email' ) ),
-                       whereclause = galaxy.model.UserGroupAssociation.table.c.group_id == group_id,
-                       from_obj = [ sa.outerjoin( galaxy.model.UserGroupAssociation.table, 
-                                                  galaxy.model.User.table ) ],
-                       order_by = [ 'user_email' ] )
+        group = galaxy.model.Group.get( int( params.group_id ) )
         members = []
-        for row in q.execute():
-            members.append( ( row.user_id,
-                              escape( row.user_email, entities ) ) )
-        if members:
-            members = sorted( members, key=operator.itemgetter(1) )
+        for uga in group.members:
+            members.append ( galaxy.model.User.get( uga.user_id ) )
         return trans.fill_template( '/admin/dataset_security/group_members_edit.mako', 
-                                    group_id=group_id, 
-                                    group_name=escape( group_name, entities ),
-                                    users=users,
-                                    members=members, 
+                                    group=group,
+                                    members=members,
+                                    users=galaxy.model.User.query().order_by( galaxy.model.User.table.c.email ).all(),
                                     msg=msg )
     @web.expose
     def update_group_members( self, trans, **kwd ):
@@ -283,27 +238,74 @@ class Admin( BaseController ):
         # simpler approach of deleting all existing members and creating 
         # new records for user_ids in the received members param.
         # First remove existing members that are not in the received members param
-        for user_group_assoc in group.members:
-            if user_group_assoc.user_id not in members:
+        for uga in group.members:
+            if uga.user_id not in members:
                 # Delete the UserGroupAssociation
-                user_group_assoc.delete()
-                user_group_assoc.flush()
+                uga.delete()
+                uga.flush()
         # Then add all new members to the group
         for user_id in members:
             user = galaxy.model.User.get( user_id )
             if user not in group.members:
-                user_group_association = galaxy.model.UserGroupAssociation( user, group )
-                user_group_association.flush()
+                uga = galaxy.model.UserGroupAssociation( user, group )
+                uga.flush()
         msg = "Group membership has been updated with a total of %s members" % len( members )
-        trans.response.send_redirect( '/admin/group_members?group_id=%s&group_name=%s&msg=%s' % ( str( group_id ), params.group_name, msg ) )
+        trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
+    @web.expose
+    def group_roles_edit( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        group = galaxy.model.Group.get( int( params.group_id ) )
+        group_roles = []
+        for gra in group.roles:
+            group_roles.append ( galaxy.model.Role.get( gra.role_id ) )
+        return trans.fill_template( '/admin/dataset_security/group_roles_edit.mako', 
+                                    group=group,
+                                    group_roles=group_roles,
+                                    roles=galaxy.model.Role.query().order_by( galaxy.model.Role.table.c.name ).all(),
+                                    msg=msg )
+    @web.expose
+    def update_group_roles( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        group_id = int( params.group_id )
+        roles = params.roles
+        if roles and not isinstance( roles, list ):
+            # mako passes singleton lists as strings for some reason
+            roles = [ roles ]
+        # Handle case where admin removed all members from group
+        elif roles is None:
+            roles = []
+        group = galaxy.model.Group.get( group_id )
+        # This is tricky since we have default association tables with
+        # records referring to members of this group.  Because of this,
+        # we'll need to handle changes to the member list rather than the
+        # simpler approach of deleting all existing members and creating 
+        # new records for user_ids in the received members param.
+        # First remove existing members that are not in the received members param
+        for gra in group.roles:
+            if gra.role_id not in roles:
+                # Delete the GroupRoleAssociation
+                gra.delete()
+                gra.flush()
+        # Then add all new roles to the group
+        for role_id in roles:
+            role = galaxy.model.Role.get( role_id )
+            if role not in group.roles:
+                gra = galaxy.model.GroupRoleAssociation( group, role )
+                gra.flush()
+        msg = "Group role associations have been updated with a total of %s roles" % len( roles )
+        trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
     @web.expose
     def mark_group_deleted( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        group_id = params.group_id
-        group = galaxy.model.Group.get( group_id )
+        group = galaxy.model.Group.get( int( params.group_id ) )
         group.deleted = True
         group.flush()
         msg = "The group has been marked as deleted."
@@ -314,24 +316,23 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        # This query retrieves groups that are not deleted and members of each group
-        q = sa.select( ( ( galaxy.model.Group.table.c.id ).label( 'group_id' ),
-                         ( galaxy.model.Group.table.c.name ).label( 'group_name' ),
-                         sa.func.count( galaxy.model.User.table.c.id ).label( 'total_members' ) ),
-                       whereclause = galaxy.model.Group.table.c.deleted == True,
-                       from_obj = [ sa.outerjoin( galaxy.model.Group.table, 
-                                                  galaxy.model.UserGroupAssociation.table
-                                                ).outerjoin( galaxy.model.User.table ) ],
-                       group_by = [ galaxy.model.Group.table.c.id,
-                                    galaxy.model.Group.table.c.name ],
-                       order_by = [ galaxy.model.Group.table.c.name ] )
-        groups = []
-        for row in q.execute():
-            groups.append( ( row.group_id,
-                             escape( row.group_name, entities ),
-                             row.total_members ) )
+        # Build a list of tuples which are groups followed by lists of members and roles
+        # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
+        groups_members_roles = []
+        groups = galaxy.model.Group.query() \
+            .filter( galaxy.model.Group.table.c.deleted==True ) \
+            .order_by( galaxy.model.Group.table.c.name ) \
+            .all()
+        for group in groups:
+            members = []
+            for uga in group.members:
+                members.append( galaxy.model.User.get( uga.user_id ) )
+            roles = []
+            for gra in group.roles:
+                roles.append( galaxy.model.Role.get( gra.role_id ) )
+            groups_members_roles.append( ( group, members, roles ) )
         return trans.fill_template( '/admin/dataset_security/deleted_groups.mako', 
-                                    groups=groups, 
+                                    groups_members_roles=groups_members_roles, 
                                     msg=msg )
     @web.expose
     def undelete_group( self, trans, **kwd ):
@@ -339,8 +340,7 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        group_id = params.group_id
-        group = galaxy.model.Group.get( group_id )
+        group = galaxy.model.Group.get( int( params.group_id ) )
         group.deleted = False
         group.flush()
         msg = "The group has been marked as not deleted."
@@ -351,26 +351,15 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        group_id = params.group_id
-        group = galaxy.model.Group.get( group_id )
-        # Remove members and all associations
-        for user_group_assoc in group.members:
-            user = galaxy.model.User.get( user_group_assoc.user_id )
-            # Delete DefaultUserGroupAssociations
-            for default_user_group_association in user.default_groups:
-                if default_user_group_association.group_id == group_id:
-                    default_user_group_association.delete()
-                    default_user_group_association.flush()
-                    break # Should only be 1 record
-            # Delete DefaultHistoryGroupAssociations
-            for history in user.histories:
-                for default_history_group_association in history.default_groups:
-                    if default_history_group_association.group_id == group_id:
-                        default_history_group_association.delete()
-                        default_history_group_association.flush()
-            # Delete the UserGroupAssociation
-            user_group_assoc.delete()
-            user_group_assoc.flush()
+        group = galaxy.model.Group.get( int( params.group_id ) )
+        # Remove UserGroupAssociations
+        for uga in group.users:
+            uga.delete()
+            uga.flush()
+        # Remove GroupRoleAssociations
+        for gra in group.roles:
+            gra.delete()
+            gra.flush()
         # Delete the Group
         group.delete()
         group.flush()
@@ -384,43 +373,27 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        # Get all users
-        users = []
-        for user in sorted( trans.app.model.User.query().all(), lambda x, y: cmp( x.email.lower(), y.email.lower() ) ):
-            users.append( ( user.id,
-                            escape( user.email, entities ) ) )
         return trans.fill_template( '/admin/dataset_security/users.mako',
-                                    users=users,
+                                    users=trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all(),
                                     msg=msg )
     @web.expose
     def user_groups_roles( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
+        user_id = params.user_id
         msg = params.msg
-        user_id = int( params.user_id )
-        user_email = unescape( params.user_email, unentities )
-        # Get the user
         user = trans.app.model.User.get( user_id )
-        # Get the groups to which the user belongs
-        groups = []
-        for group in sorted( trans.app.model.Group.query() \
-                             .select_from( ( outerjoin( trans.app.model.Group, trans.app.model.UserGroupAssociation ) ) \
-                                           .outerjoin( trans.app.model.User ) ) \
-                            .filter( and_( trans.app.model.Group.deleted == False, trans.app.model.User.id == user_id ) ).all(), \
-                            lambda x, y: cmp( x.name.lower(), y.name.lower() ) ):
-            groups.append( ( group.id,
-                             escape( group.name, entities ) ) )
-        # Get the roles associated with the user
-        roles = []
-        for role in user.all_roles():
-            roles.append( ( role.id,
-                            escape( role.name, entities ),
-                            escape( role.description, entities ),
-                            role.type ) )
+        # Get the groups and roles to which the user belongs
+        groups = trans.app.model.Group.query() \
+                    .select_from( ( outerjoin( trans.app.model.Group, trans.app.model.UserGroupAssociation ) ) \
+                    .outerjoin( trans.app.model.User ) ) \
+                    .filter( and_( trans.app.model.Group.deleted == False, trans.app.model.User.id == user_id ) ) \
+                    .order_by( trans.app.model.Group.table.c.name ) \
+                    .all()
+        roles = user.all_roles()
         return trans.fill_template( '/admin/dataset_security/user_groups_roles.mako', 
-                                    user_id=params.user_id, 
-                                    user_email=params.user_email,
+                                    user=user, 
                                     groups=groups,
                                     roles=roles,
                                     msg=msg )

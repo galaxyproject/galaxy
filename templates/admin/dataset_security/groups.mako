@@ -1,21 +1,34 @@
 <%inherit file="/base.mako"/>
 
-<% 
-    from galaxy.web.controllers.admin import entities, unentities
-    from xml.sax.saxutils import escape, unescape 
-%>
-
 ## Render a row
-<%def name="render_row( group_name, group, ctr, anchored, curr_anchor )">
+<%def name="render_row( group, members, roles, ctr, anchored, curr_anchor )">
     %if ctr % 2 == 1:
         <tr class="odd_row">
     %else:
         <tr>
     %endif
-        <td>${group_name}</td>
-        <td><a href="${h.url_for( controller='admin', action='group_members', group_id=group[0], group_name=group[1] )}">${group[2]}</a></td>
         <td>
-            <a href="${h.url_for( controller='admin', action='mark_group_deleted', group_id=group[0] )}">Mark group deleted</a>
+            ${group.name}
+            <a id="group-${group.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="group-${group.id}-popup">
+                <a class="action-button" href="${h.url_for( action='group_members_edit', group_id=group.id )}">Change members</a>
+                <a class="action-button" href="${h.url_for( action='group_roles_edit', group_id=group.id )}">Change associated roles</a>
+                <a class="action-button" href="${h.url_for( action='mark_group_deleted', group_id=group.id )}">Mark group deleted</a>
+            </div>
+        </td>
+        <td>
+            <ul>
+                %for user in members:
+                    <li><a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user.id )}">${user.email}</a></li>
+                %endfor
+            </ul>
+        </td>
+        <td>
+            <ul>
+                %for role in roles:
+                    <li><a href="${h.url_for( controller='admin', action='role_users_actions', role_id=role.id )}">${role.name}</a></li>
+                %endfor
+            </ul>
             %if not anchored:
                 <a name="${curr_anchor}"></a>
                 <div style="float: right;"><a href="#TOP">top</a></div>
@@ -35,12 +48,12 @@
     <li><a class="action-button" href="${h.url_for( controller='admin', action='deleted_groups' )}">Manage deleted groups</a></li>
 </ul>
 
-%if len( groups ) == 0:
+%if len( groups_members_roles ) == 0:
     There are no Galaxy groups
 %else:
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <% 
-            render_quick_find = len( groups ) > 50
+            render_quick_find = len( groups_members_roles ) > 50
             ctr = 0
         %>
         %if render_quick_find:
@@ -62,29 +75,33 @@
         <tr class="header">
             <td>Name</td>
             <td>Members</td>
-            <td>&nbsp;</td>
+            <td>Associated Roles</td>
         </tr>
-        %for ctr, group in enumerate( groups ):
-            <% group_name = unescape( group[1], unentities ) %>
-            %if render_quick_find and not group_name.upper().startswith( curr_anchor ):
+        %for ctr, group_tuple in enumerate( groups_members_roles ):
+            <%
+                group = group_tuple[0]
+                members = group_tuple[1]
+                roles = group_tuple[2]
+            %>
+            %if render_quick_find and not group.name.upper().startswith( curr_anchor ):
                 <% anchored = False %>
             %endif
-            %if render_quick_find and group_name.upper().startswith( curr_anchor ):
+            %if render_quick_find and group.name.upper().startswith( curr_anchor ):
                 %if not anchored:
-                    ${render_row( group_name, group, ctr, anchored, curr_anchor )}
+                    ${render_row( group, members, roles, ctr, anchored, curr_anchor )}
                     <% anchored = True %>
                 %else:
-                    ${render_row( group_name, group, ctr, anchored, curr_anchor )}
+                    ${render_row( group, members, roles, ctr, anchored, curr_anchor )}
                 %endif
             %elif render_quick_find:
                 %for anchor in anchors[ anchor_loc: ]:
-                    %if group_name.upper().startswith( anchor ):
+                    %if group.name.upper().startswith( anchor ):
                         %if not anchored:
                             <% curr_anchor = anchor %>
-                            ${render_row( group_name, group, ctr, anchored, curr_anchor )}
+                            ${render_row( group, members, roles, ctr, anchored, curr_anchor )}
                             <%  anchored = True %>
                         %else:
-                            ${render_row( group_name, group, ctr, anchored, curr_anchor )}
+                            ${render_row( group, members, roles, ctr, anchored, curr_anchor )}
                         %endif
                         <% 
                             anchor_loc = anchors.index( anchor )
@@ -93,7 +110,7 @@
                     %endif
                 %endfor
             %else:
-                ${render_row( group_name, group, ctr, True, '' )}
+                ${render_row( group, members, roles, ctr, True, '' )}
             %endif
         %endfor
     </table>
