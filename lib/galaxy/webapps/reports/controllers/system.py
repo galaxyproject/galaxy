@@ -2,8 +2,9 @@ import operator, os
 from datetime import datetime, timedelta
 from galaxy.webapps.reports.base.controller import *
 import pkg_resources
-pkg_resources.require( "sqlalchemy>=0.3" )
-from sqlalchemy import eagerload, desc
+pkg_resources.require( "SQLAlchemy >= 0.4" )
+from sqlalchemy.orm import eagerload
+from sqlalchemy import desc
 import logging
 log = logging.getLogger( __name__ )
 
