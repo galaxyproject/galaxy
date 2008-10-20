@@ -296,7 +296,7 @@ class GalaxyRBACAgent( RBACAgent ):
         assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to check for associations.'
         if 'dataset' in kwd:
             if 'action' in kwd:
-                return self.model.ActionDatasetRolesAssociation.filter_by( action = kwd['action'].action, dataset_id = kwd['dataset'].id ).first()
+                return self.model.ActionDatasetRoleAssociation.filter_by( action = kwd['action'].action, dataset_id = kwd['dataset'].id ).first()
         elif 'user' in kwd:
             if 'group' in kwd:
                 return self.model.UserGroupAssociation.filter_by( group_id = kwd['group'].id, user_id = kwd['user'].id ).first()

@@ -62,64 +62,154 @@ class Admin( BaseController ):
     def roles( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
-        p = util.Params( kwd )
-        msg = p.msg
-        if 'create' in kwd:
-            if p.create == 'submitted':
-                role = trans.app.model.Role( name = util.restore_text( p.name ),
-                                             description = util.restore_text( p.description ),
-                                             type = trans.app.model.Role.types.ADMIN )
-                role.flush()
-                trans.response.send_redirect( url_for( action='roles', associate=True ) )
-            return trans.show_form( 
-                web.FormBuilder( action = web.url_for(), title = "Create a new role", name="role", submit_text = "Create" )
-                    .add_text( name = "name", label = "Name", value = "New Role" )
-                    .add_text( name = "description", label = "Description", value = "" )
-                    .add_input( 'hidden', '', 'create', 'submitted', use_label = False  )
-                    .add_input( 'hidden', '', 'id', id, use_label = False  ) )
+        params = util.Params( kwd )
+        msg = params.msg
         return trans.fill_template( '/admin/dataset_security/roles.mako',
                                     roles=trans.app.model.Role.query().order_by( trans.app.model.Role.table.c.name ).all(),
                                     msg=msg )
     @web.expose
-    def role( self, trans, id=None, **kwd ):
+    def create_role( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
-        p = util.Params( kwd )
-        msg = p.msg
-        if not id:
-            return trans.show_error_message( "Required role id was not received in the request parameters" )
-        role = trans.app.model.Role.get( id )
-        if not role:
-            return trans.show_error_message( "Invalid role id '%s' received in the request parameters" % str( id ) )
-        if role.type == role.types.PRIVATE:
-            return trans.show_error_message( "You cannot modify the members of a private role" )
-        if 'submitted' in kwd:
-            # TODO: remove dups and dhps for any users who've just been disassociated
-            if p.submitted == 'associate':
-                in_users = [ trans.app.model.User.get( x ) for x in listify( p.in_users ) ]
-                in_groups = [ trans.app.model.Group.get( x ) for x in listify( p.in_groups ) ]
-                trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
-                role.refresh()
+        params = util.Params( kwd )
+        msg = params.msg
+        users=trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all()
+        groups = trans.app.model.Group.query() \
+                .filter( galaxy.model.Group.table.c.deleted==False ) \
+                .order_by( trans.app.model.Group.table.c.name ) \
+                .all()
+        return trans.fill_template( '/admin/dataset_security/role_create.mako', 
+                                    users=users,
+                                    groups=groups,
+                                    msg=msg )
+    @web.expose
+    def new_role( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        name = params.name
+        description = params.description
+        if not name or not description:
+            msg = "Please enter a name and a description"
+            trans.response.send_redirect( '/admin/create_role?msg=%s' % msg )
+        elif trans.app.model.Role.filter_by( name=name ).first():
+            msg = "A role with that name already exists"
+            trans.response.send_redirect( '/admin/create_role?msg=%s' % msg )
+        else:
+            # Create the role
+            role = galaxy.model.Role( name=name,
+                                      description=description,
+                                      type=trans.app.model.Role.types.ADMIN )
+            role.flush()
+            # Add the users
+            users = listify( params.users )
+            for user_id in users:
+                user = galaxy.model.User.get( user_id )
+                # Create the UserRoleAssociation
+                ura = galaxy.model.UserRoleAssociation( user, role )
+                ura.flush()
+            # Add the groups
+            groups = listify( params.groups )
+            for group_id in groups:
+                group = galaxy.model.Group.get( group_id )
+                # Create the GroupRoleAssociation
+                gra = galaxy.model.GroupRoleAssociation( group, role )
+                gra.flush()
+            msg = "The new role has been created with %s associated users and %s associated groups" % ( str( len( users ) ), str( len( groups ) ) )
+            trans.response.send_redirect( '/admin/roles?msg=%s' % msg )
+    @web.expose
+    def role( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        role = trans.app.model.Role.get( int( params.role_id ) )
         in_users = []
         out_users = []
         in_groups = []
         out_groups = []
-        for user in sorted( trans.app.model.User.query().all(), lambda x, y: cmp( x.email.lower(), y.email.lower() ) ):
+        for user in trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all():
             if user in [ x.user for x in role.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
                 out_users.append( ( user.id, user.email ) )
-        for group in sorted( trans.app.model.Group.query().all(), lambda x,y: cmp( x.name.lower(), y.name.lower() ) ):
+        for group in trans.app.model.Group.query().order_by( trans.app.model.Group.table.c.name ).all():
             if group in [ x.group for x in role.groups ]:
                 in_groups.append( ( group.id, group.name ) )
             else:
                 out_groups.append( ( group.id, group.name ) )
+        # Build a list of tuples that are LibraryFolderDatasetAssociationss followed by a list of actions
+        # whose ActionDatasetRoleAssociation is associated with the Role
+        # [ ( LibraryFolderDatasetAssociation [ action, action ] ) ]
+        library_dataset_actions = []
+        for adra in role.actions:
+            for lfda in trans.app.model.LibraryFolderDatasetAssociation.filter( dataset_id==dataset.id ).all():
+                if adra.dataset in lfda.folder.active_datasets:
+                    library_dataset_actions.append( ( lfda, adra.dataset.actions ) )
         return trans.fill_template( '/admin/dataset_security/role.mako',
                                     role=role,
                                     in_users=in_users,
                                     out_users=out_users,
                                     in_groups=in_groups,
-                                    out_groups=out_groups )
+                                    out_groups=out_groups,
+                                    library_dataset_actions=library_dataset_actions,
+                                    msg=msg )
+    @web.expose
+    def role_members_edit( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        role = galaxy.model.Role.get( int( params.role_id ) )
+        in_users = [ trans.app.model.User.get( x ) for x in listify( params.in_users ) ]
+        for ura in role.users:
+            user = trans.app.model.User.get( ura.user_id )
+            if user not in in_users:
+                # Delete DefaultUserPermissions for previously associated users that have been removed from the role
+                for dup in user.default_permissions:
+                    if role == dup.role:
+                        dup.delete()
+                        dup.flush()
+                # Delete DefaultHistoryPermissions for previously associated users that have been removed from the role
+                for history in user.histories:
+                    for dhp in history.default_permissions:
+                        if role == dhp.role:
+                            dhp.delete()
+                            dhp.flush()
+        in_groups = [ trans.app.model.Group.get( x ) for x in listify( params.in_groups ) ]
+        trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
+        role.refresh()
+        msg = "The role has been updated with %s associated users and %s associated groups" % ( str( len( in_users ) ), str( len( in_groups ) ) )
+        trans.response.send_redirect( '/admin/roles?msg=%s' % msg )
+
+    @web.expose
+    def update_group_members( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        group_id = int( params.group_id )
+        members = listify( params.members )
+        group = galaxy.model.Group.get( group_id )
+        # This is tricky since we have default association tables with
+        # records referring to members of this group.  Because of this,
+        # we'll need to handle changes to the member list rather than the
+        # simpler approach of deleting all existing members and creating 
+        # new records for user_ids in the received members param.
+        # First remove existing members that are not in the received members param
+        for uga in group.members:
+            if uga.user_id not in members:
+                # Delete the UserGroupAssociation
+                uga.delete()
+                uga.flush()
+        # Then add all new members to the group
+        for user_id in members:
+            user = galaxy.model.User.get( user_id )
+            if user not in group.members:
+                uga = galaxy.model.UserGroupAssociation( user, group )
+                uga.flush()
+        msg = "Group membership has been updated with a total of %s members" % len( members )
+        trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
 
     # Galaxy Group Stuff
     @web.expose
@@ -179,12 +269,7 @@ class Admin( BaseController ):
             group = galaxy.model.Group( name )
             group.flush()
             # Add the members
-            members = params.members
-            if members and not isinstance( members, list ):
-                # mako passes singleton lists as strings for some reason
-                members = [ members ]
-            elif members is None:
-                members = []
+            members = listify( params.members )
             for user_id in members:
                 user = galaxy.model.User.get( user_id )
                 # Create the UserGroupAssociation
@@ -224,13 +309,7 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         group_id = int( params.group_id )
-        members = params.members
-        if members and not isinstance( members, list ):
-            # mako passes singleton lists as strings for some reason
-            members = [ members ]
-        # Handle case where admin removed all members from group
-        elif members is None:
-            members = []
+        members = listify( params.members )
         group = galaxy.model.Group.get( group_id )
         # This is tricky since we have default association tables with
         # records referring to members of this group.  Because of this,
@@ -251,6 +330,8 @@ class Admin( BaseController ):
                 uga.flush()
         msg = "Group membership has been updated with a total of %s members" % len( members )
         trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
+    # TODO: We probably don't want the following 2 methods since managing roles should be
+    # restricted to the Role page due to private roles and rules governing them
     @web.expose
     def group_roles_edit( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
@@ -272,13 +353,7 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         group_id = int( params.group_id )
-        roles = params.roles
-        if roles and not isinstance( roles, list ):
-            # mako passes singleton lists as strings for some reason
-            roles = [ roles ]
-        # Handle case where admin removed all members from group
-        elif roles is None:
-            roles = []
+        roles = listify( params.roles )
         group = galaxy.model.Group.get( group_id )
         # This is tricky since we have default association tables with
         # records referring to members of this group.  Because of this,
@@ -297,7 +372,7 @@ class Admin( BaseController ):
             if role not in group.roles:
                 gra = galaxy.model.GroupRoleAssociation( group, role )
                 gra.flush()
-        msg = "Group role associations have been updated with a total of %s roles" % len( roles )
+        msg = "Group updated with a total of %s associated roles" % len( roles )
         trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
     @web.expose
     def mark_group_deleted( self, trans, **kwd ):
@@ -373,11 +448,23 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        # Build a list of tuples which are users followed by lists of groups and roles
+        # [ ( user, [ group, group, group ], [ role, role ] ), ( user, [ group, group ], [ role ] ) ]
+        users_groups_roles = []
+        users = trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all()
+        for user in users:
+            groups = []
+            for uga in user.groups:
+                groups.append( galaxy.model.Group.get( uga.group_id ) )
+            roles = []
+            for ura in user.roles:
+                roles.append( galaxy.model.Role.get( ura.role_id ) )
+            users_groups_roles.append( ( user, groups, roles ) )
         return trans.fill_template( '/admin/dataset_security/users.mako',
-                                    users=trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all(),
+                                    users_groups_roles=users_groups_roles,
                                     msg=msg )
     @web.expose
-    def user_groups_roles( self, trans, **kwd ):
+    def user( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
@@ -392,28 +479,52 @@ class Admin( BaseController ):
                     .order_by( trans.app.model.Group.table.c.name ) \
                     .all()
         roles = user.all_roles()
-        return trans.fill_template( '/admin/dataset_security/user_groups_roles.mako', 
+        return trans.fill_template( '/admin/dataset_security/user.mako', 
                                     user=user, 
                                     groups=groups,
                                     roles=roles,
                                     msg=msg )
-
     @web.expose
-    def specified_users_group_libraries( self, trans, **kwd ):
+    def user_groups_edit( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        library_ids = params.library_ids.split( ',' )
-        libraries = []
-        for id in library_ids:
-            library = trans.app.model.Library.get( id )
-            libraries.append( library )
-        return trans.fill_template( '/admin/library/specified_users_group_libraries.mako', 
-                                    user_email=params.user_email, 
-                                    group_name=params.group_name, 
-                                    libraries=libraries,
+        user = galaxy.model.User.get( int( params.user_id ) )
+        user_groups = []
+        for uga in user.groups:
+            user_groups.append ( galaxy.model.Group.get( uga.group_id ) )
+        groups = galaxy.model.Group.query() \
+            .filter( galaxy.model.Group.table.c.deleted==False ) \
+            .order_by( galaxy.model.Group.table.c.name ) \
+            .all()
+        return trans.fill_template( '/admin/dataset_security/user_groups_edit.mako', 
+                                    user=user,
+                                    user_groups=user_groups,
+                                    groups=groups,
                                     msg=msg )
+    @web.expose
+    def update_user_groups( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        user_id = int( params.user_id )
+        groups = listify( params.groups )
+        user = galaxy.model.User.get( user_id )
+        # First remove existing UserGroupAssociations that are not in the received groups param
+        for uga in user.groups:
+            if uga.group_id not in groups:
+                # Delete the UserGroupAssociation
+                uga.delete()
+                uga.flush()
+        # Then add all new groups to the user
+        for group_id in groups:
+            group = galaxy.model.Group.get( group_id )
+            if group not in user.groups:
+                uga = galaxy.model.UserGroupAssociation( user, group )
+                uga.flush()
+        msg = "The user now belongs to a total of %s groups" % len( groups )
+        trans.response.send_redirect( '/admin/users?msg=%s' % msg )
 
     # Galaxy Library Stuff
     @web.expose
@@ -593,8 +704,9 @@ class Admin( BaseController ):
             folder.add_dataset( dataset, genome_build=last_used_build )
             dataset.flush()
             if roles:
-                adra = galaxy.model.ActionDatasetRolesAssociation( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, roles )
-                adra.flush()
+                for role in roles:
+                    adra = galaxy.model.ActionDatasetRoleAssociation( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, role )
+                    adra.flush()
             shutil.move( temp_name, dataset.dataset.file_name )
             dataset.dataset.state = dataset.dataset.states.OK
             dataset.init_meta()
@@ -631,7 +743,8 @@ class Admin( BaseController ):
                     space_to_tab = True
             roles = []
             if 'roles' in kwd:
-                roles = listify( kwd['roles'] )
+                for role_id in listify( kwd['roles'] ):
+                    roles.append( galaxy.model.Role.get( role_id ) )
             temp_name = ""
             data_list = []
             created_datasets = []

@@ -14,24 +14,26 @@
         <tr>
     %endif
         <td>
+            ${role.name}
             %if not role.type == galaxy.model.Role.types.PRIVATE:
-                <a href="${h.url_for( action='role', id=role.id, edit=True )}">${role.name}</a>
-            %else:
-                ${role.name}
+                <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                <div popupmenu="role-${role.id}-popup">
+                    <a class="action-button" href="${h.url_for( action='role', role_id=role.id )}">Change associated users and groups</a>
+                </div>
             %endif
         </td>
         <td>${role.type}</td>
         <td>
             <ul>
-                %for x in role.users:
-                    <li><a href="${h.url_for( action='user_groups_roles', user_id=x.user.id, user_email=x.user.email )}">${x.user.email}</a></li>
+                %for ura in role.users:
+                    <li><a href="${h.url_for( action='user_groups_edit', user_id=ura.user.id )}">${ura.user.email}</a></li>
                 %endfor
             </ul>
         </td>
         <td>
             <ul>
-                %for x in role.groups:
-                    <li><a href="${h.url_for( action='group_members', group_id=x.group.id, group_name=escape( x.group.name, entities ) )}">${x.group.name}</a></li>
+                %for gra in role.groups:
+                    <li><a href="${h.url_for( action='group_members_edit', group_id=gra.group.id )}">${gra.group.name}</a></li>
                 %endfor
             </ul>
             %if not anchored:
@@ -49,7 +51,7 @@
 <a name="TOP"><h2>Roles</h2></a>
 
 <ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='admin', action='roles', create=True )}">Create a new role</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='admin', action='create_role' )}">Create a new role</a></li>
     <li><a class="action-button" href="${h.url_for( controller='admin', action='deleted_roles' )}">Manage deleted roles</a></li>
 </ul>
 

@@ -1,5 +1,9 @@
 <%inherit file="/base.mako"/>
 
+<% 
+    import galaxy.model
+%>
+
 ## Render a row
 <%def name="render_row( group, members, roles, ctr, anchored, curr_anchor )">
     %if ctr % 2 == 1:
@@ -12,21 +16,28 @@
             <a id="group-${group.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="group-${group.id}-popup">
                 <a class="action-button" href="${h.url_for( action='group_members_edit', group_id=group.id )}">Change members</a>
-                <a class="action-button" href="${h.url_for( action='group_roles_edit', group_id=group.id )}">Change associated roles</a>
                 <a class="action-button" href="${h.url_for( action='mark_group_deleted', group_id=group.id )}">Mark group deleted</a>
             </div>
         </td>
         <td>
             <ul>
                 %for user in members:
-                    <li><a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user.id )}">${user.email}</a></li>
+                    <li>
+                        <a href="${h.url_for( controller='admin', action='user', user_id=user.id )}">${user.email}</a>
+                    </li>
                 %endfor
             </ul>
         </td>
         <td>
             <ul>
                 %for role in roles:
-                    <li><a href="${h.url_for( controller='admin', action='role_users_actions', role_id=role.id )}">${role.name}</a></li>
+                    <li>
+                        %if not role.type == galaxy.model.Role.types.PRIVATE:
+                            <a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.name}</a>
+                        %else:
+                            ${role.name}
+                        %endif
+                    </li>
                 %endfor
             </ul>
             %if not anchored:

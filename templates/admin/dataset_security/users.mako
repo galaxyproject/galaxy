@@ -1,17 +1,62 @@
 <%inherit file="/base.mako"/>
 
+<% 
+    import galaxy.model
+%>
+
+## Render a row
+<%def name="render_row( user, groups, roles, ctr, anchored, curr_anchor )">
+    %if ctr % 2 == 1:
+        <tr class="odd_row">
+    %else:
+        <tr>
+    %endif
+        <td>
+            <a href="${h.url_for( controller='admin', action='user', user_id=user.id )}">${user.email}</a>
+            <a id="user-${user.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="user-${user.id}-popup">
+                <a class="action-button" href="${h.url_for( action='user_groups_edit', user_id=user.id )}">Change associated groups</a>
+            </div>
+        </td>
+        <td>
+            <ul>
+                %for group in groups:
+                    <li>${group.name}</li>
+                %endfor
+            </ul>
+        </td>
+        <td>
+            <ul>
+                %for role in roles:
+                    <li>
+                        %if not role.type == galaxy.model.Role.types.PRIVATE:
+                            <a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.name}</a>
+                        %else:
+                            ${role.name}
+                        %endif
+                    </li>
+                %endfor
+            </ul>
+            %if not anchored:
+                <a name="${curr_anchor}"></a>
+                <div style="float: right;"><a href="#TOP">top</a></div>
+            %endif
+        </td>
+    </tr>
+</%def>
+
 %if msg:
     <div class="donemessage">${msg}</div>
 %endif
 
 <a name="TOP"><h2>Users</h2></a>
 
-%if len( users ) == 0:
+%if len( users_groups_roles ) == 0:
     There are no Galaxy users
 %else:
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <%
-            render_quick_find = len( users ) > 50
+            render_quick_find = len( users_groups_roles ) > 50
             ctr = 0
         %>
         %if render_quick_find:
@@ -30,47 +75,46 @@
                 </td>
             </tr>
         %endif
-        <tr class="header"><td>Email</td></tr>
-        %for ctr, user in enumerate( users ):
+        <tr class="header">
+            <td>Email</td>
+            <td>Groups</td>
+            <td>Associated Roles</td>
+        </tr>
+        %for ctr, user_tuple in enumerate( users_groups_roles ):
+            <%
+                user = user_tuple[0]
+                groups = user_tuple[1]
+                roles = user_tuple[2]
+            %>
             %if render_quick_find and not user.email.upper().startswith( curr_anchor ):
                 <% anchored = False %>
             %endif
-            %if ctr % 2 == 0:
-                <tr class="odd_row">
+            %if render_quick_find and user.email.upper().startswith( curr_anchor ):
+                %if not anchored:
+                    ${render_row( user, groups, roles, ctr, anchored, curr_anchor )}
+                    <% anchored = True %>
+                %else:
+                    ${render_row( user, groups, roles, ctr, anchored, curr_anchor )}
+                %endif
+            %elif render_quick_find:   
+                %for anchor in anchors[ anchor_loc: ]:
+                   %if user.email.upper().startswith( anchor ):
+                       %if not anchored:
+                           <% curr_anchor = anchor %>
+                           ${render_row( user, groups, roles, ctr, anchored, curr_anchor )}
+                           <%  anchored = True %>
+                       %else:
+                           ${render_row( user, groups, roles, ctr, anchored, curr_anchor )}
+                       %endif
+                       <% 
+                           anchor_loc = anchors.index( anchor )
+                           break 
+                       %>
+                   %endif
+                %endfor
             %else:
-                <tr>
+                ${render_row( user, groups, roles, ctr, True, '' )}
             %endif
-                <td>
-                    %if render_quick_find and user.email.upper().startswith( curr_anchor ):
-                        %if not anchored:
-                            <a name="${curr_anchor}"></a>
-                            <div style="float: right;"><a href="#TOP">top</a></div>
-                            <% anchored = True %>
-                        %endif
-                        <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user.id )}">${user.email}</a>
-                    %elif render_quick_find:
-                        %for anchor in anchors[ anchor_loc: ]:   
-                            %if email.upper().startswith( anchor ):
-                                %if not anchored:
-                                    <a name="${anchor}"></a>
-                                    <div style="float: right;"><a href="#TOP">top</a></div>
-                                    <% 
-                                        curr_anchor = anchor
-                                        anchored = True 
-                                    %>
-                                %endif
-                                <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user.id )}">${user.email}</a>
-                                <% 
-                                    anchor_loc = anchors.index( anchor )
-                                    break 
-                                %>
-                            %endif
-                        %endfor
-                    %else:
-                        <a href="${h.url_for( controller='admin', action='user_groups_roles', user_id=user.id )}">${user.email}</a>
-                    %endif
-                </td>
-            </tr>
         %endfor
     </table>
 %endif

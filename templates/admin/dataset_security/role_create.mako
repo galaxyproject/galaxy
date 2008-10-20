@@ -7,12 +7,12 @@
     %else:
         <tr>
     %endif
-        <td><input type="checkbox" name="members" value="${user.id}"/> ${user.email}</td>
+        <td><input type="checkbox" name="users" value="${user.id}"/> ${user.email}</td>
     </tr>
 </%def>
 
-## Render a role row
-<%def name="render_role_row( role, ctr, anchored, curr_anchor )">
+## Render a group row
+<%def name="render_group_row( group, ctr, anchored, curr_anchor )">
     %if ctr % 2 == 1:
         <tr class="odd_row">
     %else:
@@ -21,9 +21,9 @@
         <td>
             %if not anchored:
                 <div style="float: right;"><a href="#TOP">top</a></div>
-                <a name="${curr_anchor}"><input type="checkbox" name="roles" value="${role.id}"/> ${role.name}</a>
+                <a name="${curr_anchor}"><input type="checkbox" name="groups" value="${group.id}"/> ${group.name}</a>
             %else:
-                <input type="checkbox" name="roles" value="${role.id}"/> ${role.name}
+                <input type="checkbox" name="groups" value="${group.id}"/> ${group.name}
             %endif
         </td>
     </tr>
@@ -33,12 +33,15 @@
     <div class="donemessage">${msg}</div>
 %endif
 
-<a name="TOP"><h2>Create Group</h2></a>
+<a name="TOP"><h2>Create Role</h2></a>
   
 
-<form name="group_create" action="${h.url_for( controller='admin', action='new_group' )}" method="post" >
+<form name="role_create" action="${h.url_for( controller='admin', action='new_role' )}" method="post" >
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-        <tr><td colspan="2">Name: <input  name="name" type="textfield" value="" size=40"></td></tr>
+        <tr>
+            <td>Name: <input  name="name" type="textfield" value="" size=40"></td>
+            <td>Description: <input  name="description" type="textfield" value="" size=40"></td>
+        </tr>
         <%
             render_quick_find = len( users ) > 50
             ctr = 0
@@ -61,7 +64,7 @@
         %endif
         <tr class="header">
             <td>Check to add user</td>
-            <td>Check to add role</td>
+            <td>Check to add group</td>
         </tr>
         <tr>
             ## Render users
@@ -76,26 +79,26 @@
             <td valign="top">
                 <% curr_anchor = 'A' %>
                 <table border="0" cellspacing="0" cellpadding="0" width="100%">
-                    %for ctr, role in enumerate( roles ):
-                        %if render_quick_find and not role.name.upper().startswith( curr_anchor ):
+                    %for ctr, group in enumerate( groups ):
+                        %if render_quick_find and not group.name.upper().startswith( curr_anchor ):
                           <% anchored = False %>
                         %endif 
-                        %if render_quick_find and role.name.upper().startswith( curr_anchor ):
+                        %if render_quick_find and group.name.upper().startswith( curr_anchor ):
                             %if not anchored:
-                                ${render_role_row( role, ctr, anchored, curr_anchor )}
+                                ${render_group_row( group, ctr, anchored, curr_anchor )}
                                 <% anchored = True %>
                             %else:
-                                ${render_role_row( role, ctr, anchored, curr_anchor )}
+                                ${render_group_row( group, ctr, anchored, curr_anchor )}
                             %endif
                         %elif render_quick_find:
                             %for anchor in anchors[ anchor_loc: ]:
-                                %if role.name.upper().startswith( anchor ):
+                                %if group.name.upper().startswith( anchor ):
                                     %if not anchored:
                                         <% curr_anchor = anchor %>
-                                        ${render_role_row( role, ctr, anchored, curr_anchor )}
+                                        ${render_group_row( group, ctr, anchored, curr_anchor )}
                                         <% anchored = True %>
                                     %else:
-                                        ${render_role_row( role, ctr, anchored, curr_anchor )}
+                                        ${render_group_row( group, ctr, anchored, curr_anchor )}
                                     %endif
                                     <% 
                                         anchor_loc = anchors.index( anchor )
@@ -104,12 +107,12 @@
                                 %endif
                             %endfor
                         %else:
-                            ${render_role_row( role, ctr, True, '' )}
+                            ${render_group_row( group, ctr, True, '' )}
                         %endif
                     %endfor
                 </table>
             </td>
         </tr>
-        <tr><td colspan="2"><button name="create_group_button" value="group_create">Create</button></td></tr>
+        <tr><td colspan="2"><button name="create_role_button" value="role_create">Create</button></td></tr>
     </table>
 </form>

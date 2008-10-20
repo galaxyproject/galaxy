@@ -1,13 +1,12 @@
 <%inherit file="/base.mako"/>
-<%def name="title()">Associate role with users and groups</%def>
 
 <%def name="javascripts()">
-${parent.javascripts()}
-<script type="text/javascript">
-$(function(){
-    $("input:text:first").focus();
-})
-</script>
+    ${parent.javascripts()}
+    <script type="text/javascript">
+        $(function(){
+            $("input:text:first").focus();
+        })
+    </script>
 </%def>
 
 <%def name="render_select( name, options )">
@@ -44,42 +43,37 @@ $().ready(function() {
 </script>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Associate role with users and groups</div>
+    <div class="toolFormTitle">Role '${role.name}'</div>
     <div class="toolFormBody">
-    <form name="associate_role_user_group" id="associate_role_user_group" action="${h.url_for( action='role', id=role.id, submitted='associate' )}" method="post" >
-        <div class="form-row">
-            <label>
-                Select users and groups to associate with this role: ${role.name}.
-            </label>
-        </div>
-        <div class="form-row">
-            <div style="float: left; margin-right: 10px;">
-                Users associated:<br/>
-                ${render_select( "in_users", in_users )}<br/>
-                <input type="submit" id="users_remove" value=">>"/>
+        <form name="associate_role_user_group" id="associate_role_user_group" action="${h.url_for( action='role_members_edit', role_id=role.id )}" method="post" >
+            <div class="form-row">
+                <div style="float: left; margin-right: 10px;">
+                    Users associated with '${role.name}'<br/>
+                    ${render_select( "in_users", in_users )}<br/>
+                    <input type="submit" id="users_remove" value=">>"/>
+                </div>
+                <div>
+                    Users not associated with '${role.name}'<br/>
+                    ${render_select( "out_users", out_users )}<br/>
+                    <input type="submit" id="users_add" value="<<"/>
+                </div>
             </div>
-            <div>
-                Users not associated:<br/>
-                ${render_select( "out_users", out_users )}<br/>
-                <input type="submit" id="users_add" value="<<"/>
+            <div class="form-row">
+                <div style="float: left; margin-right: 10px;">
+                    Groups associated with '${role.name}'<br/>
+                    ${render_select( "in_groups", in_groups )}<br/>
+                    <input type="submit" id="groups_remove" value=">>"/>
+                </div>
+                <div>
+                    Groups not associated with '${role.name}'<br/>
+                    ${render_select( "out_groups", out_groups )}<br/>
+                    <input type="submit" id="groups_add" value="<<"/>
+                </div>
             </div>
-        </div>
-        <div class="form-row">
-            <div style="float: left; margin-right: 10px;">
-                Groups associated:<br/>
-                ${render_select( "in_groups", in_groups )}<br/>
-                <input type="submit" id="groups_remove" value=">>"/>
+            <div class="form-row">
+                <input type="submit" name="submit" value="Save"/>
             </div>
-            <div>
-                Groups not associated:<br/>
-                ${render_select( "out_groups", out_groups )}<br/>
-                <input type="submit" id="groups_add" value="<<"/>
-            </div>
-        </div>
-        <div class="form-row">
-            <input type="submit" name="submit" value="Save"/>
-        </div>
-  </form>
-  </div>
+        </form>
+    </div>
 </div>
 <p/>
