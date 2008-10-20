@@ -44,6 +44,9 @@ class DefaultToolAction( object ):
                             assoc.dataset = new_data
                             assoc.flush()
                             data = new_data
+                # TODO, Nate: Make sure the permitted actions here are appropriate.
+                if data and not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=data ):
+                    raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
             if isinstance( input, DataToolParameter ):
                 if isinstance( value, list ):
@@ -80,6 +83,14 @@ class DefaultToolAction( object ):
                 data = NoneDataset( datatypes_registry = trans.app.datatypes_registry )
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
+        
+        # Determine output dataset permission/roles list
+        existing_datasets = [ inp for inp in inp_data.values() if inp ]
+        if existing_datasets:
+            output_permissions = trans.app.security_agent.guess_derived_permissions_for_datasets( existing_datasets )
+        else:
+            # No valid inputs, we will use history defaults
+            output_permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
         # Build name for output datasets based on tool name and input names
         if len( input_names ) == 1:
             on_text = input_names[0]
@@ -133,6 +144,7 @@ class DefaultToolAction( object ):
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
                 # Commit the dataset immediately so it gets database assigned unique id
                 data.flush()
+                trans.app.security_agent.set_dataset_permissions( data.dataset, output_permissions )
             # Create an empty file immediately
             open( data.file_name, "w" ).close()
             # This may not be neccesary with the new parent/child associations
@@ -192,6 +204,9 @@ class DefaultToolAction( object ):
             job.add_parameter( name, value )
         for name, dataset in inp_data.iteritems():
             if dataset:
+                # TODO, Nate: Make sure the permitted actions here are appropriate.
+                if not trans.app.security_agent.allow_action( trans.user, dataset.permitted_actions.DATASET_ACCESS, dataset=dataset ):
+                    raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 job.add_input_dataset( name, dataset )
             else:
                 job.add_input_dataset( name, None )
@@ -203,7 +218,15 @@ class DefaultToolAction( object ):
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
         # from being queued.
         if 'REDIRECT_URL' in incoming:
-            redirect_url = tool.parse_redirect_url( inp_data, incoming )
+            # Get the dataset - there should only be 1
+            for name in inp_data.keys():
+                dataset = inp_data[ name ]
+            redirect_url = tool.parse_redirect_url( dataset, incoming )
+            # GALAXY_URL should be include in the tool params to enable the external application 
+            # to send back to the current Galaxy instance
+            GALAXY_URL = incoming.get( 'GALAXY_URL', None )
+            assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
+            redirect_url += "&GALAXY_URL=%s" % GALAXY_URL
             # Job should not be queued, so set state to ok
             job.state = JOB_OK
             job.info = "Redirected to: %s" % redirect_url

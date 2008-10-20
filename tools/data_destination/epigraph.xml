@@ -1,17 +1,24 @@
 <?xml version="1.0"?>
-<tool name="Perform genome" id="epigraph_export">
+<tool name="Perform genome" id="epigraph_export" tool_type="data_destination">
   <description> analysis and prediction with EpiGRAPH</description>
   <redirect_url_params>GENOME=${input1.dbkey} NAME=${input1.name} INFO=${input1.info}</redirect_url_params>
   <inputs>
-    <param format="bed" name="input1" type="data" label="Send this dataset to EpiGRAPH">
+    <param name="input1" type="data" format="bed" label="Send this dataset to EpiGRAPH" help="Query missing? See TIP below">
       <validator type="unspecified_build" />
     </param>
     <param name="REDIRECT_URL" type="hidden" value="http://epigraph.mpi-inf.mpg.de/WebGRAPH_Public_Test/faces/DataImport.jsp" />
     <param name="DATA_URL" type="baseurl" value="/datasets" />
-    <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=epigraph_import" />
+    <param name="GALAXY_URL" type="baseurl"  value="/tool_runner?tool_id=epigraph_import"/>
   </inputs>
   <outputs/>
   <help>
+
+ .. class:: infomark
+
+**TIP:** Data sent to EpiGRAPH must be "publicly accessible" ( no roles should be associated with the dataset that restrict it's access ).  Click the pencil icon in the history item to change the dataset's permissions if you are permitted to do so.
+
+-----
+
 **What it does**
 
 This tool sends the selected dataset to EpiGRAPH for in-depth analysis and prediction.
