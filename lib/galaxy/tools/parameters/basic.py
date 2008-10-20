@@ -989,7 +989,8 @@ class DataToolParameter( ToolParameter ):
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
         # Add metadata validator
-        self.validators.append( validation.MetadataValidator() )
+        if not str_bool( elem.get( 'no_validation', False ) ):
+            self.validators.append( validation.MetadataValidator() )
         # Build tuple of classes for supported data formats
         formats = []
         self.extensions = elem.get( 'format', 'data' ).split( "," )
@@ -1100,7 +1101,7 @@ class DataToolParameter( ToolParameter ):
                 pass #no valid options
         def dataset_collector( datasets ):
             def is_convertable( dataset ):
-                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats, converter_safe = True ) #need to assume converter_safe = True, since we don't know about other parameter values here
+                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats, converter_safe = self.converter_safe( None, trans ) )
                 if target_ext is not None:
                     return True
                 return False
@@ -1173,8 +1174,10 @@ class DataToolParameter( ToolParameter ):
             return []
 
     def converter_safe( self, other_values, trans ):
-        if not hasattr( trans, 'workflow_building_mode' ) or trans.workflow_building_mode:
+        if self.tool.has_multiple_pages or not hasattr( trans, 'workflow_building_mode' ) or trans.workflow_building_mode:
             return False
+        if other_values is None:
+            return True # we don't know other values, so we can't check, assume ok
         converter_safe = [True]
         def visitor( prefix, input, value, parent = None ):
             if isinstance( input, SelectToolParameter ) and self.name in input.get_dependencies():
