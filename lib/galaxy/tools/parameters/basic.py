@@ -1174,7 +1174,7 @@ class DataToolParameter( ToolParameter ):
             return []
 
     def converter_safe( self, other_values, trans ):
-        if self.tool.has_multiple_pages or not hasattr( trans, 'workflow_building_mode' ) or trans.workflow_building_mode:
+        if not hasattr( trans, 'has_multiple_pages' ) or self.tool.has_multiple_pages or not hasattr( trans, 'workflow_building_mode' ) or trans.workflow_building_mode:
             return False
         if other_values is None:
             return True # we don't know other values, so we can't check, assume ok
