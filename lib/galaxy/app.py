@@ -41,6 +41,11 @@ class UniverseApplication( object ):
             if heartbeat.Heartbeat:
                 self.heartbeat = heartbeat.Heartbeat()
                 self.heartbeat.start()
+        # Enable the memdump signal catcher if configured and available
+        if self.config.use_memdump:
+            from galaxy.util import memdump
+            if memdump.Memdump:
+                self.memdump = memdump.Memdump()
     def shutdown( self ):
         self.job_stop_queue.shutdown()
         self.job_queue.shutdown()

@@ -56,6 +56,7 @@ class Configuration( object ):
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "" )
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "" )
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', "False" ) )
+        self.use_memdump = kwargs.get( 'use_memdump', False )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,flybase,elegans" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )

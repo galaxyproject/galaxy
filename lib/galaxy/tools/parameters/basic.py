@@ -29,6 +29,7 @@ class ToolParameter( object ):
         self.type = param.get("type")
         self.label = util.xml_text(param, "label")
         self.help = util.xml_text(param, "help")
+        self.unsanitize = param.get( "unsanitize", None )
         self.html = "no html set"
         self.repeat = param.get("repeat", None)
         self.condition = param.get( "condition", None )
