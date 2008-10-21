@@ -490,6 +490,14 @@ class GalaxyConfig:
                     return False
             except:
                 return False
+        elif egg_name == "guppy":
+            try:
+                if self.config.get( "app:main", "use_memdump" ) == "True":
+                    return True
+                else:
+                    return False
+            except:
+                return False
         elif egg_name == "MySQL_python":
             try:
                 if self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ):
