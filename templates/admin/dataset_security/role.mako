@@ -76,4 +76,37 @@ $().ready(function() {
         </form>
     </div>
 </div>
-<p/>
+<br clear="left"/>
+<br/>
+%if len( library_dataset_actions ) > 0:
+    <h3>Library datasets associated with role '${role.name}'</h3>
+    <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+        <tr>
+            <td>
+                <ul>
+                    %for ctr, library, in enumerate( library_dataset_actions.keys() ):
+                        <li>
+                            <img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
+                            ${library.name}
+                            <ul>
+                                %for folder_path, permissions in library_dataset_actions[ library ].items():
+                                    <li>
+                                        <img src="/static/images/silk/folder_page.png" class="rowIcon"/>
+                                        ${folder_path}
+                                        <ul>
+                                            % for permission in permissions:
+                                                <ul>
+                                                    <li>${permission}</li>
+                                                </ul>
+                                            %endfor
+                                        </ul>
+                                    </li>
+                                %endfor
+                            </ul>
+                        </li>
+                    %endfor
+                </ul>
+            </td>
+        </tr>
+    </table>
+%endif

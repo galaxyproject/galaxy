@@ -21,20 +21,14 @@
         <td>
             <ul>
                 %for group in groups:
-                    <li>${group.name}</li>
+                    <li><a href="${h.url_for( controller='admin', action='group_members_edit', group_id=group.id )}">${group.name}</a></li>
                 %endfor
             </ul>
         </td>
         <td>
             <ul>
                 %for role in roles:
-                    <li>
-                        %if not role.type == galaxy.model.Role.types.PRIVATE:
-                            <a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.name}</a>
-                        %else:
-                            ${role.name}
-                        %endif
-                    </li>
+                    <li><a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.name}</a></li>
                 %endfor
             </ul>
             %if not anchored:
@@ -67,7 +61,7 @@
                 curr_anchor = 'A'
             %>
             <tr style="background: #EEE">
-                <td style="border-bottom: 1px solid #D8B365; text-align: center;">
+                <td colspan="3" style="border-bottom: 1px solid #D8B365; text-align: center;">
                     Jump to letter:
                     %for a in anchors:
                         | <a href="#${a}">${a}</a>
@@ -78,7 +72,7 @@
         <tr class="header">
             <td>Email</td>
             <td>Groups</td>
-            <td>Associated Roles</td>
+            <td>Associated Non-private Roles</td>
         </tr>
         %for ctr, user_tuple in enumerate( users_groups_roles ):
             <%

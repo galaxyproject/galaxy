@@ -447,6 +447,9 @@ assign_mapper( context, Role, Role.table,
 assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
     properties=dict(
         user=relation( User, backref="roles" ),
+        non_private_roles=relation( User, 
+                                    backref="non_private_roles",
+                                    primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.type == 'private' ) ) ),
         role=relation( Role )
     )
 )

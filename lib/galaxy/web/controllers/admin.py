@@ -65,7 +65,9 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         return trans.fill_template( '/admin/dataset_security/roles.mako',
-                                    roles=trans.app.model.Role.query().order_by( trans.app.model.Role.table.c.name ).all(),
+                                    roles=trans.app.model.Role.query() \
+                                    .filter( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) \
+                                    .order_by( trans.app.model.Role.table.c.name ).all(),
                                     msg=msg )
     @web.expose
     def create_role( self, trans, **kwd ):
@@ -142,11 +144,31 @@ class Admin( BaseController ):
         # Build a list of tuples that are LibraryFolderDatasetAssociationss followed by a list of actions
         # whose ActionDatasetRoleAssociation is associated with the Role
         # [ ( LibraryFolderDatasetAssociation [ action, action ] ) ]
-        library_dataset_actions = []
+        library_dataset_actions = {}
         for adra in role.actions:
-            for lfda in trans.app.model.LibraryFolderDatasetAssociation.filter( dataset_id==dataset.id ).all():
-                if adra.dataset in lfda.folder.active_datasets:
-                    library_dataset_actions.append( ( lfda, adra.dataset.actions ) )
+            for lfda in trans.app.model.LibraryFolderDatasetAssociation \
+                            .filter( trans.app.model.LibraryFolderDatasetAssociation.dataset_id==adra.dataset_id ) \
+                            .all():
+                root_found = False
+                folder_path = ''
+                folder = lfda.folder
+                while not root_found:
+                    log.debug("#####folder.name: %s" % folder.name )
+                    folder_path = '%s / %s' % ( folder.name, folder_path )
+                    if not folder.parent:
+                        log.debug("root_found is true...")
+                        root_found = True
+                    else:
+                        folder = folder.parent
+                folder_path = '%s %s' % ( folder_path, lfda.name )
+                log.debug("###folder_path: %s" % folder_path )
+                library = trans.app.model.Library.filter( trans.app.model.Library.table.c.root_folder_id == folder.id ).first()
+                if library not in library_dataset_actions:
+                    library_dataset_actions[ library ] = {}
+                try:
+                    library_dataset_actions[ library ][ folder_path ].append( adra.action )
+                except:
+                    library_dataset_actions[ library ][ folder_path ] = [ adra.action ]
         return trans.fill_template( '/admin/dataset_security/role.mako',
                                     role=role,
                                     in_users=in_users,
@@ -182,34 +204,84 @@ class Admin( BaseController ):
         role.refresh()
         msg = "The role has been updated with %s associated users and %s associated groups" % ( str( len( in_users ) ), str( len( in_groups ) ) )
         trans.response.send_redirect( '/admin/roles?msg=%s' % msg )
-
     @web.expose
-    def update_group_members( self, trans, **kwd ):
+    def mark_role_deleted( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        group_id = int( params.group_id )
-        members = listify( params.members )
-        group = galaxy.model.Group.get( group_id )
-        # This is tricky since we have default association tables with
-        # records referring to members of this group.  Because of this,
-        # we'll need to handle changes to the member list rather than the
-        # simpler approach of deleting all existing members and creating 
-        # new records for user_ids in the received members param.
-        # First remove existing members that are not in the received members param
-        for uga in group.members:
-            if uga.user_id not in members:
-                # Delete the UserGroupAssociation
-                uga.delete()
-                uga.flush()
-        # Then add all new members to the group
-        for user_id in members:
-            user = galaxy.model.User.get( user_id )
-            if user not in group.members:
-                uga = galaxy.model.UserGroupAssociation( user, group )
-                uga.flush()
-        msg = "Group membership has been updated with a total of %s members" % len( members )
-        trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
+        msg = params.msg
+        role = galaxy.model.Role.get( int( params.role_id ) )
+        role.deleted = True
+        role.flush()
+        msg = "The role has been marked as deleted."
+        trans.response.send_redirect( '/admin/roles?msg=%s' % msg )
+    @web.expose
+    def deleted_roles( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        # Build a list of tuples which are roles followed by lists of groups and users
+        # [ ( role, [ group, group, group ], [ user, user ] ), ( role, [ group, group ], [ user ] ) ]
+        roles_groups_users = []
+        roles = galaxy.model.Role.query() \
+            .filter( galaxy.model.Role.table.c.deleted==True ) \
+            .order_by( galaxy.model.Role.table.c.name ) \
+            .all()
+        for role in roles:
+            groups = []
+            for gra in role.groups:
+                groups.append( galaxy.model.Group.get( gra.group_id ) )
+            users = []
+            for ura in role.users:
+                users.append( galaxy.model.User.get( ura.user_id ) )
+            roles_groups_users.append( ( role, groups, users ) )
+        return trans.fill_template( '/admin/dataset_security/deleted_roles.mako', 
+                                    roles_groups_users=roles_groups_users, 
+                                    msg=msg )
+    @web.expose
+    def undelete_role( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        role = galaxy.model.Role.get( int( params.role_id ) )
+        role.deleted = False
+        role.flush()
+        msg = "The role has been marked as not deleted."
+        trans.response.send_redirect( '/admin/roles?msg=%s' % msg )
+    @web.expose
+    def purge_role( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        role = galaxy.model.Role.get( int( params.role_id ) )
+        # Delete UserRoleAssociations
+        for ura in role.users:
+            user = trans.app.model.User.get( ura.user_id )
+            # Delete DefaultUserPermissions for associated users
+            for dup in user.default_permissions:
+                if role == dup.role:
+                    dup.delete()
+                    dup.flush()
+            # Delete DefaultHistoryPermissions for associated users
+            for history in user.histories:
+                for dhp in history.default_permissions:
+                    if role == dhp.role:
+                        dhp.delete()
+                        dhp.flush()
+            ura.delete()
+            ura.flush()
+        # Delete GroupRoleAssociations
+        for gra in role.groups:
+            gra.delete()
+            gra.flush()
+        # Delete the Role
+        role.delete()
+        role.flush()
+        msg = "The role has been purged from the database."
+        trans.response.send_redirect( '/admin/deleted_roles?msg=%s' % msg )
 
     # Galaxy Group Stuff
     @web.expose
@@ -427,11 +499,11 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         group = galaxy.model.Group.get( int( params.group_id ) )
-        # Remove UserGroupAssociations
+        # Delete UserGroupAssociations
         for uga in group.users:
             uga.delete()
             uga.flush()
-        # Remove GroupRoleAssociations
+        # Delete GroupRoleAssociations
         for gra in group.roles:
             gra.delete()
             gra.flush()
@@ -457,7 +529,7 @@ class Admin( BaseController ):
             for uga in user.groups:
                 groups.append( galaxy.model.Group.get( uga.group_id ) )
             roles = []
-            for ura in user.roles:
+            for ura in user.non_private_roles:
                 roles.append( galaxy.model.Role.get( ura.role_id ) )
             users_groups_roles.append( ( user, groups, roles ) )
         return trans.fill_template( '/admin/dataset_security/users.mako',

@@ -15,12 +15,11 @@
     %endif
         <td>
             ${role.name}
-            %if not role.type == galaxy.model.Role.types.PRIVATE:
-                <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                <div popupmenu="role-${role.id}-popup">
-                    <a class="action-button" href="${h.url_for( action='role', role_id=role.id )}">Change associated users and groups</a>
-                </div>
-            %endif
+            <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="role-${role.id}-popup">
+                <a class="action-button" href="${h.url_for( action='role', role_id=role.id )}">Change associated users and groups</a>
+                <a class="action-button" href="${h.url_for( action='mark_role_deleted', role_id=role.id )}">Mark role deleted</a>
+            </div>
         </td>
         <td>${role.type}</td>
         <td>
@@ -48,7 +47,7 @@
     <div class="donemessage">${msg}</div>
 %endif
 
-<a name="TOP"><h2>Roles</h2></a>
+<a name="TOP"><h2>Non-private Roles</h2></a>
 
 <ul class="manage-table-actions">
     <li><a class="action-button" href="${h.url_for( controller='admin', action='create_role' )}">Create a new role</a></li>
