@@ -13,8 +13,8 @@ from galaxy import eggs
 import galaxy.model.mapping
 import pkg_resources
         
-pkg_resources.require( "sqlalchemy>=0.3" )
-from sqlalchemy import eagerload
+pkg_resources.require( "SQLAlchemy >= 0.4" )
+from sqlalchemy.orm import eagerload
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
