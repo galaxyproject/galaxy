@@ -153,15 +153,12 @@ class Admin( BaseController ):
                 folder_path = ''
                 folder = lfda.folder
                 while not root_found:
-                    log.debug("#####folder.name: %s" % folder.name )
                     folder_path = '%s / %s' % ( folder.name, folder_path )
                     if not folder.parent:
-                        log.debug("root_found is true...")
                         root_found = True
                     else:
                         folder = folder.parent
                 folder_path = '%s %s' % ( folder_path, lfda.name )
-                log.debug("###folder_path: %s" % folder_path )
                 library = trans.app.model.Library.filter( trans.app.model.Library.table.c.root_folder_id == folder.id ).first()
                 if library not in library_dataset_actions:
                     library_dataset_actions[ library ] = {}

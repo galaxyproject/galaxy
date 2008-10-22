@@ -14,13 +14,16 @@
       <div class="form-row">
         <label>File:</label>
         <div style="float: left; width: 250px; margin-right: 10px;"><input type="file" name="file_data"></div>
+        <div class="toolParamHelp" style="clear: both;">
+          Upload a single file.  Use the "Server Directory" feature below to upload an entire directory of files.
+        </div>
         <div style="clear: both"></div>
       </div>
       <div class="form-row">
         <label>URL/Text:</label>
         <div style="float: left; width: 250px; margin-right: 10px;"><textarea name="url_paste" rows="5" cols="35"></textarea></div>
         <div class="toolParamHelp" style="clear: both;">
-          Here you may specify a list of URLs (one per line) or paste the contents of a file.
+          Specify a list of URLs (one per line) or paste the contents of a file.
         </div>
         <div style="clear: both"></div>
       </div>
@@ -36,7 +39,7 @@
           </select>
         </div>
         <div class="toolParamHelp" style="clear: both;">
-          You may also choose to upload all files in a subdirectory of <strong>${trans.app.config.library_import_dir}</strong> on the Galaxy server.
+          Upload all files in a subdirectory of <strong>${trans.app.config.library_import_dir}</strong> on the Galaxy server.
         </div>
         <div style="clear: both"></div>
       </div>
@@ -45,7 +48,7 @@
         <label>Convert spaces to tabs:</label>
         <div style="float: left; width: 250px; margin-right: 10px;"><div><input type="checkbox" name="space_to_tab" value="Yes">Yes</div></div>
         <div class="toolParamHelp" style="clear: both;">
-          Use this option if you are entering intervals by hand.
+          Use this option if you are manually entering intervals.
         </div>
         <div style="clear: both"></div>
       </div>
@@ -58,9 +61,6 @@
               <option value="${file_format}">${file_format}</option>
             %endfor
           </select>
-        </div>
-        <div class="toolParamHelp" style="clear: both;">
-          Which format? See help below
         </div>
         <div style="clear: both"></div>
       </div>
@@ -89,12 +89,12 @@
           </select>
         </div>
         <div class="toolParamHelp" style="clear: both;">
-          To select multiple roles, hold ctrl or command while clicking.  More permissions can be set after the upload is complete.  Selecting no roles makes a dataset public.
+          Multi-select list - hold the appropriate key while clicking to select multiple roles.  More restrictions can be applied after the upload is complete.  Selecting no roles makes a dataset public.
         </div>
       </div>
       <div style="clear: both"></div>
       <div class="form-row">
-        <input type="submit" class="primary-button" name="create_dataset" value="Add Dataset to Folder">
+        <input type="submit" class="primary-button" name="create_dataset" value="Add Dataset(s) to Folder">
       </div>
     </form>
   </div>

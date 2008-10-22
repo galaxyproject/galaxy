@@ -55,7 +55,7 @@
 </ul>
 
 %if len( roles ) == 0:
-    There are no Galaxy roles
+    There are no non-private Galaxy roles
 %else:
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <% 
