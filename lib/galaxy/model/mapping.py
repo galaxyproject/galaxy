@@ -354,6 +354,16 @@ StoredWorkflowMenuEntry.table = Table( "stored_workflow_menu_entry", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),                              
     Column( "order_index", Integer ) )
 
+MetadataFile.table = Table( "metadata_file", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "name", String ),
+    Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
+    Column( "lda_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), index=True, nullable=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "purged", Boolean, index=True, default=False ) )
+
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
@@ -588,6 +598,9 @@ assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserSh
 
 assign_mapper( context, StoredWorkflowMenuEntry, StoredWorkflowMenuEntry.table,
     properties=dict( stored_workflow=relation( StoredWorkflow ) ) )
+
+assign_mapper( context, MetadataFile, MetadataFile.table,
+    properties=dict( history_dataset=relation( HistoryDatasetAssociation ), library_dataset=relation( LibraryFolderDatasetAssociation ) ) )
 
 def db_next_hid( self ):
     """

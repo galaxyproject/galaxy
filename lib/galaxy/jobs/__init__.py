@@ -474,7 +474,16 @@ class JobWrapper( object ):
 
     def get_input_fnames( self ):
         job = model.Job.get( self.job_id )
-        return [ da.dataset.file_name for da in job.input_datasets if da.dataset ]
+        filenames = []
+        for da in job.input_datasets: #da is JobToInputDatasetAssociation object
+            if da.dataset:
+                filenames.append( da.dataset.file_name )
+                #we will need to stage in metadata file names also
+                #TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
+                for key, value in da.dataset.metadata.items():
+                    if isinstance( value, model.MetadataFile ):
+                        filenames.append( value.file_name )
+        return filenames
 
     def get_output_fnames( self ):
         job = model.Job.get( self.job_id )

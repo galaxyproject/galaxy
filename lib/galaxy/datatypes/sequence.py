@@ -8,6 +8,7 @@ import re
 from cgi import escape
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
+import galaxy.model
 from galaxy import util
 from sniff import *
 
@@ -24,7 +25,6 @@ class Alignment( Sequence ):
 
     """Add metadata elements"""
     MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
-    MetadataElement( name="species_chromosomes", desc="Species Chromosomes", value={}, param=metadata.PythonObjectParameter, readonly=True, no_value={}, to_string=str, visible=False )
 
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
@@ -192,23 +192,30 @@ except:
 class Maf( Alignment ):
     """Class describing a Maf alignment"""
     file_ext = "maf"
+    
+    #Readonly and optional, users can't unset it, but if it is not set, we are generally ok; if required use a metadata validator in the tool definition
+    MetadataElement( name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
+    MetadataElement( name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
 
     def init_meta( self, dataset, copy_from=None ):
         Alignment.init_meta( self, dataset, copy_from=copy_from )
     
     def set_meta( self, dataset, overwrite = True, **kwd ):
         """
-        Parses and sets species and chromosomes from MAF files.
+        Parses and sets species, chromosomes, index from MAF file.
         """
+        #these metadata values are not accessable by users, always overwrite
+        
         species = []
         species_chromosomes = {}
+        maf_reader = bx.align.maf.Reader( open( dataset.file_name ) )
+        indexes = bx.interval_index_file.Indexes()
         try:
-            for i, m in enumerate( bx.align.maf.Reader( open(dataset.file_name) ) ):
-                for c in m.components:
-                    ## spec,chrom = bx.align.maf.src_split( c.src )
-                    ## if not spec or not chrom: spec = chrom = c.src
-                    # "src_split" finds the rightmost dot, which is probably
-                    # wrong in general, and certainly here. 
+            while True:
+                pos = maf_reader.file.tell()
+                block = maf_reader.next()
+                if block is None: break
+                for c in block.components:
                     spec = c.src
                     chrom = None
                     if "." in spec:
@@ -218,20 +225,44 @@ class Maf( Alignment ):
                         species_chromosomes[spec] = []
                     if chrom and chrom not in species_chromosomes[spec]:
                         species_chromosomes[spec].append( chrom )
-                # only check first 100,000 blocks for species
-                if i > 100000: break
-        except: 
+                    indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos, max=c.src_size )
+        except: #bad MAF file
             pass
-        #these metadata values are not accessable by users, always overwrite
         dataset.metadata.species = species
-        dataset.metadata.species_chromosomes = species_chromosomes
+        #only overwrite the contents if our newly determined chromosomes don't match stored
+        chrom_file = dataset.metadata.species_chromosomes
+        compare_chroms = {}
+        if chrom_file:
+            try:
+                for line in open( chrom_file.file_name ):
+                    fields = line.split( "\t" )
+                    if fields:
+                        spec = fields.pop( 0 )
+                        if spec:
+                            compare_chroms[spec] = fields
+            except:
+                pass
+        #write out species chromosomes again only if values are different
+        if not species_chromosomes or compare_chroms != species_chromosomes:
+            tmp_file = tempfile.TemporaryFile( 'w+b' )
+            for spec, chroms in species_chromosomes.items():
+                tmp_file.write( "%s\t%s\n" % ( spec, "\t".join( chroms ) ) )
+            
+            if not chrom_file:
+                chrom_file = galaxy.model.MetadataFile( dataset = dataset, name = "species_chromosomes" )
+                chrom_file.flush()
+            tmp_file.seek( 0 )
+            open( chrom_file.file_name, 'wb' ).write( tmp_file.read() )
+            dataset.metadata.species_chromosomes = chrom_file
+            tmp_file.close()
+        
+        index_file = dataset.metadata.maf_index
+        if not index_file:
+            index_file = galaxy.model.MetadataFile( dataset = dataset, name="maf_index" )
+            index_file.flush()
+        indexes.write( open( index_file.file_name, 'w' ) )
+        dataset.metadata.maf_index = index_file
     
-    def missing_meta( self, dataset ):
-        """Checks to see if species is set"""
-        if dataset.metadata.species in [None, []]:
-            return True
-        return False
-
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return self.make_html_table( dataset )

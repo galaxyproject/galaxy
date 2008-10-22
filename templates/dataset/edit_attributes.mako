@@ -73,6 +73,9 @@ elif isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
               if they are not accurate.
           </div>
       </form>
+      %if data.missing_meta():
+          <div class="errormessagesmall">Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.</div>
+      %endif
   </div>
   </div>
 

@@ -15,6 +15,7 @@ usage: %prog maf_file [options]
    -G, --geneBED: Input is a Gene BED file, process and join exons as one region
    -t, --mafSourceType=t: Type of MAF source to use
    -m, --mafSource=m: Path of source MAF file, if not using cached version
+   -I, --mafIndex=I: Path of precomputed source MAF file index, if not using cached version
    -i, --interval_file=i:       Input interval file
    -o, --output_file=o:      Output MAF file
    -p, --species=p: Species to include in output
@@ -105,7 +106,7 @@ def __main__():
             stop_err( "The MAF source specified (%s) appears to be invalid." % ( options.mafSource ) )
     elif options.mafSourceType.lower() in ["user"]:
         #index maf for use here, need to remove index_file when finished
-        index, index_filename = maf_utilities.build_maf_index( options.mafSource, species = [primary_species] )
+        index, index_filename = maf_utilities.open_or_build_maf_index( options.mafSource, options.mafIndex, species = [primary_species] )
         if index is None:
             stop_err( "Your MAF file appears to be malformed." )
     else:

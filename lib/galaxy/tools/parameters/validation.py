@@ -163,13 +163,15 @@ class MetadataValidator( Validator ):
     """
     Validator that checks for missing metadata
     """
-    def __init__( self, message=None ):
+    def __init__( self, message = None, check = "", skip = "" ):
         self.message = message
+        self.check = check.split( "," )
+        self.skip = skip.split( "," )
     @classmethod
     def from_element( cls, param, elem ):
-        return cls( elem.get( 'message', None ) )
+        return cls( message=elem.get( 'message', None ), check=elem.get( 'check', "" ), skip=elem.get( 'skip', "" ) )
     def validate( self, value, history=None ):
-        if value and value.missing_meta():
+        if value and value.missing_meta( check = self.check, skip = self.skip ):
             if self.message is None:
                 self.message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
             raise ValueError( self.message )

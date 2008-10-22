@@ -2,7 +2,9 @@
 <description>Multiple Alignment Viewer</description>
   <command interpreter="python">GMAJ.py $out_file1 $maf_input $gmaj_file $filenames_file</command>
   <inputs>
-      <param name="maf_input" type="data" format="maf" label="Alignment File" optional="False"/>
+      <param name="maf_input" type="data" format="maf" label="Alignment File" optional="False">
+        <validator type="metadata" check="species_chromosomes" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
+      </param>
       <param name="refseq" label="Reference Sequence" type="select">
         <option value="first" selected="true">First sequence in each block</option>
         <option value="any">Any sequence</option>
@@ -104,8 +106,18 @@ nowarn = $nowarn
 #set $seq_count = 0
 #for $annotation_count, $annotation in $enumerate( $annotations ):
 #if $annotation.annotation_style.style == "galaxy":
-#if $maf_input.dataset.metadata.species_chromosomes and $annotation.annotation_style['species'].value in $maf_input.dataset.metadata.species_chromosomes and $maf_input.dataset.metadata.species_chromosomes[$annotation.annotation_style['species'].value]:
-#set $seq_names = [ "%s.%s" % ( $annotation.annotation_style['species'].value, $chrom ) for $chrom in $maf_input.dataset.metadata.species_chromosomes[$annotation.annotation_style['species'].value]]
+#set $species_chromosomes = {}
+#if $maf_input.dataset.metadata.species_chromosomes:
+#for $line in open( $maf_input.dataset.metadata.species_chromosomes.file_name ):
+#set $fields = $line.split( "\t" )
+#if $fields:
+#set $spec = $fields.pop( 0 )
+#set $species_chromosomes[spec] = $fields
+#end if
+#end for
+#end if
+#if $species_chromosomes and $annotation.annotation_style['species'].value in $species_chromosomes and $species_chromosomes[$annotation.annotation_style['species'].value]:
+#set $seq_names = [ "%s.%s" % ( $annotation.annotation_style['species'].value, $chrom ) for $chrom in $species_chromosomes[$annotation.annotation_style['species'].value]]
 #else:
 #set $seq_names = [$annotation.annotation_style['species']]
 #end if

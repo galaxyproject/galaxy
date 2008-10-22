@@ -16,6 +16,7 @@ usage: %prog maf_file [options]
    -S, --strandCol=S: Column of Strand
    -t, --mafType=t: Type of MAF source to use
    -m, --mafFile=m: Path of source MAF file, if not using cached version
+   -I, --mafIndex=I: Path of precomputed source MAF file index, if not using cached version
    -i, --interval_file=i:       Input interval file
    -o, --output_file=o:      Output MAF file
    -p, --species=p: Species to include in output
@@ -92,7 +93,7 @@ def __main__():
             print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( options.mafType )
             sys.exit()
     elif options.mafFile:
-        index, index_filename = maf_utilities.build_maf_index( options.mafFile, species = [dbkey] )
+        index, index_filename = maf_utilities.open_or_build_maf_index( options.mafFile, options.mafIndex, species = [dbkey] )
         if index is None:
             print >> sys.stderr, "Your MAF file appears to be malformed."
             sys.exit()

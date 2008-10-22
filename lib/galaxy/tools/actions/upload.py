@@ -210,7 +210,7 @@ class UploadToolAction( object ):
         temp = open( temp_name, "U" )
         magic_check = temp.read( 2 )
         temp.close()
-        if magic_check != datatypes.data.gzip_magic:
+        if magic_check != util.gzip_magic:
             return ( False, False )
         CHUNK_SIZE = 2**15 # 32Kb
         gzipped_file = gzip.GzipFile( temp_name )

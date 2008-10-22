@@ -8,6 +8,9 @@
       $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} $summary
     #end if
     ${GALAXY_DATA_INDEX_DIR}
+    #if $maf_source_type.maf_source == "user":
+    $input2.metadata.maf_index
+    #end if
   </command>
   <inputs>
     <param format="interval" name="input1" label="Interval File" type="data">

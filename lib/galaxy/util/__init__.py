@@ -17,6 +17,8 @@ from elementtree import ElementTree
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
 
+gzip_magic = '\037\213'
+
 def synchronized(func):
     """This wrapper will serialize access to 'func' to a single thread. Use it as a decorator."""
     def caller(*params, **kparams):
