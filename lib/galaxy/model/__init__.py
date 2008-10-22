@@ -5,7 +5,7 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import os.path, os, errno, copy
+import os.path, os, errno
 import sha
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
@@ -165,7 +165,7 @@ class HistoryDatasetAssociation( object ):
         return self._metadata_collection
     def set_metadata( self, bunch ):
         # Needs to accept a MetadataCollection, a bunch, or a dict
-        self._metadata = dict( [ ( key, copy.deepcopy( value ) ) for key, value in bunch.items() ] )
+        self._metadata = self.metadata.make_dict_copy( bunch )
     metadata = property( get_metadata, set_metadata )
 
     """
@@ -223,8 +223,8 @@ class HistoryDatasetAssociation( object ):
         return self.datatype.set_meta( self, **kwd )
     def set_readonly_meta( self, **kwd ):
         return self.datatype.set_readonly_meta( self, **kwd )
-    def missing_meta( self ):
-        return self.datatype.missing_meta( self )
+    def missing_meta( self, **kwd ):
+        return self.datatype.missing_meta( self, **kwd )
     def as_display_type( self, type, **kwd ):
         return self.datatype.as_display_type( self, type, **kwd )
     def display_peek( self ):
@@ -258,8 +258,9 @@ class HistoryDatasetAssociation( object ):
         return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
     
     def copy( self, copy_children = False, parent_id = None ):
-        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, metadata=self._metadata, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
+        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
         des.flush()
+        des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         if copy_children:
             for child in self.children:
                 child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
@@ -563,6 +564,24 @@ class StoredWorkflowMenuEntry( object ):
         self.stored_workflow = None
         self.user = None
         self.order_index = None
+
+class MetadataFile( object ):
+    def __init__( self, dataset = None, name = None ):
+        self.dataset = dataset
+        self.name = name
+    @property
+    def file_name( self ):
+        assert self.id is not None, "ID must be set before filename used (commit the object)"
+        path = os.path.join( Dataset.file_path, '_metadata_files', *directory_hash_id( self.id ) )
+        # Create directory if it does not exist
+        try:
+            os.makedirs( path )
+        except OSError, e:
+            # File Exists is okay, otherwise reraise
+            if e.errno != errno.EEXIST:
+                raise
+        # Return filename inside hashed directory
+        return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 
 ## ---- Utility methods -------------------------------------------------------
 

@@ -1,8 +1,9 @@
-import sys, logging
+import sys, logging, copy, shutil
 
 from galaxy.util import string_as_bool
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
+import galaxy.model
 
 log = logging.getLogger( __name__ )
 
@@ -75,7 +76,13 @@ class MetadataCollection:
     def get_html_by_name( self, name, **kwd ):
         if name in self.spec:
             return self.spec[name].param.get_html( value=getattr( self, name ), context=self, **kwd )
-
+    def make_dict_copy( self, to_copy ):
+        """Makes a deep copy of input iterable to_copy according to self.spec"""
+        rval = {}
+        for key, value in to_copy.items():
+            if key in self.spec:
+                rval[key] = self.spec[key].param.make_copy( value, target_context=self, source_context=to_copy )
+        return rval
 
 class MetadataSpecCollection( odict ):
     """
@@ -121,7 +128,10 @@ class MetadataParameter( object ):
     
     def to_string( self, value ):
         return str( value )
-
+    
+    def make_copy( self, value, target_context = None, source_context = None ):
+        return copy.deepcopy( value )
+    
     @classmethod
     def marshal ( cls, value ):
         """
@@ -150,7 +160,6 @@ class MetadataParameter( object ):
         Turns a value into its usable form.
         """
         return value
-
 
 class MetadataElementSpec( object ):
     """
@@ -280,20 +289,55 @@ class ColumnTypesParameter( MetadataParameter ):
         return ",".join( map( str, value ) )
 
 class PythonObjectParameter( MetadataParameter ):
-    def __init__( self, spec ):
-        MetadataParameter.__init__( self, spec )
     
     def to_string( self, value ):
         if not value:
-            return self.spec.to_string( self.spec.no_value )
-        return self.spec.to_string( value )
+            return self.spec._to_string( self.spec.no_value )
+        return self.spec._to_string( value )
     
     def get_html_field( self, value=None, context={}, other_values={}, **kwd ):
-        return form_builder.TextField( self.spec.name, value=self.to_string( value ) )
+        return form_builder.TextField( self.spec.name, value=self._to_string( value ) )
 
     def get_html( self, value=None, context={}, other_values={}, **kwd ):
         return str( self )
 
     @classmethod
     def marshal( cls, value ):
+        return value
+
+class FileParameter( MetadataParameter ):
+    
+    def to_string( self, value ):
+        if not value:
+            return str( self.spec.no_value )
+        return value.file_name
+    
+    def get_html_field( self, value=None, context={}, other_values={}, **kwd ):
+        return form_builder.TextField( self.spec.name, value=str( value.id ) )
+
+    def get_html( self, value=None, context={}, other_values={}, **kwd ):
+        return "<div>No display available for Metadata Files</div>"
+
+    def wrap( self, value ):
+        if isinstance( value, galaxy.model.MetadataFile ):
+            return value
+        try:
+            return galaxy.model.MetadataFile.get( value )
+        except:
+            #value was not a valid id
+            return None
+
+    def make_copy( self, value, target_context = None, source_context = None ):
+        value = self.wrap( value )
+        if value:
+            new_value = galaxy.model.MetadataFile( dataset = target_context.parent, name = self.spec.name )
+            new_value.flush()
+            shutil.copy( value.file_name, new_value.file_name )
+            return self.unwrap( new_value )
+        return None
+
+    @classmethod
+    def marshal( cls, value ):
+        if isinstance( value, galaxy.model.MetadataFile ):
+            value = value.id
         return value

@@ -146,7 +146,15 @@ def maf_index_by_uid( maf_uid, index_location_file ):
             pass
     return None
 
-#builds and returns (index, index_filename) for specified maf_file
+#return ( index, temp_index_filename ) for user maf, if available, or build one and return it, return None when no tempfile is created
+def open_or_build_maf_index( maf_file, index_filename, species = None ):
+    try:
+        return ( bx.align.maf.Indexed( maf_file, index_filename = index_filename, keep_open = True, parse_e_rows = False ), None )
+    except:
+        return build_maf_index( maf_file, species = species )
+    
+
+#builds and returns ( index, index_filename ) for specified maf_file
 def build_maf_index( maf_file, species = None ):
     indexes = bx.interval_index_file.Indexes()
     try:

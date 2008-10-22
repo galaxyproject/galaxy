@@ -2,7 +2,8 @@
 #Retreives data from UCSC and stores in a file. UCSC parameters are provided in the input/output file.
 import urllib, sys, os, gzip, tempfile, shutil
 from galaxy import eggs
-from galaxy.datatypes import data
+#from galaxy.datatypes import data
+from galaxy.util import gzip_magic
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -14,7 +15,7 @@ def check_gzip( filename ):
     temp = open( filename, "U" )
     magic_check = temp.read( 2 )
     temp.close()
-    if magic_check != data.gzip_magic:
+    if magic_check != gzip_magic:
         return False
     return True
 

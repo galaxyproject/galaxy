@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 # Valid first column and strand column values vor bed, other formats
 col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
 valid_strand = ['+', '-', '.']
-gzip_magic = '\037\213'
 
 class DataMeta( type ):
     """
@@ -86,10 +85,19 @@ class Data( object ):
     def set_readonly_meta( self, dataset ):
         """Unimplemented method, resets the readonly metadata values"""
         return True
-    def missing_meta( self, dataset ):
-        """Checks for empty metadata values, Returns True if non-optional metadata is missing"""
-        for key, value in dataset.metadata.items():
-            if dataset.metadata.spec[key].get("optional"): continue #we skip check for optional values here
+    def missing_meta( self, dataset, check = [], skip = [] ):
+        """
+        Checks for empty metadata values, Returns True if non-optional metadata is missing
+        Specifying a list of 'check' values will only check those names provided; when used, optionality is ignored
+        Specifying a list of 'skip' items will return True even when a named metadata value is missing
+        """
+        if check:
+            to_check = [ ( to_check, dataset.metadata.get( to_check ) ) for to_check in check ]
+        else:
+            to_check = dataset.metadata.items()
+        for key, value in to_check:
+            if key in skip or ( not check and dataset.metadata.spec[key].get( "optional" ) ):
+                continue #we skip check for optional and nonrequested values here 
             if not value:
                 return True
         return False
@@ -328,7 +336,7 @@ def get_file_peek( file_name, WIDTH=256, LINE_COUNT=5 ):
         line = line[ :WIDTH ]
         if not data_checked and line:
             data_checked = True
-            if line[0:2] == gzip_magic:
+            if line[0:2] == util.gzip_magic:
                 file_type = 'gzipped'
                 break
             else:

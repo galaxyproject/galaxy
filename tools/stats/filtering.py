@@ -4,7 +4,6 @@
 
 import sys, sets, re, os.path
 from galaxy import eggs
-from galaxy.datatypes import metadata
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
