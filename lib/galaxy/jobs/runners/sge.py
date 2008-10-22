@@ -103,8 +103,15 @@ class SGEJobRunner( object ):
 
     def queue_job( self, job_wrapper ):
         """Create SGE script for a job and submit it to the SGE queue"""
-        job_wrapper.prepare()
-        command_line = job_wrapper.get_command_line()
+
+        try:
+            job_wrapper.prepare()
+            command_line = job_wrapper.get_command_line()
+        except:
+            job_wrapper.fail( "failure preparing job", exception=True )
+            log.exception("failure running job %d" % job_wrapper.job_id)
+            return
+
         runner_url = job_wrapper.tool.job_runner
         
         # This is silly, why would we queue a job with no command line?
