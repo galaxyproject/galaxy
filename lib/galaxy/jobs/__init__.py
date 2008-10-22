@@ -15,7 +15,7 @@ from Queue import Queue, Empty
 log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
-JOB_WAIT, JOB_ERROR, JOB_OK, JOB_READY, JOB_DELETED = 'wait', 'error', 'ok', 'ready', 'deleted'
+JOB_WAIT, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED = 'wait', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted'
 
 class Sleeper( object ):
     """
@@ -163,8 +163,10 @@ class JobQueue( object ):
                 if job_state == JOB_WAIT: 
                     if not self.track_jobs_in_database:
                         new_waiting.append( job )
-                elif job_state == JOB_ERROR:
-                    log.info( "job %d ended with an error" % job.job_id )
+                elif job_state == JOB_INPUT_ERROR:
+                    log.info( "job %d unable to run: one or more inputs in error state" % job.job_id )
+                elif job_state == JOB_INPUT_DELETED:
+                    log.info( "job %d unable to run: one or more inputs deleted" % job.job_id )
                 elif job_state == JOB_READY:
                     # If special queuing is enabled, put the ready jobs in the special queue
                     if self.use_policy :
@@ -320,6 +322,7 @@ class JobWrapper( object ):
             dataset.flush()
         job.state = model.Job.states.ERROR
         job.command_line = self.command_line
+        job.info = message
         # If the failure is due to a Galaxy framework exception, save 
         # the traceback
         if exception:
@@ -356,12 +359,13 @@ class JobWrapper( object ):
 
     def check_if_ready_to_run( self ):
         """
-        Check if a job is ready to run by verifying that each of its input 
+        Check if a job is ready to run by verifying that each of its input
         datasets is ready (specifically in the OK state). If any input dataset
-        has an error, fail the job and return JOB_ERROR. If all input datasets
-        are in OK state, return JOB_READY indicating that the job can be 
-        dispatched. Otherwise, return JOB_WAIT indicating that input datasets
-        are still being prepared.
+        has an error, fail the job and return JOB_INPUT_ERROR. If any input
+        dataset is deleted, fail the job and return JOB_INPUT_DELETED.  If all
+        input datasets are in OK state, return JOB_READY indicating that the
+        job can be dispatched. Otherwise, return JOB_WAIT indicating that input
+        datasets are still being prepared.
         """
         job = model.Job.get( self.job_id )
         job.refresh()
@@ -373,11 +377,11 @@ class JobWrapper( object ):
             # don't run jobs for which the input dataset was deleted
             if idata.deleted == True:
                 self.fail( "input data %d was deleted before this job ran" % idata.hid )
-                return JOB_ERROR
+                return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
             elif idata.state == idata.states.ERROR:
                 self.fail( "error in input data %d" % idata.hid )
-                return JOB_ERROR
+                return JOB_INPUT_ERROR
             elif idata.state != idata.states.OK:
                 # need to requeue
                 return JOB_WAIT
