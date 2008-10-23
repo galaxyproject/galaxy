@@ -4,6 +4,7 @@ Galaxy Security
 """
 import logging
 from galaxy.util.bunch import Bunch
+from galaxy.model.orm import *
 
 log = logging.getLogger(__name__)
 
@@ -160,7 +161,8 @@ class GalaxyRBACAgent( RBACAgent ):
         self.associate_components( role=role, user=user )
         return role
     def get_private_user_role( self, user, auto_create=False ):
-        role = self.model.Role.get_by( name=user.email, type=self.model.Role.types.PRIVATE )
+        role = self.model.Role.filter( and_( self.model.Role.table.c.name == user.email, 
+                                             self.model.Role.table.c.type == self.model.Role.types.PRIVATE ) ).first()
         if not role:
             if auto_create:
                 return self.create_private_user_role( user )

@@ -8,9 +8,6 @@ import twill
 import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm
 from elementtree import ElementTree
-
-from galaxy.web.controllers.admin import entities, unentities
-from xml.sax.saxutils import escape, unescape 
   
 buffer = StringIO.StringIO()
 
@@ -530,32 +527,48 @@ class TwillTestCase( unittest.TestCase ):
         self.assertNotEqual(count, maxiter)
 
     # Dataset Security stuff
-    def create_group( self, name='New Test Group' ):
-        """Create a new group with 1 member"""
+    def create_role( self, name='New Test Role', description="Very cool new test role", user_ids=[], group_ids=[] ):
+        """Create a new role with 2 members"""
+        self.visit_url( "%s/admin/create_role" % self.url )
+        form = tc.show()
+        self.check_page_for_string( "Create Role" )
+        try: 
+            tc.fv( "1", "name", name )
+            tc.fv( "1", "description", description )
+            for user_id in user_ids:
+                tc.fv( "1", "3", user_id ) # 1-based form field 3 is the 1st check box named 'users', user id 1 is test@bx.psu.edu
+            for group_id in group_ids:
+                tc.fv( "1", "4", group_id ) # 1-based form field 4 is the 1st check box named 'groups'
+            tc.submit( "create_role_button" )
+        except AssertionError, err:
+            errmsg = 'Exception caught attempting to create role: %s' % str( err )
+            raise AssertionError( errmsg )
+        self.home()
+        return form
+    def create_group( self, name='New Test Group3', user_ids=[], role_ids=[] ):
+        """Create a new group with 2 members and 1 associated role"""
         self.visit_url( "%s/admin/create_group" % self.url )
         form = tc.show()
         self.check_page_for_string( "Create Group" )
         try: 
             tc.fv( "1", "name", name )
-            # twill version 0.9 still does not allow for easily testing forms that contain
-            # multiple fields with the same name ( e.g., check boxes ).  We could attempt to determine
-            # the number of the field on the form and use it instead of the name of the field, but we
-            # would be forced to drop and recreate the database every time we test in order to ensure
-            # the fields will be the same on the form ( since it is dynamically rendered from the database ).
-            tc.fv( "1", "2", "1" ) # 1-based form field 3 is the 1st check box named 'members', user id 1 is test@bx.psu.edu
+            for user_id in user_ids:
+                tc.fv( "1", "2", user_id ) # 1-based form field 2 is the 1st check box named 'members', user id 1 is test@bx.psu.edu
+            for role_id in role_ids:
+                tc.fv( "1", "3", role_id ) # form field 3 is the 1st check box named 'roles', role id 1 is 'New Test Role'
             tc.submit( "create_group_button" )
         except AssertionError, err:
             errmsg = 'Exception caught attempting to create group: %s' % str( err )
             raise AssertionError( errmsg )
         self.home()
         return form
-    def add_group_member( self, group_id='', group_name='' ):
+    def add_group_member( self, group_id ):
         """Add a member to an existing group"""
         # twill version 0.9 does not allow for this test
-        self.visit_url( "%s/admin/group_members_edit?group_id=%s&group_name=%s" % ( self.url, group_id, group_name ) )
+        self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_id ) )
         self.check_page_for_string( 'Members of' )
         try:
-            tc.fv( "1", "", "2" ) # 1-based form field 2 is the 2nd check box named 'members', user id 2 is test2@bx.psu.edu
+            tc.fv( "1", "1", "2" ) # 1-based form field 2 is the 2nd check box named 'members', user id 2 is test2@bx.psu.edu
             tc.submit( "group_members_edit_button" )
         except AssertionError, err:
             errmsg = 'Exception caught attempting to create group: %s' % str( err )

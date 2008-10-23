@@ -313,7 +313,8 @@ class Admin( BaseController ):
         msg = params.msg
         users=trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all()
         roles = trans.app.model.Role.query() \
-                .filter( galaxy.model.Role.table.c.deleted==False ) \
+                .filter( and_( galaxy.model.Role.table.c.deleted == False, 
+                               galaxy.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) ) \
                 .order_by( trans.app.model.Role.table.c.name ) \
                 .all()
         return trans.fill_template( '/admin/dataset_security/group_create.mako', 
@@ -1056,7 +1057,7 @@ class Admin( BaseController ):
         temp = open( temp_name, "U" )
         magic_check = temp.read( 2 )
         temp.close()
-        if magic_check != datatypes.data.gzip_magic:
+        if magic_check != util.gzip_magic:
             return ( False, False )
         CHUNK_SIZE = 2**15 # 32Kb
         gzipped_file = gzip.GzipFile( temp_name )
