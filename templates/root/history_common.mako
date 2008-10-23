@@ -67,7 +67,7 @@
                     %if data.has_data:
                         <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
                         %for display_app in data.datatype.get_display_types():
-                            <% display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
+                            <% display_links = data.datatype.get_display_links( data, display_app, app, request.base + h.url_for() ) %>
                             %if len( display_links ) > 0:
                                 | ${data.datatype.get_display_label(display_app)}
 				%for display_name, display_link in display_links:
