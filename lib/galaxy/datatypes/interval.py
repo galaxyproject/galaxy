@@ -9,6 +9,7 @@ import logging, os, sys, time, sets, tempfile, shutil
 import data
 from galaxy import util
 from galaxy.datatypes.sniff import *
+from galaxy.web import url_for
 from cgi import escape
 import urllib
 from bx.intervals.io import *
@@ -217,7 +218,7 @@ class Interval( Tabular ):
                 stop = viewport_tuple[2]
                 for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
                     if site_name in app.config.ucsc_display_sites:
-                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s" % (base_url, url_for( controller='root' ), dataset.id, type) )
                         link = "%sdb=%s&position=%s:%s-%s&hgt.customText=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )
                         ret_val.append( (site_name, link) )
         return ret_val
@@ -810,7 +811,7 @@ class CustomTrack ( Tabular ):
                 stop = viewport_tuple[2]
                 for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
                     if site_name in app.config.ucsc_display_sites:
-                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s" % (base_url, url_for( controller='root' ), dataset.id, type) )
                         link = "%sdb=%s&position=%s:%s-%s&hgt.customText=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )
                         ret_val.append( (site_name, link) )
         return ret_val
@@ -889,7 +890,7 @@ class GBrowseTrack ( Tabular ):
                 stop = viewport_tuple[2]
                 for site_name, site_url in util.get_gbrowse_sites_by_build(dataset.dbkey):
                     if site_name in app.config.gbrowse_display_sites:
-                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s" % (base_url, url_for( controller='root' ), dataset.id, type) )
                         link = "%sname=%s&ref=%s:%s..%s&eurl=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )                        
                         ret_val.append( (site_name, link) )
         return ret_val
