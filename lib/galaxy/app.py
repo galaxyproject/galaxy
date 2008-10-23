@@ -4,6 +4,7 @@ from galaxy import config, jobs, util, tools, web
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
+import galaxy.security
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -20,7 +21,7 @@ class UniverseApplication( object ):
         if self.config.database_connection:
             db_url = self.config.database_connection
         else:
-            db_url = "sqlite://%s?isolation_level=IMMEDIATE" % self.config.database
+            db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         # Setup the database engine and ORM
         self.model = galaxy.model.mapping.init( self.config.file_path,
                                                 db_url,
@@ -30,6 +31,8 @@ class UniverseApplication( object ):
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         #Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
+        #Load security policy
+        self.security_agent = self.model.security_agent
         # Start the job queue
         job_dispatcher = jobs.DefaultJobDispatcher( self )
         self.job_queue = jobs.JobQueue( self, job_dispatcher )
