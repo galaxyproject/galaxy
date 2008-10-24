@@ -30,7 +30,7 @@ class ToolRunner( BaseController ):
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         # No tool id passed, redirect to main page
         if tool_id is None:
-            return trans.response.send_redirect( "/static/welcome.html" )
+            return trans.response.send_redirect( url_for( "/static/welcome.html" ) )
         # Load the tool
         toolbox = self.get_toolbox()
         tool = toolbox.tools_by_id.get( tool_id, None )

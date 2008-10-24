@@ -114,7 +114,7 @@ class RootController( BaseController ):
     ## ---- Dataset display / editing ----------------------------------------
 
     @web.expose
-    def display(self, trans, id=None, hid=None, tofile=None, toext=".txt"):
+    def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", **kwd ):
         """
         Returns data directly into the browser. 
         Sets the mime-type according to the extension

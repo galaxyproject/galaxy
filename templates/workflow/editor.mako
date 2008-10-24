@@ -3,7 +3,7 @@
 <%def name="title()">Galaxy Workflow Editor</%def>
 
 <%def name="late_javascripts()">
-    <script type='text/javascript' src="/static/scripts/galaxy.panels.js"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.panels.js')}"> </script>
     <script type="text/javascript">
         ensure_dd_helper();
         make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
@@ -17,16 +17,16 @@
     ${parent.javascripts()}
     
     <!--[if IE]>
-    <script type='text/javascript' src="/static/scripts/excanvas.js"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"> </script>
     <![endif]-->
-    <script type='text/javascript' src="/static/scripts/jquery.js"> </script>
-    <script type='text/javascript' src="/static/scripts/jquery.ui.js"> </script>
-    <script type='text/javascript' src="/static/scripts/galaxy.ui.scrollPanel.js"> </script>
-    <script type='text/javascript' src="/static/scripts/jquery.hoverIntent.js"> </script>
-    <script type='text/javascript' src="/static/scripts/jquery.form.js"> </script>
-    <script type='text/javascript' src="/static/scripts/jquery.json.js"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.ui.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.ui.scrollPanel.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.hoverIntent.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.json.js')}"> </script>
 
-    <script type='text/javascript' src="/static/scripts/galaxy.workflow_editor.canvas.js"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.workflow_editor.canvas.js')}"> </script>
     
     <!--[if lt IE 7]>
     <script type='text/javascript'>
