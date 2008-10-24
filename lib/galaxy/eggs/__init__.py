@@ -528,8 +528,6 @@ def require( pkg ):
         else:
             pkg_resources.working_set.require( "%s==%s" % ( name, egg.get_vertag() ) )
         return
-    except UserWarning, e:
-        sys.exit( 1 )
     except pkg_resources.VersionConflict, e:
         # there's a conflicting egg on the pythonpath, remove it
         dist = pkg_resources.get_distribution( name )

@@ -1,4 +1,6 @@
 from sqlalchemy.types import *
+import pkg_resources
+pkg_resources.require("simplejson")
 import simplejson
 import pickle
 from galaxy.util.bunch import Bunch

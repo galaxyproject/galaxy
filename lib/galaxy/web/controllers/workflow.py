@@ -1,5 +1,7 @@
 from galaxy.web.base.controller import *
 
+import pkg_resources
+pkg_resources.require( "simplejson" )
 import simplejson
 
 from galaxy.tools.parameters import *

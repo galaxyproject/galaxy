@@ -11,18 +11,18 @@ import base
 import pickle
 from galaxy import util
 
-pkg_resources.require( "WebHelpers" )
-pkg_resources.require( "PasteDeploy" )
+pkg_resources.require( "simplejson" )
+import simplejson
 
+pkg_resources.require( "WebHelpers" )
 import webhelpers
+
+pkg_resources.require( "PasteDeploy" )
 from paste.deploy.converters import asbool
 
 pkg_resources.require( "Mako" )
 import mako.template
 import mako.lookup
-
-pkg_resources.require( "simplejson" )
-import simplejson
 
 pkg_resources.require( "sqlalchemy>=0.3" )
 from sqlalchemy import desc
