@@ -1,5 +1,5 @@
 import galaxy.model
-from base.twilltestcase import TwillTestCase
+from base.twilltestcase import *
 
 s = 'You must have Galaxy administrator privileges to use this feature.'
         
@@ -45,66 +45,126 @@ class TestHistory( TwillTestCase ):
         self.visit_page( "admin" )
         self.check_page_for_string( 'Administration' )
         user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
+        # Make sure a private role exists for the user
+        private_role_found = False
+        for role in user.all_roles():
+            if role.name == user.email and role.description == 'Private Role for %s' % user.email:
+                private_role_found = True
+                break
+        if not private_role_found:
+            raise AssertionError( "Private role not found for user '%s'" % user.email )
         self.visit_url( "%s/admin/user?user_id=%s" % ( self.url, user.id ) )
         self.check_page_for_string( "test@bx.psu.edu" )
         self.home()
         self.logout()
-        # Need to ensure that we have 2 users
+        # Make sure that we have 3 users
         self.login( email='test2@bx.psu.edu' ) # This will not be an admin user
+        self.visit_page( "admin" )
+        self.check_page_for_string( s )
+        self.logout()
+        self.login( email='test3@bx.psu.edu' ) # This will not be an admin user
         self.visit_page( "admin" )
         self.check_page_for_string( s )
         self.logout()
     def test_10_create_role( self ):
         """Testing creating new non-private role with 2 members"""
         self.login( email='test@bx.psu.edu' )
-        self.visit_page( "admin/create_role" )
-        self.check_page_for_string( 'Create Role' )
         user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
         user_id1 = str( user.id )
         user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test2@bx.psu.edu' ).first()
         user_id2 = str( user.id )
-        self.create_role( user_ids=[user_id1, user_id2] )
-        self.visit_page( "admin/roles" )
-        self.check_page_for_string( "New Test Role" )
+        self.create_role( user_ids=[ user_id1, user_id2 ] )
     def test_15_create_group( self ):
         """Testing creating new group with 2 members and 1 associated role"""
-        self.visit_page( "admin/create_group" )
-        self.check_page_for_string( 'Create Group' )
         user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
         user_id1 = str( user.id )
         user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test2@bx.psu.edu' ).first()
         user_id2 = str( user.id )
         role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name=='New Test Role' ).first()
         role_id = str( role.id )
-        self.create_group( user_ids=[user_id1, user_id2], role_ids=[role_id] )
-        self.visit_page( "admin/groups" )
-        self.check_page_for_string( "New Test Group" )
+        self.create_group( user_ids=[ user_id1, user_id2 ], role_ids=[ role_id ] )
     def test_20_add_group_member( self ):
         """Testing editing membership of an existing group"""
-        self.create_group( 'Another Test Group' )
+        self.create_group( name='Another Test Group' )
+        group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'Another Test Group' ).first()
+        group_id = str( group.id )
+        user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test3@bx.psu.edu' ).first()
+        user_id = str( user.id )
+        self.add_group_members( group_id, [ user_id  ] )
+        self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'test3@bx.psu.edu' )
+    def test_25_associate_groups_with_role( self ):
+        """Testing adding existing groups to an existing role"""
+        group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'Another Test Group' ).first()
+        group_id = str( group.id )
+        user = galaxy.model.User.filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ).first()
+        user_id = str( user.id )
+        # NOTE: To get this to work with twill, all select lists on the ~/admin/role page must contain at least
+        # 1 option value or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        # Due to this bug in twill, we crreate the role, associating it with at least 1 user and 1 group...
+        #
+        # TODO: need to enhance this test to associate DefaultUserPermissions and DefaultHistoryPermissions
+        # with the role, then add tests in test_55_purge_role to make sure the association records are deleted
+        # when the role is purged.
+        self.create_role( name='Another Test Role', user_ids=[ user_id ], group_ids=[ group_id ] )
+        role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name=='Another Test Role' ).first()
+        role_id = str( role.id )
         group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'New Test Group' ).first()
         group_id = str( group.id )
-        self.add_group_member( group_id )
-        self.visit_page( 'admin/group_members_edit?group_id=%s' % group_id )
-        self.check_page_for_string( 'test@bx.psu.edu' )
-        self.check_page_for_string( 'test2@bx.psu.edu' )
-    #def test_20_delete_group( self ):
-    #    """Testing deleting a group"""
-    #    self.visit_page( "admin/groups" )
-    #    self.check_page_for_string( "group_name=New+Test+Group" )
-    #    group = galaxy.model.Group.filter_by( name='New Test Group' ).all()[0]
-    #    group_id = str( group.id )
-    #    self.mark_group_deleted( group_id=group_id )
-    #def test_25_undelete_group( self ):
-    #    """Testing undeleting a deleted group"""
-    #    group = galaxy.model.Group.filter_by( name='New Test Group' ).all()[0]
-    #    group_id = str( group.id )
-    #    self.undelete_group( group_id=group_id )
-    #def test_30_purge_group( self ):
-    #    """Testing purging a group"""
-    #    group = galaxy.model.Group.filter_by( name='New Test Group' ).all()[0]
-    #    self.purge_group( group=group )
-
+        # ...and then we associate the role with a group not yet associated
+        self.associate_groups_with_role( role_id, group_ids=[ group_id  ] )
+        self.visit_page( 'admin/roles' )
+        self.check_page_for_string( 'New Test Group' )
+    def test_30_mark_group_deleted( self ):
+        """Testing marking a group as deleted"""
+        self.visit_page( "admin/groups" )
+        self.check_page_for_string( "Another Test Group" )
+        group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'Another Test Group' ).first()
+        group_id = str( group.id )
+        self.mark_group_deleted( group_id )
+    def test_35_undelete_group( self ):
+        """Testing undeleting a deleted group"""
+        group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'Another Test Group' ).first()
+        group_id = str( group.id )
+        self.undelete_group( group_id )
+    def test_40_mark_role_deleted( self ):
+        """Testing marking a role as deleted"""
+        self.visit_page( "admin/roles" )
+        self.check_page_for_string( "Another Test Role" )
+        role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name == 'Another Test Role' ).first()
+        role_id = str( role.id )
+        self.mark_role_deleted( role_id )
+    def test_45_undelete_role( self ):
+        """Testing undeleting a deleted role"""
+        role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name == 'Another Test Role' ).first()
+        role_id = str( role.id )
+        self.undelete_role( role_id )
+    def test_50_purge_group( self ):
+        """Testing purging a group"""
+        group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'Another Test Group' ).first()
+        group_id = str( group.id )
+        self.purge_group( group_id )
+        # Make sure there are no UserGroupAssociations
+        uga = galaxy.model.UserGroupAssociation.filter( galaxy.model.UserGroupAssociation.table.c.group_id == group_id ).all()
+        if uga:
+            raise AssertionError( "Purging the group did not delete the UserGroupAssociations for group_id '%s'" % group_id )
+        # Make sure there are no GroupRoleAssociations
+        gra = galaxy.model.GroupRoleAssociation.filter( galaxy.model.GroupRoleAssociation.table.c.group_id == group_id ).all()
+        if gra:
+            raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
+    def test_55_purge_role( self ):
+        """Testing purging a role"""
+        role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name == 'Another Test Role' ).first()
+        role_id = str( role.id )
+        self.purge_role( role_id )
+        # Make sure there are no GroupRoleAssociations
+        gra = galaxy.model.GroupRoleAssociation.filter( galaxy.model.GroupRoleAssociation.table.c.role_id == role_id ).all()
+        if gra:
+            raise AssertionError( "Purging the role did not delete the GroupRoleAssociations for role_id '%s'" % role_id )
+        # Make sure there are no ActionDatasetRoleAssociations
+        adra = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.role_id == role_id ).all()
+        if adra:
+            raise AssertionError( "Purging the role did not delete the ActionDatasetRoleAssociations for role_id '%s'" % role_id )
     #def test_20_create_library( self ):
     #    """Testing creating new library"""
     #    self.create_library( name='New Test Library', description='New Test Library Description' )

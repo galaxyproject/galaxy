@@ -370,6 +370,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home() #Reset our URL for future tests
         
     def login( self, email='test@bx.psu.edu', password='testuser'):
+        # test@bx.psu.edu is configured as an admin user
         self.create( email=email, password=password, confirm=password )
         self.visit_page( "user/login?email=%s&password=%s" % (email, password) )
         self.check_page_for_string( "Now logged in as %s" %email )
@@ -528,7 +529,7 @@ class TwillTestCase( unittest.TestCase ):
 
     # Dataset Security stuff
     def create_role( self, name='New Test Role', description="Very cool new test role", user_ids=[], group_ids=[] ):
-        """Create a new role with 2 members"""
+        """Create a new role"""
         self.visit_url( "%s/admin/create_role" % self.url )
         form = tc.show()
         self.check_page_for_string( "Create Role" )
@@ -536,16 +537,38 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "name", name )
             tc.fv( "1", "description", description )
             for user_id in user_ids:
-                tc.fv( "1", "3", user_id ) # 1-based form field 3 is the 1st check box named 'users', user id 1 is test@bx.psu.edu
+                tc.fv( "1", "3", user_id ) # form field 3 is the check box named 'users'
             for group_id in group_ids:
-                tc.fv( "1", "4", group_id ) # 1-based form field 4 is the 1st check box named 'groups'
+                tc.fv( "1", "4", group_id ) # form field 4 is the check box named 'groups'
             tc.submit( "create_role_button" )
         except AssertionError, err:
             errmsg = 'Exception caught attempting to create role: %s' % str( err )
             raise AssertionError( errmsg )
         self.home()
-        return form
-    def create_group( self, name='New Test Group3', user_ids=[], role_ids=[] ):
+        self.visit_page( "admin/roles" )
+        self.check_page_for_string( name )
+        self.home()
+    def mark_role_deleted( self, role_id ):
+        """Mark a role as deleted"""
+        self.visit_url( "%s/admin/mark_role_deleted?role_id=%s" % ( self.url, role_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The role has been marked as deleted' )
+        self.home()
+    def undelete_role( self, role_id ):
+        """Undelete an existing role"""
+        self.visit_url( "%s/admin/undelete_role?role_id=%s" % ( self.url, role_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The role has been marked as not deleted' )
+        self.home()
+    def purge_role( self, role_id, deleted=False ):
+        """Purge an existing role"""
+        if not deleted:
+            self.mark_role_deleted( role_id )
+        self.visit_url( "%s/admin/purge_role?role_id=%s" % ( self.url, role_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The role has been purged from the database' )
+        self.home()
+    def create_group( self, name='New Test Group', user_ids=[], role_ids=[] ):
         """Create a new group with 2 members and 1 associated role"""
         self.visit_url( "%s/admin/create_group" % self.url )
         form = tc.show()
@@ -553,47 +576,61 @@ class TwillTestCase( unittest.TestCase ):
         try: 
             tc.fv( "1", "name", name )
             for user_id in user_ids:
-                tc.fv( "1", "2", user_id ) # 1-based form field 2 is the 1st check box named 'members', user id 1 is test@bx.psu.edu
+                tc.fv( "1", "2", user_id ) # form field 2 is the check box named 'members'
             for role_id in role_ids:
-                tc.fv( "1", "3", role_id ) # form field 3 is the 1st check box named 'roles', role id 1 is 'New Test Role'
+                tc.fv( "1", "3", role_id ) # form field 3 is the check box named 'roles'
             tc.submit( "create_group_button" )
         except AssertionError, err:
             errmsg = 'Exception caught attempting to create group: %s' % str( err )
             raise AssertionError( errmsg )
         self.home()
-        return form
-    def add_group_member( self, group_id ):
+        self.visit_page( "admin/groups" )
+        self.check_page_for_string( name )
+        self.home()
+    def add_group_members( self, group_id, user_ids=[] ):
         """Add a member to an existing group"""
-        # twill version 0.9 does not allow for this test
         self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_id ) )
         self.check_page_for_string( 'Members of' )
         try:
-            tc.fv( "1", "1", "2" ) # 1-based form field 2 is the 2nd check box named 'members', user id 2 is test2@bx.psu.edu
+            for user_id in user_ids:
+                tc.fv( "1", "1", user_id ) # form field 1 is the check box named 'members'
             tc.submit( "group_members_edit_button" )
         except AssertionError, err:
-            errmsg = 'Exception caught attempting to create group: %s' % str( err )
-            raise AssertionError( errmsg )
+            raise AssertionError( 'Exception caught attempting to create group: %s' % str( err ) )
         self.home()
-    def mark_group_deleted( self, group_id='' ):
-        """Delete an existing group"""
+    def associate_groups_with_role( self, role_id, group_ids=[] ):
+        """Add groups to an existing role"""
+        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
+        # or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Groups associated with' )
+        # All groups must be in the out_groups form field
+        try:
+            for group in groups:
+                tc.fv( "1", "7", group_id ) # form field 7 is the select list named out_groups, note the buttons...
+                tc.submit( "groups_add_button" )
+            tc.submit( "role_button" )
+        except AssertionError, err: 
+            raise AssertionError( 'Exception caught attempting to associated groups with a role: %s' % str( err ) )
+        except:
+            pass
+        self.home()
+    def mark_group_deleted( self, group_id ):
+        """Mark a group as deleted"""
         self.visit_url( "%s/admin/mark_group_deleted?group_id=%s" % ( self.url, group_id ) )
         self.last_page()
         self.check_page_for_string( 'The group has been marked as deleted' )
         self.home()
-    def undelete_group( self, group_id='' ):
+    def undelete_group( self, group_id ):
         """Undelete an existing group"""
         self.visit_url( "%s/admin/undelete_group?group_id=%s" % ( self.url, group_id ) )
         self.last_page()
         self.check_page_for_string( 'The group has been marked as not deleted' )
         self.home()
-    def purge_group( self, group=None ):
+    def purge_group( self, group_id, deleted=False ):
         """Purge an existing group"""
-        if not group.deleted:
-            self.mark_group_deleted( group_id=group.id )
-        group_id = str( group.id )
-        group_name = group.name.replace( ' ', '+' )
-        self.visit_url( "%s/admin/deleted_groups" % self.url )
-        self.check_page_for_string( '%s' % group.name )
+        if not deleted:
+            self.mark_group_deleted( group_id )
         self.visit_url( "%s/admin/purge_group?group_id=%s" % ( self.url, group_id ) )
         self.last_page()
         self.check_page_for_string( 'The group has been purged from the database' )
