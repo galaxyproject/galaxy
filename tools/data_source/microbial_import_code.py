@@ -84,7 +84,8 @@ from galaxy import datatypes, config, jobs
 from shutil import copyfile
 
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
-    history = out_data.items()[0][1].history
+    base_dataset = out_data.items()[0][1]
+    history = base_dataset.history
     if history == None:
         print "unknown history!"
         return
@@ -128,6 +129,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.extension = file_type
             newdata.name = basic_name + " (" + microbe_info[kingdom][org]['chrs'][chr]['data'][description]['feature'] +" for "+microbe_info[kingdom][org]['name']+":"+chr + ")"
             newdata.flush()
+            app.security_agent.copy_dataset_permissions( base_dataset.dataset, newdata.dataset )
             history.add_dataset( newdata )
             app.model.flush()
             try:

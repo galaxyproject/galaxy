@@ -8,7 +8,7 @@ import twill
 import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm
 from elementtree import ElementTree
-
+  
 buffer = StringIO.StringIO()
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
@@ -30,7 +30,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.set_history()
 
-    """Functions associated with files"""
+    # Functions associated with files
     def files_diff( self, file1, file2 ):
         """Checks the contents of 2 files for differences"""
         if not filecmp.cmp( file1, file2 ):
@@ -82,7 +82,7 @@ class TwillTestCase( unittest.TestCase ):
             errmsg += str( err )
             raise AssertionError( errmsg )
 
-    """Functions associated with histories"""
+    # Functions associated with histories
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
         self.visit_page( "history" )
@@ -209,7 +209,7 @@ class TwillTestCase( unittest.TestCase ):
     def view_stored_histories( self ):
         self.visit_page( "history_available" )
 
-    """Functions associated with datasets (history items) and meta data"""
+    # Functions associated with datasets (history items) and meta data
     def get_job_stderr( self, id ):
         self.visit_page( "dataset/stderr?id=%s" % id )
         return self.last_page()
@@ -360,7 +360,7 @@ class TwillTestCase( unittest.TestCase ):
         genome_build = elem.get('dbkey')
         self.assertTrue( genome_build == dbkey )
 
-    """Functions associated with user accounts"""
+    # Functions associated with user accounts
     def create( self, email='test@bx.psu.edu', password='testuser', confirm='testuser' ):
         self.visit_page( "user/create?email=%s&password=%s&confirm=%s" %(email, password, confirm) )
         try:
@@ -370,6 +370,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home() #Reset our URL for future tests
         
     def login( self, email='test@bx.psu.edu', password='testuser'):
+        # test@bx.psu.edu is configured as an admin user
         self.create( email=email, password=password, confirm=password )
         self.visit_page( "user/login?email=%s&password=%s" % (email, password) )
         self.check_page_for_string( "Now logged in as %s" %email )
@@ -380,7 +381,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( "You are no longer logged in" )
         self.home() #Reset our URL for future tests
 
-    """Functions associated with browsers, cookies, HTML forms and page visits"""
+    # Functions associated with browsers, cookies, HTML forms and page visits
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""
         page = self.last_page()
@@ -502,7 +503,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.go("%s" % url)
         tc.code( 200 )
 
-    """Functions associated with Galaxy tools"""
+    # Functions associated with Galaxy tools
     def run_tool( self, tool_id, **kwd ):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
@@ -525,3 +526,124 @@ class TwillTestCase( unittest.TestCase ):
             else:
                 break
         self.assertNotEqual(count, maxiter)
+
+    # Dataset Security stuff
+    def create_role( self, name='New Test Role', description="Very cool new test role", user_ids=[], group_ids=[] ):
+        """Create a new role"""
+        self.visit_url( "%s/admin/create_role" % self.url )
+        form = tc.show()
+        self.check_page_for_string( "Create Role" )
+        try: 
+            tc.fv( "1", "name", name )
+            tc.fv( "1", "description", description )
+            for user_id in user_ids:
+                tc.fv( "1", "3", user_id ) # form field 3 is the check box named 'users'
+            for group_id in group_ids:
+                tc.fv( "1", "4", group_id ) # form field 4 is the check box named 'groups'
+            tc.submit( "create_role_button" )
+        except AssertionError, err:
+            errmsg = 'Exception caught attempting to create role: %s' % str( err )
+            raise AssertionError( errmsg )
+        self.home()
+        self.visit_page( "admin/roles" )
+        self.check_page_for_string( name )
+        self.home()
+    def mark_role_deleted( self, role_id ):
+        """Mark a role as deleted"""
+        self.visit_url( "%s/admin/mark_role_deleted?role_id=%s" % ( self.url, role_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The role has been marked as deleted' )
+        self.home()
+    def undelete_role( self, role_id ):
+        """Undelete an existing role"""
+        self.visit_url( "%s/admin/undelete_role?role_id=%s" % ( self.url, role_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The role has been marked as not deleted' )
+        self.home()
+    def purge_role( self, role_id, deleted=False ):
+        """Purge an existing role"""
+        if not deleted:
+            self.mark_role_deleted( role_id )
+        self.visit_url( "%s/admin/purge_role?role_id=%s" % ( self.url, role_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The role has been purged from the database' )
+        self.home()
+    def create_group( self, name='New Test Group', user_ids=[], role_ids=[] ):
+        """Create a new group with 2 members and 1 associated role"""
+        self.visit_url( "%s/admin/create_group" % self.url )
+        form = tc.show()
+        self.check_page_for_string( "Create Group" )
+        try: 
+            tc.fv( "1", "name", name )
+            for user_id in user_ids:
+                tc.fv( "1", "2", user_id ) # form field 2 is the check box named 'members'
+            for role_id in role_ids:
+                tc.fv( "1", "3", role_id ) # form field 3 is the check box named 'roles'
+            tc.submit( "create_group_button" )
+        except AssertionError, err:
+            errmsg = 'Exception caught attempting to create group: %s' % str( err )
+            raise AssertionError( errmsg )
+        self.home()
+        self.visit_page( "admin/groups" )
+        self.check_page_for_string( name )
+        self.home()
+    def add_group_members( self, group_id, user_ids=[] ):
+        """Add a member to an existing group"""
+        self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'Members of' )
+        try:
+            for user_id in user_ids:
+                tc.fv( "1", "1", user_id ) # form field 1 is the check box named 'members'
+            tc.submit( "group_members_edit_button" )
+        except AssertionError, err:
+            raise AssertionError( 'Exception caught attempting to create group: %s' % str( err ) )
+        self.home()
+    def associate_groups_with_role( self, role_id, group_ids=[] ):
+        """Add groups to an existing role"""
+        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
+        # or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Groups associated with' )
+        # All groups must be in the out_groups form field
+        try:
+            for group in groups:
+                tc.fv( "1", "7", group_id ) # form field 7 is the select list named out_groups, note the buttons...
+                tc.submit( "groups_add_button" )
+            tc.submit( "role_button" )
+        except AssertionError, err: 
+            raise AssertionError( 'Exception caught attempting to associated groups with a role: %s' % str( err ) )
+        except:
+            pass
+        self.home()
+    def mark_group_deleted( self, group_id ):
+        """Mark a group as deleted"""
+        self.visit_url( "%s/admin/mark_group_deleted?group_id=%s" % ( self.url, group_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The group has been marked as deleted' )
+        self.home()
+    def undelete_group( self, group_id ):
+        """Undelete an existing group"""
+        self.visit_url( "%s/admin/undelete_group?group_id=%s" % ( self.url, group_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The group has been marked as not deleted' )
+        self.home()
+    def purge_group( self, group_id, deleted=False ):
+        """Purge an existing group"""
+        if not deleted:
+            self.mark_group_deleted( group_id )
+        self.visit_url( "%s/admin/purge_group?group_id=%s" % ( self.url, group_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The group has been purged from the database' )
+        self.home()
+
+    # Library stuff
+    def create_library( self, name='', description='' ):
+        """Create a new library"""
+        name = name.replace( ' ', '+' )
+        description = description.replace( ' ', '+' )
+        try:
+            self.visit_url( "%s/admin/library?name=%s&description=%s&create_library=None" % ( self.url, name, description ) )
+        except AssertionError, err:
+            errmsg = 'Exception caught attempting to create library: %s' % str( err )
+            raise AssertionError( errmsg )
+        self.home()
