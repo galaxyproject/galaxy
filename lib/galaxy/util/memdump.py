@@ -22,22 +22,29 @@ else:
             self.fname = fname
             signal.signal( signum, self.dump )
             self.heapy = guppy.hpy()
+            self.heap = None
         def dump( self, signum, stack ):
             file = open( self.fname, "a" )
             print >> file, "Memdump for pid %d at %s" % ( os.getpid(), time.asctime() )
             print >> file
             try:
-                h = self.heapy.heap()
+                self.heap = self.heapy.heap()
                 print >> file, "heap():"
-                print >> file, h
+                print >> file, self.heap
                 print >> file, "\nbyrcs:"
-                print >> file, h.byrcs
+                print >> file, self.heap.byrcs
                 print >> file, "\nbyrcs[0].byid:"
-                print >> file, h.byrcs[0].byid
+                print >> file, self.heap.byrcs[0].byid
                 print >> file, "\nget_rp():"
-                print >> file, h.get_rp()
+                print >> file, self.heap.get_rp()
                 self.heapy.setref()
             except AssertionError:
                 pass
             print >> file, "\nEnd dump\n"
             file.close()
+        def setref( self ):
+            self.heapy.setref()
+        def get( self, update=False ):
+            if update:
+                self.heap = self.heapy.heap()
+            return self.heap

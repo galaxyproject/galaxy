@@ -35,6 +35,7 @@ class UniverseApplication( object ):
         self.job_queue = jobs.JobQueue( self, job_dispatcher )
         self.job_stop_queue = jobs.JobStopQueue( self, job_dispatcher )
         self.heartbeat = None
+        self.memdump = None
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
             from galaxy.util import heartbeat
