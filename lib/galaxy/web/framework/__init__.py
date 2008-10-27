@@ -267,6 +267,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         # remote_user middleware ensures HTTP_REMOTE_USER exists
         try:
             user = self.app.model.User.filter_by( email=self.environ[ 'HTTP_REMOTE_USER' ] ).first()
+            assert user is not None
         except:
             user = self.app.model.User( email=self.environ[ 'HTTP_REMOTE_USER' ] )
             user.set_password_cleartext( 'external' )
