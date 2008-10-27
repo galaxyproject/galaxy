@@ -1,5 +1,13 @@
 <?xml version="1.0"?>
-<tool name="BioMart" id="biomart" tool_type="data_source">
+<!--
+    If the value of 'URL_method' is 'get', the request will consist of the value of 'URL' coming back in
+    the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
+    initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
+
+    TODO: Hack to get biomart to work - the 'add_to_URL' param can be eliminated when the Biomart team encodes URL prior to sending, meanwhile
+    everything including and beyond the first '&' is truncated from URL.  They said they'll let us know when this is fixed at their end.
+-->
+<tool name="BioMart" id="biomart_test" tool_type="data_source" URL_method="get" add_to_URL="biomart_hack">
 	<description>Test server</description>
 	<command interpreter="python">data_source.py $output</command>
 	<inputs action="http://test.biomart.org/biomart/martview" check_values="false" method="get" target="_top">

@@ -228,19 +228,21 @@ class Tool:
             self.version = "1.0.0"
         # Type of tool
         self.tool_type = root.get( "tool_type", None )
-        if self.tool_type is not None:
-            # data_source tool
-            if self.tool_type == "data_source":
-                self.param_trans_dict = {}
-                req_param_trans = root.find( "request_param_translation" )
-                if req_param_trans is not None:
-                    for req_param in req_param_trans.findall( "request_param" ):
-                        # req_param tags must look like <request_param galaxy_name="dbkey" remote_name="GENOME" missing="" />
-                        trans_list = []
-                        remote_name = req_param.get( "remote_name" )
-                        trans_list.append( req_param.get( "galaxy_name" ) )
-                        trans_list.append( req_param.get( "missing" ) )
-                        self.param_trans_dict[ remote_name ] = trans_list
+        # data_source tool
+        if self.tool_type == "data_source":
+            self.URL_method = root.get( "URL_method", "get" ) # get is the default
+            # TODO: Biomart hack - eliminate when they encode URL - they'll let us know when...
+            self.add_to_URL = root.get( "add_to_URL", None )
+            self.param_trans_dict = {}
+            req_param_trans = root.find( "request_param_translation" )
+            if req_param_trans is not None:
+                for req_param in req_param_trans.findall( "request_param" ):
+                    # req_param tags must look like <request_param galaxy_name="dbkey" remote_name="GENOME" missing="" />
+                    trans_list = []
+                    remote_name = req_param.get( "remote_name" )
+                    trans_list.append( req_param.get( "galaxy_name" ) )
+                    trans_list.append( req_param.get( "missing" ) )
+                    self.param_trans_dict[ remote_name ] = trans_list
         # Command line (template). Optional for tools that do not invoke a local program  
         command = root.find("command")
         if command is not None and command.text is not None:

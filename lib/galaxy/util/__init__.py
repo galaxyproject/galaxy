@@ -143,7 +143,7 @@ class Params:
     #       different parameters can be sanitized in different ways.
     NEVER_SANITIZE = ['file_data', 'url_paste', 'URL']
     
-    def __init__( self, params, safe=True, sanitize=True, tool_type=None, param_trans_dict={} ):
+    def __init__( self, params, safe=True, sanitize=True, tool=None ):
         if safe:
             for key, value in params.items():
                 # Check to see if we should translate certain parameter names.  For example,
@@ -152,21 +152,27 @@ class Params:
                 # param_trans_dict looks like { "GENOME" : [ "dbkey" "?" ] }
                 new_key = key
                 new_value = value
-                if tool_type == 'data_source':
-                    if key in param_trans_dict:
-                        new_key = param_trans_dict[ key ][0]
+                if tool and tool.tool_type == 'data_source':
+                    if key in tool.param_trans_dict:
+                        new_key = tool.param_trans_dict[ key ][0]
                         if not value:
-                            new_value = param_trans_dict[ key ][1]
+                            new_value = tool.param_trans_dict[ key ][1]
                 if key not in self.NEVER_SANITIZE and sanitize:
                     self.__dict__[ new_key ] = sanitize_param( new_value )
                 else:
                     self.__dict__[ new_key ] = new_value
-            for key, value in param_trans_dict.items():
-                # Make sure that all translated values used in Galaxy are added to the params
-                galaxy_name = param_trans_dict[ key ][0]
-                if galaxy_name not in self.__dict__:
-                    # This will set the galaxy_name to the "missing" value
-                    self.__dict__[ galaxy_name ] = param_trans_dict[ key ][1]
+            if tool and tool.tool_type == 'data_source':
+                # Add the tool's URL_method to params
+                self.__dict__[ 'URL_method' ] = tool.URL_method
+                # TODO: Biomart hack - eliminate when they encode URL - they'll let us know when...
+                if tool.add_to_URL is not None:
+                    self.__dict__[ 'add_to_URL' ] = tool.add_to_URL
+                for key, value in tool.param_trans_dict.items():
+                    # Make sure that all translated values used in Galaxy are added to the params
+                    galaxy_name = tool.param_trans_dict[ key ][0]
+                    if galaxy_name not in self.__dict__:
+                        # This will set the galaxy_name to the "missing" value
+                        self.__dict__[ galaxy_name ] = tool.param_trans_dict[ key ][1]
         else:
             self.__dict__.update(params)
 
