@@ -176,11 +176,17 @@ class JobQueue( object ):
                         self.dispatcher.put( job )
                         log.debug( "job %d dispatched" % job.job_id)
                 elif job_state == JOB_DELETED:
-                    log.debug( "job %d deleted by user while still queued" % job.job_id )
+                    msg = "job %d deleted by user while still queued" % job.job_id
+                    job.info = msg
+                    log.debug( msg )
                 else:
-                    log.error( "unknown job state '%s' for job %d" % ( job_state, job.job_id ))
-            except:
-                log.exception( "failure running job %d" % job.job_id )
+                    msg = "unknown job state '%s' for job %d" % ( job_state, job.job_id )
+                    job.info = msg
+                    log.error( msg )
+            except Exception, e:
+                msg = "failure running job %d: %s" % ( job.job_id, str( e ) )
+                job.info = msg
+                log.exception( msg )
         # Update the waiting list
         self.waiting = new_waiting
         # If special (e.g. fair) scheduling is enabled, dispatch all jobs
@@ -194,9 +200,10 @@ class JobQueue( object ):
                 except Empty: 
                     # squeue is empty, so stop dispatching
                     break
-                except: # if something else breaks while dispatching
-                    job.fail( "failure dispatching job" )
-                    log.exception( "failure running job %d" % sjob.job_id )
+                except Exception, e: # if something else breaks while dispatching
+                    msg = "failure running job %d: %s" % ( sjob.job_id, str( e ) )
+                    job.fail( msg )
+                    log.exception( msg )
             
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""
@@ -301,7 +308,7 @@ class JobWrapper( object ):
         self.extra_filenames = extra_filenames
         return extra_filenames
         
-    def fail( self, message, exception=False ):
+    def fail( self, message, state=None, exception=False ):
         """
         Indicate job failure by setting state and message on all output 
         datasets.
@@ -309,25 +316,26 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         job.refresh()
         # if the job was deleted, don't fail it
-        if job.state == job.states.DELETED:
-            self.cleanup()
-            return
-        for dataset_assoc in job.output_datasets:
-            dataset = dataset_assoc.dataset
-            dataset.refresh()
-            dataset.state = dataset.states.ERROR
-            dataset.blurb = 'tool error'
-            dataset.info = message
-            dataset.set_size()
-            dataset.flush()
-        job.state = model.Job.states.ERROR
-        job.command_line = self.command_line
-        job.info = message
-        # If the failure is due to a Galaxy framework exception, save 
-        # the traceback
-        if exception:
-            job.traceback = traceback.format_exc()
-        job.flush()
+        if not job.state == job.states.DELETED:
+            for dataset_assoc in job.output_datasets:
+                dataset = dataset_assoc.dataset
+                dataset.refresh()
+                dataset.state = dataset.states.ERROR
+                dataset.blurb = 'tool error'
+                dataset.info = message
+                dataset.set_size()
+                dataset.flush()
+            if state is not None:
+                job.state = state
+            else:
+                job.state = model.Job.states.ERROR
+            job.command_line = self.command_line
+            job.info = message
+            # If the failure is due to a Galaxy framework exception, save the traceback
+            if exception:
+                job.traceback = traceback.format_exc()
+            job.flush()
+        # If the job was deleted, just clean up
         self.cleanup()
         
     def change_state( self, state, info = False ):
@@ -371,16 +379,19 @@ class JobWrapper( object ):
         job.refresh()
         for dataset_assoc in job.input_datasets:
             idata = dataset_assoc.dataset
-            if not idata: continue
+            if not idata:
+                continue
             idata.refresh()
             idata.dataset.refresh() #we need to refresh the base Dataset, since that is where 'state' is stored
             # don't run jobs for which the input dataset was deleted
-            if idata.deleted == True:
-                self.fail( "input data %d was deleted before this job ran" % idata.hid )
+            if idata.deleted:
+                msg = "input data %d was deleted before this job started" % idata.hid
+                self.fail( msg, state=JOB_INPUT_DELETED )
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
             elif idata.state == idata.states.ERROR:
-                self.fail( "error in input data %d" % idata.hid )
+                msg = "input data %d is in an error state" % idata.hid
+                self.fail( msg, state=JOB_INPUT_ERROR )
                 return JOB_INPUT_ERROR
             elif idata.state != idata.states.OK:
                 # need to requeue
@@ -467,8 +478,8 @@ class JobWrapper( object ):
                 os.remove( fname )
             if self.working_directory is not None:
                 os.rmdir( self.working_directory ) 
-        except:
-            log.exception( "Unable to cleanup job %s" % self.job_id )
+        except Exception, e:
+            log.exception( "Unable to cleanup job %s, exception: %s" % ( str( self.job_id ), str( e ) ) )
         
     def get_command_line( self ):
         return self.command_line
@@ -617,7 +628,7 @@ class JobStopQueue( object ):
         job = model.Job.get( job_id )
         job.refresh()
         job.state = job.states.DELETED
-        job.info = "Job deleted by user before it completed."
+        job.info = "Job output deleted by user before job completed."
         job.flush()
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset
@@ -630,7 +641,7 @@ class JobStopQueue( object ):
                 dataset.deleted = True
                 dataset.blurb = 'deleted'
                 dataset.peek = 'Job deleted'
-                dataset.info = 'Job deleted by user before it completed'
+                dataset.info = 'Job output deleted by user before job completed'
                 dataset.flush()
 
     def put( self, job ):
