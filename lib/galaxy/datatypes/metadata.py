@@ -1,4 +1,4 @@
-import sys, logging, copy, shutil
+import sys, logging, copy, shutil, weakref
 
 from galaxy.util import string_as_bool
 from galaxy.util.odict import odict
@@ -40,6 +40,13 @@ class MetadataCollection:
         #initialize dict if needed
         if self.parent._metadata is None:
             self.parent._metadata = {}
+    def get_parent( self ):
+        if "_parent" in self.__dict__:
+            return self.__dict__["_parent"]()
+        return None
+    def set_parent( self, parent ):
+        self.__dict__["_parent"] = weakref.ref( parent ) # use weakref to prevent a circular reference interfering with garbage collection: hda/lda (parent) <--> MetadataCollection (self) ; needs to be hashable, so cannot use proxy.
+    parent = property( get_parent, set_parent )
     @property
     def spec( self ):
         return self.parent.datatype.metadata_spec
@@ -65,7 +72,7 @@ class MetadataCollection:
             return self.parent._metadata[name]
     def __setattr__( self, name, value ):
         if name == "parent":
-            self.__dict__[name] = value
+            return self.set_parent( value )
         else:
             if name in self.spec:
                 self.parent._metadata[name] = self.spec[name].unwrap( value )
