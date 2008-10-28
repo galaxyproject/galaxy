@@ -358,6 +358,7 @@ class Admin( BaseController ):
                 gra.flush()
             msg = "The new group has been created with %s members and %s associated roles" % ( str( len( members ) ), str( len( roles ) ) )
             trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
+    @web.expose
     def group_members_edit( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
