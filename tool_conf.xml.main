@@ -7,6 +7,7 @@
     <tool file="data_source/microbial_import.xml" />
     <tool file="data_source/biomart.xml" />
     <tool file="data_source/encode_db.xml" />
+    <tool file="data_source/epigraph_import.xml" />
   </section>
   <section name="Get ENCODE Data" id="encode">
     <tool file="data_source/encode_import_chromatin_and_chromosomes.xml"/>
@@ -15,6 +16,9 @@
     <tool file="data_source/encode_import_transcription_regulation.xml"/>
     <tool file="data_source/encode_import_all_latest_datasets.xml" />
     <tool file="data_source/encode_import_gencode.xml" />
+  </section>
+  <section name="Send Data" id="send">
+    <tool file="data_destination/epigraph.xml" />
   </section>
   <section name="ENCODE Tools" id="EncodeTools">
     <tool file="encode/gencode_partition.xml" />

@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
-<tool name="Perform genome analysis" id="epigraph_export">
-    <description> and prediction with EpiGRAPH</description>
+<tool name="Perform genome analysis" id="epigraph_test_export">
+    <description> and prediction with EpiGRAPH Test</description>
     <redirect_url_params>GENOME=${input1.dbkey} NAME=${input1.name} INFO=${input1.info}</redirect_url_params>
     <inputs>
         <param format="bed" name="input1" type="data" label="Send this dataset to EpiGRAPH">
             <validator type="unspecified_build" />
         </param>
-        <param name="REDIRECT_URL" type="hidden" value="http://epigraph.mpi-inf.mpg.de/WebGRAPH/faces/DataImport.jsp" />
+        <param name="REDIRECT_URL" type="hidden" value="http://epigraph.mpi-inf.mpg.de/WebGRAPH_Public_Test/faces/DataImport.jsp" />
         <param name="DATA_URL" type="baseurl" value="/datasets" />
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=epigraph_import" />
     </inputs>
@@ -15,7 +15,7 @@
 
 .. class:: warningmark
 
-After clicking the **Execute** button, you will be redirected to the EpiGRAPH website. Please be patient while the dataset is being imported. Inside EpiGRAPH, buttons are available to send the results of the EpiGRAPH analysis back to Galaxy. In addition, you can always abandon an EpiGRAPH session and return to Galaxy by directing your browser to your current Galaxy instance.
+After clicking the **Execute** button, you will be redirected to the EpiGRAPH test website. Please be patient while the dataset is being imported. Inside EpiGRAPH, buttons are available to send the results of the EpiGRAPH analysis back to Galaxy. In addition, you can always abandon an EpiGRAPH session and return to Galaxy by directing your browser to your current Galaxy instance.
 
 -----
 
