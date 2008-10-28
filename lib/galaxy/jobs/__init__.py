@@ -117,8 +117,8 @@ class JobQueue( object ):
         while self.running:
             try:
                 self.monitor_step()
-            except:
-                log.exception( "Exception in monitor_step" )
+            except Exception, e:
+                log.exception( "Exception in monitor_step: %s" % str( e ) )
             # Sleep
             self.sleeper.sleep( 1 )
 
@@ -308,7 +308,7 @@ class JobWrapper( object ):
         self.extra_filenames = extra_filenames
         return extra_filenames
         
-    def fail( self, message, state=None, exception=False ):
+    def fail( self, message, exception=False ):
         """
         Indicate job failure by setting state and message on all output 
         datasets.
@@ -316,7 +316,7 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         job.refresh()
         # if the job was deleted, don't fail it
-        if not job.state == job.states.DELETED:
+        if not job.state == model.Job.states.DELETED:
             for dataset_assoc in job.output_datasets:
                 dataset = dataset_assoc.dataset
                 dataset.refresh()
@@ -325,10 +325,7 @@ class JobWrapper( object ):
                 dataset.info = message
                 dataset.set_size()
                 dataset.flush()
-            if state is not None:
-                job.state = state
-            else:
-                job.state = model.Job.states.ERROR
+            job.state = model.Job.states.ERROR
             job.command_line = self.command_line
             job.info = message
             # If the failure is due to a Galaxy framework exception, save the traceback
@@ -385,13 +382,11 @@ class JobWrapper( object ):
             idata.dataset.refresh() #we need to refresh the base Dataset, since that is where 'state' is stored
             # don't run jobs for which the input dataset was deleted
             if idata.deleted:
-                msg = "input data %d was deleted before this job started" % idata.hid
-                self.fail( msg, state=JOB_INPUT_DELETED )
+                self.fail( "input data %d was deleted before this job started" % idata.hid )
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
             elif idata.state == idata.states.ERROR:
-                msg = "input data %d is in an error state" % idata.hid
-                self.fail( msg, state=JOB_INPUT_ERROR )
+                self.fail( "input data %d is in an error state" % idata.hid )
                 return JOB_INPUT_ERROR
             elif idata.state != idata.states.OK:
                 # need to requeue
@@ -578,8 +573,8 @@ class JobStopQueue( object ):
         while self.running:
             try:
                 self.monitor_step()
-            except:
-                log.exception( "Exception in monitor_step" )
+            except Exception, e:
+                log.exception( "Exception in monitor_step: %s" % str( e ) )
             # Sleep
             self.sleeper.sleep( 1 )
 
