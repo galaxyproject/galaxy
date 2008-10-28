@@ -62,7 +62,7 @@ class JobQueue( object ):
                 else :
                     self.use_policy = False
                     log.info("Scheduler policy not defined as expected, defaulting to FIFO")
-            except AttributeError, detail : # try may throw AttributeError
+            except AttributeError, detail: # try may throw AttributeError
                 self.use_policy = False
                 log.exception("Error while loading scheduler policy class, defaulting to FIFO")
         else :
@@ -117,8 +117,8 @@ class JobQueue( object ):
         while self.running:
             try:
                 self.monitor_step()
-            except Exception, e:
-                log.exception( "Exception in monitor_step: %s" % str( e ) )
+            except:
+                log.exception( "Exception in monitor_step" )
             # Sleep
             self.sleeper.sleep( 1 )
 
@@ -184,9 +184,8 @@ class JobQueue( object ):
                     job.info = msg
                     log.error( msg )
             except Exception, e:
-                msg = "failure running job %d: %s" % ( job.job_id, str( e ) )
-                job.info = msg
-                log.exception( msg )
+                job.info = "failure running job %d: %s" % ( job.job_id, str( e ) )
+                log.exception( "failure running job %d" % job.job_id )
         # Update the waiting list
         self.waiting = new_waiting
         # If special (e.g. fair) scheduling is enabled, dispatch all jobs
@@ -201,9 +200,8 @@ class JobQueue( object ):
                     # squeue is empty, so stop dispatching
                     break
                 except Exception, e: # if something else breaks while dispatching
-                    msg = "failure running job %d: %s" % ( sjob.job_id, str( e ) )
-                    job.fail( msg )
-                    log.exception( msg )
+                    job.fail( "failure running job %d: %s" % ( sjob.job_id, str( e ) ) )
+                    log.exception( "failure running job %d" % sjob.job_id )
             
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""
@@ -473,8 +471,8 @@ class JobWrapper( object ):
                 os.remove( fname )
             if self.working_directory is not None:
                 os.rmdir( self.working_directory ) 
-        except Exception, e:
-            log.exception( "Unable to cleanup job %s, exception: %s" % ( str( self.job_id ), str( e ) ) )
+        except:
+            log.exception( "Unable to cleanup job %d" % self.job_id )
         
     def get_command_line( self ):
         return self.command_line
@@ -573,8 +571,8 @@ class JobStopQueue( object ):
         while self.running:
             try:
                 self.monitor_step()
-            except Exception, e:
-                log.exception( "Exception in monitor_step: %s" % str( e ) )
+            except:
+                log.exception( "Exception in monitor_step" )
             # Sleep
             self.sleeper.sleep( 1 )
 
