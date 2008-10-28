@@ -97,11 +97,10 @@ class JobQueue( object ):
         model = self.app.model
         # Jobs in the NEW state won't be requeued unless we're tracking in the database
         if not self.track_jobs_in_database:
-            for job in model.Job.select( model.Job.c.state == model.Job.states.NEW ):
+            for job in model.Job.filter( model.Job.c.state==model.Job.states.NEW ).all():
                 log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
                 self.queue.put( ( job.id, job.tool_id ) )
-        for job in model.Job.select( (model.Job.c.state == model.Job.states.RUNNING)
-                                 | (model.Job.c.state == model.Job.states.QUEUED) ):
+        for job in model.Job.filter( (model.Job.c.state == model.Job.states.RUNNING) | (model.Job.c.state == model.Job.states.QUEUED) ).all():
             if job.job_runner_name is not None:
                 # why are we passing the queue to the wrapper?
                 job_wrapper = JobWrapper( job.id, self.app.toolbox.tools_by_id[ job.tool_id ], self )
@@ -136,7 +135,7 @@ class JobQueue( object ):
         new_jobs = []
         if self.track_jobs_in_database:
             model = self.app.model
-            for j in model.Job.select( model.Job.c.state == model.Job.states.NEW ):
+            for j in model.Job.filter( model.Job.c.state==model.Job.states.NEW ).all():
                 job = JobWrapper( j.id, self.app.toolbox.tools_by_id[ j.tool_id ], self )
                 new_jobs.append( job )
         else:
