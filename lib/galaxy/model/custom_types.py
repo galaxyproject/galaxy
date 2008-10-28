@@ -18,16 +18,15 @@ class JSONType( TypeDecorator ):
         self.mutable = mutable
         super( JSONType, self).__init__()
 
-    def convert_result_value( self, value, dialect ):
+    def process_bind_param( self, value, dialect ):
         if value is None:
             return None
-        buf = self.impl.convert_result_value( value, dialect )
-        return self.jsonifyer.loads( str(buf) )
-    
-    def convert_bind_param( self, value, dialect ):
+        return self.jsonifyer.dumps( value )
+
+    def process_result_value( self, value, dialect ):
         if value is None:
             return None
-        return self.impl.convert_bind_param( self.jsonifyer.dumps(value), dialect )
+        return self.jsonifyer.loads( str( value ) )
     
     def copy_value( self, value ):
         if self.mutable:
@@ -60,10 +59,10 @@ class MetadataType( JSONType ):
         self.mutable = mutable
         super( MetadataType, self).__init__()
     
-    def convert_result_value( self, value, dialect ):
+    def process_result_value( self, value, dialect ):
         if value is None:
             return None
-        buf = self.impl.convert_result_value( value, dialect )
+        buf = value
         ret = None
         try:
             ret = self.pickler.loads( str(buf) )
@@ -77,7 +76,7 @@ class MetadataType( JSONType ):
     
 class TrimmedString( TypeDecorator ):
     impl = String
-    def convert_bind_param( self, value, dialect ):
+    def process_bind_param( self, value, dialect ):
         """Automatically truncate string values"""
         if self.impl.length and value is not None:
             value = value[0:self.impl.length]
