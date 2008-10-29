@@ -205,6 +205,12 @@ def purge_histories( h, d, m, cutoff_time, remove_from_disk ):
                                     metadata_file.purged = True
                                     metadata_file.flush()
                                     print "%s" % metadata_file.file_name()
+                            for lda in dataset.library_associations:
+                                for metadata_file in m.filter( m.table.c.lda_id==lda.id ).all():
+                                    metadata_file.deleted = True
+                                    metadata_file.purged = True
+                                    metadata_file.flush()
+                                    print "%s" % metadata_file.file_name()
                         dataset_count += 1
                         try:
                             disk_space += file_size
@@ -272,6 +278,12 @@ def purge_datasets( d, m, cutoff_time, remove_from_disk ):
                     metadata_file.purged = True
                     metadata_file.flush()
                     print "%s" % metadata_file.file_name()
+            for lda in dataset.library_associations:
+                for metadata_file in m.filter( m.table.c.lda_id==lda.id ).all():
+                    metadata_file.deleted = True
+                    metadata_file.purged = True
+                    metadata_file.flush()
+                    print "%s" % metadata_file.file_name()
             dataset_count += 1
         try:
             disk_space += file_size
@@ -307,6 +319,12 @@ def purge_dataset( dataset, m ):
                 for hda in dataset.history_associations:
                     for metadata_file in m.filter( m.table.c.hda_id==hda.id ).all():
                         os.unlink( metadata_file.file_name() )
+                        metadata_file.deleted = True
+                        metadata_file.purged = True
+                        metadata_file.flush()
+                        print "%s" % metadata_file.file_name()
+                for lda in dataset.library_associations:
+                    for metadata_file in m.filter( m.table.c.lda_id==lda.id ).all():
                         metadata_file.deleted = True
                         metadata_file.purged = True
                         metadata_file.flush()
