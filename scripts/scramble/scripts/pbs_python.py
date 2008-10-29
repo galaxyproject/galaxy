@@ -1,65 +1,9 @@
-import os, sys, subprocess, tarfile, shutil
+import os, sys, shutil, subprocess
 
-def unpack_prebuilt_torque():
-    if not os.access( TORQUE_BINARY_ARCHIVE, os.F_OK ):
-        print "unpack_prebuilt_torque(): No binary archive of Torque available for this platform - will build it now"
-        build_torque()
-    else:
-        print "unpack_prebuilt_torque(): Found a previously built Torque binary archive for this platform."
-        print "unpack_prebuilt_torque(): To force Torque to be rebuilt, remove the archive:"
-        print " ", TORQUE_BINARY_ARCHIVE
-        t = tarfile.open( TORQUE_BINARY_ARCHIVE, "r" )
-        for fn in t.getnames():
-            t.extract( fn )
-        t.close()
-
-def build_torque():
-    # untar
-    print "build_torque(): Unpacking Torque source archive from:"
-    print " ", TORQUE_ARCHIVE
-    t = tarfile.open( TORQUE_ARCHIVE, "r" )
-    for fn in t.getnames():
-        t.extract( fn )
-    t.close()
-    # patch
-    file = os.path.join( "torque-%s" %TORQUE_VERSION, "src", "include", "libpbs.h" )
-    print "build_torque(): Patching", file
-    if not os.access( "%s.orig" %file, os.F_OK ):
-        shutil.copyfile( file, "%s.orig" %file )
-    i = open( "%s.orig" %file, "r" )
-    o = open( file, "w" )
-    for line in i.readlines():
-        if line == "#define NCONNECTS 5\n":
-            line = "#define NCONNECTS 50\n"
-        print >>o, line,
-    i.close()
-    o.close()
-    # configure
-    print "build_torque(): Running Torque configure script"
-    p = subprocess.Popen( args = CONFIGURE, shell = True, cwd = os.path.join( os.getcwd(), "torque-%s" %TORQUE_VERSION) )
-    r = p.wait()
-    if r != 0:
-        print "build_torque(): Torque configure script failed"
-        sys.exit( 1 )
-    # compile
-    print "build_torque(): Building Torque (make)"
-    p = subprocess.Popen( args = "make", shell = True, cwd = os.path.join( os.getcwd(), "torque-%s" %TORQUE_VERSION) )
-    r = p.wait()
-    if r != 0:
-        print "build_torque(): Building Torque (make) failed"
-        sys.exit( 1 )
-    # install
-    print "build_torque(): Installing Torque (make install_lib)"
-    p = subprocess.Popen( args = "make DESTDIR=%s/torque install_lib" %os.getcwd(), shell = True, cwd = os.path.join( os.getcwd(), "torque-%s" %TORQUE_VERSION) )
-    r = p.wait()
-    if r != 0:
-        print "build_torque(): Installing Torque (make install_lib) failed"
-        sys.exit( 1 )
-    # pack
-    print "build_torque(): Creating binary Torque archive for future builds of pbs_python"
-    t = tarfile.open( TORQUE_BINARY_ARCHIVE, "w:bz2" )
-    t.add( "torque" )
-    t.close()
+if "LIBTORQUE_DIR" not in os.environ:
+    print "scramble(): Please set LIBTORQUE_DIR to the path of the"
+    print "scramble(): directory containing libtorque.so"
+    sys.exit(1)
 
 # change back to the build dir
 if os.path.dirname( sys.argv[0] ) != "":
@@ -77,37 +21,22 @@ except:
     from setuptools import *
     import pkg_resources
 
-# get the tag
-if os.access( ".galaxy_tag", os.F_OK ):
-    tagfile = open( ".galaxy_tag", "r" )
-    tag = tagfile.readline().strip()
-else:
-    tag = None
-
-TORQUE_VERSION = ( tag.split( "_" ) )[1]
-TORQUE_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "torque-%s.tar.gz" %TORQUE_VERSION ) )
-TORQUE_BINARY_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "torque-%s-%s.tar.bz2" %( TORQUE_VERSION, pkg_resources.get_platform() ) ) )
-CONFIGURE = "CFLAGS='-fPIC' ./configure --prefix=/usr/local --without-tcl --without-tk"
-
 # clean, in case you're running this by hand from a dirty module source dir
-for dir in [ "build", "dist", "torque-%s" %TORQUE_VERSION ]:
+for dir in [ "build", "dist" ]:
     if os.access( dir, os.F_OK ):
-        print "scramble_it.py: removing dir:", dir
+        print "scramble(): removing dir:", dir
         shutil.rmtree( dir )
 
-# build/unpack Torque
-unpack_prebuilt_torque()
-
-print "scramble_it(): Running pbs_python configure script"
-p = subprocess.Popen( args = "sh configure --with-pbsdir=torque/usr/local/lib", shell = True )
+print "scramble(): Running pbs_python configure script"
+p = subprocess.Popen( args = "sh configure --with-pbsdir=%s" % os.environ['LIBTORQUE_DIR'], shell = True )
 r = p.wait()
 if r != 0:
-    print "scramble_it(): pbs_python configure script failed"
+    print "scramble(): pbs_python configure script failed"
     sys.exit( 1 )
 
 # version string in 2.9.4 setup.py is wrong
 file = "setup.py"
-print "scramble_it(): Patching", file
+print "scramble(): Patching", file
 if not os.access( "%s.orig" %file, os.F_OK ):
     shutil.copyfile( file, "%s.orig" %file )
 i = open( "%s.orig" %file, "r" )
@@ -122,9 +51,6 @@ o.close()
 # tag
 me = sys.argv[0]
 sys.argv = [ me ]
-if tag is not None:
-    sys.argv.append( "egg_info" )
-    sys.argv.append( "--tag-build=%s" %tag )
 sys.argv.append( "bdist_egg" )
 
 # go
