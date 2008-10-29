@@ -15,7 +15,7 @@ from Queue import Queue, Empty
 log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
-JOB_WAIT, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED = 'wait', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted'
+JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED = 'wait', 'error', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted'
 
 class Sleeper( object ):
     """
@@ -162,6 +162,8 @@ class JobQueue( object ):
                 if job_state == JOB_WAIT: 
                     if not self.track_jobs_in_database:
                         new_waiting.append( job )
+                elif job_state == JOB_ERROR:
+                    log.info( "job %d ended with an error" % job.job_id )
                 elif job_state == JOB_INPUT_ERROR:
                     log.info( "job %d unable to run: one or more inputs in error state" % job.job_id )
                 elif job_state == JOB_INPUT_DELETED:
