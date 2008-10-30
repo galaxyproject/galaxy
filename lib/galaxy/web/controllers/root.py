@@ -429,7 +429,7 @@ class RootController( BaseController ):
         if not email:
             return trans.fill_template("/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
         user = trans.get_user()  
-        send_to_user = trans.app.model.User.get_by( email = email )
+        send_to_user = trans.app.model.User.filter_by( email=email ).first()
         if not send_to_user:
             send_to_err = "No such user"
         elif user.email == email:
@@ -488,7 +488,7 @@ class RootController( BaseController ):
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.app.model.GalaxySessionToHistoryAssociation.selectone_by( session_id=galaxy_session.id, history_id=new_history.id )
+                association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
@@ -505,7 +505,7 @@ class RootController( BaseController ):
             new_history.user_id = None
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.app.model.GalaxySessionToHistoryAssociation.selectone_by( session_id=galaxy_session.id, history_id=new_history.id )
+                association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
@@ -530,7 +530,7 @@ class RootController( BaseController ):
             if new_history:
                 galaxy_session = trans.get_galaxy_session()
                 try:
-                    association = trans.app.model.GalaxySessionToHistoryAssociation.selectone_by( session_id=galaxy_session.id, history_id=new_history.id )
+                    association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
                 except:
                     association = None
                 new_history.add_galaxy_session( galaxy_session, association=association )

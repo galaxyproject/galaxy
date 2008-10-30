@@ -24,7 +24,7 @@ pkg_resources.require( "Mako" )
 import mako.template
 import mako.lookup
 
-pkg_resources.require( "sqlalchemy>=0.3" )
+pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import desc
             
 import logging
@@ -172,7 +172,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             if secure_id:
                 session_key = self.security.decode_session_key( secure_id )
                 try:
-                    galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                    galaxy_session = self.app.model.GalaxySession.filter_by( session_key=session_key ).first()
                     if galaxy_session and galaxy_session.is_valid and galaxy_session.current_history_id:
                         history = self.app.model.History.get( galaxy_session.current_history_id )
                         if history and not history.deleted:
@@ -216,7 +216,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             galaxy_session.user_id = self.user.id
         try:
             # See if we have already associated the history with the session
-            association = self.app.model.GalaxySessionToHistoryAssociation.select_by( session_id=galaxy_session.id, history_id=history.id )[0]
+            association = self.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=history.id ).first()
         except:
             association = None
         history.add_galaxy_session( galaxy_session, association=association )
@@ -265,7 +265,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """Return the user in $HTTP_REMOTE_USER and create if necessary"""
         # remote_user middleware ensures HTTP_REMOTE_USER exists
         try:
-            user = self.app.model.User.selectone_by( email=self.environ[ 'HTTP_REMOTE_USER' ] )
+            user = self.app.model.User.filter_by( email=self.environ[ 'HTTP_REMOTE_USER' ] ).first()
         except:
             user = self.app.model.User( email=self.environ[ 'HTTP_REMOTE_USER' ] )
             user.set_password_cleartext( 'external' )
@@ -281,7 +281,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if secure_id:
             session_key = self.security.decode_session_key( secure_id )
             try:
-                galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                galaxy_session = self.app.model.GalaxySession.filter_by( session_key=session_key ).first()
                 if galaxy_session and galaxy_session.is_valid and galaxy_session.user_id:
                     user = self.app.model.User.get( galaxy_session.user_id )
                     if user:
@@ -321,7 +321,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                 session_key = self.security.decode_session_key( secure_id )
                 try:
                     # Retrive the galaxy_session id via the unique session_key
-                    galaxy_session = self.app.model.GalaxySession.selectone_by( session_key=session_key )
+                    galaxy_session = self.app.model.GalaxySession.filter_by( session_key=session_key ).first()
                     if galaxy_session and galaxy_session.is_valid:
                         self.__galaxy_session = galaxy_session
                 except:
@@ -382,7 +382,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if self.history is not None:
             # See if we have already associated the session with the history
             try:
-                association = self.app.model.GalaxySessionToHistoryAssociation.select_by( session_id=galaxy_session.id, history_id=self.history.id )[0]
+                association = self.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=self.history.id ).first()
             except:
                 association = None
             galaxy_session.add_history( self.history, association=association )
