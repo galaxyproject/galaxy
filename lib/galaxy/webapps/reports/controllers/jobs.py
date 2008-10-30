@@ -5,7 +5,7 @@ import calendar
 from galaxy.webapps.reports.base.controller import *
 import galaxy.model
 import pkg_resources
-pkg_resources.require( "sqlalchemy>=0.3" )
+pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 import logging
 log = logging.getLogger( __name__ )

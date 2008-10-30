@@ -13,8 +13,8 @@ from galaxy import eggs
 import galaxy.model.mapping
 import pkg_resources
         
-pkg_resources.require( "sqlalchemy>=0.3" )
-from sqlalchemy import eagerload
+pkg_resources.require( "SQLAlchemy >= 0.4" )
+from sqlalchemy.orm import eagerload
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -191,8 +191,6 @@ def purge_histories( h, d, m, cutoff_time, remove_from_disk ):
                             if errmsg:
                                 errors = True
                                 print errmsg
-                            else:
-                                print "%s" % dataset.file_name
                         else:
                             dataset.purged = True
                             dataset.flush()
@@ -201,6 +199,12 @@ def purge_histories( h, d, m, cutoff_time, remove_from_disk ):
                             print "The following metadata files associated with dataset '%s' have been marked purged" % dataset.file_name
                             for hda in dataset.history_associations:
                                 for metadata_file in m.filter( m.table.c.hda_id==hda.id ).all():
+                                    metadata_file.deleted = True
+                                    metadata_file.purged = True
+                                    metadata_file.flush()
+                                    print "%s" % metadata_file.file_name()
+                            for lda in dataset.library_associations:
+                                for metadata_file in m.filter( m.table.c.lda_id==lda.id ).all():
                                     metadata_file.deleted = True
                                     metadata_file.purged = True
                                     metadata_file.flush()
@@ -258,7 +262,6 @@ def purge_datasets( d, m, cutoff_time, remove_from_disk ):
                print errmsg
             else:
                 dataset_count += 1
-                print "%s" % dataset.file_name
         else:
             dataset.purged = True
             dataset.file_size = 0
@@ -268,6 +271,12 @@ def purge_datasets( d, m, cutoff_time, remove_from_disk ):
             print "The following metadata files associated with dataset '%s' have been marked purged" % dataset.file_name
             for hda in dataset.history_associations:
                 for metadata_file in m.filter( m.table.c.hda_id==hda.id ).all():
+                    metadata_file.deleted = True
+                    metadata_file.purged = True
+                    metadata_file.flush()
+                    print "%s" % metadata_file.file_name()
+            for lda in dataset.library_associations:
+                for metadata_file in m.filter( m.table.c.lda_id==lda.id ).all():
                     metadata_file.deleted = True
                     metadata_file.purged = True
                     metadata_file.flush()
@@ -302,11 +311,18 @@ def purge_dataset( dataset, m ):
             else:
                 # Remove dataset file from disk
                 os.unlink( dataset.file_name )
+                print "%s" % dataset.file_name
                 # Mark all associated MetadataFiles as deleted and purged and remove them from disk
                 print "The following metadata files associated with dataset '%s' have been purged" % dataset.file_name
                 for hda in dataset.history_associations:
                     for metadata_file in m.filter( m.table.c.hda_id==hda.id ).all():
                         os.unlink( metadata_file.file_name() )
+                        metadata_file.deleted = True
+                        metadata_file.purged = True
+                        metadata_file.flush()
+                        print "%s" % metadata_file.file_name()
+                for lda in dataset.library_associations:
+                    for metadata_file in m.filter( m.table.c.lda_id==lda.id ).all():
                         metadata_file.deleted = True
                         metadata_file.purged = True
                         metadata_file.flush()
