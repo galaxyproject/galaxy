@@ -122,13 +122,26 @@ class TableCoverageSummary:
         self.table_chromosome_count = {} #dict of dict of table:chrom containing total number of coverage ranges of table for a chrom
         self.table_regions_overlaped_count = {} #total number of table regions overlaping user's input intervals (non unique)
         self.interval_table_overlap_count = {} #total number of user input intervals which overlap table
+        self.region_size_errors = {} #dictionary of lists of invalid ranges by chromosome
     def add_region( self, chrom, start, end ):
-        self.total_interval_size += ( end - start )
+        chrom_length = self.chrom_lengths.get( chrom )
+        region_start = min( start, chrom_length )
+        region_end = min( end, chrom_length )
+        region_length = region_end - region_start
+        
+        if region_length < 1 or region_start != start or region_end != end:
+            if chrom not in self.region_size_errors:
+                self.region_size_errors[chrom] = []
+            self.region_size_errors[chrom].append( ( start, end ) )
+            if region_length < 1: return
+        
+        self.total_interval_size += region_length
         self.total_interval_count += 1
         if chrom not in self.chromosome_coverage:
-            self.chromosome_coverage[chrom] = bx.bitset.BitSet( self.chrom_lengths.get( chrom ) )
-        self.chromosome_coverage[chrom].set_range( start, end - start )
-        for table_name, coverage, regions in self.coverage_reader.iter_table_coverage_regions_by_region( chrom, start, end ):
+            self.chromosome_coverage[chrom] = bx.bitset.BitSet( chrom_length )
+        
+        self.chromosome_coverage[chrom].set_range( region_start, region_length )
+        for table_name, coverage, regions in self.coverage_reader.iter_table_coverage_regions_by_region( chrom, region_start, region_end ):
             if table_name not in self.table_coverage:
                 self.table_coverage[table_name] = 0
                 self.table_chromosome_size[table_name] = {}
@@ -214,6 +227,16 @@ def profile_summary( interval_filename, chrom_col, start_col, end_col, out_filen
             #only output tables that have atleast 1 base covered unless empty are requested
             out.write( "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ( table_name, table_chromosome_size, table_chromosome_count, table_region_coverage, table_region_count, total_interval_count, total_interval_size, total_coverage, table_regions_overlaped_count, interval_region_overlap_count, nr_interval_count, nr_interval_size, nr_coverage, nr_table_regions_overlaped_count, nr_interval_table_overlap_count ) )
     out.close()
+    
+    #report chrom size errors as needed:
+    if table_coverage_summary.region_size_errors:
+        print "Regions provided extended beyond known chromosome lengths, and have been truncated as necessary, for the following intervals:"
+        for chrom, regions in table_coverage_summary.region_size_errors.items():
+            if len( regions ) > 3:
+                extra_region_info = ", ... "
+            else:
+                extra_region_info = ""
+            print "%s has max length of %s, exceeded by %s%s." % ( chrom, chrom_lengths.get( chrom ), ", ".join( map( str, regions[:3] ) ), extra_region_info )
 
 class ChromosomeLengths:
     def __init__( self, filename ):
