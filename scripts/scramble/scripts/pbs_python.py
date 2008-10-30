@@ -27,6 +27,9 @@ for dir in [ "build", "dist" ]:
         print "scramble(): removing dir:", dir
         shutil.rmtree( dir )
 
+# the build process doesn't set an rpath for libtorque
+os.environ['LD_RUN_PATH'] = os.environ['LIBTORQUE_DIR']
+
 print "scramble(): Running pbs_python configure script"
 p = subprocess.Popen( args = "sh configure --with-pbsdir=%s" % os.environ['LIBTORQUE_DIR'], shell = True )
 r = p.wait()
