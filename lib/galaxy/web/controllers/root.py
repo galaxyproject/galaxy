@@ -511,7 +511,7 @@ class RootController( BaseController ):
         if not email:
             return trans.fill_template("/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
         user = trans.get_user()  
-        send_to_user = trans.app.model.User.filter_by( email=email ).one()
+        send_to_user = trans.app.model.User.filter_by( email=email ).first()
         p = util.Params( kwd )
         if p.action and p.action == "no_share":
             trans.response.send_redirect( url_for( action='history_options' ) )
