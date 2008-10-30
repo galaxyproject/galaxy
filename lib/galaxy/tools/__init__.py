@@ -676,7 +676,7 @@ class Tool:
             # on the standard run form) or "URL" (a parameter provided by
             # external data source tools). 
             if "runtool_btn" not in incoming and "URL" not in incoming:
-                return "tool_form.tmpl", dict( errors={}, tool_state=state, param_values={}, incoming={} )
+                return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
         # Process incoming data
         if not( self.check_values ):
             # If `self.check_values` is false we don't do any checking or
@@ -702,20 +702,20 @@ class Tool:
             # error messages
             if errors:
                 error_message = "One or more errors were found in the input you provided. The specific errors are marked below."    
-                return "tool_form.tmpl", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
+                return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
                 out_data = self.execute( trans, incoming=params )
-                return 'tool_executed.tmpl', dict( out_data=out_data )
+                return 'tool_executed.mako', dict( out_data=out_data )
             # Otherwise move on to the next page
             else:
                 state.page += 1
                 # Fill in the default values for the next page
                 self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
-                return 'tool_form.tmpl', dict( errors=errors, tool_state=state )
+                return 'tool_form.mako', dict( errors=errors, tool_state=state )
         else:
             # Just a refresh, render the form with updated state and errors.
-            return 'tool_form.tmpl', dict( errors=errors, tool_state=state )
+            return 'tool_form.mako', dict( errors=errors, tool_state=state )
       
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
                       update_only=False, old_errors={}, changed_dependencies={} ):
