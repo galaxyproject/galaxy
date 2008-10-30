@@ -68,68 +68,68 @@
 </script>
 
 <%def name="render_folder( parent, parent_pad )">
-  <%
-    ##if not trans.app.security_agent.check_folder_contents( trans.user, parent ):
-    ##  return ""
-    pad = parent_pad + 20
-    if parent_pad == 0:
-        expander = "/static/images/silk/resultset_bottom.png"
-        folder = "/static/images/silk/folder_page.png"
-        subfolder = False
-    else:
-        expander = "/static/images/silk/resultset_next.png"
-        folder = "/static/images/silk/folder.png"
-        subfolder = True
-  %>
-  <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
-    <div class="rowTitle">
-      <img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
-      ${parent.name}
-      %if parent.description:
-        <i>- ${parent.description}</i>
-      %endif
-      <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-    </div>
-    <div popupmenu="folder-${parent.id}-popup">
-      <a class="action-button" href="${h.url_for( action='dataset', folder_id=parent.id )}">Add new dataset to this folder</a>
-      <a class="action-button" href="${h.url_for( action='add_dataset_to_folder_from_history', folder_id=parent.id )}">Copy a dataset from your history to this folder</a>
-      <a class="action-button" href="${h.url_for( action='folder', new=True, id=parent.id )}">Create a new subfolder in this folder</a>
-      <a class="action-button" href="${h.url_for( action='folder', rename=True, id=parent.id )}">Rename this folder</a>
-      %if subfolder:
-      <a class="action-button" confirm="Are you sure you want to delete folder '${parent.name}'?" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents</a>
-      %endif
-    </div>
-  </li>
-  %if subfolder:
-    <ul id="subFolder">
-  %else:
-    <ul>
-  %endif
-      %for folder in parent.active_folders:
+    <%
+        ##if not trans.app.security_agent.check_folder_contents( trans.user, parent ):
+        ##  return ""
+        pad = parent_pad + 20
+        if parent_pad == 0:
+            expander = "/static/images/silk/resultset_bottom.png"
+            folder = "/static/images/silk/folder_page.png"
+            subfolder = False
+        else:
+            expander = "/static/images/silk/resultset_next.png"
+            folder = "/static/images/silk/folder.png"
+            subfolder = True
+    %>
+    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
+        <div class="rowTitle">
+            <img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
+            ${parent.name}
+            %if parent.description:
+                <i>- ${parent.description}</i>
+            %endif
+            <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+        </div>
+        <div popupmenu="folder-${parent.id}-popup">
+            <a class="action-button" href="${h.url_for( action='dataset', folder_id=parent.id )}">Add new dataset to this folder</a>
+            <a class="action-button" href="${h.url_for( action='add_dataset_to_folder_from_history', folder_id=parent.id )}">Copy a dataset from your history to this folder</a>
+            <a class="action-button" href="${h.url_for( action='folder', new=True, id=parent.id )}">Create a new sub-folder in this folder</a>
+            <a class="action-button" href="${h.url_for( action='folder', rename=True, id=parent.id )}">Rename this folder</a>
+            %if subfolder:
+                <a class="action-button" confirm="Are you sure you want to delete folder '${parent.name}'?" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents</a>
+            %endif
+        </div>
+    </li>
+    %if subfolder:
+        <ul id="subFolder">
+    %else:
+        <ul>
+    %endif
+    %for folder in parent.active_folders:
         ${render_folder( folder, pad )}
-      %endfor
-      %for dataset in parent.active_datasets:
+    %endfor
+    %for dataset in parent.active_datasets:
         ##%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=dataset.dataset ):
-            <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset )}</li>
+        <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset )}</li>
         ##%endif
-      %endfor
+    %endfor
     </ul>
 </%def>
 
 <h2>Libraries</h2>
 
-%if message:
-<%
-    try:
-        messagetype
-    except:
-        messagetype = "done"
-%>
-<p />
-<div class="${messagetype}message">
-    ${message}
-</div>
-<p />
+%if msg:
+    <%
+        try:
+            messagetype
+        except:
+            messagetype = "done"
+    %>
+    <p />
+    <div class="${messagetype}message">
+        ${msg}
+    </div>
+    <p />
 %endif
 
 <ul class="manage-table-actions">
@@ -140,45 +140,48 @@
         </a>
     </li>
 </ul>
-<form name="update_multiple_datasets" action="${h.url_for( action='datasets' )}" onSubmit="javascript:return checkForm();" method="post">
-<ul>
-%if libraries:
-%for library in libraries:
-  ##%if trans.app.security_agent.check_folder_contents( trans.user, library ):
-  <li class="libraryRow libraryOrFolderRow" id="libraryRow"><div class="rowTitle"><table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle"><tr>
-    <th width="*">
-        <img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
-        ${library.name}
-        %if library.description:
-          <i>- ${library.description}</i>
-        %endif
-        <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-        <div popupmenu="library-${library.id}-popup">
-            <a class="action-button" href="${h.url_for( action='library', rename=True, id=library.id )}">Rename this library</a>
-            <a class="action-button" confirm="Are you sure you want to delete library '${library.name}'?" href="${h.url_for( action='library', delete=True, id=library.id )}">Remove this library and its contents</a>
-        </div>
-    </th>
-    <th width="100">Format</th>
-    <th width="50">Db</th>
-    <th width="200">Info</th>
-  </tr></table></div></li>
-    <ul>
-      ${render_folder( library.root_folder, 0 )}
-    </ul>
-  <br/>
-  ##%endif
-%endfor
-</ul>
-<div style="float: right;">
-    With selected datasets:
-    <select name="action" id="with-selected-select">
-        <option value="None" selected></option>
-        <option value="edit">edit permissions</option>
-        <option value="delete">delete</option>
-    </select>
-    <input type="submit" class="primary-button" name="with-selected" id="with-selected-submit" value="go"/>
-</div>
-</form>
+
+%if not libraries:
+    There are no libraries.
 %else:
-There are no libraries.
+    <form name="update_multiple_datasets" action="${h.url_for( action='datasets' )}" onSubmit="javascript:return checkForm();" method="post">
+        <ul>
+            %for library in libraries:
+                ##%if trans.app.security_agent.check_folder_contents( trans.user, library ):
+                <li class="libraryRow libraryOrFolderRow" id="libraryRow">
+                    <div class="rowTitle"><table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle">
+                        <th width="*">
+                            <img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
+                            ${library.name}
+                            %if library.description:
+                                <i>- ${library.description}</i>
+                            %endif
+                            <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                            <div popupmenu="library-${library.id}-popup">
+                                <a class="action-button" href="${h.url_for( action='library', rename=True, id=library.id )}">Rename this library</a>
+                                <a class="action-button" confirm="Are you sure you want to delete library '${library.name}'?" href="${h.url_for( action='library', delete=True, id=library.id )}">Remove this library and its contents</a>
+                            </div>
+                        </th>
+                        <th width="100">Format</th>
+                        <th width="50">Db</th>
+                        <th width="200">Info</th>
+                    </div>
+                </li>
+                <ul>
+                    ${render_folder( library.root_folder, 0 )}
+                </ul>
+                <br/>
+                ##%endif
+            %endfor
+        </ul>
+        <div style="float: right;">
+            With selected datasets:
+            <select name="action" id="with-selected-select">
+                <option value="None" selected></option>
+                <option value="edit">edit permissions</option>
+                <option value="delete">delete</option>
+            </select>
+            <input type="submit" class="primary-button" name="with-selected" id="with-selected-submit" value="go"/>
+        </div>
+    </form>
 %endif

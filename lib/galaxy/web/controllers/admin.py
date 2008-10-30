@@ -602,52 +602,54 @@ class Admin( BaseController ):
         ## TODO: "show deleted libraries" toggle?
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
-        if 'message' in kwd:
-            message = kwd['message']
+        if 'msg' in kwd:
+            msg = kwd[ 'msg' ]
         else:
-            message = None
-        return trans.fill_template( '/admin/library/browser.mako', libraries=trans.app.model.Library.filter_by( deleted=False ).all(), message = message )
+            msg = None
+        return trans.fill_template( '/admin/library/browser.mako', 
+                                    libraries=trans.app.model.Library.filter_by( deleted=False ).order_by( trans.app.model.Library.name ).all(), 
+                                    msg=msg )
     libraries = library_browser
     @web.expose
     def library( self, trans, id=None, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
-        if not id and 'new' not in kwd:
-            return trans.show_error_message( "Galaxy can't perform a library action if you don't specify a library" )
-        if 'new' not in kwd:
-            library = trans.app.model.Library.get( id )
         params = util.Params( kwd )
-        if 'new' in kwd:
+        msg = params.msg
+        if params.get( 'new', False ):
+            action = 'new'
+        elif params.get( 'rename', False ):
+            action = 'rename'
+        elif params.get( 'delete', False ):
+            action = 'delete'
+        else:
+            return trans.show_error_message( "You must specify a valid action ( new, rename, delete ) to perform on a library." )
+        if not id and not action == 'new':
+            return trans.show_error_message( "You must specify a library to %s." % action )
+        if not action == 'new':
+            library = trans.app.model.Library.get( int( id ) )
+        if action == 'new':
             if params.new == 'submitted':
-                library = trans.app.model.Library( name = util.restore_text( params.name ), description = util.restore_text( params.description ) )
+                library = trans.app.model.Library( name = util.restore_text( params.name ), 
+                                                   description = util.restore_text( params.description ) )
                 root_folder = trans.app.model.LibraryFolder( name = util.restore_text( params.name ), description = "" )
                 root_folder.flush()
                 library.root_folder = root_folder
                 library.flush()
-                return trans.response.send_redirect( web.url_for( action='library_browser' ) )
-            return trans.show_form( 
-                web.FormBuilder( action = web.url_for(), title = "Create a new Library", name="library", submit_text = "Create" )
-                    .add_text( name = "name", label = "Name", value = "New Library" )
-                    .add_text( name = "description", label = "Description", value = "" )
-                    .add_input( 'hidden', '', 'new', 'submitted', use_label = False  ) )
-        elif 'rename' in kwd:
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            return trans.fill_template( '/admin/library/new_library.mako', msg=msg )
+        elif action == 'rename':
             if params.rename == 'submitted':
-                if 'root_folder' in kwd:
+                if params.get( 'root_folder', None ):
                     root_folder = library.root_folder
                     root_folder.name = util.restore_text( params.name )
                     root_folder.flush()
                 library.name = util.restore_text( params.name )
                 library.description = util.restore_text( params.description )
                 library.flush()
-                return trans.response.send_redirect( web.url_for( action='library_browser' ) )
-            return trans.show_form( 
-                web.FormBuilder( action = web.url_for(), title = "Edit library name and description", name = "library", submit_text = "Save" )
-                    .add_text( name = "name", label = "Name", value = library.name )
-                    .add_text( name = "description", label = "Description", value = library.description )
-                    .add_input( 'checkbox', 'Also change the root folder\'s name', 'root_folder' )
-                    .add_input( 'hidden', '', 'rename', 'submitted', use_label = False  )
-                    .add_input( 'hidden', '', 'id', id, use_label = False  ) )
-        elif 'delete' in kwd:
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            return trans.fill_template( '/admin/library/rename_library.mako', library=library, msg=msg )
+        elif action == 'delete':
             def delete_folder( folder ):
                 for subfolder in folder.active_folders:
                     delete_folder( subfolder )
@@ -659,46 +661,45 @@ class Admin( BaseController ):
             delete_folder( library.root_folder )
             library.deleted = True
             library.flush()
-            return trans.response.send_redirect( web.url_for( action='library_browser' ) )
-        else:
-            return trans.show_error_message( "Galaxy can't perform a library action if you don't specify an action" )
+            msg = 'The library and all of its contents have been marked deleted'
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
     @web.expose
-    def folder( self, trans, id=None, **kwd ):
+    def folder( self, trans, id, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
-        if not id:
-            return trans.show_error_message( "Galaxy can't perform a folder action if you don't specify a folder" )
         params = util.Params( kwd )
+        msg = params.msg
+        if params.get( 'new', False ):
+            action = 'new'
+        elif params.get( 'rename', False ):
+            action = 'rename'
+        elif params.get( 'delete', False ):
+            action = 'delete'
+        else:
+            return trans.show_error_message( "You must specify a valid action ( new, rename, delete ) to perform on a folder." )
         folder = trans.app.model.LibraryFolder.get( id )
-        if 'new' in kwd:
+        if not folder:
+            return trans.show_error_message( "Invalid folder specified, id: %s" % str( id ) )
+        if action == 'new':
             if params.new == 'submitted':
-                new_folder = trans.app.model.LibraryFolder( name = util.restore_text( params.name ), description = util.restore_text( params.description ) )
-                # We are associating the last used genome_build with folders, so we will always
+                new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
+                                                            description=util.restore_text( params.description ) )
+                # We are associating the last used genome build with folders, so we will always
                 # initialize a new folder with the first dbkey in util.dbnames which is currently
                 # ?    unspecified (?)
                 new_folder.genome_build = util.dbnames.default_value
                 folder.add_folder( new_folder )
                 new_folder.flush()
-                return trans.response.send_redirect( web.url_for( action='library_browser' ) )
-            return trans.show_form( 
-                web.FormBuilder( action = web.url_for(), title = "Create a new folder", name="folder", submit_text = "Create" )
-                    .add_text( name = "name", label = "Name", value = "New Folder" )
-                    .add_text( name = "description", label = "Description", value = "" )
-                    .add_input( 'hidden', '', 'new', 'submitted', use_label = False  )
-                    .add_input( 'hidden', '', 'id', id, use_label = False  ) )
-        elif 'rename' in kwd:
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            return trans.fill_template( '/admin/library/new_folder.mako', folder=folder, msg=msg )
+        elif action == 'rename':
             if params.rename == 'submitted':
                 folder.name = util.restore_text( params.name )
                 folder.description = util.restore_text( params.description )
                 folder.flush()
-                return trans.response.send_redirect( web.url_for( action='library_browser' ) )
-            return trans.show_form( 
-                web.FormBuilder( action = web.url_for(), title = "Edit folder name and description", name = "folder", submit_text = "Save" )
-                    .add_text( name = "name", label = "Name", value = folder.name )
-                    .add_text( name = "description", label = "Description", value = folder.description )
-                    .add_input( 'hidden', '', 'rename', 'submitted', use_label = False  )
-                    .add_input( 'hidden', '', 'id', id, use_label = False  ) )
-        elif 'delete' in kwd:
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            return trans.fill_template( '/admin/library/rename_folder.mako', folder=folder, msg=msg )
+        elif action == 'delete':
             def delete_folder( folder ):
                 for subfolder in folder.active_folders:
                     delete_folder( subfolder )
@@ -708,9 +709,8 @@ class Admin( BaseController ):
                 folder.deleted = True
                 folder.flush()
             delete_folder( folder )
-            return trans.response.send_redirect( web.url_for( action='library_browser' ) )
-        else:
-            return trans.show_error_message( "Galaxy can't perform a folder action if you don't specify an action" )
+            msg = 'The folder and all of its contents have been marked deleted'
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
     @web.expose
     def dataset( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, dbkey=None, **kwd ):
         if not self.user_is_admin( trans ):
@@ -746,7 +746,7 @@ class Admin( BaseController ):
                     except IOError:
                         os.close( fd )
                         os.remove( uncompressed )
-                        raise BadFileException( 'problem decompressing gzipped data.' )
+                        raise BadFileException( 'problem uncompressing gzipped data.' )
                     if not chunk:
                         break
                     os.write( fd, chunk )
@@ -795,26 +795,25 @@ class Admin( BaseController ):
         # END add_file method
 
         # Dataset upload
-        if 'create_dataset' in kwd:
+        if params.get( 'new_dataset_button', False ):
             # Copied from upload tool action
             last_dataset_created = None
-            data_file = kwd['file_data']
-            url_paste = kwd['url_paste']
-            server_dir = kwd.get( 'server_dir', 'None' )
+            data_file = params.get( 'file_data', '' )
+            url_paste = params.get( 'url_paste', '' )
+            server_dir = params.get( 'server_dir', 'None' )
             if data_file == '' and url_paste == '' and server_dir in [ 'None', '' ]:
                 if trans.app.config.library_import_dir is not None:
                     msg = 'Select a file, enter a URL or Text, or select a server directory.'
                 else:
                     msg = 'Select a file, enter a URL or enter Text.'
                 trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=msg ) )
-            space_to_tab = False 
-            if 'space_to_tab' in kwd:
-                if kwd['space_to_tab'] not in ["None", None]:
-                    space_to_tab = True
+            space_to_tab = params.get( 'space_to_tab', False )
+            if space_to_tab and space_to_tab not in [ "None", None ]:
+                space_to_tab = True
             roles = []
-            if 'roles' in kwd:
-                for role_id in listify( kwd['roles'] ):
-                    roles.append( galaxy.model.Role.get( role_id ) )
+            role_ids = params.get( 'roles', [] )
+            for role_id in listify( role_ids ):
+                roles.append( galaxy.model.Role.get( role_id ) )
             temp_name = ""
             data_list = []
             created_datasets = []
@@ -883,7 +882,7 @@ class Admin( BaseController ):
             if len( created_datasets ) > 1:
                 trans.response.send_redirect( web.url_for(
                     action = 'library_browser',
-                    message = "%i new datasets added to the library.  <a href='%s'>Click here</a> if you'd like to edit the permissions on these datasets." % (
+                    msg = "%i new datasets added to the library.  <a href='%s'>Click here</a> if you'd like to edit the permissions on these datasets." % (
                         len( created_datasets ),
                         web.url_for( action='dataset', id=",".join( [ str(d.id) for d in created_datasets ] ) )
                     )
@@ -891,7 +890,7 @@ class Admin( BaseController ):
             elif last_dataset_created is not None:
                 trans.response.send_redirect( web.url_for(
                     action = 'library_browser',
-                    message = "New dataset added to the library.  <a href='%s'>Click here</a> if you'd like to edit the permissions or attributes on this dataset." %
+                    msg = "New dataset added to the library.  <a href='%s'>Click here</a> if you'd like to edit the permissions or attributes on this dataset." %
                         web.url_for( action='dataset', id=last_dataset_created.id )
                 ) )
             else:
@@ -925,7 +924,7 @@ class Admin( BaseController ):
         if id:
             lda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
             if not lda:
-                return trans.show_error_message( "Invalid dataset specified" )
+                return trans.show_error_message( "Invalid dataset specified, id: %s" %str( id ) )
 
             # Copied from edit attributes for 'regular' datasets with some additions
             p = util.Params(kwd, safe=False)
@@ -1048,7 +1047,11 @@ class Admin( BaseController ):
                     error_msg += "A requested dataset (%s) was invalid.  " % ( data_id )
         if dataset_names:
             ok_msg = "Added datasets (%s) to the library folder." % ( ", ".join( dataset_names ) )
-        return trans.fill_template( "/admin/library/add_dataset_from_history.mako", history=trans.get_history(), folder=folder, ok_msg=ok_msg, error_msg=error_msg )
+        return trans.fill_template( "/admin/library/add_dataset_from_history.mako", 
+                                    history=trans.get_history(),
+                                    folder=folder,
+                                    ok_msg=ok_msg,
+                                    error_msg=error_msg )
         
     def check_gzip( self, temp_name ):
         """
