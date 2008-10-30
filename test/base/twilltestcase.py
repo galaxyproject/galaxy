@@ -637,13 +637,75 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Library stuff
-    def create_library( self, name='', description='' ):
+    def create_library( self, name='New Test Library', description='New Test Library Description' ):
         """Create a new library"""
-        name = name.replace( ' ', '+' )
-        description = description.replace( ' ', '+' )
         try:
-            self.visit_url( "%s/admin/library?name=%s&description=%s&create_library=None" % ( self.url, name, description ) )
+            self.visit_url( "%s/admin/library?new=True" % self.url )
+            self.last_page()
+            self.check_page_for_string( 'Create a new library' )
+            tc.fv( "1", "1", name ) # form field 1 is the field named name...
+            tc.fv( "1", "2", description ) # form field 1 is the field named name...
+            tc.submit( "create_library_button" )
         except AssertionError, err:
-            errmsg = 'Exception caught attempting to create library: %s' % str( err )
-            raise AssertionError( errmsg )
+            raise AssertionError( 'Exception caught attempting to create library: %s' % str( err ) )
         self.home()
+    def rename_library( self, library_id, name='New Test Library Renamed', description='New Test Library Description Re-described' ):
+        """Rename a library"""
+        try:
+            self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
+            self.last_page()
+            self.check_page_for_string( 'Edit library name and description' )
+            tc.fv( "1", "name", name ) # form field 1 is the field named name...
+            tc.fv( "1", "description", description ) # form field 2 is the field named description...
+            tc.submit( "rename_library_button" )
+        except AssertionError, err:
+            raise AssertionError( 'Exception caught attempting to rename a library: %s' % str( err ) )
+        self.home()
+    def add_folder( self, folder_id, name='New Test Folder', description='New Test Folder Description' ):
+        """Create a new folder"""
+        try:
+            self.visit_url( "%s/admin/folder?id=%s&new=True" % ( self.url, folder_id ) )
+            self.last_page()
+            self.check_page_for_string( 'Create a new folder' )
+            tc.fv( "1", "name", name ) # form field 1 is the field named name...
+            tc.fv( "1", "description", description ) # form field 2 is the field named description...
+            tc.submit( "new_folder_button" )
+        except AssertionError, err:
+            raise AssertionError( 'Exception caught attempting to create a new folder: %s' % str( err ) )
+        self.home()
+    def rename_folder( self, folder_id, name='New Test Folder Renamed', description='New Test Folder Description Re-described' ):
+        """Rename a Folder"""
+        try:
+            self.visit_url( "%s/admin/folder?rename=True&id=%s" % ( self.url, folder_id ) )
+            self.last_page()
+            self.check_page_for_string( 'Edit folder name and description' )
+            tc.fv( "1", "name", name ) # form field 1 is the field named name...
+            tc.fv( "1", "description", description ) # form field 2 is the field named description...
+            tc.submit( "rename_folder_button" )
+        except AssertionError, err:
+            raise AssertionError( 'Exception caught attempting to rename a library: %s' % str( err ) )
+        self.home()
+    def add_dataset( self, filename, folder_id, extension='auto', dbkey='hg18', roles=[] ):
+        """Add a dataset to a folder"""
+        filename = self.get_filename( filename )
+        try:
+            self.visit_url( "%s/admin/dataset?folder_id=%s&new=True" % ( self.url, folder_id ) )
+            self.last_page()
+            self.check_page_for_string( 'Create a new library dataset' )
+            tc.fv( "1", "folder_id", folder_id ) # form field 1 is the field named folder_id...
+            tc.formfile( "1", "file_data", filename ) # form field 2 is the field named file_data...
+            tc.fv( "1", "extension", extension )
+            tc.fv( "1", "dbkey", dbkey )
+            for role_id in roles:
+                tc.fv( "1", "roles", role_id ) # form field 7 is the select list named out_groups, note the buttons...
+            tc.submit( "new_dataset_button" )
+        except AssertionError, err:
+            raise AssertionError( 'Exception caught attempting to create add a dataset to a folder: %s' % str( err ) )
+        self.home()
+    def mark_library_deleted( self, library_id ):
+        """Mark a library as deleted"""
+        self.visit_url( "%s/admin/library?id=%s&delete=True" % ( self.url, library_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The library and all of its contents have been marked deleted' )
+        self.home()
+

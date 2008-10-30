@@ -1,4 +1,5 @@
 import galaxy.model
+from galaxy.model.orm import *
 from base.twilltestcase import *
 
 s = 'You must have Galaxy administrator privileges to use this feature.'
@@ -35,7 +36,7 @@ class TestHistory( TwillTestCase ):
         self.check_page_for_string( s )
         self.visit_url( "%s/admin/library" % self.url )
         self.check_page_for_string( s )
-        self.visit_url( "%s/admin/folder" % self.url )
+        self.visit_url( "%s/admin/folder?id=1&new=True" % self.url )
         self.check_page_for_string( s )
         self.visit_url( "%s/admin/dataset" % self.url )
         self.check_page_for_string( s )
@@ -101,7 +102,7 @@ class TestHistory( TwillTestCase ):
         user_id = str( user.id )
         # NOTE: To get this to work with twill, all select lists on the ~/admin/role page must contain at least
         # 1 option value or twill throws an exception, which is: ParseError: OPTION outside of SELECT
-        # Due to this bug in twill, we crreate the role, associating it with at least 1 user and 1 group...
+        # Due to this bug in twill, we create the role, associating it with at least 1 user and 1 group...
         #
         # TODO: need to enhance this test to associate DefaultUserPermissions and DefaultHistoryPermissions
         # with the role, then add tests in test_55_purge_role to make sure the association records are deleted
@@ -115,31 +116,81 @@ class TestHistory( TwillTestCase ):
         self.associate_groups_with_role( role_id, group_ids=[ group_id  ] )
         self.visit_page( 'admin/roles' )
         self.check_page_for_string( 'New Test Group' )
-    def test_30_mark_group_deleted( self ):
+    def test_30_create_library( self ):
+        """Testing creating new library"""
+        self.create_library( name='New Test Library', description='New Test Library Description' )
+        self.visit_page( 'admin/libraries' )
+        self.check_page_for_string( "New Test Library" )
+    def test_35_rename_library( self ):
+        """Testing renaming a library"""
+        library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
+                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+        library_id = str( library.id )
+        self.rename_library( library_id, name='New Test Library Renamed', description='New Test Library Description Re-described' )
+        self.visit_page( 'admin/libraries' )
+        self.check_page_for_string( "New Test Library Renamed" )
+        # Rename it back to what it was originally
+        self.rename_library( library_id, name='New Test Library', description='New Test Library Description' )
+    def test_40_rename_root_folder( self ):
+        """Testing renaming a library root folder"""
+        library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
+                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+        folder = library.root_folder
+        folder_id = str( folder.id )
+        self.rename_folder( folder_id, name='New Test Library Root Folder', description='New Test Library Root Folder Description' )
+        self.visit_page( 'admin/libraries' )
+        self.check_page_for_string( "New Test Library Root Folder" )
+    def test_45_add_public_dataset_to_root_folder( self ):
+        """Testing adding a public dataset to a library root folder"""
+        library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
+                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+        folder = library.root_folder
+        folder_id = str( folder.id )
+        self.add_dataset( '1.bed', folder_id, extension='bed', dbkey='hg18', roles=[] )
+        self.visit_page( 'admin/libraries' )
+        self.check_page_for_string( "1.bed" )
+        self.check_page_for_string( "bed" )
+        self.check_page_for_string( "hg18" )
+    def test_50_add_new_folder( self ):
+        """Testing adding a folder to a library root folder"""
+        library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
+                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+        folder = library.root_folder
+        folder_id = str( folder.id )
+        self.add_folder( folder_id, name='New Test Folder', description='New Test Folder Description' )
+        self.visit_page( 'admin/libraries' )
+        self.check_page_for_string( "New Test Folder" )
+    def test_55_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         self.visit_page( "admin/groups" )
         self.check_page_for_string( "Another Test Group" )
         group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'Another Test Group' ).first()
         group_id = str( group.id )
         self.mark_group_deleted( group_id )
-    def test_35_undelete_group( self ):
+    def test_60_undelete_group( self ):
         """Testing undeleting a deleted group"""
         group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'Another Test Group' ).first()
         group_id = str( group.id )
         self.undelete_group( group_id )
-    def test_40_mark_role_deleted( self ):
+    def test_65_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
         self.visit_page( "admin/roles" )
         self.check_page_for_string( "Another Test Role" )
         role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name == 'Another Test Role' ).first()
         role_id = str( role.id )
         self.mark_role_deleted( role_id )
-    def test_45_undelete_role( self ):
+    def test_70_undelete_role( self ):
         """Testing undeleting a deleted role"""
         role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name == 'Another Test Role' ).first()
         role_id = str( role.id )
         self.undelete_role( role_id )
-    def test_50_purge_group( self ):
+    def test_75_mark_library_deleted( self ):
+        """Testing marking a library as deleted"""
+        library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
+                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+        library_id = str( library.id )
+        self.mark_library_deleted( library_id )
+    def test_80_purge_group( self ):
         """Testing purging a group"""
         group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'Another Test Group' ).first()
         group_id = str( group.id )
@@ -152,7 +203,7 @@ class TestHistory( TwillTestCase ):
         gra = galaxy.model.GroupRoleAssociation.filter( galaxy.model.GroupRoleAssociation.table.c.group_id == group_id ).all()
         if gra:
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
-    def test_55_purge_role( self ):
+    def test_85_purge_role( self ):
         """Testing purging a role"""
         role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name == 'Another Test Role' ).first()
         role_id = str( role.id )
@@ -165,9 +216,4 @@ class TestHistory( TwillTestCase ):
         adra = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.role_id == role_id ).all()
         if adra:
             raise AssertionError( "Purging the role did not delete the ActionDatasetRoleAssociations for role_id '%s'" % role_id )
-    #def test_20_create_library( self ):
-    #    """Testing creating new library"""
-    #    self.create_library( name='New Test Library', description='New Test Library Description' )
-    #    self.visit_page( 'admin/libraries' )
-    #    self.check_page_for_string( "New Test Library" )
                
