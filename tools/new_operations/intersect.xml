@@ -31,6 +31,20 @@
     </test>
     <test>
       <param name="input1" value="1.bed" />
+      <param name="input2" value="2_mod.bed" ftype="interval"/>
+      <param name="min" value="1" />
+      <param name="returntype" value="" />
+      <output name="output" file="gops_intersect_diffCols.bed" />
+    </test>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2_mod.bed" ftype="interval"/>
+      <param name="min" value="1" />
+      <param name="returntype" value="Overlapping pieces of Intervals" />
+      <output name="output" file="gops_intersect_p_diffCols.bed" />
+    </test>
+    <test>
+      <param name="input1" value="1.bed" />
       <param name="input2" value="2.bed" />
       <param name="min" value="10" />
       <param name="returntype" value="Overlapping pieces of Intervals" />

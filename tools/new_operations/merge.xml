@@ -22,6 +22,11 @@
       <param name="returntype" value="true" />
     </test>
     <test>
+      <param name="input1" value="2_mod.bed" ftype="interval"/>
+      <output name="output" file="gops_merge_diffCols.dat" />
+      <param name="returntype" value="true" />
+    </test>
+    <test>
       <param name="input1" value="gops_bigint.interval" />
       <output name="output" file="gops_merge_out2.bed" />
       <param name="returntype" value="true" />
