@@ -2,12 +2,13 @@
 Basic tool parameters.
 """
 
-import logging, string, sys, os
+import logging, string, sys, os, os.path
 
 from elementtree.ElementTree import XML, Element
 
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
+from galaxy.util.bunch import Bunch
 
 import validation, dynamic_options
 
@@ -294,6 +295,23 @@ class FileToolParameter( ToolParameter ):
         self.name = elem.get( 'name' )
     def get_html_field( self, trans=None, value=None, other_values={}  ):
         return form_builder.FileField( self.name )
+    def from_html( self, value, trans=None, other_values={} ):
+        # Middleware or proxies may encode files in special ways (TODO: this
+        # should be pluggable)
+        if type( value ) == dict:
+            upload_location = self.tool.app.config.nginx_upload_location
+            assert upload_location, \
+                "Request appears to have been processed by nginx_upload_module \
+                but Galaxy is not configured to recgonize it"
+            # Check that the file is in the right location
+            local_filename = os.path.abspath( value['path'] )
+            assert local_filename.startswith( upload_location ), \
+                "Filename provided by nginx is not in correct directory"
+            value = Bunch(
+                filename = value["name"],
+                local_filename = local_filename
+            )
+        return value
     def get_required_enctype( self ):
         """
         File upload elements require the multipart/form-data encoding

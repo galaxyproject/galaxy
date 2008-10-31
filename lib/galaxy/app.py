@@ -31,9 +31,11 @@ class UniverseApplication( object ):
         #Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Start the job queue
-        job_dispatcher = jobs.DefaultJobDispatcher( self )
-        self.job_queue = jobs.JobQueue( self, job_dispatcher )
-        self.job_stop_queue = jobs.JobStopQueue( self, job_dispatcher )
+        self.job_manager = jobs.JobManager( self )
+        # FIXME: These are exposed directly for backward compatibility
+        self.job_queue = self.job_manager.job_queue
+        self.job_stop_queue = self.job_manager.job_stop_queue
+        # Heartbeat and memdump for thread / heap profiling
         self.heartbeat = None
         self.memdump = None
         # Start the heartbeat process if configured and available
@@ -48,7 +50,6 @@ class UniverseApplication( object ):
             if memdump.Memdump:
                 self.memdump = memdump.Memdump()
     def shutdown( self ):
-        self.job_stop_queue.shutdown()
-        self.job_queue.shutdown()
+        self.job_manager.shutdown()
         if self.heartbeat:
             self.heartbeat.shutdown()

@@ -5,6 +5,7 @@ A simple WSGI application/framework.
 import socket
 import types
 import logging
+import os.path
 import sys
 
 from Cookie import SimpleCookie
@@ -132,16 +133,16 @@ class WebApplication( object ):
         if callable( body ):
             # Assume the callable is another WSGI application to run
             return body( environ, start_response )
+        elif isinstance( body, types.FileType ):
+            # Stream the file back to the browser
+            return send_file( start_response, trans, body )
         else:
             start_response( trans.response.wsgi_status(), 
                             trans.response.wsgi_headeritems() )
             return self.make_body_iterable( trans, body )
         
     def make_body_iterable( self, trans, body ):
-        if isinstance( body, types.FileType ):
-            # Stream the file back to the browser
-            return iterate_file( body )
-        elif isinstance( body, ( types.GeneratorType, list, tuple ) ):
+        if isinstance( body, ( types.GeneratorType, list, tuple ) ):
             # Recursively stream the iterable
             return flatten( body )
         elif isinstance( body, basestring ):
@@ -301,6 +302,20 @@ class Response( object ):
 # ---- Utilities ------------------------------------------------------------
 
 CHUNK_SIZE = 2**16
+
+def send_file( start_response, trans, body ):
+    # If configured use X-Accel-Redirect header for nginx
+    base = trans.app.config.nginx_x_accel_redirect_base
+    if base:
+        trans.response.headers['X-Accel-Redirect'] = \
+            base + os.path.abspath( body.name )
+        body = [ "" ]
+    # Fall back on sending the file in chunks
+    else:
+        body = iterate_file( body )
+    start_response( trans.response.wsgi_status(), 
+                    trans.response.wsgi_headeritems() )
+    return body
 
 def iterate_file( file ):
     """

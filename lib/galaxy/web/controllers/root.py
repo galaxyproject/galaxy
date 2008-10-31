@@ -266,6 +266,28 @@ class RootController( BaseController ):
         return trans.fill_template( "/dataset/edit_attributes.mako", data=data,
                                     datatypes=ldatatypes, err=None )
 
+    def __delete_dataset( self, trans, id ):
+        data = self.app.model.HistoryDatasetAssociation.get( id )
+        if data:
+            # Walk up parent datasets to find the containing history
+            topmost_parent = data
+            while topmost_parent.parent:
+                topmost_parent = topmost_parent.parent
+            assert topmost_parent in trans.history.datasets, "Data does not belong to current history"
+            # Mark deleted and cleanup
+            data.mark_deleted()
+            data.clear_associated_files()
+            trans.log_event( "Dataset id %s marked as deleted" % str(id) )
+            if data.parent_id is None and len( data.creating_job_associations ) > 0:
+                # Mark associated job for deletion
+                job = data.creating_job_associations[0].job
+                if job.state not in [ model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.NEW ]:
+                    return
+                # Are *all* of the job's other output datasets deleted?
+                if job.check_if_output_datasets_deleted():
+                    job.mark_deleted()                
+            self.app.model.flush()
+
     @web.expose
     def delete( self, trans, id = None, show_deleted_on_refresh = False, **kwd):
         if id:
@@ -276,26 +298,10 @@ class RootController( BaseController ):
             history = trans.get_history()
             for id in dataset_ids:
                 try:
-                    int( id )
+                    id = int( id )
                 except:
                     continue
-                data = self.app.model.HistoryDatasetAssociation.get( id )
-                if data:
-                    # Walk up parent datasets to find the containing history
-                    topmost_parent = data
-                    while topmost_parent.parent:
-                        topmost_parent = topmost_parent.parent
-                    assert topmost_parent in history.datasets, "Data does not belong to current history"
-                    # Mark deleted and cleanup
-                    data.mark_deleted()
-                    data.clear_associated_files()
-                    self.app.model.flush()
-                    trans.log_event( "Dataset id %s marked as deleted" % str(id) )
-                    if data.parent_id is None:
-                        try:
-                            self.app.job_stop_queue.put( data.creating_job_associations[0].job )
-                        except IndexError:
-                            pass    # upload tool will cause this since it doesn't have a job
+                self.__delete_dataset( trans, id )
         return self.history( trans, show_deleted = show_deleted_on_refresh )
         
     @web.expose
@@ -305,24 +311,7 @@ class RootController( BaseController ):
                 int( id )
             except:
                 return "Dataset id '%s' is invalid" %str( id )
-            history = trans.get_history()
-            data = self.app.model.HistoryDatasetAssociation.get( id )
-            if data:
-                # Walk up parent datasets to find the containing history
-                topmost_parent = data
-                while topmost_parent.parent:
-                    topmost_parent = topmost_parent.parent
-                assert topmost_parent in history.datasets, "Data does not belong to current history"
-                # Mark deleted and cleanup
-                data.mark_deleted()
-                data.clear_associated_files()
-                self.app.model.flush()
-                trans.log_event( "Dataset id %s marked as deleted async" % str(id) )
-                if data.parent_id is None:
-                    try:
-                        self.app.job_stop_queue.put( data.creating_job_associations[0].job )
-                    except IndexError:
-                        pass    # upload tool will cause this since it doesn't have a job
+            self.__delete_dataset( trans, id )
         return "OK"
 
     ## ---- History management -----------------------------------------------

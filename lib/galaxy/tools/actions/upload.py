@@ -26,12 +26,22 @@ class UploadToolAction( object ):
         temp_name = ""
         data_list = []
 
-        if 'filename' in dir( data_file ):
+        if 'local_filename' in dir( data_file ):
+            # Use the existing file
             try:
                 file_name = data_file.filename
                 file_name = file_name.split( '\\' )[-1]
                 file_name = file_name.split( '/' )[-1]
-                data_list.append( self.add_file( trans, data_file.file, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
+                data_list.append( self.add_file( trans, data_file.local_filename, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
+            except Exception, e:
+                return self.upload_empty( trans, "Error:", str( e ) )
+        elif 'filename' in dir( data_file ):
+            try:
+                file_name = data_file.filename
+                file_name = file_name.split( '\\' )[-1]
+                file_name = file_name.split( '/' )[-1]
+                temp_name = sniff.stream_to_file( data_file.file )
+                data_list.append( self.add_file( trans, temp_name, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
                 return self.upload_empty( trans, "Error:", str( e ) )
         if url_paste not in [ None, "" ]:
@@ -41,7 +51,8 @@ class UploadToolAction( object ):
                     line = line.rstrip( '\r\n' )
                     if line:
                         try:
-                            data_list.append( self.add_file( trans, urllib.urlopen( line ), line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
+                            temp_name = sniff.stream_to_file( urllib.urlopen( line ) )
+                            data_list.append( self.add_file( trans, temp_name, line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
                         except Exception, e:
                             return self.upload_empty( trans, "Error:", str( e ) )
             else:
@@ -53,7 +64,8 @@ class UploadToolAction( object ):
                         break
                 if is_valid:
                     try:
-                        data_list.append( self.add_file( trans, StringIO.StringIO( url_paste ), 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
+                        temp_name = sniff.stream_to_file( StringIO.StringIO( url_paste ) )
+                        data_list.append( self.add_file( trans, temp_name, 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
                     except Exception, e:
                         return self.upload_empty( trans, "Error:", str( e ) )
                 else:
@@ -77,9 +89,8 @@ class UploadToolAction( object ):
         trans.app.model.flush()
         return dict( output=data )
 
-    def add_file( self, trans, file_obj, file_name, file_type, dbkey, info=None, space_to_tab=False ):
+    def add_file( self, trans, temp_name, file_name, file_type, dbkey, info=None, space_to_tab=False ):
         data_type = None
-        temp_name = sniff.stream_to_file( file_obj )
         
         # See if we have an empty file
         if not os.path.getsize( temp_name ) > 0:

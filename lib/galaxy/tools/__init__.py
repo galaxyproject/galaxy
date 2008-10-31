@@ -797,7 +797,7 @@ class Tool:
                 # Deal with the 'test' element and see if it's value changed
                 test_param_key = group_prefix + input.test_param.name
                 test_param_error = None
-                test_incoming = incoming.get( test_param_key, None )
+                test_incoming = get_incoming_value( incoming, test_param_key, None )
                 if test_param_key not in incoming \
                    and "__force_update__" + test_param_key not in incoming \
                    and update_only:
@@ -878,7 +878,7 @@ class Tool:
                         except:
                             pass
                     if not incoming_value_generated:
-                        incoming_value = incoming.get( key, None )
+                        incoming_value = get_incoming_value( incoming, key, None )
                     value, error = check_param( trans, input, incoming_value, context )
                     if input.dependent_params and state[ input.name ] != value:
                         # We need to keep track of changed dependency parametrs ( parameters
@@ -1362,3 +1362,12 @@ def json_fix( val ):
     else:
         return val
     
+def get_incoming_value( incoming, key, default ):
+    if "__" + key + "__is_composite" in incoming:
+        composite_keys = incoming["__" + key + "__keys"].split()
+        value = dict()
+        for composite_key in composite_keys:
+            value[composite_key] = incoming[key + "_" + composite_key]
+        return value
+    else:
+        return incoming.get( key, default )

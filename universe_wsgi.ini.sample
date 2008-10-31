@@ -34,7 +34,7 @@ job_queue_cleanup_interval = 30
 # Database connection
 database_file = database/universe.sqlite
 # You may use a SQLAlchemy connection string to specify an external database instead
-## database_connection = postgres:///galaxy_test
+## database_connection = postgres:///galaxy
 ## database_engine_option_echo = true
 ## database_engine_option_echo_pool = true
 ## database_engine_option_pool_size = 10
@@ -89,12 +89,15 @@ mailing_join_addr = galaxy-user-join@bx.psu.edu
 # Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
 ## use_heartbeat = True
 
+# Enable the memory debugging interface (careful, negatively impacts server performance)
+## use_memdump = True
+
 # Profiling middleware (cProfile based)
 ## use_profile = True
 
-# Mail
-smtp_server = coltrane.bx.psu.edu
-error_email_to = galaxy-bugs@bx.psu.edu
+# For use by 'report this error' link on error-state datasets
+#smtp_server = smtp.example.org
+#error_email_to = galaxy-bugs@example.org
 
 # Use the new iframe / javascript based layout
 use_new_layout = true
@@ -120,29 +123,34 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 ## wiki_url: replaces the default galaxy main wiki
 ## bugs_email: replaces the default galaxy bugs email list
 #brand = Private local mirror
-#wiki_url=/path/to/my/local/wiki
-#bugs_email=mailto:bugmaster@this.site.com
+#wiki_url = /path/to/my/local/wiki
+#bugs_email = mailto:galaxy-bugs@example.org
 
 # ---- Job Runners ----------------------------------------------------------
 
 # Clustering Galaxy is not a straightforward process and requires a lot of
-# pre-configuration.  See the ClusteringGalaxy Wiki before attempting to set any
-# of these options.  If running normally (without a cluster), do not change
-# anything in this section.
+# pre-configuration.  See the ClusteringGalaxy Wiki before attempting to set
+# any of these options:
+#
+# http://g2.trac.bx.psu.edu/wiki/ClusteringGalaxy
+#
+# If running normally (without a cluster), do not change anything in this
+# section.
 
 # start_job_runners: Comma-separated list of job runners to start.  local is
 # always started.  If left commented, no jobs will be run on the cluster, even
 # if a cluster URL is explicitly defined in the [galaxy:tool_runners] section
-# below.  The only runner currently available is 'pbs'.
+# below.  The runners currently available are 'pbs' and 'sge'.
 #start_job_runners = pbs
 
 # default_cluster_job_runner: The URL for the default runner to use when a tool
 # doesn't explicity define a runner below.  For help on the cluster URL format,
-# see the ClusteringGalaxy Wiki.  Leave commented if not using a cluster job runner.
+# see the ClusteringGalaxy Wiki.  Leave commented if not using a cluster job
+# runner.
 #default_cluster_job_runner = pbs:///
 
 # The PBS options are described in detail in the Galaxy Configuration section of
-# the ClusteringGalaxy Wiki
+# the ClusteringGalaxy Wiki, and are only necessary when using file staging.
 #pbs_application_server = 
 #pbs_stage_path = 
 #pbs_dataset_server = 
@@ -152,8 +160,6 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 [galaxy:tool_runners]
 
 biomart = local:///
-blat2wig = pbs:///blast
-blat_wrapper = pbs:///blast
 encode_db1 = local:///
 encode_import_all_latest_datasets1 = local:///
 encode_import_chromatin_and_chromosomes1 = local:///
@@ -161,13 +167,8 @@ encode_import_gencode1 = local:///
 encode_import_genes_and_transcripts1 = local:///
 encode_import_multi-species_sequence_analysis1 = local:///
 encode_import_transcription_regulation1 = local:///
-generate_coverage_report = pbs:///blast
 hbvar = local:///
-hist_high_quality_score = pbs:///blast
-megablast_wrapper = pbs:///blast
-megablast_xml_parser = pbs:///blast
 microbial_import1 = local:///
-quality_score_distribution = pbs:///blast
 ucsc_table_direct1 = local:///
 ucsc_table_direct_archaea1 = local:///
 ucsc_table_direct_test1 = local:///
