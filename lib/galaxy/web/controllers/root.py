@@ -818,3 +818,4 @@ class RootController( BaseController ):
     def generate_error( self, trans ):
         raise Exception( "Fake error!" )
 
+
