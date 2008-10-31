@@ -369,9 +369,10 @@ class DatasetInstance( object ):
         self.blurb = blurb
         self.peek = peek
         self.extension = extension
-        self.dbkey = dbkey
         self.designation = designation
         self.metadata = metadata or dict()
+        if dbkey: #dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
+            self.dbkey = dbkey
         self.deleted = deleted
         self.visible = visible
         # Relationships

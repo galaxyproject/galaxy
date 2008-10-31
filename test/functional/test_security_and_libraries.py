@@ -124,7 +124,7 @@ class TestHistory( TwillTestCase ):
     def test_35_rename_library( self ):
         """Testing renaming a library"""
         library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
-                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+                                                     galaxy.model.Library.table.c.deleted==False ) ).first()
         library_id = str( library.id )
         self.rename_library( library_id, name='New Test Library Renamed', description='New Test Library Description Re-described' )
         self.visit_page( 'admin/libraries' )
@@ -134,7 +134,7 @@ class TestHistory( TwillTestCase ):
     def test_40_rename_root_folder( self ):
         """Testing renaming a library root folder"""
         library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
-                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+                                                     galaxy.model.Library.table.c.deleted==False ) ).first()
         folder = library.root_folder
         folder_id = str( folder.id )
         self.rename_folder( folder_id, name='New Test Library Root Folder', description='New Test Library Root Folder Description' )
@@ -143,7 +143,7 @@ class TestHistory( TwillTestCase ):
     def test_45_add_public_dataset_to_root_folder( self ):
         """Testing adding a public dataset to a library root folder"""
         library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
-                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+                                                     galaxy.model.Library.table.c.deleted==False ) ).first()
         folder = library.root_folder
         folder_id = str( folder.id )
         self.add_dataset( '1.bed', folder_id, extension='bed', dbkey='hg18', roles=[] )
@@ -154,7 +154,7 @@ class TestHistory( TwillTestCase ):
     def test_50_add_new_folder( self ):
         """Testing adding a folder to a library root folder"""
         library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
-                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+                                                     galaxy.model.Library.table.c.deleted==False ) ).first()
         folder = library.root_folder
         folder_id = str( folder.id )
         self.add_folder( folder_id, name='New Test Folder', description='New Test Folder Description' )
@@ -187,7 +187,7 @@ class TestHistory( TwillTestCase ):
     def test_75_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
         library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
-                                                     galaxy.model.Library.table.c.deleted=='f' ) ).first()
+                                                     galaxy.model.Library.table.c.deleted==False ) ).first()
         library_id = str( library.id )
         self.mark_library_deleted( library_id )
     def test_80_purge_group( self ):
