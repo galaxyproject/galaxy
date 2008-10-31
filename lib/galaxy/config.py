@@ -67,6 +67,11 @@ class Configuration( object ):
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
         if self.library_import_dir is not None and not os.path.exists( self.library_import_dir ):
             raise ConfigurationError( "library_import_dir specified in config (%s) does not exist" % self.library_import_dir )
+        # Configuration options for taking advantage of nginx features
+        self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
+        self.nginx_upload_location = kwargs.get( 'nginx_upload_store', False )
+        if self.nginx_upload_location:
+            self.nginx_upload_location = os.path.abspath( self.nginx_upload_location )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
@@ -81,6 +86,11 @@ class Configuration( object ):
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
     def get( self, key, default ):
         return self.config_dict.get( key, default )
+    def get_bool( self, key, default ):
+        if key in self.config_dict:
+            return string_as_bool( key )
+        else:
+            return default
     def check( self ):
         # Check that required directories exist
         for path in self.root, self.file_path, self.tool_path, self.tool_data_path, self.template_path, self.job_working_directory:

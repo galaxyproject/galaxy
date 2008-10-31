@@ -356,7 +356,7 @@ StoredWorkflowMenuEntry.table = Table( "stored_workflow_menu_entry", metadata,
 
 MetadataFile.table = Table( "metadata_file", metadata, 
     Column( "id", Integer, primary_key=True ),
-    Column( "name", String ),
+    Column( "name", TEXT ),
     Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
     Column( "lda_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), index=True, nullable=True ),
     Column( "create_time", DateTime, default=now ),

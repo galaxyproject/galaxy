@@ -16,9 +16,7 @@ def check_param( trans, param, incoming_value, param_values ):
     value = incoming_value
     error = None
     try:
-        if param.name == 'file_data':
-            pass
-        elif value is not None or isinstance(param, DataToolParameter):
+        if value is not None or isinstance(param, DataToolParameter):
             # Convert value from HTML representation
             value = param.from_html( value, trans, param_values )
             # Allow the value to be converted if neccesary

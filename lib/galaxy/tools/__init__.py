@@ -676,7 +676,7 @@ class Tool:
             # on the standard run form) or "URL" (a parameter provided by
             # external data source tools). 
             if "runtool_btn" not in incoming and "URL" not in incoming:
-                return "tool_form.tmpl", dict( errors={}, tool_state=state, param_values={}, incoming={} )
+                return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
         # Process incoming data
         if not( self.check_values ):
             # If `self.check_values` is false we don't do any checking or
@@ -702,20 +702,20 @@ class Tool:
             # error messages
             if errors:
                 error_message = "One or more errors were found in the input you provided. The specific errors are marked below."    
-                return "tool_form.tmpl", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
+                return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
                 out_data = self.execute( trans, incoming=params )
-                return 'tool_executed.tmpl', dict( out_data=out_data )
+                return 'tool_executed.mako', dict( out_data=out_data )
             # Otherwise move on to the next page
             else:
                 state.page += 1
                 # Fill in the default values for the next page
                 self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
-                return 'tool_form.tmpl', dict( errors=errors, tool_state=state )
+                return 'tool_form.mako', dict( errors=errors, tool_state=state )
         else:
             # Just a refresh, render the form with updated state and errors.
-            return 'tool_form.tmpl', dict( errors=errors, tool_state=state )
+            return 'tool_form.mako', dict( errors=errors, tool_state=state )
       
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
                       update_only=False, old_errors={}, changed_dependencies={} ):
@@ -797,7 +797,7 @@ class Tool:
                 # Deal with the 'test' element and see if it's value changed
                 test_param_key = group_prefix + input.test_param.name
                 test_param_error = None
-                test_incoming = incoming.get( test_param_key, None )
+                test_incoming = get_incoming_value( incoming, test_param_key, None )
                 if test_param_key not in incoming \
                    and "__force_update__" + test_param_key not in incoming \
                    and update_only:
@@ -878,7 +878,7 @@ class Tool:
                         except:
                             pass
                     if not incoming_value_generated:
-                        incoming_value = incoming.get( key, None )
+                        incoming_value = get_incoming_value( incoming, key, None )
                     value, error = check_param( trans, input, incoming_value, context )
                     if input.dependent_params and state[ input.name ] != value:
                         # We need to keep track of changed dependency parametrs ( parameters
@@ -948,7 +948,10 @@ class Tool:
                 # Regular tool parameter
                 value = input_values[ input.name ]
                 if isinstance( value, UnvalidatedValue ):
-                    value = input.from_html( value.value, None, context )
+                    if value.value is None: #if value.value is None, it could not have been submited via html form and therefore .from_html can't be guaranteed to work
+                        value = None
+                    else:
+                        value = input.from_html( value.value, None, context )
                     # Then do any further validation on the value
                     input.validate( value, None )
                     input_values[ input.name ] = value
@@ -1361,3 +1364,12 @@ def json_fix( val ):
     else:
         return val
     
+def get_incoming_value( incoming, key, default ):
+    if "__" + key + "__is_composite" in incoming:
+        composite_keys = incoming["__" + key + "__keys"].split()
+        value = dict()
+        for composite_key in composite_keys:
+            value[composite_key] = incoming[key + "_" + composite_key]
+        return value
+    else:
+        return incoming.get( key, default )

@@ -191,8 +191,6 @@ def purge_histories( h, d, m, cutoff_time, remove_from_disk ):
                             if errmsg:
                                 errors = True
                                 print errmsg
-                            else:
-                                print "%s" % dataset.file_name
                         else:
                             dataset.purged = True
                             dataset.flush()
@@ -264,7 +262,6 @@ def purge_datasets( d, m, cutoff_time, remove_from_disk ):
                print errmsg
             else:
                 dataset_count += 1
-                print "%s" % dataset.file_name
         else:
             dataset.purged = True
             dataset.file_size = 0
@@ -314,6 +311,7 @@ def purge_dataset( dataset, m ):
             else:
                 # Remove dataset file from disk
                 os.unlink( dataset.file_name )
+                print "%s" % dataset.file_name
                 # Mark all associated MetadataFiles as deleted and purged and remove them from disk
                 print "The following metadata files associated with dataset '%s' have been purged" % dataset.file_name
                 for hda in dataset.history_associations:

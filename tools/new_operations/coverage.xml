@@ -20,6 +20,11 @@
       <output name="output" file="gops_coverage_out.interval" />
     </test>
     <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2_mod.bed" ftype="interval"/>
+      <output name="output" file="gops_coverage_out_diffCols.interval" />
+    </test>
+    <test>
       <param name="input1" value="gops_bigint.interval" />
       <param name="input2" value="gops_bigint2.interval" />
       <output name="output" file="gops_coverage_out2.interval" />

@@ -94,7 +94,35 @@ class Job( object ):
         tool = app.toolbox.tools_by_id[self.tool_id]
         param_dict = tool.params_from_strings( param_dict, app )
         return param_dict
-                
+    def check_if_output_datasets_deleted( self ):
+        """
+        Return true if all of the output datasets associated with this job are
+        in the deleted state
+        """
+        for dataset_assoc in self.output_datasets:
+            dataset = dataset_assoc.dataset
+            # only the originator of the job can delete a dataset to cause
+            # cancellation of the job, no need to loop through history_associations
+            if not dataset.deleted:
+                return False
+        return True
+    def mark_deleted( self ):
+        """
+        Mark this job as deleted, and mark any output datasets as discarded.
+        """
+        self.state = Job.states.DELETED
+        self.info = "Job output deleted by user before job completed."
+        for dataset_assoc in self.output_datasets:
+            dataset = dataset_assoc.dataset
+            dataset.deleted = True
+            dataset.state = dataset.states.DISCARDED
+            for dataset in dataset.dataset.history_associations:
+                # propagate info across shared datasets
+                dataset.deleted = True
+                dataset.blurb = 'deleted'
+                dataset.peek = 'Job deleted'
+                dataset.info = 'Job output deleted by user before job completed'
+
 class JobParameter( object ):
     def __init__( self, name, value ):
         self.name = name

@@ -17,6 +17,27 @@ log = logging.getLogger( __name__ )
 # States for running a job. These are NOT the same as data states
 JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED = 'wait', 'error', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted'
 
+class JobManager( object ):
+    """
+    Highest level interface to job management.
+    
+    TODO: Currently the app accesses "job_queue" and "job_stop_queue" directly.
+          This should be decoupled. 
+    """
+    def __init__( self, app ):
+        self.app = app
+        if self.app.config.get_bool( "enable_job_running", True ):
+            # The dispatcher launches the underlying job runners
+            self.dispatcher = DefaultJobDispatcher( app )
+            # Queues for starting and stopping jobs
+            self.job_queue = JobQueue( app, self.dispatcher )
+            self.job_stop_queue = JobStopQueue( app, self.dispatcher )
+        else:
+            self.job_queue = self.job_stop_queue = NoopQueue()
+    def shutdown( self ):
+        self.job_queue.shutdown()
+        self.job_stop_queue.shutdown()
+
 class Sleeper( object ):
     """
     Provides a 'sleep' method that sleeps for a number of seconds *unless*
@@ -443,7 +464,7 @@ class JobWrapper( object ):
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
-        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here?
+        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
         self.tool.collect_associated_files(out_data)
@@ -594,49 +615,11 @@ class JobStopQueue( object ):
             pass  
 
         for job in jobs:
-            # jobs in a non queued/running/new state do not need to be stopped
-            if job.state not in [ model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.NEW ]:
-                return
-            # job has multiple datasets that aren't parent/child and not all of them are deleted.
-            if not self.check_if_output_datasets_deleted( job.id ):
-                return
-            self.mark_deleted( job.id )
             # job is in JobQueue or FooJobRunner, will be dequeued due to state change above
             if job.job_runner_name is None:
                 return
             # tell the dispatcher to stop the job
             self.dispatcher.stop( job )
-
-    def check_if_output_datasets_deleted( self, job_id ):
-        job = model.Job.get( job_id )
-        for dataset_assoc in job.output_datasets:
-            dataset = dataset_assoc.dataset
-            dataset.refresh()
-            #only the originator of the job can delete a dataset to cause
-            #cancellation of the job, no need to loop through history_associations
-            if not dataset.deleted:
-                return False
-        return True
-
-    def mark_deleted( self, job_id ):
-        job = model.Job.get( job_id )
-        job.refresh()
-        job.state = job.states.DELETED
-        job.info = "Job output deleted by user before job completed."
-        job.flush()
-        for dataset_assoc in job.output_datasets:
-            dataset = dataset_assoc.dataset
-            dataset.refresh()
-            dataset.deleted = True
-            dataset.state = dataset.states.DISCARDED
-            dataset.dataset.flush()
-            for dataset in dataset.dataset.history_associations:
-                #propagate info across shared datasets
-                dataset.deleted = True
-                dataset.blurb = 'deleted'
-                dataset.peek = 'Job deleted'
-                dataset.info = 'Job output deleted by user before job completed'
-                dataset.flush()
 
     def put( self, job ):
         self.queue.put( job )
@@ -652,3 +635,12 @@ class JobStopQueue( object ):
             self.queue.put( self.STOP_SIGNAL )
             self.sleeper.wake()
             log.info( "job stopper stopped" )
+
+class NoopQueue( object ):
+    """
+    Implements the JobQueue / JobStopQueue interface but does nothing
+    """
+    def put( self, *args ):
+        return
+    def shutdown( self ):
+        return
