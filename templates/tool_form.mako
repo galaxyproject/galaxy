@@ -127,7 +127,7 @@ $( function() {
     <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
     
     %if tool.display_by_page[tool_state.page]:
-        ${trans.fill_template_string( tool.display_by_page[tool_state.page], other_values=tool.get_param_html_map( trans, tool_state.page, tool_state.inputs ) )}
+        ${trans.fill_template_string( tool.display_by_page[tool_state.page], context=tool.get_param_html_map( trans, tool_state.page, tool_state.inputs ) )}
         <input type="submit" class="primary-button" name="runtool_btn" value="Execute">
         
     %else:
