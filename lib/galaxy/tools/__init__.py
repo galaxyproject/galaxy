@@ -948,7 +948,10 @@ class Tool:
                 # Regular tool parameter
                 value = input_values[ input.name ]
                 if isinstance( value, UnvalidatedValue ):
-                    value = input.from_html( value.value, None, context )
+                    if value.value is None: #if value.value is None, it could not have been submited via html form and therefore .from_html can't be guaranteed to work
+                        value = None
+                    else:
+                        value = input.from_html( value.value, None, context )
                     # Then do any further validation on the value
                     input.validate( value, None )
                     input_values[ input.name ] = value

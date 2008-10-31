@@ -464,7 +464,7 @@ class JobWrapper( object ):
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
-        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here?
+        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
         self.tool.collect_associated_files(out_data)

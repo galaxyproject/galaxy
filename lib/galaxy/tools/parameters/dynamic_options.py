@@ -102,7 +102,7 @@ class DataMetaFilter( Filter ):
             if self.multiple:
                 return dataset_value in file_value.split( self.separator )
             return file_value == dataset_value
-        assert self.ref_name in other_values or trans.workflow_building_mode, "Required dependency '%s' not found in incoming values" % self.ref_name
+        assert self.ref_name in other_values or ( trans is not None and trans.workflow_building_mode), "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = other_values.get( self.ref_name, None )
         if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ):
             return [] #not a valid dataset
@@ -146,9 +146,9 @@ class ParamValueFilter( Filter ):
     def get_dependency_name( self ):
         return self.ref_name
     def filter_options( self, options, trans, other_values ):
-        if trans.workflow_building_mode: return []
+        if trans is not None and trans.workflow_building_mode: return []
+        assert self.ref_name in other_values, "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = str( other_values.get( self.ref_name, None ) )
-        assert ref is not None, "Required dependency '%s' not found in incoming values" % self.ref_name
         rval = []
         for fields in options:
             if ( self.keep and fields[self.column] == ref ) or ( not self.keep and fields[self.column] != ref ):
