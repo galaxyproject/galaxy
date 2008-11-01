@@ -353,17 +353,18 @@ class History( object ):
             dataset = HistoryDatasetAssociation( dataset = dataset )
             dataset.flush()
         elif not isinstance( dataset, HistoryDatasetAssociation ):
-            raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history."
+            raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history ( you tried to add %s )." % str( dataset )
         if parent_id:
             for data in self.datasets:
                 if data.id == parent_id:
                     dataset.hid = data.hid
                     break
             else:
-                if set_hid: dataset.hid = self._next_hid()
+                if set_hid:
+                    dataset.hid = self._next_hid()
         else:
-            if set_hid: dataset.hid = self._next_hid()
-        dataset.history = self
+            if set_hid:
+                dataset.hid = self._next_hid()
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
         self.datasets.append( dataset )
