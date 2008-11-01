@@ -1,9 +1,9 @@
 """
 Contains the user interface in the Universe class
 """
-
 from galaxy.web.base.controller import *
-
+from galaxy.model.orm import *
+from galaxy import util
 import logging, os, string
 from random import choice
 
@@ -118,6 +118,7 @@ class User( BaseController ):
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
                 user.flush()
+                trans.app.security_agent.setup_new_user( user )
                 trans.set_user( user )
                 trans.ensure_valid_galaxy_session()
                 """
@@ -166,3 +167,23 @@ class User( BaseController ):
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Reset Password", submit_text="Submit" )
                 .add_text( "email", "Email", value=email, error=error ) )
+    
+    @web.expose
+    def set_default_permissions( self, trans, **kwd ):
+        """Sets the user's default permissions for the new histories"""
+        if trans.user:
+            if 'update_roles' in kwd:
+                p = util.Params( kwd )
+                permissions = {}
+                for k, v in trans.app.model.Dataset.permitted_actions.items():
+                    in_roles = p.get( k + '_in', [] )
+                    if not isinstance( in_roles, list ):
+                        in_roles = [ in_roles ]
+                    in_roles = [ trans.app.model.Role.get( x ) for x in in_roles ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
+                return trans.show_ok_message( 'Default new history permissions have been changed.' )
+            return trans.fill_template( 'user/permissions.mako' )
+        else:
+            # User not logged in, history group must be only public
+            return trans.show_error_message( "You must be logged in to change your default permitted actions." )
