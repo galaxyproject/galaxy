@@ -326,6 +326,7 @@ assign_mapper( context, Event, Event.table,
 
 assign_mapper( context, GalaxySession, GalaxySession.table,
     properties=dict( histories=relation( GalaxySessionToHistoryAssociation ),
+                     current_history=relation( History ),
                      user=relation( User.mapper ) ) )
 
 assign_mapper( context, GalaxySessionToHistoryAssociation, GalaxySessionToHistoryAssociation.table,

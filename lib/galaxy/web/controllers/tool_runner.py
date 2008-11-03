@@ -41,7 +41,6 @@ class ToolRunner( BaseController ):
             return "Tool '%s' does not exist, kwd=%s " % (tool_id, kwd)
         params = util.Params( kwd, sanitize=tool.options.sanitize, tool=tool )
         history = trans.get_history()
-        trans.ensure_valid_galaxy_session()
         template, vars = tool.handle_input( trans, params.__dict__ )
         if len(params) > 0:
             trans.log_event( "Tool params: %s" % (str(params)), tool_id=tool_id )

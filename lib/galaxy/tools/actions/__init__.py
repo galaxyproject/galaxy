@@ -177,7 +177,7 @@ class DefaultToolAction( object ):
         trans.app.model.flush()
         # Create the job object
         job = trans.app.model.Job()
-        job.session_id = trans.get_galaxy_session( create=True ).id
+        job.session_id = trans.get_galaxy_session().id
         job.history_id = trans.history.id
         job.tool_id = tool.id
         try:

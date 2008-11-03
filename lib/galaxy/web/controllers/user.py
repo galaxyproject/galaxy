@@ -82,10 +82,7 @@ class User( BaseController ):
             elif not user.check_password( password ):
                 password_error = "Invalid password"
             else:
-                trans.set_user( user )
-                trans.ensure_valid_galaxy_session()
-                # Associate user with galaxy_session and history
-                trans.make_associations()
+                trans.handle_user_login( user )
                 trans.log_event( "User logged in" )
                 return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
         return trans.show_form( 
@@ -97,7 +94,7 @@ class User( BaseController ):
     def logout( self, trans ):
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
-        new_galaxy_session = trans.logout_galaxy_session()
+        trans.handle_user_logout()
         return trans.show_ok_message( "You are no longer logged in", refresh_frames=['masthead', 'history'] )
             
     @web.expose
@@ -118,12 +115,7 @@ class User( BaseController ):
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
                 user.flush()
-                trans.set_user( user )
-                trans.ensure_valid_galaxy_session()
-                """
-                Associate user with galaxy_session and history
-                """
-                trans.make_associations()
+                trans.handle_user_login( user )
                 trans.log_event( "User created a new account" )
                 trans.log_event( "User logged in" )
                 #subscribe user to email list

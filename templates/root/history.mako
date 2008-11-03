@@ -231,6 +231,7 @@ div#footer {
 
 <body class="historyPage">
 
+
 <div id="top-links" class="historyLinks">
     <a href="${h.url_for('history', show_deleted=show_deleted)}">refresh</a> 
     %if show_deleted:

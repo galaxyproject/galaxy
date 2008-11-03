@@ -54,10 +54,7 @@ class RootController( BaseController ):
         
         NOTE: No longer accepts "id" or "template" options for security reasons.
         """
-        try:
-            history = trans.get_history()
-        except:
-            return self.history_new(trans)
+        history = trans.get_history()
         if as_xml:
             trans.response.set_content_type('text/xml')
             return trans.fill_template_mako( "root/history_as_xml.mako", history=history )

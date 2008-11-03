@@ -1,9 +1,35 @@
+import os, os.path, logging
+
 import pkg_resources
 pkg_resources.require( "pycrypto" )
 
 from Crypto.Cipher import Blowfish
 from Crypto.Util.randpool import RandomPool
 from Crypto.Util import number
+
+log = logging.getLogger( __name__ )
+
+if os.path.exists( "/dev/urandom" ):
+    log.debug("###using /dev/urandom....")
+    # We have urandom, use it as the source of random data
+    random_fd = os.open( "/dev/urandom", os.O_RDONLY )
+    def get_random_bytes( nbytes ):
+        value = os.read( random_fd, nbytes )
+        # Normally we should get as much as we need
+        if len( value ) == nbytes:
+            return value
+        # If we don't, keep reading (this is slow and should never happen)
+        while len( value ) < nbytes:
+            value += os.read( random_fd, nbytes - len( value ) )
+        return value
+else:
+    def get_random_bytes( nbytes ):
+        nbits = nbytes * 8
+        random_pool = RandomPool( 1064 )
+        while random_pool.entropy < nbits:
+            random_pool.add_event()
+        random_pool.stir()
+        return( str( number.getRandomNumber( nbits, random_pool.get_bytes ) ) )
 
 class SecurityHelper( object ):
     # TODO: checking if histories/datasets are owned by the current user) will be moved here.
@@ -30,11 +56,5 @@ class SecurityHelper( object ):
         return self.id_cipher.decrypt( session_key.decode( 'hex' ) ).lstrip( "!" )
     def get_new_session_key( self ):
         # Generate a unique, high entropy 128 bit random number
-        random_pool = RandomPool( 1064 )
-        while random_pool.entropy < 128:
-            random_pool.add_event()
-        random_pool.stir()
-        rn = number.getRandomNumber( 128, random_pool.get_bytes )
-        # session_key must be a string
-        return str( rn )
+        return get_random_bytes( 16 )
         
