@@ -274,7 +274,6 @@ class JobWrapper( object ):
         Prepare the job to run by creating the working directory and the
         config files.
         """
-        mapping.context.current.clear() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
         # Create the working directory
         self.working_directory = \
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
