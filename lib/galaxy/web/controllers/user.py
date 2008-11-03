@@ -115,6 +115,7 @@ class User( BaseController ):
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
                 user.flush()
+                trans.app.security_agent.setup_new_user( user )
                 trans.handle_user_login( user )
                 trans.log_event( "User created a new account" )
                 trans.log_event( "User logged in" )

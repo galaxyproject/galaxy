@@ -354,6 +354,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             history.user = self.galaxy_session.user
         # Track genome_build with history
         history.genome_build = util.dbnames.default_value
+        # Set the user's default history permissions
+        self.app.security_agent.history_set_default_permissions( history )
         # Save
         self.sa_session.flush( [ self.galaxy_session, history ] )
         return history
