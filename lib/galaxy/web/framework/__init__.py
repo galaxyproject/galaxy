@@ -454,8 +454,8 @@ class FormBuilder( object ):
         self.action = action
         self.submit_text = submit_text
         self.inputs = []
-    def add_input( self, type, name, label, value=None, error=None, help=None  ):
-        self.inputs.append( FormInput( type, label, name, value, error, help ) )
+    def add_input( self, type, name, label, value=None, error=None, help=None, use_label=True  ):
+        self.inputs.append( FormInput( type, label, name, value, error, help, use_label ) )
         return self
     def add_text( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'text', label, name, value, error, help )
@@ -466,13 +466,14 @@ class FormInput( object ):
     """
     Simple class describing a form input element
     """
-    def __init__( self, type, name, label, value=None, error=None, help=None ):
+    def __init__( self, type, name, label, value=None, error=None, help=None, use_label=True ):
         self.type = type
         self.name = name
         self.label = label
         self.value = value
         self.error = error
         self.help = help
+        self.use_label = use_label
     
 class FormData( object ):
     """
@@ -492,3 +493,4 @@ class Bunch( dict ):
         return self[key]
     def __setattr__( self, key, value ):
         self[key] = value
+
