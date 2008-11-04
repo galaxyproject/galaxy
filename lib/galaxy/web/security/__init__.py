@@ -10,18 +10,17 @@ from Crypto.Util import number
 log = logging.getLogger( __name__ )
 
 if os.path.exists( "/dev/urandom" ):
-    log.debug("###using /dev/urandom....")
     # We have urandom, use it as the source of random data
     random_fd = os.open( "/dev/urandom", os.O_RDONLY )
     def get_random_bytes( nbytes ):
         value = os.read( random_fd, nbytes )
         # Normally we should get as much as we need
         if len( value ) == nbytes:
-            return value
+            return value.encode( "hex" )
         # If we don't, keep reading (this is slow and should never happen)
         while len( value ) < nbytes:
             value += os.read( random_fd, nbytes - len( value ) )
-        return value
+        return value.encode( "hex" )
 else:
     def get_random_bytes( nbytes ):
         nbits = nbytes * 8
@@ -29,7 +28,8 @@ else:
         while random_pool.entropy < nbits:
             random_pool.add_event()
         random_pool.stir()
-        return( str( number.getRandomNumber( nbits, random_pool.get_bytes ) ) )
+        return str( number.getRandomNumber( nbits, random_pool.get_bytes ) )
+
 
 class SecurityHelper( object ):
     # TODO: checking if histories/datasets are owned by the current user) will be moved here.
