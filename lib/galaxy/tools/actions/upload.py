@@ -25,7 +25,19 @@ class UploadToolAction( object ):
                 space_to_tab = True
         temp_name = ""
         data_list = []
-
+        # Create the job object
+        job = trans.app.model.Job()
+        job.session_id = trans.get_galaxy_session().id
+        job.history_id = trans.history.id
+        job.tool_id = tool.id
+        try:
+            # For backward compatibility, some tools may not have versions yet.
+            job.tool_version = tool.version
+        except:
+            job.tool_version = "1.0.0"
+        job.flush()
+        log.debug( 'tool %s created job id %d' % ( tool.id, job.id ) )
+        trans.log_event( 'created job id %d' % job.id, tool_id=tool.id )
         if 'local_filename' in dir( data_file ):
             # Use the existing file
             try:
@@ -34,7 +46,7 @@ class UploadToolAction( object ):
                 file_name = file_name.split( '/' )[-1]
                 data_list.append( self.add_file( trans, data_file.local_filename, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
-                return self.upload_empty( trans, "Error:", str( e ) )
+                return self.upload_empty( trans, job, "Error:", str( e ) )
         elif 'filename' in dir( data_file ):
             try:
                 file_name = data_file.filename
@@ -43,7 +55,7 @@ class UploadToolAction( object ):
                 temp_name = sniff.stream_to_file( data_file.file )
                 data_list.append( self.add_file( trans, temp_name, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
-                return self.upload_empty( trans, "Error:", str( e ) )
+                return self.upload_empty( trans, job, "Error:", str( e ) )
         if url_paste not in [ None, "" ]:
             if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
                 url_paste = url_paste.replace( '\r', '' ).split( '\n' )
@@ -54,7 +66,7 @@ class UploadToolAction( object ):
                             temp_name = sniff.stream_to_file( urllib.urlopen( line ) )
                             data_list.append( self.add_file( trans, temp_name, line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
                         except Exception, e:
-                            return self.upload_empty( trans, "Error:", str( e ) )
+                            return self.upload_empty( trans, job, "Error:", str( e ) )
             else:
                 is_valid = False
                 for line in url_paste:
@@ -67,26 +79,40 @@ class UploadToolAction( object ):
                         temp_name = sniff.stream_to_file( StringIO.StringIO( url_paste ) )
                         data_list.append( self.add_file( trans, temp_name, 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
                     except Exception, e:
-                        return self.upload_empty( trans, "Error:", str( e ) )
+                        return self.upload_empty( trans, job, "Error:", str( e ) )
                 else:
-                    return self.upload_empty( trans, "No data error:", "you pasted no data." )
+                    return self.upload_empty( trans, job, "No data error:", "you pasted no data." )
         if self.empty:
-            return self.upload_empty( trans, "Empty file error:", "you attempted to upload an empty file." )
+            return self.upload_empty( trans, job, "Empty file error:", "you attempted to upload an empty file." )
         elif len( data_list ) < 1:
-            return self.upload_empty( trans, "No data error:", "either you pasted no data, the url you specified is invalid, or you have not specified a file." )
-        return dict( output=data_list[0] )
+            return self.upload_empty( trans, job, "No data error:", "either you pasted no data, the url you specified is invalid, or you have not specified a file." )
+        hda = data_list[0]
+        job.state = trans.app.model.Job.states.OK
+        file_size_str = nice_size( hda.dataset.file_size )
+        job.info = "Uploaded file '%s', size: %s" % ( file_name, file_size_str )
+        job.flush()
+        log.debug( 'tool %s job id %d ended ok, file: %s, size: %s' % ( tool.id, job.id, file_name, file_size_str ) )
+        trans.log_event( 'job id %d ended ok, file: %s, size: %s' % ( job.id, file_name, file_size_str ), tool_id=tool.id )
+        return dict( output=hda )
 
-    def upload_empty(self, trans, err_code, err_msg):
+    def upload_empty(self, trans, job, err_code, err_msg):
         data = trans.app.model.HistoryDatasetAssociation( create_dataset = True )
         data.name = err_code 
         data.extension = "txt"
         data.dbkey = "?"
         data.info = err_msg
         data.file_size = 0
-        data.flush()
         data.state = data.states.EMPTY
+        data.flush()
         trans.history.add_dataset( data )
         trans.app.model.flush()
+        # Indicate job failure by setting state and message
+        job.state = trans.app.model.Job.states.ERROR
+        job.info = err_msg
+        # If the failure is due to a Galaxy framework exception, save the traceback
+        job.flush()
+        log.debug( 'tool %s job id %d ended with errors' % ( job.tool_id, job.id ) )
+        trans.log_event( 'job id %d ended with errors' % job.id, tool_id=job.tool_id )
         return dict( output=data )
 
     def add_file( self, trans, temp_name, file_name, file_type, dbkey, info=None, space_to_tab=False ):
@@ -274,6 +300,21 @@ class UploadToolAction( object ):
         if chunk is None:
             temp.close()
         return False
+
+def nice_size( size ):
+    """Returns a readably formatted string with the size"""
+    words = [ 'bytes', 'Kb', 'Mb', 'Gb' ]
+    try:
+        size = float( size )
+    except:
+        return '??? bytes'
+    for ind, word in enumerate( words ):
+        step  = 1024 ** ( ind + 1 )
+        if step > size:
+            size = size / float( 1024 ** ind )
+            out  = "%.1f %s" % ( size, word )
+            return out
+    return '??? bytes'
 
 class BadFileException( Exception ):
     pass
