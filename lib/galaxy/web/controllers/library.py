@@ -1,0 +1,24 @@
+from galaxy.web.base.controller import *
+from galaxy.model.orm import *
+import logging
+
+log = logging.getLogger( __name__ )
+
+class Library( BaseController ):
+    @web.expose
+    def browse( self, trans, **kwd ):
+        return trans.fill_template( '/library/browser.mako', libraries=trans.app.model.Library.filter_by( deleted=False ).all() )
+    index = browse
+    @web.expose
+    def import_datasets( self, trans, import_ids=[], **kwd ):
+        if not import_ids:
+            return trans.show_error_message( "You must select at least one dataset to import" )
+        if not isinstance( import_ids, list ):
+            import_ids = [ import_ids ]
+        history = trans.get_history()
+        for id in import_ids:
+            dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id ).to_history_dataset_association()
+            history.add_dataset( dataset )
+            dataset.flush()
+        history.flush()
+        return trans.show_ok_message( "%i dataset(s) have been imported in to your history" % len( import_ids ), refresh_frames=['history'] )
