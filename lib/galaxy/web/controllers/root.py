@@ -116,6 +116,9 @@ class RootController( BaseController ):
         Returns data directly into the browser. 
         Sets the mime-type according to the extension
         """
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         if hid is not None:
             try:
                 hid = int( hid )
@@ -146,6 +149,9 @@ class RootController( BaseController ):
                 fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, toext)
             trans.log_event( "Display dataset id: %s" % str(id) )
+            if self.app.memory_usage:
+                m1 = trans.app.memory_usage.memory( m0, pretty=True )
+                log.info( "End of root/display, memory used increased by %s"  % m1 )
             try:
                 return open( data.file_name )
             except: 
@@ -321,6 +327,9 @@ class RootController( BaseController ):
     @web.expose
     def history_delete( self, trans, id=None, **kwd):
         """Deletes a list of histories, ensures that histories are owned by current user"""
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         history_names = []
         if id:
             if isinstance( id, list ):
@@ -348,12 +357,18 @@ class RootController( BaseController ):
                 trans.log_event( "History id %s marked as deleted" % str(hid) )
         else:
             return trans.show_message( "You must select at least one history to delete." )
+        if self.app.memory_usage:
+            m1 = trans.app.memory_usage.memory( m0, pretty=True )
+            log.info( "End of root/history_delete, memory used increased by %s"  % m1 )
         return trans.show_message( "History deleted: %s" % ",".join(history_names),
                                            refresh_frames=['history'])
 
     @web.expose
     def history_undelete( self, trans, id=[], **kwd):
         """Undeletes a list of histories, ensures that histories are owned by current user"""
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         history_names = []
         errors = []
         ok_msg = ""
@@ -385,22 +400,34 @@ class RootController( BaseController ):
                 ok_msg = "Histories (%s) have been undeleted." % ", ".join( history_names )
         else:
             errors.append( "You must select at least one history to undelete." )
+        if self.app.memory_usage:
+            m1 = trans.app.memory_usage.memory( m0, pretty=True )
+            log.info( "End of root/history_undelete, memory used increased by %s"  % m1 )
         return self.history_available( trans, id=','.join( id ), show_deleted=True, ok_msg = ok_msg, error_msg = "  ".join( errors )  )
     
     @web.expose
     def clear_history( self, trans ):
         """Clears the history for a user"""
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         history = trans.get_history()
         for dataset in history.datasets:
             dataset.deleted = True
             dataset.clear_associated_files()
         self.app.model.flush()
         trans.log_event( "History id %s cleared" % (str(history.id)) )
+        if self.app.memory_usage:
+            m1 = trans.app.memory_usage.memory( m0, pretty=True )
+            log.info( "End of root/clear_history, memory used increased by %s"  % m1 )
         trans.response.send_redirect( url_for("/index" ) )
 
     @web.expose
     @web.require_login( "share histories with other users" )
     def history_share( self, trans, id=None, email="", **kwd ):
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         send_to_err = ""
         if not id:
             id = trans.get_history().id
@@ -427,6 +454,9 @@ class RootController( BaseController ):
                 trans.log_event( "History share, id: %s, name: '%s': to new id: %s" % (str(history.id), history.name, str(new_history.id)) )
             self.app.model.flush()
             return trans.show_message( "History (%s) has been shared with: %s" % (",".join(history_names),email) )
+        if self.app.memory_usage:
+            m1 = trans.app.memory_usage.memory( m0, pretty=True )
+            log.info( "End of root/history_share, memory used increased by %s"  % m1 )
         return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
 
     @web.expose
@@ -435,18 +465,21 @@ class RootController( BaseController ):
         """
         List all available histories
         """
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         if as_xml:
             trans.response.set_content_type('text/xml')
             return trans.fill_template( "/history/list_as_xml.mako" )
         if not isinstance( id, list ):
             id = id.split( "," )
         trans.log_event( "History id %s available" % str( id ) )
-        
         history_operations = dict( share=self.history_share, rename=self.history_rename, delete=self.history_delete, undelete=self.history_undelete )
-        
+        if self.app.memory_usage:
+            m1 = trans.app.memory_usage.memory( m0, pretty=True )
+            log.info( "End of root/history_available, memory used increased by %s"  % m1 )
         if do_operation in history_operations:
             return history_operations[do_operation]( trans, id=id, show_deleted=show_deleted, ok_msg=ok_msg, error_msg=error_msg, **kwd  )
-
         return trans.fill_template( "/history/list.mako", ids=id,
                                     user=trans.get_user(),
                                     current_history=trans.get_history(),
@@ -457,6 +490,9 @@ class RootController( BaseController ):
         
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         msg = ""
         user = trans.get_user()
         user_history = trans.get_history()
@@ -497,6 +533,9 @@ class RootController( BaseController ):
             new_history.flush()
             trans.set_history( new_history )
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
+            if self.app.memory_usage:
+                m1 = trans.app.memory_usage.memory( m0, pretty=True )
+                log.info( "End of root/history_import, memory used increased by %s"  % m1 )
             return trans.show_ok_message( """
                 History "%s" has been imported. Click <a href="%s">here</a>
                 to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
@@ -511,6 +550,9 @@ class RootController( BaseController ):
         if not id:
             return trans.response.send_redirect( web.url_for( action='history_available' ) )
         else:
+            if trans.app.memory_usage:
+                # Keep track of memory usage
+                m0 = self.app.memory_usage.memory()
             new_history = trans.app.model.History.get( id )
             if new_history:
                 galaxy_session = trans.get_galaxy_session()
@@ -522,6 +564,9 @@ class RootController( BaseController ):
                 new_history.flush()
                 trans.set_history( new_history )
                 trans.log_event( "History switched to id: %s, name: '%s'" % (str(new_history.id), new_history.name ) )
+                if self.app.memory_usage:
+                    m1 = trans.app.memory_usage.memory( m0, pretty=True )
+                    log.info( "End of root/history_switch, memory used increased by %s"  % m1 )
                 return trans.show_message( "History switched to: %s" % new_history.name,
                                            refresh_frames=['history'])
             else:
@@ -529,13 +574,22 @@ class RootController( BaseController ):
                 
     @web.expose
     def history_new( self, trans ):
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         trans.new_history()
         trans.log_event( "Created new History, id: %s." % str(trans.get_history().id) )
+        if self.app.memory_usage:
+            m1 = trans.app.memory_usage.memory( m0, pretty=True )
+            log.info( "End of root/history_new, memory used increased by %s"  % m1 )
         return trans.show_message( "New history created", refresh_frames = ['history'] )
 
     @web.expose
     @web.require_login( "renames histories" )
     def history_rename( self, trans, id=None, name=None, **kwd ):
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         user = trans.get_user()
 
         if not isinstance( id, list ):
@@ -572,11 +626,17 @@ class RootController( BaseController ):
                     change_msg = change_msg + "<p>You must specify a valid name for History: "+cur_names[i]+"</p>"
             else:
                 change_msg = change_msg + "<p>History: "+cur_names[i]+" does not appear to belong to you.</p>"
+        if self.app.memory_usage:
+            m1 = trans.app.memory_usage.memory( m0, pretty=True )
+            log.info( "End of root/history_rename, memory used increased by %s"  % m1 )
         return trans.show_message( "<p>%s" % change_msg, refresh_frames=['history'] ) 
 
     @web.expose
     def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="txt",dbkey="?",**kwd ):
         """Adds a POSTed file to a History"""
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         try:
             history = trans.app.model.History.get( history_id )
             data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
@@ -595,6 +655,9 @@ class RootController( BaseController ):
             data.set_size()
             data.flush()
             trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id))
+            if self.app.memory_usage:
+                m1 = trans.app.memory_usage.memory( m0, pretty=True )
+                log.info( "End of root/history_add_to, memory used increased by %s"  % m1 )
             return trans.show_ok_message("Dataset "+str(data.hid)+" added to history "+str(history_id)+".")
         except:
             return trans.show_error_message("Adding File to History has Failed")
@@ -602,6 +665,9 @@ class RootController( BaseController ):
     @web.expose
     def dataset_make_primary( self, trans, id=None):
         """Copies a dataset and makes primary"""
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         try:
             old_data = self.app.model.HistoryDatasetAssociation.get( id )
             new_data = old_data.copy()
@@ -610,6 +676,9 @@ class RootController( BaseController ):
             history = trans.get_history()
             history.add_dataset(new_data)
             new_data.flush()
+            if self.app.memory_usage:
+                m1 = trans.app.memory_usage.memory( m0, pretty=True )
+                log.info( "End of root/dataset_make_primary, memory used increased by %s"  % m1 )
             return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] ) 
         except:
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" ) 

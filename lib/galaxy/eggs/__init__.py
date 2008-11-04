@@ -484,7 +484,7 @@ class GalaxyConfig:
                 return False
         elif egg_name == "threadframe":
             try:
-                if self.config.get( "app:main", "use_heartbeat" ) == "True":
+                if self.config.get( "app:main", "use_heartbeat" ):
                     return True
                 else:
                     return False
@@ -492,7 +492,7 @@ class GalaxyConfig:
                 return False
         elif egg_name == "guppy":
             try:
-                if self.config.get( "app:main", "use_memdump" ) == "True":
+                if self.config.get( "app:main", "use_memdump" ):
                     return True
                 else:
                     return False
