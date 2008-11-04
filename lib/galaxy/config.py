@@ -85,7 +85,7 @@ class Configuration( object ):
         return self.config_dict.get( key, default )
     def get_bool( self, key, default ):
         if key in self.config_dict:
-            return string_as_bool( key )
+            return string_as_bool( self.config_dict[key] )
         else:
             return default
     def check( self ):
