@@ -188,7 +188,7 @@ class HistoryDatasetAssociation( object ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
 
     def get_metadata( self ):
-        if not hasattr( self, '_metadata_collection' ):
+        if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent is None: #using weakref to store parent (to prevent circ ref), does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
             self._metadata_collection = MetadataCollection( self )
         return self._metadata_collection
     def set_metadata( self, bunch ):
