@@ -127,23 +127,24 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         return self.app.model.context.current
     def log_event( self, message, tool_id=None, **kwargs ):
         """
-        Application level logging. Still needs fleshing out (log levels and
-        such)
+        Application level logging. Still needs fleshing out (log levels and such)
+        Logging events is a config setting - if False, do not log.
         """
-        event = self.app.model.Event()
-        event.tool_id = tool_id
-        try:
-            event.message = message % kwargs
-        except:
-            event.message = message
-        event.history = self.history
-        try:
-            event.history_id = self.history.id
-        except:
-            event.history_id = None
-        event.user = self.user
-        event.session_id = self.galaxy_session.id   
-        event.flush()
+        if self.app.config.log_events:
+            event = self.app.model.Event()
+            event.tool_id = tool_id
+            try:
+                event.message = message % kwargs
+            except:
+                event.message = message
+            event.history = self.history
+            try:
+                event.history_id = self.history.id
+            except:
+                event.history_id = None
+            event.user = self.user
+            event.session_id = self.galaxy_session.id   
+            event.flush()
     def get_cookie( self, name='galaxysession' ):
         """Convienience method for getting the galaxysession cookie"""
         try:

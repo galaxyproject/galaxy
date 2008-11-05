@@ -19,6 +19,9 @@ log_level = DEBUG
 # Log memory usage
 log_memory_usage = False
 
+# Log events
+log_events = True
+
 # Should jobs be tracked through the database, rather than in memory
 ## track_jobs_in_database = true
 
