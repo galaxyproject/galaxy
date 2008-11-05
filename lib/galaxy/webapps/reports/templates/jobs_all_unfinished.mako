@@ -17,6 +17,8 @@
             state = job[0]
             if state == 'new':
               rowdef = '<tr class="headernew">'
+            elif state == 'waiting':
+              rowdef = '<tr class="headerwaiting">'
             elif state == 'queued':
               rowdef = '<tr class="headerqueued">'
             elif state == 'running':

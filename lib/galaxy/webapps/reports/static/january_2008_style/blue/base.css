@@ -267,6 +267,14 @@ table.colored tr.headernew
   border-bottom: solid #d8b365 1px;
   font-weight: bold;
 }
+table.colored tr.headerwaiting
+{ 
+  background: #ebd9b2;
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+}
 table.colored tr.headerqueued
 { 
   background: #ee82ee;
