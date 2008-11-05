@@ -274,6 +274,9 @@ class JobWrapper( object ):
         Prepare the job to run by creating the working directory and the
         config files.
         """
+        if self.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         mapping.context.current.clear() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
         # Create the working directory
         self.working_directory = \
@@ -327,6 +330,9 @@ class JobWrapper( object ):
             extra_filenames.append( param_filename )
         self.param_dict = param_dict
         self.extra_filenames = extra_filenames
+        if self.app.memory_usage:
+            m1 = self.app.memory_usage.memory( m0, pretty=True )
+            log.info("End of prepare for job id %d, memory used increased by %s"  % ( job.id, m1 ) )
         return extra_filenames
         
     def fail( self, message, exception=False ):
@@ -334,6 +340,9 @@ class JobWrapper( object ):
         Indicate job failure by setting state and message on all output 
         datasets.
         """
+        if self.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         job = model.Job.get( self.job_id )
         job.refresh()
         # if the job was deleted, don't fail it
@@ -353,10 +362,16 @@ class JobWrapper( object ):
             if exception:
                 job.traceback = traceback.format_exc()
             job.flush()
+            if self.app.memory_usage:
+                m1 = self.app.memory_usage.memory( m0, pretty=True )
+                log.info("End of fail for job id %d, memory used increased by %s"  % ( job.id, m1 ) )
         # If the job was deleted, just clean up
         self.cleanup()
         
     def change_state( self, state, info = False ):
+        if self.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         job = model.Job.get( self.job_id )
         job.refresh()
         for dataset_assoc in job.output_datasets:
@@ -370,6 +385,9 @@ class JobWrapper( object ):
             job.info = info
         job.state = state
         job.flush()
+        if self.app.memory_usage:
+            m1 = self.app.memory_usage.memory( m0, pretty=True )
+            log.info("End of change_state for job id %d, memory used increased by %s"  % ( job.id, m1 ) )
 
     def get_state( self ):
         job = model.Job.get( self.job_id )
@@ -393,6 +411,9 @@ class JobWrapper( object ):
         job can be dispatched. Otherwise, return JOB_WAIT indicating that input
         datasets are still being prepared.
         """
+        if self.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         job = model.Job.get( self.job_id )
         job.refresh()
         for dataset_assoc in job.input_datasets:
@@ -412,6 +433,9 @@ class JobWrapper( object ):
             elif idata.state != idata.states.OK:
                 # need to requeue
                 return JOB_WAIT
+        if self.app.memory_usage:
+            m1 = self.app.memory_usage.memory( m0, pretty=True )
+            log.info("End of check_if_ready_to_run for job id %d, memory used increased by %s"  % ( job.id, m1 ) )
         if job.state == model.Job.states.DELETED:
             return JOB_DELETED
         return JOB_READY
@@ -422,6 +446,9 @@ class JobWrapper( object ):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files. 
         """
+        if self.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         # default post job setup
         mapping.context.current.clear()
         job = model.Job.get( self.job_id )
@@ -485,9 +512,15 @@ class JobWrapper( object ):
         job.command_line = self.command_line
         mapping.context.current.flush()
         log.debug( 'job %d ended' % self.job_id )
+        if self.app.memory_usage:
+            m1 = self.app.memory_usage.memory( m0, pretty=True )
+            log.info("End of finish for job id %d, memory used increased by %s"  % ( job.id, m1 ) )
         self.cleanup()
         
     def cleanup( self ):
+        if self.app.memory_usage:
+            # Keep track of memory usage
+            m0 = self.app.memory_usage.memory()
         # remove temporary files
         try:
             for fname in self.extra_filenames: 
@@ -496,6 +529,9 @@ class JobWrapper( object ):
                 os.rmdir( self.working_directory ) 
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
+        if self.app.memory_usage:
+            m1 = self.app.memory_usage.memory( m0, pretty=True )
+            log.info("End of cleanup for job id %d, memory used increased by %s"  % ( self.job_id, m1 ) )
         
     def get_command_line( self ):
         return self.command_line
