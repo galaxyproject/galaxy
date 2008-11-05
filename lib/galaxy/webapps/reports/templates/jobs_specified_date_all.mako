@@ -17,11 +17,15 @@
             state = job[0]
             if state == 'new':
               rowdef = '<tr class="headernew">'
+            elif state == 'waiting':
+              rowdef = '<tr class="headerwaiting">'
             elif state == 'queued':
               rowdef = '<tr class="headerqueued">'
             elif state == 'running':
               rowdef = '<tr class="headerrunning">'
             elif state == 'error':
+              rowdef = '<tr class="headererror">'
+            elif state == 'deleted':
               rowdef = '<tr class="headererror">'
             elif state == 'ok':
               rowdef = '<tr class="headerok">'

@@ -403,11 +403,11 @@ class JobWrapper( object ):
             idata.dataset.refresh() #we need to refresh the base Dataset, since that is where 'state' is stored
             # don't run jobs for which the input dataset was deleted
             if idata.deleted:
-                self.fail( "input data %d was deleted before this job started" % idata.hid )
+                self.fail( "input data %d (file: %s) was deleted before the job started" % ( idata.hid, idata.file_name ) )
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
             elif idata.state == idata.states.ERROR:
-                self.fail( "input data %d is in an error state" % idata.hid )
+                self.fail( "input data %d (file: %s) is in an error state" % ( idata.hid, idata.file_name ) )
                 return JOB_INPUT_ERROR
             elif idata.state != idata.states.OK:
                 # need to requeue

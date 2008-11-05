@@ -2,7 +2,7 @@
 
 <%def name="main_body()">
   <div class="reportBody">
-    <h3 align="center">Jobs in Error for ${month_label}&nbsp;${year_label}</h3>
+    <h3 align="center">Jobs in Error for ${month_label}&nbsp;${year_label} ( includes jobs deleted before finishing )</h3>
     <h4 align="center">Click Jobs in Error to view jobs in error for that day</h4>
     %if msg:
       <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">

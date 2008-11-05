@@ -15,6 +15,9 @@ class UploadToolAction( object ):
         self.line_count = None
     
     def execute( self, tool, trans, incoming={}, set_output_hid = True ):
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = trans.app.memory_usage.memory()
         data_file = incoming['file_data']
         file_type = incoming['file_type']
         dbkey = incoming['dbkey']
@@ -36,7 +39,7 @@ class UploadToolAction( object ):
         except:
             job.tool_version = "1.0.0"
         job.flush()
-        log.debug( 'tool %s created job id %d' % ( tool.id, job.id ) )
+        log.info( 'tool %s created job id %d' % ( tool.id, job.id ) )
         trans.log_event( 'created job id %d' % job.id, tool_id=tool.id )
         if 'local_filename' in dir( data_file ):
             # Use the existing file
@@ -100,11 +103,14 @@ class UploadToolAction( object ):
             return self.upload_empty( trans, job, "No data error:", "either you pasted no data, the url you specified is invalid, or you have not specified a file." )
         hda = data_list[0]
         job.state = trans.app.model.Job.states.OK
-        file_size_str = nice_size( hda.dataset.file_size )
-        job.info = "Uploaded file '%s', size: %s" % ( file_name, file_size_str )
+        file_size_str = datatypes.data.nice_size( hda.dataset.file_size )
+        job.info = "%s, size: %s" % ( hda.info, file_size_str )
         job.flush()
-        log.debug( 'tool %s job id %d ended ok, file: %s, size: %s' % ( tool.id, job.id, file_name, file_size_str ) )
-        trans.log_event( 'job id %d ended ok, file: %s, size: %s' % ( job.id, file_name, file_size_str ), tool_id=tool.id )
+        log.info( 'job id %d ended ok, file size: %s' % ( job.id, file_size_str ) )
+        trans.log_event( 'job id %d ended ok, file size: %s' % ( job.id, file_size_str ), tool_id=tool.id )
+        if trans.app.memory_usage:
+            m1 = trans.app.memory_usage.memory( m0, pretty=True )
+            log.info("End of tool %s execution for job id %d, memory used increased by %s"  % ( tool.id, job.id, m1 ) )
         return dict( output=hda )
 
     def upload_empty(self, trans, job, err_code, err_msg):
@@ -124,7 +130,7 @@ class UploadToolAction( object ):
         job.info = err_msg
         # If the failure is due to a Galaxy framework exception, save the traceback
         job.flush()
-        log.debug( 'tool %s job id %d ended with errors' % ( job.tool_id, job.id ) )
+        log.info( 'job id %d ended with errors' % job.id )
         trans.log_event( 'job id %d ended with errors' % job.id, tool_id=job.tool_id )
         return dict( output=data )
 
@@ -314,21 +320,6 @@ class UploadToolAction( object ):
         if chunk is None:
             temp.close()
         return False
-
-def nice_size( size ):
-    """Returns a readably formatted string with the size"""
-    words = [ 'bytes', 'Kb', 'Mb', 'Gb' ]
-    try:
-        size = float( size )
-    except:
-        return '??? bytes'
-    for ind, word in enumerate( words ):
-        step  = 1024 ** ( ind + 1 )
-        if step > size:
-            size = size / float( 1024 ** ind )
-            out  = "%.1f %s" % ( size, word )
-            return out
-    return '??? bytes'
 
 class BadFileException( Exception ):
     pass

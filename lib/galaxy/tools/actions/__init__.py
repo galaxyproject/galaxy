@@ -68,6 +68,9 @@ class DefaultToolAction( object ):
         return input_datasets
     
     def execute(self, tool, trans, incoming={}, set_output_hid=True ):
+        if trans.app.memory_usage:
+            # Keep track of memory usage
+            m0 = trans.app.memory_usage.memory()
         out_data = {}
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
@@ -213,6 +216,9 @@ class DefaultToolAction( object ):
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
         trans.app.model.flush()
+        if trans.app.memory_usage:
+            m1 = trans.app.memory_usage.memory( m0, pretty=True )
+            log.info("End of tool %s execution for job id %d, memory used increased by %s"  % ( tool.id, job.id, m1 ) )
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job

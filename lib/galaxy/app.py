@@ -41,6 +41,7 @@ class UniverseApplication( object ):
         # Heartbeat and memdump for thread / heap profiling
         self.heartbeat = None
         self.memdump = None
+        self.memory_usage = None
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
             from galaxy.util import heartbeat
@@ -52,6 +53,10 @@ class UniverseApplication( object ):
             from galaxy.util import memdump
             if memdump.Memdump:
                 self.memdump = memdump.Memdump()
+        # Enable memory_usage logging if configured
+        if self.config.log_memory_usage:
+            from galaxy.util import memory_usage
+            self.memory_usage = memory_usage
     def shutdown( self ):
         self.job_manager.shutdown()
         if self.heartbeat:
