@@ -4,6 +4,7 @@ from galaxy import config, jobs, util, tools, web
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
+import galaxy.security
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -30,6 +31,8 @@ class UniverseApplication( object ):
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         #Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
+        #Load security policy
+        self.security_agent = self.model.security_agent
         # Start the job queue
         self.job_manager = jobs.JobManager( self )
         # FIXME: These are exposed directly for backward compatibility
