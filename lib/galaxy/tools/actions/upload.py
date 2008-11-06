@@ -93,6 +93,7 @@ class UploadToolAction( object ):
         job.state = trans.app.model.Job.states.OK
         file_size_str = datatypes.data.nice_size( hda.dataset.file_size )
         job.info = "%s, size: %s" % ( hda.info, file_size_str )
+        job.add_output_dataset( hda.name, hda )
         job.flush()
         log.info( 'job id %d ended ok, file size: %s' % ( job.id, file_size_str ) )
         trans.log_event( 'job id %d ended ok, file size: %s' % ( job.id, file_size_str ), tool_id=tool.id )
@@ -112,10 +113,10 @@ class UploadToolAction( object ):
         data.flush()
         trans.history.add_dataset( data )
         trans.app.model.flush()
-        # Indicate job failure by setting state and message
+        # Indicate job failure by setting state and info
         job.state = trans.app.model.Job.states.ERROR
         job.info = err_msg
-        # If the failure is due to a Galaxy framework exception, save the traceback
+        job.add_output_dataset( data.name, data )
         job.flush()
         log.info( 'job id %d ended with errors' % job.id )
         trans.log_event( 'job id %d ended with errors' % job.id, tool_id=job.tool_id )
