@@ -7,6 +7,7 @@ from itertools import *
 import twill
 import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm
+pkg_resources.require( "elementtree" )
 from elementtree import ElementTree
   
 buffer = StringIO.StringIO()
@@ -255,7 +256,7 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( data_list )
         if hid is None: # take last hid
             elem = data_list[-1]
-            hid = elem.get('hid')
+            hid = int( elem.get('hid') )
         self.assertTrue( hid )
         self.visit_page( 'edit?hid=%d' % hid )
         if form_no == 0:
@@ -510,6 +511,21 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
         tc.find( 'runtool_btn' )
         self.submit_form( **kwd )
+
+    def run_ucsc_main( self, track_params, output_params ):
+        """Gets Data From UCSC"""
+        tool_id = "ucsc_table_direct1"
+        track_string = urllib.urlencode( track_params )
+        galaxy_url = urllib.quote_plus( "%s/tool_runner/index?" % self.url )
+        
+        self.visit_url( "http://genome.ucsc.edu/cgi-bin/hgTables?GALAXY_URL=%s&hgta_compressType=none&tool_id=%s&%s" % ( galaxy_url, tool_id, track_string ) )
+        tc.fv( "1","hgta_doTopSubmit", "get output" )
+        self.submit_form( button="get output" )#, **track_params )
+        
+        
+        tc.fv( "1","hgta_doGalaxyQuery", "Send query to Galaxy" )
+        
+        self.submit_form( button="Send query to Galaxy" )#, **output_params ) #AssertionError: Attempting to set field 'fbQual' to value '['whole']' in form 'None' threw exception: no matching forms! control: <RadioControl(fbQual=[whole, upstreamAll, endAll])>
 
     def wait( self, maxiter=20 ):
         """Waits for the tools to finish"""
