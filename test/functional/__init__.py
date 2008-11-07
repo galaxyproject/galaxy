@@ -16,6 +16,7 @@ from galaxy.app import UniverseApplication
 from galaxy.web import buildapp
 import test_toolbox
 from galaxy import tools
+from galaxy.util import bunch
 
 log = logging.getLogger( __name__ )
 
@@ -92,7 +93,8 @@ def setup():
     else:
         # FIXME: This doesn't work at all now that toolbox requires an 'app' instance
         #        (to get at datatypes, might just pass a datatype registry directly)
-        test_toolbox.toolbox = tools.ToolBox( 'tool_conf.xml.test', 'tools' )
+        my_app = bunch.Bunch( datatypes_registry = galaxy.datatypes.registry.Registry() )
+        test_toolbox.toolbox = tools.ToolBox( 'tool_conf.xml.test', 'tools', my_app )
         
     # Test if the server is up
     conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port )
