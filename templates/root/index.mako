@@ -1,5 +1,13 @@
 <%inherit file="/base_panels.mako"/>
 
+<%def name="init()">
+<%
+    self.has_left_panel=True
+    self.has_right_panel=True
+    self.active_view="analysis"
+%>
+</%def>
+
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Tools</div>
