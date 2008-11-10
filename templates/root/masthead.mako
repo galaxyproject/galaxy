@@ -9,32 +9,56 @@
 <link href="${h.url_for('/static/style/masthead.css')}" rel="stylesheet" type="text/css" />
 </head>
 
-<body class="mastheadPage">
+<body class="mastheadPage" scroll="no">
+<div id="tab-bar-bottom"></div>
 <table width="100%" cellspacing="0" border="0">
 <tr valign="middle"><td width="26px"><a target="_blank" href="${wiki_url}">
 <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}"></a></td>
 <td align="left" valign="middle"><div class="pageTitle">Galaxy${brand}</div></td>
 <td align="right" valign="middle">
-
-    Info: <a href="${bugs_email}">report bugs</a>
-    | <a target="_blank" href="${wiki_url}">wiki</a>                  
-    | <a target="_blank" href="${screencasts_url}">screencasts</a>
-    | <a target="_blank" href="${blog_url}">blog</a>
+    View: <span class="link-group">
+        <span
+            %if active_view == "analysis":
+                class="active-link"
+            %endif
+        ><a target="_parent" href="${h.url_for( controller='root', action='index' )}">analysis</a></span>
+        | <span
+            %if active_view == "workflow":
+                class="active-link"
+            %endif
+        ><a target="_parent" href="${h.url_for( controller='workflow', action='index' )}">workflow</a></span>
+        %if admin_user == "true":
+        | <span
+            %if active_view == "admin":
+                class="active-link"
+            %endif
+        ><a target="_parent" href="${h.url_for( controller='admin', action='index' )}">admin</a></span>
+        %endif
+        
+    </span>
+    &nbsp;&nbsp;&nbsp;
+    <span class="link-group">
+    Info: <span><a href="${bugs_email}">report bugs</a></span>
+    | <span><a target="_blank" href="${wiki_url}">wiki</a></span>             
+    | <span><a target="_blank" href="${screencasts_url}">screencasts</a></span>
+    </span>
     <!-- | <a target="mainframe" href="/static/index_frame_tools.html">tools</a>
     | <a target="mainframe" href="/static/index_frame_history.html">history</a> -->
     &nbsp;&nbsp;&nbsp;
+    <span class="link-group">
     %if app.config.use_remote_user:
         Logged in as ${t.user.email}
     %else:
         %if t.user:
-            Logged in as ${t.user.email}: <a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">manage</a>
-            | <a target="galaxy_main" href="${h.url_for( controller='user', action='logout' )}">logout</a>
+            Logged in as ${t.user.email}: <span><a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">manage</a></span>
+            | <span><a target="galaxy_main" href="${h.url_for( controller='user', action='logout' )}">logout</a></span>
         %else:
-            Account: <a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">create</a>
-            | <a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">login</a>
+            Account: <span><a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">create</a></span>
+            | <span><a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">login</a></span>
         %endif
     %endif
     &nbsp;
+    </span>
 </td>
 </tr>
 </table>
