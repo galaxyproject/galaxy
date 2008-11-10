@@ -52,22 +52,17 @@
 	<outputs>
   	<data format="customtrack" name="out_file1" />
 	</outputs>
-  <!--
-  <tests>
-    <test>
-  		<param name="primary" value="customTrack1.bed" />
-  		<param name="primary_color" value="0-0-0" />
-  		<param name="primary_visib" value="1" />
-  		<param name="primary_name" value="customTrack1.bed" />
-  		<param name="newdata" value="customTrack2.bed" />
-  		<param name="status" value="1" />
-  		<param name="Color" value="255-0-0" />
-  		<param name="Visibility" value="2" />
-  		<param name="other_names" value="customTrack2.bed" />
-  		<output name="out_file1" file="customTrack_output.dat" />
-    </test>
+    <tests>
+        <!--TODO: add a 2nd test here that includes 2 tracks -->
+        <test>
+  		    <param name="input" value="customTrack1.bed" />
+  		    <param name="name" value="User Track" />
+  		    <param name="description" value="User Supplied Track (from Galaxy)" />
+  		    <param name="color" value="0-0-0" />
+  		    <param name="visibility" value="1" />
+  		    <output name="out_file1" file="build_ucsc_custom_track_out1.customtrack" />
+        </test>
 	</tests>
-  -->
 <help>
 
 .. class:: infomark

@@ -420,13 +420,16 @@ class TwillTestCase( unittest.TestCase ):
 
     def submit_form( self, form_no=0, button="runtool_btn", **kwd ):
         """Populates and submits a form from the keyword arguments."""
-        for i, f in enumerate( self.showforms() ):
-            if i == form_no:
-                break
         # An HTMLForm contains a sequence of Controls.  Supported control classes are:
         # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
         # SubmitControl, ImageControl
+        for i, f in enumerate( self.showforms() ):
+            if i == form_no:
+                break
+        # To help with debugging a tool, print out the form controls when the test fails
+        print "form '%s' contains the following controls ( note the values )" % f.name
         for i, control in enumerate( f.controls ):
+            print "control %d: %s" % ( i, str( control ) )
             try:
                 # Check for refresh_on_change attribute, submit a change if required
                 if 'refresh_on_change' in control.attrs.keys():
@@ -504,10 +507,15 @@ class TwillTestCase( unittest.TestCase ):
         tc.code( 200 )
 
     """Functions associated with Galaxy tools"""
-    def run_tool( self, tool_id, **kwd ):
+    def run_tool( self, tool_id, repeat_name=None, **kwd ):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
         self.visit_url( "%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
+        if repeat_name is not None:
+            repeat_button = '%s_add' % repeat_name
+            # Submit the "repeat" form button to add an input)
+            tc.submit( repeat_button )
+            print "button '%s' clicked" % repeat_button
         tc.find( 'runtool_btn' )
         self.submit_form( **kwd )
 
@@ -516,14 +524,10 @@ class TwillTestCase( unittest.TestCase ):
         tool_id = "ucsc_table_direct1"
         track_string = urllib.urlencode( track_params )
         galaxy_url = urllib.quote_plus( "%s/tool_runner/index?" % self.url )
-        
         self.visit_url( "http://genome.ucsc.edu/cgi-bin/hgTables?GALAXY_URL=%s&hgta_compressType=none&tool_id=%s&%s" % ( galaxy_url, tool_id, track_string ) )
         tc.fv( "1","hgta_doTopSubmit", "get output" )
         self.submit_form( button="get output" )#, **track_params )
-        
-        
         tc.fv( "1","hgta_doGalaxyQuery", "Send query to Galaxy" )
-        
         self.submit_form( button="Send query to Galaxy" )#, **output_params ) #AssertionError: Attempting to set field 'fbQual' to value '['whole']' in form 'None' threw exception: no matching forms! control: <RadioControl(fbQual=[whole, upstreamAll, endAll])>
 
     def wait( self, maxiter=20 ):

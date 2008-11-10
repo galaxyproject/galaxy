@@ -1,5 +1,7 @@
 import sys
 import new
+from galaxy.tools.parameters import grouping
+from galaxy.tools.parameters import basic
 from base.twilltestcase import TwillTestCase
 
 toolbox = None
@@ -22,7 +24,7 @@ class ToolTestCase( TwillTestCase ):
             self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ) )
             print "Uploaded file: ", fname, ", ftype: ", extra.get( 'ftype', 'auto' ), ", extra: ", extra
         # We need to handle the case where we've uploaded a valid compressed file since the upload
-        # tool will have decompressed it on the fly.
+        # tool will have uncompressed it on the fly.
         all_inputs = {}
         for name, value, _ in self.testdef.inputs:
             if value:
@@ -31,11 +33,16 @@ class ToolTestCase( TwillTestCase ):
                         value = value.rstrip( end )
                         break
             all_inputs[ name ] = value
-
+        # See if we have a grouping.Repeat element
+        repeat_name = None
+        for input_name, input_value in self.testdef.tool.inputs_by_page[0].items():
+            if isinstance( input_value, grouping.Repeat ):
+                repeat_name = input_name
+                break
         # Do the first page
         page_inputs =  self.__expand_grouping(self.testdef.tool.inputs_by_page[0], all_inputs)
         # Run the tool
-        self.run_tool( self.testdef.tool.id, **page_inputs )
+        self.run_tool( self.testdef.tool.id, repeat_name=repeat_name, **page_inputs )
         print "page_inputs (0)", page_inputs
         # Do other pages if they exist
         for i in range( 1, self.testdef.tool.npages ):
@@ -52,24 +59,48 @@ class ToolTestCase( TwillTestCase ):
     def shortDescription( self ):
         return self.name
 
-    def __expand_grouping(self, tool_inputs, declared_inputs ):
-        from galaxy.tools.parameters import grouping
+    def __expand_grouping( self, tool_inputs, declared_inputs, repeat_index=0, repeat_sep='' ):
         expanded_inputs = {}
         for key, value in tool_inputs.items():
             if isinstance(value, grouping.Conditional):
                 for i, case in enumerate(value.cases):
                     if declared_inputs[value.test_param.name] == case.value:
                         if isinstance(case.value, str):
-                            expanded_inputs["%s|%s" % (value.name, value.test_param.name)] = case.value.split(",")
+                            if repeat_sep:
+                                cond_sep = "%s%s" % ( repeat_sep, value.test_param.name )
+                            else:
+                                cond_sep = "%s|%s" % ( value.name, value.test_param.name ) 
+                            expanded_inputs[ cond_sep ] = case.value.split( "," )
                         else:
-                            expanded_inputs["%s|%s" % (value.name, value.test_param.name)] = case.value
+                            if repeat_sep:
+                                cond_sep = "%s%s" % ( repeat_sep, value.test_param.name )
+                            else:
+                                cond_sep = "%s|%s" % ( value.name, value.test_param.name )
+                            expanded_inputs[ cond_sep ] = case.value
                         for input_name, input_value in case.inputs.items():
                             if isinstance(input_value, grouping.Conditional):
-                                expanded_inputs.update(self.__expand_grouping({input_name:input_value}), declared_inputs)
+                                expanded_inputs.update( self.__expand_grouping( { input_name:input_value }, declared_inputs, repeat_index=repeat_index, repeat_sep=repeat_sep ) )
                             elif isinstance(declared_inputs[input_name], str):
-                                expanded_inputs.update({"%s|%s" % (value.name, input_name):declared_inputs[input_name].split(",")})
+                                if repeat_sep:
+                                    cond_sep = "%s%s" % ( repeat_sep, input_name )
+                                else:
+                                    cond_sep = "%s|%s" % ( value.name, input_name )
+                                expanded_inputs.update( { cond_sep : declared_inputs[ input_name ].split( "," ) } )
                             else:
-                                expanded_inputs.update({"%s|%s" % (value.name, input_name):declared_inputs[input_name]})
+                                if repeat_sep:
+                                    cond_sep = "%s%s" % ( repeat_sep, input_name )
+                                else:
+                                    cond_sep = "%s|%s" % ( value.name, input_name )
+                                expanded_inputs.update( { cond_sep : declared_inputs[ input_name ] } )
+            elif isinstance( value, grouping.Repeat ):
+                for r_name, r_value in value.inputs.items():
+                    repeat_sep = "%s_%d|%s" % ( value.name, repeat_index, r_name )
+                    if isinstance( r_value, grouping.Conditional ):
+                        cond_sep = repeat_sep + "|"
+                        expanded_inputs.update( self.__expand_grouping( { r_name:r_value }, declared_inputs, repeat_index=repeat_index, repeat_sep=cond_sep ) )
+                    else:
+                        expanded_inputs.update( { repeat_sep : [ declared_inputs[ r_name ] ] } )
+                repeat_index += 1
             elif isinstance(declared_inputs[value.name], str):
                 expanded_inputs[value.name] = declared_inputs[value.name].split(",")
             else:

@@ -94,7 +94,25 @@
   <outputs>
     <data format="pdf" name="out_file1" />
   </outputs>
-
+    <!--
+        TODO: figure out how to change the submit_form() method to correctly handle refreshing the 
+        form when the input for refresh is within a repeat construct ( like this tool )
+    <tests>
+        <test>
+            <param name="main" value="Example XY Plot"/>
+            <param name="xlab" value="Column 1"/>
+            <param name="ylab" value="Column 2"/>
+            <param name="input" value="2.tabular" ftype="tabular"/>
+            <param name="xcol" value="1"/>
+            <param name="ycol" value="2"/>
+            <param name="type" value="line"/>
+            <param name="lty" value="dashed"/>
+            <param name="col" value="2"/>
+            <param name="lwd" value="1.0"/>
+            <output name="out_file1" file="XY_Plot_1_out.pdf"/>
+        </test>
+    </tests>
+    -->
 <help>
 .. class:: infomark
 

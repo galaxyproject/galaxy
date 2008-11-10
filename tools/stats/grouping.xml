@@ -40,17 +40,19 @@
   </requirements>
   <tests>
   	<!-- Test valid data -->
-  	<!-- Testing this tool will not be possible unless / until the twill team inplements an
-  	enhancement to allow for mouse clicks in the test cases...
+  	<!-- TODO: fix this tool so that it works on various platforms
+  	     The following test should then work...
     <test>
       <param name="input1" value="1.bed"/>
       <param name="groupcol" value="1"/>
-      <param name="operations" value="mean 2"/>
+      <param name="optype" value="mean"/>
+      <param name="opcol" value="2"/>
+      <param name="opround" value="no"/>
       <output name="out_file1" file="groupby_out1.dat"/>
     </test>
     -->
     <!-- Test data with an invalid value in a column -->
-    <!--
+    <!-- TODO: fix this test...
     <test>
       <param name="input1" value="1.tabular"/>
       <param name="groupcol" value="1"/>
