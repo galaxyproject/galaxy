@@ -573,7 +573,7 @@ class WorkflowStep( object ):
         self.tool_inputs = None
         self.tool_errors = None
         self.position = None
-        self.input_connections = None
+        self.input_connections = []
         self.config = None
         
 class WorkflowStepConnection( object ):
