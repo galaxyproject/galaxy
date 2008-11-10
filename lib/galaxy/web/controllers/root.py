@@ -327,6 +327,7 @@ class RootController( BaseController ):
                     # Are *all* of the job's other output datasets deleted?
                     if job.check_if_output_datasets_deleted():
                         job.mark_deleted()                
+                        self.app.job_manager.job_stop_queue.put( job )
             self.app.model.flush()
 
     @web.expose
