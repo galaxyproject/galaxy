@@ -79,7 +79,7 @@ def info_delete_userless_histories( h, cutoff_time ):
     # Provide info about the histories and datasets that will be affected if the delete_userless_histories function is executed.
     history_count = 0
     dataset_count = 0
-    where = ( h.table.c.user_id==None ) & ( h.table.c.deleted=='f' ) & ( h.table.c.update_time < cutoff_time )
+    where = ( h.table.c.user_id==None ) & ( h.table.c.deleted==False ) & ( h.table.c.update_time < cutoff_time )
     histories = h.query().filter( where ).options( eagerload( 'active_datasets' ) ).all()
 
     print '# The following datasets and associated userless histories will be deleted'
@@ -102,7 +102,7 @@ def delete_userless_histories( h, d, cutoff_time ):
     # The datasets associated with each history are also deleted.  Nothing is removed from disk.
     history_count = 0
     dataset_count = 0
-    h_where = ( h.table.c.user_id==None ) & ( h.table.c.deleted=='f' ) & ( h.table.c.update_time < cutoff_time )
+    h_where = ( h.table.c.user_id==None ) & ( h.table.c.deleted==False ) & ( h.table.c.update_time < cutoff_time )
 
     print '# The following datasets and associated userless histories have been deleted'
     start = time.clock()
@@ -136,7 +136,7 @@ def info_purge_histories( h, d, cutoff_time ):
     history_count = 0
     dataset_count = 0
     disk_space = 0
-    h_where = ( h.table.c.deleted=='t' ) & ( h.table.c.purged=='f' ) & ( h.table.c.update_time < cutoff_time )
+    h_where = ( h.table.c.deleted==True ) & ( h.table.c.purged==False ) & ( h.table.c.update_time < cutoff_time )
 
     print '# The following datasets and associated deleted histories will be purged'
     start = time.clock()
@@ -169,7 +169,7 @@ def purge_histories( h, d, m, cutoff_time, remove_from_disk ):
     disk_space = 0
     file_size = 0
     errors = False
-    h_where = ( h.table.c.deleted=='t' ) & ( h.table.c.purged=='f' ) & ( h.table.c.update_time < cutoff_time )
+    h_where = ( h.table.c.deleted==True ) & ( h.table.c.purged==False ) & ( h.table.c.update_time < cutoff_time )
 
     print '# The following datasets and associated deleted histories have been purged'
     start = time.clock()
@@ -187,7 +187,7 @@ def purge_histories( h, d, m, cutoff_time, remove_from_disk ):
                         dataset.file_size = 0
                         if remove_from_disk:
                             dataset.flush()
-                            errmsg = purge_dataset( dataset, m )
+                            errmsg = purge_dataset( dataset, d, m )
                             if errmsg:
                                 errors = True
                                 print errmsg
@@ -221,7 +221,7 @@ def info_purge_datasets( d, cutoff_time ):
     # Provide info about the datasets that will be affected if the purge_datasets function is executed.
     dataset_count = 0
     disk_space = 0
-    where = ( d.table.c.deleted=='t' ) & ( d.table.c.purgable=='t' ) & ( d.table.c.purged=='f' ) & ( d.table.c.update_time < cutoff_time )
+    where = ( d.table.c.deleted==True ) & ( d.table.c.purgable==True ) & ( d.table.c.purged==False ) & ( d.table.c.update_time < cutoff_time )
 
     print '# The following deleted datasets will be purged'    
     start = time.clock()
@@ -243,7 +243,7 @@ def purge_datasets( d, m, cutoff_time, remove_from_disk ):
     dataset_count = 0
     disk_space = 0
     file_size = 0
-    where = ( d.table.c.deleted=='t' ) & ( d.table.c.purgable=='t' ) & ( d.table.c.purged=='f' ) & ( d.table.c.update_time < cutoff_time )
+    where = ( d.table.c.deleted==True ) & ( d.table.c.purgable==True ) & ( d.table.c.purged==False ) & ( d.table.c.update_time < cutoff_time )
 
     print '# The following deleted datasets have been purged'
     start = time.clock()
@@ -251,7 +251,7 @@ def purge_datasets( d, m, cutoff_time, remove_from_disk ):
     for dataset in datasets:
         file_size = dataset.file_size
         if remove_from_disk:
-            errmsg = purge_dataset( dataset, m )
+            errmsg = purge_dataset( dataset, d, m )
             if errmsg:
                print errmsg
             else:
@@ -280,23 +280,33 @@ def purge_datasets( d, m, cutoff_time, remove_from_disk ):
         print '# Freed disk space: ', disk_space, '\n'
     print "Elapsed time: ", stop - start, "\n"
 
-def purge_dataset( dataset, m ):
+def purge_dataset( dataset, d, m ):
     # Removes the file from disk and updates the database accordingly.
     if dataset.deleted:
+        purgable = True
         # Remove files from disk and update the database
         try:
-            dataset.purged = True
-            dataset.file_size = 0
-            dataset.flush()
-            for shared_data in dataset.history_associations:
-                # Check to see if another dataset is using this file.  This happens when a user shares 
-                # their history with another user.  In this case, a new record is created in the dataset
-                # table for each dataset, but the dataset records point to the same data file on disk.  So
-                # if 1 of the 2 users deletes the dataset from their history but the other doesn't, we need
-                # to keep the dataset on disk for the 2nd user.
-                if not shared_data.deleted:
-                    break #only purge when not shared
-            else:
+            # See if the dataset has been shared
+            if dataset.external_filename:
+                # This check handles the pre-history_dataset_association approach to sharing.
+                shared_data = d.filter( and_( d.table.c.external_filename==dataset.external_filename, d.table.c.deleted==False ) ).all()
+                if shared_data:
+                    purgable = False
+            if purgable:
+                # This check handles the history_dataset_association approach to sharing.
+                for shared_data in dataset.history_associations:
+                    # Check to see if another dataset is using this file.  This happens when a user shares 
+                    # their history with another user.  In this case, a new record is created in the dataset
+                    # table for each dataset, but the dataset records point to the same data file on disk.  So
+                    # if 1 of the 2 users deletes the dataset from their history but the other doesn't, we need
+                    # to keep the dataset on disk for the 2nd user.
+                    if not shared_data.deleted:
+                        purgable = False
+                        break
+            if purgable:
+                dataset.purged = True
+                dataset.file_size = 0
+                dataset.flush()
                 # Remove dataset file from disk
                 os.unlink( dataset.file_name )
                 print "%s" % dataset.file_name
