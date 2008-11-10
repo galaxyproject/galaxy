@@ -306,7 +306,6 @@ class WorkflowController( BaseController ):
         workflow.stored_workflow = stored
         stored.latest_workflow = workflow
         # Persist
-        trans.sa_session.save( stored )
         trans.sa_session.flush()
         # Return something informative
         errors = []
@@ -520,6 +519,7 @@ class WorkflowController( BaseController ):
                         outputs[ step.id ] = tool.execute( trans, step.state.inputs )
                     else:
                         outputs[ step.id ] = step.module.execute( trans, step.state )
+                        
                 return trans.fill_template( "workflow/run_complete.mako",
                                             workflow=stored,
                                             outputs=outputs )
