@@ -20,7 +20,7 @@ class LocalJobRunner( object ):
         self.app = app
         self.queue = Queue()
         self.threads = []
-        nworkers = app.config.job_queue_workers
+        nworkers = app.config.local_job_queue_workers
         log.info( "starting workers" )
         for i in range( nworkers  ):
             worker = threading.Thread( target=self.run_next )
