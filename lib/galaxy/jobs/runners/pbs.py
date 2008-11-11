@@ -78,13 +78,20 @@ class PBSJobRunner( object ):
         # be modified by the monitor thread, which will move items from 'queue'
         # to 'watched' and then manage the watched jobs.
         self.watched = []
-        self.queue = Queue()
+        self.monitor_queue = Queue()
         # set the default server during startup
         self.default_pbs_server = None
         self.determine_pbs_server( 'pbs:///' )
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
-        log.debug( "ready" )
+        self.work_queue = Queue()
+        self.work_threads = []
+        nworkers = app.config.cluster_job_queue_workers
+        for i in range( nworkers ):
+            worker = threading.Thread( target=self.run_next )
+            worker.start()
+            self.work_threads.append( worker )
+        log.debug( "%d workers ready" % nworkers )
 
     def determine_pbs_server( self, url, rewrite = False ):
         """Determine what PBS server we are connecting to"""
@@ -112,6 +119,22 @@ class PBSJobRunner( object ):
             queue = None
         return queue
 
+    def run_next( self ):
+        """
+        Run the next item in the queue (a job waiting to run or finish )
+        """
+        while 1:
+            ( op, obj ) = self.work_queue.get()
+            if op is self.STOP_SIGNAL:
+                return
+            try:
+                if op == 'queue':
+                    self.queue_job( obj )
+                elif op == 'finish':
+                    self.finish_job( obj )
+            except:
+                log.exception( "Uncaught exception %sing job" % op )
+
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
 
@@ -136,9 +159,6 @@ class PBSJobRunner( object ):
             job_wrapper.cleanup()
             return
 
-        # Change to queued state immediately
-        job_wrapper.change_state( 'queued' )
-        
         ( pbs_server_name, runner_url ) = self.determine_pbs_server( runner_url, rewrite = True )
         pbs_queue_name = self.determine_pbs_queue( runner_url )
         c = pbs.pbs_connect( pbs_server_name )
@@ -228,7 +248,7 @@ class PBSJobRunner( object ):
         pbs_job_state.runner_url = runner_url
         
         # Add to our 'queue' of jobs to monitor
-        self.queue.put( pbs_job_state )
+        self.monitor_queue.put( pbs_job_state )
 
     def monitor( self ):
         """
@@ -239,7 +259,7 @@ class PBSJobRunner( object ):
             # Take any new watched jobs and put them on the monitor list
             try:
                 while 1: 
-                    pbs_job_state = self.queue.get_nowait()
+                    pbs_job_state = self.monitor_queue.get_nowait()
                     if pbs_job_state is self.STOP_SIGNAL:
                         # TODO: This is where any cleanup would occur
                         return
@@ -290,7 +310,7 @@ class PBSJobRunner( object ):
                         new_watched.append( pbs_job_state )
                     else:
                         log.debug("(%s/%s) job has left queue" % (galaxy_job_id, job_id) )
-                        self.finish_job( pbs_job_state )
+                        self.work_queue.put( ( 'finish', pbs_job_state ) )
         # Replace the watch list with the updated version
         self.watched = new_watched
         
@@ -371,12 +391,17 @@ class PBSJobRunner( object ):
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
-        self.queue_job( job_wrapper )
+        #self.queue_job( job_wrapper )
+        # Change to queued state before handing to worker thread so the runner won't pick it up again
+        job_wrapper.change_state( 'queued' )
+        self.work_queue.put( ( 'queue', job_wrapper ) )
     
     def shutdown( self ):
         """Attempts to gracefully shut down the monitor thread"""
         log.info( "sending stop signal to worker threads" )
-        self.queue.put( self.STOP_SIGNAL )
+        self.monitor_queue.put( self.STOP_SIGNAL )
+        for i in range( len( self.work_threads ) ):
+            self.work_queue.put( ( self.STOP_SIGNAL, None ) )
         log.info( "pbs job runner stopped" )
 
     def get_stage_in_out( self, fnames, symlink=False ):
@@ -419,9 +444,9 @@ class PBSJobRunner( object ):
             log.debug( "(%s/%s) is still in running state, adding to the PBS queue" % ( job.id, job.job_runner_external_id ) )
             pbs_job_state.old_state = 'R'
             pbs_job_state.running = True
-            self.queue.put( pbs_job_state )
+            self.monitor_queue.put( pbs_job_state )
         elif job.state == model.Job.states.QUEUED:
             log.debug( "(%s/%s) is still in PBS queued state, adding to the PBS queue" % ( job.id, job.job_runner_external_id ) )
             pbs_job_state.old_state = 'Q'
             pbs_job_state.running = False
-            self.queue.put( pbs_job_state )
+            self.monitor_queue.put( pbs_job_state )

@@ -26,7 +26,7 @@ log_events = True
 ## track_jobs_in_database = true
 
 # Number of concurrent jobs to run (local runner)
-job_queue_workers = 5
+local_job_queue_workers = 5
 
 # Job scheduling policy to be used. 
 # module/package name and classname should be in "module:classname" format.
@@ -154,6 +154,12 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 # see the ClusteringGalaxy Wiki.  Leave commented if not using a cluster job
 # runner.
 #default_cluster_job_runner = pbs:///
+
+# cluster_job_queue_workers: The cluster runners have their own thread pools
+# used to prepare and finish jobs (so that these operations do not block normal
+# queue operation).  The value here is the number of worker threads available
+# to each runner.
+#cluster_job_queue_workers = 5
 
 # The PBS options are described in detail in the Galaxy Configuration section of
 # the ClusteringGalaxy Wiki, and are only necessary when using file staging.
