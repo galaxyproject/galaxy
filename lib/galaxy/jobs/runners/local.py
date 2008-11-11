@@ -40,7 +40,6 @@ class LocalJobRunner( object ):
                 log.exception( "Uncaught exception running job" )
                 
     def run_job( self, job_wrapper ):
-        job_wrapper.change_state( 'running' )
         job_wrapper.set_runner( 'local:///', None )
         stderr = stdout = command_line = ''
         # Prepare the job to run
@@ -86,6 +85,8 @@ class LocalJobRunner( object ):
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
+        # Change to queued state before handing to worker thread so the runner won't pick it up again
+        job_wrapper.change_state( 'running' )
         self.queue.put( job_wrapper )
     
     def shutdown( self ):
