@@ -252,7 +252,7 @@ table.colored td
 
 table.colored tr.header
 { 
-  background: #ebd9b2;
+  background: #EBD9B2;
   background-image: url(report_title_bg.png);
   background-repeat: repeat-x;
   background-position: top;
@@ -261,7 +261,7 @@ table.colored tr.header
 }
 table.colored tr.headernew
 { 
-  background: #add8e6;
+  background: #ADD8E6;
   background-repeat: repeat-x;
   background-position: top;
   border-bottom: solid #d8b365 1px;
@@ -269,7 +269,7 @@ table.colored tr.headernew
 }
 table.colored tr.headerwaiting
 { 
-  background: #ebd9b2;
+  background: #FF6600;
   background-repeat: repeat-x;
   background-position: top;
   border-bottom: solid #d8b365 1px;
@@ -277,7 +277,7 @@ table.colored tr.headerwaiting
 }
 table.colored tr.headerqueued
 { 
-  background: #ee82ee;
+  background: #EE82EE;
   background-repeat: repeat-x;
   background-position: top;
   border-bottom: solid #d8b365 1px;
@@ -285,7 +285,7 @@ table.colored tr.headerqueued
 }
 table.colored tr.headerrunning
 { 
-  background: #ffff00;
+  background: #FFFF00;
   background-repeat: repeat-x;
   background-position: top;
   border-bottom: solid #d8b365 1px;
@@ -293,7 +293,15 @@ table.colored tr.headerrunning
 }
 table.colored tr.headererror
 { 
-  background: #ff0000;
+  background: #FF0000;
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+}
+table.colored tr.headerdeleted
+{ 
+  background: #9900FF;
   background-repeat: repeat-x;
   background-position: top;
   border-bottom: solid #d8b365 1px;
@@ -302,6 +310,22 @@ table.colored tr.headererror
 table.colored tr.headerok
 { 
   background: #008000;
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+}
+table.colored tr.headerupload
+{ 
+  background: #336699;
+  background-repeat: repeat-x;
+  background-position: top;
+  border-bottom: solid #d8b365 1px;
+  font-weight: bold;
+}
+table.colored tr.headerunknown
+{ 
+  background: #FF6666;
   background-repeat: repeat-x;
   background-position: top;
   border-bottom: solid #d8b365 1px;

@@ -23,6 +23,10 @@
               rowdef = '<tr class="headerqueued">'
             elif state == 'running':
               rowdef = '<tr class="headerrunning">'
+            elif state == 'upload':
+              rowdef = '<tr class="headerupload">'
+            else:
+              rowdef = '<tr class="headerunknown">'
           %>
           ${rowdef}
             <td>State</td>

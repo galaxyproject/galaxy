@@ -10,10 +10,19 @@
     %endif
     <table align="center" width="60%" class="colored">
       %if len( jobs ) == 0:
-        <tr><td colspan="5">There are no jobs in error for ${day_label},&nbsp;${month_label}&nbsp;${day_of_month},&nbsp;${year_label}</td></tr>
+        <tr><td colspan="5">There are no jobs in the deleted or error state for ${day_label},&nbsp;${month_label}&nbsp;${day_of_month},&nbsp;${year_label}</td></tr>
       %else:
         %for job in jobs:
-          <tr class="headererror">
+          <% 
+            state = job[0]
+            if state == 'error':
+              rowdef = '<tr class="headererror">'
+            elif state == 'deleted':
+              rowdef = '<tr class="headerdeleted">'
+            else:
+              rowdef = '<tr class="headerunknown">'
+          %>
+          ${rowdef}
             <td>State</td>
             <td>Job Id</td>
             <td>Create Time</td>

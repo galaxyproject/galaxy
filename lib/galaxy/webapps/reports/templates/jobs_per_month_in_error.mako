@@ -11,7 +11,7 @@
     %endif
     <table align="center" width="60%" class="colored">
       %if len( jobs ) == 0:
-        <tr><td colspan="2">There are no jobs in error</td></tr>
+        <tr><td colspan="2">There are no jobs in the deleted or error state</td></tr>
       %else:
         <tr class="header">
           <td>Month</td>

@@ -26,9 +26,13 @@
             elif state == 'error':
               rowdef = '<tr class="headererror">'
             elif state == 'deleted':
-              rowdef = '<tr class="headererror">'
+              rowdef = '<tr class="headerdeleted">'
+            elif state == 'upload':
+              rowdef = '<tr class="headerupload">'
             elif state == 'ok':
               rowdef = '<tr class="headerok">'
+            else:
+              rowdef = '<tr class="headerunknown">'
           %>
           ${rowdef}
             <td>State</td>

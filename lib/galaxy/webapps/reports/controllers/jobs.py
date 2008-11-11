@@ -139,8 +139,10 @@ class Jobs( BaseController ):
                                               galaxy.model.Job.table.c.create_time >= start_date, 
                                               galaxy.model.Job.table.c.create_time < end_date ),
                        from_obj = [ sa.outerjoin( galaxy.model.Job.table, 
-                                                  galaxy.model.History.table ).outerjoin( galaxy.model.User.table ).outerjoin( galaxy.model.GalaxySession.table,
-                                                                                                                               galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
+                                                  galaxy.model.History.table ) \
+                                                  .outerjoin( galaxy.model.User.table ) \
+                                                  .outerjoin( galaxy.model.GalaxySession.table,
+                                                              galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
                        order_by = [ sa.desc( galaxy.model.Job.table.c.id ) ] )
         jobs = []
         for row in q.execute():
@@ -197,8 +199,10 @@ class Jobs( BaseController ):
                        whereclause = sa.and_( galaxy.model.Job.table.c.create_time >= start_date, 
                                               galaxy.model.Job.table.c.create_time < end_date ),
                        from_obj = [ sa.outerjoin( galaxy.model.Job.table, 
-                                                  galaxy.model.History.table ).outerjoin( galaxy.model.User.table ).outerjoin( galaxy.model.GalaxySession.table,
-                                                                                                                               galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
+                                                  galaxy.model.History.table ) \
+                                                  .outerjoin( galaxy.model.User.table ) \
+                                                  .outerjoin( galaxy.model.GalaxySession.table,
+                                                              galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
                        order_by = [ sa.desc( galaxy.model.Job.table.c.id ) ] )
         jobs = []
         for row in q.execute():
@@ -245,13 +249,14 @@ class Jobs( BaseController ):
                          galaxy.model.Job.table.c.info,
                          ( galaxy.model.User.table.c.email ).label( 'user_email' ),
                          galaxy.model.GalaxySession.table.c.remote_addr ),
-                       whereclause = sa.or_( galaxy.model.Job.table.c.state == 'running', 
-                                             galaxy.model.Job.table.c.state == 'queued',
-                                             galaxy.model.Job.table.c.state == 'waiting', 
-                                             galaxy.model.Job.table.c.state == 'new' ),
+                       whereclause = sa.not_( sa.or_( galaxy.model.Job.table.c.state == 'ok', 
+                                                      galaxy.model.Job.table.c.state == 'error', 
+                                                      galaxy.model.Job.table.c.state == 'deleted' ) ),
                        from_obj = [ sa.outerjoin( galaxy.model.Job.table, 
-                                                  galaxy.model.History.table ).outerjoin( galaxy.model.User.table ).outerjoin( galaxy.model.GalaxySession.table,
-                                                                                                                               galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
+                                                  galaxy.model.History.table ) \
+                                                  .outerjoin( galaxy.model.User.table ) \
+                                                  .outerjoin( galaxy.model.GalaxySession.table,
+                                                              galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
                        order_by = [ sa.desc( galaxy.model.Job.table.c.id ) ] )
         for row in q.execute():
             remote_host = row.remote_addr
@@ -379,8 +384,10 @@ class Jobs( BaseController ):
                                               galaxy.model.Job.table.c.create_time >= start_date, 
                                               galaxy.model.Job.table.c.create_time < end_date ),
                        from_obj = [ sa.outerjoin( galaxy.model.Job.table, 
-                                                  galaxy.model.History.table ).outerjoin( galaxy.model.User.table ).outerjoin( galaxy.model.GalaxySession.table,
-                                                                                                                               galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
+                                                  galaxy.model.History.table ) \
+                                                  .outerjoin( galaxy.model.User.table ) \
+                                                  .outerjoin( galaxy.model.GalaxySession.table,
+                                                              galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
                        order_by = [ sa.desc( galaxy.model.Job.table.c.id ) ] )
         for row in q.execute():
             remote_host = row.remote_addr
@@ -467,8 +474,10 @@ class Jobs( BaseController ):
                                               galaxy.model.Job.table.c.create_time >= start_date, 
                                               galaxy.model.Job.table.c.create_time < end_date ),
                        from_obj = [ sa.outerjoin( galaxy.model.Job.table, 
-                                                  galaxy.model.History.table ).outerjoin( galaxy.model.User.table ).outerjoin( galaxy.model.GalaxySession.table,
-                                                                                                                               galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
+                                                  galaxy.model.History.table ) \
+                                                  .outerjoin( galaxy.model.User.table ) \
+                                                  .outerjoin( galaxy.model.GalaxySession.table,
+                                                              galaxy.model.Job.table.c.session_id == galaxy.model.GalaxySession.table.c.id ) ],
                        order_by = [ sa.desc( galaxy.model.Job.table.c.id ) ] )
         for row in q.execute():
             remote_host = row.remote_addr
@@ -498,6 +507,7 @@ class Jobs( BaseController ):
                                     msg=msg )
     @web.expose
     def per_domain( self, trans, **kwd ):
+        # TODO: rewrite using alchemy
         params = util.Params( kwd )
         msg = ''
         engine = galaxy.model.mapping.metadata.engine
