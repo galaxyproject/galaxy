@@ -30,11 +30,6 @@ class UniverseApplication( object ):
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         #Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
-        # Start the job queue
-        self.job_manager = jobs.JobManager( self )
-        # FIXME: These are exposed directly for backward compatibility
-        self.job_queue = self.job_manager.job_queue
-        self.job_stop_queue = self.job_manager.job_stop_queue
         # Heartbeat and memdump for thread / heap profiling
         self.heartbeat = None
         self.memdump = None
@@ -54,6 +49,11 @@ class UniverseApplication( object ):
         if self.config.log_memory_usage:
             from galaxy.util import memory_usage
             self.memory_usage = memory_usage
+        # Start the job queue
+        self.job_manager = jobs.JobManager( self )
+        # FIXME: These are exposed directly for backward compatibility
+        self.job_queue = self.job_manager.job_queue
+        self.job_stop_queue = self.job_manager.job_stop_queue
     def shutdown( self ):
         self.job_manager.shutdown()
         if self.heartbeat:
