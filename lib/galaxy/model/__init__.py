@@ -46,6 +46,7 @@ class Job( object ):
     parameters, and output datasets.
     """
     states = Bunch( NEW = 'new',
+                    UPLOAD = 'upload',
                     WAITING = 'waiting',
                     QUEUED = 'queued',
                     RUNNING = 'running',

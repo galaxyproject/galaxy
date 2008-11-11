@@ -38,6 +38,7 @@ class UploadToolAction( object ):
             job.tool_version = tool.version
         except:
             job.tool_version = "1.0.0"
+        job.state = trans.app.model.Job.states.UPLOAD
         job.flush()
         log.info( 'tool %s created job id %d' % ( tool.id, job.id ) )
         trans.log_event( 'created job id %d' % job.id, tool_id=tool.id )
