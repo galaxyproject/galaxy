@@ -56,19 +56,20 @@ def main():
 	for od in job.output_datasets:
             ds = app.model.Dataset.get(od.dataset_id)
             if not ds.deleted:
-                hda = app.model.HistoryDatasetAssociation.filter(app.model.HistoryDatasetAssociation.table.c.dataset_id == ds.id)[0]
-                hist = app.model.History.get(hda.history_id)
-                if hist.user_id:
-                    user = app.model.User.get(hist.user_id)
-                    jobs[job.id] = {}
-                    jobs[job.id]['dataset_id'] = ds.id
-                    jobs[job.id]['dataset_create_time'] = ds.create_time 
-                    jobs[job.id]['dataset_name'] = hda.name 
-                    jobs[job.id]['hda_id'] = hda.id 
-                    jobs[job.id]['hist_id'] = hist.id 
-                    jobs[job.id]['hist_name'] = hist.name 
-                    jobs[job.id]['hist_modified_time'] = hist.update_time
-		    jobs[job.id]['user_email'] = user.email 
+                #hda = app.model.HistoryDatasetAssociation.filter(app.model.HistoryDatasetAssociation.table.c.dataset_id == ds.id)[0]
+                for hda in ds.history_associations:
+                    hist = app.model.History.get(hda.history_id)
+                    if hist.user_id:
+                        user = app.model.User.get(hist.user_id)
+                        jobs[job.id] = {}
+                        jobs[job.id]['dataset_id'] = ds.id
+                        jobs[job.id]['dataset_create_time'] = ds.create_time 
+                        jobs[job.id]['dataset_name'] = hda.name 
+                        jobs[job.id]['hda_id'] = hda.id 
+                        jobs[job.id]['hist_id'] = hist.id 
+                        jobs[job.id]['hist_name'] = hist.name 
+                        jobs[job.id]['hist_modified_time'] = hist.update_time
+                        jobs[job.id]['user_email'] = user.email 
     
     print "Number of Incorrect Jobs: %d\n"%(len(jobs))
     print "#job_id\tdataset_id\tdataset_create_time\thda_id\thistory_id\thistory_name\thistory_modified_time\tuser_email"
