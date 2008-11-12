@@ -6,14 +6,11 @@ Fetch jobs using gops_intersect, gops_merge, gops_subtract, gops_complement, gop
 from galaxy import eggs
 import sys, os, ConfigParser
 import galaxy.app
-#from galaxy.util.bunch import Bunch
-
 import galaxy.model.mapping
 import pkg_resources
         
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
-#from sqlalchemy.orm import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -53,10 +50,9 @@ def main():
                 ),
              sa.not_(app.model.Job.table.c.command_line.like('%-2 1,2,3%'))
             )).all():
-	for od in job.output_datasets:
+	   for od in job.output_datasets:
             ds = app.model.Dataset.get(od.dataset_id)
             if not ds.deleted:
-                #hda = app.model.HistoryDatasetAssociation.filter(app.model.HistoryDatasetAssociation.table.c.dataset_id == ds.id)[0]
                 for hda in ds.history_associations:
                     hist = app.model.History.get(hda.history_id)
                     if hist.user_id:
