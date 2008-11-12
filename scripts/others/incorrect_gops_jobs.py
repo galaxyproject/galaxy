@@ -77,11 +77,12 @@ def main():
     print "\n\n# Number of incorrect Jobs: %d\n\n" % ( len( jobs ) )
     print "#job_id\thda_id\thda_name\thda_info\thistory_id\thistory_name\thistory_update_time\tuser_email"
     for jid in jobs:
-        print "%s\t%s\t%s\t%s\t%s\t%s\t%s" % \
-            ( jid, jobs[ jid ][ 'hda_id' ], 
+        print "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % \
+            ( str( jid ), 
+              str( jobs[ jid ][ 'hda_id' ] ), 
               jobs[ jid ][ 'hda_name' ], 
               jobs[ jid ][ 'hda_info' ],
-              jobs[ jid ][ 'history_id' ],
+              str( jobs[ jid ][ 'history_id' ] ),
               jobs[ jid ][ 'history_name' ],
               jobs[ jid ][ 'history_update_time' ],
               jobs[ jid ][ 'user_email' ]
