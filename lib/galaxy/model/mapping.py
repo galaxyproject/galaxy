@@ -196,6 +196,7 @@ Library.table = Table( "library", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TEXT, index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
+    Column( "purged", Boolean, index=True, default=False ),
     Column( "description", TEXT ) )
 
 LibraryFolder.table = Table( "library_folder", metadata,
@@ -208,6 +209,7 @@ LibraryFolder.table = Table( "library_folder", metadata,
     Column( "order_id", Integer ),
     Column( "item_count", Integer ),
     Column( "deleted", Boolean, index=True, default=False ),
+    Column( "purged", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ) )
 
 LibraryTag.table = Table( "library_tag", metadata,

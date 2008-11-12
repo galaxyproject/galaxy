@@ -4,7 +4,7 @@
 </%doc>
 
 ## Render the dataset `data`
-<%def name="render_dataset( data )">
+<%def name="render_dataset( data, deleted )">
     <%
 	if data.state in ['no state','',None]:
 	    data_state = "queued"
@@ -41,11 +41,13 @@
 	    <td width="*">
                 <input type="checkbox" name="dataset_ids" value="${data.id}"/>
                 <span class="historyItemTitle"><b>${data.display_name()}</b></span>
-                <a id="dataset-${data.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                <div popupmenu="dataset-${data.id}-popup">
-                    <a class="action-button" href="${h.url_for( action='dataset', id=data.id )}">Edit this dataset's attributes and permissions</a>
-                    <a class="action-button" confirm="Are you sure you want to delete dataset '${data.name}'?" href="${h.url_for( action='dataset', delete=True, id=data.id )}">Remove this dataset</a>
-                </div>
+                %if not deleted:
+                    <a id="dataset-${data.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                    <div popupmenu="dataset-${data.id}-popup">
+                        <a class="action-button" href="${h.url_for( action='dataset', id=data.id )}">Edit this dataset's attributes and permissions</a>
+                        <a class="action-button" confirm="Are you sure you want to delete dataset '${data.name}'?" href="${h.url_for( action='dataset', delete=True, id=data.id )}">Remove this dataset from the library</a>
+                    </div>
+                %endif
             </td>
             <td width="100">${data.ext}</td>
             <td width="50"><span class="${data.dbkey}">${data.dbkey}</span></td>

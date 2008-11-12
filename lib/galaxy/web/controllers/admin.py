@@ -599,7 +599,6 @@ class Admin( BaseController ):
     # Galaxy Library Stuff
     @web.expose
     def library_browser( self, trans, **kwd ):
-        ## TODO: "show deleted libraries" toggle?
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         if 'msg' in kwd:
@@ -607,7 +606,9 @@ class Admin( BaseController ):
         else:
             msg = None
         return trans.fill_template( '/admin/library/browser.mako', 
-                                    libraries=trans.app.model.Library.filter_by( deleted=False ).order_by( trans.app.model.Library.name ).all(), 
+                                    libraries=trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
+                                                                     .order_by( trans.app.model.Library.name ).all(),
+                                    deleted=False,
                                     msg=msg )
     libraries = library_browser
     @web.expose
@@ -663,6 +664,63 @@ class Admin( BaseController ):
             library.flush()
             msg = 'The library and all of its contents have been marked deleted'
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+    @web.expose
+    def deleted_libraries( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        libraries=trans.app.model.Library.filter( and_( trans.app.model.Library.table.c.deleted==True,
+                                                        trans.app.model.Library.table.c.purged==False ) ) \
+                                         .order_by( trans.app.model.Library.table.c.name ).all()
+        return trans.fill_template( '/admin/library/browser.mako', 
+                                    libraries=libraries,
+                                    deleted=True,
+                                    msg=msg )
+    @web.expose
+    def undelete_library( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        library = galaxy.model.Library.get( int( params.id ) )
+        def undelete_folder( folder ):
+            for subfolder in folder.active_folders:
+                undelete_folder( subfolder )
+            for dataset in folder.datasets:
+                dataset.deleted = False
+                dataset.flush()
+            folder.deleted = False
+            folder.flush()
+        undelete_folder( library.root_folder )
+        library.deleted = False
+        library.flush()
+        msg = "The library and all of its contents have been marked not deleted"
+        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+    @web.expose
+    def purge_library( self, trans, **kwd ):
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
+        params = util.Params( kwd )
+        msg = params.msg
+        library = galaxy.model.Library.get( int( params.id ) )
+        def purge_folder( folder ):
+            for subfolder in folder.folders:
+                purge_folder( subfolder )
+            for lfda in folder.datasets:
+                dataset = lfda.dataset
+                if not dataset.deleted:
+                    dataset.deleted = True
+                    # We don't set dataset.purged to True here, because the cleanup_datasets script will 
+                    # do that for us, as well as removing the file from disk if all appropriate checks pass.
+                    dataset.flush()
+            folder.purged = True
+            folder.flush()
+        purge_folder( library.root_folder )
+        library.purged = True
+        library.flush()
+        msg = "The library and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script"
+        return trans.response.send_redirect( web.url_for( action='deleted_libraries', msg=msg ) )
     @web.expose
     def folder( self, trans, id, **kwd ):
         if not self.user_is_admin( trans ):

@@ -190,7 +190,15 @@ class TestHistory( TwillTestCase ):
                                                      galaxy.model.Library.table.c.deleted==False ) ).first()
         library_id = str( library.id )
         self.mark_library_deleted( library_id )
-    def test_80_purge_group( self ):
+    def test_80_mark_library_undeleted( self ):
+        """Testing marking a library as not deleted"""
+        library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
+                                                     galaxy.model.Library.table.c.deleted==True ) ).first()
+        library_id = str( library.id )
+        self.mark_library_undeleted( library_id )
+        # Mark library as deleted again so we can test purging it
+        self.mark_library_deleted( library_id )
+    def test_85_purge_group( self ):
         """Testing purging a group"""
         group = galaxy.model.Group.filter( galaxy.model.Group.table.c.name == 'Another Test Group' ).first()
         group_id = str( group.id )
@@ -203,7 +211,7 @@ class TestHistory( TwillTestCase ):
         gra = galaxy.model.GroupRoleAssociation.filter( galaxy.model.GroupRoleAssociation.table.c.group_id == group_id ).all()
         if gra:
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
-    def test_85_purge_role( self ):
+    def test_90_purge_role( self ):
         """Testing purging a role"""
         role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name == 'Another Test Role' ).first()
         role_id = str( role.id )
@@ -216,4 +224,9 @@ class TestHistory( TwillTestCase ):
         adra = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.role_id == role_id ).all()
         if adra:
             raise AssertionError( "Purging the role did not delete the ActionDatasetRoleAssociations for role_id '%s'" % role_id )
-               
+    def test_95_purge_library( self ):
+        """Testing purging a library"""
+        library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name=='New Test Library',
+                                                     galaxy.model.Library.table.c.deleted==True ) ).first()
+        library_id = str( library.id )
+        self.purge_library( library_id )

@@ -316,6 +316,12 @@ def purge_dataset( dataset, d, m ):
                         purgable = False
                         break
             if purgable:
+                # This check handles the library_folder_dataset_association approach to sharing.
+                for shared_data in dataset.library_associations:
+                    if not shared_data.deleted:
+                        purgable = False
+                        break
+            if purgable:
                 dataset.purged = True
                 dataset.file_size = 0
                 dataset.flush()

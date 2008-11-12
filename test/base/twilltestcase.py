@@ -728,4 +728,15 @@ class TwillTestCase( unittest.TestCase ):
         self.last_page()
         self.check_page_for_string( 'The library and all of its contents have been marked deleted' )
         self.home()
-
+    def mark_library_undeleted( self, library_id ):
+        """Mark a library as not deleted"""
+        self.visit_url( "%s/admin/undelete_library?id=%s" % ( self.url, library_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The library and all of its contents have been marked not deleted' )
+        self.home()
+    def purge_library( self, library_id ):
+        """Purge a library"""
+        self.visit_url( "%s/admin/purge_library?id=%s" % ( self.url, library_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The library and all of its contents have been purged' )
+        self.home()
