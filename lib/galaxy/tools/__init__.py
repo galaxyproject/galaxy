@@ -242,6 +242,19 @@ class Tool:
                     remote_name = req_param.get( "remote_name" )
                     trans_list.append( req_param.get( "galaxy_name" ) )
                     trans_list.append( req_param.get( "missing" ) )
+                    if req_param.get( "galaxy_name" ) == "data_type":
+                        # The req_param tag for data_type is special in that it can contain another tag set like
+                        # <data_type_translation>
+                        #    <format galaxy_format="tabular" remote_format="selectedFields" />
+                        # </data_type_translation>
+                        format_trans = req_param.find( "data_type_translation" )
+                        if format_trans is not None:
+                            format_trans_dict = {}
+                            for format in format_trans.findall( "format" ):
+                                remote_format = format.get( "remote_format" )
+                                galaxy_format = format.get( "galaxy_format" )                        
+                                format_trans_dict[ remote_format ] = galaxy_format
+                            trans_list.append( format_trans_dict )
                     self.param_trans_dict[ remote_name ] = trans_list
         # Command line (template). Optional for tools that do not invoke a local program  
         command = root.find("command")

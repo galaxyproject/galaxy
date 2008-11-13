@@ -91,8 +91,7 @@ class Jobs( BaseController ):
         year_label = start_date.strftime( "%Y" )
         q = sa.select( ( sa.func.date( galaxy.model.Job.table.c.create_time ).label( 'date' ),
                          sa.func.count( galaxy.model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       whereclause = sa.and_( sa.or_( galaxy.model.Job.table.c.state == 'error', 
-                                                      galaxy.model.Job.table.c.state == 'deleted' ),
+                       whereclause = sa.and_( galaxy.model.Job.table.c.state == 'error',
                                               galaxy.model.Job.table.c.create_time >= start_date, 
                                               galaxy.model.Job.table.c.create_time < end_date ),
                        from_obj = [ sa.outerjoin( galaxy.model.Job.table, 
@@ -134,8 +133,7 @@ class Jobs( BaseController ):
                          galaxy.model.Job.table.c.info,
                          ( galaxy.model.User.table.c.email ).label( 'user_email' ),
                          galaxy.model.GalaxySession.table.c.remote_addr ),
-                       whereclause = sa.and_( sa.or_( galaxy.model.Job.table.c.state == 'error', 
-                                                      galaxy.model.Job.table.c.state == 'deleted' ),
+                       whereclause = sa.and_( galaxy.model.Job.table.c.state == 'error',
                                               galaxy.model.Job.table.c.create_time >= start_date, 
                                               galaxy.model.Job.table.c.create_time < end_date ),
                        from_obj = [ sa.outerjoin( galaxy.model.Job.table, 
@@ -305,8 +303,7 @@ class Jobs( BaseController ):
         msg = ''
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( galaxy.model.Job.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( galaxy.model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       whereclause = sa.or_( galaxy.model.Job.table.c.state == 'error', 
-                                             galaxy.model.Job.table.c.state == 'deleted' ),
+                       whereclause = galaxy.model.Job.table.c.state == 'error',
                        from_obj = [ galaxy.model.Job.table ],
                        group_by = [ sa.func.date_trunc( 'month', sa.func.date( galaxy.model.Job.table.c.create_time ) ) ],
                        order_by = [ sa.desc( 'date' ) ] )

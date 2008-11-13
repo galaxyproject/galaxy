@@ -155,7 +155,17 @@ class Params:
                 if tool and tool.tool_type == 'data_source':
                     if key in tool.param_trans_dict:
                         new_key = tool.param_trans_dict[ key ][0]
-                        if not value:
+                        if new_key == 'data_type':
+                            try:
+                                # The Galaxy "data_type entry is special in that it can include the ability
+                                # to translate the format to a Galaxy supported format.  In the dict, this entry
+                                # looks something like:  {'hgta_outputType': ['data_type', 'bed', {'selectedFields': 'tabular'}] }
+                                format_trans_dict = tool.param_trans_dict[ key ][2]
+                                if value in format_trans_dict:
+                                    new_value = format_trans_dict[ value ]
+                            except:
+                                pass
+                        if not value and not new_value:
                             new_value = tool.param_trans_dict[ key ][1]
                 if key not in self.NEVER_SANITIZE and sanitize:
                     self.__dict__[ new_key ] = sanitize_param( new_value )

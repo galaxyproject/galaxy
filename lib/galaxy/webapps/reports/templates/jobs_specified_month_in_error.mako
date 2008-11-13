@@ -2,7 +2,7 @@
 
 <%def name="main_body()">
   <div class="reportBody">
-    <h3 align="center">Jobs in Error for ${month_label}&nbsp;${year_label} ( includes jobs deleted before finishing )</h3>
+    <h3 align="center">Jobs in Error for ${month_label}&nbsp;${year_label}</h3>
     <h4 align="center">Click Jobs in Error to view jobs in error for that day</h4>
     %if msg:
       <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
@@ -11,7 +11,7 @@
     %endif
     <table align="center" width="60%" class="colored">
       %if len( jobs ) == 0:
-        <tr><td colspan="3">There are no jobs in error for ${month_label}&nbsp;${year_label}</td></tr>
+        <tr><td colspan="3">There are no jobs in the error state for ${month_label}&nbsp;${year_label}</td></tr>
       %else:
         <tr class="header">
           <td>Day</td>
