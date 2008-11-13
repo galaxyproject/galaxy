@@ -23,6 +23,7 @@
         <request_param galaxy_name="description" remote_name="hgta_regionType" missing="" />
         <request_param galaxy_name="data_type" remote_name="hgta_outputType" missing="bed" >
             <data_type_translation>
+                <format galaxy_format="tabular" remote_format="primaryTable" />
                 <format galaxy_format="tabular" remote_format="selectedFields" />
             </data_type_translation>
         </request_param>
