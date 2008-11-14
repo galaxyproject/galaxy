@@ -45,7 +45,7 @@ class Configuration( object ):
         self.job_scheduler_policy = kwargs.get("job_scheduler_policy", "FIFO")
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
-        self.admin_pass = kwargs.get('admin_pass',"galaxy")
+        self.admin_users = kwargs.get( "admin_users", "" )
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
@@ -67,6 +67,9 @@ class Configuration( object ):
         self.bugs_email = kwargs.get( 'bugs_email', None )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
+        self.library_import_dir = kwargs.get( 'library_import_dir', None )
+        if self.library_import_dir is not None and not os.path.exists( self.library_import_dir ):
+            raise ConfigurationError( "library_import_dir specified in config (%s) does not exist" % self.library_import_dir )
         # Configuration options for taking advantage of nginx features
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
         self.nginx_upload_location = kwargs.get( 'nginx_upload_store', False )
