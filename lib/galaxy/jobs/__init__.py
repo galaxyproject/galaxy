@@ -64,7 +64,7 @@ class JobQueue( object ):
         """Start the job manager"""
         self.app = app
         # Should we use IPC to communicate (needed if forking)
-        self.track_jobs_in_database = app.config.get( 'track_jobs_in_database', False )
+        self.track_jobs_in_database = app.config.get_bool( 'track_jobs_in_database', False )
         
         # Check if any special scheduling policy should be used. If not, default is FIFO.
         sched_policy = app.config.get('job_scheduler_policy', 'FIFO')
@@ -107,7 +107,8 @@ class JobQueue( object ):
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()        
         log.info( "job manager started" )
-        self.check_jobs_at_startup()
+        if self.track_jobs_in_database:
+            self.check_jobs_at_startup()
 
     def check_jobs_at_startup( self ):
         """
