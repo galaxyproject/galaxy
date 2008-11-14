@@ -1,6 +1,6 @@
 <tool id="poisson2test" name="Poisson two-sample test" version="1.0.0">
   <description></description>
-  <command interpreter="python">poisson2test.py $input1 $input2 $input3 $input4 $input5 > $output1 </command>
+  <command interpreter="python">poisson2test.py $input1 $input2 $input3 $input4 $input5 $output1 2>/dev/null </command>
   <inputs>
     <param name="input1" format="tabular" type="data" label="Input File"/>
     <param name="input2" type="integer" size="5" value="2" label="First Column"/>

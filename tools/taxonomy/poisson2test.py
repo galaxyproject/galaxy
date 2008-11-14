@@ -5,7 +5,7 @@ from math import *
 from rpy import *
 
 
-if ((len(sys.argv)-1) != 5):
+if ((len(sys.argv)-1) != 6):
     print 'too few parameters' 
     print 'usage: inputfile, col1, col2, d-value(not 0), p-val correction method(0 or 1)'
     sys.exit()
@@ -21,6 +21,7 @@ try:
     j = int(sys.argv[3]) #second colum to compare
     d = float(sys.argv[4]) #correction factor
     k = int(sys.argv[5]) #p-val correction method
+    outfile = open(sys.argv[6],'w') # output data
     
     if (i>j):
         print 'column order not correct col1 < col2'
@@ -114,7 +115,7 @@ else:
 
 #printing all columns
 for n in range(fsize):
-    print "%s\t%4.3f\t%4.3f\t%8.6f\t%8.6f\t%8.6f\t%8.6f" %(lines_arr[n].strip(),z1[n],z2[n],pz1[n],pz2[n],corrz1[n],corrz2[n])
+    print >> outfile, "%s\t%4.3f\t%4.3f\t%8.6f\t%8.6f\t%8.6f\t%8.6f" %(lines_arr[n].strip(),z1[n],z2[n],pz1[n],pz2[n],corrz1[n],corrz2[n])
 
 
       
