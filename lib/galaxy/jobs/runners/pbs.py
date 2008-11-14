@@ -267,7 +267,10 @@ class PBSJobRunner( object ):
             except Empty:
                 pass
             # Iterate over the list of watched jobs and check state
-            self.check_watched_items()
+            try:
+                self.check_watched_items()
+            except:
+                log.exception( "Uncaught exception checking jobs" )
             # Sleep a bit before the next state check
             time.sleep( 1 )
             
