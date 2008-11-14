@@ -399,9 +399,15 @@ assign_mapper( context, Dataset, Dataset.table,
         history_associations=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
+        active_history_associations=relation( 
+            HistoryDatasetAssociation, 
+            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted == False ) ) ),
         library_associations=relation( 
             LibraryFolderDatasetAssociation, 
-            primaryjoin=( Dataset.table.c.id == LibraryFolderDatasetAssociation.table.c.dataset_id ) )
+            primaryjoin=( Dataset.table.c.id == LibraryFolderDatasetAssociation.table.c.dataset_id ) ),
+        active_library_associations=relation( 
+            LibraryFolderDatasetAssociation, 
+            primaryjoin=( ( Dataset.table.c.id == LibraryFolderDatasetAssociation.table.c.dataset_id ) & ( LibraryFolderDatasetAssociation.table.c.deleted == False ) ) )
             ) )
 
 
@@ -497,6 +503,11 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
             order_by=asc( LibraryFolder.table.c.order_id ), 
             lazy=True, #"""sqlalchemy.exceptions.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
             viewonly=True ),
+        datasets=relation( LibraryFolderDatasetAssociation,
+            primaryjoin=( ( LibraryFolderDatasetAssociation.table.c.folder_id == LibraryFolder.table.c.id ) ), 
+            order_by=asc( LibraryFolderDatasetAssociation.table.c.order_id ), 
+            lazy=False, 
+            viewonly=True ),
         active_datasets=relation( LibraryFolderDatasetAssociation,
             primaryjoin=( ( LibraryFolderDatasetAssociation.table.c.folder_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolderDatasetAssociation.table.c.deleted ) ) ), 
             order_by=asc( LibraryFolderDatasetAssociation.table.c.order_id ), 
@@ -511,9 +522,7 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
 assign_mapper( context, LibraryFolderDatasetAssociation, LibraryFolderDatasetAssociation.table,
     properties=dict( 
         dataset=relation( Dataset ),
-        folder=relation( 
-            LibraryFolder,
-            backref=backref( "datasets" ) ),
+        folder=relation( LibraryFolder ),
         copied_to_library_folder_dataset_associations=relation( 
             LibraryFolderDatasetAssociation, 
             primaryjoin=( LibraryFolderDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ),

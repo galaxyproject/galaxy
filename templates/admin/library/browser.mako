@@ -57,7 +57,7 @@
         });
     });
     function checkForm() {
-        if ( $("select#with-selected-select option:selected").text() == "delete" ) {
+        if ( $("select#action_on_datasets_select option:selected").text() == "delete" ) {
             if ( confirm( "Are you sure you want to delete these datasets?" ) ) {
                 return true;
             } else {
@@ -183,7 +183,7 @@
                                 %if not deleted:
                                     <div popupmenu="library-${library.id}-popup">
                                         <a class="action-button" href="${h.url_for( action='library', rename=True, id=library.id )}">Rename this library</a>
-                                        <a class="action-button" href="${h.url_for( action='library', delete=True, id=library.id )}">Delete this library and its contents</a>
+                                        <a class="action-button" confirm="Current state will not be saved, so undeleting the library will restore all of its contents.  Click OK to delete the library named '${library.name}'?" href="${h.url_for( action='library', delete=True, id=library.id )}">Delete this library and its contents</a>
                                     </div>
                                 %else:
                                     <div popupmenu="library-${library.id}-popup">
@@ -206,15 +206,14 @@
             %endfor
         </ul>
         %if not deleted:
-            <div style="float: right;">
-                With selected datasets:
-                <select name="action" id="with-selected-select">
-                    <option value="None" selected></option>
-                    <option value="edit">edit permissions</option>
-                    <option value="delete">delete</option>
+            <p>
+                <b>Perform action on selected datasets:</b>
+                <select name="action" id="action_on_datasets_select">
+                    <option value="edit">Edit permissions on selected datasets</option>
+                    <option value="delete">Remove selected datasets from this library</option>
                 </select>
-                <input type="submit" class="primary-button" name="with-selected" id="with-selected-submit" value="go"/>
-            </div>
+                <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
+            </p>
         %endif
     </form>
 %endif

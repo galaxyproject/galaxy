@@ -601,10 +601,8 @@ class Admin( BaseController ):
     def library_browser( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
-        if 'msg' in kwd:
-            msg = kwd[ 'msg' ]
-        else:
-            msg = None
+        params = util.Params( kwd )
+        msg = params.msg
         return trans.fill_template( '/admin/library/browser.mako', 
                                     libraries=trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                                                      .order_by( trans.app.model.Library.name ).all(),
@@ -651,14 +649,18 @@ class Admin( BaseController ):
                 return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
             return trans.fill_template( '/admin/library/rename_library.mako', library=library, msg=msg )
         elif action == 'delete':
-            def delete_folder( folder ):
-                for subfolder in folder.active_folders:
-                    delete_folder( subfolder )
-                for dataset in folder.active_datasets:
-                    dataset.deleted = True
-                    dataset.flush()
-                folder.deleted = True
-                folder.flush()
+            def delete_folder( library_folder ):
+                for folder in library_folder.active_folders:
+                    delete_folder( folder )
+                for lfda in library_folder.active_datasets:
+                    # We don't set lfda.dataset.deleted to True here because the cleanup_dataset script
+                    # will eventually remove it from disk.  The purge_library method below sets the dataset
+                    # to deleted.  This allows for the library to be undeleted ( before it is purged ), 
+                    # restoring all of its contents.
+                    lfda.deleted = True
+                    lfda.flush()
+                library_folder.deleted = True
+                library_folder.flush()
             delete_folder( library.root_folder )
             library.deleted = True
             library.flush()
@@ -684,14 +686,14 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         library = galaxy.model.Library.get( int( params.id ) )
-        def undelete_folder( folder ):
-            for subfolder in folder.active_folders:
-                undelete_folder( subfolder )
-            for dataset in folder.datasets:
-                dataset.deleted = False
-                dataset.flush()
-            folder.deleted = False
-            folder.flush()
+        def undelete_folder( library_folder ):
+            for folder in library_folder.folders:
+                undelete_folder( folder )
+            for lfda in library_folder.datasets:
+                lfda.deleted = False
+                lfda.flush()
+            library_folder.deleted = False
+            library_folder.flush()
         undelete_folder( library.root_folder )
         library.deleted = False
         library.flush()
@@ -704,18 +706,23 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         library = galaxy.model.Library.get( int( params.id ) )
-        def purge_folder( folder ):
-            for subfolder in folder.folders:
-                purge_folder( subfolder )
-            for lfda in folder.datasets:
+        def purge_folder( library_folder ):
+            for lf in library_folder.folders:
+                purge_folder( lf )
+            for lfda in library_folder.datasets:
+                lfda.refresh()
                 dataset = lfda.dataset
-                if not dataset.deleted:
+                dataset.refresh()
+                # If the dataset is not associated with any additional undeleted folders, then we can delete it.
+                # We don't set dataset.purged to True here because the cleanup_datasets script will do that for
+                # us, as well as removing the file from disk.
+                if not dataset.deleted and len( dataset.active_library_associations ) <= 1: # This is our current lfda
                     dataset.deleted = True
-                    # We don't set dataset.purged to True here, because the cleanup_datasets script will 
-                    # do that for us, as well as removing the file from disk if all appropriate checks pass.
                     dataset.flush()
-            folder.purged = True
-            folder.flush()
+                lfda.deleted = True
+                lfda.flush()
+            library_folder.purged = True
+            library_folder.flush()
         purge_folder( library.root_folder )
         library.purged = True
         library.flush()
@@ -761,9 +768,9 @@ class Admin( BaseController ):
             def delete_folder( folder ):
                 for subfolder in folder.active_folders:
                     delete_folder( subfolder )
-                for dataset in folder.active_datasets:
-                    dataset.deleted = True
-                    dataset.flush()
+                for lfda in folder.active_datasets:
+                    lfda.deleted = True
+                    lfda.flush()
                 folder.deleted = True
                 folder.flush()
             delete_folder( folder )
@@ -1068,8 +1075,7 @@ class Admin( BaseController ):
                 for lda in ldas:
                     trans.app.security_agent.set_dataset_permissions( lda.dataset, permissions )
                     lda.dataset.refresh()
-	    # Ensure that the permissions across all datasets are
-	    # identical.  Otherwise, we can't update together.
+	    # Ensure that the permissions across all datasets are identical.  Otherwise, we can't update together.
             tmp = []
             for lda in ldas:
                 perms = trans.app.security_agent.get_dataset_permissions( lda.dataset )
@@ -1129,28 +1135,30 @@ class Admin( BaseController ):
         return ( True, True )
     @web.expose
     def datasets( self, trans, **kwd ):
-        """
-        The datasets method is used by the dropdown box on the admin-side library browser.
-        """
+        # This method is used by the select list labeled "Perform action on selected datasets" on the admin library browser.
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        if 'with-selected' in kwd:
+        msg = params.msg
+        if params.get( 'action_on_datasets_button', False ):
             if not params.dataset_ids:
-                return trans.show_error_message( "At least one dataset must be selected." )
+                msg = "At least one dataset must be selected for %s" % params.action
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
             dataset_ids = listify( params.dataset_ids )
             if params.action == 'edit':
-                trans.response.send_redirect( web.url_for( action = 'dataset', id = ",".join( dataset_ids ) ) )
+                trans.response.send_redirect( web.url_for( action='dataset', id=",".join( dataset_ids ) ) )
             elif params.action == 'delete':
                 for id in dataset_ids:
-                    d = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-                    d.deleted = True
-                    d.flush()
-                trans.response.send_redirect( web.url_for( action = 'library_browser' ) )
+                    lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+                    lfda.deleted = True
+                    lfda.flush()
+                    msg = "The selected datasets have been removed from this library"
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
             else:
-                return trans.show_error_message( "Not implemented." )
+                msg = "Action '%s' is not yet implemented" % str( params.action )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
         else:
-            return trans.show_error_message( "Galaxy can't operate on datasets without an operation." )
+            trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
     @web.expose
     def delete_dataset( self, trans, id=None, **kwd):
         if not self.user_is_admin( trans ):
@@ -1199,8 +1207,8 @@ class Admin( BaseController ):
         return trans.show_error_message( "You did not specify a folder to delete." )
     
     def _delete_folder( self, folder ):
-        for library_folder_dataset_association in folder.active_datasets:
-            self._delete_dataset( library_folder_dataset_association )
+        for lfda in folder.active_datasets:
+            self._delete_dataset( lfda )
         for folder in folder.active_folders:
             self._delete_folder( folder )
         folder.deleted = True
