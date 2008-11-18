@@ -35,7 +35,7 @@ def __main__():
             sequence = ''
         else:
             sequence = "%s%s" % ( sequence, line )
-            if line.split()[0].isdigit():
+            if line.split() and line.split()[0].isdigit():
                 sequence += ' '
     if sequence:
         seq_hash[( sequence_count, title )] = sequence

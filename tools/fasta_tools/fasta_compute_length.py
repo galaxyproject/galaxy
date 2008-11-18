@@ -34,7 +34,7 @@ def __main__():
             tmp_seq = ''
         else:
             tmp_seq = "%s%s" % ( tmp_seq, line )
-            if line.split()[0].isdigit():
+            if line.split() and line.split()[0].isdigit():
                 tmp_seq = "%s " % tmp_seq
     if len( tmp_seq ) > 0:
         seq_hash[ ( tmp_seq_count, tmp_title ) ] = tmp_seq
