@@ -32,6 +32,9 @@ class JSONType( TypeDecorator ):
 
     def compare_values( self, x, y ):
         return json_encoder.encode( x ) == json_encoder.encode( y )
+    
+    def is_mutable( self ):
+        return True
 
 metadata_pickler = AliasPickleModule( {
     ( "cookbook.patterns", "Bunch" ) : ( "galaxy.util.bunch" , "Bunch" )
