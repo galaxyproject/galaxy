@@ -13,8 +13,6 @@ import sqlalchemy as sa
 import logging
 log = logging.getLogger( __name__ )
 
-entities = { '@': 'FuNkYaT' }
-unentities = { 'FuNkYaT' : '@' }
 no_privilege_msg = "You must have Galaxy administrator privileges to use this feature."
 
 class Admin( BaseController ):
@@ -603,9 +601,11 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        created_lfda_ids = params.get( 'created_lfda_ids', '' )
         return trans.fill_template( '/admin/library/browser.mako', 
                                     libraries=trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                                                      .order_by( trans.app.model.Library.name ).all(),
+                                    created_lfda_ids=created_lfda_ids,
                                     deleted=False,
                                     msg=msg )
     libraries = library_browser
@@ -622,9 +622,11 @@ class Admin( BaseController ):
         elif params.get( 'delete', False ):
             action = 'delete'
         else:
-            return trans.show_error_message( "You must specify a valid action ( new, rename, delete ) to perform on a library." )
+            msg = "You must specify a valid action ( new, rename, delete ) to perform on a library."
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
         if not id and not action == 'new':
-            return trans.show_error_message( "You must specify a library to %s." % action )
+            msg = "You must specify a library to %s." % action
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
         if not action == 'new':
             library = trans.app.model.Library.get( int( id ) )
         if action == 'new':
@@ -741,10 +743,12 @@ class Admin( BaseController ):
         elif params.get( 'delete', False ):
             action = 'delete'
         else:
-            return trans.show_error_message( "You must specify a valid action ( new, rename, delete ) to perform on a folder." )
+            msg = "You must specify a valid action ( new, rename, delete ) to perform on a folder."
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
         folder = trans.app.model.LibraryFolder.get( id )
         if not folder:
-            return trans.show_error_message( "Invalid folder specified, id: %s" % str( id ) )
+            msg = "Invalid folder specified, id: %s" % str( id )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
         if action == 'new':
             if params.new == 'submitted':
                 new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
@@ -862,7 +866,6 @@ class Admin( BaseController ):
         # Dataset upload
         if params.get( 'new_dataset_button', False ):
             # Copied from upload tool action
-            last_dataset_created = None
             data_file = params.get( 'file_data', '' )
             url_paste = params.get( 'url_paste', '' )
             server_dir = params.get( 'server_dir', 'None' )
@@ -881,34 +884,35 @@ class Admin( BaseController ):
                 roles.append( galaxy.model.Role.get( role_id ) )
             temp_name = ""
             data_list = []
-            created_datasets = []
+            created_lfda_ids = ''
             if 'filename' in dir( data_file ):
                 file_name = data_file.filename
                 file_name = file_name.split( '\\' )[-1]
                 file_name = file_name.split( '/' )[-1]
-                last_dataset_created = add_file( data_file.file,
-                                                 file_name,
-                                                 extension,
-                                                 dbkey,
-                                                 last_used_build,
-                                                 roles,
-                                                 info="uploaded file",
-                                                 space_to_tab=space_to_tab )
+                created_lfda = add_file( data_file.file,
+                                         file_name,
+                                         extension,
+                                         dbkey,
+                                         last_used_build,
+                                         roles,
+                                         info="uploaded file",
+                                         space_to_tab=space_to_tab )
+                created_lfda_ids = str( created_lfda.id )
             elif url_paste not in [ None, "" ]:
                 if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
                     url_paste = url_paste.replace( '\r', '' ).split( '\n' )
                     for line in url_paste:
                         line = line.rstrip( '\r\n' )
                         if line:
-                            last_dataset_created = add_file( urllib.urlopen( line ),
-                                                             line,
-                                                             extension,
-                                                             dbkey,
-                                                             last_used_build,
-                                                             roles,
-                                                             info="uploaded url",
-                                                             space_to_tab=space_to_tab )
-                            created_datasets.append( last_dataset_created )
+                            created_lfda = add_file( urllib.urlopen( line ),
+                                                     line,
+                                                     extension,
+                                                     dbkey,
+                                                     last_used_build,
+                                                     roles,
+                                                     info="uploaded url",
+                                                     space_to_tab=space_to_tab )
+                            created_lfda_ids = '%s,%s' % ( created_lfda_ids, str( created_lfda.id ) )
                 else:
                     is_valid = False
                     for line in url_paste:
@@ -917,14 +921,15 @@ class Admin( BaseController ):
                             is_valid = True
                             break
                     if is_valid:
-                        last_dataset_created = add_file( StringIO.StringIO( url_paste ),
-                                                         'Pasted Entry',
-                                                         extension,
-                                                         dbkey,
-                                                         last_used_build,
-                                                         roles,
-                                                         info="pasted entry",
-                                                         space_to_tab=space_to_tab )
+                        created_lfda = add_file( StringIO.StringIO( url_paste ),
+                                                 'Pasted Entry',
+                                                 extension,
+                                                 dbkey,
+                                                 last_used_build,
+                                                 roles,
+                                                 info="pasted entry",
+                                                 space_to_tab=space_to_tab )
+                        created_lfda_ids = '%s,%s' % ( created_lfda_ids, str( created_lfda.id ) )
             elif server_dir not in [ None, "", "None" ]:
                 full_dir = os.path.join( trans.app.config.library_import_dir, server_dir )
                 try:
@@ -935,31 +940,23 @@ class Admin( BaseController ):
                     full_file = os.path.join( full_dir, file )
                     if not os.path.isfile( full_file ):
                         continue
-                    last_dataset_created = add_file( open( full_file, 'rb' ),
-                                                     file,
-                                                     extension,
-                                                     dbkey,
-                                                     last_used_build,
-                                                     roles,
-                                                     info="imported file",
-                                                     space_to_tab=space_to_tab )
-                    created_datasets.append( last_dataset_created )
-            if len( created_datasets ) > 1:
-                trans.response.send_redirect( web.url_for(
-                    action = 'library_browser',
-                    msg = "%i new datasets added to the library.  <a href='%s'>Click here</a> if you'd like to edit the permissions on these datasets." % (
-                        len( created_datasets ),
-                        web.url_for( action='dataset', id=",".join( [ str(d.id) for d in created_datasets ] ) )
-                    )
-                ) )
-            elif last_dataset_created is not None:
-                trans.response.send_redirect( web.url_for(
-                    action = 'library_browser',
-                    msg = "New dataset added to the library.  <a href='%s'>Click here</a> if you'd like to edit the permissions or attributes on this dataset." %
-                        web.url_for( action='dataset', id=last_dataset_created.id )
-                ) )
+                    created_lfda = add_file( open( full_file, 'rb' ),
+                                             file,
+                                             extension,
+                                             dbkey,
+                                             last_used_build,
+                                             roles,
+                                             info="imported file",
+                                             space_to_tab=space_to_tab )
+                    created_lfda_ids = '%s,%s' % ( created_lfda_ids, str( created_lfda.id ) )
+            if created_lfda_ids:
+                created_lfda_ids = created_lfda_ids.lstrip( ',' )
+                total_added = len( created_lfda_ids.split( ',' ) )
+                msg = "%i new datasets added to the library ( each is selected below ).  Click the Go button at the bottom of this page to edit the permissions on these datasets." % total_added
+                trans.response.send_redirect( web.url_for( action='library_browser', created_lfda_ids=created_lfda_ids, msg=msg ) )
             else:
-                return trans.show_error_message( 'Upload failed' )
+                msg = "Upload failed"
+                trans.response.send_redirect( web.url_for( action='library_browser', created_lfda_ids=created_lfda_ids, msg=msg ) )
 
         # No dataset(s) specified, display upload form
         elif not id:
@@ -971,7 +968,7 @@ class Admin( BaseController ):
                     yield build_name, dbkey, ( dbkey==last_used_build )
             dbkeys = get_dbkey_options( last_used_build )
             # Send list of roles to the form so the dataset can be associated with 1 or more of them.
-            roles = trans.app.model.Role.query().order_by( trans.app.model.Role.c.name ).all()
+            roles = trans.app.model.Role.filter( trans.app.model.Role.c.type != trans.app.model.Role.types.PRIVATE ).order_by( trans.app.model.Role.c.name ).all()
             return trans.fill_template( '/admin/library/new_dataset.mako', 
                                         folder_id=folder_id,
                                         file_formats=file_formats,
@@ -981,7 +978,7 @@ class Admin( BaseController ):
                                         msg=msg )
         else:
             if id.count( ',' ):
-                ids = id.split(',')
+                ids = id.split( ',' )
                 id = None
             else:
                 ids = None
@@ -989,7 +986,8 @@ class Admin( BaseController ):
         if id:
             lda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
             if not lda:
-                return trans.show_error_message( "Invalid dataset specified, id: %s" %str( id ) )
+                msg = "Invalid dataset specified, id: %s" %str( id )
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
 
             # Copied from edit attributes for 'regular' datasets with some additions
             p = util.Params(kwd, safe=False)
@@ -1056,36 +1054,40 @@ class Admin( BaseController ):
                                         datatypes=ldatatypes,
                                         err=None,
                                         msg=msg )
-        # multiple ids specfied, display multi permission form
+        # multiple ids specfied, display permission form for each one...
         elif ids:
-            ldas = []
+            lfdas = []
             for id in [ int( id ) for id in ids ]:
-                lda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-                if lda is None:
-                    return trans.show_error_message( 'You specified an invalid dataset' )
-                ldas.append( lda )
-            if len( ldas ) < 2:
-                return trans.show_error_message( 'You must specify at least two datasets to modify permissions on' )
+                lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+                if lfda is None:
+                    msg = 'You specified an invalid dataset id: %s' %str( id )
+                    trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+                lfdas.append( lfda )
+            if len( lfdas ) < 2:
+                msg = 'You must specify at least two datasets on which to modify permissions, ids you sent: %s' % str( ids )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
             if 'update_roles' in kwd:
-                p = util.Params( kwd )
+                #p = util.Params( kwd )
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    in_roles = [ trans.app.model.Role.get( x ) for x in listify( p.get( k + '_in', [] ) ) ]
+                    in_roles = [ trans.app.model.Role.get( x ) for x in listify( params.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-                for lda in ldas:
-                    trans.app.security_agent.set_dataset_permissions( lda.dataset, permissions )
-                    lda.dataset.refresh()
-	    # Ensure that the permissions across all datasets are identical.  Otherwise, we can't update together.
+                for lfda in lfdas:
+                    trans.app.security_agent.set_dataset_permissions( lfda.dataset, permissions )
+                    lfda.dataset.refresh()
+                msg = 'Permissions and roles have been updated on %d datasets' % len( lfdas )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            # Ensure that the permissions across all datasets are identical.  Otherwise, we can't update together.
             tmp = []
-            for lda in ldas:
-                perms = trans.app.security_agent.get_dataset_permissions( lda.dataset )
+            for lfda in lfdas:
+                perms = trans.app.security_agent.get_dataset_permissions( lfda.dataset )
                 if perms not in tmp:
                     tmp.append( perms )
             if len( tmp ) != 1:
-                return trans.show_error_message( "The datasets you selected do not have identical permissions, so they can not be updated together" )
+                msg = 'The datasets you selected do not have identical permissions, so they can not be updated together'
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
             else:
-                return trans.fill_template( "/admin/library/dataset.mako",
-                                            dataset=ldas )
+                return trans.fill_template( "/admin/library/dataset.mako", dataset=lfdas )
     @web.expose
     def add_dataset_to_folder_from_history( self, trans, ids="", folder_id=None, **kwd ):
         if not isinstance( ids, list ):
@@ -1098,7 +1100,8 @@ class Admin( BaseController ):
         except:
             folder = None
         if folder is None:
-            return trans.show_error_message( "You must provide a valid target folder." )
+            msg = "You must provide a valid target folder."
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
         error_msg = ok_msg = ""
         dataset_names = []
         if ids:
@@ -1169,7 +1172,8 @@ class Admin( BaseController ):
             self._delete_dataset( library_folder_dataset_assoc )
             trans.log_event( "Dataset id %s deleted from library folder id %s" % ( str( id ), str( library_folder_dataset_assoc.folder.id ) ) )
             trans.response.send_redirect( web.url_for( action = 'folder', id = library_folder_dataset_assoc.folder.id, msg = 'The dataset was deleted from the folder' ) )
-        return trans.show_error_message( "You did not specify a dataset to delete." )
+        msg = "You did not specify a dataset to delete."
+        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
     
     def _delete_dataset( self, library_folder_dataset_assoc ):
         #dataset = library_folder_dataset_assoc.dataset
@@ -1204,7 +1208,8 @@ class Admin( BaseController ):
             if folder.library_root:
                 trans.response.send_redirect( web.url_for( action = 'library', id = folder.library_root[0].id, msg = 'You have deleted the root folder.' ) )
             trans.response.send_redirect( web.url_for( action = 'folder', id = folder.parent_id, msg = 'The folder was deleted.' ) )
-        return trans.show_error_message( "You did not specify a folder to delete." )
+        msg = "You did not specify a folder to delete."
+        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
     
     def _delete_folder( self, folder ):
         for lfda in folder.active_datasets:
@@ -1228,7 +1233,8 @@ class Admin( BaseController ):
             library.flush()
             trans.log_event( "Library id %s deleted." % id )
             trans.response.send_redirect( web.url_for( action = 'libraries', msg = 'You have deleted the library %s.' % library.id ) )
-        return trans.show_error_message( "You did not specify a library to delete." )
+        msg = "You did not specify a library to delete."
+        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
 
     @web.expose
     def memdump( self, trans, ids = 'None', sorts = 'None', pages = 'None', new_id = None, new_sort = None, **kwd ):

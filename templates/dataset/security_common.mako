@@ -27,59 +27,59 @@
     </div>
 </%def>
 
-<%def name="render_permission_form( obj, form_url, id_name, id, all_roles )">
-<%
-  if isinstance( obj, trans.app.model.User ):
-    current_actions = obj.default_permissions
-  elif isinstance( obj, trans.app.model.History ):
-    current_actions = obj.default_permissions
-  elif isinstance( obj, trans.app.model.Dataset ):
-    current_actions = obj.actions
-  else:
-    current_actions = obj.dataset.actions
-%>
-
-<script type="text/javascript">
-    var q = jQuery.noConflict();
-    q( document ).ready( function () {
-        q('.role_add_button').click(function() {
-            var action = this.id.substring( 0, this.id.lastIndexOf( '_add_button' ) )
-            var in_select = '#' + action + '_in_select';
-            var out_select = '#' + action + '_out_select';
-            return !q(out_select + ' option:selected').remove().appendTo(in_select);
-        });
-        q('.role_remove_button').click(function() {
-            var action = this.id.substring( 0, this.id.lastIndexOf( '_remove_button' ) )
-            var in_select = '#' + action + '_in_select';
-            var out_select = '#' + action + '_out_select';
-            return !q(in_select + ' option:selected').remove().appendTo(out_select);
-        });
-        q('form#edit_role_associations').submit(function() {
-            q('.in_select option').each(function(i) {
-                q(this).attr("selected", "selected");
+<%def name="render_permission_form( obj, obj_name, form_url, id_name, id, all_roles )">
+    <%
+        if isinstance( obj, trans.app.model.User ):
+            current_actions = obj.default_permissions
+            obj_str = 'user %s' % obj_name
+        elif isinstance( obj, trans.app.model.History ):
+            current_actions = obj.default_permissions
+            obj_str = 'history %s' % obj_name
+        elif isinstance( obj, trans.app.model.Dataset ):
+            current_actions = obj.actions
+            obj_str = 'dataset(s) %s' % obj_name
+        else:
+            current_actions = obj.dataset.actions
+            obj_str = 'unknown object %s' %obj_name
+    %>
+    <script type="text/javascript">
+        var q = jQuery.noConflict();
+        q( document ).ready( function () {
+            q( '.role_add_button' ).click( function() {
+                var action = this.id.substring( 0, this.id.lastIndexOf( '_add_button' ) )
+                var in_select = '#' + action + '_in_select';
+                var out_select = '#' + action + '_out_select';
+                return !q( out_select + ' option:selected' ).remove().appendTo( in_select );
+            });
+            q( '.role_remove_button' ).click( function() {
+                var action = this.id.substring( 0, this.id.lastIndexOf( '_remove_button' ) )
+                var in_select = '#' + action + '_in_select';
+                var out_select = '#' + action + '_out_select';
+                return !q( in_select + ' option:selected' ).remove().appendTo( out_select );
+            });
+            q( 'form#edit_role_associations' ).submit( function() {
+                q( '.in_select option' ).each(function( i ) {
+                    q( this ).attr( "selected", "selected" );
+                });
             });
         });
-    });
-</script>
-
-<div class="toolForm">
-    <div class="toolFormTitle">Associate with roles and set permissions</div>
-    <div class="toolFormBody">
-        <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
-            <input type="hidden" name="${id_name}" value="${id}">
-            <div class="form-row">
-            </div>
-            %for k, v in trans.app.model.Dataset.permitted_actions.items():
+    </script>
+    <div class="toolForm">
+        <div class="toolFormTitle">Associate with roles and set permissions on ${obj_str} </div>
+        <div class="toolFormBody">
+            <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
+                <input type="hidden" name="${id_name}" value="${id}"/>
+                <div class="form-row"></div>
+                %for k, v in trans.app.model.Dataset.permitted_actions.items():
+                    <div class="form-row">
+                        ${render_select( current_actions, k, v, all_roles )}
+                    </div>
+                %endfor
                 <div class="form-row">
-                    ${render_select( current_actions, k, v, all_roles )}
+                    <input type="submit" name="update_roles" value="Save"/>
                 </div>
-            %endfor
-            <div class="form-row">
-                <input type="submit" name="update_roles" value="Save"/>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
-<p/>
-
+    <p/>
 </%def>

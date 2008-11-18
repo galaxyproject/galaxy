@@ -39,8 +39,8 @@
 <form name="role_create" action="${h.url_for( controller='admin', action='new_role' )}" method="post" >
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr>
-            <td>Name: <input  name="name" type="textfield" value="" size=40"></td>
-            <td>Description: <input  name="description" type="textfield" value="" size=40"></td>
+            <td>Name: <input  name="name" type="textfield" value="" size=40"/></td>
+            <td>Description: <input  name="description" type="textfield" value="" size=40"/></td>
         </tr>
         <%
             render_quick_find = len( users ) > 50

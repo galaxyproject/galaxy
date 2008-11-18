@@ -75,6 +75,7 @@ def setup():
                                    log_destination = "stdout",
                                    use_heartbeat=False,
                                    admin_users = 'test@bx.psu.edu',
+                                   library_import_dir = galaxy_test_file_dir,
                                    global_conf= { "__file__": "universe_wsgi.ini.sample" } )
                                    
         log.info( "Embedded Universe application started" )

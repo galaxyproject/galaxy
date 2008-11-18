@@ -1,8 +1,6 @@
 <%inherit file="/base.mako"/>
 
 <% 
-    from galaxy.web.controllers.admin import entities, unentities
-    from xml.sax.saxutils import escape, unescape
     import galaxy.model
 %>
 

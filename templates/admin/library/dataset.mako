@@ -17,10 +17,17 @@
     </select>
 </%def>
 
+<%
+    roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ).all()
+%>
+
 %if isinstance( dataset, list ):
-    ${render_permission_form( dataset[0].dataset, h.url_for( action='dataset' ), 'id', ",".join( [ str(d.id) for d in dataset ] ), trans.app.model.Role.query().all() )}
+    <%
+        name_str = ' - ( %d of them )' % len( dataset )
+    %>
+    ${render_permission_form( dataset[0].dataset, name_str, h.url_for( action='dataset' ), 'id', ",".join( [ str(d.id) for d in dataset ] ), roles )}
 %else:
-    ${render_permission_form( dataset.dataset, h.url_for( action='dataset' ), 'id', dataset.id, trans.app.model.Role.query().all() )}
+    ${render_permission_form( dataset.dataset, dataset.name, h.url_for( action='dataset' ), 'id', dataset.id, roles )}
 %endif
 
 %if not isinstance( dataset, list ):
@@ -28,18 +35,18 @@
         <div class="toolFormTitle">Edit Attributes</div>
         <div class="toolFormBody">
             <form name="edit_attributes" action="${h.url_for( controller='admin', action='dataset' )}" method="post">
-                <input type="hidden" name="id" value="${dataset.id}">
+                <input type="hidden" name="id" value="${dataset.id}"/>
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="name" value="${dataset.name}" size="40">
+                        <input type="text" name="name" value="${dataset.name}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Info:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="info" value="${dataset.info}" size="40">
+                        <input type="text" name="info" value="${dataset.info}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div> 
@@ -55,13 +62,13 @@
                     %endif
                 %endfor
                 <div class="form-row">
-                    <input type="submit" name="save" value="Save">
+                    <input type="submit" name="save" value="Save"/>
                 </div>
             </form>
             <form name="auto_detect" action="${h.url_for( controller='admin', action='dataset' )}" method="post">
-                <input type="hidden" name="id" value="${dataset.id}">
+                <input type="hidden" name="id" value="${dataset.id}"/>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="submit" name="detect" value="Auto-detect">
+                    <input type="submit" name="detect" value="Auto-detect"/>
                 </div>
                 <div class="toolParamHelp" style="clear: both;">
                     This will inspect the dataset and attempt to correct the above column values
@@ -75,7 +82,7 @@
         <div class="toolFormTitle">Change data type</div>
         <div class="toolFormBody">
             <form name="change_datatype" action="${h.url_for( controller='admin', action='dataset' )}" method="post">
-                <input type="hidden" name="id" value="${dataset.id}">
+                <input type="hidden" name="id" value="${dataset.id}"/>
                 <div class="form-row">
                     <label>New Type:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -89,11 +96,10 @@
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                    <input type="submit" name="change" value="Save">
+                    <input type="submit" name="change" value="Save"/>
                 </div>
             </form>
         </div>
     </div>
     <p/>
 %endif
-<a href="${h.url_for( controller='admin', action='library_browser' )}">Return to the library browser</a>
