@@ -391,7 +391,10 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
         children=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ),
-            backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) )
+            backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
+        visible_children=relation( 
+            HistoryDatasetAssociation, 
+            primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible == True ) ) )
             ) )
 
 assign_mapper( context, Dataset, Dataset.table,
@@ -531,6 +534,9 @@ assign_mapper( context, LibraryFolderDatasetAssociation, LibraryFolderDatasetAss
             LibraryFolderDatasetAssociation, 
             primaryjoin=( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ),
             backref=backref( "parent", primaryjoin=( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id] ) ),
+        visible_children=relation( 
+            LibraryFolderDatasetAssociation, 
+            primaryjoin=( ( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ) & ( LibraryFolderDatasetAssociation.table.c.visible == True ) ) ),
         tags=relation( 
             LibraryTagDatasetAssociation, 
             primaryjoin=( LibraryFolderDatasetAssociation.table.c.id == LibraryTagDatasetAssociation.table.c.dataset_id ),

@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="common.mako" import="render_dataset" />
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="title()">Import from Library</%def>
 <%def name="stylesheets()">
@@ -58,7 +59,7 @@
     });
     function checkForm() {
         if ( $("select#action_on_datasets_select option:selected").text() == "delete" ) {
-            if ( confirm( "Are you sure you want to delete these datasets?" ) ) {
+            if ( confirm( "Click OK to delete these datasets?" ) ) {
                 return true;
             } else {
                 return false;
@@ -97,12 +98,12 @@
         </div>
         %if not deleted:
             <div popupmenu="folder-${parent.id}-popup">
-                <a class="action-button" href="${h.url_for( action='dataset', folder_id=parent.id )}">Add new dataset to this folder</a>
+                <a class="action-button" href="${h.url_for( action='dataset', folder_id=parent.id )}">Add a new dataset to this folder</a>
                 <a class="action-button" href="${h.url_for( action='add_dataset_to_folder_from_history', folder_id=parent.id )}">Copy a dataset from your history to this folder</a>
                 <a class="action-button" href="${h.url_for( action='folder', new=True, id=parent.id )}">Create a new sub-folder in this folder</a>
                 <a class="action-button" href="${h.url_for( action='folder', rename=True, id=parent.id )}">Rename this folder</a>
                 %if subfolder:
-                    <a class="action-button" confirm="Are you sure you want to delete folder '${parent.name}'?" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
+                    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'?" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
                 %endif
             </div>
         %endif
@@ -147,18 +148,6 @@
     Libraries
 </h2>
 
-%if msg:
-    <%
-        try:
-            messagetype
-        except:
-            messagetype = "done"
-    %>
-    <p />
-    <div class="${messagetype}message">${msg}</div>
-    <p />
-%endif
-
 <ul class="manage-table-actions">
     %if not deleted:
         <li>
@@ -169,6 +158,10 @@
         </li>
     %endif
 </ul>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 %if not libraries:
     %if deleted:

@@ -1,21 +1,13 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="title()">Add Dataset to Library from History</%def>
-%if error_msg:
-    <p>
-        <div class="errormessage">${error_msg}</div>
-        <div style="clear: both"></div>
-    </p>
+%if msg:
+    ${render_msg( msg, messagetype )}
 %endif
-%if ok_msg:
-    <p>
-        <div class="donemessage">${ok_msg}</div>
-        <div style="clear: both"></div>
-    </p>
-%endif
-<p/>
+
 <div class="toolForm">
-    <div class="toolFormTitle">Active Datasets in your current history (${history.name})</div>
+    <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
     <div class="toolFormBody">
         <form name="add_dataset_from_history">
             <input type="hidden" name="folder_id" value="${folder.id}"/>
@@ -24,7 +16,7 @@
                     <input name="ids" value="${dataset.id}" type="checkbox"/>${dataset.hid}: ${dataset.name}
                 </div>
             %endfor
-            <input type="submit" name="submit" value="Add Datasets"/>
+            <input type="submit" name="add_dataset_from_history_button" value="Add selected datasets"/>
         </form>
     </div>
 </div>

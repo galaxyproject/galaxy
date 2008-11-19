@@ -674,7 +674,7 @@ class TwillTestCase( unittest.TestCase ):
             self.home()
             raise AssertionError( 'Exception caught attempting to create library: %s' % str( err ) )
         self.home()
-    def rename_library( self, library_id, name='New Test Library Renamed', description='New Test Library Description Re-described' ):
+    def rename_library( self, library_id, name='New Test Library Renamed', description='New Test Library Description Re-described', root_folder='' ):
         """Rename a library"""
         try:
             self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
@@ -682,6 +682,8 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( 'Edit library name and description' )
             tc.fv( "1", "name", name ) # form field 1 is the field named name...
             tc.fv( "1", "description", description ) # form field 2 is the field named description...
+            if root_folder:
+                tc.fv( "1", "root_folder", root_folder )
             tc.submit( "rename_library_button" )
         except AssertionError, err:
             self.home()
@@ -729,6 +731,25 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( "new_dataset_button" )
             self.last_page()
             self.check_page_for_string( '1 new datasets added to the library ( each is selected below )' )
+        except AssertionError, err:
+            self.home()
+            raise AssertionError( 'Exception caught attempting to create add a dataset to a folder: %s' % str( err ) )
+        self.home()
+    def add_dataset_to_folder_from_history( self, folder_id ):
+        """Copy a dataset from the current history to a library folder"""
+        try:
+            # Create a new history
+            self.new_history()
+            self.upload_file( "1.bed" )
+            self.verify_dataset_correctness( "1.bed" )
+            self.visit_url( "%s/admin/add_dataset_to_folder_from_history?folder_id=%s" % ( self.url, folder_id ) )
+            self.last_page()
+            self.check_page_for_string( 'Active datasets in your current history' )
+            tc.fv( "1", "folder_id", folder_id )
+            tc.fv( "1", "ids", "1" )
+            tc.submit( "add_dataset_from_history_button" )
+            self.last_page()
+            self.check_page_for_string( 'Added the following datasets to the library folder: 1.bed' )
         except AssertionError, err:
             self.home()
             raise AssertionError( 'Exception caught attempting to create add a dataset to a folder: %s' % str( err ) )

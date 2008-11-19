@@ -1,7 +1,8 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 %if msg:
-    <p class="ok_bgr">${msg}</p></td></tr>
+    ${render_msg( msg, messagetype )}
 %endif
 
 <div class="toolForm">
@@ -25,19 +26,19 @@
             <div class="form-row">
                 <label>Also change the root folder's name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="checkbox" name="root_folder" value="" size="40"/>
+                    <input type="checkbox" name="root_folder"/>
                 </div>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="rename" value="submitted" size="40"/>
+                    <input type="hidden" name="rename" value="submitted"/>
                 </div>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="id" value="${library.id}" size="40"/>
+                    <input type="hidden" name="id" value="${library.id}"/>
                 </div>
                 <div style="clear: both"></div>
             </div>

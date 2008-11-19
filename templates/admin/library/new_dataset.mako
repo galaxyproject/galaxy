@@ -1,9 +1,10 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <% import os %>
 
 %if msg:
-    <p class="ok_bgr">${msg}</p></td></tr>
+    ${render_msg( msg, messagetype )}
 %endif
 
 <div class="toolForm" id="new_dataset">

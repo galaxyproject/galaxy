@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 ## Render a row
 <%def name="render_row( user, ctr, anchored, curr_anchor, check )">
@@ -17,11 +18,11 @@
     </tr>
 </%def>
 
-%if msg:
-    <div class="donemessage">${msg}</div>
-%endif
-
 <a name="TOP"><h2>Members of group '${group.name}'</h2></a>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 %if len( users ) == 0:
     <tr><td>There are no Galaxy users</td></tr>

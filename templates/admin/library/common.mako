@@ -50,7 +50,7 @@
                         <a id="dataset-${data.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="dataset-${data.id}-popup">
                             <a class="action-button" href="${h.url_for( action='dataset', id=data.id )}">Edit this dataset's attributes and permissions</a>
-                            <a class="action-button" confirm="Are you sure you want to delete dataset '${data.name}'?" href="${h.url_for( action='dataset', delete=True, id=data.id )}">Remove this dataset from the library</a>
+                            <a class="action-button" confirm="Click OK to remove dataset '${data.name}'?" href="${h.url_for( action='dataset', delete=True, id=data.id )}">Remove this dataset from the library</a>
                         </div>
                     %endif
                 </td>
@@ -85,24 +85,13 @@
             <div><pre id="peek${data.id}" class="peek">${data.display_peek()}</pre></div>
         %endif
         ## Recurse for child datasets
-        %if len( data.children ) > 0:
-            ## FIXME: This should not be in the template, there should
-            ##        be a 'visible_children' method on dataset.
-            <%
-                children = []
-                for child in data.children:
-                    if child.visible:
-                        children.append( child )
-            %>
-            %if len( children ) > 0:
-                <div>
-                    There are ${len( children )} secondary datasets.
-                    %for idx, child in enumerate(children):
-                        ##${render_dataset( child, idx + 1 )}
-                        ${ render_dataset( child, selected, deleted ) }
-                    %endfor
-                </div>
-            %endif
+        %if len( data.visible_children ) > 0:
+            <div>
+                There are ${len( data.visible_children )} secondary datasets.
+                %for idx, child in enumerate( data.visible_children ):
+                    ${ render_dataset( child, selected, deleted ) }
+                %endfor
+            </div>
         %endif
     </div>
 </%def>

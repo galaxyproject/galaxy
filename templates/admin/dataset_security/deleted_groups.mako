@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 ## Render a row
 <%def name="render_row( group, members, roles, ctr, anchored, curr_anchor )">
@@ -36,11 +37,11 @@
     </tr>
 </%def>
 
-%if msg:
-    <div class="donemessage">${msg}</div>
-%endif
-
 <a name="TOP"><h2>Deleted Groups</h2></a>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 %if len( groups_members_roles ) == 0:
     There are no deleted Galaxy groups

@@ -32,7 +32,8 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        return trans.fill_template( '/admin/index.mako', msg=msg )
+        messagetype = params.get( 'messagetype', 'done' )
+        return trans.fill_template( '/admin/index.mako', msg=msg, messagetype=messagetype )
     @web.expose
     def center( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
@@ -44,7 +45,8 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
-        return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, msg=msg )
+        messagetype = params.get( 'messagetype', 'done' )
+        return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, msg=msg, messagetype=messagetype )
     @web.expose
     def tool_reload( self, trans, tool_version=None, **kwd ):
         if not self.user_is_admin( trans ):
@@ -53,7 +55,7 @@ class Admin( BaseController ):
         tool_id = params.tool_id
         self.app.toolbox.reload( tool_id )
         msg = 'Reloaded tool: ' + tool_id
-        return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, msg=msg )
+        return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, msg=msg, messagetype='done' )
     
     # Galaxy Role Stuff
     @web.expose
@@ -62,17 +64,20 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         return trans.fill_template( '/admin/dataset_security/roles.mako',
                                     roles=trans.app.model.Role.query() \
                                     .filter( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) \
                                     .order_by( trans.app.model.Role.table.c.name ).all(),
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def create_role( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         users=trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all()
         groups = trans.app.model.Group.query() \
                 .filter( galaxy.model.Group.table.c.deleted==False ) \
@@ -81,21 +86,21 @@ class Admin( BaseController ):
         return trans.fill_template( '/admin/dataset_security/role_create.mako', 
                                     users=users,
                                     groups=groups,
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def new_role( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         name = params.name
         description = params.description
         if not name or not description:
             msg = "Please enter a name and a description"
-            trans.response.send_redirect( '/admin/create_role?msg=%s' % msg )
+            trans.response.send_redirect( web.url_for( action='create_role', msg=msg, messagetype='error' ) )
         elif trans.app.model.Role.filter_by( name=name ).first():
             msg = "A role with that name already exists"
-            trans.response.send_redirect( '/admin/create_role?msg=%s' % msg )
+            trans.response.send_redirect( web.url_for( action='create_role', msg=msg, messagetype='error' ) )
         else:
             # Create the role
             role = galaxy.model.Role( name=name,
@@ -117,13 +122,14 @@ class Admin( BaseController ):
                 gra = galaxy.model.GroupRoleAssociation( group, role )
                 gra.flush()
             msg = "The new role has been created with %s associated users and %s associated groups" % ( str( len( users ) ), str( len( groups ) ) )
-            trans.response.send_redirect( '/admin/roles?msg=%s' % msg )
+            trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
     @web.expose
     def role( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         role = trans.app.model.Role.get( int( params.role_id ) )
         in_users = []
         out_users = []
@@ -171,13 +177,13 @@ class Admin( BaseController ):
                                     in_groups=in_groups,
                                     out_groups=out_groups,
                                     library_dataset_actions=library_dataset_actions,
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def role_members_edit( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         role = galaxy.model.Role.get( int( params.role_id ) )
         in_users = [ trans.app.model.User.get( x ) for x in listify( params.in_users ) ]
         for ura in role.users:
@@ -198,24 +204,24 @@ class Admin( BaseController ):
         trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
         role.refresh()
         msg = "The role has been updated with %s associated users and %s associated groups" % ( str( len( in_users ) ), str( len( in_groups ) ) )
-        trans.response.send_redirect( '/admin/roles?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
     @web.expose
     def mark_role_deleted( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         role = galaxy.model.Role.get( int( params.role_id ) )
         role.deleted = True
         role.flush()
         msg = "The role has been marked as deleted."
-        trans.response.send_redirect( '/admin/roles?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
     @web.expose
     def deleted_roles( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         # Build a list of tuples which are roles followed by lists of groups and users
         # [ ( role, [ group, group, group ], [ user, user ] ), ( role, [ group, group ], [ user ] ) ]
         roles_groups_users = []
@@ -233,24 +239,23 @@ class Admin( BaseController ):
             roles_groups_users.append( ( role, groups, users ) )
         return trans.fill_template( '/admin/dataset_security/deleted_roles.mako', 
                                     roles_groups_users=roles_groups_users, 
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def undelete_role( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         role = galaxy.model.Role.get( int( params.role_id ) )
         role.deleted = False
         role.flush()
         msg = "The role has been marked as not deleted."
-        trans.response.send_redirect( '/admin/roles?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
     @web.expose
     def purge_role( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         role = galaxy.model.Role.get( int( params.role_id ) )
         # Delete UserRoleAssociations
         for ura in role.users:
@@ -276,7 +281,7 @@ class Admin( BaseController ):
         role.delete()
         role.flush()
         msg = "The role has been purged from the database."
-        trans.response.send_redirect( '/admin/deleted_roles?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='deleted_roles', msg=msg, messagetype='done' ) )
 
     # Galaxy Group Stuff
     @web.expose
@@ -285,6 +290,7 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         # Build a list of tuples which are groups followed by lists of members and roles
         # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
         groups_members_roles = []
@@ -302,13 +308,15 @@ class Admin( BaseController ):
             groups_members_roles.append( ( group, members, roles ) )
         return trans.fill_template( '/admin/dataset_security/groups.mako', 
                                     groups_members_roles=groups_members_roles, 
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def create_group( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         users=trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all()
         roles = trans.app.model.Role.query() \
                 .filter( and_( galaxy.model.Role.table.c.deleted == False, 
@@ -318,20 +326,20 @@ class Admin( BaseController ):
         return trans.fill_template( '/admin/dataset_security/group_create.mako', 
                                     users=users,
                                     roles=roles,
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def new_group( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         name = params.name
         if not name:
             msg = "Please enter a name"
-            trans.response.send_redirect( '/admin/create_group?msg=%s' % msg )
+            trans.response.send_redirect( web.url_for( action='create_group', msg=msg, messagetype='error' ) )
         elif trans.app.model.Group.filter_by( name=name ).first():
             msg = "A group with that name already exists"
-            trans.response.send_redirect( '/admin/create_group?msg=%s' % msg )
+            trans.response.send_redirect( web.url_for( action='create_group', msg=msg, messagetype='error' ) )
         else:
             # Create the group
             group = galaxy.model.Group( name )
@@ -355,13 +363,14 @@ class Admin( BaseController ):
                 gra = galaxy.model.GroupRoleAssociation( group, role )
                 gra.flush()
             msg = "The new group has been created with %s members and %s associated roles" % ( str( len( members ) ), str( len( roles ) ) )
-            trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
+            trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
     @web.expose
     def group_members_edit( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         group = galaxy.model.Group.get( int( params.group_id ) )
         members = []
         for uga in group.members:
@@ -370,7 +379,8 @@ class Admin( BaseController ):
                                     group=group,
                                     members=members,
                                     users=galaxy.model.User.query().order_by( galaxy.model.User.table.c.email ).all(),
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def update_group_members( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
@@ -397,7 +407,7 @@ class Admin( BaseController ):
                 uga = galaxy.model.UserGroupAssociation( user, group )
                 uga.flush()
         msg = "Group membership has been updated with a total of %s members" % len( members )
-        trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
     # TODO: We probably don't want the following 2 methods since managing roles should be
     # restricted to the Role page due to private roles and rules governing them
     @web.expose
@@ -406,6 +416,7 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         group = galaxy.model.Group.get( int( params.group_id ) )
         group_roles = []
         for gra in group.roles:
@@ -414,7 +425,8 @@ class Admin( BaseController ):
                                     group=group,
                                     group_roles=group_roles,
                                     roles=galaxy.model.Role.query().order_by( galaxy.model.Role.table.c.name ).all(),
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def update_group_roles( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
@@ -441,24 +453,24 @@ class Admin( BaseController ):
                 gra = galaxy.model.GroupRoleAssociation( group, role )
                 gra.flush()
         msg = "Group updated with a total of %s associated roles" % len( roles )
-        trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
     @web.expose
     def mark_group_deleted( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         group = galaxy.model.Group.get( int( params.group_id ) )
         group.deleted = True
         group.flush()
         msg = "The group has been marked as deleted."
-        trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
     @web.expose
     def deleted_groups( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         # Build a list of tuples which are groups followed by lists of members and roles
         # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
         groups_members_roles = []
@@ -476,24 +488,23 @@ class Admin( BaseController ):
             groups_members_roles.append( ( group, members, roles ) )
         return trans.fill_template( '/admin/dataset_security/deleted_groups.mako', 
                                     groups_members_roles=groups_members_roles, 
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def undelete_group( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         group = galaxy.model.Group.get( int( params.group_id ) )
         group.deleted = False
         group.flush()
         msg = "The group has been marked as not deleted."
-        trans.response.send_redirect( '/admin/groups?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
     @web.expose
     def purge_group( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         group = galaxy.model.Group.get( int( params.group_id ) )
         # Delete UserGroupAssociations
         for uga in group.users:
@@ -507,7 +518,7 @@ class Admin( BaseController ):
         group.delete()
         group.flush()
         msg = "The group has been purged from the database."
-        trans.response.send_redirect( '/admin/deleted_groups?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='deleted_groups', msg=msg, messagetype='done' ) )
 
     # Galaxy User Stuff
     @web.expose
@@ -516,6 +527,7 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         # Build a list of tuples which are users followed by lists of groups and roles
         # [ ( user, [ group, group, group ], [ role, role ] ), ( user, [ group, group ], [ role ] ) ]
         users_groups_roles = []
@@ -530,7 +542,8 @@ class Admin( BaseController ):
             users_groups_roles.append( ( user, groups, roles ) )
         return trans.fill_template( '/admin/dataset_security/users.mako',
                                     users_groups_roles=users_groups_roles,
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def user( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
@@ -538,6 +551,7 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         user_id = params.user_id
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         user = trans.app.model.User.get( user_id )
         # Get the groups and roles to which the user belongs
         groups = trans.app.model.Group.query() \
@@ -551,13 +565,15 @@ class Admin( BaseController ):
                                     user=user, 
                                     groups=groups,
                                     roles=roles,
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def user_groups_edit( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         user = galaxy.model.User.get( int( params.user_id ) )
         user_groups = []
         for uga in user.groups:
@@ -570,7 +586,8 @@ class Admin( BaseController ):
                                     user=user,
                                     user_groups=user_groups,
                                     groups=groups,
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def update_user_groups( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
@@ -592,7 +609,7 @@ class Admin( BaseController ):
                 uga = galaxy.model.UserGroupAssociation( user, group )
                 uga.flush()
         msg = "The user now belongs to a total of %s groups" % len( groups )
-        trans.response.send_redirect( '/admin/users?msg=%s' % msg )
+        trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='done' ) )
 
     # Galaxy Library Stuff
     @web.expose
@@ -601,13 +618,15 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         created_lfda_ids = params.get( 'created_lfda_ids', '' )
         return trans.fill_template( '/admin/library/browser.mako', 
                                     libraries=trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                                                      .order_by( trans.app.model.Library.name ).all(),
                                     created_lfda_ids=created_lfda_ids,
                                     deleted=False,
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     libraries = library_browser
     @web.expose
     def library( self, trans, id=None, **kwd ):
@@ -615,6 +634,7 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         if params.get( 'new', False ):
             action = 'new'
         elif params.get( 'rename', False ):
@@ -622,11 +642,11 @@ class Admin( BaseController ):
         elif params.get( 'delete', False ):
             action = 'delete'
         else:
-            msg = "You must specify a valid action ( new, rename, delete ) to perform on a library."
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            msg = 'Invalid action attempted on library'
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
         if not id and not action == 'new':
             msg = "You must specify a library to %s." % action
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
         if not action == 'new':
             library = trans.app.model.Library.get( int( id ) )
         if action == 'new':
@@ -637,19 +657,27 @@ class Admin( BaseController ):
                 root_folder.flush()
                 library.root_folder = root_folder
                 library.flush()
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
-            return trans.fill_template( '/admin/library/new_library.mako', msg=msg )
+                msg = 'The new library named %s has been created' % library.name
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+            return trans.fill_template( '/admin/library/new_library.mako', msg=msg, messagetype=messagetype )
         elif action == 'rename':
             if params.rename == 'submitted':
-                if params.get( 'root_folder', None ):
-                    root_folder = library.root_folder
-                    root_folder.name = util.restore_text( params.name )
-                    root_folder.flush()
-                library.name = util.restore_text( params.name )
-                library.description = util.restore_text( params.description )
-                library.flush()
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
-            return trans.fill_template( '/admin/library/rename_library.mako', library=library, msg=msg )
+                new_name = util.restore_text( params.name )
+                new_description = util.restore_text( params.description )
+                if not new_name:
+                    msg = 'Enter a valid name'
+                    return trans.fill_template( '/admin/library/rename_library.mako', library=library, msg=msg, messagetype='error' )
+                else:
+                    if params.get( 'root_folder', False ):
+                        root_folder = library.root_folder
+                        root_folder.name = new_name
+                        root_folder.flush()
+                    library.name = new_name
+                    library.description = new_description
+                    library.flush()
+                    msg = 'The library has been renamed to %s' % new_name
+                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+            return trans.fill_template( '/admin/library/rename_library.mako', library=library, msg=msg, messagetype=messagetype )
         elif action == 'delete':
             def delete_folder( library_folder ):
                 for folder in library_folder.active_folders:
@@ -667,26 +695,27 @@ class Admin( BaseController ):
             library.deleted = True
             library.flush()
             msg = 'The library and all of its contents have been marked deleted'
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
     @web.expose
     def deleted_libraries( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         libraries=trans.app.model.Library.filter( and_( trans.app.model.Library.table.c.deleted==True,
                                                         trans.app.model.Library.table.c.purged==False ) ) \
                                          .order_by( trans.app.model.Library.table.c.name ).all()
         return trans.fill_template( '/admin/library/browser.mako', 
                                     libraries=libraries,
                                     deleted=True,
-                                    msg=msg )
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def undelete_library( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         library = galaxy.model.Library.get( int( params.id ) )
         def undelete_folder( library_folder ):
             for folder in library_folder.folders:
@@ -700,13 +729,12 @@ class Admin( BaseController ):
         library.deleted = False
         library.flush()
         msg = "The library and all of its contents have been marked not deleted"
-        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
     @web.expose
     def purge_library( self, trans, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
-        msg = params.msg
         library = galaxy.model.Library.get( int( params.id ) )
         def purge_folder( library_folder ):
             for lf in library_folder.folders:
@@ -729,13 +757,14 @@ class Admin( BaseController ):
         library.purged = True
         library.flush()
         msg = "The library and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script"
-        return trans.response.send_redirect( web.url_for( action='deleted_libraries', msg=msg ) )
+        return trans.response.send_redirect( web.url_for( action='deleted_libraries', msg=msg, messagetype='done' ) )
     @web.expose
     def folder( self, trans, id, **kwd ):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         if params.get( 'new', False ):
             action = 'new'
         elif params.get( 'rename', False ):
@@ -743,12 +772,12 @@ class Admin( BaseController ):
         elif params.get( 'delete', False ):
             action = 'delete'
         else:
-            msg = "You must specify a valid action ( new, rename, delete ) to perform on a folder."
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            msg = "Invalid action attempted on folder."
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
         folder = trans.app.model.LibraryFolder.get( id )
         if not folder:
             msg = "Invalid folder specified, id: %s" % str( id )
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
         if action == 'new':
             if params.new == 'submitted':
                 new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
@@ -759,17 +788,26 @@ class Admin( BaseController ):
                 new_folder.genome_build = util.dbnames.default_value
                 folder.add_folder( new_folder )
                 new_folder.flush()
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
-            return trans.fill_template( '/admin/library/new_folder.mako', folder=folder, msg=msg )
+                msg = 'The new folder named %s has been added to this library' % new_folder.name
+                return trans.response.send_redirect( web.url_for( action='folder', id=new_folder.id, msg=msg, messagetype='done' ) )
+            return trans.fill_template( '/admin/library/new_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
         elif action == 'rename':
             if params.rename == 'submitted':
-                folder.name = util.restore_text( params.name )
-                folder.description = util.restore_text( params.description )
-                folder.flush()
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
-            return trans.fill_template( '/admin/library/rename_folder.mako', folder=folder, msg=msg )
+                new_name = util.restore_text( params.name )
+                new_description = util.restore_text( params.description )
+                if not new_name:
+                    msg = 'Enter a valid name'
+                    return trans.fill_template( '/admin/library/rename_folder.mako', folder=folder, msg=msg, messagetype='error' )
+                else:
+                    folder.name = new_name
+                    folder.description = new_description
+                    folder.flush()
+                    msg = 'The folder has been renamed to %s' % new_name
+                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+            return trans.fill_template( '/admin/library/rename_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
         elif action == 'delete':
             def delete_folder( folder ):
+                folder.refresh()
                 for subfolder in folder.active_folders:
                     delete_folder( subfolder )
                 for lfda in folder.active_datasets:
@@ -778,8 +816,8 @@ class Admin( BaseController ):
                 folder.deleted = True
                 folder.flush()
             delete_folder( folder )
-            msg = 'The folder and all of its contents have been marked deleted'
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            msg = 'The folder %s and all of its contents have been marked deleted' % folder.name
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
     @web.expose
     def dataset( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, dbkey=None, **kwd ):
         if not self.user_is_admin( trans ):
@@ -794,6 +832,7 @@ class Admin( BaseController ):
         data_files = []
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
 
         # add_file method
         def add_file( file_obj, name, extension, dbkey, last_used_build, roles, info='no info', space_to_tab=False ):
@@ -874,7 +913,7 @@ class Admin( BaseController ):
                     msg = 'Select a file, enter a URL or Text, or select a server directory.'
                 else:
                     msg = 'Select a file, enter a URL or enter Text.'
-                trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=msg ) )
+                trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=msg, messagetype='done' ) )
             space_to_tab = params.get( 'space_to_tab', False )
             if space_to_tab and space_to_tab not in [ "None", None ]:
                 space_to_tab = True
@@ -953,10 +992,10 @@ class Admin( BaseController ):
                 created_lfda_ids = created_lfda_ids.lstrip( ',' )
                 total_added = len( created_lfda_ids.split( ',' ) )
                 msg = "%i new datasets added to the library ( each is selected below ).  Click the Go button at the bottom of this page to edit the permissions on these datasets." % total_added
-                trans.response.send_redirect( web.url_for( action='library_browser', created_lfda_ids=created_lfda_ids, msg=msg ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', created_lfda_ids=created_lfda_ids, msg=msg, messagetype='done' ) )
             else:
                 msg = "Upload failed"
-                trans.response.send_redirect( web.url_for( action='library_browser', created_lfda_ids=created_lfda_ids, msg=msg ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', created_lfda_ids=created_lfda_ids, msg=msg, messagetype='error' ) )
 
         # No dataset(s) specified, display upload form
         elif not id:
@@ -975,7 +1014,8 @@ class Admin( BaseController ):
                                         dbkeys=dbkeys,
                                         last_used_build=last_used_build,
                                         roles=roles,
-                                        msg=msg )
+                                        msg=msg,
+                                        messagetype=messagetype )
         else:
             if id.count( ',' ):
                 ids = id.split( ',' )
@@ -987,7 +1027,7 @@ class Admin( BaseController ):
             lda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
             if not lda:
                 msg = "Invalid dataset specified, id: %s" %str( id )
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
 
             # Copied from edit attributes for 'regular' datasets with some additions
             p = util.Params(kwd, safe=False)
@@ -1021,7 +1061,8 @@ class Admin( BaseController ):
                 lda.metadata.dbkey = dbkey
                 lda.datatype.after_edit( lda )
                 trans.app.model.flush()
-                return trans.show_ok_message( "Attributes updated" )
+                msg = 'Attributes updated for dataset %s' % lda.name
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
             elif p.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
                 for name, spec in lda.datatype.metadata_spec.items():
@@ -1032,11 +1073,14 @@ class Admin( BaseController ):
                 lda.datatype.set_meta( lda )
                 lda.datatype.after_edit( lda )
                 trans.app.model.flush()
-                return trans.show_ok_message( "Attributes updated" )
+                msg = 'Attributes updated for dataset %s' % lda.name
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
             elif p.delete:
+                # The user selected the "Remove this dataset from the library" pop-up menu option
                 lda.deleted = True
                 lda.flush()
-                trans.response.send_redirect( web.url_for( action='library_browser' ) )
+                msg = 'Dataset %s has been removed from this library' % lda.name
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
             lda.datatype.before_edit( lda )
             if "dbkey" in lda.datatype.metadata_spec and not lda.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
@@ -1053,7 +1097,8 @@ class Admin( BaseController ):
                                         dataset=lda, 
                                         datatypes=ldatatypes,
                                         err=None,
-                                        msg=msg )
+                                        msg=msg,
+                                        messagetype=messagetype )
         # multiple ids specfied, display permission form for each one...
         elif ids:
             lfdas = []
@@ -1061,11 +1106,11 @@ class Admin( BaseController ):
                 lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
                 if lfda is None:
                     msg = 'You specified an invalid dataset id: %s' %str( id )
-                    trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+                    trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
                 lfdas.append( lfda )
             if len( lfdas ) < 2:
                 msg = 'You must specify at least two datasets on which to modify permissions, ids you sent: %s' % str( ids )
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
             if 'update_roles' in kwd:
                 #p = util.Params( kwd )
                 permissions = {}
@@ -1076,7 +1121,7 @@ class Admin( BaseController ):
                     trans.app.security_agent.set_dataset_permissions( lfda.dataset, permissions )
                     lfda.dataset.refresh()
                 msg = 'Permissions and roles have been updated on %d datasets' % len( lfdas )
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
             # Ensure that the permissions across all datasets are identical.  Otherwise, we can't update together.
             tmp = []
             for lfda in lfdas:
@@ -1085,40 +1130,49 @@ class Admin( BaseController ):
                     tmp.append( perms )
             if len( tmp ) != 1:
                 msg = 'The datasets you selected do not have identical permissions, so they can not be updated together'
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
             else:
                 return trans.fill_template( "/admin/library/dataset.mako", dataset=lfdas )
     @web.expose
     def add_dataset_to_folder_from_history( self, trans, ids="", folder_id=None, **kwd ):
-        if not isinstance( ids, list ):
-            if ids:
-                ids = ids.split( "," )
-            else:
-                ids = []
+        if not self.user_is_admin( trans ):
+            return trans.show_error_message( no_privilege_msg )
         try:
             folder = trans.app.model.LibraryFolder.get( folder_id )
         except:
-            folder = None
-        if folder is None:
-            msg = "You must provide a valid target folder."
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
-        error_msg = ok_msg = ""
-        dataset_names = []
-        if ids:
-            for data_id in ids:
-                data = trans.app.model.HistoryDatasetAssociation.get( data_id )
-                if data:
-                    data.to_library_dataset_folder_association( target_folder = folder )
-                    dataset_names.append( data.name )
+            msg = "Invalid folder id: %s" % str( folder_id )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+        params = util.Params( kwd )
+        msg = params.get( 'msg', None )
+        messagetype = params.get( 'messagetype', 'done' )
+        # See if the current history is empty
+        history=trans.get_history()
+        if not history.active_datasets:
+            msg = 'Your current history is empty'
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+        if params.get( 'add_dataset_from_history_button', False ):
+            if not isinstance( ids, list ):
+                if ids:
+                    ids = ids.split( "," )
                 else:
-                    error_msg += "A requested dataset (%s) was invalid.  " % ( data_id )
-        if dataset_names:
-            ok_msg = "Added datasets (%s) to the library folder." % ( ", ".join( dataset_names ) )
-        return trans.fill_template( "/admin/library/add_dataset_from_history.mako", 
-                                    history=trans.get_history(),
-                                    folder=folder,
-                                    ok_msg=ok_msg,
-                                    error_msg=error_msg )
+                    ids = []
+            dataset_names = []
+            if ids:
+                for data_id in ids:
+                    data = trans.app.model.HistoryDatasetAssociation.get( data_id )
+                    if data:
+                        data.to_library_dataset_folder_association( target_folder = folder )
+                        dataset_names.append( data.name )
+                    else:
+                        msg = "The requested dataset id '%s' is invalid" % str( data_id )
+                        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+                if dataset_names:
+                    msg = "Added the following datasets to the library folder: %s" % ( ", ".join( dataset_names ) )
+                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+            else:
+                msg = 'Select at least one dataset from the list'
+                messagetype = 'error'
+        return trans.fill_template( "/admin/library/add_dataset_from_history.mako", history=history, folder=folder, msg=msg, messagetype=messagetype )
         
     def check_gzip( self, temp_name ):
         """
@@ -1143,98 +1197,45 @@ class Admin( BaseController ):
             return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
         if params.get( 'action_on_datasets_button', False ):
             if not params.dataset_ids:
                 msg = "At least one dataset must be selected for %s" % params.action
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
             dataset_ids = listify( params.dataset_ids )
             if params.action == 'edit':
-                trans.response.send_redirect( web.url_for( action='dataset', id=",".join( dataset_ids ) ) )
+                trans.response.send_redirect( web.url_for( action='dataset', id=",".join( dataset_ids ), msg=msg, messagetype=messagetype ) )
             elif params.action == 'delete':
                 for id in dataset_ids:
                     lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
                     lfda.deleted = True
                     lfda.flush()
                     msg = "The selected datasets have been removed from this library"
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
             else:
                 msg = "Action '%s' is not yet implemented" % str( params.action )
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
         else:
-            trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+            trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype=messagetype ) )
     @web.expose
     def delete_dataset( self, trans, id=None, **kwd):
         if not self.user_is_admin( trans ):
             return trans.show_error_message( no_privilege_msg )
         if id:
             # id is a LibraryFolderDatasetAssociation.id
-            library_folder_dataset_assoc = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-            self._delete_dataset( library_folder_dataset_assoc )
-            trans.log_event( "Dataset id %s deleted from library folder id %s" % ( str( id ), str( library_folder_dataset_assoc.folder.id ) ) )
-            trans.response.send_redirect( web.url_for( action = 'folder', id = library_folder_dataset_assoc.folder.id, msg = 'The dataset was deleted from the folder' ) )
+            lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
+            lfda.deleted = True
+            lfda.flush()
+            msg = "Dataset %s was deleted from library folder %s" % ( lfda.name, lfda.folder.name )
+            trans.response.send_redirect( web.url_for( action='folder', 
+                                                       id=str( lfda.folder.id ),
+                                                       msg=msg,
+                                                       messagetype='done' ) )
         msg = "You did not specify a dataset to delete."
-        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
-    
-    def _delete_dataset( self, library_folder_dataset_assoc ):
-        #dataset = library_folder_dataset_assoc.dataset
-        # TODO: assuming 1 to 1 mapping between Dataset -> LibraryFolders ( i.e., is can the same
-        # dataset record be shared across LibraryFolders?
-        # Confirm that things should be deleted as follows
-        
-        ### Deleting the base dataset will delete datasets that exist in user's histories
-        ### ( LDA.dataset == HDA.dataset )
-        ### Shouldn't this be a separate option?
-        ### For Now, I am commenting out logic that acts on the dataset directly
-        ### -- Dan:
-        
-        
-        # Delete the LibraryFolderDatasetAssociation
-        library_folder_dataset_assoc.deleted = True
-        library_folder_dataset_assoc.flush()
-    
-    @web.expose
-    def delete_folder( self, trans, id=None, **kwd):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
-        if id:
-            if 'confirm' not in kwd:
-                return trans.show_warn_message( 'Click <a href="%s">here</a> to confirm folder deletion.' % web.url_for( action = 'delete_folder', id = id, confirm=True ) )
-            # id is a LibraryFolder.id
-            folder = trans.app.model.LibraryFolder.get( id )
-            self._delete_folder( folder )
-            
-            trans.log_event( "Folder id %s deleted." % id )
-            
-            if folder.library_root:
-                trans.response.send_redirect( web.url_for( action = 'library', id = folder.library_root[0].id, msg = 'You have deleted the root folder.' ) )
-            trans.response.send_redirect( web.url_for( action = 'folder', id = folder.parent_id, msg = 'The folder was deleted.' ) )
-        msg = "You did not specify a folder to delete."
-        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
-    
-    def _delete_folder( self, folder ):
-        for lfda in folder.active_datasets:
-            self._delete_dataset( lfda )
-        for folder in folder.active_folders:
-            self._delete_folder( folder )
-        folder.deleted = True
-        folder.flush()
-    
-    @web.expose
-    def delete_library( self, trans, id=None, **kwd):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
-        if id:
-            if 'confirm' not in kwd:
-                return trans.show_warn_message( 'Click <a href="%s">here</a> to confirm library deletion.' % web.url_for( action = 'delete_library', id = id, confirm=True ) )
-            # id is a LibraryFolder.id
-            library = trans.app.model.Library.get( id )
-            self._delete_folder( library.root_folder )
-            library.deleted = True
-            library.flush()
-            trans.log_event( "Library id %s deleted." % id )
-            trans.response.send_redirect( web.url_for( action = 'libraries', msg = 'You have deleted the library %s.' % library.id ) )
-        msg = "You did not specify a library to delete."
-        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg ) )
+        return trans.response.send_redirect( web.url_for( action='folder',
+                                                          id=str( lfda.folder.id ),
+                                                          msg=msg,
+                                                          messagetype='error' ) )
 
     @web.expose
     def memdump( self, trans, ids = 'None', sorts = 'None', pages = 'None', new_id = None, new_sort = None, **kwd ):

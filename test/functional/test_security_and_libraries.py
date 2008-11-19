@@ -129,11 +129,11 @@ class TestHistory( TwillTestCase ):
                                                      galaxy.model.Library.table.c.deleted==False ) ).first()
     def test_21_rename_library( self ):
         """Testing renaming a library"""
-        self.rename_library( str( library.id ), name='New Test Library Renamed', description='New Test Library Description Re-described' )
+        self.rename_library( str( library.id ), name='New Test Library Renamed', description='New Test Library Description Re-described', root_folder='on' )
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( "New Test Library Renamed" )
         # Rename it back to what it was originally
-        self.rename_library( str( library.id ), name='New Test Library', description='New Test Library Description' )
+        self.rename_library( str( library.id ), name='New Test Library', description='New Test Library Description', root_folder='on' )
     def test_24_rename_root_folder( self ):
         """Testing renaming a library root folder"""
         folder = library.root_folder
@@ -148,7 +148,11 @@ class TestHistory( TwillTestCase ):
         self.check_page_for_string( "1.bed" )
         self.check_page_for_string( "bed" )
         self.check_page_for_string( "hg18" )
-    def test_30_add_new_folder( self ):
+    def test_30_copy_dataset_from_history_to_root_folder( self ):
+        """Testing copying a dataset from the current history to a library root folder"""
+        folder = library.root_folder
+        self.add_dataset_to_folder_from_history( str( folder.id ) )
+    def test_33_add_new_folder( self ):
         """Testing adding a folder to a library root folder"""
         root_folder = library.root_folder
         name = 'New Test Folder'
@@ -160,26 +164,26 @@ class TestHistory( TwillTestCase ):
                                                                    galaxy.model.LibraryFolder.table.c.description==description ) ).first()
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( "New Test Folder" )
-    def test_33_add_datasets_from_library_dir( self ):
-        """Testing adding dataset from library directory to sub-folder"""
+    def test_36_add_datasets_from_library_dir( self ):
+        """Testing adding several datasets from library directory to sub-folder"""
         self.add_datasets_from_library_dir( str( new_test_folder.id ), roles=[ str( new_test_role.id ) ] )
-    def test_36_mark_group_deleted( self ):
+    def test_39_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         self.visit_page( "admin/groups" )
         self.check_page_for_string( another_test_group.name )
         self.mark_group_deleted( str( another_test_group.id ) )
-    def test_39_undelete_group( self ):
+    def test_42_undelete_group( self ):
         """Testing undeleting a deleted group"""
         self.undelete_group( str( another_test_group.id ) )
-    def test_42_mark_role_deleted( self ):
+    def test_45_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
         self.visit_page( "admin/roles" )
         self.check_page_for_string( another_test_role.name )
         self.mark_role_deleted( str( another_test_role.id ) )
-    def test_45_undelete_role( self ):
+    def test_48_undelete_role( self ):
         """Testing undeleting a deleted role"""
         self.undelete_role( str( another_test_role.id ) )
-    def test_48_mark_library_deleted( self ):
+    def test_51_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
         self.mark_library_deleted( str( library.id ) )
         # Make sure the library was deleted
@@ -203,7 +207,7 @@ class TestHistory( TwillTestCase ):
                 if lfda.dataset.deleted:
                     raise AssertionError( 'The dataset with id "%s" has been marked as deleted when it should not have been.' % lfda.dataset.id )
         check_folder( library.root_folder )
-    def test_51_mark_library_undeleted( self ):
+    def test_54_mark_library_undeleted( self ):
         """Testing marking a library as not deleted"""
         self.mark_library_undeleted( str( library.id ) )
         # Make sure the library is undeleted
@@ -232,7 +236,7 @@ class TestHistory( TwillTestCase ):
         library.refresh()
         if not library.deleted:
             raise AssertionError( 'The library id %s named "%s" has not been marked as deleted after it was undeleted.' % ( str( library.id ), library.name ) )
-    def test_54_purge_group( self ):
+    def test_57_purge_group( self ):
         """Testing purging a group"""
         group_id = str( another_test_group.id )
         self.purge_group( group_id )
@@ -244,7 +248,7 @@ class TestHistory( TwillTestCase ):
         gra = galaxy.model.GroupRoleAssociation.filter( galaxy.model.GroupRoleAssociation.table.c.group_id == group_id ).all()
         if gra:
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
-    def test_57_purge_role( self ):
+    def test_60_purge_role( self ):
         """Testing purging a role"""
         role_id = str( another_test_role.id )
         self.purge_role( role_id )
@@ -256,7 +260,7 @@ class TestHistory( TwillTestCase ):
         adra = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.role_id == role_id ).all()
         if adra:
             raise AssertionError( "Purging the role did not delete the ActionDatasetRoleAssociations for role_id '%s'" % role_id )
-    def test_60_purge_library( self ):
+    def test_63_purge_library( self ):
         """Testing purging a library"""
         self.purge_library( str( library.id ) )
         # Make sure the library was purged

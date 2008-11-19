@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <% 
     import galaxy.model
@@ -41,16 +42,16 @@
     </tr>
 </%def>
 
-%if msg:
-    <div class="donemessage">${msg}</div>
-%endif
-
 <a name="TOP"><h2>Non-private Roles</h2></a>
 
 <ul class="manage-table-actions">
     <li><a class="action-button" href="${h.url_for( controller='admin', action='create_role' )}">Create a new role</a></li>
     <li><a class="action-button" href="${h.url_for( controller='admin', action='deleted_roles' )}">Manage deleted roles</a></li>
 </ul>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 %if len( roles ) == 0:
     There are no non-private Galaxy roles

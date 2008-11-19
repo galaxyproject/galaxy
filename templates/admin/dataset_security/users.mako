@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <% 
     import galaxy.model
@@ -39,11 +40,11 @@
     </tr>
 </%def>
 
-%if msg:
-    <div class="donemessage">${msg}</div>
-%endif
-
 <a name="TOP"><h2>Users</h2></a>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 %if len( users_groups_roles ) == 0:
     There are no Galaxy users

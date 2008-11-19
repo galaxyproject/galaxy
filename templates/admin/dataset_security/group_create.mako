@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 ## Render a user row
 <%def name="render_user_row( user, ctr )">
@@ -29,12 +30,11 @@
     </tr>
 </%def>
 
-%if msg:
-    <div class="donemessage">${msg}</div>
-%endif
-
 <a name="TOP"><h2>Create Group</h2></a>
   
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 <form name="group_create" action="${h.url_for( controller='admin', action='new_group' )}" method="post" >
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
