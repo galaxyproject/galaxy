@@ -9,9 +9,9 @@
 <%def name="render_role( user, role )">
     <li>
         %if not role.type == galaxy.model.Role.types.PRIVATE:
-            <a href="${h.url_for( action='role', role=role, edit=True )}">${role.name}</a>
+            <a href="${h.url_for( action='role', role_id=role.id, edit=True )}">${role.description}</a>
         %else:
-            ${role.name}
+            ${role.description}
         %endif
         <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
         <div popupmenu="role-${role.id}-popup">

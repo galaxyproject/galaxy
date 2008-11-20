@@ -93,7 +93,7 @@
                     <label>Restrict dataset access to specific roles:</label>
                     <select name="roles" multiple="true" size="5">
                         %for role in roles:
-                            <option value="${role.id}">${role.name}</option>
+                            <option value="${role.id}">${role.description}</option>
                         %endfor
                     </select>
                 </div>

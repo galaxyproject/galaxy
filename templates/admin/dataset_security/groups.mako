@@ -23,9 +23,7 @@
         <td>
             <ul>
                 %for user in members:
-                    <li>
-                        <a href="${h.url_for( controller='admin', action='user', user_id=user.id )}">${user.email}</a>
-                    </li>
+                    <li><a href="${h.url_for( controller='admin', action='user', user_id=user.id )}">${user.email}</a></li>
                 %endfor
             </ul>
         </td>
@@ -34,9 +32,9 @@
                 %for role in roles:
                     <li>
                         %if not role.type == galaxy.model.Role.types.PRIVATE:
-                            <a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.name}</a>
+                            <a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.description}</a>
                         %else:
-                            ${role.name}
+                            ${role.description}
                         %endif
                     </li>
                 %endfor
@@ -76,7 +74,7 @@
                 curr_anchor = 'A'
             %>
             <tr style="background: #EEE">
-                <td colspan="3" style="text-align: center; border-bottom: 1px solid #D8B365">
+                <td colspan="3" style="border-bottom: 1px solid #D8B365; text-align: center;">
                     Jump to letter:
                     %for a in anchors:
                         | <a href="#${a}">${a}</a>

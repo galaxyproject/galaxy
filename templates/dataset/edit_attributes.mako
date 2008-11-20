@@ -173,7 +173,7 @@
                                 <li>${action.description}</li>
                                 <ul>
                                     %for role in roles:
-                                        <li>${role.name}</li>
+                                        <li>${role.description}</li>
                                     %endfor
                                 </ul>
                             %endif

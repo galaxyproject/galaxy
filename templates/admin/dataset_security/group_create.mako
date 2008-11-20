@@ -22,9 +22,9 @@
         <td>
             %if not anchored:
                 <div style="float: right;"><a href="#TOP">top</a></div>
-                <a name="${curr_anchor}"><input type="checkbox" name="roles" value="${role.id}"/> ${role.name}</a>
+                <a name="${curr_anchor}"><input type="checkbox" name="roles" value="${role.id}"/> ${role.description}</a>
             %else:
-                <input type="checkbox" name="roles" value="${role.id}"/> ${role.name}
+                <input type="checkbox" name="roles" value="${role.id}"/> ${role.description}
             %endif
         </td>
     </tr>
@@ -77,10 +77,10 @@
                 <% curr_anchor = 'A' %>
                 <table border="0" cellspacing="0" cellpadding="0" width="100%">
                     %for ctr, role in enumerate( roles ):
-                        %if render_quick_find and not role.name.upper().startswith( curr_anchor ):
+                        %if render_quick_find and not role.description.upper().startswith( curr_anchor ):
                           <% anchored = False %>
                         %endif 
-                        %if render_quick_find and role.name.upper().startswith( curr_anchor ):
+                        %if render_quick_find and role.description.upper().startswith( curr_anchor ):
                             %if not anchored:
                                 ${render_role_row( role, ctr, anchored, curr_anchor )}
                                 <% anchored = True %>
@@ -89,7 +89,7 @@
                             %endif
                         %elif render_quick_find:
                             %for anchor in anchors[ anchor_loc: ]:
-                                %if role.name.upper().startswith( anchor ):
+                                %if role.description.upper().startswith( anchor ):
                                     %if not anchored:
                                         <% curr_anchor = anchor %>
                                         ${render_role_row( role, ctr, anchored, curr_anchor )}

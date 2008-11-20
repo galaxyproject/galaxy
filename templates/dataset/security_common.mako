@@ -11,7 +11,7 @@
         Roles associated:<br/>
         <select name="${action_key}_in" id="${action_key}_in_select" class="in_select" style="width: 200px; height: 150px;" multiple>
             %for role in in_roles:
-                <option value="${role.id}">${role.name}</option>
+                <option value="${role.id}">${role.description}</option>
             %endfor
         </select> <br/>
         <input type="submit" id="${action_key}_remove_button" class="role_remove_button" value=">>"/>
@@ -20,7 +20,7 @@
         Roles not associated:<br/>
         <select name="${action_key}_out" id="${action_key}_out_select" style="width: 200px; height: 150px;" multiple>
             %for role in out_roles:
-                <option value="${role.id}">${role.name}</option>
+                <option value="${role.id}">${role.description}</option>
             %endfor
         </select> <br/>
         <input type="submit" id="${action_key}_add_button" class="role_add_button" value="<<"/>

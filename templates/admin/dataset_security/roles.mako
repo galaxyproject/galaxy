@@ -13,7 +13,7 @@
         <tr>
     %endif
         <td>
-            ${role.name}
+            ${role.description}
             <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="role-${role.id}-popup">
                 <a class="action-button" href="${h.url_for( action='role', role_id=role.id )}">Change associated users and groups</a>
@@ -84,10 +84,10 @@
             <td>Groups</td>
         </tr>
         %for ctr, role in enumerate( roles ):
-            %if render_quick_find and not role.name.upper().startswith( curr_anchor ):
+            %if render_quick_find and not role.description.upper().startswith( curr_anchor ):
                 <% anchored = False %>
             %endif
-            %if render_quick_find and role.name.upper().startswith( curr_anchor ):
+            %if render_quick_find and role.description.upper().startswith( curr_anchor ):
                 %if not anchored:
                     ${render_row( role, ctr, anchored, curr_anchor )}
                     <% anchored = True %>
@@ -96,7 +96,7 @@
                 %endif
             %elif render_quick_find:
                 %for anchor in anchors[ anchor_loc: ]:
-                    %if role.name.upper().startswith( anchor ):
+                    %if role.description.upper().startswith( anchor ):
                         %if not anchored:
                             <% curr_anchor = anchor %>
                             ${render_row( role, ctr, anchored, curr_anchor )}

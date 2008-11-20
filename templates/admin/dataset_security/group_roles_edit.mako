@@ -10,9 +10,9 @@
     %endif
         <td>
             %if check:
-                <input type="checkbox" name="roles" value="${role.id}" checked/> ${role.name}
+                <input type="checkbox" name="roles" value="${role.id}" checked/> ${role.description}
             %else:
-                <input type="checkbox" name="roles" value="${role.id}"/> ${role.name}
+                <input type="checkbox" name="roles" value="${role.id}"/> ${role.description}
             %endif
         </td>
     </tr>
@@ -60,10 +60,10 @@
                         %>
                     %endif
                 %endfor
-                %if render_quick_find and not role.name.upper().startswith( curr_anchor ):
+                %if render_quick_find and not role.description.upper().startswith( curr_anchor ):
                   <% anchored = False %>
                 %endif 
-                %if render_quick_find and role.name.upper().startswith( curr_anchor ):
+                %if render_quick_find and role.description.upper().startswith( curr_anchor ):
                     %if not anchored:
                         ${render_row( role, ctr, anchored, curr_anchor, check )}
                         <% anchored = True %>
@@ -72,7 +72,7 @@
                     %endif
                 %elif render_quick_find:
                     %for anchor in anchors[ anchor_loc: ]:
-                        %if role.name.upper().startswith( anchor ):
+                        %if role.description.upper().startswith( anchor ):
                             %if not anchored:
                                 <% curr_anchor = anchor %>
                                 ${render_row( role, ctr, anchored, curr_anchor, check )}

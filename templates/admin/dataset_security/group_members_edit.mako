@@ -14,6 +14,10 @@
             %else:
                 <input type="checkbox" name="members" value="${user.id}"/> ${user.email}
             %endif
+            %if not anchored:
+                <a name="${curr_anchor}"></a>
+                <div style="float: right;"><a href="#TOP">top</a></div>
+            %endif
         </td>
     </tr>
 </%def>
@@ -41,7 +45,7 @@
                     curr_anchor = 'A'
                 %>
                 <tr style="background: #EEE">
-                    <td style="border-bottom: 1px solid #D8B365; text-align: center;">
+                    <td colspan="3" style="border-bottom: 1px solid #D8B365; text-align: center;">
                         Jump to letter:
                         %for a in anchors:
                             | <a href="#${a}">${a}</a>
@@ -94,4 +98,3 @@
         </table>
     </form>
 %endif
-

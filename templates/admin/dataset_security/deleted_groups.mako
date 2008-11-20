@@ -26,7 +26,7 @@
         <td>
             <ul>
                 %for role in roles:
-                    <li>${role.name}</li>
+                    <li>${role.description}</li>
                 %endfor
             </ul>
             %if not anchored:

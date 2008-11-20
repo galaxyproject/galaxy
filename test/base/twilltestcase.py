@@ -368,19 +368,23 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( "User with that email already exists" )
         except:
             self.check_page_for_string( "Now logged in as %s" %email )
-        self.home() #Reset our URL for future tests
+            self.home()
+            # Make sure a new private role was created for the user
+            self.visit_page( "user/set_default_permissions" )
+            self.check_page_for_string( email )
+        self.home()
         
     def login( self, email='test@bx.psu.edu', password='testuser'):
         # test@bx.psu.edu is configured as an admin user
         self.create( email=email, password=password, confirm=password )
         self.visit_page( "user/login?email=%s&password=%s" % (email, password) )
         self.check_page_for_string( "Now logged in as %s" %email )
-        self.home() #Reset our URL for future tests
+        self.home()
 
     def logout( self ):
         self.visit_page( "user/logout" )
         self.check_page_for_string( "You are no longer logged in" )
-        self.home() #Reset our URL for future tests
+        self.home()
 
     # Functions associated with browsers, cookies, HTML forms and page visits
     def check_page_for_string( self, patt ):
@@ -548,26 +552,44 @@ class TwillTestCase( unittest.TestCase ):
         self.assertNotEqual(count, maxiter)
 
     # Dataset Security stuff
-    def create_role( self, name='New Test Role', description="Very cool new test role", user_ids=[], group_ids=[] ):
+    def create_role( self, name='New Test Role', description="Very cool new test role", user_ids=[], group_ids=[], private_role='' ):
         """Create a new role"""
         self.visit_url( "%s/admin/create_role" % self.url )
         form = tc.show()
         self.check_page_for_string( "Create Role" )
-        try: 
+        try:
+            # Attempt to submit a blank form
+            tc.fv( "1", "name", "" )
+            tc.fv( "1", "description", "" )
+            tc.submit( "create_role_button" )
+            self.last_page()
+            self.check_page_for_string( "Enter a valid name and a description" )
             tc.fv( "1", "name", name )
             tc.fv( "1", "description", description )
             for user_id in user_ids:
-                tc.fv( "1", "3", user_id ) # form field 3 is the check box named 'users'
+                tc.fv( "1", "users", user_id )
             for group_id in group_ids:
-                tc.fv( "1", "4", group_id ) # form field 4 is the check box named 'groups'
+                tc.fv( "1", "groups", group_id )
             tc.submit( "create_role_button" )
+            self.last_page()
+            check_str = 'The new role has been created with %d associated users and %d associated groups' % ( len( user_ids ), len( group_ids ) )
+            self.check_page_for_string( check_str )
+            if private_role:
+                # Make sure no private roles are displayed
+                try:
+                    self.check_page_for_string( private_role )
+                    errmsg = 'Private role %s displayed on Non-private Roles page' % private_role
+                    raise AssertionError( errmsg )
+                except AssertionError:
+                    # Reaching here is the behavior we want since no private roles should be displayed
+                    pass
         except AssertionError, err:
             self.home()
             errmsg = 'Exception caught attempting to create role: %s' % str( err )
             raise AssertionError( errmsg )
         self.home()
         self.visit_page( "admin/roles" )
-        self.check_page_for_string( name )
+        self.check_page_for_string( description )
         self.home()
     def mark_role_deleted( self, role_id ):
         """Mark a role as deleted"""
@@ -594,12 +616,25 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/admin/create_group" % self.url )
         form = tc.show()
         self.check_page_for_string( "Create Group" )
-        try: 
+        # Make sure no private roles are displayed
+        try:
+            self.check_page_for_string( 'Private Role for'  )
+            errmsg = 'Private role displayed on Create Group page'
+            raise AssertionError( errmsg )
+        except AssertionError:
+            # Reaching here is the behavior we want since no private roles should be displayed
+            pass
+        try:
+            # Attempt to submit a blank form
+            tc.fv( "1", "name", "" )
+            tc.submit( "create_group_button" )
+            self.last_page()
+            self.check_page_for_string( "Enter a valid name" )
             tc.fv( "1", "name", name )
             for user_id in user_ids:
-                tc.fv( "1", "2", user_id ) # form field 2 is the check box named 'members'
+                tc.fv( "1", "members", user_id )
             for role_id in role_ids:
-                tc.fv( "1", "3", role_id ) # form field 3 is the check box named 'roles'
+                tc.fv( "1", "roles", role_id )
             tc.submit( "create_group_button" )
         except AssertionError, err:
             self.home()
@@ -680,8 +715,14 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
             self.last_page()
             self.check_page_for_string( 'Edit library name and description' )
-            tc.fv( "1", "name", name ) # form field 1 is the field named name...
-            tc.fv( "1", "description", description ) # form field 2 is the field named description...
+            # Attempt to submit a blank form
+            tc.fv( "1", "name", "" )
+            tc.fv( "1", "description", "" )
+            tc.submit( "rename_library_button" )
+            self.last_page()
+            self.check_page_for_string( 'Enter a valid name' )
+            tc.fv( "1", "name", name )
+            tc.fv( "1", "description", description )
             if root_folder:
                 tc.fv( "1", "root_folder", root_folder )
             tc.submit( "rename_library_button" )
@@ -754,8 +795,9 @@ class TwillTestCase( unittest.TestCase ):
             self.home()
             raise AssertionError( 'Exception caught attempting to create add a dataset to a folder: %s' % str( err ) )
         self.home()
-    def add_datasets_from_library_dir( self, folder_id, extension='auto', dbkey='hg18', roles=[] ):
+    def add_datasets_from_library_dir( self, folder_id, extension='auto', dbkey='hg18', roles_tuple=[] ):
         """Add a directory of datasets to a folder"""
+        # roles is a list of tuples: [ ( role_id, role_description ) ]
         try:
             self.visit_url( "%s/admin/dataset?folder_id=%s" % ( self.url, folder_id ) )
             self.last_page()
@@ -765,8 +807,8 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "dbkey", dbkey )
             library_dir = "%s" % self.file_dir
             tc.fv( "1", "server_dir", "library" )
-            for role_id in roles:
-                tc.fv( "1", "roles", role_id )
+            for role_tuple in roles_tuple:
+                tc.fv( "1", "roles", role_tuple[0] )
             tc.submit( "new_dataset_button" )
             self.last_page()
             self.check_page_for_string( '3 new datasets added to the library ( each is selected below )' )
@@ -776,14 +818,14 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( "action_on_datasets_button" )
             self.last_page()
             self.check_page_for_string( '( 3 of them )' )
-            self.check_page_for_string( 'New Test Role' )
-            self.check_page_for_string( 'Another Test Role' )
-            tc.find( "update_roles" )
+            for role_tuple in roles_tuple:
+                self.check_page_for_string( role_tuple[1] )
             # NOTE: we cannot submit the form because of a bug in twill ( it cannot handle select lists
             # that include no option fields.  Since the "manage permissions" and "edit metadata" select
             # lists have no options ( no roles associated ), submitting the form will throw a 
-            # ParseError: <unprintable ParseError object> exception.  Uncomment the following 3 lines
+            # ParseError: <unprintable ParseError object> exception.  Uncomment the following 4 lines
             # when twill fixes this bug...
+            # tc.find( "update_roles" )
             # tc.submit( "update_roles" )
             # self.last_page()
             # self.check_page_for_string( 'Libraries' )

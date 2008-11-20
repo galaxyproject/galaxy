@@ -29,7 +29,7 @@
         <td>
             <ul>
                 %for role in roles:
-                    <li><a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.name}</a></li>
+                    <li><a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.description}</a></li>
                 %endfor
             </ul>
             %if not anchored:
@@ -97,19 +97,19 @@
                 %endif
             %elif render_quick_find:   
                 %for anchor in anchors[ anchor_loc: ]:
-                   %if user.email.upper().startswith( anchor ):
-                       %if not anchored:
-                           <% curr_anchor = anchor %>
-                           ${render_row( user, groups, roles, ctr, anchored, curr_anchor )}
-                           <%  anchored = True %>
-                       %else:
-                           ${render_row( user, groups, roles, ctr, anchored, curr_anchor )}
-                       %endif
-                       <% 
-                           anchor_loc = anchors.index( anchor )
-                           break 
-                       %>
-                   %endif
+                    %if user.email.upper().startswith( anchor ):
+                        %if not anchored:
+                            <% curr_anchor = anchor %>
+                            ${render_row( user, groups, roles, ctr, anchored, curr_anchor )}
+                            <%  anchored = True %>
+                        %else:
+                            ${render_row( user, groups, roles, ctr, anchored, curr_anchor )}
+                        %endif
+                        <% 
+                            anchor_loc = anchors.index( anchor )
+                            break 
+                        %>
+                    %endif
                 %endfor
             %else:
                 ${render_row( user, groups, roles, ctr, True, '' )}

@@ -48,29 +48,29 @@ $().ready(function() {
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Role '${role.name}'</div>
+    <div class="toolFormTitle">Role '${role.description}'</div>
     <div class="toolFormBody">
         <form name="associate_role_user_group" id="associate_role_user_group" action="${h.url_for( action='role_members_edit', role_id=role.id )}" method="post" >
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    Users associated with '${role.name}'<br/>
+                    Users associated with '${role.description}'<br/>
                     ${render_select( "in_users", in_users )}<br/>
                     <input type="submit" id="users_remove_button" value=">>"/>
                 </div>
                 <div>
-                    Users not associated with '${role.name}'<br/>
+                    Users not associated with '${role.description}'<br/>
                     ${render_select( "out_users", out_users )}<br/>
                     <input type="submit" id="users_add_button" value="<<"/>
                 </div>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    Groups associated with '${role.name}'<br/>
+                    Groups associated with '${role.description}'<br/>
                     ${render_select( "in_groups", in_groups )}<br/>
                     <input type="submit" id="groups_remove_button" value=">>"/>
                 </div>
                 <div>
-                    Groups not associated with '${role.name}'<br/>
+                    Groups not associated with '${role.description}'<br/>
                     ${render_select( "out_groups", out_groups )}<br/>
                     <input type="submit" id="groups_add_button" value="<<"/>
                 </div>
@@ -84,7 +84,7 @@ $().ready(function() {
 <br clear="left"/>
 <br/>
 %if len( library_dataset_actions ) > 0:
-    <h3>Library datasets associated with role '${role.name}'</h3>
+    <h3>Library datasets associated with role '${role.description}'</h3>
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr>
             <td>

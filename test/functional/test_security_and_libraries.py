@@ -2,44 +2,45 @@ import galaxy.model
 from galaxy.model.orm import *
 from base.twilltestcase import *
 
-security_msg = 'You must have Galaxy administrator privileges to use this feature.'
+not_logged_in_security_msg = 'You must be an administrator to access this feature, and currently you are not logged in.'
+logged_in_security_msg = 'You must be an administrator to access this feature.'
 
 class TestHistory( TwillTestCase ):
     def test_00_admin_features_when_not_logged_in( self ):
         """Testing admin_features when not logged in"""
         self.logout()
         self.visit_url( "%s/admin" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/reload_tool?tool_id=upload1" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/roles" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/create_role" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/new_role" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/role" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/groups" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/create_group" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/group_members_edit" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/update_group_members" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/users" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/library_browser" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/libraries" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/library" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/folder?id=1&new=True" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/dataset" % self.url )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( not_logged_in_security_msg )
     def test_03_login_as_admin( self ):
         """Testing logging in as an admin user"""
         self.login( email='test@bx.psu.edu' ) #This is configured as our admin user
@@ -55,6 +56,14 @@ class TestHistory( TwillTestCase ):
                 break
         if not private_role_found:
             raise AssertionError( "Private role not found for user '%s'" % testuser1.email )
+        # Make sure a DefaultUserPermission exists for the user
+        if not testuser1.default_permissions:
+            raise AssertionError( 'No DefaultUserPermissions were created for %s when their account was created' % testuser1.email )
+        if len( testuser1.default_permissions ) > 1:
+            raise AssertionError( 'More than 1 DefaultUserPermissions were created for %s when their account was created' % testuser1.email )
+        dup =  galaxy.model.DefaultUserPermissions.filter( galaxy.model.DefaultUserPermissions.table.c.user_id==testuser1.id ).first()
+        if not dup.action == 'manage permissions':
+            raise AssertionError( 'The DefaultUserPermission.action for user "%s" is "%s", but it should be "manage permissions"' % ( testuser1.email, dup.action ) )            
         self.visit_url( "%s/admin/user?user_id=%s" % ( self.url, testuser1.id ) )
         self.check_page_for_string( testuser1.email )
         self.home()
@@ -64,19 +73,23 @@ class TestHistory( TwillTestCase ):
         global testuser2
         testuser2 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test2@bx.psu.edu' ).first()
         self.visit_page( "admin" )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( logged_in_security_msg )
+        # NOTE: we cannot currently Set DefaultHistoryPermissions for this user
+        # because of a bug in twill where it is not able to handle select lists that
+        # include no options...
         self.logout()
         self.login( email='test3@bx.psu.edu' ) # This will not be an admin user
         global testuser3
         testuser3 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test3@bx.psu.edu' ).first()
         self.visit_page( "admin" )
-        self.check_page_for_string( security_msg )
+        self.check_page_for_string( logged_in_security_msg )
         self.logout()
     def test_06_create_role( self ):
         """Testing creating new non-private role with 2 members"""
         self.login( email=testuser1.email )
-        self.create_role( user_ids=[ str( testuser1.id ), str( testuser2.id ) ] )
         name = 'New Test Role'
+        description = 'Very cool new test role'
+        self.create_role( name=name, description=description, user_ids=[ str( testuser1.id ), str( testuser2.id ) ], private_role=testuser1.email )
         # Get the role object for later tests
         global new_test_role
         new_test_role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
@@ -107,7 +120,12 @@ class TestHistory( TwillTestCase ):
         # with the role, then add tests in test_55_purge_role to make sure the association records are deleted
         # when the role is purged.
         name = 'Another Test Role'
-        self.create_role( name=name, user_ids=[ str( testuser1.id ) ], group_ids=[ str( another_test_group.id ) ] )
+        description = 'Another cool new test role'
+        self.create_role( name=name, 
+                          description=description, 
+                          user_ids=[ str( testuser1.id ) ], 
+                          group_ids=[ str( another_test_group.id ) ], 
+                          private_role=testuser1.email )
         # Get the role object for later tests
         global another_test_role
         another_test_role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
@@ -152,6 +170,17 @@ class TestHistory( TwillTestCase ):
         """Testing copying a dataset from the current history to a library root folder"""
         folder = library.root_folder
         self.add_dataset_to_folder_from_history( str( folder.id ) )
+        # Now that we have a history and a dataset, we can test for ActionDatasetRoleAssociation - we're still logged in as testuser1.
+        # The default setting are "manage permissions"
+        last_dataset_created = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
+        adras = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.dataset_id==last_dataset_created.id ).all()
+        if not adras:
+            raise AssertionError( 'No ActionDatasetRoleAssociations created for dataset id: %d' % last_dataset_created.id )
+        if len( adras ) > 1:
+            raise AssertionError( 'More than 1 ActionDatasetRoleAssociations created for dataset id: %d' % last_dataset_created.id )
+        for adra in adras:
+            if not adra.action == 'manage permissions':
+                raise AssertionError( 'ActionDatasetRoleAssociation.action "%s" is not the DefaultHistoryPermission setting, which is "manage permissions"' % str( adra.action ) )
     def test_33_add_new_folder( self ):
         """Testing adding a folder to a library root folder"""
         root_folder = library.root_folder
@@ -166,7 +195,8 @@ class TestHistory( TwillTestCase ):
         self.check_page_for_string( "New Test Folder" )
     def test_36_add_datasets_from_library_dir( self ):
         """Testing adding several datasets from library directory to sub-folder"""
-        self.add_datasets_from_library_dir( str( new_test_folder.id ), roles=[ str( new_test_role.id ) ] )
+        roles_tuple = [ ( str( new_test_role.id ), new_test_role.description ) ] 
+        self.add_datasets_from_library_dir( str( new_test_folder.id ), roles_tuple=roles_tuple )
     def test_39_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         self.visit_page( "admin/groups" )
@@ -178,7 +208,7 @@ class TestHistory( TwillTestCase ):
     def test_45_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
         self.visit_page( "admin/roles" )
-        self.check_page_for_string( another_test_role.name )
+        self.check_page_for_string( another_test_role.description )
         self.mark_role_deleted( str( another_test_role.id ) )
     def test_48_undelete_role( self ):
         """Testing undeleting a deleted role"""

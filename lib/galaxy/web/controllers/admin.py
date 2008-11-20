@@ -77,7 +77,7 @@ class Admin( BaseController ):
         name = params.name
         description = params.description
         if not name or not description:
-            msg = "Please enter a name and a description"
+            msg = "Enter a valid name and a description"
             trans.response.send_redirect( web.url_for( action='create_role', msg=msg, messagetype='error' ) )
         elif trans.app.model.Role.filter_by( name=name ).first():
             msg = "A role with that name already exists"
@@ -307,7 +307,7 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         name = params.name
         if not name:
-            msg = "Please enter a name"
+            msg = "Enter a valid name"
             trans.response.send_redirect( web.url_for( action='create_group', msg=msg, messagetype='error' ) )
         elif trans.app.model.Group.filter_by( name=name ).first():
             msg = "A group with that name already exists"
@@ -1087,9 +1087,8 @@ class Admin( BaseController ):
             else:
                 return trans.fill_template( "/admin/library/dataset.mako", dataset=lfdas )
     @web.expose
+    @web.require_admin
     def add_dataset_to_folder_from_history( self, trans, ids="", folder_id=None, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         try:
             folder = trans.app.model.LibraryFolder.get( folder_id )
         except:
