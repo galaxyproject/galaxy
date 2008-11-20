@@ -107,7 +107,7 @@ class JobQueue( object ):
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()        
         log.info( "job manager started" )
-        if self.track_jobs_in_database:
+        if app.config.get_bool( 'enable_job_recovery', True ):
             self.check_jobs_at_startup()
 
     def check_jobs_at_startup( self ):

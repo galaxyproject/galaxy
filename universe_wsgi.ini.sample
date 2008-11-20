@@ -25,6 +25,11 @@ log_events = True
 # Should jobs be tracked through the database, rather than in memory
 ## track_jobs_in_database = true
 
+# Enable job recovery (if Galaxy is restarted while cluster jobs are running,
+# it can "recover" them when it starts).  This is not safe to use if you are
+# running more than one Galaxy server using the same database.
+#enable_job_recovery = True
+
 # Number of concurrent jobs to run (local runner)
 local_job_queue_workers = 5
 
