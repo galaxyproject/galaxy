@@ -60,6 +60,19 @@ def require_login( verb="perform this action" ):
         return decorator
     return argcatcher
     
+def require_admin( func ):
+    def decorator( self, trans, *args, **kwargs ):
+        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+        if not admin_users:
+            return trans.show_error_message( "You must be an administrator to access this feature, and no administrators are set in the Galaxy configuration." )
+        user = trans.get_user()
+        if not user:
+            return trans.show_error_message( "You must be an administrator to access this feature, and currently you are not logged in." )
+        if not user.email in admin_users:
+            return trans.show_error_message( "You must be an administrator to access this feature." )
+        return func( self, trans, *args, **kwargs )
+    return decorator
+
 NOT_SET = object()
 
 class MessageException( Exception ):
@@ -117,6 +130,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.workflow_building_mode = False
         # Always have a valid galaxy session
         self.__ensure_valid_session()
+        if self.app.config.require_login:
+            self.__ensure_logged_in_user( environ )
     @property
     def sa_session( self ):
         """
@@ -240,6 +255,18 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             if prev_galaxy_session:
                 objects_to_flush.append( prev_galaxy_session )            
             sa_session.flush( objects_to_flush )
+    def __ensure_logged_in_user( self, environ ):
+        allowed_paths = (
+            url_for( controller='root', action='index' ),
+            url_for( controller='root', action='tool_menu' ),
+            url_for( controller='root', action='masthead' ),
+            url_for( controller='root', action='history' ),
+            url_for( controller='user', action='login' ),
+            url_for( controller='user', action='create' ),
+            url_for( controller='user', action='reset_password' ),
+        )
+        if self.galaxy_session.user is None and environ['PATH_INFO'] not in allowed_paths:
+            self.response.send_redirect( url_for( controller='root', action='index' ) )
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """
         Create a new GalaxySession for this request, possibly with a connection
@@ -369,7 +396,13 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.galaxy_session.user = user
         self.sa_session.flush( [ self.galaxy_session ] )
     user = property( get_user, set_user )
-                
+
+    def user_is_admin( self ):
+        admin_users = self.app.config.get( "admin_users", "" ).split( "," )
+        if self.user and admin_users and self.user.email in admin_users:
+            return True
+        return False
+
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox
@@ -415,12 +448,12 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Convenience method for displaying an warn message. See `show_message`.
         """
         return self.show_message( message, 'warning', refresh_frames )
-    def show_form( self, form ):
+    def show_form( self, form, header=None ):
         """
         Convenience method for displaying a simple page with a single HTML
         form.
         """    
-        return self.fill_template( "form.mako", form=form )
+        return self.fill_template( "form.mako", form=form, header=header )
     def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.

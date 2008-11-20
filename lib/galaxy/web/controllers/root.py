@@ -25,7 +25,10 @@ class RootController( BaseController ):
     
     @web.expose
     def tool_menu( self, trans ):
-        return trans.fill_template('/root/tool_menu.mako', toolbox=self.get_toolbox() )
+        if trans.app.config.require_login and not trans.user:
+            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy tools.' )
+        else:
+            return trans.fill_template('/root/tool_menu.mako', toolbox=self.get_toolbox() )
 
     @web.expose
     def tool_help( self, trans, id ):
@@ -51,6 +54,8 @@ class RootController( BaseController ):
         NOTE: No longer accepts "id" or "template" options for security reasons.
         """
         history = trans.get_history()
+        if trans.app.config.require_login and not trans.user:
+            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
         if as_xml:
             trans.response.set_content_type('text/xml')
             return trans.fill_template_mako( "root/history_as_xml.mako", history=history )

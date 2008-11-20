@@ -13,44 +13,28 @@ import sqlalchemy as sa
 import logging
 log = logging.getLogger( __name__ )
 
-no_privilege_msg = "You must have Galaxy administrator privileges to use this feature."
-
 class Admin( BaseController ):
-    def user_is_admin( self, trans ):
-        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
-        if not admin_users:
-            return False
-        user = trans.get_user()
-        if not user:
-            return False
-        if not user.email in admin_users:
-            return False
-        return True
     @web.expose
+    @web.require_admin
     def index( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
         return trans.fill_template( '/admin/index.mako', msg=msg, messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def center( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         return trans.fill_template( '/admin/center.mako' )
     @web.expose
+    @web.require_admin
     def reload_tool( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
         return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, msg=msg, messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def tool_reload( self, trans, tool_version=None, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         tool_id = params.tool_id
         self.app.toolbox.reload( tool_id )
@@ -59,9 +43,8 @@ class Admin( BaseController ):
     
     # Galaxy Role Stuff
     @web.expose
+    @web.require_admin
     def roles( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -72,9 +55,8 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def create_role( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -89,9 +71,8 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def new_role( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         name = params.name
         description = params.description
@@ -108,14 +89,14 @@ class Admin( BaseController ):
                                       type=trans.app.model.Role.types.ADMIN )
             role.flush()
             # Add the users
-            users = listify( params.users )
+            users = util.listify( params.users )
             for user_id in users:
                 user = galaxy.model.User.get( user_id )
                 # Create the UserRoleAssociation
                 ura = galaxy.model.UserRoleAssociation( user, role )
                 ura.flush()
             # Add the groups
-            groups = listify( params.groups )
+            groups = util.listify( params.groups )
             for group_id in groups:
                 group = galaxy.model.Group.get( group_id )
                 # Create the GroupRoleAssociation
@@ -124,9 +105,8 @@ class Admin( BaseController ):
             msg = "The new role has been created with %s associated users and %s associated groups" % ( str( len( users ) ), str( len( groups ) ) )
             trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def role( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -180,12 +160,11 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def role_members_edit( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         role = galaxy.model.Role.get( int( params.role_id ) )
-        in_users = [ trans.app.model.User.get( x ) for x in listify( params.in_users ) ]
+        in_users = [ trans.app.model.User.get( x ) for x in util.listify( params.in_users ) ]
         for ura in role.users:
             user = trans.app.model.User.get( ura.user_id )
             if user not in in_users:
@@ -200,15 +179,14 @@ class Admin( BaseController ):
                         if role == dhp.role:
                             dhp.delete()
                             dhp.flush()
-        in_groups = [ trans.app.model.Group.get( x ) for x in listify( params.in_groups ) ]
+        in_groups = [ trans.app.model.Group.get( x ) for x in util.listify( params.in_groups ) ]
         trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
         role.refresh()
         msg = "The role has been updated with %s associated users and %s associated groups" % ( str( len( in_users ) ), str( len( in_groups ) ) )
         trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def mark_role_deleted( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         role = galaxy.model.Role.get( int( params.role_id ) )
         role.deleted = True
@@ -216,9 +194,8 @@ class Admin( BaseController ):
         msg = "The role has been marked as deleted."
         trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def deleted_roles( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -242,9 +219,8 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def undelete_role( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         role = galaxy.model.Role.get( int( params.role_id ) )
         role.deleted = False
@@ -252,9 +228,8 @@ class Admin( BaseController ):
         msg = "The role has been marked as not deleted."
         trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def purge_role( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         role = galaxy.model.Role.get( int( params.role_id ) )
         # Delete UserRoleAssociations
@@ -285,9 +260,8 @@ class Admin( BaseController ):
 
     # Galaxy Group Stuff
     @web.expose
+    @web.require_admin
     def groups( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -311,9 +285,8 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def create_group( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -329,9 +302,8 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def new_group( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         name = params.name
         if not name:
@@ -345,7 +317,7 @@ class Admin( BaseController ):
             group = galaxy.model.Group( name )
             group.flush()
             # Add the members
-            members = listify( params.members )
+            members = util.listify( params.members )
             for user_id in members:
                 user = galaxy.model.User.get( user_id )
                 # Create the UserGroupAssociation
@@ -365,9 +337,8 @@ class Admin( BaseController ):
             msg = "The new group has been created with %s members and %s associated roles" % ( str( len( members ) ), str( len( roles ) ) )
             trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def group_members_edit( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -382,12 +353,11 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def update_group_members( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         group_id = int( params.group_id )
-        members = listify( params.members )
+        members = util.listify( params.members )
         group = galaxy.model.Group.get( group_id )
         # This is tricky since we have default association tables with
         # records referring to members of this group.  Because of this,
@@ -411,9 +381,8 @@ class Admin( BaseController ):
     # TODO: We probably don't want the following 2 methods since managing roles should be
     # restricted to the Role page due to private roles and rules governing them
     @web.expose
+    @web.require_admin
     def group_roles_edit( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -428,12 +397,11 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def update_group_roles( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         group_id = int( params.group_id )
-        roles = listify( params.roles )
+        roles = util.listify( params.roles )
         group = galaxy.model.Group.get( group_id )
         # This is tricky since we have default association tables with
         # records referring to members of this group.  Because of this,
@@ -455,9 +423,8 @@ class Admin( BaseController ):
         msg = "Group updated with a total of %s associated roles" % len( roles )
         trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def mark_group_deleted( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         group = galaxy.model.Group.get( int( params.group_id ) )
         group.deleted = True
@@ -465,9 +432,8 @@ class Admin( BaseController ):
         msg = "The group has been marked as deleted."
         trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def deleted_groups( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -491,9 +457,8 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def undelete_group( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         group = galaxy.model.Group.get( int( params.group_id ) )
         group.deleted = False
@@ -501,9 +466,8 @@ class Admin( BaseController ):
         msg = "The group has been marked as not deleted."
         trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def purge_group( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         group = galaxy.model.Group.get( int( params.group_id ) )
         # Delete UserGroupAssociations
@@ -522,9 +486,8 @@ class Admin( BaseController ):
 
     # Galaxy User Stuff
     @web.expose
+    @web.require_admin
     def users( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -545,9 +508,8 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def user( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         user_id = params.user_id
         msg = params.msg
@@ -568,9 +530,8 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def user_groups_edit( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -589,12 +550,11 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def update_user_groups( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         user_id = int( params.user_id )
-        groups = listify( params.groups )
+        groups = util.listify( params.groups )
         user = galaxy.model.User.get( user_id )
         # First remove existing UserGroupAssociations that are not in the received groups param
         for uga in user.groups:
@@ -613,9 +573,8 @@ class Admin( BaseController ):
 
     # Galaxy Library Stuff
     @web.expose
+    @web.require_admin
     def library_browser( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -629,9 +588,8 @@ class Admin( BaseController ):
                                     messagetype=messagetype )
     libraries = library_browser
     @web.expose
+    @web.require_admin
     def library( self, trans, id=None, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -697,9 +655,8 @@ class Admin( BaseController ):
             msg = 'The library and all of its contents have been marked deleted'
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def deleted_libraries( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -712,9 +669,8 @@ class Admin( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
+    @web.require_admin
     def undelete_library( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         library = galaxy.model.Library.get( int( params.id ) )
         def undelete_folder( library_folder ):
@@ -731,9 +687,8 @@ class Admin( BaseController ):
         msg = "The library and all of its contents have been marked not deleted"
         return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def purge_library( self, trans, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         library = galaxy.model.Library.get( int( params.id ) )
         def purge_folder( library_folder ):
@@ -759,9 +714,8 @@ class Admin( BaseController ):
         msg = "The library and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script"
         return trans.response.send_redirect( web.url_for( action='deleted_libraries', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def folder( self, trans, id, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -819,9 +773,8 @@ class Admin( BaseController ):
             msg = 'The folder %s and all of its contents have been marked deleted' % folder.name
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
     @web.expose
+    @web.require_admin
     def dataset( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, dbkey=None, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
         else:
@@ -919,7 +872,7 @@ class Admin( BaseController ):
                 space_to_tab = True
             roles = []
             role_ids = params.get( 'roles', [] )
-            for role_id in listify( role_ids ):
+            for role_id in util.listify( role_ids ):
                 roles.append( galaxy.model.Role.get( role_id ) )
             temp_name = ""
             data_list = []
@@ -1035,7 +988,7 @@ class Admin( BaseController ):
                 # The user clicked the Save button on the 'Associate With Roles' form
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    in_roles = [ trans.app.model.Role.get( x ) for x in listify( p.get( k + '_in', [] ) ) ]
+                    in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( p.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 trans.app.security_agent.set_dataset_permissions( lda.dataset, permissions )
                 lda.dataset.refresh()
@@ -1115,7 +1068,7 @@ class Admin( BaseController ):
                 #p = util.Params( kwd )
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    in_roles = [ trans.app.model.Role.get( x ) for x in listify( params.get( k + '_in', [] ) ) ]
+                    in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 for lfda in lfdas:
                     trans.app.security_agent.set_dataset_permissions( lfda.dataset, permissions )
@@ -1191,10 +1144,9 @@ class Admin( BaseController ):
         #    return( True, False )
         return ( True, True )
     @web.expose
+    @web.require_admin
     def datasets( self, trans, **kwd ):
         # This method is used by the select list labeled "Perform action on selected datasets" on the admin library browser.
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
@@ -1202,7 +1154,7 @@ class Admin( BaseController ):
             if not params.dataset_ids:
                 msg = "At least one dataset must be selected for %s" % params.action
                 trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
-            dataset_ids = listify( params.dataset_ids )
+            dataset_ids = util.listify( params.dataset_ids )
             if params.action == 'edit':
                 trans.response.send_redirect( web.url_for( action='dataset', id=",".join( dataset_ids ), msg=msg, messagetype=messagetype ) )
             elif params.action == 'delete':
@@ -1218,9 +1170,8 @@ class Admin( BaseController ):
         else:
             trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype=messagetype ) )
     @web.expose
+    @web.require_admin
     def delete_dataset( self, trans, id=None, **kwd):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         if id:
             # id is a LibraryFolderDatasetAssociation.id
             lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
@@ -1238,9 +1189,8 @@ class Admin( BaseController ):
                                                           messagetype='error' ) )
 
     @web.expose
+    @web.require_admin
     def memdump( self, trans, ids = 'None', sorts = 'None', pages = 'None', new_id = None, new_sort = None, **kwd ):
-        if not self.user_is_admin( trans ):
-            return trans.show_error_message( no_privilege_msg )
         if self.app.memdump is None:
             return trans.show_error_message( "Memdump is not enabled (set <code>use_memdump = True</code> in universe_wsgi.ini)" )
         heap = self.app.memdump.get()
@@ -1278,14 +1228,3 @@ class Admin( BaseController ):
             breadcrumb += ".theone"
             heap = heap.theone
         return trans.fill_template( '/admin/memdump.mako', heap = heap, ids = ids, sorts = sorts, breadcrumb = breadcrumb, msg = msg )
-
-def listify( item, return_none=False ):
-    """
-    Since single params are not a single item list
-    """
-    if item is None:
-        return []
-    elif isinstance( item, list ):
-        return item
-    else:
-        return [ item ]

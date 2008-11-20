@@ -14,11 +14,17 @@
         %if 'history' in refresh_frames:
             if ( parent.frames && parent.frames.galaxy_history ) {
                 parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history')}";
+                if ( parent.force_right_panel ) {
+                    parent.force_right_panel( 'show' );
+                }
             }
         %endif
         %if 'tools' in refresh_frames:
             if ( parent.frames && parent.frames.galaxy_tools ) {
                 parent.frames.galaxy_tools.location.href="${h.url_for( controller='root', action='tool_menu')}";
+                if ( parent.force_left_panel ) {
+                    parent.force_left_panel( 'show' );
+                }
             }
         %endif
 

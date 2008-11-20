@@ -57,10 +57,12 @@
         ensure_dd_helper();
         %if self.has_left_panel:
             var lp = make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
+            force_left_panel = lp.force_panel;
         %endif
         %if self.has_right_panel:
             var rp = make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
             handle_minwidth_hint = rp.handle_minwidth_hint;
+            force_right_panel = rp.force_panel;
         %endif
     </script>
 </%def>

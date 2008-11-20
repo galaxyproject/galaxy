@@ -94,11 +94,12 @@
                 </div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                  <span>Tools</span>
+                  <span>Server</span>
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
                     <div class="toolTitle"><a href="${h.url_for( action='reload_tool' )}" target="galaxy_main">Reload a tool's configuration</a></div>
+                    <div class="toolTitle"><a href="${h.url_for( action='memdump' )}" target="galaxy_main">Profile memory usage</a></div>
                   </div>
                 </div>
             </div>
