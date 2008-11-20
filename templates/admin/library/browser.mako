@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="common.mako" import="render_dataset" />
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="title()">Import from Library</%def>
 <%def name="stylesheets()">
@@ -58,7 +59,7 @@
     });
     function checkForm() {
         if ( $("select#action_on_datasets_select option:selected").text() == "delete" ) {
-            if ( confirm( "Are you sure you want to delete these datasets?" ) ) {
+            if ( confirm( "Click OK to delete these datasets?" ) ) {
                 return true;
             } else {
                 return false;
@@ -67,7 +68,7 @@
     }
 </script>
 
-<%def name="render_folder( parent, parent_pad, deleted )">
+<%def name="render_folder( parent, parent_pad, deleted, created_lfda_ids )">
     <%
         ##if not trans.app.security_agent.check_folder_contents( trans.user, parent ):
         ##  return ""
@@ -80,6 +81,11 @@
             expander = "/static/images/silk/resultset_next.png"
             folder = "/static/images/silk/folder.png"
             subfolder = True
+
+        if created_lfda_ids and not isinstance ( created_lfda_ids, list ):
+            created_lfda_id_list = created_lfda_ids.split( ',' )
+            if created_lfda_id_list:
+               created_lfda_ids = [ int( lfda_id ) for lfda_id in created_lfda_id_list ]
     %>
     <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
         <div class="rowTitle">
@@ -92,12 +98,12 @@
         </div>
         %if not deleted:
             <div popupmenu="folder-${parent.id}-popup">
-                <a class="action-button" href="${h.url_for( action='dataset', folder_id=parent.id )}">Add new dataset to this folder</a>
+                <a class="action-button" href="${h.url_for( action='dataset', folder_id=parent.id )}">Add a new dataset to this folder</a>
                 <a class="action-button" href="${h.url_for( action='add_dataset_to_folder_from_history', folder_id=parent.id )}">Copy a dataset from your history to this folder</a>
                 <a class="action-button" href="${h.url_for( action='folder', new=True, id=parent.id )}">Create a new sub-folder in this folder</a>
                 <a class="action-button" href="${h.url_for( action='folder', rename=True, id=parent.id )}">Rename this folder</a>
                 %if subfolder:
-                    <a class="action-button" confirm="Are you sure you want to delete folder '${parent.name}'?" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
+                    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'?" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
                 %endif
             </div>
         %endif
@@ -119,11 +125,17 @@
         %>
     %endif
     %for folder in parent_folders:
-        ${render_folder( folder, pad, deleted )}
+        ${render_folder( folder, pad, deleted, created_lfda_ids )}
     %endfor
     %for dataset in parent_datasets:
         ##%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=dataset.dataset ):
-        <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset, deleted )}</li>
+        <%
+            if created_lfda_ids and dataset.id in created_lfda_ids:
+                selected = True
+            else:
+                selected = False
+        %>
+        <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset, selected, deleted )}</li>
         ##%endif
     %endfor
     </ul>
@@ -136,18 +148,6 @@
     Libraries
 </h2>
 
-%if msg:
-    <%
-        try:
-            messagetype
-        except:
-            messagetype = "done"
-    %>
-    <p />
-    <div class="${messagetype}message">${msg}</div>
-    <p />
-%endif
-
 <ul class="manage-table-actions">
     %if not deleted:
         <li>
@@ -158,6 +158,10 @@
         </li>
     %endif
 </ul>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 %if not libraries:
     %if deleted:
@@ -199,7 +203,7 @@
                     </div>
                 </li>
                 <ul>
-                    ${render_folder( library.root_folder, 0, deleted )}
+                    ${render_folder( library.root_folder, 0, deleted, created_lfda_ids )}
                 </ul>
                 <br/>
                 ##%endif
@@ -209,7 +213,7 @@
             <p>
                 <b>Perform action on selected datasets:</b>
                 <select name="action" id="action_on_datasets_select">
-                    <option value="edit">Edit permissions on selected datasets</option>
+                    <option value="edit">Edit selected datasets' attributes and permissions</option>
                     <option value="delete">Remove selected datasets from this library</option>
                 </select>
                 <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>

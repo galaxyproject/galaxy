@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -41,6 +42,10 @@ $().ready(function() {
     });
 });
 </script>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 <div class="toolForm">
     <div class="toolFormTitle">Role '${role.name}'</div>

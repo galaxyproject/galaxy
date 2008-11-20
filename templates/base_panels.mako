@@ -10,7 +10,7 @@
 %>
     
 <%def name="init()">
-## Override
+    ## Override
 </%def>
 
 ## Default title
@@ -40,10 +40,10 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-  <!--[if lt IE 7]>
-  <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
-  <script type='text/javascript' src="/static/scripts/ie7-recalc.js"> </script>
-  <![endif]-->
+    <!--[if lt IE 7]>
+    <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
+    <script type='text/javascript' src="/static/scripts/ie7-recalc.js"> </script>
+    <![endif]-->
 </%def>
 
 ## Default late-load javascripts
@@ -57,14 +57,16 @@
         ensure_dd_helper();
         %if self.has_left_panel:
             var lp = make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
+            force_left_panel = lp.force_panel;
         %endif
         %if self.has_right_panel:
             var rp = make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
             handle_minwidth_hint = rp.handle_minwidth_hint;
+            force_right_panel = rp.force_panel;
         %endif
     </script>
 </%def>
-    
+
 ## Masthead
 <%def name="masthead()">
     <iframe name="galaxy_masthead" src="${h.url_for( controller='root', action='masthead', active_view=self.active_view )}" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
@@ -80,40 +82,42 @@
     ${self.init()}    
     
     <head>
-	<title>${self.title()}</title>
-	${self.javascripts()}
-	${self.stylesheets()}
+	   <title>${self.title()}</title>
+	   ${self.javascripts()}
+	   ${self.stylesheets()}
     </head>
     
     <body scroll="no">
-	## Background displays first
-	<div id="background"></div>
-	## Layer iframes over backgrounds
-	<div id="masthead">
-	    ${self.masthead()}
-	</div>
+        ## Background displays first
+        <div id="background"></div>
+        ## Layer iframes over backgrounds
+        <div id="masthead">
+            ${self.masthead()}
+        </div>
         <div id="messagebox" class="panel-${self.message_box_class}-message">
             %if self.message_box_visible:
                 ${self.message_box_content()}
             %endif
         </div>
         %if self.has_left_panel:
-	<div id="left">
-	    ${self.left_panel()}
-	</div>
-	<div id="left-border"><div id="left-border-inner" style="display: none;"></div></div>
+            <div id="left">
+                ${self.left_panel()}
+            </div>
+            <div id="left-border">
+                <div id="left-border-inner" style="display: none;"></div>
+            </div>
         %endif
-	<div id="center">
-	    ${self.center_panel()}
-	</div>
+        <div id="center">
+            ${self.center_panel()}
+        </div>
         %if self.has_right_panel:
-	<div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
-	<div id="right">
-	    ${self.right_panel()}
-	</div>
+            <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
+            <div id="right">
+                ${self.right_panel()}
+            </div>
         %endif
         ## Allow other body level elements
-	${next.body()}
+        ${next.body()}
     </body>
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout

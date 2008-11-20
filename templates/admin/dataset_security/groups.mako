@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <% 
     import galaxy.model
@@ -48,16 +49,16 @@
     </tr>
 </%def>
 
-%if msg:
-    <div class="donemessage">${msg}</div>
-%endif
-
 <a name="TOP"><h2>Groups</h2></a>
 
 <ul class="manage-table-actions">
     <li><a class="action-button" href="${h.url_for( controller='admin', action='create_group' )}">Create a new group</a></li>
     <li><a class="action-button" href="${h.url_for( controller='admin', action='deleted_groups' )}">Manage deleted groups</a></li>
 </ul>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 %if len( groups_members_roles ) == 0:
     There are no Galaxy groups

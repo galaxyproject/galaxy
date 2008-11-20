@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <%
     import galaxy.model
@@ -30,12 +31,12 @@
     </li>
 </%def>
 
+<h2>User '${user.email}'</h2>
+
 %if msg:
-    <div class="donemessage">${msg}</div>
+    ${render_msg( msg, messagetype )}
 %endif
 
-<h2>User '${user.email}'</h2>
-  
 %if len( groups ) == 0 and len( roles ) == 0:
     User '${user.email}' belongs to no groups and is associated with no roles
 %else:

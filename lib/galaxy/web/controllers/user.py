@@ -9,6 +9,17 @@ from random import choice
 
 log = logging.getLogger( __name__ )
 
+require_login_template = """
+<h1>Welcome to Galaxy</h1>
+
+<p>
+    This installation of Galaxy has been configured such that only users who are logged in may use it.%s
+</p>
+<p/>
+"""
+require_login_nocreation_template = require_login_template % ""
+require_login_creation_template = require_login_template % "  If you don't already have an account, <a href='%s'>you may create one</a>."
+
 class User( BaseController ):
     
     @web.expose
@@ -75,6 +86,10 @@ class User( BaseController ):
             m0 = trans.app.memory_usage.memory()
         email_error = password_error = None
         # Attempt login
+        if trans.app.config.require_login:
+            refresh_frames = [ 'masthead', 'history', 'tools' ]
+        else:
+            refresh_frames = [ 'masthead', 'history' ]
         if email or password:
             user = trans.app.model.User.filter_by( email=email ).first()
             if not user:
@@ -87,33 +102,50 @@ class User( BaseController ):
             else:
                 trans.handle_user_login( user )
                 trans.log_event( "User logged in" )
-                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
+                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=refresh_frames )
         if trans.app.memory_usage:
             m1 = trans.app.memory_usage.memory( m0, pretty=True )
             log.info( "End of user/login, memory used increased by %s"  % m1 )
-        return trans.show_form( 
-            web.FormBuilder( web.url_for(), "Login", submit_text="Login" )
-                .add_text( "email", "Email address", value=email, error=email_error )
+        form = web.FormBuilder( web.url_for(), "Login", submit_text="Login" ) \
+                .add_text( "email", "Email address", value=email, error=email_error ) \
                 .add_password( "password", "Password", value='', error=password_error, 
-                                help="<a href='%s'>Forgot password? Reset here</a>" % web.url_for( action='reset_password' ) ) )
+                                help="<a href='%s'>Forgot password? Reset here</a>" % web.url_for( action='reset_password' ) )
+        if trans.app.config.require_login:
+            if trans.app.config.allow_user_creation:
+                return trans.show_form( form, header = require_login_creation_template % web.url_for( action = 'create' ) )
+            else:
+                return trans.show_form( form, header = require_login_nocreation_template )
+        else:
+            return trans.show_form( form )
+
     @web.expose
     def logout( self, trans ):
         if trans.app.memory_usage:
             # Keep track of memory usage
             m0 = trans.app.memory_usage.memory()
+        if trans.app.config.require_login:
+            refresh_frames = [ 'masthead', 'history', 'tools' ]
+        else:
+            refresh_frames = [ 'masthead', 'history' ]
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
         trans.handle_user_logout()
         if trans.app.memory_usage:
             m1 = trans.app.memory_usage.memory( m0, pretty=True )
             log.info( "End of user/logout, memory used increased by %s"  % m1 )
-        return trans.show_ok_message( "You are no longer logged in", refresh_frames=['masthead', 'history'] )
+        return trans.show_ok_message( "You are no longer logged in.", refresh_frames=refresh_frames )
             
     @web.expose
-    def create( self, trans, email='', password='', confirm='',subscribe=False ):
+    def create( self, trans, email='', password='', confirm='', subscribe=False ):
         if trans.app.memory_usage:
             # Keep track of memory usage
             m0 = trans.app.memory_usage.memory()
+        if trans.app.config.require_login:
+            refresh_frames = [ 'masthead', 'history', 'tools' ]
+        else:
+            refresh_frames = [ 'masthead', 'history' ]
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+            return trans.show_error_message( 'User registration is disabled.  Please contact your local Galaxy administrator for an account.' )
         email_error = password_error = confirm_error = None
         if email:
             if len( email ) == 0 or "@" not in email or "." not in email:
@@ -130,29 +162,36 @@ class User( BaseController ):
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
                 user.flush()
-                trans.app.security_agent.setup_new_user( user )
-                trans.handle_user_login( user )
-                trans.log_event( "User created a new account" )
-                trans.log_event( "User logged in" )
+                if trans.user_is_admin():
+                    trans.app.security_agent.create_private_user_role( user )
+                    trans.app.security_agent.user_set_default_permissions( user )
+                    trans.log_event( "Admin created a new account" )
+                    msg = 'Created account ' + user.email
+                else:
+                    trans.app.security_agent.setup_new_user( user )
+                    trans.handle_user_login( user )
+                    trans.log_event( "User created a new account" )
+                    trans.log_event( "User logged in" )
+                    msg = 'Now logged in as ' + user.email
                 #subscribe user to email list
                 if subscribe:
                     mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
                     mail.write("To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % (trans.app.config.mailing_join_addr,email) )
                     if mail.close():
-                        return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=['masthead', 'history'] )
+                        return trans.show_warn_message( msg + ". However, subscribing to the mailing list has failed.", refresh_frames=refresh_frames )
                 if trans.app.memory_usage:
                     m1 = trans.app.memory_usage.memory( m0, pretty=True )
                     log.info( "End of user/create, memory used increased by %s"  % m1 )
-                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
+                return trans.show_ok_message( msg, refresh_frames=refresh_frames )
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Create account", submit_text="Create" )
                 .add_text( "email", "Email address", value=email, error=email_error )
-                .add_password( "password", "Password", value='', error=password_error ) 
-                .add_password( "confirm", "Confirm password", value='', error=confirm_error ) 
+                .add_password( "password", "Password", value='', error=password_error )
+                .add_password( "confirm", "Confirm password", value='', error=confirm_error )
                 .add_input( "checkbox","Subscribe To Mailing List","subscribe", value='subscribe' ) )
 
     @web.expose
-    def reset_password(self, trans, email=None, **kwd):
+    def reset_password( self, trans, email=None, **kwd ):
         error = ''
         reset_user = trans.app.model.User.filter_by( email=email ).first()
         user = trans.get_user()
@@ -167,11 +206,11 @@ class User( BaseController ):
                 mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
                 mail.write("To: %s\nFrom: no-reply@%s\nSubject: Galaxy Password Reset\n\nYour password has been reset to \"%s\" (no quotes)." % (email, trans.request.remote_addr, new_pass) )
                 if mail.close():
-                    return trans.show_ok_message( "Failed to reset password! If this problem persist, submit a bug report.")
+                    return trans.show_error_message( 'Failed to reset password.  If this problem persists, please submit a bug report.' )
                 reset_user.set_password_cleartext( new_pass )
                 reset_user.flush()
                 trans.log_event( "User reset password: %s" % email )
-                return trans.show_ok_message( "Password has been reset and emailed to: %s." % email)
+                return trans.show_ok_message( "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( action='login' ) ) )
         elif email != None:
             error = "The specified user does not exist"
         return trans.show_form( 

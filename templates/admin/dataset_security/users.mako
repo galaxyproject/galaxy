@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <% 
     import galaxy.model
@@ -39,11 +40,15 @@
     </tr>
 </%def>
 
+<a name="TOP"><h2>Users</h2></a>
+
 %if msg:
-    <div class="donemessage">${msg}</div>
+    ${render_msg( msg, messagetype )}
 %endif
 
-<a name="TOP"><h2>Users</h2></a>
+<ul class="manage-table-actions">
+    <li><a class="action-button" href="${h.url_for( controller='user', action='create' )}">Create a new user</a></li>
+</ul>
 
 %if len( users_groups_roles ) == 0:
     There are no Galaxy users

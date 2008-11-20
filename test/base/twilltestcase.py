@@ -562,6 +562,7 @@ class TwillTestCase( unittest.TestCase ):
                 tc.fv( "1", "4", group_id ) # form field 4 is the check box named 'groups'
             tc.submit( "create_role_button" )
         except AssertionError, err:
+            self.home()
             errmsg = 'Exception caught attempting to create role: %s' % str( err )
             raise AssertionError( errmsg )
         self.home()
@@ -601,6 +602,7 @@ class TwillTestCase( unittest.TestCase ):
                 tc.fv( "1", "3", role_id ) # form field 3 is the check box named 'roles'
             tc.submit( "create_group_button" )
         except AssertionError, err:
+            self.home()
             errmsg = 'Exception caught attempting to create group: %s' % str( err )
             raise AssertionError( errmsg )
         self.home()
@@ -616,6 +618,7 @@ class TwillTestCase( unittest.TestCase ):
                 tc.fv( "1", "1", user_id ) # form field 1 is the check box named 'members'
             tc.submit( "group_members_edit_button" )
         except AssertionError, err:
+            self.home()
             raise AssertionError( 'Exception caught attempting to create group: %s' % str( err ) )
         self.home()
     def associate_groups_with_role( self, role_id, group_ids=[] ):
@@ -631,6 +634,7 @@ class TwillTestCase( unittest.TestCase ):
                 tc.submit( "groups_add_button" )
             tc.submit( "role_button" )
         except AssertionError, err: 
+            self.home()
             raise AssertionError( 'Exception caught attempting to associated groups with a role: %s' % str( err ) )
         except:
             pass
@@ -667,9 +671,10 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "2", description ) # form field 1 is the field named name...
             tc.submit( "create_library_button" )
         except AssertionError, err:
+            self.home()
             raise AssertionError( 'Exception caught attempting to create library: %s' % str( err ) )
         self.home()
-    def rename_library( self, library_id, name='New Test Library Renamed', description='New Test Library Description Re-described' ):
+    def rename_library( self, library_id, name='New Test Library Renamed', description='New Test Library Description Re-described', root_folder='' ):
         """Rename a library"""
         try:
             self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
@@ -677,8 +682,11 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( 'Edit library name and description' )
             tc.fv( "1", "name", name ) # form field 1 is the field named name...
             tc.fv( "1", "description", description ) # form field 2 is the field named description...
+            if root_folder:
+                tc.fv( "1", "root_folder", root_folder )
             tc.submit( "rename_library_button" )
         except AssertionError, err:
+            self.home()
             raise AssertionError( 'Exception caught attempting to rename a library: %s' % str( err ) )
         self.home()
     def add_folder( self, folder_id, name='New Test Folder', description='New Test Folder Description' ):
@@ -691,6 +699,7 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "description", description ) # form field 2 is the field named description...
             tc.submit( "new_folder_button" )
         except AssertionError, err:
+            self.home()
             raise AssertionError( 'Exception caught attempting to create a new folder: %s' % str( err ) )
         self.home()
     def rename_folder( self, folder_id, name='New Test Folder Renamed', description='New Test Folder Description Re-described' ):
@@ -703,6 +712,7 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "description", description ) # form field 2 is the field named description...
             tc.submit( "rename_folder_button" )
         except AssertionError, err:
+            self.home()
             raise AssertionError( 'Exception caught attempting to rename a library: %s' % str( err ) )
         self.home()
     def add_dataset( self, filename, folder_id, extension='auto', dbkey='hg18', roles=[] ):
@@ -719,8 +729,67 @@ class TwillTestCase( unittest.TestCase ):
             for role_id in roles:
                 tc.fv( "1", "roles", role_id ) # form field 7 is the select list named out_groups, note the buttons...
             tc.submit( "new_dataset_button" )
+            self.last_page()
+            self.check_page_for_string( '1 new datasets added to the library ( each is selected below )' )
         except AssertionError, err:
+            self.home()
             raise AssertionError( 'Exception caught attempting to create add a dataset to a folder: %s' % str( err ) )
+        self.home()
+    def add_dataset_to_folder_from_history( self, folder_id ):
+        """Copy a dataset from the current history to a library folder"""
+        try:
+            # Create a new history
+            self.new_history()
+            self.upload_file( "1.bed" )
+            self.verify_dataset_correctness( "1.bed" )
+            self.visit_url( "%s/admin/add_dataset_to_folder_from_history?folder_id=%s" % ( self.url, folder_id ) )
+            self.last_page()
+            self.check_page_for_string( 'Active datasets in your current history' )
+            tc.fv( "1", "folder_id", folder_id )
+            tc.fv( "1", "ids", "1" )
+            tc.submit( "add_dataset_from_history_button" )
+            self.last_page()
+            self.check_page_for_string( 'Added the following datasets to the library folder: 1.bed' )
+        except AssertionError, err:
+            self.home()
+            raise AssertionError( 'Exception caught attempting to create add a dataset to a folder: %s' % str( err ) )
+        self.home()
+    def add_datasets_from_library_dir( self, folder_id, extension='auto', dbkey='hg18', roles=[] ):
+        """Add a directory of datasets to a folder"""
+        try:
+            self.visit_url( "%s/admin/dataset?folder_id=%s" % ( self.url, folder_id ) )
+            self.last_page()
+            self.check_page_for_string( 'Create a new library dataset' )
+            tc.fv( "1", "folder_id", folder_id )
+            tc.fv( "1", "extension", extension )
+            tc.fv( "1", "dbkey", dbkey )
+            library_dir = "%s" % self.file_dir
+            tc.fv( "1", "server_dir", "library" )
+            for role_id in roles:
+                tc.fv( "1", "roles", role_id )
+            tc.submit( "new_dataset_button" )
+            self.last_page()
+            self.check_page_for_string( '3 new datasets added to the library ( each is selected below )' )
+            self.check_page_for_string( "3.bed" )
+            self.check_page_for_string( "4.bed" )
+            self.check_page_for_string( "5.bed" )
+            tc.submit( "action_on_datasets_button" )
+            self.last_page()
+            self.check_page_for_string( '( 3 of them )' )
+            self.check_page_for_string( 'New Test Role' )
+            self.check_page_for_string( 'Another Test Role' )
+            tc.find( "update_roles" )
+            # NOTE: we cannot submit the form because of a bug in twill ( it cannot handle select lists
+            # that include no option fields.  Since the "manage permissions" and "edit metadata" select
+            # lists have no options ( no roles associated ), submitting the form will throw a 
+            # ParseError: <unprintable ParseError object> exception.  Uncomment the following 3 lines
+            # when twill fixes this bug...
+            # tc.submit( "update_roles" )
+            # self.last_page()
+            # self.check_page_for_string( 'Libraries' )
+        except AssertionError, err:
+            self.home()
+            raise AssertionError( 'Exception caught attempting to create add a directory of datasets to a folder: %s' % str( err ) )
         self.home()
     def mark_library_deleted( self, library_id ):
         """Mark a library as deleted"""

@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="common.mako" import="render_dataset" />
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="title()">Import from Library</%def>
 <%def name="stylesheets()">
@@ -78,67 +79,88 @@
 <![endif]>
 
 <%def name="render_folder( parent, parent_pad )">
-  <%
-    if not trans.app.security_agent.check_folder_contents( trans.user, parent ):
-      return ""
-    pad = parent_pad + 20
-    if parent_pad == 0:
-        expander = "/static/images/silk/resultset_bottom.png"
-        folder = "/static/images/silk/folder_page.png"
-        subfolder = False
-    else:
-        expander = "/static/images/silk/resultset_next.png"
-        folder = "/static/images/silk/folder.png"
-        subfolder = True
-  %>
-  <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
-    <div class="rowTitle">
-      <img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
-      ${parent.name}
-      %if parent.description:
-        <i>- ${parent.description}</i>
-      %endif
-    </div>
-  </li>
-  %if subfolder:
-    <ul id="subFolder">
-  %else:
-    <ul>
-  %endif
-      %for folder in parent.active_folders:
-        ${render_folder( folder, pad )}
-      %endfor
-      %for dataset in parent.active_datasets:
-        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=dataset.dataset ):
-            <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset )}</li>
-        %endif
-      %endfor
+    <%
+        if not trans.app.security_agent.check_folder_contents( trans.user, parent ):
+            return ""
+        pad = parent_pad + 20
+        if parent_pad == 0:
+            expander = "/static/images/silk/resultset_bottom.png"
+            folder = "/static/images/silk/folder_page.png"
+            subfolder = False
+        else:
+            expander = "/static/images/silk/resultset_next.png"
+            folder = "/static/images/silk/folder.png"
+            subfolder = True
+    %>
+    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
+        <div class="rowTitle">
+            <img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
+            ${parent.name}
+            %if parent.description:
+                <i>- ${parent.description}</i>
+            %endif
+        </div>
+    </li>
+    %if subfolder:
+        <ul id="subFolder">
+    %else:
+        <ul>
+    %endif
+        %for folder in parent.active_folders:
+            ${render_folder( folder, pad )}
+        %endfor
+        %for dataset in parent.active_datasets:
+            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=dataset.dataset ):
+                <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset )}</li>
+            %endif
+        %endfor
     </ul>
 </%def>
 
 <h2>Libraries</h2>
-<form name="import_from_library" action="${h.url_for( '/library/import_datasets' )}" method="post">
-<ul>
-%for library in libraries:
-  %if trans.app.security_agent.check_folder_contents( trans.user, library ):
-  <li class="libraryRow libraryOrFolderRow" id="libraryRow"><div class="rowTitle"><table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle"><tr>
-    <th width="*">
-        <img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
-        ${library.name}
-        %if library.description:
-          <i>- ${library.description}</i>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
+
+%if not libraries:
+    No libraries contain datasets that you are allowed to access
+%else:
+    <% can_access = False %>
+    <form name="import_from_library" action="${h.url_for( '/library/import_datasets' )}" method="post">
+        <ul>
+            %for library in libraries:
+                %if trans.app.security_agent.check_folder_contents( trans.user, library ):
+                    <% can_access = True %>
+                    <li class="libraryRow libraryOrFolderRow" id="libraryRow">
+                        <div class="rowTitle">
+                            <table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle">
+                                <tr>
+                                    <th width="*">
+                                        <img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
+                                        ${library.name}
+                                        %if library.description:
+                                            <i>- ${library.description}</i>
+                                        %endif
+                                    </th>
+                                    <th width="100">Format</th>
+                                    <th width="50">Db</th>
+                                    <th width="200">Info</th>
+                                </tr>
+                            </table>
+                        </div>
+                    </li>
+                    <ul>
+                        ${render_folder( library.root_folder, 0 )}
+                    </ul>
+                    <br/>
+                %endif
+            %endfor
+        </ul>
+        %if can_access:
+            <input type="submit" class="primary-button" name="import_dataset" value="Import selected datasets"/>
+        %else:
+            No libraries contain datasets that you are allowed to access
         %endif
-    </th>
-    <th width="100">Format</th>
-    <th width="50">Db</th>
-    <th width="200">Info</th>
-  </tr></table></div></li>
-    <ul>
-      ${render_folder( library.root_folder, 0 )}
-    </ul>
-  <br/>
-  %endif
-%endfor
-</ul>
-<input type="submit" class="primary-button" name="import_dataset" value="Import selected datasets"/>
-</form>
+    </form>
+%endif

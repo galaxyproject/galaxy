@@ -1,7 +1,8 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 %if msg:
-<div class="donemessage">${msg}</div>
+    ${render_msg( msg, messagetype )}
 %endif
 
 <div class="toolForm">

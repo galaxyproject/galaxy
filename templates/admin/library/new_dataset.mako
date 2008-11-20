@@ -1,20 +1,21 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <% import os %>
 
 %if msg:
-    <p class="ok_bgr">${msg}</p></td></tr>
+    ${render_msg( msg, messagetype )}
 %endif
 
 <div class="toolForm" id="new_dataset">
     <div class="toolFormTitle">Create a new library dataset</div>
     <div class="toolFormBody">
         <form name="tool_form" action="${h.url_for( controller='admin', action='dataset' )}" enctype="multipart/form-data" method="post">
-            <input type="hidden" name="folder_id" value="${folder_id}">
+            <input type="hidden" name="folder_id" value="${folder_id}"/>
             <div class="form-row">
                 <label>File:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="file" name="file_data">
+                    <input type="file" name="file_data"/>
                 </div>
                 <div class="toolParamHelp" style="clear: both;">
                     Upload a single file.  Use the "Server Directory" feature below to upload an entire directory of files.
@@ -52,7 +53,7 @@
                 <label>Convert spaces to tabs:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <div>
-                        <input type="checkbox" name="space_to_tab" value="Yes">Yes
+                        <input type="checkbox" name="space_to_tab" value="Yes"/>Yes
                     </div>
                 </div>
                 <div class="toolParamHelp" style="clear: both;">
@@ -102,7 +103,7 @@
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
-                <input type="submit" class="primary-button" name="new_dataset_button" value="Add Dataset(s) to Folder">
+                <input type="submit" class="primary-button" name="new_dataset_button" value="Add Dataset(s) to Folder"/>
             </div>
         </form>
     </div>

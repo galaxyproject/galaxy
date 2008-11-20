@@ -246,6 +246,18 @@ def string_as_bool( string ):
     else:
         return False
 
+def listify( item ):
+    """
+    Make a single item a single item list, or return a list if passed a
+    list.  Passing a None returns an empty list.
+    """
+    if item is None:
+        return []
+    elif isinstance( item, list ):
+        return item
+    else:
+        return [ item ]
+
 def commaify(amount):
     orig = amount
     new = re.sub("^(-?\d+)(\d{3})", '\g<1>,\g<2>', amount)

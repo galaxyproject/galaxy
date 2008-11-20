@@ -10,6 +10,10 @@ $(function(){
 </script>
 </%def>
 
+%if header:
+    ${header}
+%endif
+
 <div class="toolForm">
     <div class="toolFormTitle">${form.title}</div>
     <div class="toolFormBody">
