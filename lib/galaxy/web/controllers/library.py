@@ -7,7 +7,8 @@ log = logging.getLogger( __name__ )
 class Library( BaseController ):
     @web.expose
     def browse( self, trans, **kwd ):
-        return trans.fill_template( '/library/browser.mako', libraries=trans.app.model.Library.filter_by( deleted=False ).all() )
+        libraries=trans.app.model.Library.filter_by( deleted=False ).order_by( trans.app.model.Library.table.c.name ).all()
+        return trans.fill_template( '/library/browser.mako', libraries=libraries )
     index = browse
     @web.expose
     def import_datasets( self, trans, import_ids=[], **kwd ):

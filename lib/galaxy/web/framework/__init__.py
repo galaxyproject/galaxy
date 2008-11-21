@@ -64,10 +64,10 @@ def require_admin( func ):
     def decorator( self, trans, *args, **kwargs ):
         admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
         if not admin_users:
-            return trans.show_error_message( "You must be an administrator to access this feature, and no administrators are set in the Galaxy configuration." )
+            return trans.show_error_message( "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration." )
         user = trans.get_user()
         if not user:
-            return trans.show_error_message( "You must be an administrator to access this feature, and currently you are not logged in." )
+            return trans.show_error_message( "You must be logged in as an administrator to access this feature." )
         if not user.email in admin_users:
             return trans.show_error_message( "You must be an administrator to access this feature." )
         return func( self, trans, *args, **kwargs )
@@ -264,6 +264,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             url_for( controller='user', action='login' ),
             url_for( controller='user', action='create' ),
             url_for( controller='user', action='reset_password' ),
+            url_for( controller='library', action='browse' )
         )
         if self.galaxy_session.user is None and environ['PATH_INFO'] not in allowed_paths:
             self.response.send_redirect( url_for( controller='root', action='index' ) )

@@ -2,7 +2,7 @@ import galaxy.model
 from galaxy.model.orm import *
 from base.twilltestcase import *
 
-not_logged_in_security_msg = 'You must be an administrator to access this feature, and currently you are not logged in.'
+not_logged_in_security_msg = 'You must be logged in as an administrator to access this feature.'
 logged_in_security_msg = 'You must be an administrator to access this feature.'
 
 class TestHistory( TwillTestCase ):
