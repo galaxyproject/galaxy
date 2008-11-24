@@ -46,6 +46,7 @@
             <option name="MAF File" value="maf">
               <option name="Invalid MAF version (maf_version)" value="maf_version"/>
               <option name="Skipping unsupported paragraph (maf_paragraph)" value="maf_paragraph"/>
+              <option name="Unrecognized character found in alignment (bad_char_all)" value="bad_char_all"/>
               <option name="Skipping all reconstruction scores: no species specified (recon_noseq)" value="recon_noseq"/>
               <option name="Skipping reconstruction scores in blocks with missing row (recon_missing)" value="recon_missing"/>
               <option name="The first row in some blocks is not the specified reference sequence (refseq_not_first)" value="refseq_not_first"/>
@@ -75,7 +76,7 @@
                 <option name="Score shading is not yet supported (score_shading)" value="score_shading"/>
               </option>
               <option name="Red Flags" value="red">
-                <option name="Sequence name in annotation file does not match name in MAF (seqname_mismatch)" value="seqname_mismatch"/>
+                <option name="Assuming that annotations in file ___ are for species ___ (seqname_fix_all)" value="seqname_fix_all"/>
                 <option name="BED start or end &lt; 0 (bed_coord)" value="bed_coord"/>
                 <option name="GFF start or end &lt; 1 (gff_coord)" value="gff_coord"/>
                 <option name="Missing item name for URL substitution (url_subst)" value="url_subst"/>
@@ -87,6 +88,7 @@
               <option name="Skipping blocks for export where reference sequence is hidden or all gaps (export_skip)" value="export_skip"/>
               <option name="Possible parse error: token ends with an escaped quote (escaped_quote)" value="escaped_quote"/>
               <option name="Draggable panel dividers will not be sticky (no_sticky)" value="no_sticky"/>
+              <option name="Selecting a large block may be very slow (big_block)" value="big_block"/>
             </option>
           </option>
         </options>
