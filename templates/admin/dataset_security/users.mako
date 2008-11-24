@@ -42,13 +42,13 @@
 
 <a name="TOP"><h2>Users</h2></a>
 
+<ul class="manage-table-actions">
+    <li><a class="action-button" href="${h.url_for( controller='admin', action='create_new_user' )}">Create a new user</a></li>
+</ul>
+
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
-
-<ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='user', action='create' )}">Create a new user</a></li>
-</ul>
 
 %if len( users_groups_roles ) == 0:
     There are no Galaxy users

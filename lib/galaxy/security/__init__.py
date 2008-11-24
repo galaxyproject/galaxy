@@ -47,12 +47,8 @@ class RBACAgent:
         raise "Unimplemented Method"
     def get_private_user_role( self, user ):
         raise "Unimplemented Method"
-    def user_set_default_permissions( self, user, permissions = None, history = False, dataset = False ):
+    def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False ):
         raise "Unimplemented Method"
-    def setup_new_user( self, user ):
-        self.create_private_user_role( user )
-        self.user_set_default_permissions( user, history = True, dataset = True )
-        #self.associate_components( user=user, group=self.get_public_group() )
     def history_set_default_permissions( self, history, permissions=None, dataset=False, bypass_manage_permission=False ):
         raise "Unimplemented Method"
     def set_dataset_permissions( self, dataset, permissions ):
@@ -169,7 +165,7 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 return None
         return role
-    def user_set_default_permissions( self, user, permissions = {}, history = False, dataset = False ):
+    def user_set_default_permissions( self, user, permissions = {}, history=False, dataset=False ):
         if user is None:
             return None
         if not permissions:
@@ -195,7 +191,7 @@ class GalaxyRBACAgent( RBACAgent ):
         for dup in user.default_permissions:
             perms[ self.get_action( dup.action ) ].append( dup.role )
         return perms
-    def history_set_default_permissions( self, history, permissions = {}, dataset = False, bypass_manage_permission = False ):
+    def history_set_default_permissions( self, history, permissions={}, dataset=False, bypass_manage_permission=False ):
         if not history.user:
             return None # default permissions on a userless history are none
         if not permissions:

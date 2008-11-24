@@ -487,6 +487,47 @@ class Admin( BaseController ):
     # Galaxy User Stuff
     @web.expose
     @web.require_admin
+    def create_new_user( self, trans, email='', password='', confirm='', subscribe=False ):
+        email_error = password_error = confirm_error = None
+        if email:
+            if len( email ) == 0 or "@" not in email or "." not in email:
+                email_error = "Please enter a real email address"
+            elif len( email) > 255:
+                email_error = "Email address exceeds maximum allowable length"
+            elif trans.app.model.User.filter_by( email=email ).first():
+                email_error = "User with that email already exists"
+            elif len( password ) < 6:
+                password_error = "Please use a password of at least 6 characters"
+            elif password != confirm:
+                confirm_error = "Passwords do not match"
+            else:
+                user = trans.app.model.User( email=email )
+                user.set_password_cleartext( password )
+                user.flush()
+                trans.app.security_agent.create_private_user_role( user )
+                trans.app.security_agent.user_set_default_permissions( user, history=False, dataset=False )
+                trans.log_event( "Admin created a new account for user %s" % email )
+                msg = 'Created new account'
+                messagetype = 'done'
+                #subscribe user to email list
+                if subscribe:
+                    mail = os.popen( "%s -t" % trans.app.config.sendmail_path, 'w' )
+                    mail.write( "To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % ( trans.app.config.mailing_join_addr,email ) )
+                    if mail.close():
+                        msg + ". However, subscribing to the mailing list has failed."
+                        messagetype = 'error'
+            trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype=messagetype ) )
+        # TODO: make this a mako template
+        return trans.show_form( 
+            web.FormBuilder( web.url_for(), "Create account", submit_text="Create" )
+                .add_text( "email", "Email address", value=email, error=email_error )
+                .add_password( "password", "Password", value='', error=password_error )
+                .add_password( "confirm", "Confirm password", value='', error=confirm_error )
+                .add_input( "checkbox","Subscribe To Mailing List","subscribe", value='subscribe' ) )
+                
+                        
+    @web.expose
+    @web.require_admin
     def users( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = params.msg
@@ -960,7 +1001,7 @@ class Admin( BaseController ):
                     yield build_name, dbkey, ( dbkey==last_used_build )
             dbkeys = get_dbkey_options( last_used_build )
             # Send list of roles to the form so the dataset can be associated with 1 or more of them.
-            roles = trans.app.model.Role.filter( trans.app.model.Role.c.type != trans.app.model.Role.types.PRIVATE ).order_by( trans.app.model.Role.c.name ).all()
+            roles = trans.app.model.Role.query().order_by( trans.app.model.Role.c.name ).all()
             return trans.fill_template( '/admin/library/new_dataset.mako', 
                                         folder_id=folder_id,
                                         file_formats=file_formats,

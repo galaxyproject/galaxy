@@ -373,19 +373,48 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_page( "user/set_default_permissions" )
             self.check_page_for_string( email )
         self.home()
-        
+    def user_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=2 ): # role.id = 2 is Private Role for test2@bx.psu.edu 
+        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
+        # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
+        # /user/set_default_permissions method.
+        url = "user/set_default_permissions?update_roles=Save&id=None"
+        for po in permissions_out:
+            key = '%s_out' % po
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        for pi in permissions_in:
+            key = '%s_in' % pi
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        self.visit_url( "%s/%s" % ( self.url, url ) )
+        self.last_page()
+        self.check_page_for_string( 'Default new history permissions have been changed.' )
+        self.home()
+    def history_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=3 ): # role.id = 3 is Private Role for test3@bx.psu.edu 
+        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
+        # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
+        # /user/set_default_permissions method.
+        url = "root/history_set_default_permissions?update_roles=Save&id=None&dataset=True"
+        for po in permissions_out:
+            key = '%s_out' % po
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        for pi in permissions_in:
+            key = '%s_in' % pi
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        self.visit_url( "%s/%s" % ( self.url, url ) )
+        self.last_page()
+        self.check_page_for_string( 'Default history permissions have been changed.' )
+        self.home()
     def login( self, email='test@bx.psu.edu', password='testuser'):
         # test@bx.psu.edu is configured as an admin user
         self.create( email=email, password=password, confirm=password )
         self.visit_page( "user/login?email=%s&password=%s" % (email, password) )
         self.check_page_for_string( "Now logged in as %s" %email )
         self.home()
-
     def logout( self ):
         self.visit_page( "user/logout" )
         self.check_page_for_string( "You are no longer logged in" )
         self.home()
-
     # Functions associated with browsers, cookies, HTML forms and page visits
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""

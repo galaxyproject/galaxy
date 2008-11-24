@@ -81,9 +81,6 @@ class User( BaseController ):
 
     @web.expose
     def login( self, trans, email='', password='' ):
-        if trans.app.memory_usage:
-            # Keep track of memory usage
-            m0 = trans.app.memory_usage.memory()
         email_error = password_error = None
         # Attempt login
         if trans.app.config.require_login:
@@ -102,13 +99,11 @@ class User( BaseController ):
             else:
                 trans.handle_user_login( user )
                 trans.log_event( "User logged in" )
+                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=refresh_frames )
                 msg = "Now logged in as " + user.email + "."
                 if trans.app.config.require_login:
                     msg += '  <a href="%s">Click here</a> to continue to the front page.' % web.url_for( '/static/welcome.html' )
                 return trans.show_ok_message( msg, refresh_frames=refresh_frames )
-        if trans.app.memory_usage:
-            m1 = trans.app.memory_usage.memory( m0, pretty=True )
-            log.info( "End of user/login, memory used increased by %s"  % m1 )
         form = web.FormBuilder( web.url_for(), "Login", submit_text="Login" ) \
                 .add_text( "email", "Email address", value=email, error=email_error ) \
                 .add_password( "password", "Password", value='', error=password_error, 
@@ -143,15 +138,12 @@ class User( BaseController ):
             
     @web.expose
     def create( self, trans, email='', password='', confirm='', subscribe=False ):
-        if trans.app.memory_usage:
-            # Keep track of memory usage
-            m0 = trans.app.memory_usage.memory()
         if trans.app.config.require_login:
             refresh_frames = [ 'masthead', 'history', 'tools' ]
         else:
             refresh_frames = [ 'masthead', 'history' ]
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
-            return trans.show_error_message( 'User registration is disabled.  Please contact your local Galaxy administrator for an account.' )
+            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
         email_error = password_error = confirm_error = None
         if email:
             if len( email ) == 0 or "@" not in email or "." not in email:
@@ -168,32 +160,23 @@ class User( BaseController ):
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
                 user.flush()
-                if trans.user_is_admin():
-                    trans.app.security_agent.create_private_user_role( user )
-                    trans.app.security_agent.user_set_default_permissions( user )
-                    trans.log_event( "Admin created a new account" )
-                    msg = 'Created account ' + user.email
-                else:
-                    trans.app.security_agent.setup_new_user( user )
-                    trans.handle_user_login( user )
-                    trans.log_event( "User created a new account" )
-                    trans.log_event( "User logged in" )
-                    msg = 'Now logged in as ' + user.email
+                trans.app.security_agent.create_private_user_role( user )
+                trans.handle_user_login( user )
+                trans.app.security_agent.user_set_default_permissions( user, history=True, dataset=True )
+                trans.log_event( "User created a new account" )
+                trans.log_event( "User logged in" )
                 #subscribe user to email list
                 if subscribe:
                     mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
                     mail.write("To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % (trans.app.config.mailing_join_addr,email) )
                     if mail.close():
-                        return trans.show_warn_message( msg + ". However, subscribing to the mailing list has failed.", refresh_frames=refresh_frames )
-                if trans.app.memory_usage:
-                    m1 = trans.app.memory_usage.memory( m0, pretty=True )
-                    log.info( "End of user/create, memory used increased by %s"  % m1 )
-                return trans.show_ok_message( msg, refresh_frames=refresh_frames )
+                        return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=['masthead', 'history'] )
+                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Create account", submit_text="Create" )
                 .add_text( "email", "Email address", value=email, error=email_error )
-                .add_password( "password", "Password", value='', error=password_error )
-                .add_password( "confirm", "Confirm password", value='', error=confirm_error )
+                .add_password( "password", "Password", value='', error=password_error ) 
+                .add_password( "confirm", "Confirm password", value='', error=confirm_error ) 
                 .add_input( "checkbox","Subscribe To Mailing List","subscribe", value='subscribe' ) )
 
     @web.expose

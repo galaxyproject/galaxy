@@ -316,20 +316,25 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Login a new user (possibly newly created)
            - create a new session
            - associate new session with user
-           - if old session had a history and it was not associated with a user, associate it with the new session.
+           - if old session had a history and it was not associated with a user, associate it with the new session, 
+             otherwise associate the current session's history with the user
         """
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
         self.galaxy_session = self.__create_new_session( prev_galaxy_session, user )
         if prev_galaxy_session.current_history:
             history = prev_galaxy_session.current_history
-            if history.user is None:
-                self.galaxy_session.add_history( history )
-                self.galaxy_session.current_history = history
-                history.user = user   
-            self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session, history ] )
+        elif self.galaxy_session.current_history:
+            history = self.galaxy_session.current_history
         else:
-            self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session ] )
+            history = self.history
+        if history not in self.galaxy_session.histories:
+            self.galaxy_session.add_history( history )
+        if history.user is None:
+            history.user = user
+        self.galaxy_session.current_history = history
+        self.app.security_agent.history_set_default_permissions( history, dataset=True )
+        self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session, history ] )
         self.__update_session_cookie()
     def handle_user_logout( self ):
         """

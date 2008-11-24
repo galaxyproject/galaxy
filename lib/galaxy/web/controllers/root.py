@@ -800,7 +800,9 @@ class RootController( BaseController ):
                         in_roles = [ in_roles ]
                     in_roles = [ trans.app.model.Role.get( x ) for x in in_roles ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-                trans.app.security_agent.history_set_default_permissions( history, permissions )
+                dataset = 'dataset' in kwd
+                bypass_manage_permission = 'bypass_manage_permission' in kwd
+                trans.app.security_agent.history_set_default_permissions( history, permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission )
                 return trans.show_ok_message( 'Default history permissions have been changed.' )
             return trans.fill_template( 'history/permissions.mako' )
         else:
