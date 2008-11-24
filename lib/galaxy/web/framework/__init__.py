@@ -266,7 +266,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             url_for( controller='user', action='reset_password' ),
             url_for( controller='library', action='browse' )
         )
-        if self.galaxy_session.user is None and environ['PATH_INFO'] not in allowed_paths:
+        if self.galaxy_session.user is None and self.request.path not in allowed_paths:
             self.response.send_redirect( url_for( controller='root', action='index' ) )
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """

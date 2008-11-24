@@ -8,7 +8,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create a new folder</div>
     <div class="toolFormBody">
-        <form name="folder" action="/admin/folder" method="post" >
+        <form name="folder" action="${h.url_for( controller='admin', action='folder' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
