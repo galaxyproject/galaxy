@@ -102,7 +102,10 @@ class User( BaseController ):
             else:
                 trans.handle_user_login( user )
                 trans.log_event( "User logged in" )
-                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=refresh_frames )
+                msg = "Now logged in as " + user.email + "."
+                if trans.app.config.require_login:
+                    msg += '  <a href="%s">Click here</a> to continue to the front page.' % web.url_for( '/static/welcome.html' )
+                return trans.show_ok_message( msg, refresh_frames=refresh_frames )
         if trans.app.memory_usage:
             m1 = trans.app.memory_usage.memory( m0, pretty=True )
             log.info( "End of user/login, memory used increased by %s"  % m1 )
@@ -133,7 +136,10 @@ class User( BaseController ):
         if trans.app.memory_usage:
             m1 = trans.app.memory_usage.memory( m0, pretty=True )
             log.info( "End of user/logout, memory used increased by %s"  % m1 )
-        return trans.show_ok_message( "You are no longer logged in.", refresh_frames=refresh_frames )
+        msg = "You are no longer logged in."
+        if trans.app.config.require_login:
+            msg += '  <a href="%s">Click here</a> to return to the login page.' % web.url_for( controller='user', action='login' )
+        return trans.show_ok_message( msg, refresh_frames=refresh_frames )
             
     @web.expose
     def create( self, trans, email='', password='', confirm='', subscribe=False ):
