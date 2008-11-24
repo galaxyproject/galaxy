@@ -208,9 +208,9 @@ class Maf( Alignment ):
         
         species = []
         species_chromosomes = {}
-        maf_reader = bx.align.maf.Reader( open( dataset.file_name ) )
         indexes = bx.interval_index_file.Indexes()
         try:
+            maf_reader = bx.align.maf.Reader( open( dataset.file_name ) )
             while True:
                 pos = maf_reader.file.tell()
                 block = maf_reader.next()
