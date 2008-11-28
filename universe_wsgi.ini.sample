@@ -141,6 +141,9 @@ use_interactive = True
 # Can users register new accounts?
 #allow_user_creation = True
 
+# Can an admin user delete user accounts?
+#allow_user_deletion = False
+
 # ---- Job Execution --------------------------------------------------------
 
 # Number of concurrent jobs to run (local job runner)

@@ -13,6 +13,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
+from galaxy.model.orm import *
 
 class WorkflowController( BaseController ):
     
@@ -48,7 +49,8 @@ class WorkflowController( BaseController ):
         # Load workflow from database
         stored = get_stored_workflow( trans, id )
         if email:
-            other = model.User.filter_by( email=email ).first()
+            other = model.User.filter( and_( model.user.table.c.email==email,
+                                             model.User.table.c.deleted==False ) ).first()
             if not other:
                 mtype = "error"
                 msg = ( "User '%s' does not exist" % email )

@@ -103,7 +103,7 @@
                 <a class="action-button" href="${h.url_for( action='folder', new=True, id=parent.id )}">Create a new sub-folder in this folder</a>
                 <a class="action-button" href="${h.url_for( action='folder', rename=True, id=parent.id )}">Rename this folder</a>
                 %if subfolder:
-                    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'?" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
+                    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
                 %endif
             </div>
         %endif

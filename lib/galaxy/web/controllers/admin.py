@@ -3,12 +3,7 @@ from galaxy import util, datatypes
 from galaxy.web.base.controller import *
 from galaxy.datatypes import sniff
 from galaxy.security import RBACAgent
-import galaxy.model
 from galaxy.model.orm import *
-from xml.sax.saxutils import escape, unescape
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-import sqlalchemy as sa
 
 import logging
 log = logging.getLogger( __name__ )
@@ -60,9 +55,9 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
-        users=trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all()
+        users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all()
         groups = trans.app.model.Group.query() \
-                .filter( galaxy.model.Group.table.c.deleted==False ) \
+                .filter( trans.app.model.Group.table.c.deleted==False ) \
                 .order_by( trans.app.model.Group.table.c.name ) \
                 .all()
         return trans.fill_template( '/admin/dataset_security/role_create.mako', 
@@ -84,23 +79,21 @@ class Admin( BaseController ):
             trans.response.send_redirect( web.url_for( action='create_role', msg=msg, messagetype='error' ) )
         else:
             # Create the role
-            role = galaxy.model.Role( name=name,
-                                      description=description,
-                                      type=trans.app.model.Role.types.ADMIN )
+            role = trans.app.model.Role( name=name, description=description, type=trans.app.model.Role.types.ADMIN )
             role.flush()
             # Add the users
             users = util.listify( params.users )
             for user_id in users:
-                user = galaxy.model.User.get( user_id )
+                user = trans.app.model.User.get( user_id )
                 # Create the UserRoleAssociation
-                ura = galaxy.model.UserRoleAssociation( user, role )
+                ura = trans.app.model.UserRoleAssociation( user, role )
                 ura.flush()
             # Add the groups
             groups = util.listify( params.groups )
             for group_id in groups:
-                group = galaxy.model.Group.get( group_id )
+                group = trans.app.model.Group.get( group_id )
                 # Create the GroupRoleAssociation
-                gra = galaxy.model.GroupRoleAssociation( group, role )
+                gra = trans.app.model.GroupRoleAssociation( group, role )
                 gra.flush()
             msg = "The new role has been created with %s associated users and %s associated groups" % ( str( len( users ) ), str( len( groups ) ) )
             trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
@@ -115,7 +108,7 @@ class Admin( BaseController ):
         out_users = []
         in_groups = []
         out_groups = []
-        for user in trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all():
+        for user in trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all():
             if user in [ x.user for x in role.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
@@ -163,7 +156,7 @@ class Admin( BaseController ):
     @web.require_admin
     def role_members_edit( self, trans, **kwd ):
         params = util.Params( kwd )
-        role = galaxy.model.Role.get( int( params.role_id ) )
+        role = trans.app.model.Role.get( int( params.role_id ) )
         in_users = [ trans.app.model.User.get( x ) for x in util.listify( params.in_users ) ]
         for ura in role.users:
             user = trans.app.model.User.get( ura.user_id )
@@ -188,7 +181,7 @@ class Admin( BaseController ):
     @web.require_admin
     def mark_role_deleted( self, trans, **kwd ):
         params = util.Params( kwd )
-        role = galaxy.model.Role.get( int( params.role_id ) )
+        role = trans.app.model.Role.get( int( params.role_id ) )
         role.deleted = True
         role.flush()
         msg = "The role has been marked as deleted."
@@ -202,17 +195,17 @@ class Admin( BaseController ):
         # Build a list of tuples which are roles followed by lists of groups and users
         # [ ( role, [ group, group, group ], [ user, user ] ), ( role, [ group, group ], [ user ] ) ]
         roles_groups_users = []
-        roles = galaxy.model.Role.query() \
-            .filter( galaxy.model.Role.table.c.deleted==True ) \
-            .order_by( galaxy.model.Role.table.c.name ) \
+        roles = trans.app.model.Role.query() \
+            .filter( trans.app.model.Role.table.c.deleted==True ) \
+            .order_by( trans.app.model.Role.table.c.name ) \
             .all()
         for role in roles:
             groups = []
             for gra in role.groups:
-                groups.append( galaxy.model.Group.get( gra.group_id ) )
+                groups.append( trans.app.model.Group.get( gra.group_id ) )
             users = []
             for ura in role.users:
-                users.append( galaxy.model.User.get( ura.user_id ) )
+                users.append( trans.app.model.User.get( ura.user_id ) )
             roles_groups_users.append( ( role, groups, users ) )
         return trans.fill_template( '/admin/dataset_security/deleted_roles.mako', 
                                     roles_groups_users=roles_groups_users, 
@@ -222,7 +215,7 @@ class Admin( BaseController ):
     @web.require_admin
     def undelete_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        role = galaxy.model.Role.get( int( params.role_id ) )
+        role = trans.app.model.Role.get( int( params.role_id ) )
         role.deleted = False
         role.flush()
         msg = "The role has been marked as not deleted."
@@ -230,8 +223,19 @@ class Admin( BaseController ):
     @web.expose
     @web.require_admin
     def purge_role( self, trans, **kwd ):
+        # This method should only be called for a Role that has previously been deleted.
+        # Purging a deleted Role deletes all of the following from the database:
+        # - UserRoleAssociations where role_id == Role.id
+        # - DefaultUserPermissions where role_id == Role.id
+        # - DefaultHistoryPermissions where role_id == Role.id
+        # - GroupRoleAssociations where role_id == Role.id
+        # - ActionDatasetRoleAssociations where role_id == Role.id
         params = util.Params( kwd )
-        role = galaxy.model.Role.get( int( params.role_id ) )
+        role = trans.app.model.Role.get( int( params.role_id ) )
+        if not role.deleted:
+            # We should never reach here, but just in case there is a bug somewhere...
+            msg = "The role has not been deleted, so it cannot be purged."
+            trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='error' ) )
         # Delete UserRoleAssociations
         for ura in role.users:
             user = trans.app.model.User.get( ura.user_id )
@@ -252,10 +256,12 @@ class Admin( BaseController ):
         for gra in role.groups:
             gra.delete()
             gra.flush()
-        # Delete the Role
-        role.delete()
-        role.flush()
-        msg = "The role has been purged from the database."
+        # Delete ActionDatasetRoleAssociations
+        for adra in role.actions:
+            adra.delete()
+            adra.flush()
+        msg = "The following have been purged from the database for the role: "
+        msg += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, ActionDatasetRoleAssociations."
         trans.response.send_redirect( web.url_for( action='deleted_roles', msg=msg, messagetype='done' ) )
 
     # Galaxy Group Stuff
@@ -268,17 +274,17 @@ class Admin( BaseController ):
         # Build a list of tuples which are groups followed by lists of members and roles
         # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
         groups_members_roles = []
-        groups = galaxy.model.Group.query() \
-            .filter( galaxy.model.Group.table.c.deleted==False ) \
-            .order_by( galaxy.model.Group.table.c.name ) \
+        groups = trans.app.model.Group.query() \
+            .filter( trans.app.model.Group.table.c.deleted==False ) \
+            .order_by( trans.app.model.Group.table.c.name ) \
             .all()
         for group in groups:
             members = []
             for uga in group.members:
-                members.append( galaxy.model.User.get( uga.user_id ) )
+                members.append( trans.app.model.User.get( uga.user_id ) )
             roles = []
             for gra in group.roles:
-                roles.append( galaxy.model.Role.get( gra.role_id ) )
+                roles.append( trans.app.model.Role.get( gra.role_id ) )
             groups_members_roles.append( ( group, members, roles ) )
         return trans.fill_template( '/admin/dataset_security/groups.mako', 
                                     groups_members_roles=groups_members_roles, 
@@ -290,10 +296,10 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
-        users=trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all()
+        users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all()
         roles = trans.app.model.Role.query() \
-                .filter( and_( galaxy.model.Role.table.c.deleted == False, 
-                               galaxy.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) ) \
+                .filter( and_( trans.app.model.Role.table.c.deleted == False, 
+                               trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) ) \
                 .order_by( trans.app.model.Role.table.c.name ) \
                 .all()
         return trans.fill_template( '/admin/dataset_security/group_create.mako', 
@@ -314,14 +320,14 @@ class Admin( BaseController ):
             trans.response.send_redirect( web.url_for( action='create_group', msg=msg, messagetype='error' ) )
         else:
             # Create the group
-            group = galaxy.model.Group( name )
+            group = trans.app.model.Group( name )
             group.flush()
             # Add the members
             members = util.listify( params.members )
             for user_id in members:
-                user = galaxy.model.User.get( user_id )
+                user = trans.app.model.User.get( user_id )
                 # Create the UserGroupAssociation
-                uga = galaxy.model.UserGroupAssociation( user, group )
+                uga = trans.app.model.UserGroupAssociation( user, group )
                 uga.flush()
             # Add the roles
             roles = params.roles
@@ -330,9 +336,9 @@ class Admin( BaseController ):
             elif roles is None:
                 roles = []
             for role_id in roles:
-                role = galaxy.model.Role.get( role_id )
+                role = trans.app.model.Role.get( role_id )
                 # Create the GroupRoleAssociation
-                gra = galaxy.model.GroupRoleAssociation( group, role )
+                gra = trans.app.model.GroupRoleAssociation( group, role )
                 gra.flush()
             msg = "The new group has been created with %s members and %s associated roles" % ( str( len( members ) ), str( len( roles ) ) )
             trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
@@ -342,14 +348,15 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
-        group = galaxy.model.Group.get( int( params.group_id ) )
+        group = trans.app.model.Group.get( int( params.group_id ) )
         members = []
         for uga in group.members:
-            members.append ( galaxy.model.User.get( uga.user_id ) )
+            members.append ( trans.app.model.User.get( uga.user_id ) )
+        users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all()
         return trans.fill_template( '/admin/dataset_security/group_members_edit.mako', 
                                     group=group,
                                     members=members,
-                                    users=galaxy.model.User.query().order_by( galaxy.model.User.table.c.email ).all(),
+                                    users=users,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -358,7 +365,7 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         group_id = int( params.group_id )
         members = util.listify( params.members )
-        group = galaxy.model.Group.get( group_id )
+        group = trans.app.model.Group.get( group_id )
         # This is tricky since we have default association tables with
         # records referring to members of this group.  Because of this,
         # we'll need to handle changes to the member list rather than the
@@ -372,9 +379,9 @@ class Admin( BaseController ):
                 uga.flush()
         # Then add all new members to the group
         for user_id in members:
-            user = galaxy.model.User.get( user_id )
+            user = trans.app.model.User.get( user_id )
             if user not in group.members:
-                uga = galaxy.model.UserGroupAssociation( user, group )
+                uga = trans.app.model.UserGroupAssociation( user, group )
                 uga.flush()
         msg = "Group membership has been updated with a total of %s members" % len( members )
         trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
@@ -386,14 +393,14 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
-        group = galaxy.model.Group.get( int( params.group_id ) )
+        group = trans.app.model.Group.get( int( params.group_id ) )
         group_roles = []
         for gra in group.roles:
-            group_roles.append ( galaxy.model.Role.get( gra.role_id ) )
+            group_roles.append ( trans.app.model.Role.get( gra.role_id ) )
         return trans.fill_template( '/admin/dataset_security/group_roles_edit.mako', 
                                     group=group,
                                     group_roles=group_roles,
-                                    roles=galaxy.model.Role.query().order_by( galaxy.model.Role.table.c.name ).all(),
+                                    roles=trans.app.model.Role.query().order_by( trans.app.model.Role.table.c.name ).all(),
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -402,7 +409,7 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         group_id = int( params.group_id )
         roles = util.listify( params.roles )
-        group = galaxy.model.Group.get( group_id )
+        group = trans.app.model.Group.get( group_id )
         # This is tricky since we have default association tables with
         # records referring to members of this group.  Because of this,
         # we'll need to handle changes to the member list rather than the
@@ -416,9 +423,9 @@ class Admin( BaseController ):
                 gra.flush()
         # Then add all new roles to the group
         for role_id in roles:
-            role = galaxy.model.Role.get( role_id )
+            role = trans.app.model.Role.get( role_id )
             if role not in group.roles:
-                gra = galaxy.model.GroupRoleAssociation( group, role )
+                gra = trans.app.model.GroupRoleAssociation( group, role )
                 gra.flush()
         msg = "Group updated with a total of %s associated roles" % len( roles )
         trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
@@ -426,7 +433,7 @@ class Admin( BaseController ):
     @web.require_admin
     def mark_group_deleted( self, trans, **kwd ):
         params = util.Params( kwd )
-        group = galaxy.model.Group.get( int( params.group_id ) )
+        group = trans.app.model.Group.get( int( params.group_id ) )
         group.deleted = True
         group.flush()
         msg = "The group has been marked as deleted."
@@ -440,17 +447,17 @@ class Admin( BaseController ):
         # Build a list of tuples which are groups followed by lists of members and roles
         # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
         groups_members_roles = []
-        groups = galaxy.model.Group.query() \
-            .filter( galaxy.model.Group.table.c.deleted==True ) \
-            .order_by( galaxy.model.Group.table.c.name ) \
+        groups = trans.app.model.Group.query() \
+            .filter( trans.app.model.Group.table.c.deleted==True ) \
+            .order_by( trans.app.model.Group.table.c.name ) \
             .all()
         for group in groups:
             members = []
             for uga in group.members:
-                members.append( galaxy.model.User.get( uga.user_id ) )
+                members.append( trans.app.model.User.get( uga.user_id ) )
             roles = []
             for gra in group.roles:
-                roles.append( galaxy.model.Role.get( gra.role_id ) )
+                roles.append( trans.app.model.Role.get( gra.role_id ) )
             groups_members_roles.append( ( group, members, roles ) )
         return trans.fill_template( '/admin/dataset_security/deleted_groups.mako', 
                                     groups_members_roles=groups_members_roles, 
@@ -460,7 +467,7 @@ class Admin( BaseController ):
     @web.require_admin
     def undelete_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        group = galaxy.model.Group.get( int( params.group_id ) )
+        group = trans.app.model.Group.get( int( params.group_id ) )
         group.deleted = False
         group.flush()
         msg = "The group has been marked as not deleted."
@@ -468,8 +475,14 @@ class Admin( BaseController ):
     @web.expose
     @web.require_admin
     def purge_group( self, trans, **kwd ):
+        # This method should only be called for a Group that has previously been deleted.
+        # Purging a deleted Group simply deletes all UserGroupAssociations and GroupRoleAssociations.
         params = util.Params( kwd )
-        group = galaxy.model.Group.get( int( params.group_id ) )
+        group = trans.app.model.Group.get( int( params.group_id ) )
+        if not group.deleted:
+            # We should never reach here, but just in case there is a bug somewhere...
+            msg = "The group has not been deleted, so it cannot be purged."
+            trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='error' ) )
         # Delete UserGroupAssociations
         for uga in group.users:
             uga.delete()
@@ -479,27 +492,40 @@ class Admin( BaseController ):
             gra.delete()
             gra.flush()
         # Delete the Group
-        group.delete()
-        group.flush()
-        msg = "The group has been purged from the database."
+        msg = "The following have been purged from the database for the group: UserGroupAssociations, GroupRoleAssociations."
         trans.response.send_redirect( web.url_for( action='deleted_groups', msg=msg, messagetype='done' ) )
 
     # Galaxy User Stuff
     @web.expose
     @web.require_admin
-    def create_new_user( self, trans, email='', password='', confirm='', subscribe=False ):
-        email_error = password_error = confirm_error = None
-        if email:
+    def create_new_user( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = params.msg
+        email = ''
+        password = ''
+        confirm = ''
+        subscribe = False
+        messagetype = params.get( 'messagetype', 'done' )
+        if 'user_create_button' in kwd:
+            if 'email' in kwd:
+                email = kwd[ 'email' ]
+            if 'password' in kwd:
+                password = kwd[ 'password' ]
+            if 'confirm' in kwd:
+                confirm = kwd[ 'confirm' ]
+            if 'subscribe' in kwd:
+                subscribe = kwd[ 'subscribe' ]
+            messagetype = 'error'
             if len( email ) == 0 or "@" not in email or "." not in email:
-                email_error = "Please enter a real email address"
+                msg = "Please enter a real email address"
             elif len( email) > 255:
-                email_error = "Email address exceeds maximum allowable length"
-            elif trans.app.model.User.filter_by( email=email ).first():
-                email_error = "User with that email already exists"
+                msg = "Email address exceeds maximum allowable length"
+            elif trans.app.model.User.filter( trans.app.model.User.table.c.email==email ).first():
+                msg = "User with that email already exists"
             elif len( password ) < 6:
-                password_error = "Please use a password of at least 6 characters"
+                msg = "Please use a password of at least 6 characters"
             elif password != confirm:
-                confirm_error = "Passwords do not match"
+                msg = "Passwords do not match"
             else:
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
@@ -507,25 +533,147 @@ class Admin( BaseController ):
                 trans.app.security_agent.create_private_user_role( user )
                 trans.app.security_agent.user_set_default_permissions( user, history=False, dataset=False )
                 trans.log_event( "Admin created a new account for user %s" % email )
-                msg = 'Created new account'
+                msg = 'Created new user account'
                 messagetype = 'done'
                 #subscribe user to email list
                 if subscribe:
                     mail = os.popen( "%s -t" % trans.app.config.sendmail_path, 'w' )
-                    mail.write( "To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % ( trans.app.config.mailing_join_addr,email ) )
+                    mail.write( "To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % ( trans.app.config.mailing_join_addr, email ) )
                     if mail.close():
                         msg + ". However, subscribing to the mailing list has failed."
                         messagetype = 'error'
-            trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype=messagetype ) )
-        # TODO: make this a mako template
-        return trans.show_form( 
-            web.FormBuilder( web.url_for(), "Create account", submit_text="Create" )
-                .add_text( "email", "Email address", value=email, error=email_error )
-                .add_password( "password", "Password", value='', error=password_error )
-                .add_password( "confirm", "Confirm password", value='', error=confirm_error )
-                .add_input( "checkbox","Subscribe To Mailing List","subscribe", value='subscribe' ) )
-                
-                        
+                trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype=messagetype ) )
+        return trans.fill_template( '/admin/user/create.mako',
+                                    msg=msg,
+                                    messagetype=messagetype,
+                                    email=email,
+                                    password=password,
+                                    confirm=confirm,
+                                    subscribe=subscribe )
+    @web.expose
+    @web.require_admin
+    def reset_user_password( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = params.msg
+        user_id = int( params.user_id )
+        user = trans.app.model.User.filter( trans.app.model.User.table.c.id==user_id ).first()
+        password = ''
+        confirm = ''
+        messagetype = params.get( 'messagetype', 'done' )
+        if 'reset_user_password_button' in kwd:
+            if 'password' in kwd:
+                password = kwd[ 'password' ]
+            if 'confirm' in kwd:
+                confirm = kwd[ 'confirm' ]
+            messagetype = 'error'
+            if len( password ) < 6:
+                msg = "Please use a password of at least 6 characters"
+            elif password != confirm:
+                msg = "Passwords do not match"
+            else:
+                user.set_password_cleartext( password )
+                user.flush()
+                trans.log_event( "Admin reset password for user %s" % user.email )
+                msg = 'Password reset'
+                messagetype = 'done'
+                trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype=messagetype ) )
+        return trans.fill_template( '/admin/user/reset_password.mako',
+                                    msg=msg,
+                                    messagetype=messagetype,
+                                    user=user,
+                                    password=password,
+                                    confirm=confirm )
+    @web.expose
+    @web.require_admin
+    def mark_user_deleted( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
+        user = trans.app.model.User.get( int( params.user_id ) )
+        user.deleted = True
+        user.flush()
+        msg = "The user has been marked as deleted."
+        trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='done' ) )
+    @web.expose
+    @web.require_admin
+    def undelete_user( self, trans, **kwd ):
+        params = util.Params( kwd )
+        user = trans.app.model.User.get( int( params.user_id ) )
+        user.deleted = False
+        user.flush()
+        msg = "The user has been marked as not deleted."
+        trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='done' ) )
+    @web.expose
+    @web.require_admin
+    def purge_user( self, trans, **kwd ):
+        # This method should only be called for a User that has previously been deleted.
+        # We keep the User in the database ( marked as purged ), and stuff associated
+        # with the user's private role in case we want the ability to unpurge the user 
+        # some time in the future.
+        # Purging a deleted User deletes all of the following:
+        # - DefaultUserPermissions where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
+        # - History where user_id = User.id
+        #    - DefaultHistoryPermissions where history_id == History.id EXCEPT FOR THE PRIVATE ROLE
+        #    - HistoryDatasetAssociation where history_id = History.id
+        #    - Dataset where HistoryDatasetAssociation.dataset_id = Dataset.id
+        # - UserGroupAssociation where user_id == User.id
+        # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
+        # Purging Histories and Datasets must be handled via the cleanup_datasets.py script
+        params = util.Params( kwd )
+        user = trans.app.model.User.get( int( params.user_id ) )
+        if not user.deleted:
+            # We should never reach here, but just in case there is a bug somewhere...
+            msg = "The account has not been deleted, so it cannot be purged."
+            trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='error' ) )
+        private_role = trans.app.security_agent.get_private_user_role( user )
+        # Delete DefaultUserPermissions EXCEPT FOR THE PRIVATE ROLE
+        for dup in user.default_permissions:
+            if dup.role_id != private_role.id:
+                dup.delete()
+                dup.flush()
+        # Delete History
+        for h in user.active_histories:
+            h.refresh()
+            # Delete DefaultHistoryPermissions EXCEPT FOR THE PRIVATE ROLE
+            for dp in h.default_permissions:
+                if dp.role_id != private_role.id:
+                    dp.delete()
+                    dp.flush()
+            for hda in h.active_datasets:
+                # Delete HistoryDatasetAssociation
+                d = trans.app.model.Dataset.get( hda.dataset_id )
+                # Delete Dataset
+                if not d.deleted:
+                    d.deleted = True
+                    d.flush()
+                hda.deleted = True
+                hda.flush()
+            h.deleted = True
+            h.flush()
+        # Delete UserGroupAssociations
+        for uga in user.groups:
+            uga.delete()
+            uga.flush()
+        # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
+        for ura in user.roles:
+            if ura.role_id != private_role.id:
+                ura.delete()
+                ura.flush()
+        # Purge the user
+        user.purged = True
+        user.flush()
+        msg = "The user has been marked as purged."
+        trans.response.send_redirect( web.url_for( action='deleted_users', msg=msg, messagetype='done' ) )
+    @web.expose
+    @web.require_admin
+    def deleted_users( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = params.msg
+        messagetype = params.get( 'messagetype', 'done' )
+        users = trans.app.model.User.filter( and_( trans.app.model.User.table.c.deleted==True, trans.app.model.User.table.c.purged==False ) ) \
+                                 .order_by( trans.app.model.User.table.c.email ) \
+                                 .all()
+        return trans.fill_template( '/admin/user/deleted_users.mako', users=users, msg=msg, messagetype=messagetype )
     @web.expose
     @web.require_admin
     def users( self, trans, **kwd ):
@@ -535,24 +683,25 @@ class Admin( BaseController ):
         # Build a list of tuples which are users followed by lists of groups and roles
         # [ ( user, [ group, group, group ], [ role, role ] ), ( user, [ group, group ], [ role ] ) ]
         users_groups_roles = []
-        users = trans.app.model.User.query().order_by( trans.app.model.User.table.c.email ).all()
+        users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all()
         for user in users:
             groups = []
             for uga in user.groups:
-                groups.append( galaxy.model.Group.get( uga.group_id ) )
+                groups.append( trans.app.model.Group.get( uga.group_id ) )
             roles = []
             for ura in user.non_private_roles:
-                roles.append( galaxy.model.Role.get( ura.role_id ) )
+                roles.append( trans.app.model.Role.get( ura.role_id ) )
             users_groups_roles.append( ( user, groups, roles ) )
         return trans.fill_template( '/admin/dataset_security/users.mako',
                                     users_groups_roles=users_groups_roles,
+                                    allow_user_deletion=trans.app.config.allow_user_deletion,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
     @web.require_admin
     def user( self, trans, **kwd ):
         params = util.Params( kwd )
-        user_id = params.user_id
+        user_id = int( params.user_id )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
         user = trans.app.model.User.get( user_id )
@@ -560,7 +709,7 @@ class Admin( BaseController ):
         groups = trans.app.model.Group.query() \
                     .select_from( ( outerjoin( trans.app.model.Group, trans.app.model.UserGroupAssociation ) ) \
                     .outerjoin( trans.app.model.User ) ) \
-                    .filter( and_( trans.app.model.Group.deleted == False, trans.app.model.User.id == user_id ) ) \
+                    .filter( and_( trans.app.model.Group.deleted==False, trans.app.model.User.id==user_id ) ) \
                     .order_by( trans.app.model.Group.table.c.name ) \
                     .all()
         roles = user.all_roles()
@@ -576,13 +725,13 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
-        user = galaxy.model.User.get( int( params.user_id ) )
+        user = trans.app.model.User.get( int( params.user_id ) )
         user_groups = []
         for uga in user.groups:
-            user_groups.append ( galaxy.model.Group.get( uga.group_id ) )
-        groups = galaxy.model.Group.query() \
-            .filter( galaxy.model.Group.table.c.deleted==False ) \
-            .order_by( galaxy.model.Group.table.c.name ) \
+            user_groups.append ( trans.app.model.Group.get( uga.group_id ) )
+        groups = trans.app.model.Group.query() \
+            .filter( trans.app.model.Group.table.c.deleted==False ) \
+            .order_by( trans.app.model.Group.table.c.name ) \
             .all()
         return trans.fill_template( '/admin/dataset_security/user_groups_edit.mako', 
                                     user=user,
@@ -596,7 +745,7 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         user_id = int( params.user_id )
         groups = util.listify( params.groups )
-        user = galaxy.model.User.get( user_id )
+        user = trans.app.model.User.get( user_id )
         # First remove existing UserGroupAssociations that are not in the received groups param
         for uga in user.groups:
             if uga.group_id not in groups:
@@ -605,9 +754,9 @@ class Admin( BaseController ):
                 uga.flush()
         # Then add all new groups to the user
         for group_id in groups:
-            group = galaxy.model.Group.get( group_id )
+            group = trans.app.model.Group.get( group_id )
             if group not in user.groups:
-                uga = galaxy.model.UserGroupAssociation( user, group )
+                uga = trans.app.model.UserGroupAssociation( user, group )
                 uga.flush()
         msg = "The user now belongs to a total of %s groups" % len( groups )
         trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='done' ) )
@@ -713,7 +862,7 @@ class Admin( BaseController ):
     @web.require_admin
     def undelete_library( self, trans, **kwd ):
         params = util.Params( kwd )
-        library = galaxy.model.Library.get( int( params.id ) )
+        library = trans.app.model.Library.get( int( params.id ) )
         def undelete_folder( library_folder ):
             for folder in library_folder.folders:
                 undelete_folder( folder )
@@ -731,7 +880,7 @@ class Admin( BaseController ):
     @web.require_admin
     def purge_library( self, trans, **kwd ):
         params = util.Params( kwd )
-        library = galaxy.model.Library.get( int( params.id ) )
+        library = trans.app.model.Library.get( int( params.id ) )
         def purge_folder( library_folder ):
             for lf in library_folder.folders:
                 purge_folder( lf )
@@ -877,7 +1026,7 @@ class Admin( BaseController ):
             dataset.flush()
             if roles:
                 for role in roles:
-                    adra = galaxy.model.ActionDatasetRoleAssociation( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, role )
+                    adra = trans.app.model.ActionDatasetRoleAssociation( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, role )
                     adra.flush()
             shutil.move( temp_name, dataset.dataset.file_name )
             dataset.dataset.state = dataset.dataset.states.OK
@@ -914,7 +1063,7 @@ class Admin( BaseController ):
             roles = []
             role_ids = params.get( 'roles', [] )
             for role_id in util.listify( role_ids ):
-                roles.append( galaxy.model.Role.get( role_id ) )
+                roles.append( trans.app.model.Role.get( role_id ) )
             temp_name = ""
             data_list = []
             created_lfda_ids = ''
@@ -1139,7 +1288,8 @@ class Admin( BaseController ):
         msg = params.get( 'msg', None )
         messagetype = params.get( 'messagetype', 'done' )
         # See if the current history is empty
-        history=trans.get_history()
+        history = trans.get_history()
+        history.refresh()
         if not history.active_datasets:
             msg = 'Your current history is empty'
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )

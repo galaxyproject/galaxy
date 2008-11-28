@@ -32,6 +32,8 @@ class User( object ):
         self.email = email
         self.password = password
         self.external = False
+        self.deleted = False
+        self.purged = False
         # Relationships
         self.histories = []
         
@@ -143,6 +145,7 @@ class Group( object ):
     permitted_actions = galaxy.security.get_permitted_actions( 'GROUP' )
     def __init__( self, name = None ):
         self.name = name
+        self.deleted = False
 
 class UserGroupAssociation( object ):
     def __init__( self, user, group ):

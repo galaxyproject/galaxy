@@ -362,16 +362,13 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( genome_build == dbkey )
 
     # Functions associated with user accounts
-    def create( self, email='test@bx.psu.edu', password='testuser', confirm='testuser' ):
-        self.visit_page( "user/create?email=%s&password=%s&confirm=%s" %(email, password, confirm) )
-        try:
-            self.check_page_for_string( "User with that email already exists" )
-        except:
-            self.check_page_for_string( "Now logged in as %s" %email )
-            self.home()
-            # Make sure a new private role was created for the user
-            self.visit_page( "user/set_default_permissions" )
-            self.check_page_for_string( email )
+    def create( self, email='test@bx.psu.edu', password='testuser' ):
+        self.visit_page( "user/create?email=%s&password=%s&confirm=%s" % ( email, password, password ) )
+        self.check_page_for_string( "Now logged in as %s" %email )
+        self.home()
+        # Make sure a new private role was created for the user
+        self.visit_page( "user/set_default_permissions" )
+        self.check_page_for_string( email )
         self.home()
     def user_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=2 ): # role.id = 2 is Private Role for test2@bx.psu.edu 
         # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
@@ -405,14 +402,19 @@ class TwillTestCase( unittest.TestCase ):
         self.last_page()
         self.check_page_for_string( 'Default history permissions have been changed.' )
         self.home()
-    def login( self, email='test@bx.psu.edu', password='testuser'):
+    def login( self, email='test@bx.psu.edu', password='testuser' ):
         # test@bx.psu.edu is configured as an admin user
-        self.create( email=email, password=password, confirm=password )
-        self.visit_page( "user/login?email=%s&password=%s" % (email, password) )
-        self.check_page_for_string( "Now logged in as %s" %email )
-        self.home()
+        try:
+            self.create( email=email, password=password )
+        except:
+            self.home()
+            self.visit_page( "user/login?email=%s&password=%s" % ( email, password ) )
+            self.last_page()
+            self.check_page_for_string( "Now logged in as %s" %email )
+            self.home()
     def logout( self ):
         self.visit_page( "user/logout" )
+        self.last_page()
         self.check_page_for_string( "You are no longer logged in" )
         self.home()
     # Functions associated with browsers, cookies, HTML forms and page visits
@@ -581,7 +583,41 @@ class TwillTestCase( unittest.TestCase ):
         self.assertNotEqual(count, maxiter)
 
     # Dataset Security stuff
-    def create_role( self, name='New Test Role', description="Very cool new test role", user_ids=[], group_ids=[], private_role='' ):
+    def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser' ):
+        """Create a new account for another user"""
+        self.visit_url( "%s/admin/create_new_user?email=%s&password=%s&confirm=%s&user_create_button=%s" \
+                        % ( self.url, email, password, password, 'Create' ) )
+        self.last_page()
+        self.check_page_for_string( "Created new user account" )
+        self.home()
+    def reset_password_as_admin( self, user_id=4, password='testreset' ):
+        """Reset a user password"""
+        self.visit_url( "%s/admin/reset_user_password?user_id=%s" % ( self.url, str( user_id ) ) )
+        tc.fv( "1", "password", password )
+        tc.fv( "1", "confirm", password )
+        tc.submit( "reset_user_password_button" )
+        self.last_page()
+        self.check_page_for_string( "Password reset" )
+        self.home()
+    def mark_user_deleted( self, user_id=4 ):
+        """Mark a user as deleted"""
+        self.visit_url( "%s/admin/mark_user_deleted?user_id=%s" % ( self.url, str( user_id ) ) )
+        self.last_page()
+        self.check_page_for_string( "The user has been marked as deleted." )
+        self.home()
+    def undelete_user( self, user_id ):
+        """Undelete a user"""
+        self.visit_url( "%s/admin/undelete_user?user_id=%s" % ( self.url, user_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The user has been marked as not deleted' )
+        self.home()
+    def purge_user( self, user_id ):
+        """Purge a user account"""
+        self.visit_url( "%s/admin/purge_user?user_id=%s" % ( self.url, user_id ) )
+        self.last_page()
+        self.check_page_for_string( 'The user has been marked as purged.' )
+        self.home()
+    def create_role( self, name='Role One', description="This is Role One", user_ids=[], group_ids=[], private_role='' ):
         """Create a new role"""
         self.visit_url( "%s/admin/create_role" % self.url )
         form = tc.show()
@@ -632,15 +668,15 @@ class TwillTestCase( unittest.TestCase ):
         self.last_page()
         self.check_page_for_string( 'The role has been marked as not deleted' )
         self.home()
-    def purge_role( self, role_id, deleted=False ):
+    def purge_role( self, role_id ):
         """Purge an existing role"""
-        if not deleted:
-            self.mark_role_deleted( role_id )
         self.visit_url( "%s/admin/purge_role?role_id=%s" % ( self.url, role_id ) )
         self.last_page()
-        self.check_page_for_string( 'The role has been purged from the database' )
+        msg = "The following have been purged from the database for the role: "
+        msg += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, ActionDatasetRoleAssociations."
+        self.check_page_for_string( msg )
         self.home()
-    def create_group( self, name='New Test Group', user_ids=[], role_ids=[] ):
+    def create_group( self, name='Group One', user_ids=[], role_ids=[] ):
         """Create a new group with 2 members and 1 associated role"""
         self.visit_url( "%s/admin/create_group" % self.url )
         form = tc.show()
@@ -685,23 +721,17 @@ class TwillTestCase( unittest.TestCase ):
             self.home()
             raise AssertionError( 'Exception caught attempting to create group: %s' % str( err ) )
         self.home()
-    def associate_groups_with_role( self, role_id, group_ids=[] ):
+    def associate_groups_with_role( self, role_id, group_names=[] ):
         """Add groups to an existing role"""
         # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
-        # or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
         self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
         self.check_page_for_string( 'Groups associated with' )
-        # All groups must be in the out_groups form field
-        try:
-            for group in groups:
-                tc.fv( "1", "7", group_id ) # form field 7 is the select list named out_groups, note the buttons...
-                tc.submit( "groups_add_button" )
-            tc.submit( "role_button" )
-        except AssertionError, err: 
-            self.home()
-            raise AssertionError( 'Exception caught attempting to associated groups with a role: %s' % str( err ) )
-        except:
-            pass
+        # All group_ids passed in  MUST be in the out_groups form field
+        for group_name in group_names:
+            tc.fv( "1", "out_groups", group_name ) # note the buttons...
+            tc.submit( "groups_add_button" )
+        tc.submit( "role_button" )
         self.home()
     def mark_group_deleted( self, group_id ):
         """Mark a group as deleted"""
@@ -715,17 +745,15 @@ class TwillTestCase( unittest.TestCase ):
         self.last_page()
         self.check_page_for_string( 'The group has been marked as not deleted' )
         self.home()
-    def purge_group( self, group_id, deleted=False ):
+    def purge_group( self, group_id ):
         """Purge an existing group"""
-        if not deleted:
-            self.mark_group_deleted( group_id )
         self.visit_url( "%s/admin/purge_group?group_id=%s" % ( self.url, group_id ) )
         self.last_page()
-        self.check_page_for_string( 'The group has been purged from the database' )
+        self.check_page_for_string( "The following have been purged from the database for the group: UserGroupAssociations, GroupRoleAssociations." )
         self.home()
 
     # Library stuff
-    def create_library( self, name='New Test Library', description='New Test Library Description' ):
+    def create_library( self, name='Library One', description='This is Library One' ):
         """Create a new library"""
         try:
             self.visit_url( "%s/admin/library?new=True" % self.url )
@@ -738,7 +766,7 @@ class TwillTestCase( unittest.TestCase ):
             self.home()
             raise AssertionError( 'Exception caught attempting to create library: %s' % str( err ) )
         self.home()
-    def rename_library( self, library_id, name='New Test Library Renamed', description='New Test Library Description Re-described', root_folder='' ):
+    def rename_library( self, library_id, name='Library One Renamed', description='This is Library One Re-described', root_folder='' ):
         """Rename a library"""
         try:
             self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
@@ -759,7 +787,7 @@ class TwillTestCase( unittest.TestCase ):
             self.home()
             raise AssertionError( 'Exception caught attempting to rename a library: %s' % str( err ) )
         self.home()
-    def add_folder( self, folder_id, name='New Test Folder', description='New Test Folder Description' ):
+    def add_folder( self, folder_id, name='Folder One', description='NThis is Folder One' ):
         """Create a new folder"""
         try:
             self.visit_url( "%s/admin/folder?id=%s&new=True" % ( self.url, folder_id ) )
@@ -772,7 +800,7 @@ class TwillTestCase( unittest.TestCase ):
             self.home()
             raise AssertionError( 'Exception caught attempting to create a new folder: %s' % str( err ) )
         self.home()
-    def rename_folder( self, folder_id, name='New Test Folder Renamed', description='New Test Folder Description Re-described' ):
+    def rename_folder( self, folder_id, name='Folder One Renamed', description='This is Folder One Re-described' ):
         """Rename a Folder"""
         try:
             self.visit_url( "%s/admin/folder?rename=True&id=%s" % ( self.url, folder_id ) )
@@ -811,7 +839,6 @@ class TwillTestCase( unittest.TestCase ):
             # Create a new history
             self.new_history()
             self.upload_file( "1.bed" )
-            self.verify_dataset_correctness( "1.bed" )
             self.visit_url( "%s/admin/add_dataset_to_folder_from_history?folder_id=%s" % ( self.url, folder_id ) )
             self.last_page()
             self.check_page_for_string( 'Active datasets in your current history' )
@@ -822,7 +849,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( 'Added the following datasets to the library folder: 1.bed' )
         except AssertionError, err:
             self.home()
-            raise AssertionError( 'Exception caught attempting to create add a dataset to a folder: %s' % str( err ) )
+            raise AssertionError( 'Exception caught attempting to add a dataset to a folder: %s' % str( err ) )
         self.home()
     def add_datasets_from_library_dir( self, folder_id, extension='auto', dbkey='hg18', roles_tuple=[] ):
         """Add a directory of datasets to a folder"""

@@ -221,8 +221,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                     galaxy_session.user = self.__get_or_create_remote_user( remote_user_email )
                     galaxy_session_requires_flush = True
                 elif galaxy_session.user.email != remote_user_email:
-                    # Session exists but is not associated with the correct
-                    # remote user
+                    # Session exists but is not associated with the correct remote user
                     invalidate_existing_session = True
                     user_for_new_session = self.__get_or_create_remote_user( remote_user_email )
                     log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
@@ -293,16 +292,27 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
     def __get_or_create_remote_user( self, remote_user_email ):
         """
         Return the user in $HTTP_REMOTE_USER and create if necessary
-        
         Caller is responsible for flushing the returned user.
         """
         # remote_user middleware ensures HTTP_REMOTE_USER exists
-        user = self.app.model.User.filter_by( email=remote_user_email ).first()
+        user = self.app.model.User.filter( self.app.model.User.table.c.email==remote_user_email ).first()
         if user is None:
             user = self.app.model.User( email=remote_user_email )
             user.set_password_cleartext( 'external' )
             user.external = True
             self.log_event( "Automatically created account '%s'", user.email )
+        # TODO: make sure this correctly handles deleted / purged users
+        elif user.deleted:
+            if user.purged:
+                # If the user has been purged, all associations have been deleted except for the private role 
+                # and the DefaultUserPermissions and DefaultHistoryPermissions associated with it.  We'll
+                # restore the user, but all of their previous histories and other associations will have been
+                # deleted.
+                user.purged = False
+            # If the user was not purged, the state of all of their associations at the time they were deleted
+            # will have been preserved.
+            user.deleted = False
+            user.flush()
         return user
     def __update_session_cookie( self ):
         """

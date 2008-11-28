@@ -43,7 +43,9 @@ User.table = Table( "galaxy_user", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "email", TrimmedString( 255 ), nullable=False ),
     Column( "password", TrimmedString( 40 ), nullable=False ),
-    Column( "external", Boolean, default=False ) )
+    Column( "external", Boolean, default=False ),
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "purged", Boolean, index=True, default=False ) )
             
 History.table = Table( "history", metadata,
     Column( "id", Integer, primary_key=True),

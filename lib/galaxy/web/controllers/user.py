@@ -88,12 +88,13 @@ class User( BaseController ):
         else:
             refresh_frames = [ 'masthead', 'history' ]
         if email or password:
-            user = trans.app.model.User.filter_by( email=email ).first()
+            user = trans.app.model.User.filter( trans.app.model.User.table.c.email==email ).first()
             if not user:
                 email_error = "No such user"
+            elif user.deleted:
+                email_error = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
             elif user.external:
-                return trans.show_error_message( "This account was created for use with an external authentication "
-                                               + "method.  Please contact your local Galaxy administrator to activate it." )
+                email_error = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             elif not user.check_password( password ):
                 password_error = "Invalid password"
             else:
@@ -118,9 +119,6 @@ class User( BaseController ):
 
     @web.expose
     def logout( self, trans ):
-        if trans.app.memory_usage:
-            # Keep track of memory usage
-            m0 = trans.app.memory_usage.memory()
         if trans.app.config.require_login:
             refresh_frames = [ 'masthead', 'history', 'tools' ]
         else:
@@ -128,9 +126,6 @@ class User( BaseController ):
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
         trans.handle_user_logout()
-        if trans.app.memory_usage:
-            m1 = trans.app.memory_usage.memory( m0, pretty=True )
-            log.info( "End of user/logout, memory used increased by %s"  % m1 )
         msg = "You are no longer logged in."
         if trans.app.config.require_login:
             msg += '  <a href="%s">Click here</a> to return to the login page.' % web.url_for( controller='user', action='login' )
@@ -148,9 +143,10 @@ class User( BaseController ):
         if email:
             if len( email ) == 0 or "@" not in email or "." not in email:
                 email_error = "Please enter a real email address"
-            elif len( email) > 255:
+            elif len( email ) > 255:
                 email_error = "Email address exceeds maximum allowable length"
-            elif trans.app.model.User.filter_by( email=email ).first():
+            elif trans.app.model.User.filter( and_( trans.app.model.User.table.c.email==email,
+                                                    trans.app.model.User.table.c.deleted==False ) ).first():
                 email_error = "User with that email already exists"
             elif len( password ) < 6:
                 password_error = "Please use a password of at least 6 characters"
@@ -182,11 +178,11 @@ class User( BaseController ):
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
         error = ''
-        reset_user = trans.app.model.User.filter_by( email=email ).first()
+        reset_user = trans.app.model.User.filter( trans.app.model.User.table.c.email==email ).first()
         user = trans.get_user()
         if reset_user:
             if user and user.id != reset_user.id:
-                    error = "You may only reset your own password"
+                error = "You may only reset your own password"
             else:
                 chars = string.letters + string.digits
                 new_pass = ""
