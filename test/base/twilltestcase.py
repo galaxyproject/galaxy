@@ -176,7 +176,6 @@ class TwillTestCase( unittest.TestCase ):
 
     def share_history( self, id=None, email='test2@bx.psu.edu' ):
         """Share a history with a different user"""
-        self.create( email=email, password='testuser' )
         history_list = self.get_histories()
         self.assertTrue( history_list )
         if id is None: # take last id
