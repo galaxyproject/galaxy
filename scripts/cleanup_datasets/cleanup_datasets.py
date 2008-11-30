@@ -9,12 +9,7 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
-from galaxy import eggs
-import galaxy.model.mapping
-import pkg_resources
-        
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-from sqlalchemy.orm import eagerload
+from galaxy.model.orm import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -79,8 +74,10 @@ def info_delete_userless_histories( h, cutoff_time ):
     # Provide info about the histories and datasets that will be affected if the delete_userless_histories function is executed.
     history_count = 0
     dataset_count = 0
-    where = ( h.table.c.user_id==None ) & ( h.table.c.deleted==False ) & ( h.table.c.update_time < cutoff_time )
-    histories = h.query().filter( where ).options( eagerload( 'active_datasets' ) ).all()
+    histories = h.filter( and_( h.table.c.user_id==None,
+                                h.table.c.deleted==False,
+                                h.table.c.update_time < cutoff_time ) ) \
+                 .options( eagerload( 'active_datasets' ) ).all()
 
     print '# The following datasets and associated userless histories will be deleted'
     start = time.clock()
@@ -102,17 +99,18 @@ def delete_userless_histories( h, d, cutoff_time ):
     # The datasets associated with each history are also deleted.  Nothing is removed from disk.
     history_count = 0
     dataset_count = 0
-    h_where = ( h.table.c.user_id==None ) & ( h.table.c.deleted==False ) & ( h.table.c.update_time < cutoff_time )
 
     print '# The following datasets and associated userless histories have been deleted'
     start = time.clock()
-    histories = h.query().filter( h_where ).options( eagerload( 'active_datasets' ) ).all()
+    histories = h.filter( and_( h.table.c.user_id==None,
+                                h.table.c.deleted==False,
+                                h.table.c.update_time < cutoff_time ) ) \
+                 .options( eagerload( 'active_datasets' ) ).all()
     for history in histories:
         for dataset_assoc in history.active_datasets:
             if not dataset_assoc.deleted:
                 # Mark all datasets as deleted
-                d_where = ( d.table.c.id==dataset_assoc.dataset_id )
-                datasets = d.query().filter( d_where ).all()
+                datasets = d.filter( d.table.c.id==dataset_assoc.dataset_id ).all()
                 for dataset in datasets:
                     if not dataset.deleted:
                         dataset.deleted = True
@@ -136,17 +134,17 @@ def info_purge_histories( h, d, cutoff_time ):
     history_count = 0
     dataset_count = 0
     disk_space = 0
-    h_where = ( h.table.c.deleted==True ) & ( h.table.c.purged==False ) & ( h.table.c.update_time < cutoff_time )
-
     print '# The following datasets and associated deleted histories will be purged'
     start = time.clock()
-    histories = h.query().filter( h_where ).options( eagerload( 'datasets' ) ).all()
+    histories = h.filter( and_( h.table.c.deleted==True,
+                                h.table.c.purged==False,
+                                h.table.c.update_time < cutoff_time ) ) \
+                 .options( eagerload( 'datasets' ) ).all()
     for history in histories:
         for dataset_assoc in history.datasets:
             # Datasets can only be purged if their HistoryDatasetAssociation has been deleted.
             if dataset_assoc.deleted:
-                d_where = ( d.table.c.id==dataset_assoc.dataset_id )
-                datasets = d.query().filter( d_where ).all()
+                datasets = d.filter( d.table.c.id==dataset_assoc.dataset_id ).all()
                 for dataset in datasets:
                     if dataset.purgable and not dataset.purged:
                         print "%s" % dataset.file_name
@@ -169,17 +167,17 @@ def purge_histories( h, d, m, cutoff_time, remove_from_disk ):
     disk_space = 0
     file_size = 0
     errors = False
-    h_where = ( h.table.c.deleted==True ) & ( h.table.c.purged==False ) & ( h.table.c.update_time < cutoff_time )
-
     print '# The following datasets and associated deleted histories have been purged'
     start = time.clock()
-    histories = h.query().filter( h_where ).options( eagerload( 'datasets' ) ).all()    
+    histories = h.filter( and_( h.table.c.deleted==True,
+                                h.table.c.purged==False,
+                                h.table.c.update_time < cutoff_time ) ) \
+                 .options( eagerload( 'datasets' ) ).all()    
     for history in histories:
         errors = False
         for dataset_assoc in history.datasets:
             if dataset_assoc.deleted:
-                d_where = ( d.table.c.id==dataset_assoc.dataset_id )
-                datasets = d.query().filter( d_where ).all()
+                datasets = d.filter( d.table.c.id==dataset_assoc.dataset_id ).all()
                 for dataset in datasets:
                     if dataset.purgable and not dataset.purged:
                         file_size = dataset.file_size
@@ -221,11 +219,12 @@ def info_purge_datasets( d, cutoff_time ):
     # Provide info about the datasets that will be affected if the purge_datasets function is executed.
     dataset_count = 0
     disk_space = 0
-    where = ( d.table.c.deleted==True ) & ( d.table.c.purgable==True ) & ( d.table.c.purged==False ) & ( d.table.c.update_time < cutoff_time )
-
     print '# The following deleted datasets will be purged'    
     start = time.clock()
-    datasets = d.query().filter( where ).all()
+    datasets = d.filter( and_( d.table.c.deleted==True,
+                               d.table.c.purgable==True,
+                               d.table.c.purged==False,
+                               d.table.c.update_time < cutoff_time ) ).all()
     for dataset in datasets:
         print "%s" % dataset.file_name
         dataset_count += 1
@@ -243,11 +242,12 @@ def purge_datasets( d, m, cutoff_time, remove_from_disk ):
     dataset_count = 0
     disk_space = 0
     file_size = 0
-    where = ( d.table.c.deleted==True ) & ( d.table.c.purgable==True ) & ( d.table.c.purged==False ) & ( d.table.c.update_time < cutoff_time )
-
     print '# The following deleted datasets have been purged'
     start = time.clock()
-    datasets = d.query().filter( where ).all()
+    datasets = d.filter( and_( d.table.c.deleted==True,
+                               d.table.c.purgable==True,
+                               d.table.c.purged==False,
+                               d.table.c.update_time < cutoff_time ) ).all()
     for dataset in datasets:
         file_size = dataset.file_size
         if remove_from_disk:
@@ -289,7 +289,8 @@ def purge_dataset( dataset, d, m ):
             # See if the dataset has been shared
             if dataset.external_filename:
                 # This check handles the pre-history_dataset_association approach to sharing.
-                shared_data = d.filter( and_( d.table.c.external_filename==dataset.external_filename, d.table.c.deleted==False ) ).all()
+                shared_data = d.filter( and_( d.table.c.external_filename==dataset.external_filename,
+                                              d.table.c.deleted==False ) ).all()
                 if shared_data:
                     purgable = False
             if purgable:
