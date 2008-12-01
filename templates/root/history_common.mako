@@ -6,7 +6,11 @@
 	else:
 	    data_state = data.state
     %>
-    <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
+    %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
+        <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">
+    %else:
+        <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
+    %endif
         
     %if data.deleted:
         <div class="warningmessagesmall">
@@ -36,7 +40,9 @@
         ## Body for history items, extra info and actions, data "peek"
         
         <div id="info${data.id}" class="historyItemBody">
-            %if data_state == "queued":
+            %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
+                <div>You do not have permission to view this dataset.</div>
+            %elif data_state == "queued":
                 <div>Job is waiting to run</div>
             %elif data_state == "running":
                 <div>Job is currently running</div>

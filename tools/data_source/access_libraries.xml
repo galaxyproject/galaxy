@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<tool name="Access Libraries" id="library_access1">
+    <description>stored locally</description>
+    <inputs action="/library/browse" method="get">
+        <param name="bogus_param" type="hidden" value="needed" />
+    </inputs>
+</tool>
