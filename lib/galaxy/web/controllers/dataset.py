@@ -21,25 +21,23 @@ error_report_template = """
 GALAXY TOOL ERROR REPORT
 ------------------------
 
-This error report is in reference to dataset ${dataset_id}. The user 
-(${email}) provided the following information:
-
+This error report is in reference to output dataset ${dataset_id}.
 -----------------------------------------------------------------------------
+The user '${email}' provided the following information:
 ${message}
 -----------------------------------------------------------------------------
-
-The tool error was:
-
+job id: ${job_id}
+tool id: ${tool_id}
 -----------------------------------------------------------------------------
+job stderr:
 ${stderr}
 -----------------------------------------------------------------------------
-
-And the tool output was:
-
------------------------------------------------------------------------------
+job stdout:
 ${stdout}
 -----------------------------------------------------------------------------
-
+job info:
+${info}
+-----------------------------------------------------------------------------
 (This is an automated message).
 """
 
@@ -62,7 +60,8 @@ class DatasetInterface( BaseController ):
         smtp_server = trans.app.config.smtp_server
         if smtp_server is None:
             return trans.show_error_message( "Sorry, mail is not configured for this galaxy instance" )
-        to_address = trans.app.config.error_email_to
+        #to_address = trans.app.config.error_email_to
+        to_address = 'greg@bx.psu.edu'
         if to_address is None:
             return trans.show_error_message( "Sorry, error reporting has been disabled for this galaxy instance" )
         # Get the dataset and associated job
@@ -72,9 +71,12 @@ class DatasetInterface( BaseController ):
         msg = MIMEText( string.Template( error_report_template )
             .safe_substitute( dataset_id=dataset.id,
                               email=email, 
-                              message=message, 
+                              message=message,
+                              job_id=job.id,
+                              tool_id=job.tool_id,
                               stderr=job.stderr,
-                              stdout=job.stdout ) )
+                              stdout=job.stdout,
+                              info=job.info ) )
         frm = to_address
         # Check email a bit
         email = email.strip()
