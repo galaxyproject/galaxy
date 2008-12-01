@@ -381,6 +381,7 @@ class TwillTestCase( unittest.TestCase ):
         for pi in permissions_in:
             key = '%s_in' % pi
             url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.last_page()
         self.check_page_for_string( 'Default new history permissions have been changed.' )
@@ -397,6 +398,7 @@ class TwillTestCase( unittest.TestCase ):
         for pi in permissions_in:
             key = '%s_in' % pi
             url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.last_page()
         self.check_page_for_string( 'Default history permissions have been changed.' )
@@ -587,8 +589,15 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/admin/create_new_user?email=%s&password=%s&confirm=%s&user_create_button=%s" \
                         % ( self.url, email, password, password, 'Create' ) )
         self.last_page()
-        self.check_page_for_string( "Created new user account" )
+        try:
+            self.check_page_for_string( "Created new user account" )
+            previously_created = False
+        except:
+            # May have created the account in a previous test run...
+            self.check_page_for_string( "User with that email already exists" )
+            previously_created = True
         self.home()
+        return previously_created
     def reset_password_as_admin( self, user_id=4, password='testreset' ):
         """Reset a user password"""
         self.visit_url( "%s/admin/reset_user_password?user_id=%s" % ( self.url, str( user_id ) ) )
@@ -638,6 +647,7 @@ class TwillTestCase( unittest.TestCase ):
             self.last_page()
             check_str = 'The new role has been created with %d associated users and %d associated groups' % ( len( user_ids ), len( group_ids ) )
             self.check_page_for_string( check_str )
+            previously_created = False
             if private_role:
                 # Make sure no private roles are displayed
                 try:
@@ -648,13 +658,14 @@ class TwillTestCase( unittest.TestCase ):
                     # Reaching here is the behavior we want since no private roles should be displayed
                     pass
         except AssertionError, err:
-            self.home()
-            errmsg = 'Exception caught attempting to create role: %s' % str( err )
-            raise AssertionError( errmsg )
+            # The role may have been created on a previous test run
+            self.check_page_for_string( "A role with that name already exists" )
+            previously_created = True
         self.home()
         self.visit_page( "admin/roles" )
         self.check_page_for_string( description )
         self.home()
+        return previously_created
     def mark_role_deleted( self, role_id ):
         """Mark a role as deleted"""
         self.visit_url( "%s/admin/mark_role_deleted?role_id=%s" % ( self.url, role_id ) )
@@ -700,14 +711,17 @@ class TwillTestCase( unittest.TestCase ):
             for role_id in role_ids:
                 tc.fv( "1", "roles", role_id )
             tc.submit( "create_group_button" )
-        except AssertionError, err:
-            self.home()
-            errmsg = 'Exception caught attempting to create group: %s' % str( err )
-            raise AssertionError( errmsg )
+            self.last_page()
+            self.check_page_for_string( "The new group has been created" )
+            previously_created = False
+        except:
+            self.check_page_for_string( "A group with that name already exists" )
+            previously_created = True
         self.home()
         self.visit_page( "admin/groups" )
         self.check_page_for_string( name )
         self.home()
+        return previously_created
     def add_group_members( self, group_id, user_ids=[] ):
         """Add a member to an existing group"""
         self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_id ) )
@@ -730,7 +744,18 @@ class TwillTestCase( unittest.TestCase ):
         for group_name in group_names:
             tc.fv( "1", "out_groups", group_name ) # note the buttons...
             tc.submit( "groups_add_button" )
-        tc.submit( "role_button" )
+        tc.submit( "role_members_edit_button" )
+        self.home()
+    def associate_users_with_role( self, role_id, user_emails=[] ):
+        """Add a users to an existing role"""
+        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
+        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Users associated with' )
+        for user_email in user_emails:
+            tc.fv( "1", "out_users", user_email )
+            tc.submit( "users_add_button" )
+        tc.submit( "role_members_edit_button" )
         self.home()
     def mark_group_deleted( self, group_id ):
         """Mark a group as deleted"""

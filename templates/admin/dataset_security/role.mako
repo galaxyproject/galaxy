@@ -76,7 +76,7 @@ $().ready(function() {
                 </div>
             </div>
             <div class="form-row">
-                <input type="submit" name="role_button" value="Save"/>
+                <input type="submit" name="role_members_edit_button" value="Save"/>
             </div>
         </form>
     </div>

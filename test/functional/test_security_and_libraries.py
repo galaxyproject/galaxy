@@ -139,7 +139,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             adras.append( adra.action )
         # Sort actions for later comparison
         adras.sort()
-        # Compare ActionDatasetRoleAssociations with permissions_in - shouuld be the same
+        # Compare ActionDatasetRoleAssociations with permissions_in - should be the same
         if adras != actions_in:
             raise AssertionError( 'ActionDatasetRoleAssociations "%s" for dataset id %d differ from changed default permissions "%s"' \
                                       % ( str( adras ), latest_dataset.id, str( actions_in ) ) )
@@ -147,6 +147,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if adras != dhps:
                 raise AssertionError( 'ActionDatasetRoleAssociations "%s" for dataset id %d differ from DefaultHistoryPermissions "%s" for history id %d' \
                                       % ( str( adras ), latest_dataset.id, str( dhps ), latest_history.id ) )
+        # Change DefaultHistoryPermissions for testuser2 back to the default
+        permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
+        permissions_out = [ 'DATASET_ACCESS', 'DATASET_EDIT_METADATA' ]
+        role_id = str( private_role.id )
+        self.user_set_default_permissions( permissions_in=permissions_in, permissions_out=permissions_out, role_id=role_id )
         self.home()
         self.logout()
     def test_09_login_as_non_admin_user2( self ):
@@ -206,7 +211,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.login( email='test@bx.psu.edu' )
         email = 'test4@bx.psu.edu'
         password = 'testuser'
-        self.create_new_account_as_admin( email=email, password=password )
+        previously_created = self.create_new_account_as_admin( email=email, password=password )
         # Get the user object for later tests
         global testuser4
         testuser4 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test4@bx.psu.edu' ).first()
@@ -216,21 +221,23 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Make sure a private role was created for the user
         if not testuser4.roles:
             raise AssertionError( 'No UserRoleAssociations were created for user %s when the admin created the account' % email )
-        if len( testuser4.roles ) != 1:
-            raise AssertionError( '%d UserRoleAssociations were created for user %s when the admin created the account ( should have been 1 )' \
-                                  % len( testuser4.roles ) )
+        if not previously_created and len( testuser4.roles ) != 1:
+            raise AssertionError( '%d UserRoleAssociations were created for user %s when the admin created the account ( should have been <= 2 )' \
+                                  % ( len( testuser4.roles ), testuser4.email ) )
         for ura in testuser4.roles:
             role = galaxy.model.Role.get( ura.role_id )
-            if role.type != 'private':
+            if not previously_created and role.type != 'private':
                 raise AssertionError( 'Role created for user %s when the admin created the account is not private, type is' \
                                       % str( role.type ) )
-        # Make sure a history was not created
-        histories = galaxy.model.History.filter( galaxy.model.History.table.c.user_id==testuser4.id ).all()
-        if histories:
-            raise AssertionError( 'Histories were incorrectly created for user %s when the admin created the account' % email )
-        # Make sure the user was not associated with any groups
-        if testuser4.groups:
-            raise AssertionError( 'Groups were incorrectly associated with user %s when the admin created the account' % email )
+        if not previously_created:
+            # Make sure a history was not created ( previous test runs may have left deleted histories )
+            histories = galaxy.model.History.filter( and_( galaxy.model.History.table.c.user_id==testuser4.id,
+                                                           galaxy.model.History.table.c.deleted==False ) ).all()
+            if histories:
+                raise AssertionError( 'Histories were incorrectly created for user %s when the admin created the account' % email )
+            # Make sure the user was not associated with any groups
+            if testuser4.groups:
+                raise AssertionError( 'Groups were incorrectly associated with user %s when the admin created the account' % email )
     def test_15_reset_password_as_admin( self ):
         """Testing reseting a user password as admin"""
         email = 'test4@bx.psu.edu'
@@ -268,7 +275,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         name = 'Role One'
         description = 'This is Role One'
         user_ids=[ str( testuser1.id ), str( testuser2.id ), str( testuser4.id ) ]
-        self.create_role( name=name, description=description, user_ids=user_ids, private_role=testuser1.email )
+        previously_created = self.create_role( name=name, description=description, user_ids=user_ids, private_role=testuser1.email )
         # Get the role object for later tests
         global role_one
         role_one = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
@@ -283,14 +290,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
             user.refresh()
             if not user.roles:
                 raise AssertionError( 'No UserRoleAssociations were created for user %s when a new role was created' % user.email )
-            if len( user.roles ) != 2:
+            if not previously_created and len( user.roles ) != 2:
                 raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 2 )' % ( len( user.roles ), user.email ) )
     def test_30_create_group( self ):
         """Testing creating new group with 3 members and 1 associated role"""
         name = 'Group One'
         user_ids=[ str( testuser1.id ), str( testuser2.id ), str( testuser4.id ) ]
         role_ids=[ str( role_one.id ) ]
-        self.create_group( name=name, user_ids=user_ids, role_ids=role_ids )
+        previously_created = self.create_group( name=name, user_ids=user_ids, role_ids=role_ids )
         # Get the group object for later tests
         global group_one
         group_one = galaxy.model.Group.filter( galaxy.model.Group.table.c.name==name ).first()
@@ -350,11 +357,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         group_ids=[ str( group_two.id ) ]
         private_role=testuser1.email
         # STEP 1: create the role
-        self.create_role( name=name, 
-                          description=description, 
-                          user_ids=user_ids, 
-                          group_ids=group_ids, 
-                          private_role=private_role )
+        previously_created = self.create_role( name=name, 
+                                               description=description, 
+                                               user_ids=user_ids, 
+                                               group_ids=group_ids, 
+                                               private_role=private_role )
         # Get the role object for later tests
         global role_two
         role_two = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
@@ -392,6 +399,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
         #self.associate_groups_with_role( str( role_two.id ), group_names=group_names )
         #self.visit_page( 'admin/roles' )
         #self.check_page_for_string( group_one.name )
+        #
+        # Manually delete the userRoleAssociation for later test runs
+        for ura in testuser1.roles:
+            if ura.role_id == role_two.id:
+                ura.delete()
+                ura.flush()
+                break
     def test_39_create_library( self ):
         """Testing creating new library"""
         name = 'Library One'
@@ -574,7 +588,25 @@ class TestSecurityAndLibraries( TwillTestCase ):
             role = galaxy.model.Role.get( ura.role_id )
             if role.type != 'private':
                 raise AssertionError( 'UserRoleAssociations for user %s are not related with the private role.' % testuser4.email )
-    def test_81_purge_group( self ):
+    def test_81_manually_unpurge_user( self ):
+        """Testing manually un-purging a user account"""
+        # Reset the user for later test runs.  The user's private Role and DefaultUserPermissions for that role
+        # should have been preserved, so all we need to do is reset purged and deleted.
+        # TODO: If we decide to implement the GUI feature for un-purging a user, replace this with a method call
+        testuser4.purged = False
+        testuser4.deleted = False
+        testuser4.flush()
+        # Need to also manually add user as a member of group_one for later test runs
+        uga = galaxy.model.UserGroupAssociation( testuser4, group_one )
+        uga.flush()
+    def test_84_edit_role_membership( self ):
+        """Testing adding a new member to an existing role"""
+        # TODO: Twill throws an exception on this...
+        #self.associate_users_with_role( str( role_one.id ), user_emails=[ str( testuser4.email ) ] )
+        # Due to the above bug in twill, we need to manaually re-associate the user with the role for later test runs.
+        ura = galaxy.model.UserRoleAssociation( testuser4, role_one )
+        ura.flush()
+    def test_87_purge_group( self ):
         """Testing purging a group"""
         group_id = str( group_two.id )
         self.mark_group_deleted( group_id )
@@ -587,7 +619,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         gra = galaxy.model.GroupRoleAssociation.filter( galaxy.model.GroupRoleAssociation.table.c.group_id == group_id ).all()
         if gra:
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
-    def test_84_purge_role( self ):
+        # Undelete the group for later test runs
+        self.undelete_group( group_id )
+    def test_90_purge_role( self ):
         """Testing purging a role"""
         role_id = str( role_two.id )
         self.mark_role_deleted( role_id )
@@ -612,7 +646,16 @@ class TestSecurityAndLibraries( TwillTestCase ):
         adra = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.role_id == role_id ).all()
         if adra:
             raise AssertionError( "Purging the role did not delete the ActionDatasetRoleAssociations for role_id '%s'" % role_id )
-    def test_87_purge_library( self ):
+        # Manually unpurge, then undelete the role for later test runs
+        role_two.perged = False
+        role_two.flush()
+        self.undelete_role( role_id )
+        # Manually re-associate groups and users for later test runs.
+        ura = galaxy.model.UserRoleAssociation( testuser1, role_two )
+        ura.flush()
+        uga = galaxy.model.GroupRoleAssociation( group_two, role_two )
+        uga.flush()
+    def test_93_purge_library( self ):
         """Testing purging a library"""
         self.purge_library( str( library.id ) )
         # Make sure the library was purged
