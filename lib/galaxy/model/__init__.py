@@ -289,6 +289,7 @@ class HistoryDatasetAssociation( object ):
     def copy( self, copy_children = False, parent_id = None ):
         des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
         des.flush()
+        des.set_size()
         des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         if copy_children:
             for child in self.children:
@@ -467,7 +468,8 @@ class Dataset( object ):
     def set_size( self ):
         """Returns the size of the data on disk"""
         try:
-            self.file_size = os.path.getsize( self.file_name )
+            if not self.file_size:
+                self.file_size = os.path.getsize( self.file_name )
         except OSError:
             self.file_size = 0
     def has_data( self ):

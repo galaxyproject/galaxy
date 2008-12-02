@@ -18,7 +18,7 @@ class QualityScore ( data.Text ):
     def set_peek( self, dataset, line_count=None ):
         dataset.peek  = data.get_file_peek( dataset.file_name )
         if line_count is None:
-            dataset.blurb = "%s lines, Quality score file" % util.commaify( str( data.get_line_count( dataset.file_name ) ) )
+            dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.blurb = "%s lines, Quality score file" % util.commaify( str( line_count ) )
     

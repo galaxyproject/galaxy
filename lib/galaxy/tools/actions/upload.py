@@ -210,6 +210,7 @@ class UploadToolAction( object ):
         data.flush()
         shutil.move( temp_name, data.file_name )
         data.state = data.states.OK
+        data.set_size()
         data.init_meta()
         if self.line_count is not None:
             try:
@@ -218,7 +219,6 @@ class UploadToolAction( object ):
                 data.set_peek()
         else:
             data.set_peek()
-        data.set_size()
 
         # validate incomming data
         """

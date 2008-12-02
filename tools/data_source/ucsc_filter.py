@@ -43,6 +43,7 @@ def exec_after_process( app, inp_data, out_data, param_dict, tool=None, stdout=N
     """Verifies the data after the run"""
     items = out_data.items()
     for name, data in items:
+        data.set_size()
         try:            
             err_msg, err_flag = 'Errors:', False
             line_count = 0
@@ -65,4 +66,3 @@ def exec_after_process( app, inp_data, out_data, param_dict, tool=None, stdout=N
         except Exception, exc:
             data.info  = data.info + "\n" + str(exc)
             data.blurb = "error"
-        data.set_size()

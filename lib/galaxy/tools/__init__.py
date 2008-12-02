@@ -1189,6 +1189,7 @@ class Tool:
         # tag set in the tool config.
         if self.tool_type == 'data_source':
             name, data = out_data.items()[0]
+            data.set_size()
             if data.state == data.states.OK:
                 data.name = param_dict.get( 'name', data.name )
                 data.info = param_dict.get( 'info', data.name )
@@ -1202,7 +1203,6 @@ class Tool:
                 if data.missing_meta(): 
                     data = app.datatypes_registry.change_datatype( data, 'tabular' )
             data.set_peek()
-            data.set_size()
             data.flush()
 
     def collect_associated_files( self, output ):
@@ -1234,12 +1234,12 @@ class Tool:
                 # Move data from temp location to dataset location
                 shutil.move( filename, child_dataset.file_name )
                 child_dataset.flush()
+                child_dataset.set_size()
                 child_dataset.name = "Secondary Dataset (%s)" % ( designation )
                 child_dataset.state = child_dataset.states.OK
                 child_dataset.init_meta()
                 child_dataset.set_meta()
                 child_dataset.set_peek()
-                child_dataset.set_size()
                 child_dataset.flush()
                 # Add child to return dict 
                 children[name][designation] = child_dataset
@@ -1270,13 +1270,13 @@ class Tool:
                 primary_data.flush()
                 # Move data from temp location to dataset location
                 shutil.move( filename, primary_data.file_name )
+                primary_data.set_size()
                 primary_data.name = dataset.name
                 primary_data.info = dataset.info
                 primary_data.state = primary_data.states.OK
                 primary_data.init_meta( copy_from=dataset )
                 primary_data.set_meta()
                 primary_data.set_peek()
-                primary_data.set_size()
                 primary_data.flush()
                 outdata.history.add_dataset( primary_data )
                 # Add dataset to return dict 

@@ -19,6 +19,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             dbkey = fields[2]
             file_type = fields[3]
             name, data = out_data.items()[0]
+            data.set_size()
             basic_name = data.name
             data.name = data.name + " (" + description + ")"
             data.dbkey = dbkey
@@ -26,7 +27,6 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             data = app.datatypes_registry.change_datatype( data, file_type )
             data.init_meta()
             data.set_peek()
-            data.set_size()
             app.model.flush()
         elif fields[0] == "#NewFile":
             description = fields[1]
@@ -34,6 +34,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             filepath = fields[3]
             file_type = fields[4]
             newdata = app.model.HistoryDatasetAssociation( create_dataset = True ) #This import should become a library
+            newdata.set_size()
             newdata.extension = file_type
             newdata.name = basic_name + " (" + description + ")"
             history.add_dataset( newdata )
@@ -48,5 +49,4 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.dbkey = dbkey
             newdata.set_meta()
             newdata.set_peek()
-            newdata.set_size()
             app.model.flush()

@@ -15,8 +15,8 @@ class Ab1( data.Data ):
     file_ext = "ab1"
     def set_peek( self, dataset ):
         export_url = "/history_add_to?"+urlencode({'history_id':dataset.history_id,'ext':'ab1','name':'ab1 sequence','info':'Sequence file','dbkey':dataset.dbkey})
-        dataset.peek  = "Binary ab1 sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
-        dataset.blurb = "Binary ab1 sequence file"
+        dataset.peek  = "Binary ab1 sequence file"
+        dataset.blurb = data.nice_size( dataset.get_size() )
     def display_peek(self, dataset):
         try:
             return dataset.peek
@@ -28,8 +28,8 @@ class Scf( data.Data ):
     file_ext = "scf"
     def set_peek( self, dataset ):
         export_url = "/history_add_to?"+urlencode({'history_id':dataset.history_id,'ext':'scf','name':'scf sequence','info':'Sequence file','dbkey':dataset.dbkey})
-        dataset.peek  = "Binary scf sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
-        dataset.blurb = "Binary scf sequence file"
+        dataset.peek  = "Binary scf sequence file" 
+        dataset.blurb = data.nice_size( dataset.get_size() )
     def display_peek(self, dataset):
         try:
             return dataset.peek
@@ -42,8 +42,8 @@ class Binseq( data.Data ):
     def set_peek( self, dataset ):
         zip_file = zipfile.ZipFile( dataset.file_name, "r" )
         num_files = len( zip_file.namelist() )
-        dataset.peek  = "Binary sequence file archive (%s)" % ( data.nice_size( dataset.get_size() ) )
-        dataset.blurb = 'Zip archive of %s binary sequence files' % ( str( num_files ) )
+        dataset.peek  = "Archive of %s binary sequence files" % ( str( num_files ) )
+        dataset.blurb = data.nice_size( dataset.get_size() )
     def display_peek(self, dataset):
         try:
             return dataset.peek
@@ -59,8 +59,8 @@ class Txtseq( data.Data ):
     def set_peek( self, dataset ):
         zip_file = zipfile.ZipFile( dataset.file_name, "r" )
         num_files = len( zip_file.namelist() )
-        dataset.peek  = "Text sequence file archive (%s)" % ( data.nice_size( dataset.get_size() ) )
-        dataset.blurb = 'Zip archive of %s text sequence files' % ( str( num_files ) )
+        dataset.peek  = "Archive of %s text sequence files" % ( str( num_files ) )
+        dataset.blurb = data.nice_size( dataset.get_size() )
     def display_peek(self, dataset):
         try:
             return dataset.peek
@@ -73,8 +73,8 @@ class Txtseq( data.Data ):
 class Image( data.Data ):
     """Class describing an image"""
     def set_peek( self, dataset ):
-        dataset.peek  = 'Image in %s format (%s)' % ( dataset.extension, data.nice_size( dataset.get_size() ) )
-        dataset.blurb = 'image' 
+        dataset.peek  = 'Image in %s format' % dataset.extension
+        dataset.blurb = data.nice_size( dataset.get_size() )
 
 def create_applet_tag_peek( class_name, archive, params ):
     text = """
@@ -147,7 +147,7 @@ class Html( data.Text ):
     """Class describing an html file"""
     file_ext = "html"
     def set_peek( self, dataset ):
-        dataset.peek  = "HTML file (%s)" % ( data.nice_size( dataset.get_size() ) )
+        dataset.peek  = "HTML file"
         dataset.blurb = data.nice_size( dataset.get_size() )
     def get_mime(self):
         """Returns the mime type of the datatype"""

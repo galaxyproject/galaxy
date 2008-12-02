@@ -647,13 +647,13 @@ class RootController( BaseController ):
             data_file.write( file_data.file.read() )
             data_file.close()
             data.state = data.states.OK
+            data.set_size()
             data.init_meta()
             data.set_meta()
             data.flush()
             history.add_dataset( data )
             history.flush()
             data.set_peek()
-            data.set_size()
             data.flush()
             trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id))
             if self.app.memory_usage:

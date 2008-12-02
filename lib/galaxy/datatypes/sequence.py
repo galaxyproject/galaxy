@@ -32,17 +32,7 @@ class Fasta( Sequence ):
 
     def set_peek( self, dataset ):
         dataset.peek = data.get_file_peek( dataset.file_name )
-        count = size = 0
-        for line in file( dataset.file_name ):
-            if line and line[0] == ">":
-                count += 1
-            else:
-                line = line.strip()
-                size += len(line)
-        if count == 1:
-            dataset.blurb = '%d bases' % size
-        else:
-            dataset.blurb = '%d sequences' % count
+        dataset.blurb = data.nice_size( dataset.get_size() )
 
     def sniff(self, filename):
         """
@@ -96,17 +86,7 @@ class csFasta( Sequence ):
     
     def set_peek( self, dataset ):
         dataset.peek = data.get_file_peek( dataset.file_name )
-        count = size = 0
-        for line in file( dataset.file_name ):
-            if line and line[0] == ">":
-                count += 1
-            else:
-                line = line.strip()
-                size += len(line)
-        if count == 1:
-            dataset.blurb = '%d bases' % size
-        else:
-            dataset.blurb = '%d sequences' % count
+        dataset.blurb = data.nice_size( dataset.get_size() )
 
     def sniff( self, filename ):
         """
@@ -128,18 +108,7 @@ class FastqSolexa( Sequence ):
 
     def set_peek( self, dataset ):
         dataset.peek = data.get_file_peek( dataset.file_name )
-        count = size = 0
-        bases_regexp = re.compile("^[NGTAC]*$")
-        for i, line in enumerate(file( dataset.file_name )):
-            if line and line[0] == "@" and i % 4 == 0:
-                count += 1
-            elif bases_regexp.match(line):
-                line = line.strip()
-                size += len(line)
-        if count == 1:
-            dataset.blurb = '%d bases' % size
-        else:
-            dataset.blurb = '%d sequences' % count
+        dataset.blurb = data.nice_size( dataset.get_size() )
 
     def sniff( self, filename ):
         """

@@ -71,6 +71,6 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
             
         else:
             data = app.datatypes_registry.change_datatype(data, 'tabular')
-    data.set_peek()
     data.set_size()
+    data.set_peek()
     data.flush()

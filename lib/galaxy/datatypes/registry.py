@@ -191,6 +191,7 @@ class Registry( object ):
         # being converted *to* will handle any metadata copying and
         # initialization.
         if data.has_data():
+            data.set_size()
             data.init_meta( copy_from=data )
             data.set_meta( overwrite = False )
             data.set_peek()
