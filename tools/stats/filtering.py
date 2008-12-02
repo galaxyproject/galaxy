@@ -25,6 +25,7 @@ out_fname = sys.argv[2]
 cond_text = sys.argv[3]
 try:
     in_columns = int( sys.argv[4] )
+    assert sys.argv[5]  #check to see that the column types varaible isn't null
     in_column_types = sys.argv[5].split( ',' )
 except:
     stop_err( "Data does not appear to be tabular.  This tool can only be used with tab-delimited data." )

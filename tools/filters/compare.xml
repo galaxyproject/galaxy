@@ -3,9 +3,13 @@
   <command interpreter="python">joinWrapper.py $input1 $input2 $field1 $field2 $mode $out_file1</command>
   <inputs>
     <param format="tabular" name="input1" type="data" label="Compare"/>
-    <param name="field1" label="Using column" type="data_column" data_ref="input1" />
+    <param name="field1" label="Using column" type="data_column" data_ref="input1">
+        <validator type="no_options" message="Invalid column choice. Please try again after editing metadata of your input dataset by clicking on the pencil icon next to it."/>
+    </param>
     <param format="tabular" name="input2" type="data" label="against" />
-    <param name="field2" label="and column" type="data_column" data_ref="input2" />
+    <param name="field2" label="and column" type="data_column" data_ref="input2">
+            <validator type="no_options" message="Invalid column choice. Please try again after editing metadata of your input dataset by clicking on the pencil icon next to it."/>
+    </param>
     <param name="mode" type="select" label="To find" help="See examples below for explanation of these options">
       <option value="N">Matching rows of 1st query</option>
       <option value="V">Non Matching rows of 1st query</option>

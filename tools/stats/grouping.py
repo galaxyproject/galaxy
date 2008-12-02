@@ -128,7 +128,7 @@ def main():
                             if op not in ['c','length','unique','random']:
                                 for j, elem in enumerate( prev_vals[i] ):
                                     prev_vals[i][j] = float( elem )
-                                rout = "%f" %( eval( rfunc )( prev_vals[i] ))
+                                rout = "%g" %( eval( rfunc )( prev_vals[i] ))
                                 if rounds[i] == 'yes':
                                     rout = int(round(float(rout)))
                             else:
@@ -179,7 +179,7 @@ def main():
             if op not in ['c','length','unique','random']:
                 for j, elem in enumerate( prev_vals[i] ):
                     prev_vals[i][j] = float( elem )
-                rout = '%f' %( eval( rfunc )( prev_vals[i] ))
+                rout = '%g' %( eval( rfunc )( prev_vals[i] ))
                 if rounds[i] == 'yes':
                     rout = int(round(float(rout)))
             else:
