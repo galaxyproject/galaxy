@@ -305,19 +305,19 @@ assign_mapper( context, User, User.table,
                      ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
-    properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation ) ) )
+    properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )
 
 assign_mapper( context, JobToOutputDatasetAssociation, JobToOutputDatasetAssociation.table,
-    properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation ) ) )
+    properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )
 
 assign_mapper( context, JobParameter, JobParameter.table )
 
 assign_mapper( context, Job, Job.table, 
     properties=dict( galaxy_session=relation( GalaxySession ),
                      history=relation( History ),
-                     parameters=relation( JobParameter ),
-                     input_datasets=relation( JobToInputDatasetAssociation ),
-                     output_datasets=relation( JobToOutputDatasetAssociation ) ) )
+                     parameters=relation( JobParameter, lazy=False ),
+                     input_datasets=relation( JobToInputDatasetAssociation, lazy=False ),
+                     output_datasets=relation( JobToOutputDatasetAssociation, lazy=False ) ) )
 
 assign_mapper( context, Event, Event.table,
     properties=dict( history=relation( History ),
