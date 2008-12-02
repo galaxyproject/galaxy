@@ -1063,7 +1063,7 @@ class DataToolParameter( ToolParameter ):
                     # If we are sending data to an external application, then we need to make sure there are no roles
                     # associated with the dataset that restrict it's access from "public".  We determine this by sending
                     # None as the user to the allow_action method.
-                    if self.tool.tool_type == 'data_destination':
+                    if self.tool and self.tool.tool_type == 'data_destination':
                         if not trans.app.security_agent.allow_action( None, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
                             continue
                     if self.options and hda.get_dbkey() != filter_value:
