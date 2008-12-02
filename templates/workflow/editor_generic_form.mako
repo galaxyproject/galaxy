@@ -1,8 +1,8 @@
 <div class="toolForm">
     <div class="toolFormTitle">${form.title}</div>
     <div class="toolFormBody">
-    <form name="$form.name" action="${h.url_for(form.action)}" method="post">
-        <table cellpadding="0" cellspacing="0" border="0">
+    <form name="${form.name}" action="${h.url_for( action='editor_form_post' )}" method="post">
+        <input type="hidden" name="type" value="${module.type}" />
         %if form.inputs:
           %for input in form.inputs:
               <%
@@ -33,9 +33,9 @@
   
               </div>
           %endfor
-        <tr><td></td><td><input type="submit" value="${form.submit_text}">
+        <div class="form-row"><input type="submit" value="${form.submit_text}"></div>
         %else:
-          <tr><td colspan="2"><i>No options</i></td></tr>
+          <div class="form-row"><i>No options</i></div>
         %endif
         </table>
     </form>
