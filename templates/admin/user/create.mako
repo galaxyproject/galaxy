@@ -8,7 +8,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create account</div>
     <div class="toolFormBody">
-        <form name="form" action="/admin/create_new_user" method="post" >
+        <form name="form" action="${h.url_for( controller='admin', action='create_new_user' )}" method="post" >
             <div class="form-row">
                 <label>Email address:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
