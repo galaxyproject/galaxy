@@ -5,6 +5,7 @@ from galaxy.tools.parameters import DataToolParameter, check_param
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.grouping import Repeat, Conditional
 from galaxy.util.bunch import Bunch
+from galaxy.util.json import from_json_string, to_json_string
         
 class WorkflowModule( object ):
     
@@ -78,20 +79,48 @@ class WorkflowModule( object ):
 class InputDataModule( WorkflowModule ):
     type = "data_input"
     name = "Input dataset"
-    _runtime_inputs = {
-        'input' : DataToolParameter( None, Element( "param", name="input", label="Input Dataset", type="data", format="data" ) )
-    }
-    
+
+    @classmethod
+    def new( Class, trans, tool_id=None ):
+        module = Class( trans )
+        module.state = dict( name="Input Dataset" )
+        return module
+    @classmethod
+    def from_dict( Class, trans, d ):
+        module = Class( trans )
+        state = from_json_string( d["tool_state"] )
+        module.state = dict( name=state.get( "name", "Input Dataset" ) )
+        return module
+    @classmethod
+    def from_workflow_step( Class, trans, step ):
+        module = Class( trans )
+        module.state = dict( name="Input Dataset" )
+        if step.tool_inputs and "name" in step.tool_inputs:
+            module.state['name'] = step.tool_inputs[ 'name' ]
+        return module
+    def save_to_step( self, step ):
+        step.type = self.type
+        step.tool_id = None
+        step.tool_inputs = self.state
+
     def get_data_inputs( self ):
         return []
     def get_data_outputs( self ):
         return [ dict( name='output', extension='input' ) ]
     def get_config_form( self ):
+        form = web.FormBuilder( title=self.name ) \
+            .add_text( "name", "Name", value=self.state['name'] )
         return self.trans.fill_template( "workflow/editor_generic_form.mako",
-                                          form = web.FormBuilder( title=self.name ) )
+                                         module=self, form=form )
+    def get_state( self ):
+        return to_json_string( self.state )
+    
+    def update_state( self, incoming ):
+        self.state['name'] = incoming.get( 'name', 'Input Dataset' )
     
     def get_runtime_inputs( self ):
-        return self._runtime_inputs
+        label = self.state.get( "name", "Input Dataset" )
+        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, type="data", format="data" ) ) )
     def get_runtime_state( self ):
         state = DefaultToolState()
         state.inputs = dict( input=None )
@@ -106,7 +135,7 @@ class InputDataModule( WorkflowModule ):
         return state
     def update_runtime_state( self, trans, state, values ):
         errors = {}
-        for name, param in self._runtime_inputs.iteritems():
+        for name, param in self.get_runtime_inputs().iteritems():
             value, error = check_param( trans, param, values.get( name, None ), values )
             state.inputs[ name ] = value
             if error:
@@ -146,7 +175,6 @@ class ToolModule( object ):
         tool_id = step.tool_id
         module = Class( trans, tool_id )
         module.state = DefaultToolState()
-        print step.tool_inputs
         module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
         module.errors = step.tool_errors
         return module
