@@ -43,9 +43,11 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = params.msg
         messagetype = params.get( 'messagetype', 'done' )
+        roles = trans.app.model.Role.filter( and_( trans.app.model.Role.table.c.deleted==False,
+                                                   trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) ) \
+                                    .order_by( trans.app.model.Role.table.c.name ).all()
         return trans.fill_template( '/admin/dataset_security/roles.mako',
-                                    roles=trans.app.model.Role.filter( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) \
-                                                              .order_by( trans.app.model.Role.table.c.name ).all(),
+                                    roles=roles,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
