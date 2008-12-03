@@ -18,7 +18,7 @@
 </%def>
 
 <%
-    roles = trans.app.model.Role.query().all()
+    roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
 %>
 
 %if isinstance( dataset, list ):
