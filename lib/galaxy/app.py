@@ -26,7 +26,7 @@ class UniverseApplication( object ):
         self.model = galaxy.model.mapping.init( self.config.file_path,
                                                 db_url,
                                                 self.config.database_engine_options,
-                                                create_tables = True )
+                                                create_tables = self.config.database_create_tables )
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         #Load datatype converters

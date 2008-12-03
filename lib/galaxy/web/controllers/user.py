@@ -157,7 +157,7 @@ class User( BaseController ):
                 user.flush()
                 trans.app.security_agent.create_private_user_role( user )
                 trans.handle_user_login( user )
-                trans.app.security_agent.user_set_default_permissions( user, history=True, dataset=True )
+                #trans.app.security_agent.user_set_default_permissions( user, history=True, dataset=True, bypass_manage_permission=True ) #This is taken care of by trans.handle_user_login
                 trans.log_event( "User created a new account" )
                 trans.log_event( "User logged in" )
                 #subscribe user to email list
