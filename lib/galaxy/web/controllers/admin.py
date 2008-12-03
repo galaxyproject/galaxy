@@ -68,8 +68,8 @@ class Admin( BaseController ):
     @web.require_admin
     def new_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        name = params.get( 'name', '' )
-        description = params.get( 'description', '' )
+        name = util.restore_text( params.name )
+        description = util.restore_text( params.description )
         if not name or not description:
             msg = "Enter a valid name and a description"
         elif trans.app.model.Role.filter( trans.app.model.Role.table.c.name==name ).first():
@@ -309,7 +309,7 @@ class Admin( BaseController ):
     @web.require_admin
     def new_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        name = params.name
+        name = util.restore_text( params.name )
         if not name:
             msg = "Enter a valid name"
         elif trans.app.model.Group.filter( trans.app.model.Group.table.c.name==name ).first():
