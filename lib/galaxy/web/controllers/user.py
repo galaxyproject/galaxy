@@ -100,7 +100,6 @@ class User( BaseController ):
             else:
                 trans.handle_user_login( user )
                 trans.log_event( "User logged in" )
-                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=refresh_frames )
                 msg = "Now logged in as " + user.email + "."
                 if trans.app.config.require_login:
                     msg += '  <a href="%s">Click here</a> to continue to the front page.' % web.url_for( '/static/welcome.html' )
