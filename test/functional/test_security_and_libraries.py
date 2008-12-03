@@ -25,7 +25,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/create_group" % self.url )
         self.check_page_for_string( not_logged_in_security_msg )
-        self.visit_url( "%s/admin/group_members_edit" % self.url )
+        self.visit_url( "%s/admin/group_members_edit?group_id=0" % self.url )
         self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/update_group_members" % self.url )
         self.check_page_for_string( not_logged_in_security_msg )
@@ -48,6 +48,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( 'Administration' )
         global testuser1
         testuser1 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
+        assert testuser1 is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         # Make sure DefaultUserPermissions are correct
         if not testuser1.default_permissions:
             raise AssertionError( 'No DefaultUserPermissions were created for %s when their account was created' % testuser1.email )
@@ -67,15 +68,16 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if not dhp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
             raise AssertionError( 'The DefaultHistoryPermission.action for history id %d is "%s", but it should be "%s"' \
                                   % ( latest_history.id, dhp.action, galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
+        self.home()
         self.visit_url( "%s/admin/user?user_id=%s" % ( self.url, testuser1.id ) )
         self.check_page_for_string( testuser1.email )
-        self.home()
         self.logout()
     def test_06_login_as_non_admin_user1( self ):
         """Testing logging in as non-admin user1 - tests private role creation, changing DefaultHistoryPermissions for new histories"""
         self.login( email='test2@bx.psu.edu' ) # test2@bx.psu.edu is not an admin user
         global testuser2
         testuser2 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test2@bx.psu.edu' ).first()
+        assert testuser2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
         self.visit_page( "admin" )
         self.check_page_for_string( logged_in_security_msg )
         # Make sure a private role exists for testuser2
@@ -152,13 +154,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
         permissions_out = [ 'DATASET_ACCESS', 'DATASET_EDIT_METADATA' ]
         role_id = str( private_role.id )
         self.user_set_default_permissions( permissions_in=permissions_in, permissions_out=permissions_out, role_id=role_id )
-        self.home()
         self.logout()
     def test_09_login_as_non_admin_user2( self ):
         """Testing logging in as non-admin user2 - tests changing DefaultHistoryPermissions for the current history"""
         self.login( email='test3@bx.psu.edu' ) # This will not be an admin user
         global testuser3
         testuser3 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test3@bx.psu.edu' ).first()
+        assert testuser3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
         latest_history = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         self.upload_file( '1.bed' )
         latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
@@ -204,7 +206,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
             adras.append( adra.action )
         # Sort actions for later comparison
         adras.sort()
-        self.home()
         self.logout()
     def test_12_create_new_user_account_as_admin( self ):
         """Testing creating a new user account as admin"""
@@ -215,6 +216,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Get the user object for later tests
         global testuser4
         testuser4 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test4@bx.psu.edu' ).first()
+        assert testuser4 is not None, 'Problem retrieving user with email "test4@bx.psu.edu" from the database'
         # Make sure DefaultUserPermissions were created
         if not testuser4.default_permissions:
             raise AssertionError( 'No DefaultUserPermissions were created for user %s when the admin created the account' % email )
@@ -242,7 +244,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing reseting a user password as admin"""
         email = 'test4@bx.psu.edu'
         self.reset_password_as_admin( user_id=testuser4.id, password='testreset' )
-        self.home()
         self.logout()
     def test_18_login_after_password_reset( self ):
         """Testing logging in after an admin reset a password - tests DefaultHistoryPermissions for accounts created by an admin"""
@@ -261,7 +262,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   % ( latest_history.id, dhp.action, galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
         # Upload a file to create a HistoryDatasetAssociation
         self.upload_file( '1.bed' )
-        self.home()
         self.logout()
     def test_21_mark_user_deleted( self ):
         """Testing marking a user account as deleted"""
@@ -279,6 +279,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Get the role object for later tests
         global role_one
         role_one = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
+        assert role_one is not None, 'Problem retrieving role named "Role One" from the database'
         # Make sure UserRoleAssociations are correct
         if not role_one.users:
             raise AssertionError( 'No UserRoleAssociations were created for role id %d when it was created with 3 members' % role_one.id )
@@ -301,6 +302,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Get the group object for later tests
         global group_one
         group_one = galaxy.model.Group.filter( galaxy.model.Group.table.c.name==name ).first()
+        assert group_one is not None, 'Problem retrieving group named "Group One" from the database'
         # Make sure UserGroupAssociations are correct
         if not group_one.users:
             raise AssertionError( 'No UserGroupAssociations were created for group id %d when it was created with 3 members' % group_one.id )
@@ -323,27 +325,31 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_33_add_group_member( self ):
         """Testing editing membership of an existing group"""
         name = 'Group Two'
-        self.create_group( name=name )
+        previously_created = self.create_group( name=name, user_ids=[], role_ids=[] )
         # Get the group object for later tests
         global group_two
         group_two = galaxy.model.Group.filter( galaxy.model.Group.table.c.name==name ).first()
+        assert group_two is not None, 'Problem retrieving group named "Group Two" from the database'
+        group_two_id = str( group_two.id )
         user_ids = [ str( testuser3.id )  ]
-        self.add_group_members( str( group_two.id ), user_ids )
-        self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, str( group_two.id ) ) )
-        self.check_page_for_string( testuser3.email )
+        self.add_group_members( group_two_id, user_ids=user_ids )
+        self.home()
+        self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_two_id ) )
         # Make sure UserGroupAssociations are correct
-        if not group_two.users:
-            raise AssertionError( 'No UserGroupAssociations were created for group id %d when %d members were added' \
-                                  % ( group_two.id, len( user_ids ) ) )
-        if len( group_two.users ) != len( user_ids ):
-            raise AssertionError( '%d UserGroupAssociations were created for group id %d when %d members were added' \
-                                  % ( len( group_two.users ), group_two.id, len( user_ids ) ) )
+        check_str = '%s currently has %d members' % ( name, len( user_ids ) )
+        self.check_page_for_string( check_str )
         # Create another group -needed for the following test
         name = 'Group Three'
-        self.create_group( name=name )
+        previously_created = self.create_group( name=name, user_ids=[], role_ids=[] )
         # Get the group object for later tests
         global group_three
         group_three = galaxy.model.Group.filter( galaxy.model.Group.table.c.name==name ).first()
+        assert group_three is not None, 'Problem retrieving group named "Group Three" from the database'
+        group_three_id = str( group_three.id )
+        self.home()
+        self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_three_id ) )
+        check_str = '%s currently has 0 members' % name
+        self.check_page_for_string( check_str )
     def test_36_associate_groups_with_role( self ):
         """Testing adding existing groups to an existing role"""
         # NOTE: To get this to work with twill, all select lists on the ~/admin/role page must contain at least
@@ -365,6 +371,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Get the role object for later tests
         global role_two
         role_two = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
+        assert role_two is not None, 'Problem retrieving role named "Role Two" from the database'
         # Make sure UserRoleAssociations are correct
         if not role_two.users:
             raise AssertionError( 'No UserRoleAssociations were created for role id %d when it was created with %d members' \
@@ -418,6 +425,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         library = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name==name,
                                                      galaxy.model.Library.table.c.description==description,
                                                      galaxy.model.Library.table.c.deleted==False ) ).first()
+        assert library is not None, 'Problem retrieving library named "Library One" from the database'
     def test_42_rename_library( self ):
         """Testing renaming a library"""
         self.rename_library( str( library.id ), name='Library One Renamed', description='This is Library One Re-described', root_folder='on' )
@@ -461,16 +469,17 @@ class TestSecurityAndLibraries( TwillTestCase ):
         name = 'Folder One'
         description = 'This is Folder One'
         self.add_folder( str( root_folder.id ), name=name, description=description )
-        global new_test_folder
-        new_test_folder = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
-                                                                   galaxy.model.LibraryFolder.table.c.name==name,
-                                                                   galaxy.model.LibraryFolder.table.c.description==description ) ).first()
+        global folder_one
+        folder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
+                                                              galaxy.model.LibraryFolder.table.c.name==name,
+                                                              galaxy.model.LibraryFolder.table.c.description==description ) ).first()
+        assert folder_one is not None, 'Problem retrieving library folder named "Folder One" from the database'
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( "Folder One" )
     def test_57_add_datasets_from_library_dir( self ):
-        """Testing adding several datasets from library directory to sub-folder"""
+        """Testing adding 3 datasets from library directory to sub-folder"""
         roles_tuple = [ ( str( role_one.id ), role_one.description ) ] 
-        self.add_datasets_from_library_dir( str( new_test_folder.id ), roles_tuple=roles_tuple )
+        self.add_datasets_from_library_dir( str( folder_one.id ), roles_tuple=roles_tuple )
     def test_60_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         self.visit_page( "admin/groups" )

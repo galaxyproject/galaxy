@@ -128,7 +128,6 @@
         ${render_folder( folder, pad, deleted, created_lfda_ids )}
     %endfor
     %for dataset in parent_datasets:
-        ##%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=dataset.dataset ):
         <%
             if created_lfda_ids and dataset.id in created_lfda_ids:
                 selected = True
@@ -136,7 +135,6 @@
                 selected = False
         %>
         <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset, selected, deleted )}</li>
-        ##%endif
     %endfor
     </ul>
 </%def>

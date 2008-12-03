@@ -23,7 +23,7 @@
 
 %if isinstance( dataset, list ):
     <%
-        name_str = ' - ( %d of them )' % len( dataset )
+        name_str = '%d selected datasets' % len( dataset )
     %>
     ${render_permission_form( dataset[0].dataset, name_str, h.url_for( action='dataset' ), 'id', ",".join( [ str(d.id) for d in dataset ] ), roles )}
 %else:

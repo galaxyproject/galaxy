@@ -12,22 +12,22 @@
             ${role.description}
             <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="role-${role.id}-popup">
-                <a class="action-button" href="${h.url_for( action='role', role_id=role.id )}">Change associated users and groups</a>
-                <a class="action-button" href="${h.url_for( action='mark_role_deleted', role_id=role.id )}">Mark role deleted</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='role', role_id=role.id )}">Change associated users and groups</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='mark_role_deleted', role_id=role.id )}">Mark role deleted</a>
             </div>
         </td>
         <td>${role.type}</td>
         <td>
             <ul>
                 %for ura in role.users:
-                    <li><a href="${h.url_for( action='user_groups_edit', user_id=ura.user.id )}">${ura.user.email}</a></li>
+                    <li><a href="${h.url_for( controller='admin', action='user_groups_edit', user_id=ura.user.id )}">${ura.user.email}</a></li>
                 %endfor
             </ul>
         </td>
         <td>
             <ul>
                 %for gra in role.groups:
-                    <li><a href="${h.url_for( action='group_members_edit', group_id=gra.group.id )}">${gra.group.name}</a></li>
+                    <li><a href="${h.url_for( controller='admin', action='group_members_edit', group_id=gra.group.id )}">${gra.group.name}</a></li>
                 %endfor
             </ul>
             %if not anchored:
@@ -74,10 +74,10 @@
             </tr>
         %endif
         <tr class="header">
-            <td>Name</td>
+            <td>Description</td>
             <td>Type</td>
-            <td>Users</td>
-            <td>Groups</td>
+            <td>Associated Users</td>
+            <td>Associated Groups</td>
         </tr>
         %for ctr, role in enumerate( roles ):
             %if render_quick_find and not role.description.upper().startswith( curr_anchor ):

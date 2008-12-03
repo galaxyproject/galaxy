@@ -23,7 +23,7 @@
             </select>
         </div>
         <div class="form-row">
-            <button name="action" value="tool_reload">Reload</button>
+            <input type="submit" name="action" value="Reload"/>
         </div>
     </form>
     </div>
