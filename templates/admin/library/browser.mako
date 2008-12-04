@@ -8,6 +8,11 @@
     <link href="${h.url_for('/static/style/library.css')}" rel="stylesheet" type="text/css" />
 </%def>
 
+<%
+def name_sorted( l ):
+    return sorted( l, lambda a, b: cmp( a.name.lower(), b.name.lower() ) )
+%>
+
 <script type="text/javascript">
     //var q = jQuery.noConflict();
     $( document ).ready( function () {
@@ -124,10 +129,10 @@
             parent_datasets = parent.active_datasets
         %>
     %endif
-    %for folder in parent_folders:
+    %for folder in name_sorted( parent_folders ):
         ${render_folder( folder, pad, deleted, created_lfda_ids )}
     %endfor
-    %for dataset in parent_datasets:
+    %for dataset in name_sorted( parent_datasets ):
         <%
             if created_lfda_ids and dataset.id in created_lfda_ids:
                 selected = True

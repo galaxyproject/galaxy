@@ -8,6 +8,11 @@
     <link href="${h.url_for('/static/style/library.css')}" rel="stylesheet" type="text/css" />
 </%def>
 
+<%
+def name_sorted( l ):
+    return sorted( l, lambda a, b: cmp( a.name.lower(), b.name.lower() ) )
+%>
+
 <script type="text/javascript">
     var q = jQuery.noConflict();
     q( document ).ready( function () {
@@ -106,10 +111,10 @@
     %else:
         <ul>
     %endif
-        %for folder in parent.active_folders:
+        %for folder in name_sorted( parent.active_folders ):
             ${render_folder( folder, pad )}
         %endfor
-        %for dataset in parent.active_datasets:
+        %for dataset in name_sorted( parent.active_datasets ):
             %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=dataset.dataset ):
                 <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset )}</li>
             %endif
