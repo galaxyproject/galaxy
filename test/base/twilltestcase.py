@@ -9,7 +9,7 @@ import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm
 pkg_resources.require( "elementtree" )
 from elementtree import ElementTree
-
+  
 buffer = StringIO.StringIO()
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
@@ -31,7 +31,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.set_history()
 
-    """Functions associated with files"""
+    # Functions associated with files
     def files_diff( self, file1, file2 ):
         """Checks the contents of 2 files for differences"""
         if not filecmp.cmp( file1, file2 ):
@@ -83,7 +83,7 @@ class TwillTestCase( unittest.TestCase ):
             errmsg += str( err )
             raise AssertionError( errmsg )
 
-    """Functions associated with histories"""
+    # Functions associated with histories
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
         self.visit_page( "history" )
@@ -176,7 +176,6 @@ class TwillTestCase( unittest.TestCase ):
 
     def share_history( self, id=None, email='test2@bx.psu.edu' ):
         """Share a history with a different user"""
-        self.create( email=email, password='testuser', confirm='testuser' )
         history_list = self.get_histories()
         self.assertTrue( history_list )
         if id is None: # take last id
@@ -210,7 +209,7 @@ class TwillTestCase( unittest.TestCase ):
     def view_stored_histories( self ):
         self.visit_page( "history_available" )
 
-    """Functions associated with datasets (history items) and meta data"""
+    # Functions associated with datasets (history items) and meta data
     def get_job_stderr( self, id ):
         self.visit_page( "dataset/stderr?id=%s" % id )
         return self.last_page()
@@ -361,27 +360,64 @@ class TwillTestCase( unittest.TestCase ):
         genome_build = elem.get('dbkey')
         self.assertTrue( genome_build == dbkey )
 
-    """Functions associated with user accounts"""
-    def create( self, email='test@bx.psu.edu', password='testuser', confirm='testuser' ):
-        self.visit_page( "user/create?email=%s&password=%s&confirm=%s" %(email, password, confirm) )
-        try:
-            self.check_page_for_string( "User with that email already exists" )
-        except:
-            self.check_page_for_string( "Now logged in as %s" %email )
-        self.home() #Reset our URL for future tests
-        
-    def login( self, email='test@bx.psu.edu', password='testuser'):
-        self.create( email=email, password=password, confirm=password )
-        self.visit_page( "user/login?email=%s&password=%s" % (email, password) )
+    # Functions associated with user accounts
+    def create( self, email='test@bx.psu.edu', password='testuser' ):
+        self.home()
+        self.visit_page( "user/create?email=%s&password=%s&confirm=%s" % ( email, password, password ) )
         self.check_page_for_string( "Now logged in as %s" %email )
-        self.home() #Reset our URL for future tests
-
+        self.home()
+        # Make sure a new private role was created for the user
+        self.visit_page( "user/set_default_permissions" )
+        self.check_page_for_string( email )
+        self.home()
+    def user_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=2 ): # role.id = 2 is Private Role for test2@bx.psu.edu 
+        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
+        # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
+        # /user/set_default_permissions method.
+        url = "user/set_default_permissions?update_roles=Save&id=None"
+        for po in permissions_out:
+            key = '%s_out' % po
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        for pi in permissions_in:
+            key = '%s_in' % pi
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        self.home()
+        self.visit_url( "%s/%s" % ( self.url, url ) )
+        self.last_page()
+        self.check_page_for_string( 'Default new history permissions have been changed.' )
+        self.home()
+    def history_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=3 ): # role.id = 3 is Private Role for test3@bx.psu.edu 
+        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
+        # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
+        # /user/set_default_permissions method.
+        url = "root/history_set_default_permissions?update_roles=Save&id=None&dataset=True"
+        for po in permissions_out:
+            key = '%s_out' % po
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        for pi in permissions_in:
+            key = '%s_in' % pi
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        self.home()
+        self.visit_url( "%s/%s" % ( self.url, url ) )
+        self.check_page_for_string( 'Default history permissions have been changed.' )
+        self.home()
+    def login( self, email='test@bx.psu.edu', password='testuser' ):
+        # test@bx.psu.edu is configured as an admin user
+        try:
+            self.create( email=email, password=password )
+        except:
+            self.home()
+            self.visit_page( "user/login?email=%s&password=%s" % ( email, password ) )
+            self.check_page_for_string( "Now logged in as %s" %email )
+            self.home()
     def logout( self ):
+        self.home()
         self.visit_page( "user/logout" )
         self.check_page_for_string( "You are no longer logged in" )
-        self.home() #Reset our URL for future tests
-
-    """Functions associated with browsers, cookies, HTML forms and page visits"""
+        self.home()
+    # Functions associated with browsers, cookies, HTML forms and page visits
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""
         page = self.last_page()
@@ -545,3 +581,299 @@ class TwillTestCase( unittest.TestCase ):
             else:
                 break
         self.assertNotEqual(count, maxiter)
+
+    # Dataset Security stuff
+    def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser' ):
+        """Create a new account for another user"""
+        self.home()
+        self.visit_url( "%s/admin/create_new_user?email=%s&password=%s&confirm=%s&user_create_button=%s" \
+                        % ( self.url, email, password, password, 'Create' ) )
+        try:
+            self.check_page_for_string( "Created new user account" )
+            previously_created = False
+        except:
+            # May have created the account in a previous test run...
+            self.check_page_for_string( "User with that email already exists" )
+            previously_created = True
+        self.home()
+        return previously_created
+    def reset_password_as_admin( self, user_id=4, password='testreset' ):
+        """Reset a user password"""
+        self.home()
+        self.visit_url( "%s/admin/reset_user_password?user_id=%s" % ( self.url, str( user_id ) ) )
+        tc.fv( "1", "password", password )
+        tc.fv( "1", "confirm", password )
+        tc.submit( "reset_user_password_button" )
+        self.check_page_for_string( "Password reset" )
+        self.home()
+    def mark_user_deleted( self, user_id=4 ):
+        """Mark a user as deleted"""
+        self.home()
+        self.visit_url( "%s/admin/mark_user_deleted?user_id=%s" % ( self.url, str( user_id ) ) )
+        self.check_page_for_string( "The user has been marked as deleted." )
+        self.home()
+    def undelete_user( self, user_id ):
+        """Undelete a user"""
+        self.home()
+        self.visit_url( "%s/admin/undelete_user?user_id=%s" % ( self.url, user_id ) )
+        self.check_page_for_string( 'The user has been marked as not deleted' )
+        self.home()
+    def purge_user( self, user_id ):
+        """Purge a user account"""
+        self.home()
+        self.visit_url( "%s/admin/purge_user?user_id=%s" % ( self.url, user_id ) )
+        self.check_page_for_string( 'The user has been marked as purged.' )
+        self.home()
+    def create_role( self, name='Role One', description="This is Role One", user_ids=[], group_ids=[], private_role='' ):
+        """Create a new role"""
+        self.home()
+        self.visit_url( "%s/admin/create_role" % self.url )
+        self.check_page_for_string( "Create Role" )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", description )
+        for user_id in user_ids:
+            tc.fv( "1", "users", user_id )
+        for group_id in group_ids:
+            tc.fv( "1", "groups", group_id )
+        tc.submit( "create_role_button" )
+        check_str = "The new role has been created with %s associated users and %s associated groups" % ( str( len( user_ids ) ), str( len( group_ids ) ) )
+        try:
+            self.check_page_for_string( check_str )
+            previously_created = False
+        except:
+            # The role may have been created on a previous test run
+            self.check_page_for_string( "A role with that name already exists" )
+            previously_created = True
+        if private_role:
+            # Make sure no private roles are displayed
+            try:
+                self.check_page_for_string( private_role )
+                errmsg = 'Private role %s displayed on Non-private Roles page' % private_role
+                raise AssertionError( errmsg )
+            except AssertionError:
+                # Reaching here is the behavior we want since no private roles should be displayed
+                pass
+        self.home()
+        self.visit_page( "admin/roles" )
+        self.check_page_for_string( description )
+        self.home()
+        return previously_created
+    def mark_role_deleted( self, role_id ):
+        """Mark a role as deleted"""
+        self.home()
+        self.visit_url( "%s/admin/mark_role_deleted?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'The role has been marked as deleted' )
+        self.home()
+    def undelete_role( self, role_id ):
+        """Undelete an existing role"""
+        self.home()
+        self.visit_url( "%s/admin/undelete_role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'The role has been marked as not deleted' )
+        self.home()
+    def purge_role( self, role_id ):
+        """Purge an existing role"""
+        self.home()
+        self.visit_url( "%s/admin/purge_role?role_id=%s" % ( self.url, role_id ) )
+        check_str = "The following have been purged from the database for the role: "
+        check_str += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, ActionDatasetRoleAssociations."
+        self.check_page_for_string( check_str )
+        self.home()
+    def create_group( self, name='Group One', user_ids=[], role_ids=[] ):
+        """Create a new group with 2 members and 1 associated role"""
+        self.home()
+        self.visit_url( "%s/admin/create_group" % self.url )
+        self.check_page_for_string( "Create Group" )
+        # Make sure no private roles are displayed
+        try:
+            self.check_page_for_string( 'Private Role for'  )
+            errmsg = 'Private role displayed on Create Group page'
+            raise AssertionError( errmsg )
+        except AssertionError:
+            # Reaching here is the behavior we want since no private roles should be displayed
+            pass
+        tc.fv( "1", "name", name )
+        for user_id in user_ids:
+            tc.fv( "1", "members", user_id )
+        for role_id in role_ids:
+            tc.fv( "1", "roles", role_id )
+        tc.submit( "create_group_button" )
+        try:
+            self.check_page_for_string( "The new group has been created" )
+            previously_created = False
+        except:
+            self.check_page_for_string( "A group with that name already exists" )
+            previously_created = True
+        self.home()
+        self.visit_page( "admin/groups" )
+        self.check_page_for_string( name )
+        self.home()
+        return previously_created
+    def add_group_members( self, group_id, user_ids=[] ):
+        """Add a member to an existing group"""
+        self.home()
+        self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'Select to add user to' )
+        for user_id in user_ids:
+            tc.fv( "1", "members", user_id )
+        tc.submit( "submit_button" )
+        # The above submit will redirect to the ~/admin/groups() method
+        self.check_page_for_string( 'Group membership has been updated' )
+        self.home()
+    def associate_groups_with_role( self, role_id, group_names=[] ):
+        """Add groups to an existing role"""
+        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
+        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        self.home()
+        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Groups associated with' )
+        # All group_ids passed in  MUST be in the out_groups form field
+        for group_name in group_names:
+            tc.fv( "1", "out_groups", group_name ) # note the buttons...
+            tc.submit( "groups_add_button" )
+        tc.submit( "role_members_edit_button" )
+        self.home()
+    def associate_users_with_role( self, role_id, user_emails=[] ):
+        """Add a users to an existing role"""
+        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
+        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        self.home()
+        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Users associated with' )
+        for user_email in user_emails:
+            tc.fv( "1", "out_users", user_email )
+            tc.submit( "users_add_button" )
+        tc.submit( "role_members_edit_button" )
+        self.home()
+    def mark_group_deleted( self, group_id ):
+        """Mark a group as deleted"""
+        self.home()
+        self.visit_url( "%s/admin/mark_group_deleted?group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'The group has been marked as deleted' )
+        self.home()
+    def undelete_group( self, group_id ):
+        """Undelete an existing group"""
+        self.home()
+        self.visit_url( "%s/admin/undelete_group?group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'The group has been marked as not deleted' )
+        self.home()
+    def purge_group( self, group_id ):
+        """Purge an existing group"""
+        self.home()
+        self.visit_url( "%s/admin/purge_group?group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( "The following have been purged from the database for the group: UserGroupAssociations, GroupRoleAssociations." )
+        self.home()
+
+    # Library stuff
+    def create_library( self, name='Library One', description='This is Library One' ):
+        """Create a new library"""
+        self.home()
+        self.visit_url( "%s/admin/library?new=True" % self.url )
+        self.check_page_for_string( 'Create a new library' )
+        tc.fv( "1", "1", name ) # form field 1 is the field named name...
+        tc.fv( "1", "2", description ) # form field 1 is the field named name...
+        tc.submit( "create_library_button" )
+        self.home()
+    def rename_library( self, library_id, name='Library One Renamed', description='This is Library One Re-described', root_folder='' ):
+        """Rename a library"""
+        self.home()
+        self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
+        self.check_page_for_string( 'Edit library name and description' )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", description )
+        if root_folder:
+            tc.fv( "1", "root_folder", root_folder )
+        tc.submit( "rename_library_button" )
+        self.home()
+    def add_folder( self, folder_id, name='Folder One', description='NThis is Folder One' ):
+        """Create a new folder"""
+        self.home()
+        self.visit_url( "%s/admin/folder?id=%s&new=True" % ( self.url, folder_id ) )
+        self.check_page_for_string( 'Create a new folder' )
+        tc.fv( "1", "name", name ) # form field 1 is the field named name...
+        tc.fv( "1", "description", description ) # form field 2 is the field named description...
+        tc.submit( "new_folder_button" )
+        self.home()
+    def rename_folder( self, folder_id, name='Folder One Renamed', description='This is Folder One Re-described' ):
+        """Rename a Folder"""
+        self.home()
+        self.visit_url( "%s/admin/folder?rename=True&id=%s" % ( self.url, folder_id ) )
+        self.check_page_for_string( 'Edit folder name and description' )
+        tc.fv( "1", "name", name ) # form field 1 is the field named name...
+        tc.fv( "1", "description", description ) # form field 2 is the field named description...
+        tc.submit( "rename_folder_button" )
+        self.home()
+    def add_dataset( self, filename, folder_id, extension='auto', dbkey='hg18', roles=[] ):
+        """Add a dataset to a folder"""
+        filename = self.get_filename( filename )
+        self.home()
+        self.visit_url( "%s/admin/dataset?folder_id=%s&new=True" % ( self.url, folder_id ) )
+        self.check_page_for_string( 'Create a new library dataset' )
+        tc.fv( "1", "folder_id", folder_id ) # form field 1 is the field named folder_id...
+        tc.formfile( "1", "file_data", filename ) # form field 2 is the field named file_data...
+        tc.fv( "1", "extension", extension )
+        tc.fv( "1", "dbkey", dbkey )
+        for role_id in roles:
+            tc.fv( "1", "roles", role_id ) # form field 7 is the select list named out_groups, note the buttons...
+        tc.submit( "new_dataset_button" )
+        self.check_page_for_string( '1 new datasets added to the library ( each is selected below )' )
+        self.home()
+    def add_dataset_to_folder_from_history( self, folder_id ):
+        """Copy a dataset from the current history to a library folder"""
+        # Create a new history
+        self.new_history()
+        self.upload_file( "1.bed" )
+        self.home()
+        self.visit_url( "%s/admin/add_dataset_to_folder_from_history?folder_id=%s" % ( self.url, folder_id ) )
+        self.check_page_for_string( 'Active datasets in your current history' )
+        tc.fv( "1", "folder_id", folder_id )
+        tc.fv( "1", "ids", "1" )
+        tc.submit( "add_dataset_from_history_button" )
+        self.check_page_for_string( 'Added the following datasets to the library folder: 1.bed' )
+        self.home()
+    def add_datasets_from_library_dir( self, folder_id, extension='auto', dbkey='hg18', roles_tuple=[] ):
+        """Add a directory of datasets to a folder"""
+        # roles is a list of tuples: [ ( role_id, role_description ) ]
+        self.home()
+        self.visit_url( "%s/admin/dataset?folder_id=%s" % ( self.url, folder_id ) )
+        self.check_page_for_string( 'Create a new library dataset' )
+        tc.fv( "1", "folder_id", folder_id )
+        tc.fv( "1", "extension", extension )
+        tc.fv( "1", "dbkey", dbkey )
+        library_dir = "%s" % self.file_dir
+        tc.fv( "1", "server_dir", "library" )
+        for role_tuple in roles_tuple:
+            tc.fv( "1", "roles", role_tuple[0] )
+        tc.submit( "new_dataset_button" )
+        self.check_page_for_string( '3 new datasets added to the library' )
+        # TODO: FIXME: the following submitdoes not work...
+        #tc.submit( "action_on_datasets_button" )
+        #self.check_page_for_string( 'Manage permissions and role associations for 3 selected datasets' )
+        #for role_tuple in roles_tuple:
+        #    self.check_page_for_string( role_tuple[1] )
+        # NOTE: we cannot submit the form because of a bug in twill ( it cannot handle select lists
+        # that include no option fields.  Since the "manage permissions" and "edit metadata" select
+        # lists have no options ( no roles associated ), submitting the form will throw a 
+        # ParseError: <unprintable ParseError object> exception.  Uncomment the following 4 lines
+        # when twill fixes this bug...
+        # tc.find( "update_roles" )
+        # tc.submit( "update_roles" )
+        # self.check_page_for_string( 'Libraries' )
+        self.home()
+    def mark_library_deleted( self, library_id ):
+        """Mark a library as deleted"""
+        self.home()
+        self.visit_url( "%s/admin/library?id=%s&delete=True" % ( self.url, library_id ) )
+        self.check_page_for_string( 'The library and all of its contents have been marked deleted' )
+        self.home()
+    def mark_library_undeleted( self, library_id ):
+        """Mark a library as not deleted"""
+        self.home()
+        self.visit_url( "%s/admin/undelete_library?id=%s" % ( self.url, library_id ) )
+        self.check_page_for_string( 'The library and all of its contents have been marked not deleted' )
+        self.home()
+    def purge_library( self, library_id ):
+        """Purge a library"""
+        self.home()
+        self.visit_url( "%s/admin/purge_library?id=%s" % ( self.url, library_id ) )
+        self.check_page_for_string( 'The library and all of its contents have been purged' )
+        self.home()
