@@ -11,7 +11,7 @@
         <form name="form" action="${h.url_for( controller='admin', action='reset_user_password' )}" method="post" >
             <input type="hidden" name="user_id" value="${user.id}" size="40">
             <div class="form-row">
-                <label>Email address:</label>
+                <label>Email:</label>
                 ${user.email}
                 <div style="clear: both"></div>
             </div>

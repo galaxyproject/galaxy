@@ -16,8 +16,9 @@
             ${group.name}
             <a id="group-${group.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="group-${group.id}-popup">
-                <a class="action-button" href="${h.url_for( action='group_members_edit', group_id=group.id )}">Change members</a>
-                <a class="action-button" href="${h.url_for( action='mark_group_deleted', group_id=group.id )}">Mark group deleted</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='group_members_edit', group_id=group.id )}">Change associated users</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='group_roles_edit', group_id=group.id )}">Change associated roles</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='mark_group_deleted', group_id=group.id )}">Mark group deleted</a>
             </div>
         </td>
         <td>
@@ -84,7 +85,7 @@
         %endif
         <tr class="header">
             <td>Name</td>
-            <td>Members</td>
+            <td>Associated Users</td>
             <td>Associated Roles</td>
         </tr>
         %for ctr, group_tuple in enumerate( groups_members_roles ):

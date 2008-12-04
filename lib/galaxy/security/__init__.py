@@ -165,7 +165,7 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 return None
         return role
-    def user_set_default_permissions( self, user, permissions = {}, history=False, dataset=False ):
+    def user_set_default_permissions( self, user, permissions = {}, history=False, dataset=False, bypass_manage_permission=False ):
         if user is None:
             return None
         if not permissions:
@@ -183,7 +183,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 dup.flush()
         if history:
             for history in user.active_histories:
-                self.history_set_default_permissions( history, permissions=permissions, dataset=dataset )
+                self.history_set_default_permissions( history, permissions=permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission )
     def user_get_default_permissions( self, user ):
         perms = {}
         for action in self.get_actions():

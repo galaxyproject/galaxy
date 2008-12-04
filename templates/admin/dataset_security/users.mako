@@ -83,7 +83,7 @@
         %endif
         <tr class="header">
             <td>Email</td>
-            <td>Groups</td>
+            <td>Associated Groups</td>
             <td>Associated Non-private Roles</td>
         </tr>
         %for ctr, user_tuple in enumerate( users_groups_roles ):

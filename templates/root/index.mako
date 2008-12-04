@@ -32,6 +32,8 @@
         center_url = h.url_for( controller='user', action='login' )
     elif tool_id is not None:
         center_url = h.url_for( 'tool_runner', tool_id=tool_id, from_noframe=True )
+    elif workflow_id is not None:
+        center_url = h.url_for( controller='workflow', action='run', id=workflow_id )
     elif m_c is not None:
         center_url = h.url_for( controller=m_c, action=m_a )
     else:

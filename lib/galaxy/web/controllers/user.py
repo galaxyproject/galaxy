@@ -100,7 +100,6 @@ class User( BaseController ):
             else:
                 trans.handle_user_login( user )
                 trans.log_event( "User logged in" )
-                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=refresh_frames )
                 msg = "Now logged in as " + user.email + "."
                 if trans.app.config.require_login:
                     msg += '  <a href="%s">Click here</a> to continue to the front page.' % web.url_for( '/static/welcome.html' )
@@ -157,8 +156,8 @@ class User( BaseController ):
                 user.set_password_cleartext( password )
                 user.flush()
                 trans.app.security_agent.create_private_user_role( user )
-                trans.handle_user_login( user )
-                trans.app.security_agent.user_set_default_permissions( user, history=True, dataset=True )
+                trans.app.security_agent.user_set_default_permissions( user ) #we set default user permissions, before we log in and set the history permisions
+                trans.handle_user_login( user ) #This has a call to history_set_default_permissions (needed when logging with a history), user needs to have default permisions set before loging in
                 trans.log_event( "User created a new account" )
                 trans.log_event( "User logged in" )
                 #subscribe user to email list

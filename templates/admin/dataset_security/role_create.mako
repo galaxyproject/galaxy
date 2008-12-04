@@ -63,8 +63,8 @@
             </tr>
         %endif
         <tr class="header">
-            <td>Check to add user</td>
-            <td>Check to add group</td>
+            <td>Select to associate users with role</td>
+            <td>Select to associate groups with role</td>
         </tr>
         <tr>
             ## Render users
@@ -113,6 +113,6 @@
                 </table>
             </td>
         </tr>
-        <tr><td colspan="2"><button name="create_role_button" value="role_create">Create</button></td></tr>
+        <tr><td colspan="2"><input type="submit" name="create_role_button" value="Create"/></td></tr>
     </table>
 </form>

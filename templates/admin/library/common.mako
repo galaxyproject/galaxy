@@ -6,16 +6,13 @@
 ## Render the dataset `data`
 <%def name="render_dataset( data, selected, deleted )">
     <%
-	if data.state in ['no state','',None]:
+	if data.state in [ 'no state', '', None ]:
 	    data_state = "queued"
 	else:
 	    data_state = data.state
     %>
-    ##%if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
-    ##    <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">
-    ##%else:
-        <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
-    ##%endif
+
+    <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
         
     ## Header row for history items (name, state, action buttons)
         
@@ -49,8 +46,11 @@
                     %if not deleted:
                         <a id="dataset-${data.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="dataset-${data.id}-popup">
-                            <a class="action-button" href="${h.url_for( action='dataset', id=data.id )}">Edit this dataset's attributes and permissions</a>
-                            <a class="action-button" confirm="Click OK to remove dataset '${data.name}'?" href="${h.url_for( action='dataset', delete=True, id=data.id )}">Remove this dataset from the library</a>
+                            <a class="action-button" href="${h.url_for( controller='admin', action='dataset', id=data.id )}">Edit this dataset's attributes and permissions</a>
+                            %if data.has_data:
+                                <a class="action-button" href="${h.url_for( controller='root', action='display', id=data.id, tofile='yes', toext='data.ext' )}" target="_blank">Download this dataset</a>
+                            %endif
+                            <a class="action-button" confirm="Click OK to remove dataset '${data.name}'?" href="${h.url_for( controller='admin', action='dataset', delete=True, id=data.id )}">Remove this dataset from the library</a>
                         </div>
                     %endif
                 </td>
@@ -69,7 +69,6 @@
         </div>
         <div> 
             %if data.has_data:
-                <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext='data.ext' )}" target="_blank">save</a>
                 %for display_app in data.datatype.get_display_types():
                     <% display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                     %if len( display_links ) > 0:

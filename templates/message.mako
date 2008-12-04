@@ -40,4 +40,5 @@
 ## Render a message
 <%def name="render_msg( msg, messagetype='done' )">
     <div class="${messagetype}message">${msg}</div>
+    <br/>
 </%def>

@@ -15,10 +15,9 @@
                 <input type="checkbox" name="roles" value="${role.id}"/> ${role.description}
             %endif
         </td>
+        <td>${role.type}</td>
     </tr>
 </%def>
-
-<a name="TOP"><h2>Roles associated with group '${group.name}'</h2></a>
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -49,7 +48,10 @@
                     </td>
                 </tr>
             %endif
-            <tr class="header"><td>Check to add role</td></tr>
+            <tr class="header">
+                <td>Select to associate non-private role with group</td>
+                <td>Role Type</td>
+            </tr>
             %for ctr, role in enumerate( roles ):
                 <% check = False %>
                 %for group_role in group_roles:
@@ -90,7 +92,7 @@
                     ${render_row( role, ctr, True, '', check )}
                 %endif
             %endfor
-            <tr><td><button name="group_roles_edit_button" value="update_group_roles">Update Role Associations</button></td></tr>
+            <tr><td><input type="submit" name="submit_button" value="Update role associations" /></td></tr>
         </table>
     </form>
 %endif

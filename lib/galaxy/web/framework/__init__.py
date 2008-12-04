@@ -343,7 +343,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if history.user is None:
             history.user = user
         self.galaxy_session.current_history = history
-        self.app.security_agent.history_set_default_permissions( history, dataset=True )
+        self.app.security_agent.history_set_default_permissions( history, dataset=True, bypass_manage_permission=True )
         self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session, history ] )
         self.__update_session_cookie()
     def handle_user_logout( self ):

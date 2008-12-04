@@ -22,14 +22,14 @@
     </tr>
 </%def>
 
-<a name="TOP"><h2>User '${user.email}' Associated Groups</h2></a>
+<a name="TOP">&nbsp;</a>
 
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
 
 %if len( groups ) == 0:
-    <tr><td>User ${user.email} is not a member of any groups</td></tr>
+    <tr><td>There are no Galaxy groups</td></tr>
 %else:
     <form name="update_user_groups" action="${h.url_for( controller='admin', action='update_user_groups', user_id=user.id )}" method="post" >
         <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
@@ -53,7 +53,7 @@
                     </td>
                 </tr>
             %endif
-            <tr class="header"><td>Check to add member</td></tr>
+            <tr class="header"><td>Select to add ${user.email} to group</td></tr>
             %for ctr, group in enumerate( groups ):
                 <% check = False %>
                 %for user_group in user_groups:
@@ -94,7 +94,7 @@
                     ${render_row( group, ctr, True, '', check )}
                 %endif
             %endfor
-            <tr><td><button name="user_groups_edit_button" value="update_user_groups">Update Group Associations</button></td></tr>
+            <tr><td><input type="submit" name="user_groups_edit_button" value="Add user to selected groups" /></td></tr>
         </table>
     </form>
 %endif

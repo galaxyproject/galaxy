@@ -37,7 +37,7 @@
             obj_str = 'history %s' % obj_name
         elif isinstance( obj, trans.app.model.Dataset ):
             current_actions = obj.actions
-            obj_str = 'dataset(s) %s' % obj_name
+            obj_str = obj_name
         else:
             current_actions = obj.dataset.actions
             obj_str = 'unknown object %s' %obj_name
@@ -65,7 +65,7 @@
         });
     </script>
     <div class="toolForm">
-        <div class="toolFormTitle">Associate with roles and set permissions on ${obj_str} </div>
+        <div class="toolFormTitle">Manage permissions and role associations for ${obj_str}</div>
         <div class="toolFormBody">
             <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
                 <input type="hidden" name="${id_name}" value="${id}"/>

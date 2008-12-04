@@ -37,15 +37,15 @@
         %for i, workflow in enumerate( workflows ):
             <tr>
                 <td>
-                    <a href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name}</a>
+                    ${workflow.name}
                     <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
                 <td>${len(workflow.latest_workflow.steps)}</td>
                 ## <td>${str(workflow.update_time)[:19]}</td>
                 <td>
                     <div popupmenu="wf-${i}-popup">
-                    <a class="action-button" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">Run</a>
                     <a class="action-button" href="${h.url_for( action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">Edit</a>
+                    <a class="action-button" href="${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(workflow.id) )}" target="_parent">Run</a>
                     <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(workflow.id) )}">Rename</a>
                     <a class="action-button" href="${h.url_for( action='share', id=trans.security.encode_id(workflow.id) )}">Share</a>
                     <a class="action-button" confirm="Are you sure you want to delete workflow '${workflow.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">Delete</a>

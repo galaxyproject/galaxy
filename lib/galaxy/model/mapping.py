@@ -640,11 +640,8 @@ def db_next_hid( self ):
         raise
 
 History._next_hid = db_next_hid
-    
-def init( file_path, url, engine_options={}, create_tables=False ):
-    """Connect mappings to the database"""
-    # Connect dataset to the file path
-    Dataset.file_path = file_path
+
+def load_egg_for_url( url ):
     # Load the appropriate db module
     dialect = (url.split(':', 1))[0]
     try:
@@ -658,6 +655,13 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     except KeyError:
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
+
+def init( file_path, url, engine_options={}, create_tables=False ):
+    """Connect mappings to the database"""
+    # Connect dataset to the file path
+    Dataset.file_path = file_path
+    # Load the appropriate db module
+    load_egg_for_url( url )
     # Create the database engine
     engine = create_engine( url, **engine_options )
     # Connect the metadata to the database.
@@ -680,14 +684,11 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
     # Create private roles if necessary.
-    if not result.Role.query().all():
-        for user in result.User.query().all():
-            role = Role( name = user.email, description = 'Private Role for ' + user.email, type = 'private' )
-            role.flush()
-            ura = UserRoleAssociation( user = user, role = role )
-            ura.flush()
-            dup = DefaultUserPermissions( user = user, action = result.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action, role = role )
-            dup.flush()
+    if create_tables: #This should be moved to the external update script
+        if not result.Role.query().all():
+            for user in result.User.query().all():
+                result.security_agent.create_private_user_role( user )
+                result.security_agent.user_set_default_permissions( user, history=True, dataset=True, bypass_manage_permission=True )
     return result
     
 def get_suite():

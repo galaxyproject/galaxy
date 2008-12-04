@@ -22,8 +22,6 @@
     </tr>
 </%def>
 
-<a name="TOP"><h2>Members of group '${group.name}'</h2></a>
-
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
@@ -31,7 +29,8 @@
 %if len( users ) == 0:
     <tr><td>There are no Galaxy users</td></tr>
 %else:
-    <form name="update_group_members" action="${h.url_for( controller='admin', action='update_group_members', group_id=group.id )}" method="post" >
+    <form name="update_group_members" action="${h.url_for( controller='admin', action='update_group_members' )}" method="post" >
+        <input type="hidden" name="group_id" value="${group.id}" />
         <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
             <%
                 render_quick_find = len( users ) > 50
@@ -53,7 +52,7 @@
                     </td>
                 </tr>
             %endif
-            <tr class="header"><td>Check to add member</td></tr>
+            <tr class="header"><td>Select to add user to ${group.name}</td></tr>
             %for ctr, user in enumerate( users ):
                 <% check = False %>
                 %for member in members:
@@ -94,7 +93,7 @@
                     ${render_row( user, ctr, True, '', check )}
                 %endif
             %endfor
-            <tr><td><button name="group_members_edit_button" value="update_group_members">Update Members</button></td></tr>
+            <tr><td><input type="submit" name="submit_button" value="Add selected users to group"/></td></tr>
         </table>
     </form>
 %endif

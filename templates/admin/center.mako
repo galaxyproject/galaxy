@@ -108,7 +108,7 @@
     </li>
     <p></p>
     <li>
-        <strong>Manage roles</strong> - provides a view of all non-private roles along with the role type, and the users and groups that
+        <strong>Manage non-private roles</strong> - provides a view of all non-private roles along with the role type, and the users and groups that
         are associated with the role.
     </li>
     <p></p>
