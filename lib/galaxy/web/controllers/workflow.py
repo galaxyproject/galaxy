@@ -172,7 +172,7 @@ class WorkflowController( BaseController ):
         return trans.fill_template( "workflow/editor.mako", workflow_id=id )
         
     @web.json
-    def editor_tool_form( self, trans, type='tool', tool_id=None, **incoming ):
+    def editor_form_post( self, trans, type='tool', tool_id=None, **incoming ):
         """
         Accepts a tool state and incoming values, and generates a new tool
         form and some additional information, packed into a json dictionary.
