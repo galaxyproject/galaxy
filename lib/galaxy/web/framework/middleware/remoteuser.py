@@ -2,6 +2,8 @@
 Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
 
+import socket
+
 errorpage = """
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
@@ -33,11 +35,34 @@ errorpage = """
 </html>
 """
 
+UCSC_SERVERS = (
+    'hgw1.cse.ucsc.edu',
+    'hgw2.cse.ucsc.edu',
+    'hgw3.cse.ucsc.edu',
+    'hgw4.cse.ucsc.edu',
+    'hgw5.cse.ucsc.edu',
+    'hgw6.cse.ucsc.edu',
+    'hgw7.cse.ucsc.edu',
+    'hgw8.cse.ucsc.edu',
+)
+
 class RemoteUser( object ):
-    def __init__( self, app, maildomain=None ):
+    def __init__( self, app, maildomain=None, ucsc_display_sites=[] ):
         self.app = app
         self.maildomain = maildomain
+        self.allow_ucsc = False
+        if len( ucsc_display_sites ):
+            self.allow_ucsc = True
     def __call__( self, environ, start_response ):
+        # Allow through UCSC if the UCSC display links are enabled
+        if self.allow_ucsc and environ.has_key( 'REMOTE_ADDR' ):
+            try:
+                host = socket.gethostbyaddr( environ[ 'REMOTE_ADDR' ] )[0]
+            except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
+                # in the event of a lookup failure, deny access
+                host = None
+            if host in UCSC_SERVERS:
+                return self.app( environ, start_response )
         # Apache sets REMOTE_USER to the string '(null)' when using the
         # Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
