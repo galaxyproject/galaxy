@@ -22,6 +22,8 @@
     </tr>
 </%def>
 
+<a name="TOP">&nbsp;</a>
+
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif

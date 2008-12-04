@@ -1,10 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<% 
-    import galaxy.model
-%>
-
 ## Render a row
 <%def name="render_row( user, groups, roles, ctr, anchored, curr_anchor )">
     %if ctr % 2 == 1:

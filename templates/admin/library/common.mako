@@ -48,7 +48,7 @@
                         <div popupmenu="dataset-${data.id}-popup">
                             <a class="action-button" href="${h.url_for( controller='admin', action='dataset', id=data.id )}">Edit this dataset's attributes and permissions</a>
                             %if data.has_data:
-                                <a class="action-button" href="${h.url_for( controller='root', action='display', id=data.id, tofile='yes', toext='data.ext' )}" target="_blank">Download this dataset</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=data.id )}">Download this dataset</a>
                             %endif
                             <a class="action-button" confirm="Click OK to remove dataset '${data.name}'?" href="${h.url_for( controller='admin', action='dataset', delete=True, id=data.id )}">Remove this dataset from the library</a>
                         </div>

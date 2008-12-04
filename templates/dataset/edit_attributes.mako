@@ -148,9 +148,16 @@
                 <div style="clear: both"></div>
                 <strong>Data Format:</strong> ${data.ext}
                 <div style="clear: both"></div>
-                %for element in metadata:
-                    <strong>${element.spec.desc}:</strong> ${element.value[0]}
-                    <div style="clear: both"></div>
+                %for name, spec in data.metadata.spec.items():
+                    %if spec.visible:
+                        <strong>${spec.desc}:</strong>
+                        %if spec.unwrap( spec.get( name ) ):
+                            ${spec.unwrap( spec.get( name ) )}
+                        %else:
+                            ${spec.no_value}
+                        %endif
+                        <div style="clear: both"></div>
+                    %endif
                 %endfor
             </div> 
         </div>
