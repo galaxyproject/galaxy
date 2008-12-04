@@ -160,7 +160,7 @@ class RootController( BaseController ):
                 except: 
                     return "This dataset contains no content"
             else:
-                return "You are not privileged to view this dataset."
+                return "You are not allowed to access this dataset"
         else:
             return "No dataset with id '%s'" % str( id )
 
@@ -226,40 +226,43 @@ class RootController( BaseController ):
             return trans.show_error_message( "Problem retrieving dataset." )
         if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
-        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
-            p = util.Params(kwd, safe=False)
+        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=data ):
+            params = util.Params( kwd, safe=False )
             
-            can_edit_metadata = lid is None or trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_EDIT_METADATA, dataset = data )
-            if p.change:
+            if lid is None or trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_EDIT_METADATA, dataset=data ):
+                edit_allowed = True
+            else:
+                edit_allowed = False
+            if params.change:
                 # The user clicked the Save button on the 'Change data type' form
-                if not can_edit_metadata:
+                if not edit_allowed:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
-                trans.app.datatypes_registry.change_datatype( data, p.datatype )
+                trans.app.datatypes_registry.change_datatype( data, params.datatype )
                 trans.app.model.flush()
-            elif p.save:
+            elif params.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
-                if not can_edit_metadata:
+                if not edit_allowed:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
-                data.name  = p.name
-                data.info  = p.info
+                data.name  = params.name
+                data.info  = params.info
                 
                 # The following for loop will save all metadata_spec items
                 for name, spec in data.datatype.metadata_spec.items():
                     if spec.get("readonly"):
                         continue
-                    optional = p.get("is_"+name, None)
+                    optional = params.get("is_"+name, None)
                     if optional and optional == 'true':
                         # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
                         setattr(data.metadata, name, None)
                     else:
-                        setattr( data.metadata, name, spec.unwrap( p.get (name, None) ) )
+                        setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )
 
                 data.datatype.after_edit( data )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
-            elif p.detect:
+            elif params.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
-                if not can_edit_metadata:
+                if not edit_allowed:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 for name, spec in data.metadata.spec.items():
                     # We need to be careful about the attributes we are resetting
@@ -270,23 +273,23 @@ class RootController( BaseController ):
                 data.datatype.after_edit( data )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
-            elif p.convert_data:
+            elif params.convert_data:
                 if lid is not None:
                     return trans.show_error_message( "Data in the library cannot be converted.  Please import it to a history and covert it." )
-                """The user clicked the Convert button on the 'Convert to new format' form"""
-                if not can_edit_metadata:
+                # The user clicked the Convert button on the 'Convert to new format' form
+                if not edit_allowed:
                     return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 target_type = kwd.get("target_type", None)
                 if target_type:
                     msg = data.datatype.convert_dataset(trans, data, target_type)
                     return trans.show_ok_message( msg, refresh_frames=['history'] )
-            elif p.update_roles:
+            elif params.update_roles:
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change permissions." )
                 if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data.dataset ):
                     permissions = {}
                     for k, v in trans.app.model.Dataset.permitted_actions.items():
-                        in_roles = p.get( k + '_in', [] )
+                        in_roles = params.get( k + '_in', [] )
                         if not isinstance( in_roles, list ):
                             in_roles = [ in_roles ]
                         in_roles = [ trans.app.model.Role.get( x ) for x in in_roles ]
@@ -309,8 +312,7 @@ class RootController( BaseController ):
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
-            return trans.fill_template( "/dataset/edit_attributes.mako", data=data,
-                                        datatypes=ldatatypes, err=None )
+            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, datatypes=ldatatypes, err=None )
         else:
             return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % id )
 

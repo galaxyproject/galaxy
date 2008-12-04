@@ -1,10 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<% 
-    import galaxy.model
-%>
-
 ## Render a row
 <%def name="render_row( group, members, roles, ctr, anchored, curr_anchor )">
     %if ctr % 2 == 1:
@@ -32,7 +28,7 @@
             <ul>
                 %for role in roles:
                     <li>
-                        %if not role.type == galaxy.model.Role.types.PRIVATE:
+                        %if not role.type == trans.app.model.Role.types.PRIVATE:
                             <a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.description}</a>
                         %else:
                             ${role.description}

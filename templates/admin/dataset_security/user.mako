@@ -1,14 +1,10 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<%
-    import galaxy.model
-%>
-
 ## Render a role
 <%def name="render_role( user, role )">
     <li>
-        %if role and not role.type == galaxy.model.Role.types.PRIVATE:
+        %if role and not role.type == trans.app.model.Role.types.PRIVATE:
             <a href="${h.url_for( action='role', role_id=role.id, edit=True )}">${role.description}</a>
             <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="role-${role.id}-popup">

@@ -107,7 +107,7 @@ class DatasetInterface( BaseController ):
         """Catches the dataset id and displays file contents as directed"""
         data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
         if not data:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset." )
+            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
             if filename is None or filename.lower() == "index":
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
@@ -128,7 +128,7 @@ class DatasetInterface( BaseController ):
                 except:
                     raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
         else:
-            return trans.show_error_message( "You are not privileged to access this dataset." )
+            return trans.show_error_message( "You are not allowed to access this dataset" )
     
     def _undelete( self, trans, id ):
         history = trans.get_history()

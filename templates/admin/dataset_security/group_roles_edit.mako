@@ -15,9 +15,17 @@
                 <input type="checkbox" name="roles" value="${role.id}"/> ${role.description}
             %endif
         </td>
-        <td>${role.type}</td>
+        <td>
+            ${role.type}
+            %if not anchored:
+                <a name="${curr_anchor}"></a>
+                <div style="float: right;"><a href="#TOP">top</a></div>
+            %endif
+        </td>
     </tr>
 </%def>
+
+<a name="TOP">&nbsp;</a>
 
 %if msg:
     ${render_msg( msg, messagetype )}
