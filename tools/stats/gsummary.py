@@ -100,7 +100,7 @@ def main():
             stop_err( "Computation resulted in the following error: %s" % str( s ) )
         summary = summary.as_py( BASIC_CONVERSION )
         outfile.write( "#%s\n" % headings_str )
-        outfile.write( "%s\n" % "\t".join( [ "%.3f" % ( summary[ k ] ) for k in headings ] ) )
+        outfile.write( "%s\n" % "\t".join( [ "%g" % ( summary[ k ] ) for k in headings ] ) )
         outfile.close()
 
         if skipped_lines:
