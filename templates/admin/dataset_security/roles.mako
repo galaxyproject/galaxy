@@ -38,7 +38,7 @@
     </tr>
 </%def>
 
-<a name="TOP"><h2>Non-private Roles</h2></a>
+<a name="TOP"><h2>Roles</h2></a>
 
 <ul class="manage-table-actions">
     <li><a class="action-button" href="${h.url_for( controller='admin', action='create_role' )}">Create a new role</a></li>
@@ -50,7 +50,7 @@
 %endif
 
 %if len( roles ) == 0:
-    There are no non-private Galaxy roles
+    There are no Galaxy roles
 %else:
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <% 

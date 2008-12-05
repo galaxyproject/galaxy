@@ -14,9 +14,6 @@
             %else:
                 <input type="checkbox" name="roles" value="${role.id}"/> ${role.name}
             %endif
-        </td>
-        <td>
-            ${role.type}
             %if not anchored:
                 <a name="${curr_anchor}"></a>
                 <div style="float: right;"><a href="#TOP">top</a></div>
@@ -34,8 +31,8 @@
 %if len( roles ) == 0:
     <tr><td>There are no Galaxy roles</td></tr>
 %else:
-    <form name="group_roles_edit" action="${h.url_for( controller='admin', action='group_roles_edit' )}" method="post" >
-        <input type="hidden" name="group_id" value="${group.id}" />
+    <form name="user_roles_edit" action="${h.url_for( controller='admin', action='user_roles_edit' )}" method="post" >
+        <input type="hidden" name="user_id" value="${user.id}" />
         <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
             <%
                 render_quick_find = len( roles ) > 50
@@ -49,7 +46,7 @@
                     curr_anchor = 'A'
                 %>
                 <tr style="background: #EEE">
-                    <td style="border-bottom: 1px solid #D8B365; text-align: center;">
+                    <td colspan="3" style="border-bottom: 1px solid #D8B365; text-align: center;">
                         Jump to letter:
                         %for a in anchors:
                             | <a href="#${a}">${a}</a>
@@ -57,24 +54,21 @@
                     </td>
                 </tr>
             %endif
-            <tr class="header">
-                <td>Select to associate role with ${group.name}</td>
-                <td>Role Type</td>
-            </tr>
+            <tr class="header"><td>Select to associate role with ${user.email}</td></tr>
             %for ctr, role in enumerate( roles ):
                 <% check = False %>
-                %for group_role in group_roles:
-                    %if group_role.name == role.name:
+                %for user_role in user_roles:
+                    %if user_role.id == role.id:
                         <% 
                             check = True
                             break
                         %>
                     %endif
                 %endfor
-                %if render_quick_find and not role.description.upper().startswith( curr_anchor ):
+                %if render_quick_find and not role.name.upper().startswith( curr_anchor ):
                   <% anchored = False %>
                 %endif 
-                %if render_quick_find and role.description.upper().startswith( curr_anchor ):
+                %if render_quick_find and role.name.upper().startswith( curr_anchor ):
                     %if not anchored:
                         ${render_row( role, ctr, anchored, curr_anchor, check )}
                         <% anchored = True %>
@@ -83,7 +77,7 @@
                     %endif
                 %elif render_quick_find:
                     %for anchor in anchors[ anchor_loc: ]:
-                        %if role.description.upper().startswith( anchor ):
+                        %if role.name.upper().startswith( anchor ):
                             %if not anchored:
                                 <% curr_anchor = anchor %>
                                 ${render_row( role, ctr, anchored, curr_anchor, check )}
@@ -101,8 +95,7 @@
                     ${render_row( role, ctr, True, '', check )}
                 %endif
             %endfor
-            <tr><td><input type="submit" name="group_roles_edit_button" value="Update role associations" /></td></tr>
+            <tr><td><input type="submit" name="user_roles_edit_button" value="Associate user with selected roles" /></td></tr>
         </table>
     </form>
 %endif
-

@@ -80,7 +80,7 @@
                   <div class="toolSectionBg">
                     <div class="toolTitle"><a href="${h.url_for( action='users' )}" target="galaxy_main">Manage users</a></div>
                     <div class="toolTitle"><a href="${h.url_for( action='groups' )}" target="galaxy_main">Manage groups</a></div>
-                    <div class="toolTitle"><a href="${h.url_for( action='roles' )}" target="galaxy_main">Manage non-private roles</a></div>
+                    <div class="toolTitle"><a href="${h.url_for( action='roles' )}" target="galaxy_main">Manage roles</a></div>
                   </div>
                 </div>
                 <div class="toolSectionPad"></div>

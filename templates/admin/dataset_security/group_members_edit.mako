@@ -31,7 +31,7 @@
 %if len( users ) == 0:
     <tr><td>There are no Galaxy users</td></tr>
 %else:
-    <form name="update_group_members" action="${h.url_for( controller='admin', action='update_group_members' )}" method="post" >
+    <form name="group_members_edit" action="${h.url_for( controller='admin', action='group_members_edit' )}" method="post" >
         <input type="hidden" name="group_id" value="${group.id}" />
         <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
             <%
@@ -95,7 +95,7 @@
                     ${render_row( user, ctr, True, '', check )}
                 %endif
             %endfor
-            <tr><td><input type="submit" name="submit_button" value="Add selected users to group"/></td></tr>
+            <tr><td><input type="submit" name="group_members_edit_button" value="Add selected users to group"/></td></tr>
         </table>
     </form>
 %endif

@@ -341,16 +341,28 @@ class Admin( BaseController ):
     @web.require_admin
     def group_members_edit( self, trans, **kwd ):
         params = util.Params( kwd )
-        group_id = params.get( 'group_id', None )
-        if not group_id:
-            # TODO: for some reason this is if condition is necessary for functional tests, need to figure out why...
-            msg = 'Group identifier was not sent in the request.'
-            trans.response.send_redirect( web.url_for( controller='admin', action='groups', msg=msg, messagetype='error' ) )
-        elif 'submit_button' in kwd:
-            # TODO: why do we reach here in the functional tests????  The action in the template form is /admin/update_group_members...
-            self.update_group_members( trans, **kwd )
-        group = trans.app.model.Group.get( int( group_id ) )
-        group.refresh()
+        group = trans.app.model.Group.get( int( params.group_id ) )
+        if 'group_members_edit_button' in kwd:
+            members = util.listify( params.members )
+            # This is tricky since we have default association tables with
+            # records referring to members of this group.  Because of this,
+            # we'll need to handle changes to the member list rather than the
+            # simpler approach of deleting all existing members and creating 
+            # new records for user_ids in the received members param.
+            # First remove existing members that are not in the received members param
+            for uga in group.members:
+                if uga.user_id not in members:
+                    # Delete the UserGroupAssociation
+                    uga.delete()
+                    uga.flush()
+            # Then add all new members to the group
+            for user_id in members:
+                user = trans.app.model.User.get( user_id )
+                if user not in group.members:
+                    uga = trans.app.model.UserGroupAssociation( user, group )
+                    uga.flush()
+            msg = "Group membership has been updated with a total of %d members" % len( members )
+            trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
         members = []
         for uga in group.members:
             members.append ( trans.app.model.User.get( uga.user_id ) )
@@ -359,81 +371,38 @@ class Admin( BaseController ):
         return trans.fill_template( '/admin/dataset_security/group_members_edit.mako', group=group, members=members, users=users, msg=msg, messagetype='done' )
     @web.expose
     @web.require_admin
-    def update_group_members( self, trans, **kwd ):
-        params = util.Params( kwd )
-        group_id = int( params.group_id )
-        members = util.listify( params.members )
-        group = trans.app.model.Group.get( group_id )
-        group.refresh()
-        # This is tricky since we have default association tables with
-        # records referring to members of this group.  Because of this,
-        # we'll need to handle changes to the member list rather than the
-        # simpler approach of deleting all existing members and creating 
-        # new records for user_ids in the received members param.
-        # First remove existing members that are not in the received members param
-        for uga in group.members:
-            if uga.user_id not in members:
-                # Delete the UserGroupAssociation
-                uga.delete()
-                uga.flush()
-        # Then add all new members to the group
-        for user_id in members:
-            user = trans.app.model.User.get( user_id )
-            if user not in group.members:
-                uga = trans.app.model.UserGroupAssociation( user, group )
-                uga.flush()
-        msg = "Group membership has been updated with a total of %d members" % len( members )
-        trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
-    @web.expose
-    @web.require_admin
     def group_roles_edit( self, trans, **kwd ):
         params = util.Params( kwd )
-        group_id = params.get( 'group_id', None )
-        if not group_id:
-            # TODO: FIXME: for some reason this is if condition is necessary for functional tests, need to figure out why...
-            msg = 'Group identifier was not sent in the request.'
-            trans.response.send_redirect( web.url_for( controller='admin', action='groups', msg=msg, messagetype='error' ) )
-        elif 'submit_button' in kwd:
-            # TODO: FIXME: why do we reach here in the functional tests????  The action in the template form is /admin/update_group_members...
-            self.update_group_roles( trans, **kwd )
-        group = trans.app.model.Group.get( int( group_id ) )
+        group = trans.app.model.Group.get( int( params.group_id ) )
+        if 'group_roles_edit_button' in kwd:
+            roles = util.listify( params.roles )
+            # This is tricky since we have default association tables with
+            # records referring to roles of this group.  Because of this,
+            # we'll need to handle changes to the role list rather than the
+            # simpler approach of deleting all existing roles and creating 
+            # new records for role_ids in the received roles param.
+            # First remove existing roles that are not in the received roles param
+            for gra in group.roles:
+                if gra.role_id not in roles:
+                    # Delete the GroupRoleAssociation
+                    gra.delete()
+                    gra.flush()
+            group.refresh()
+            # Then add all new roles to the group
+            for role_id in roles:
+                role = trans.app.model.Role.get( role_id )
+                if role not in group.roles:
+                    gra = trans.app.model.GroupRoleAssociation( group, role )
+                    gra.flush()
+            msg = "Group updated with a total of %s associated roles" % len( roles )
+            trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
+        roles=trans.app.model.Role.filter( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) \
+                                  .order_by( trans.app.model.Role.table.c.name ).all()
         group_roles = []
         for gra in group.roles:
             group_roles.append ( trans.app.model.Role.get( gra.role_id ) )
         msg = "%s is currently associated with %s roles" % ( group.name, len( group_roles ) )
-        return trans.fill_template( '/admin/dataset_security/group_roles_edit.mako', 
-                                    group=group,
-                                    group_roles=group_roles,
-                                    roles=trans.app.model.Role.filter( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) \
-                                                              .order_by( trans.app.model.Role.table.c.name ).all(),
-                                    msg=msg,
-                                    messagetype='done' )
-    @web.expose
-    @web.require_admin
-    def update_group_roles( self, trans, **kwd ):
-        params = util.Params( kwd )
-        group_id = int( params.group_id )
-        roles = util.listify( params.roles )
-        group = trans.app.model.Group.get( group_id )
-        # This is tricky since we have default association tables with
-        # records referring to members of this group.  Because of this,
-        # we'll need to handle changes to the member list rather than the
-        # simpler approach of deleting all existing members and creating 
-        # new records for user_ids in the received members param.
-        # First remove existing members that are not in the received members param
-        for gra in group.roles:
-            if gra.role_id not in roles:
-                # Delete the GroupRoleAssociation
-                gra.delete()
-                gra.flush()
-        # Then add all new roles to the group
-        for role_id in roles:
-            role = trans.app.model.Role.get( role_id )
-            if role not in group.roles:
-                gra = trans.app.model.GroupRoleAssociation( group, role )
-                gra.flush()
-        msg = "Group updated with a total of %s associated roles" % len( roles )
-        trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
+        return trans.fill_template( '/admin/dataset_security/group_roles_edit.mako', group=group, group_roles=group_roles, roles=roles, msg=msg, messagetype='done' )
     @web.expose
     @web.require_admin
     def mark_group_deleted( self, trans, **kwd ):
@@ -746,6 +715,41 @@ class Admin( BaseController ):
                                     groups=groups,
                                     msg=msg,
                                     messagetype='done' )
+    @web.expose
+    @web.require_admin
+    def user_roles_edit( self, trans, **kwd ):
+        params = util.Params( kwd )
+        user = trans.app.model.User.get( int( params.user_id ) )
+        if 'user_roles_edit_button' in kwd:
+            roles = util.listify( params.roles )
+            # This is tricky since we have default association tables with
+            # records referring to roles of this user.  Because of this,
+            # we'll need to handle changes to the role list rather than the
+            # simpler approach of deleting all existing roles and creating 
+            # new records for role_ids in the received roles param.
+            # First remove existing roles that are not in the received roles param
+            for ura in user.roles:
+                role = trans.app.model.Role.get( ura.role_id )
+                if role.type != trans.app.model.Role.types.PRIVATE and ura.role_id not in roles:
+                    # Delete the UserRoleAssociation
+                    ura.delete()
+                    ura.flush()
+            user.refresh()
+            # Then associate all new roles with the user
+            for role_id in roles:
+                role = trans.app.model.Role.get( role_id )
+                if role not in user.roles:
+                    ura = trans.app.model.UserRoleAssociation( user, role )
+                    ura.flush()
+            msg = "User updated with a total of %d associated roles" % len( roles )
+            trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='done' ) )
+        roles=trans.app.model.Role.filter( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) \
+                                  .order_by( trans.app.model.Role.table.c.name ).all()
+        user_roles = []
+        for ura in user.roles:
+            user_roles.append ( trans.app.model.Role.get( ura.role_id ) )
+        msg = "%s is currently associated with %s roles ( private roles are not displayed )" % ( user.email, len( user_roles ) )
+        return trans.fill_template( '/admin/dataset_security/user_roles_edit.mako', user=user, user_roles=user_roles, roles=roles, msg=msg, messagetype='done' )
     @web.expose
     @web.require_admin
     def remove_user_from_group( self, trans, **kwd ):

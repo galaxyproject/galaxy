@@ -648,7 +648,7 @@ class TwillTestCase( unittest.TestCase ):
             # Make sure no private roles are displayed
             try:
                 self.check_page_for_string( private_role )
-                errmsg = 'Private role %s displayed on Non-private Roles page' % private_role
+                errmsg = 'Private role %s displayed on Roles page' % private_role
                 raise AssertionError( errmsg )
             except AssertionError:
                 # Reaching here is the behavior we want since no private roles should be displayed
@@ -679,15 +679,14 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
     def create_group( self, name='Group One', user_ids=[], role_ids=[] ):
-        """Create a new group with 2 members and 1 associated role"""
+        """Create a new group with members and associated role"""
         self.home()
         self.visit_url( "%s/admin/create_group" % self.url )
         self.check_page_for_string( "Create Group" )
         # Make sure no private roles are displayed
         try:
             self.check_page_for_string( 'Private Role for'  )
-            errmsg = 'Private role displayed on Create Group page'
-            raise AssertionError( errmsg )
+            raise AssertionError( 'Private role displayed on Create Group page' )
         except AssertionError:
             # Reaching here is the behavior we want since no private roles should be displayed
             pass
@@ -708,16 +707,41 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( name )
         self.home()
         return previously_created
-    def add_group_members( self, group_id, user_ids=[] ):
-        """Add a member to an existing group"""
+    def group_members_edit( self, group_id, user_ids=[] ):
+        """Add members to an existing group"""
         self.home()
         self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_id ) )
         self.check_page_for_string( 'Select to add user to' )
         for user_id in user_ids:
             tc.fv( "1", "members", user_id )
-        tc.submit( "submit_button" )
-        # The above submit will redirect to the ~/admin/groups() method
+        tc.submit( "group_members_edit_button" )
         self.check_page_for_string( 'Group membership has been updated' )
+        self.home()
+    def group_roles_edit( self, group_id, role_ids=[] ):
+        """Change roles associated with an existing group"""
+        self.home()
+        self.visit_url( "%s/admin/group_roles_edit?group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'Select to associate role with' )
+        for role_id in role_ids:
+            tc.fv( "1", "roles", role_id )
+        tc.submit( "group_roles_edit_button" )
+        self.check_page_for_string( 'Group updated with a total of' )
+        self.home()
+    def user_roles_edit( self, user_id, role_ids=[] ):
+        """Change roles associated with an existing user"""
+        self.home()
+        self.visit_url( "%s/admin/user_roles_edit?user_id=%s" % ( self.url, user_id ) )
+        self.check_page_for_string( 'Select to associate role with' )
+        for role_id in role_ids:
+            tc.fv( "1", "roles", role_id )
+        tc.submit( "user_roles_edit_button" )
+        self.check_page_for_string( 'User updated with a total of' )
+        self.home()
+    def remove_user_from_role( self, user_id, role_id ):
+        """Remove a user from a role"""
+        self.home()
+        self.visit_url( "%s/admin/remove_user_from_role?user_id=%s&role_id=%s" % ( self.url, user_id, role_id ) )
+        self.check_page_for_string( 'User removed from role' )
         self.home()
     def associate_groups_with_role( self, role_id, group_names=[] ):
         """Add groups to an existing role"""

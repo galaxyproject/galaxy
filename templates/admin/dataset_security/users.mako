@@ -14,6 +14,7 @@
             <div popupmenu="user-${user.id}-popup">
                 <a class="action-button" href="${h.url_for( action='reset_user_password', user_id=user.id )}">Reset password</a>
                 <a class="action-button" href="${h.url_for( action='user_groups_edit', user_id=user.id )}">Change associated groups</a>
+                <a class="action-button" href="${h.url_for( action='user_roles_edit', user_id=user.id )}">Change associated roles</a>
                 %if allow_user_deletion:
                     <a class="action-button" href="${h.url_for( action='mark_user_deleted', user_id=user.id )}">Mark user deleted</a>
                 %endif
@@ -80,7 +81,7 @@
         <tr class="header">
             <td>Email</td>
             <td>Associated Groups</td>
-            <td>Associated Non-private Roles</td>
+            <td>Associated Roles</td>
         </tr>
         %for ctr, user_tuple in enumerate( users_groups_roles ):
             <%
