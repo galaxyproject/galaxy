@@ -9,7 +9,7 @@
         <tr>
     %endif
         <td>
-            ${group.name}
+            <a href="${h.url_for( controller='admin', action='group', group_id=group.id )}">${group.name}</a>
             <a id="group-${group.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="group-${group.id}-popup">
                 <a class="action-button" href="${h.url_for( controller='admin', action='group_members_edit', group_id=group.id )}">Change associated users</a>

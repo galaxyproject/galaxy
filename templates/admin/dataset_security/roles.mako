@@ -9,25 +9,38 @@
         <tr>
     %endif
         <td>
-            ${role.description}
+            ${role.name}
             <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="role-${role.id}-popup">
                 <a class="action-button" href="${h.url_for( controller='admin', action='role', role_id=role.id )}">Change associated users and groups</a>
                 <a class="action-button" href="${h.url_for( controller='admin', action='mark_role_deleted', role_id=role.id )}">Mark role deleted</a>
             </div>
         </td>
+        <td>${role.description}</td>
         <td>${role.type}</td>
         <td>
             <ul>
                 %for ura in role.users:
-                    <li><a href="${h.url_for( controller='admin', action='user_groups_edit', user_id=ura.user.id )}">${ura.user.email}</a></li>
+                    <li>
+                        <a href="${h.url_for( controller='admin', action='user', user_id=ura.user.id )}">${ura.user.email}</a>
+                        <a id="user-${ura.user.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        <div popupmenu="user-${ura.user.id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='admin', action='remove_role_from_user', role_id=role.id, user_id=ura.user.id )}">Remove user from role</a>
+                        </div>
+                    </li>
                 %endfor
             </ul>
         </td>
         <td>
             <ul>
                 %for gra in role.groups:
-                    <li><a href="${h.url_for( controller='admin', action='group_members_edit', group_id=gra.group.id )}">${gra.group.name}</a></li>
+                    <li>
+                        <a href="${h.url_for( controller='admin', action='group', group_id=gra.group.id )}">${gra.group.name}</a>
+                        <a id="group-${gra.group.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        <div popupmenu="group-${gra.group.id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='admin', action='remove_group_from_role', role_id=role.id, group_id=gra.group.id )}">Remove group from role</a>
+                        </div>
+                    </li>
                 %endfor
             </ul>
             %if not anchored:
@@ -74,16 +87,17 @@
             </tr>
         %endif
         <tr class="header">
+            <td>Name</td>
             <td>Description</td>
             <td>Type</td>
             <td>Associated Users</td>
             <td>Associated Groups</td>
         </tr>
         %for ctr, role in enumerate( roles ):
-            %if render_quick_find and not role.description.upper().startswith( curr_anchor ):
+            %if render_quick_find and not role.name.upper().startswith( curr_anchor ):
                 <% anchored = False %>
             %endif
-            %if render_quick_find and role.description.upper().startswith( curr_anchor ):
+            %if render_quick_find and role.name.upper().startswith( curr_anchor ):
                 %if not anchored:
                     ${render_row( role, ctr, anchored, curr_anchor )}
                     <% anchored = True %>
@@ -92,7 +106,7 @@
                 %endif
             %elif render_quick_find:
                 %for anchor in anchors[ anchor_loc: ]:
-                    %if role.description.upper().startswith( anchor ):
+                    %if role.name.upper().startswith( anchor ):
                         %if not anchored:
                             <% curr_anchor = anchor %>
                             ${render_row( role, ctr, anchored, curr_anchor )}

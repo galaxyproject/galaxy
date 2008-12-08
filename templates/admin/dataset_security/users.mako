@@ -23,7 +23,7 @@
         <td>
             <ul>
                 %for group in groups:
-                    <li><a href="${h.url_for( controller='admin', action='group_members_edit', group_id=group.id )}">${group.name}</a></li>
+                    <li><a href="${h.url_for( controller='admin', action='group', group_id=group.id )}">${group.name}</a></li>
                 %endfor
             </ul>
         </td>

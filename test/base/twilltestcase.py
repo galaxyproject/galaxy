@@ -727,6 +727,12 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "group_roles_edit_button" )
         self.check_page_for_string( 'Group updated with a total of' )
         self.home()
+    def remove_role_from_group( self, role_id, group_id ):
+        """Remove a role from a group"""
+        self.home()
+        self.visit_url( "%s/admin/remove_role_from_group?role_id=%s&group_id=%s" % ( self.url, role_id, group_id ) )
+        self.check_page_for_string( 'Role removed from group' )
+        self.home()
     def user_roles_edit( self, user_id, role_ids=[] ):
         """Change roles associated with an existing user"""
         self.home()
@@ -742,6 +748,12 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_url( "%s/admin/remove_user_from_role?user_id=%s&role_id=%s" % ( self.url, user_id, role_id ) )
         self.check_page_for_string( 'User removed from role' )
+        self.home()
+    def remove_user_from_group( self, user_id, group_id ):
+        """Remove a user from a group"""
+        self.home()
+        self.visit_url( "%s/admin/remove_user_from_group?user_id=%s&group_id=%s" % ( self.url, user_id, group_id ) )
+        self.check_page_for_string( 'User removed from group' )
         self.home()
     def associate_groups_with_role( self, role_id, group_names=[] ):
         """Add groups to an existing role"""
@@ -889,7 +901,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/admin/library?id=%s&delete=True" % ( self.url, library_id ) )
         self.check_page_for_string( 'The library and all of its contents have been marked deleted' )
         self.home()
-    def mark_library_undeleted( self, library_id ):
+    def undelete_library( self, library_id ):
         """Mark a library as not deleted"""
         self.home()
         self.visit_url( "%s/admin/undelete_library?id=%s" % ( self.url, library_id ) )

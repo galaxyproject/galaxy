@@ -84,6 +84,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 break
         if not private_role:
             raise AssertionError( "Private role not found for user '%s'" % testuser2.email )
+        global testuser2_private_role
+        testuser2_private_role = private_role
         # Add a dataset to the history
         self.upload_file( '1.bed' )
         latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
@@ -139,11 +141,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if adras != dhps:
                 raise AssertionError( 'ActionDatasetRoleAssociations "%s" for dataset id %d differ from DefaultHistoryPermissions "%s" for history id %d' \
                                       % ( str( adras ), latest_dataset.id, str( dhps ), latest_history.id ) )
-        # Change DefaultHistoryPermissions for testuser2 back to the default
-        permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
-        permissions_out = [ 'DATASET_ACCESS', 'DATASET_EDIT_METADATA' ]
-        role_id = str( private_role.id )
-        self.user_set_default_permissions( permissions_in=permissions_in, permissions_out=permissions_out, role_id=role_id )
         self.logout()
     def test_09_login_as_non_admin_user2( self ):
         """Testing logging in as non-admin user2 - tests changing DefaultHistoryPermissions for the current history"""
@@ -281,6 +278,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
         global role_one
         role_one = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
         assert role_one is not None, 'Problem retrieving role named "Role One" from the database'
+        if previously_created:
+            # Since the role was created in a previous test run, we need to associate the required users with it
+            role_ids = [ str( role_one.id ) ]
+            for user_id in user_ids:
+                self.user_roles_edit( user_id, role_ids=role_ids )
+            role_one.refresh()
         # Make sure UserRoleAssociations are correct
         if len( role_one.users ) != len( user_ids ):
             raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created ( should have been %d )' \
@@ -301,6 +304,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         global group_one
         group_one = galaxy.model.Group.filter( galaxy.model.Group.table.c.name==name ).first()
         assert group_one is not None, 'Problem retrieving group named "Group One" from the database'
+        if previously_created:
+            # group_one was created during a previous test run, so create associations
+            self.group_members_edit( str( group_one.id ), user_ids=user_ids )
+            self.group_roles_edit( str( group_one.id ), role_ids=role_ids )
         # Make sure UserGroupAssociations are correct
         if len( group_one.users ) != len( user_ids ):
             raise AssertionError( '%d UserGroupAssociations were created for group id %d when it was created ( should have been %d )' \
@@ -322,14 +329,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
         global group_two
         group_two = galaxy.model.Group.filter( galaxy.model.Group.table.c.name==name ).first()
         assert group_two is not None, 'Problem retrieving group named "Group Two" from the database'
-        if not previously_created:
-            # group_two should have no associations
-            if group_two.users:
-                raise AssertionError( '%d UserGroupAssociations were created for group id %d when it was created ( should have been 0 )' \
-                                  % ( len( group_two.users ), group_two.id ) )
-            if group_two.roles:
-                raise AssertionError( '%d GroupRoleAssociations were created for group id %d when it was created ( should have been 0 )' \
-                                  % ( len( group_two.roles ), group_two.id ) )
+        # group_two should have no associations
+        if group_two.users:
+            raise AssertionError( '%d UserGroupAssociations were created for group id %d when it was created ( should have been 0 )' \
+                              % ( len( group_two.users ), group_two.id ) )
+        if group_two.roles:
+            raise AssertionError( '%d GroupRoleAssociations were created for group id %d when it was created ( should have been 0 )' \
+                              % ( len( group_two.roles ), group_two.id ) )
         group_two_id = str( group_two.id )
         user_ids = [ str( testuser3.id )  ]
         # Add users to group_two based on user_ids
@@ -340,7 +346,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         check_str = '%s currently has %d members' % ( name, len( user_ids ) )
         self.check_page_for_string( check_str )
         role_ids = [ str( role_one.id ) ]
-        # Associated roles to group_two based on roles_ids
+        # Associate roles with group_two based on roles_ids
         self.group_roles_edit( group_two_id, role_ids=role_ids )
         self.home()
         self.visit_url( "%s/admin/group_roles_edit?group_id=%s" % ( self.url, group_two_id ) )
@@ -377,6 +383,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
         global role_two
         role_two = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
         assert role_two is not None, 'Problem retrieving role named "Role Two" from the database'
+        if previously_created:
+            # role_two was created during a previous test run, so create associations
+            user_id = user_ids[0]
+            role_ids = [ str( role_two.id) ]
+            self.user_roles_edit( user_id, role_ids=role_ids )
+            group_id = group_ids[0]
+            self.group_roles_edit( group_id, role_ids=role_ids )
         # Make sure UserRoleAssociations are correct
         if len( role_two.users ) != len( user_ids ):
             raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created with %d members' \
@@ -423,17 +436,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         testuser1.refresh()
         # testuser1 should now be associated with 4 roles: private, role_one, role_two, role_three
         if len( testuser1.roles) != 4:
-            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 4 )' % ( len( testuser1.roles ), testuser1.email ) )
-        # Dis-associate testuser1 from role_two, role_three to enable later test runs to pass
-        testuser1.refresh()
-        self.remove_user_from_role( str( testuser1.id ), str( role_two.id ) )
-        self.remove_user_from_role( str( testuser1.id ), str( role_three.id ) )
-        testuser1.refresh()
-        # testuser1 should now have 2 role associations: private, role_one
-        if len( testuser1.roles) != 2:
-            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 2 )' % ( len( testuser1.roles ), testuser1.email ) )
+            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 4 )' % ( len( testuser1.roles ), testuser1.email ) )       
     def test_42_create_library( self ):
-        """Testing creating new library, then renaming it and renaming the root folder"""
+        """Testing creating a new library, then renaming it and renaming the root folder"""
         name = "Library One's Name"
         description = "This is Library One's description"
         self.create_library( name=name, description=description )
@@ -451,7 +456,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.rename_library( str( library_one.id ), name=rename, description=redescription, root_folder='on' )
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( rename )
-        # Rename it back to what it was originally
+        # Reset the library back to what it was originally
         self.rename_library( str( library_one.id ), name=name, description=description, root_folder='on' )
         # Rename the root folder
         folder = library_one.root_folder
@@ -460,6 +465,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.rename_folder( str( folder.id ), name=rename, description=redescription )
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( rename )
+        # Reset the root folder back to the original name and description
+        self.rename_folder( str( folder.id ), name=name, description=description )
     def test_45_add_public_dataset_to_root_folder( self ):
         """Testing adding a public dataset to a library root folder"""
         folder = library_one.root_folder
@@ -543,9 +550,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 if lfda.dataset.deleted:
                     raise AssertionError( 'The dataset with id "%s" has been marked as deleted when it should not have been.' % lfda.dataset.id )
         check_folder( library_one.root_folder )
-    def test_72_mark_library_undeleted( self ):
+    def test_72_undelete_library( self ):
         """Testing marking a library as not deleted"""
-        self.mark_library_undeleted( str( library_one.id ) )
+        self.undelete_library( str( library_one.id ) )
         # Make sure the library is undeleted
         library_one.refresh()
         if library_one.deleted:
@@ -626,17 +633,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         testuser4.purged = False
         testuser4.deleted = False
         testuser4.flush()
-        # Need to also manually add user as a member of group_one for later test runs
-        uga = galaxy.model.UserGroupAssociation( testuser4, group_one )
-        uga.flush()
-    def test_81_edit_role_membership( self ):
-        """Testing adding a new member to an existing role"""
-        # TODO: Twill throws an exception on this...
-        #self.associate_users_with_role( str( role_one.id ), user_emails=[ str( testuser4.email ) ] )
-        # Due to the above bug in twill, we need to manaually re-associate the user with the role for later test runs.
-        ura = galaxy.model.UserRoleAssociation( testuser4, role_one )
-        ura.flush()
-    def test_84_purge_group( self ):
+    def test_81_purge_group( self ):
         """Testing purging a group"""
         group_id = str( group_two.id )
         self.mark_group_deleted( group_id )
@@ -651,7 +648,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
         # Undelete the group for later test runs
         self.undelete_group( group_id )
-    def test_87_purge_role( self ):
+    def test_84_purge_role( self ):
         """Testing purging a role"""
         role_id = str( role_two.id )
         self.mark_role_deleted( role_id )
@@ -685,7 +682,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         ura.flush()
         uga = galaxy.model.GroupRoleAssociation( group_two, role_two )
         uga.flush()
-    def test_90_purge_library( self ):
+    def test_87_purge_library( self ):
         """Testing purging a library"""
         self.purge_library( str( library_one.id ) )
         # Make sure the library was purged
@@ -712,3 +709,85 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The dataset with id "%s" has not been marked as deleted when it should have been.' % \
                                           str( lfda.dataset.id ) )
         check_folder( library_one.root_folder )
+    def test_90_reset_data_for_later_test_runs( self ):
+        """Reseting data to enable later test runs to pass"""
+        #################
+        # Reset testuser1
+        #################
+        # Eliminate all role associations except private
+        self.remove_user_from_role( str( testuser1.id ), str( role_one.id ) )
+        self.remove_user_from_role( str( testuser1.id ), str( role_two.id ) )
+        self.remove_user_from_role( str( testuser1.id ), str( role_three.id ) )
+        testuser1.refresh()
+        if len( testuser1.roles) != 1:
+            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 1 )' % ( len( testuser1.roles ), testuser1.email ) )
+        # Eliminate all group associations
+        self.remove_user_from_group( str( testuser1.id ), str( group_one.id ) )
+        testuser1.refresh()
+        if testuser1.groups:
+            raise AssertionError( '%d UserGroupAssociations are associated with %s ( should be 0 )' % ( len( testuser1.groups ), testuser1.email ) )
+
+        #################
+        # Reset testuser2
+        #################
+        self.logout()
+        self.login( email='test2@bx.psu.edu' )
+        # Change DefaultHistoryPermissions for testuser2 back to the default
+        permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
+        permissions_out = [ 'DATASET_ACCESS', 'DATASET_EDIT_METADATA' ]
+        role_id = str( testuser2_private_role.id )
+        self.user_set_default_permissions( permissions_in=permissions_in, permissions_out=permissions_out, role_id=role_id )
+        self.logout()
+        self.login( email='test@bx.psu.edu' )
+        # Eliminate all role associations except private
+        self.remove_user_from_role( str( testuser2.id ), str( role_one.id ) )
+        testuser2.refresh()
+        if len( testuser2.roles) != 1:
+            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 1 )' % ( len( testuser2.roles ), testuser2.email ) )
+        # Eliminate all group associations
+        self.remove_user_from_group( str( testuser2.id ), str( group_one.id ) )
+        testuser2.refresh()
+        if testuser2.groups:
+            raise AssertionError( '%d UserGroupAssociations are associated with %s ( should be 0 )' % ( len( testuser2.groups ), testuser2.email ) )
+
+        #################
+        # Reset testuser3
+        #################
+
+        #################
+        # Reset testuser4
+        #################
+
+        #################
+        # Reset group_one
+        #################
+        # Eliminate all role associations
+        self.remove_role_from_group( str( role_one.id ), str( group_one.id ) )
+        group_one.refresh()
+        if group_one.roles:
+            raise AssertionError( '%d GroupRoleAssociations are associated with group %s ( should be 0 )' % ( len( group_one.roles ), group_one.name ) )
+
+        #################
+        # Reset group_two
+        #################
+        # Eliminate all role associations
+        self.remove_role_from_group( str( role_two.id ), str( group_two.id ) )
+        group_two.refresh()
+        if group_two.roles:
+            raise AssertionError( '%d GroupRoleAssociations are associated with group %s ( should be 0 )' % ( len( group_two.roles ), group_two.name ) )
+
+        ###################
+        # Reset group_three
+        ###################
+
+        ################
+        # Reset role_one
+        ################
+
+        ################
+        # Reset role_two
+        ################
+
+        #################
+        # Rest role_three
+        #################
