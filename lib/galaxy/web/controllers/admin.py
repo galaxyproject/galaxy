@@ -13,7 +13,7 @@ class Admin( BaseController ):
     @web.require_admin
     def index( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         return trans.fill_template( '/admin/index.mako', msg=msg, messagetype=messagetype )
     @web.expose
@@ -24,7 +24,7 @@ class Admin( BaseController ):
     @web.require_admin
     def reload_tool( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, msg=msg, messagetype=messagetype )
     @web.expose
@@ -41,7 +41,7 @@ class Admin( BaseController ):
     @web.require_admin
     def roles( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         roles = trans.app.model.Role.filter( and_( trans.app.model.Role.table.c.deleted==False,
                                                    trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) ) \
@@ -54,7 +54,7 @@ class Admin( BaseController ):
     @web.require_admin
     def create_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all()
         groups = trans.app.model.Group.query() \
@@ -101,7 +101,7 @@ class Admin( BaseController ):
     @web.require_admin
     def role( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         role = trans.app.model.Role.get( int( params.role_id ) )
         if 'role_members_edit_button' in kwd:
@@ -158,7 +158,7 @@ class Admin( BaseController ):
     @web.require_admin
     def role_members_edit( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.get( 'msg', '' )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         role = trans.app.model.Role.get( int( params.role_id ) )
         in_users = [ trans.app.model.User.get( x ) for x in util.listify( params.in_users ) ]
@@ -194,7 +194,7 @@ class Admin( BaseController ):
     @web.require_admin
     def deleted_roles( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         # Build a list of tuples which are roles followed by lists of groups and users
         # [ ( role, [ group, group, group ], [ user, user ] ), ( role, [ group, group ], [ user ] ) ]
@@ -273,7 +273,7 @@ class Admin( BaseController ):
     @web.require_admin
     def groups( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         # Build a list of tuples which are groups followed by lists of members and roles
         # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
@@ -299,7 +299,7 @@ class Admin( BaseController ):
     def group( self, trans, **kwd ):
         params = util.Params( kwd )
         group_id = int( params.group_id )
-        msg = params.get( 'msg', '' )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         group = trans.app.model.Group.get( group_id )
         # Get the group members
@@ -315,7 +315,7 @@ class Admin( BaseController ):
     @web.require_admin
     def create_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ) \
                                     .order_by( trans.app.model.User.table.c.email ).all()
@@ -438,7 +438,7 @@ class Admin( BaseController ):
     @web.require_admin
     def deleted_groups( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         # Build a list of tuples which are groups followed by lists of members and roles
         # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
@@ -496,7 +496,7 @@ class Admin( BaseController ):
     @web.require_admin
     def create_new_user( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         email = ''
         password = ''
         confirm = ''
@@ -550,7 +550,7 @@ class Admin( BaseController ):
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         user_id = int( params.user_id )
         user = trans.app.model.User.filter( trans.app.model.User.table.c.id==user_id ).first()
         password = ''
@@ -583,7 +583,7 @@ class Admin( BaseController ):
     @web.require_admin
     def mark_user_deleted( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         user = trans.app.model.User.get( int( params.user_id ) )
         user.deleted = True
@@ -664,7 +664,7 @@ class Admin( BaseController ):
     @web.require_admin
     def deleted_users( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         users = trans.app.model.User.filter( and_( trans.app.model.User.table.c.deleted==True, trans.app.model.User.table.c.purged==False ) ) \
                                  .order_by( trans.app.model.User.table.c.email ) \
@@ -674,7 +674,7 @@ class Admin( BaseController ):
     @web.require_admin
     def users( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         # Build a list of tuples which are users followed by lists of groups and roles
         # [ ( user, [ group, group, group ], [ role, role ] ), ( user, [ group, group ], [ role ] ) ]
@@ -698,7 +698,7 @@ class Admin( BaseController ):
     def user( self, trans, **kwd ):
         params = util.Params( kwd )
         user_id = int( params.user_id )
-        msg = params.get( 'msg', '' )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         user = trans.app.model.User.get( user_id )
         # Get the groups to which the user belongs
@@ -866,7 +866,7 @@ class Admin( BaseController ):
     @web.require_admin
     def library_browser( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         created_lfda_ids = params.get( 'created_lfda_ids', '' )
         return trans.fill_template( '/admin/library/browser.mako', 
@@ -881,7 +881,7 @@ class Admin( BaseController ):
     @web.require_admin
     def library( self, trans, id=None, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         if params.get( 'new', False ):
             action = 'new'
@@ -948,7 +948,7 @@ class Admin( BaseController ):
     @web.require_admin
     def deleted_libraries( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         libraries=trans.app.model.Library.filter( and_( trans.app.model.Library.table.c.deleted==True,
                                                         trans.app.model.Library.table.c.purged==False ) ) \
@@ -1007,7 +1007,7 @@ class Admin( BaseController ):
     @web.require_admin
     def folder( self, trans, id, **kwd ):
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         if params.get( 'new', False ):
             action = 'new'
@@ -1074,7 +1074,7 @@ class Admin( BaseController ):
             last_used_build = folder.genome_build
         data_files = []
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
 
         # add_file method
@@ -1386,7 +1386,7 @@ class Admin( BaseController ):
             msg = "Invalid folder id: %s" % str( folder_id )
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
         params = util.Params( kwd )
-        msg = params.get( 'msg', None )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         # See if the current history is empty
         history = trans.get_history()
@@ -1462,7 +1462,7 @@ class Admin( BaseController ):
     def datasets( self, trans, **kwd ):
         # This method is used by the select list labeled "Perform action on selected datasets" on the admin library browser.
         params = util.Params( kwd )
-        msg = params.msg
+        msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         if params.get( 'action_on_datasets_button', False ):
             if not params.dataset_ids:

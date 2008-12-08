@@ -14,13 +14,13 @@ def name_sorted( l ):
 %>
 
 <script type="text/javascript">
-    var q = jQuery.noConflict();
-    q( document ).ready( function () {
+    //var q = jQuery.noConflict();
+    $( document ).ready( function () {
         // Hide all the folder contents
-        q("ul").filter("ul#subFolder").hide();
+        $("ul").filter("ul#subFolder").hide();
         // Handle the hide/show triangles
-        q("li.libraryOrFolderRow").wrap( "<a href='#' class='expandLink'></a>" ).click( function() {
-            var contents = q(this).parent().next("ul");
+        $("li.libraryOrFolderRow").wrap( "<a href='#' class='expandLink'></a>" ).click( function() {
+            var contents = $(this).parent().next("ul");
             if ( this.id == "libraryRow" ) {
                 var icon_open = "${h.url_for( '/static/images/silk/book_open.png' )}";
                 var icon_closed = "${h.url_for( '/static/images/silk/book.png' )}";
@@ -30,31 +30,31 @@ def name_sorted( l ):
             }
             if ( contents.is(":visible") ) {
                 contents.slideUp("fast");
-                q(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_next.png' )}"; });
-                q(this).children().find("img.rowIcon").each( function() { this.src = icon_closed; });
+                $(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_next.png' )}"; });
+                $(this).children().find("img.rowIcon").each( function() { this.src = icon_closed; });
             } else {
                 contents.slideDown("fast");
-                q(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_bottom.png' )}"; });
-                q(this).children().find("img.rowIcon").each( function() { this.src = icon_open; });
+                $(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_bottom.png' )}"; });
+                $(this).children().find("img.rowIcon").each( function() { this.src = icon_open; });
             }
         });
         // Hide all dataset bodies
-        q("div.historyItemBody").hide();
+        $("div.historyItemBody").hide();
         // Handle the dataset body hide/show link.
-        q("div.historyItemWrapper").each( function() {
+        $("div.historyItemWrapper").each( function() {
             var id = this.id;
-            var li = q(this).parent();
-            var body = q(this).children( "div.historyItemBody" );
+            var li = $(this).parent();
+            var body = $(this).children( "div.historyItemBody" );
             var peek = body.find( "pre.peek" )
-            q(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
+            $(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
                 if ( body.is(":visible") ) {
-                    if ( q.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
+                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
                     body.slideUp( "fast" );
                     li.removeClass( "datasetHighlighted" );
                 } 
                 else {
                     body.slideDown( "fast", function() { 
-                        if ( q.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
+                        if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
                     });
                     li.addClass( "datasetHighlighted" );
                 }
@@ -132,7 +132,7 @@ def name_sorted( l ):
     No libraries contain datasets that you are allowed to access
 %else:
     <% can_access = False %>
-    <form name="import_from_library" action="${h.url_for( '/library/import_datasets' )}" method="post">
+    <form name="import_from_library" action="${h.url_for( controller='library', action='import_datasets' )}" method="post">
         <ul>
             %for library in libraries:
                 %if trans.app.security_agent.check_folder_contents( trans.user, library ):

@@ -475,8 +475,28 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( "1.bed" )
         self.check_page_for_string( "bed" )
         self.check_page_for_string( "hg18" )
-    def test_48_copy_dataset_from_history_to_root_folder( self ):
+        self.logout()
+    def test_48_analysis_view_library_access( self ):
+        """Testing accessing a library public dataset from analysis view"""
+        # Login as a non-admin user and access the library
+        self.login( email = 'test2@bx.psu.edu' )
+        self.home()
+        self.visit_url( '%s/library/browse?bogus_param=needed' % self.url )
+        self.check_page_for_string( library_one.name )
+        self.check_page_for_string( '1.bed' )
+        # Test selecting "View or edit this dataset's attributes and permissions"
+        self.home()
+        self.visit_url( '%s/root/edit?lid=1' % self.url )
+        self.check_page_for_string( '<b>Name:</b> 1.bed' )
+        self.check_page_for_string( 'This dataset is accessible by everyone (it is public).' )
+        # Test importing a library dataset into a history
+        self.home()
+        self.visit_url( '%s/library/import_datasets?import_ids=1' % self.url )
+        self.check_page_for_string( '1 dataset(s) have been imported in to your history' )
+        self.logout()
+    def test_51_copy_dataset_from_history_to_root_folder( self ):
         """Testing copying a dataset from the current history to a library root folder"""
+        self.login( email='test@bx.psu.edu' )
         folder = library_one.root_folder
         self.add_dataset_to_folder_from_history( str( folder.id ) )
         # Now that we have a history and a dataset, we can test for ActionDatasetRoleAssociation - we're still logged in as testuser1.
@@ -491,7 +511,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             if not adra.action == 'manage permissions':
                 raise AssertionError( 'ActionDatasetRoleAssociation.action "%s" is not the DefaultHistoryPermission setting, which is "manage permissions"' % \
                                       str( adra.action ) )
-    def test_51_add_new_folder( self ):
+    def test_54_add_new_folder( self ):
         """Testing adding a folder to a library root folder"""
         root_folder = library_one.root_folder
         name = 'Folder One'
@@ -504,27 +524,27 @@ class TestSecurityAndLibraries( TwillTestCase ):
         assert folder_one is not None, 'Problem retrieving library folder named "Folder One" from the database'
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( "Folder One" )
-    def test_54_add_datasets_from_library_dir( self ):
+    def test_57_add_datasets_from_library_dir( self ):
         """Testing adding 3 datasets from library directory to sub-folder"""
         roles_tuple = [ ( str( role_one.id ), role_one.description ) ] 
         self.add_datasets_from_library_dir( str( folder_one.id ), roles_tuple=roles_tuple )
-    def test_57_mark_group_deleted( self ):
+    def test_60_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         self.visit_page( "admin/groups" )
         self.check_page_for_string( group_two.name )
         self.mark_group_deleted( str( group_two.id ) )
-    def test_60_undelete_group( self ):
+    def test_63_undelete_group( self ):
         """Testing undeleting a deleted group"""
         self.undelete_group( str( group_two.id ) )
-    def test_63_mark_role_deleted( self ):
+    def test_66_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
         self.visit_page( "admin/roles" )
         self.check_page_for_string( role_two.description )
         self.mark_role_deleted( str( role_two.id ) )
-    def test_66_undelete_role( self ):
+    def test_69_undelete_role( self ):
         """Testing undeleting a deleted role"""
         self.undelete_role( str( role_two.id ) )
-    def test_69_mark_library_deleted( self ):
+    def test_72_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
         self.mark_library_deleted( str( library_one.id ) )
         # Make sure the library was deleted
@@ -550,7 +570,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 if lfda.dataset.deleted:
                     raise AssertionError( 'The dataset with id "%s" has been marked as deleted when it should not have been.' % lfda.dataset.id )
         check_folder( library_one.root_folder )
-    def test_72_undelete_library( self ):
+    def test_75_undelete_library( self ):
         """Testing marking a library as not deleted"""
         self.undelete_library( str( library_one.id ) )
         # Make sure the library is undeleted
@@ -582,7 +602,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if not library_one.deleted:
             raise AssertionError( 'The library id %s named "%s" has not been marked as deleted after it was undeleted.' % \
                                   ( str( library_one.id ), library_one.name ) )
-    def test_75_purge_user( self ):
+    def test_78_purge_user( self ):
         """Testing purging a user account"""
         self.mark_user_deleted( user_id=testuser4.id )
         self.purge_user( user_id=testuser4.id )
@@ -625,7 +645,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             role = galaxy.model.Role.get( ura.role_id )
             if role.type != 'private':
                 raise AssertionError( 'UserRoleAssociations for user %s are not related with the private role.' % testuser4.email )
-    def test_78_manually_unpurge_user( self ):
+    def test_81_manually_unpurge_user( self ):
         """Testing manually un-purging a user account"""
         # Reset the user for later test runs.  The user's private Role and DefaultUserPermissions for that role
         # should have been preserved, so all we need to do is reset purged and deleted.
@@ -633,7 +653,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         testuser4.purged = False
         testuser4.deleted = False
         testuser4.flush()
-    def test_81_purge_group( self ):
+    def test_84_purge_group( self ):
         """Testing purging a group"""
         group_id = str( group_two.id )
         self.mark_group_deleted( group_id )
@@ -648,7 +668,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
         # Undelete the group for later test runs
         self.undelete_group( group_id )
-    def test_84_purge_role( self ):
+    def test_87_purge_role( self ):
         """Testing purging a role"""
         role_id = str( role_two.id )
         self.mark_role_deleted( role_id )
@@ -682,7 +702,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         ura.flush()
         uga = galaxy.model.GroupRoleAssociation( group_two, role_two )
         uga.flush()
-    def test_87_purge_library( self ):
+    def test_90_purge_library( self ):
         """Testing purging a library"""
         self.purge_library( str( library_one.id ) )
         # Make sure the library was purged
@@ -709,7 +729,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The dataset with id "%s" has not been marked as deleted when it should have been.' % \
                                           str( lfda.dataset.id ) )
         check_folder( library_one.root_folder )
-    def test_90_reset_data_for_later_test_runs( self ):
+    def test_93_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         #################
         # Reset testuser1

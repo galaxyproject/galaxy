@@ -142,15 +142,15 @@
         <div class="toolFormTitle">View Attributes</div>
         <div class="toolFormBody">
             <div class="form-row">
-                <strong>Name:</strong> ${data.name}
+                <b>Name:</b> ${data.name}
                 <div style="clear: both"></div>
-                <strong>Info:</strong> ${data.info}
+                <b>Info:</b> ${data.info}
                 <div style="clear: both"></div>
-                <strong>Data Format:</strong> ${data.ext}
+                <b>Data Format:</b> ${data.ext}
                 <div style="clear: both"></div>
                 %for name, spec in data.metadata.spec.items():
                     %if spec.visible:
-                        <strong>${spec.desc}:</strong>
+                        <b>${spec.desc}:</b>
                         %if spec.unwrap( spec.get( name ) ):
                             ${spec.unwrap( spec.get( name ) )}
                         %else:

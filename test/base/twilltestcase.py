@@ -583,6 +583,7 @@ class TwillTestCase( unittest.TestCase ):
         self.assertNotEqual(count, maxiter)
 
     # Dataset Security stuff
+    # Tests associated with users
     def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser' ):
         """Create a new account for another user"""
         self.home()
@@ -624,6 +625,18 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/admin/purge_user?user_id=%s" % ( self.url, user_id ) )
         self.check_page_for_string( 'The user has been marked as purged.' )
         self.home()
+    def user_roles_edit( self, user_id, role_ids=[] ):
+        """Change roles associated with an existing user"""
+        self.home()
+        self.visit_url( "%s/admin/user_roles_edit?user_id=%s" % ( self.url, user_id ) )
+        self.check_page_for_string( 'Select to associate role with' )
+        for role_id in role_ids:
+            tc.fv( "1", "roles", role_id )
+        tc.submit( "user_roles_edit_button" )
+        self.check_page_for_string( 'User updated with a total of' )
+        self.home()
+
+    # Tests associated with roles
     def create_role( self, name='Role One', description="This is Role One", user_ids=[], group_ids=[], private_role='' ):
         """Create a new role"""
         self.home()
@@ -678,6 +691,33 @@ class TwillTestCase( unittest.TestCase ):
         check_str += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, ActionDatasetRoleAssociations."
         self.check_page_for_string( check_str )
         self.home()
+    def associate_groups_with_role( self, role_id, group_names=[] ):
+        """Add groups to an existing role"""
+        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
+        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        self.home()
+        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Groups associated with' )
+        # All group_ids passed in  MUST be in the out_groups form field
+        for group_name in group_names:
+            tc.fv( "1", "out_groups", group_name ) # note the buttons...
+            tc.submit( "groups_add_button" )
+        tc.submit( "role_members_edit_button" )
+        self.home()
+    def associate_users_with_role( self, role_id, user_emails=[] ):
+        """Add a users to an existing role"""
+        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
+        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        self.home()
+        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Users associated with' )
+        for user_email in user_emails:
+            tc.fv( "1", "out_users", user_email )
+            tc.submit( "users_add_button" )
+        tc.submit( "role_members_edit_button" )
+        self.home()
+    
+    # Tests associated with groups
     def create_group( self, name='Group One', user_ids=[], role_ids=[] ):
         """Create a new group with members and associated role"""
         self.home()
@@ -727,59 +767,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "group_roles_edit_button" )
         self.check_page_for_string( 'Group updated with a total of' )
         self.home()
-    def remove_role_from_group( self, role_id, group_id ):
-        """Remove a role from a group"""
-        self.home()
-        self.visit_url( "%s/admin/remove_role_from_group?role_id=%s&group_id=%s" % ( self.url, role_id, group_id ) )
-        self.check_page_for_string( 'Role removed from group' )
-        self.home()
-    def user_roles_edit( self, user_id, role_ids=[] ):
-        """Change roles associated with an existing user"""
-        self.home()
-        self.visit_url( "%s/admin/user_roles_edit?user_id=%s" % ( self.url, user_id ) )
-        self.check_page_for_string( 'Select to associate role with' )
-        for role_id in role_ids:
-            tc.fv( "1", "roles", role_id )
-        tc.submit( "user_roles_edit_button" )
-        self.check_page_for_string( 'User updated with a total of' )
-        self.home()
-    def remove_user_from_role( self, user_id, role_id ):
-        """Remove a user from a role"""
-        self.home()
-        self.visit_url( "%s/admin/remove_user_from_role?user_id=%s&role_id=%s" % ( self.url, user_id, role_id ) )
-        self.check_page_for_string( 'User removed from role' )
-        self.home()
-    def remove_user_from_group( self, user_id, group_id ):
-        """Remove a user from a group"""
-        self.home()
-        self.visit_url( "%s/admin/remove_user_from_group?user_id=%s&group_id=%s" % ( self.url, user_id, group_id ) )
-        self.check_page_for_string( 'User removed from group' )
-        self.home()
-    def associate_groups_with_role( self, role_id, group_names=[] ):
-        """Add groups to an existing role"""
-        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
-        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
-        self.home()
-        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
-        self.check_page_for_string( 'Groups associated with' )
-        # All group_ids passed in  MUST be in the out_groups form field
-        for group_name in group_names:
-            tc.fv( "1", "out_groups", group_name ) # note the buttons...
-            tc.submit( "groups_add_button" )
-        tc.submit( "role_members_edit_button" )
-        self.home()
-    def associate_users_with_role( self, role_id, user_emails=[] ):
-        """Add a users to an existing role"""
-        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
-        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
-        self.home()
-        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
-        self.check_page_for_string( 'Users associated with' )
-        for user_email in user_emails:
-            tc.fv( "1", "out_users", user_email )
-            tc.submit( "users_add_button" )
-        tc.submit( "role_members_edit_button" )
-        self.home()
     def mark_group_deleted( self, group_id ):
         """Mark a group as deleted"""
         self.home()
@@ -797,6 +784,26 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_url( "%s/admin/purge_group?group_id=%s" % ( self.url, group_id ) )
         self.check_page_for_string( "The following have been purged from the database for the group: UserGroupAssociations, GroupRoleAssociations." )
+        self.home()
+
+    # Utility methods to test removal of associations
+    def remove_role_from_group( self, role_id, group_id ):
+        """Remove a role from a group"""
+        self.home()
+        self.visit_url( "%s/admin/remove_role_from_group?role_id=%s&group_id=%s" % ( self.url, role_id, group_id ) )
+        self.check_page_for_string( 'Role removed from group' )
+        self.home()
+    def remove_user_from_group( self, user_id, group_id ):
+        """Remove a user from a group"""
+        self.home()
+        self.visit_url( "%s/admin/remove_user_from_group?user_id=%s&group_id=%s" % ( self.url, user_id, group_id ) )
+        self.check_page_for_string( 'User removed from group' )
+        self.home()
+    def remove_user_from_role( self, user_id, role_id ):
+        """Remove a user from a role"""
+        self.home()
+        self.visit_url( "%s/admin/remove_user_from_role?user_id=%s&role_id=%s" % ( self.url, user_id, role_id ) )
+        self.check_page_for_string( 'User removed from role' )
         self.home()
 
     # Library stuff
@@ -881,7 +888,7 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "roles", role_tuple[0] )
         tc.submit( "new_dataset_button" )
         self.check_page_for_string( '3 new datasets added to the library' )
-        # TODO: FIXME: the following submitdoes not work...
+        # TODO: fix the following, twill must need a visit_url or somethng...
         #tc.submit( "action_on_datasets_button" )
         #self.check_page_for_string( 'Manage permissions and role associations for 3 selected datasets' )
         #for role_tuple in roles_tuple:
