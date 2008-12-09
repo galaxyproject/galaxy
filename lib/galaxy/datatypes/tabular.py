@@ -134,7 +134,7 @@ class Tabular( data.Text ):
         #Now we fill any unknown (None) column_types with data from first line
         for i in range( len( column_types ) ):
             if column_types[i] is None:
-                if first_line_column_types[i] is None:
+                if len( first_line_column_types ) <= i or first_line_column_types[i] is None:
                     column_types[i] = default_column_type
                 else:
                     column_types[i] = first_line_column_types[i]
