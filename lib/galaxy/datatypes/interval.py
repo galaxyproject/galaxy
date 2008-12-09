@@ -758,6 +758,9 @@ class CustomTrack ( Tabular ):
         """Initialize interval datatype, by adding UCSC display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
+    def set_readonly_meta( self, dataset, skip=1, **kwd ):
+        """Resets the values of readonly metadata elements."""
+        Tabular.set_readonly_meta( self, dataset, skip = skip, **kwd )
     def set_meta( self, dataset, overwrite = True, **kwd ):
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 1 )
     def display_peek( self, dataset ):
@@ -869,7 +872,11 @@ class GBrowseTrack ( Tabular ):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ('elegans', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
-
+    
+    def set_readonly_meta( self, dataset, skip=1, **kwd ):
+        """Resets the values of readonly metadata elements."""
+        Tabular.set_readonly_meta( self, dataset, skip = skip, **kwd )
+    
     def set_meta( self, dataset, overwrite = True, **kwd ):
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 1 )
     
