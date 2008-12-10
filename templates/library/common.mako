@@ -1,11 +1,6 @@
-<%doc>
-    Shamelessly stolen from history... this needs to be cleaned up to remove a
-    bunch of stuff that doesn't apply to library datasets (like state, etc).
-</%doc>
-
 ## Render the dataset `data`
 <%def name="render_dataset( data )">
-    <div class="historyItemWrapper historyItem historyItem-${data.state}" id="historyItem-${data.id}">
+    <div class="historyItemWrapper historyItem historyItem-${data.state}" id="libraryItem-${data.id}">
         
     ## Header row for library items (name, state, action buttons)
 	<div style="overflow: hidden;" class="historyItemTitleBar">		
@@ -59,14 +54,3 @@
         %endif
     </div>
 </%def>
-
-
-
-
-
-
-
-
-
-
-

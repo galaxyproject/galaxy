@@ -885,22 +885,9 @@ class TwillTestCase( unittest.TestCase ):
         library_dir = "%s" % self.file_dir
         tc.fv( "1", "server_dir", "library" )
         for role_tuple in roles_tuple:
-            tc.fv( "1", "roles", role_tuple[0] )
+            tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role description
         tc.submit( "new_dataset_button" )
         self.check_page_for_string( '3 new datasets added to the library' )
-        # TODO: fix the following, twill must need a visit_url or somethng...
-        #tc.submit( "action_on_datasets_button" )
-        #self.check_page_for_string( 'Manage permissions and role associations for 3 selected datasets' )
-        #for role_tuple in roles_tuple:
-        #    self.check_page_for_string( role_tuple[1] )
-        # NOTE: we cannot submit the form because of a bug in twill ( it cannot handle select lists
-        # that include no option fields.  Since the "manage permissions" and "edit metadata" select
-        # lists have no options ( no roles associated ), submitting the form will throw a 
-        # ParseError: <unprintable ParseError object> exception.  Uncomment the following 4 lines
-        # when twill fixes this bug...
-        # tc.find( "update_roles" )
-        # tc.submit( "update_roles" )
-        # self.check_page_for_string( 'Libraries' )
         self.home()
     def mark_library_deleted( self, library_id ):
         """Mark a library as deleted"""

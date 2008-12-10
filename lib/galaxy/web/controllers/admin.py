@@ -1343,7 +1343,7 @@ class Admin( BaseController ):
                                         err=None,
                                         msg=msg,
                                         messagetype=messagetype )
-        # multiple ids specfied, display permission form for each one...
+        # multiple ids specfied, display permission form, permissions will be updated for all simultaneously.
         elif ids:
             lfdas = []
             for id in [ int( id ) for id in ids ]:
@@ -1470,7 +1470,10 @@ class Admin( BaseController ):
                 trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
             dataset_ids = util.listify( params.dataset_ids )
             if params.action == 'edit':
-                trans.response.send_redirect( web.url_for( action='dataset', id=",".join( dataset_ids ), msg=msg, messagetype=messagetype ) )
+                trans.response.send_redirect( web.url_for( action='dataset',
+                                                           id=",".join( dataset_ids ),
+                                                           msg=msg,
+                                                           messagetype=messagetype ) )
             elif params.action == 'delete':
                 for id in dataset_ids:
                     lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
