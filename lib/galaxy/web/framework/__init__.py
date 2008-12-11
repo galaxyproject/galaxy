@@ -274,7 +274,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             user = self.app.model.User( email=remote_user_email )
             user.set_password_cleartext( 'external' )
             user.external = True
-            self.log_event( "Automatically created account '%s'", user.email )
+            #self.log_event( "Automatically created account '%s'", user.email )
         return user
     def __update_session_cookie( self ):
         """
