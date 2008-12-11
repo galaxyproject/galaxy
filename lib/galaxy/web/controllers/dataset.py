@@ -60,8 +60,7 @@ class DatasetInterface( BaseController ):
         smtp_server = trans.app.config.smtp_server
         if smtp_server is None:
             return trans.show_error_message( "Sorry, mail is not configured for this galaxy instance" )
-        #to_address = trans.app.config.error_email_to
-        to_address = 'greg@bx.psu.edu'
+        to_address = trans.app.config.error_email_to
         if to_address is None:
             return trans.show_error_message( "Sorry, error reporting has been disabled for this galaxy instance" )
         # Get the dataset and associated job
