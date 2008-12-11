@@ -34,7 +34,7 @@ class Fasta( Sequence ):
         dataset.peek = data.get_file_peek( dataset.file_name )
         dataset.blurb = data.nice_size( dataset.get_size() )
 
-    def sniff(self, filename):
+    def sniff( self, filename ):
         """
         Determines whether the file is in fasta format
         
@@ -42,7 +42,16 @@ class Fasta( Sequence ):
         The first character of the description line is a greater-than (">") symbol in the first column. 
         All lines should be shorter than 80 charcters
         
-        For complete details see http://www.g2l.bio.uni-goettingen.de/blast/fastades.html
+        For complete details see http://www.ncbi.nlm.nih.gov/blast/fasta.shtml
+        
+        Rules for sniffing as True:
+            We don't care about line length (other than empty lines).
+            The first non-empty line must start with '>' and the Very Next line.strip() must have sequence data and not be a header.
+                'sequence data' here is loosely defined as non-empty lines which do not start with '>'
+                This will cause Color Space FASTA (csfasta) to be detected as True (they are, after all, still FASTA files - they have a header line followed by sequence data)
+                    Previously this method did some checking to determine if the sequence data had integers (presumably to differentiate between fasta and csfasta)
+                    This should be done through sniff order, where csfasta (currently has a null sniff function) is detected for first (stricter definition) followed sometime after by fasta
+            We will only check that the first purported sequence is correctly formatted.
         
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Fasta().sniff( fname )
@@ -51,34 +60,26 @@ class Fasta( Sequence ):
         >>> Fasta().sniff( fname )
         True
         """
-        headers = get_headers( filename, None )
-        data_found = False
+        
         try:
-            if len(headers) > 1 and headers[0][0] and headers[0][0][0] == ">":
-                for i, l in enumerate( headers ):
-                    line = l[0]
-                    if i < 1:
-                        continue
-                    if line:
-                        data_found = True
-                        try:
-                            int( line[0] )
-                            return False
-                        except:
-                            try:
-                                elems = line.split()
-                                int( elems[0] )
-                                return False
-                            except:
-                                return True
-            else:
-                return False
-            if data_found:
-                return True
-            else:
-                return False
+            fh = open( filename )
+            while True:
+                line = fh.readline()
+                if not line:
+                    break #EOF
+                line = line.strip()
+                if line: #first non-empty line
+                    if line.startswith( '>' ):
+                        #The next line.strip() must not be '', nor startwith '>'
+                        line = fh.readline().strip()
+                        if line == '' or line.startswith( '>' ):
+                            break
+                        return True
+                    else:
+                        break #we found a non-empty line, but its not a fasta header
         except:
-            return False
+            pass
+        return False
 
 class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
