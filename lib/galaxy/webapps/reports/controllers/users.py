@@ -105,9 +105,13 @@ class Users( BaseController ):
         now = strftime( "%Y-%m-%d %H:%M:%S" )
         users = []
         for user in galaxy.model.User.query().order_by( galaxy.model.User.table.c.email ).all():
-            last_galaxy_session = user.galaxy_sessions[ 0 ]
-            if last_galaxy_session.update_time < cutoff_time:
-                users.append( ( user.email, last_galaxy_session.update_time.strftime( "%Y-%m-%d" ) ) )
+            if user.galaxy_sessions:
+                last_galaxy_session = user.galaxy_sessions[ 0 ]
+                if last_galaxy_session.update_time < cutoff_time:
+                    users.append( ( user.email, last_galaxy_session.update_time.strftime( "%Y-%m-%d" ) ) )
+            else:
+                # The user has never logged in
+                users.append( ( user.email, "never logged in" ) )
         return trans.fill_template( 'users_last_access_date.mako',
                                     users=users,
                                     not_logged_in_for_days=not_logged_in_for_days,
