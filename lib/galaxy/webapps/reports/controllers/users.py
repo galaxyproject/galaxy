@@ -1,7 +1,9 @@
-from datetime import *
+from datetime import datetime, timedelta
+from time import strftime
 import calendar
 from galaxy.webapps.reports.base.controller import *
 import galaxy.model
+from galaxy.model.orm import *
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
@@ -10,23 +12,20 @@ log = logging.getLogger( __name__ )
 
 class Users( BaseController ):
     @web.expose
+    def index( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = params.get( 'msg', '' )
+        return trans.fill_template( 'users.mako', msg=msg )
+    @web.expose
     def registered_users( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = ''
-        engine = galaxy.model.mapping.metadata.engine
-        s = """
-        SELECT
-            count(id) AS num_users
-        FROM
-            galaxy_user
-         """
-        rows = engine.text( s ).execute().fetchall()
-        num_users = rows[0].num_users
+        msg = params.get( 'msg', '' )
+        num_users = galaxy.model.User.query().count()
         return trans.fill_template( 'registered_users.mako', num_users=num_users, msg=msg )
     @web.expose
     def registered_users_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = ''
+        msg = params.get( 'msg', '' )
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
                        from_obj = [ galaxy.model.User.table ],
@@ -42,7 +41,7 @@ class Users( BaseController ):
     @web.expose
     def specified_month( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = ''
+        msg = params.get( 'msg', '' )
         year, month = map( int, params.get( 'month', datetime.utcnow().strftime( "%Y-%m" ) ).split( "-" ) )
         start_date = date( year, month, 1 )
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
@@ -70,7 +69,7 @@ class Users( BaseController ):
     @web.expose
     def specified_date( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = ''
+        msg = params.get( 'msg', '' )
         year, month, day = map( int, params.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) ).split( "-" ) )
         start_date = date( year, month, day )
         end_date = start_date + timedelta( days=1 )
@@ -94,4 +93,22 @@ class Users( BaseController ):
                                     year_label=year_label, 
                                     day_of_month=day_of_month, 
                                     users=users, 
+                                    msg=msg )
+    @web.expose
+    def last_access_date( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = params.get( 'msg', '' )
+        not_logged_in_for_days = params.get( 'not_logged_in_for_days', 0 )
+        if not not_logged_in_for_days:
+            not_logged_in_for_days = 0
+        cutoff_time = datetime.utcnow() - timedelta( days=int( not_logged_in_for_days ) )
+        now = strftime( "%Y-%m-%d %H:%M:%S" )
+        users = []
+        for user in galaxy.model.User.query().order_by( galaxy.model.User.table.c.email ).all():
+            last_galaxy_session = user.galaxy_sessions[ 0 ]
+            if last_galaxy_session.update_time < cutoff_time:
+                users.append( ( user.email, last_galaxy_session.update_time.strftime( "%Y-%m-%d" ) ) )
+        return trans.fill_template( 'users_last_access_date.mako',
+                                    users=users,
+                                    not_logged_in_for_days=not_logged_in_for_days,
                                     msg=msg )

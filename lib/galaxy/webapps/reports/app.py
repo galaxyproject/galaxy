@@ -1,6 +1,5 @@
-import sys, os, atexit
+import sys, config
 import galaxy.model
-import config
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""

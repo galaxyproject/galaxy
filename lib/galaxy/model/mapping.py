@@ -299,6 +299,7 @@ assign_mapper( context, History, History.table,
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user", 
                                          order_by=desc(History.table.c.update_time) ),
+                     galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",
                                                             cascade="all, delete-orphan",
                                                             collection_class=ordering_list( 'order_index' ) )

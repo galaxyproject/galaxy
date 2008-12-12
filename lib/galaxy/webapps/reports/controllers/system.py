@@ -37,7 +37,15 @@ class System( BaseController ):
                 deleted_histories_days, msg = self.deleted_histories( **kwd )
             elif kwd['action'] == "deleted_datasets":
                 deleted_datasets_days, msg = self.deleted_datasets( **kwd )
-        return trans.fill_template( 'system.mako', file_path=file_path, disk_usage=disk_usage, datasets=datasets, file_size_str=file_size_str, userless_histories_days=userless_histories_days, deleted_histories_days=deleted_histories_days, deleted_datasets_days=deleted_datasets_days, msg=msg )
+        return trans.fill_template( 'system.mako',
+                                    file_path=file_path,
+                                    disk_usage=disk_usage,
+                                    datasets=datasets,
+                                    file_size_str=file_size_str,
+                                    userless_histories_days=userless_histories_days,
+                                    deleted_histories_days=deleted_histories_days,
+                                    deleted_datasets_days=deleted_datasets_days,
+                                    msg=msg )
 
     def userless_histories( self, **kwd ):
         """The number of userless histories and associated datasets that have not been updated for the specified number of days."""
