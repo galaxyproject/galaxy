@@ -51,6 +51,20 @@
       <param name="fill" value="both" />
       <output name="output" file="gops-join-both.dat" />
     </test>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="min" value="500" />
+      <param name="fill" value="none" />
+      <output name="output" file="gops-join-none-500.dat" />
+    </test>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
+      <param name="min" value="100" />
+      <param name="fill" value="both" />
+      <output name="output" file="gops-join-both-100.dat" />
+    </test>
   </tests>
   <help>
 
