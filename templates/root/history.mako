@@ -248,7 +248,7 @@ div#footer {
 
 <%namespace file="history_common.mako" import="render_dataset" />
 
-%if ( show_deleted and len( history.datasets ) < 1 ) or len( history.active_datasets ) < 1:
+%if ( show_deleted and not history.activatable_datasets ) or ( not show_deleted and not history.active_datasets ):
     <div class="infomessagesmall" id="emptyHistoryMessage">
 %else:    
     <%

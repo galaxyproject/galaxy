@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from time import strftime
-import calendar
+import calendar, operator
 from galaxy.webapps.reports.base.controller import *
 import galaxy.model
 from galaxy.model.orm import *
@@ -112,6 +112,7 @@ class Users( BaseController ):
             else:
                 # The user has never logged in
                 users.append( ( user.email, "never logged in" ) )
+        users = sorted( users, key=operator.itemgetter( 1 ), reverse=True )
         return trans.fill_template( 'users_last_access_date.mako',
                                     users=users,
                                     not_logged_in_for_days=not_logged_in_for_days,

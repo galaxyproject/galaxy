@@ -13,7 +13,12 @@
             <td>
                 <form method="post" controller="users" action="last_access_date">
                     <p>
-                        Users that have not logged in to Galaxy for 
+                        %if users:
+                            ${len( users ) }
+                        %else:
+                            0
+                        %endif 
+                        &nbsp;users have not logged in to Galaxy for 
                         <input type="textfield" value="${not_logged_in_for_days}" size="3" name="not_logged_in_for_days"> days.
                         &nbsp;<button name="action" value="not_logged_in_for_days">Go</button>
                     </p>
