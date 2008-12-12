@@ -22,9 +22,9 @@
         <td>
             %if not anchored:
                 <div style="float: right;"><a href="#TOP">top</a></div>
-                <a name="${curr_anchor}"><input type="checkbox" name="roles" value="${role.id}"/> ${role.description}</a>
+                <a name="${curr_anchor}"><input type="checkbox" name="roles" value="${role.id}"/>&nbsp;${role.name}:&nbsp;${role.description}</a>
             %else:
-                <input type="checkbox" name="roles" value="${role.id}"/> ${role.description}
+                <input type="checkbox" name="roles" value="${role.id}"/>&nbsp;${role.name}:&nbsp;${role.description}
             %endif
         </td>
     </tr>

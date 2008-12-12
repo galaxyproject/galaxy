@@ -671,6 +671,15 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( description )
         self.home()
         return previously_created
+    def rename_role( self, role_id, name='Role One Renamed', description='This is Role One Re-described' ):
+        """Rename a role"""
+        self.home()
+        self.visit_url( "%s/admin/role?rename=True&role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Change role name and description' )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", description )
+        tc.submit( "rename_role_button" )
+        self.home()
     def mark_role_deleted( self, role_id ):
         """Mark a role as deleted"""
         self.home()
@@ -747,6 +756,14 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( name )
         self.home()
         return previously_created
+    def rename_group( self, group_id, name='Group One Renamed' ):
+        """Rename a group"""
+        self.home()
+        self.visit_url( "%s/admin/group?rename=True&group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'Change group name' )
+        tc.fv( "1", "name", name )
+        tc.submit( "rename_group_button" )
+        self.home()
     def group_members_edit( self, group_id, user_ids=[] ):
         """Add members to an existing group"""
         self.home()
@@ -820,7 +837,7 @@ class TwillTestCase( unittest.TestCase ):
         """Rename a library"""
         self.home()
         self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
-        self.check_page_for_string( 'Edit library name and description' )
+        self.check_page_for_string( 'Change library name and description' )
         tc.fv( "1", "name", name )
         tc.fv( "1", "description", description )
         if root_folder:

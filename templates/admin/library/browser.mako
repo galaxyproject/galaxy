@@ -103,10 +103,10 @@ def name_sorted( l ):
         </div>
         %if not deleted:
             <div popupmenu="folder-${parent.id}-popup">
-                <a class="action-button" href="${h.url_for( action='dataset', folder_id=parent.id )}">Add a new dataset to this folder</a>
-                <a class="action-button" href="${h.url_for( action='add_dataset_to_folder_from_history', folder_id=parent.id )}">Copy a dataset from your history to this folder</a>
-                <a class="action-button" href="${h.url_for( action='folder', new=True, id=parent.id )}">Create a new sub-folder in this folder</a>
-                <a class="action-button" href="${h.url_for( action='folder', rename=True, id=parent.id )}">Rename this folder</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='dataset', folder_id=parent.id )}">Add a new dataset to this folder</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='add_dataset_to_folder_from_history', folder_id=parent.id )}">Copy a dataset from your history to this folder</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=parent.id )}">Create a new sub-folder in this folder</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='folder', rename=True, id=parent.id )}">Rename this folder</a>
                 %if subfolder:
                     <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
                 %endif

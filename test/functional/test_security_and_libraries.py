@@ -6,7 +6,7 @@ not_logged_in_security_msg = 'You must be logged in as an administrator to acces
 logged_in_security_msg = 'You must be an administrator to access this feature.'
 
 class TestSecurityAndLibraries( TwillTestCase ):
-    def test_00_admin_features_when_not_logged_in( self ):
+    def test_000_admin_features_when_not_logged_in( self ):
         """Testing admin_features when not logged in"""
         self.logout()
         self.visit_url( "%s/admin" % self.url )
@@ -271,7 +271,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing undeleting a user account"""
         self.undelete_user( user_id=regular_user3.id )
     def test_045_create_role( self ):
-        """Testing creating new role with 3 members"""
+        """Testing creating new role with 3 members, then renaming it"""
         name = 'Role One'
         description = "This is Role One's description"
         user_ids=[ str( admin_user.id ), str( regular_user1.id ), str( regular_user3.id ) ]
@@ -296,8 +296,18 @@ class TestSecurityAndLibraries( TwillTestCase ):
             if not previously_created and len( user.roles ) != 2:
                 raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 2 )' \
                                       % ( len( user.roles ), user.email ) )
+        # Rename the role
+        rename = "Role One's been Renamed"
+        redescription="This is Role One's Re-described"
+        self.rename_role( str( role_one.id ), name=rename, description=redescription )
+        self.home()
+        self.visit_page( 'admin/roles' )
+        self.check_page_for_string( rename )
+        self.check_page_for_string( redescription )
+        # Reset the role back to the original name and description
+        self.rename_role( str( role_one.id ), name=name, description=description )
     def test_050_create_group( self ):
-        """Testing creating new group with 3 members and 1 associated role"""
+        """Testing creating new group with 3 members and 1 associated role, then renaming it"""
         name = "Group One's Name"
         user_ids=[ str( admin_user.id ), str( regular_user1.id ), str( regular_user3.id ) ]
         role_ids=[ str( role_one.id ) ]
@@ -323,6 +333,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if len( group_one.roles ) != len( role_ids ):
             raise AssertionError( '%d GroupRoleAssociations were created for group id %d when it was created ( should have been %d )' \
                                   % ( len( group_one.roles ), group_one.id, len( role_ids ) ) )
+        # Rename the group
+        rename = "Group One's been Renamed"
+        self.rename_group( str( group_one.id ), name=rename, )
+        self.home()
+        self.visit_page( 'admin/groups' )
+        self.check_page_for_string( rename )
+        # Reset the group back to the original name
+        self.rename_group( str( group_one.id ), name=name )
     def test_055_add_members_and_role_to_group( self ):
         """Testing editing user membership and role associations of an existing group"""
         name = 'Group Two'
@@ -457,6 +475,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         rename = "Library One's been Renamed"
         redescription="This is Library One's Re-described"
         self.rename_library( str( library_one.id ), name=rename, description=redescription, root_folder='on' )
+        self.home()
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( rename )
         self.check_page_for_string( redescription )
@@ -467,6 +486,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         rename = "Library One's Root Folder"
         redescription = "This is Library One's root folder"
         self.rename_folder( str( folder.id ), name=rename, description=redescription )
+        self.home()
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( rename )
         self.check_page_for_string( redescription )
@@ -699,8 +719,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing adding 3 datasets from a library directory to a folder"""
         roles_tuple = [ ( str( role_one.id ), role_one.description ) ] 
         self.add_datasets_from_library_dir( str( folder_one.id ), roles_tuple=roles_tuple )
-        # It would be nice if twill functioned such that the above statement resulted in a
-        # form with the uploaded datasets selected, but it does not (they're not checked ),
+    def test_120_change_permissions_on_datasets_imported_from_library( self ):
+        """Testing changing the permissions on library datasets imported into a history"""
+        # It would be nice if twill functioned such that the above test resulted in a
+        # form with the uploaded datasets selected, but it does not ( they're not checked ),
         # so we'll have to simulate this behavior ( not ideal ) for the 'edit' action.  We
         # first need to get the lfda.id for the 3 new datasets
         latest_3_lfdas = galaxy.model.LibraryFolderDatasetAssociation.query() \
@@ -781,7 +803,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 except:
                     pass # This is the behavior we want
         check_edit_page2( latest_3_lfdas )
-    def test_120_mark_group_deleted( self ):
+    def test_125_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         self.home()
         self.visit_url( '%s/admin/groups' % self.url )
@@ -795,13 +817,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all members when it was marked as deleted.' % group_two.name )
         if not group_two.roles:
             raise AssertionError( '%s incorrectly lost all role associations when it was marked as deleted.' % group_two.name )
-    def test_125_undelete_group( self ):
+    def test_130_undelete_group( self ):
         """Testing undeleting a deleted group"""
         self.undelete_group( str( group_two.id ) )
         group_two.refresh()
         if group_two.deleted:
             raise AssertionError( '%s was not correctly marked as not deleted.' % group_two.name )
-    def test_130_mark_role_deleted( self ):
+    def test_135_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
         self.home()
         self.visit_url( '%s/admin/roles' % self.url )
@@ -815,10 +837,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all user associations when it was marked as deleted.' % role_two.name )
         if not role_two.groups:
             raise AssertionError( '%s incorrectly lost all group associations when it was marked as deleted.' % role_two.name )
-    def test_135_undelete_role( self ):
+    def test_140_undelete_role( self ):
         """Testing undeleting a deleted role"""
         self.undelete_role( str( role_two.id ) )
-    def test_140_mark_library_deleted( self ):
+    def test_145_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
         self.mark_library_deleted( str( library_one.id ) )
         # Make sure the library was deleted
@@ -844,7 +866,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 if lfda.dataset.deleted:
                     raise AssertionError( 'The dataset with id "%s" has been marked as deleted when it should not have been.' % lfda.dataset.id )
         check_folder( library_one.root_folder )
-    def test_145_undelete_library( self ):
+    def test_150_undelete_library( self ):
         """Testing marking a library as not deleted"""
         self.undelete_library( str( library_one.id ) )
         # Make sure the library is undeleted
@@ -876,7 +898,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if not library_one.deleted:
             raise AssertionError( 'The library id %s named "%s" has not been marked as deleted after it was undeleted.' % \
                                   ( str( library_one.id ), library_one.name ) )
-    def test_150_purge_user( self ):
+    def test_155_purge_user( self ):
         """Testing purging a user account"""
         self.mark_user_deleted( user_id=regular_user3.id )
         self.purge_user( user_id=regular_user3.id )
@@ -921,7 +943,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             role = galaxy.model.Role.get( ura.role_id )
             if role.type != 'private':
                 raise AssertionError( 'UserRoleAssociations for user %s are not related with the private role.' % regular_user3.email )
-    def test_155_manually_unpurge_user( self ):
+    def test_160_manually_unpurge_user( self ):
         """Testing manually un-purging a user account"""
         # Reset the user for later test runs.  The user's private Role and DefaultUserPermissions for that role
         # should have been preserved, so all we need to do is reset purged and deleted.
@@ -929,7 +951,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         regular_user3.purged = False
         regular_user3.deleted = False
         regular_user3.flush()
-    def test_160_purge_group( self ):
+    def test_165_purge_group( self ):
         """Testing purging a group"""
         group_id = str( group_two.id )
         self.mark_group_deleted( group_id )
@@ -944,7 +966,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
         # Undelete the group for later test runs
         self.undelete_group( group_id )
-    def test_165_purge_role( self ):
+    def test_170_purge_role( self ):
         """Testing purging a role"""
         role_id = str( role_two.id )
         self.mark_role_deleted( role_id )
@@ -969,14 +991,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         adra = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.role_id == role_id ).all()
         if adra:
             raise AssertionError( "Purging the role did not delete the ActionDatasetRoleAssociations for role_id '%s'" % role_id )
-    def test_170_manually_unpurge_role( self ):
+    def test_175_manually_unpurge_role( self ):
         """Testing manually un-purging a role"""
         # Manually unpurge, then undelete the role for later test runs
         # TODO: If we decide to implement the GUI feature for un-purging a role, replace this with a method call
         role_two.purged = False
         role_two.flush()
         self.undelete_role( str( role_two.id ) )
-    def test_175_purge_library( self ):
+    def test_180_purge_library( self ):
         """Testing purging a library"""
         self.purge_library( str( library_one.id ) )
         # Make sure the library was purged
@@ -1003,7 +1025,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The dataset with id "%s" has not been marked as deleted when it should have been.' % \
                                           str( lfda.dataset.id ) )
         check_folder( library_one.root_folder )
-    def test_180_reset_data_for_later_test_runs( self ):
+    def test_185_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         ##################
         # Reset admin_user

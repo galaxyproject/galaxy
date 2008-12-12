@@ -104,8 +104,25 @@ class Admin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         role = trans.app.model.Role.get( int( params.role_id ) )
-        if 'role_members_edit_button' in kwd:
+        if params.get( 'role_members_edit_button', False ):
             self.role_members_edit( trans, **kwd )
+        if params.get( 'rename', False ):
+            if params.rename == 'submitted':
+                new_name = util.restore_text( params.name )
+                new_description = util.restore_text( params.description )
+                if not new_name:
+                    msg = 'Enter a valid name'
+                    return trans.fill_template( '/admin/dataset_security/role_rename.mako', role=role, msg=msg, messagetype='error' )
+                elif trans.app.model.Role.filter( trans.app.model.Role.table.c.name==new_name ).first():
+                    msg = 'A role with that name already exists'
+                    return trans.fill_template( '/admin/dataset_security/role_rename.mako', role=role, msg=msg, messagetype='error' )
+                else:
+                    role.name = new_name
+                    role.description = new_description
+                    role.flush()
+                    msg = 'The role has been renamed to %s' % new_name
+                    return trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
+            return trans.fill_template( '/admin/dataset_security/role_rename.mako', role=role, msg=msg, messagetype=messagetype )
         in_users = []
         out_users = []
         in_groups = []
@@ -302,6 +319,21 @@ class Admin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         group = trans.app.model.Group.get( group_id )
+        if params.get( 'rename', False ):
+            if params.rename == 'submitted':
+                new_name = util.restore_text( params.name )
+                if not new_name:
+                    msg = 'Enter a valid name'
+                    return trans.fill_template( '/admin/dataset_security/group_rename.mako', group=group, msg=msg, messagetype='error' )
+                elif trans.app.model.Group.filter( trans.app.model.Group.table.c.name==new_name ).first():
+                    msg = 'A group with that name already exists'
+                    return trans.fill_template( '/admin/dataset_security/group_rename.mako', group=group, msg=msg, messagetype='error' )
+                else:
+                    group.name = new_name
+                    group.flush()
+                    msg = 'The group has been renamed to %s' % new_name
+                    return trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
+            return trans.fill_template( '/admin/dataset_security/group_rename.mako', group=group, msg=msg, messagetype=messagetype )
         # Get the group members
         users = []
         for uga in group.members:
@@ -413,7 +445,8 @@ class Admin( BaseController ):
                     gra.flush()
             msg = "Group updated with a total of %s associated roles" % len( roles )
             trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
-        roles=trans.app.model.Role.filter( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) \
+        roles=trans.app.model.Role.filter( and_( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE,
+                                                 trans.app.model.Role.table.c.deleted == False ) ) \
                                   .order_by( trans.app.model.Role.table.c.name ).all()
         group_roles = []
         for gra in group.roles:
@@ -1251,7 +1284,7 @@ class Admin( BaseController ):
                     yield build_name, dbkey, ( dbkey==last_used_build )
             dbkeys = get_dbkey_options( last_used_build )
             # Send list of roles to the form so the dataset can be associated with 1 or more of them.
-            roles = trans.app.model.Role.query().order_by( trans.app.model.Role.c.name ).all()
+            roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.c.description ).all()
             return trans.fill_template( '/admin/library/new_dataset.mako', 
                                         folder_id=folder_id,
                                         file_formats=file_formats,

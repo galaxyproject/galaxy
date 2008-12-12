@@ -12,6 +12,7 @@
             ${role.name}
             <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="role-${role.id}-popup">
+                <a class="action-button" href="${h.url_for( controller='admin', action='role', rename=True, role_id=role.id )}">Rename this role</a>
                 <a class="action-button" href="${h.url_for( controller='admin', action='role', role_id=role.id )}">Change associated users and groups</a>
                 <a class="action-button" href="${h.url_for( controller='admin', action='mark_role_deleted', role_id=role.id )}">Mark role deleted</a>
             </div>

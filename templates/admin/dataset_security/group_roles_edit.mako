@@ -15,6 +15,7 @@
                 <input type="checkbox" name="roles" value="${role.id}"/> ${role.name}
             %endif
         </td>
+        <td>${role.description}</td>
         <td>
             ${role.type}
             %if not anchored:
@@ -59,6 +60,7 @@
             %endif
             <tr class="header">
                 <td>Select to associate role with ${group.name}</td>
+                <td>Description</td>
                 <td>Role Type</td>
             </tr>
             %for ctr, role in enumerate( roles ):
