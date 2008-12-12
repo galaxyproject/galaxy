@@ -300,19 +300,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             user = self.app.model.User( email=remote_user_email )
             user.set_password_cleartext( 'external' )
             user.external = True
-            #self.log_event( "Automatically created account '%s'", user.email )
-        # TODO: make sure this correctly handles deleted / purged users
         elif user.deleted:
-            if user.purged:
-                # If the user has been purged, all associations have been deleted except for the private role 
-                # and the DefaultUserPermissions and DefaultHistoryPermissions associated with it.  We'll
-                # restore the user, but all of their previous histories and other associations will have been
-                # deleted.
-                user.purged = False
-            # If the user was not purged, the state of all of their associations at the time they were deleted
-            # will have been preserved.
-            user.deleted = False
-            user.flush()
+            return self.show_error_message( "Your account is no longer valid, contact your Galaxy administrator to activate your account." )
         return user
     def __update_session_cookie( self ):
         """
