@@ -132,10 +132,10 @@ class SNPMatrix(Rgenetics):
     def set_peek( self, dataset ):
         dataset.peek  = "Binary RGenetics file"
         dataset.blurb = data.nice_size( dataset.get_size() )
-    def sniff( self, filename ):
-        """
-        """
-        return True
+    #def sniff( self, filename ):
+    #    """
+    #    """
+    #    return True
 
 class Lped(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
