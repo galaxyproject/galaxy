@@ -7,7 +7,7 @@
     TODO: Hack to get biomart to work - the 'add_to_URL' param can be eliminated when the Biomart team encodes URL prior to sending, meanwhile
     everything including and beyond the first '&' is truncated from URL.  They said they'll let us know when this is fixed at their end.
 -->
-<tool name="BioMart" id="biomart" tool_type="data_source" URL_method="get" add_to_URL="biomart_hack">
+<tool name="BioMart" id="biomart" tool_type="data_source" URL_method="get">
 	<description>Central server</description>
 	<command interpreter="python">data_source.py $output</command>
 	<inputs action="http://www.biomart.org/biomart/martview" check_values="false" method="get" target="_top">
@@ -15,7 +15,12 @@
 		<param name="GALAXY_URL" type="baseurl" value="/tool_runner/biomart" />
     </inputs>
     <request_param_translation>
-        <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="URL" remote_name="URL" missing="">
+            <add_to_url>
+                <param_from_source name="_export" missing="1" />
+                <param_from_source name="GALAXY_URL" missing="0" />
+            </add_to_url>
+        </request_param>
         <request_param galaxy_name="dbkey" remote_name="dbkey" missing="?" />
         <request_param galaxy_name="organism" remote_name="organism" missing="" />
         <request_param galaxy_name="table" remote_name="table" missing="" />

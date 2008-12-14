@@ -33,12 +33,6 @@ def __main__():
     if not URL:
         open( filename, 'w' ).write( "" )
         stop_err( 'The remote data source application has not sent back a URL parameter in the request.' )
-    # TODO: Hack to get biomart to work - this can be eliminated when the Biomart team encodes URL prior to sending, meanwhile
-    # everything including and beyond the first '&' is truncated from URL.  They said they'll let us know when this is fixed
-    # at their end.
-    add_to_URL = params.get( 'add_to_URL', None )
-    if add_to_URL:
-        URL += '&_export=1&GALAXY_URL=0'
     URL_method = params.get( 'URL_method', None )
     out = open( filename, 'w' )
     CHUNK_SIZE = 2**20 # 1Mb 

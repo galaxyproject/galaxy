@@ -159,10 +159,31 @@ class Params:
                             try:
                                 # The Galaxy "data_type entry is special in that it can include the ability
                                 # to translate the format to a Galaxy supported format.  In the dict, this entry
-                                # looks something like:  {'hgta_outputType': ['data_type', 'bed', {'selectedFields': 'tabular'}] }
+                                # looks something like:  
+                                # {'hgta_outputType': ['data_type', 'bed', {'selectedFields': 'tabular'}] }
                                 format_trans_dict = tool.param_trans_dict[ key ][2]
                                 if value in format_trans_dict:
                                     new_value = format_trans_dict[ value ]
+                            except:
+                                pass
+                        elif new_key == 'URL':
+                            # As above, the URL can include a set of params from the remote data source
+                            # that must be appended to the URL prior to the post.  In this case, the
+                            # dict entry would look something like:
+                            # ['URL', '', {'q': '', 's': '', 'd': '', 'dbkey': '', 't': ''}]
+                            try:
+                                add_to_url_dict = tool.param_trans_dict[ key ][2]
+                                if new_value.count( '?' ) == 0:
+                                    sep = '?'
+                                else:
+                                    sep = '&'
+                                for param_name, missing_value in add_to_url_dict.items():
+                                    param_value = params.get( param_name, None )
+                                    if not param_value and missing_value:
+                                        param_value = missing_value
+                                    if param_value:
+                                        new_value += '%s%s=%s' % ( sep, param_name, param_value )
+                                        sep = '&'
                             except:
                                 pass
                         if not value and not new_value:
@@ -174,9 +195,6 @@ class Params:
             if tool and tool.tool_type == 'data_source':
                 # Add the tool's URL_method to params
                 self.__dict__[ 'URL_method' ] = tool.URL_method
-                # TODO: Biomart hack - eliminate when they encode URL - they'll let us know when...
-                if tool.add_to_URL is not None:
-                    self.__dict__[ 'add_to_URL' ] = tool.add_to_URL
                 for key, value in tool.param_trans_dict.items():
                     # Make sure that all translated values used in Galaxy are added to the params
                     galaxy_name = tool.param_trans_dict[ key ][0]

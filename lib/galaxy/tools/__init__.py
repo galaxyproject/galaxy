@@ -231,8 +231,6 @@ class Tool:
         # data_source tool
         if self.tool_type == "data_source":
             self.URL_method = root.get( "URL_method", "get" ) # get is the default
-            # TODO: Biomart hack - eliminate when they encode URL - they'll let us know when...
-            self.add_to_URL = root.get( "add_to_URL", None )
             self.param_trans_dict = {}
             req_param_trans = root.find( "request_param_translation" )
             if req_param_trans is not None:
@@ -255,6 +253,22 @@ class Tool:
                                 galaxy_format = format.get( "galaxy_format" )                        
                                 format_trans_dict[ remote_format ] = galaxy_format
                             trans_list.append( format_trans_dict )
+                    elif req_param.get( "galaxy_name" ) == "URL":
+                        # Some remote data sources ( e.g., Gbrowse ) send parameters back to
+                        # Galaxy in the initial response that must be added to URL prior to
+                        # Galaxy sending the secondary request to the URL.  The tag set looks
+                        # asomething like:
+                        # <add_to_url>
+                        #    <param_from_source name="d" missing="" />
+                        # </add_to_url>
+                        add_to_url = req_param.find( "add_to_url" )
+                        if add_to_url is not None:
+                            add_to_url_dict = {}
+                            for param_from_source in add_to_url.findall( "param_from_source" ):
+                                name = param_from_source.get( "name" )
+                                value = param_from_source.get( "missing" ) # only used if the source doesn't send the param name                     
+                                add_to_url_dict[ name ] = value
+                            trans_list.append( add_to_url_dict )
                     self.param_trans_dict[ remote_name ] = trans_list
         # Command line (template). Optional for tools that do not invoke a local program  
         command = root.find("command")
@@ -1162,11 +1176,16 @@ class Tool:
                 description = param_dict.get( 'position', '' )
                 if not description:
                     description = 'unknown position'
+            gb_landmark_region = param_dict.get( 'q' )
             data_type = param_dict.get( 'data_type' )
             items = out_data.items()
             for name, data in items:
                 if organism and table and description:
+                    # This is UCSC
                     data.name  = '%s on %s: %s (%s)' % ( data.name, organism, table, description )
+                elif gb_landmark_region:
+                    # This is GBrowse
+                    data.name = '%s on %s' % ( data.name, gb_landmark_region )
                 data.info = info
                 data.dbkey = dbkey
                 try:
