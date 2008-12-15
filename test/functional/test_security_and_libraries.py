@@ -615,7 +615,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Test importing the restricted dataset into a history, can't use the 
         # ~/admin/libraries form as twill barfs on it so we'll simulate the form submission
         # by going directly to the form action
-        self.visit_url( '%s/library/import_datasets?import_ids=%d' % ( self.url, lfda_two.id ) )
+        self.visit_url( '%s/library/import_datasets?action=add&import_ids=%d' % ( self.url, lfda_two.id ) )
         self.check_page_for_string( '1 dataset(s) have been imported in to your history' )
         self.logout()
         # regular_user2 should not be able to see 2.bed
@@ -696,7 +696,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( 'This dataset is accessible by everyone (it is public).' )
         # Test importing a library dataset into a history
         self.home()
-        self.visit_url( '%s/library/import_datasets?import_ids=%d' % ( self.url, lfda_three.id ) )
+        self.visit_url( '%s/library/import_datasets?action=add&import_ids=%d' % ( self.url, lfda_three.id ) )
         self.check_page_for_string( '1 dataset(s) have been imported in to your history' )
         self.logout()
     def test_110_copy_dataset_from_history_to_root_folder( self ):
