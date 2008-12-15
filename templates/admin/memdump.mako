@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="title()">Memory Profiling</%def>
 <%
@@ -44,7 +45,7 @@
 </%def>
 
 %if msg:
-    <div class="donemessage">${msg}</div>
+    ${render_msg( msg, messagetype )}
 %endif
 
 %if heap is None:
