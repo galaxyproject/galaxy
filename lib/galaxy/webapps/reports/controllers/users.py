@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import *
 from time import strftime
 import calendar, operator
 from galaxy.webapps.reports.base.controller import *
@@ -98,7 +98,7 @@ class Users( BaseController ):
     def last_access_date( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = params.get( 'msg', '' )
-        not_logged_in_for_days = params.get( 'not_logged_in_for_days', 0 )
+        not_logged_in_for_days = params.get( 'not_logged_in_for_days', 90 )
         if not not_logged_in_for_days:
             not_logged_in_for_days = 0
         cutoff_time = datetime.utcnow() - timedelta( days=int( not_logged_in_for_days ) )
