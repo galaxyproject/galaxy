@@ -16,11 +16,33 @@ def name_sorted( l ):
 <script type="text/javascript">
     //var q = jQuery.noConflict();
     $( document ).ready( function () {
-        // Hide all the folder contents
-        $("ul").filter("ul#subFolder").hide();
+        // Check/uncheck boxes in subfolders.
+        $("input.folderCheckbox").click( function() {
+            if ( $(this).is(":checked") ) {
+                //$(this).parent().children().find("input[@type=checkbox]").each( function() { this.checked = true; });
+                $(this).parent().next("ul").find("input[@type=checkbox]").each( function() { this.checked = true; });
+            } else {
+                //$(this).parent().children().find("input[@type=checkbox]").each( function() { this.checked = false; });
+                $(this).parent().next("ul").find("input[@type=checkbox]").each( function() { this.checked = false; });
+            }
+        });
+        // If you uncheck a lower level checkbox, uncheck the boxes above it
+        // (since deselecting a child means the parent is not fully selected any
+        // more).
+        $("input[@type=checkbox]").click( function() {
+            if ( ! $(this).is(":checked") ) {
+                //var folder_rows = $(this).parents("ul").next("li.folderRow");
+                //var folder_rows = $(this).parents("ul").children("li.folderRow");
+                var folder_rows = $(this).parents("ul").prev("li.folderRow");
+                //$(folder_rows).children("input[@type=checkbox]").not(this).each( function() {
+                $(folder_rows).find("input[@type=checkbox]").each( function() {
+                    this.checked = false;
+                });
+            }
+        });
         // Handle the hide/show triangles
-        $("li.libraryOrFolderRow").wrap( "<a href='#' class='expandLink'></a>" ).click( function() {
-            var contents = $(this).parent().next("ul");
+        $("span.expandLink").wrap( "<a href='#' class='expandLink'></a>" ).click( function() {
+            var contents = $(this).parents("li:first").next("ul");
             if ( this.id == "libraryRow" ) {
                 var icon_open = "${h.url_for( '/static/images/silk/book_open.png' )}";
                 var icon_closed = "${h.url_for( '/static/images/silk/book.png' )}";
@@ -30,12 +52,12 @@ def name_sorted( l ):
             }
             if ( contents.is(":visible") ) {
                 contents.slideUp("fast");
-                $(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_next.png' )}"; });
-                $(this).children().find("img.rowIcon").each( function() { this.src = icon_closed; });
+                $(this).find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_next.png' )}"; });
+                $(this).find("img.rowIcon").each( function() { this.src = icon_closed; });
             } else {
                 contents.slideDown("fast");
-                $(this).children().find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_bottom.png' )}"; });
-                $(this).children().find("img.rowIcon").each( function() { this.src = icon_open; });
+                $(this).find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_bottom.png' )}"; });
+                $(this).find("img.rowIcon").each( function() { this.src = icon_open; });
             }
         });
         // Hide all dataset bodies
@@ -66,19 +88,19 @@ def name_sorted( l ):
 
 <![if gte IE 7]>
 <script type="text/javascript">
-    q( document ).ready( function() {
+    $( document ).ready( function() {
         // Add rollover effect to any image with a 'rollover' attribute
         preload_images = {}
-        q( "img[@rollover]" ).each( function() {
-            var r = q(this).attr('rollover');
-            var s = q(this).attr('src');
+        $( "img[@rollover]" ).each( function() {
+            var r = $(this).attr('rollover');
+            var s = $(this).attr('src');
             preload_images[r] = true;
-            q(this).hover( 
-                function() { q(this).attr( 'src', r ) },
-                function() { q(this).attr( 'src', s ) }
+            $(this).hover( 
+                function() { $(this).attr( 'src', r ) },
+                function() { $(this).attr( 'src', s ) }
             )
         })
-        for ( r in preload_images ) { q( "<img>" ).attr( "src", r ) }
+        for ( r in preload_images ) { $( "<img>" ).attr( "src", r ) }
     })
 </script>
 <![endif]>
@@ -98,16 +120,18 @@ def name_sorted( l ):
             subfolder = True
     %>
     <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
+        <input type="checkbox" class="folderCheckbox" style="float: left;"/>
         <div class="rowTitle">
-            <img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
+            <span class="expandLink"><img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
             ${parent.name}
             %if parent.description:
                 <i>- ${parent.description}</i>
             %endif
+            </span>
         </div>
     </li>
     %if subfolder:
-        <ul id="subFolder">
+        <ul id="subFolder" style="display: none;">
     %else:
         <ul>
     %endif
@@ -116,7 +140,7 @@ def name_sorted( l ):
         %endfor
         %for dataset in name_sorted( parent.active_datasets ):
             %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=dataset.dataset ):
-                <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset )}</li>
+                <li class="datasetRow" style="padding-left: ${pad + 20}px;">${render_dataset( dataset )}</li>
             %endif
         %endfor
     </ul>
@@ -137,16 +161,17 @@ def name_sorted( l ):
             %for library in libraries:
                 %if trans.app.security_agent.check_folder_contents( trans.user, library ):
                     <% can_access = True %>
-                    <li class="libraryRow libraryOrFolderRow" id="libraryRow">
+                    <li class="libraryRow libraryOrFolderRow">
                         <div class="rowTitle">
                             <table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle">
                                 <tr>
                                     <th width="*">
-                                        <img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
+                                        <span class="expandLink" id="libraryRow"><img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
                                         ${library.name}
                                         %if library.description:
                                             <i>- ${library.description}</i>
                                         %endif
+                                        </span>
                                     </th>
                                     <th width="100">Format</th>
                                     <th width="50">Db</th>
@@ -163,7 +188,21 @@ def name_sorted( l ):
             %endfor
         </ul>
         %if can_access:
-            <input type="submit" class="primary-button" name="import_dataset" value="Import selected datasets"/>
+            <select name="action" id="action_on_datasets_select">
+                %if default_action == 'add':
+                    <option value="add" selected>Add selected datasets to history</option>
+                %else:
+                    <option value="add">Add selected datasets to history</option>
+                %endif
+                %if default_action == 'download':
+                    <option value="zip" selected>Download selected datasets as a .zip file</option>
+                %else:
+                    <option value="zip">Download selected datasets as a .zip file</option>
+                %endif
+                <option value="tgz">Download selected datasets as a .tar.gz file</option>
+                <option value="tbz">Download selected datasets as a .tar.bz2 file</option>
+            </select>
+            <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
         %else:
             No libraries contain datasets that you are allowed to access
         %endif
