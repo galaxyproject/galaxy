@@ -105,6 +105,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.app = app
         self.webapp = webapp
         self.security = webapp.security
+        # FIXME: the following 3 attributes are not currently used
+        #        Remove them if they are not going to be...
         self.__user = NOT_SET
         self.__history = NOT_SET
         self.__galaxy_session = NOT_SET
@@ -178,9 +180,17 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Support for universe_session and universe_user cookies has been
         removed as of 31 Oct 2008.
         """
+        #log.debug("####In __ensure_valid_session...")
+        #try:
+        #    log.debug("####In __ensure_valid_session, self.galaxy_session: %s" % str( self.galaxy_session ) )
+        #    log.debug("####In __ensure_valid_session, self.galaxy_session.is_valid: %s" % str(self.galaxy_session.is_valid))
+        #except:
+        #    log.debug("####In __ensure_valid_session, self.galaxy_session does not yet exist...")
         sa_session = self.sa_session
         # Try to load an existing session
+        #log.debug("###In __ensure_valid_session, before secure_id = self.get_cookie( name='galaxysession' )...")
         secure_id = self.get_cookie( name='galaxysession' )
+        #log.debug("###In __ensure_valid_session, secure_id: %s" % str( secure_id) )
         galaxy_session = None
         prev_galaxy_session = None
         user_for_new_session = None
@@ -191,8 +201,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if secure_id:
             # Decode the cookie value to get the session_key
             session_key = self.security.decode_session_key( secure_id )
+            #log.debug("###In __ensure_valid_session, session_key: %s" % str( session_key) )
             # Retrive the galaxy_session id via the unique session_key
             galaxy_session = sa_session.query( self.app.model.GalaxySession ).filter_by( session_key=session_key, is_valid=True ).first()
+            #log.debug("###In __ensure_valid_session, galaxy_session: %s" % str( galaxy_session) )
         # If remote user is in use it can invalidate the session, so we need to
         # to check some things now.
         if self.app.config.use_remote_user:
@@ -248,6 +260,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         
         Caller is responsible for flushing the returned session.
         """
+        #log.debug("###In __create_new_session...")
         session_key = self.security.get_new_session_key()
         galaxy_session = self.app.model.GalaxySession(
             session_key=session_key,
