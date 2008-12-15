@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<tool name="Wormbase" id="wormbase" tool_type="data_source" URL_method="get">
+    <description>server</description>
+    <command interpreter="python">data_source.py $output</command>
+    <inputs action="http://www.wormbase.org/db/seq/gbrowse/c_elegans/" check_values="false" method="get" target="_top"> 
+        <display>go to Wormbase server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=wormbase" />
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="URL" remote_name="URL" missing="">
+            <add_to_url>
+                <param_from_source name="d" missing="" />
+                <param_from_source name="dbkey" missing="" />
+                <param_from_source name="q" missing="" />
+                <param_from_source name="s" missing="" />
+                <param_from_source name="t" missing="" />
+            </add_to_url>
+        </request_param>
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="txt" />
+    </request_param_translation>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>

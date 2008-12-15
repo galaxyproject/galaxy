@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
-<tool name="C. Elegans" id="gbrowse_elegans" tool_type="data_source" URL_method="get">
-	<description>server</description>
+<tool name="Wormbase" id="wormbase_test" tool_type="data_source" URL_method="get">
+	<description>test server</description>
 	<command interpreter="python">data_source.py $output</command>
 	<inputs action="http://dev.wormbase.org/db/seq/gbrowse/c_elegans/" check_values="false" method="get" target="_top"> 
-		<display>go to C. Elegans server $GALAXY_URL</display>
-		<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=gbrowse_elegans" />
+		<display>go to Wormbase test server $GALAXY_URL</display>
+		<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=wormbase_test" />
 	</inputs>
     <request_param_translation>
         <request_param galaxy_name="URL" remote_name="URL" missing="">
@@ -16,7 +16,7 @@
                 <param_from_source name="t" missing="" />
             </add_to_url>
         </request_param>
-        <request_param galaxy_name="data_type" remote_name="data_type" missing="gff3" />
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="txt" />
     </request_param_translation>
 	<uihints minwidth="800"/>
 	<outputs>
@@ -24,4 +24,3 @@
 	</outputs>
 	<options sanitize="False" refresh="True"/>
 </tool>
-
