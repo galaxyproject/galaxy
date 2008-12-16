@@ -78,6 +78,7 @@ class DataMetaFilter( Filter ):
         Filter.__init__( self, d_option, elem )
         self.ref_name = elem.get( "ref", None )
         assert self.ref_name is not None, "Required 'ref' attribute missing from filter"
+        d_option.has_dataset_dependencies = True
         self.key = elem.get( "key", None )
         assert self.key is not None, "Required 'key' attribute missing from filter"
         self.column = elem.get( "column", None )
@@ -290,6 +291,9 @@ class DynamicOptions( object ):
         self.file_fields = None
         self.largest_index = 0
         self.dataset_ref_name = None
+        # True if the options generation depends on one or more other parameters
+        # that are dataset inputs
+        self.has_dataset_dependencies = False
         self.validators = []
         self.converter_safe = True
         
@@ -320,6 +324,7 @@ class DynamicOptions( object ):
                 self.file_fields = self.parse_file_fields( open( data_file ) )
             elif dataset_file is not None:
                 self.dataset_ref_name = dataset_file
+                self.has_dataset_dependencies = True
                 self.converter_safe = False
             elif from_parameter is not None:
                 transform_lines = elem.get( 'transform_lines', None )
