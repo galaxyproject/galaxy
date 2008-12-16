@@ -533,8 +533,8 @@ class WorkflowController( BaseController ):
                                 elif isinstance( input, Conditional ):
                                     values = input_values[ input.name ]
                                     current = values["__current_case__"]
-                                    prefix = prefix + "|" + input.name
-                                    visitor( input.cases[current].inputs, values, prefix )
+                                    new_prefix = prefix + input.name + "|"
+                                    visitor( input.cases[current].inputs, values, new_prefix )
                                 else:
                                     if isinstance( input, DataToolParameter ):
                                         prefixed_name = prefix + input.name
