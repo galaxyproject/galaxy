@@ -495,7 +495,7 @@ class SelectToolParameter( ToolParameter ):
         # Dynamic options are not yet supported in workflow, allow 
         # specifying the value as text for now.
         if self.is_dynamic and trans.workflow_building_mode \
-           and ( self.options is None or self.options.dataset_ref_name is not None ):
+           and ( self.options is None or self.options.has_dataset_dependencies ):
             assert isinstance( value, UnvalidatedValue )
             value = value.value
             if self.multiple:
@@ -519,7 +519,7 @@ class SelectToolParameter( ToolParameter ):
         # HACK: trans may be None here if doing late validation, this is
         # treated the same as not being in workflow mode
         if self.is_dynamic and ( trans and trans.workflow_building_mode ) \
-           and ( self.options is None or self.options.dataset_ref_name is not None ):
+           and ( self.options is None or self.options.has_dataset_dependencies ):
             if self.multiple:
                 value = value.split( "\n" )
             return UnvalidatedValue( value )
@@ -560,7 +560,7 @@ class SelectToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context ):
         # More working around dynamic options for workflow
         if self.is_dynamic and trans.workflow_building_mode \
-           and ( self.options is None or self.options.dataset_ref_name is not None ):
+           and ( self.options is None or self.options.has_dataset_dependencies ):
             # Really the best we can do?
             return UnvalidatedValue( None )
         options = list( self.get_options( trans, context ) )
