@@ -90,7 +90,7 @@
 <div id="XXinternalXXworkflow" class="toolSectionBody">
   <div class="toolSectionBg">
         <div class="toolTitle">
-            <a href="${h.url_for( controller='workflow', action='index' )}" target="galaxy_main">Manage</a> workflows
+            <a href="${h.url_for( controller='workflow', action='list_for_run' )}" target="galaxy_main">List all</a> of your workflows
         </div>
         %if t.user:
             %for m in t.user.stored_workflow_menu_entries:
