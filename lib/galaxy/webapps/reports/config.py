@@ -25,14 +25,14 @@ class Configuration( object ):
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
+        # CRITICAL: the value of id_secret MUST be the same in universe_wsgi.ini and reports_wsgi.ini
+        # or the framework's __ensure_valid_session method will throw exceptions when switching between
+        # Galaxy and the reports in the same browser.
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/reports/compiled_templates" ), self.root )
-        self.admin_pass = kwargs.get('admin_pass',"galaxy")
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
-        self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
-        self.error_email_to = kwargs.get( 'error_email_to', None )
         self.brand = kwargs.get( 'brand', None )
         self.wiki_url = kwargs.get( 'wiki_url', "http://g2.trac.bx.psu.edu/" )
         self.bugs_email = kwargs.get( 'bugs_email', "mailto:galaxy-bugs@bx.psu.edu" )

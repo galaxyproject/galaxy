@@ -36,15 +36,16 @@ session_data_dir = %(here)s/database/beaker_sessions
 session_key = galaxysessions
 session_secret = changethisinproduction
 
+# Galaxy session security
+# The value of id_secret MUST be the same as the value of id_secret in universe_wsgi.ini
+id_secret = changethisinproductiontoo
+
 # Configuration for debugging middleware
 debug = true
 use_lint = false
 
 # NEVER enable this on a public site (even test or QA)
 # use_interactive = true
-
-# Admin Password
-admin_pass = "galaxy"
 
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
@@ -57,10 +58,6 @@ mailing_join_addr = galaxy-user-join@bx.psu.edu
 
 # Profiling middleware (cProfile based)
 ## use_profile = True
-
-# Mail
-smtp_server = coltrane.bx.psu.edu
-error_email_to = galaxy_bugs@bx.psu.edu
 
 # Use the new iframe / javascript based layout
 use_new_layout = true

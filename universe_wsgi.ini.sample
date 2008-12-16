@@ -73,6 +73,7 @@ session_key = galaxysessions
 session_secret = changethisinproduction
 
 # Galaxy session security
+# The value of id_secret MUST be the same as the value of id_secret in reports_wsgi.ini
 id_secret = changethisinproductiontoo
 
 # Use user provided in an upstream server's $REMOTE_USER variable

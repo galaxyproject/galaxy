@@ -35,6 +35,9 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
+        # CRITICAL: the value of id_secret MUST be the same in universe_wsgi.ini and reports_wsgi.ini
+        # or the framework's __ensure_valid_session method will throw exceptions when switching between
+        # Galaxy and the reports in the same browser.
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
