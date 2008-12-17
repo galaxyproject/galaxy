@@ -5,7 +5,7 @@ wherein the second dataset doesn't have chr, start and end in standard columns 1
 """
 
 from galaxy import eggs
-import sys, os, ConfigParser
+import sys, os, ConfigParser, tempfile
 import galaxy.app
 import galaxy.model.mapping
 import pkg_resources
@@ -62,6 +62,23 @@ def main():
                         history = app.model.History.get( hda.history_id )
                         print "# ------> processing history id %s" % str( history.id )
                         if history.user_id:
+                            cmd_line = str( job.command_line )
+                            new_output = tempfile.NamedTemporaryFile('w')
+                            if (sa.or_( app.model.Job.table.c.tool_id == 'gops_intersect_1',
+                                        app.model.Job.table.c.tool_id == 'gops_subtract_1',
+                                        app.model.Job.table.c.tool_id == 'gops_coverage_1'
+                                      )
+                               ):
+                                new_cmd_line = " ".join(map(str,cmd_line.split()[:4])) + " " + new_output.name + " " + " ".join(map(str,cmd_line.split()[5:]))
+                                job_output = cmd_line.split()[4]
+                            else:
+                                new_cmd_line = " ".join(map(str,cmd_line.split()[:3])) + " " +  new_output.name + " " + " ".join(map(str,cmd_line.split()[4:]))
+                                job_output = cmd_line.split()[3]
+                            os.system(new_cmd_line)
+                            diff_status = os.system('diff %s %s >> /dev/null' %(new_output.name, job_output))
+                            if diff_status == 0:
+                                continue
+                            print "# --------> Outputs differ"
                             user = app.model.User.get( history.user_id )
                             jobs[ job.id ] = {}
                             jobs[ job.id ][ 'hda_id' ] = hda.id
@@ -77,7 +94,7 @@ def main():
     print "\n\n# Number of incorrect Jobs: %d\n\n" % ( len( jobs ) )
     print "#job_id\thda_id\thda_name\thda_info\thistory_id\thistory_name\thistory_update_time\tuser_email"
     for jid in jobs:
-        print "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % \
+        print '%s\t%s\t"%s"\t"%s"\t%s\t"%s"\t"%s"\t%s' % \
             ( str( jid ), 
               str( jobs[ jid ][ 'hda_id' ] ), 
               jobs[ jid ][ 'hda_name' ], 
