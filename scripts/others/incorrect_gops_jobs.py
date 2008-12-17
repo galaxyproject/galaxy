@@ -42,13 +42,19 @@ def main():
     try:
         for job in app.model.Job.filter( sa.and_( app.model.Job.table.c.create_time.between( '2008-05-23', '2008-11-29' ),
                                                   app.model.Job.table.c.state == 'ok',
-                                                  sa.or_( app.model.Job.table.c.tool_id == 'gops_intersect_1',
-                                                          app.model.Job.table.c.tool_id == 'gops_subtract_1',
-                                                          app.model.Job.table.c.tool_id == 'gops_merge_1',
-                                                          app.model.Job.table.c.tool_id == 'gops_coverage_1',
-                                                          app.model.Job.table.c.tool_id == 'gops_complement_1',
-                                                        ),
-                                                  sa.not_( app.model.Job.table.c.command_line.like( '%-2 1,2,3%' ) )
+                                                  sa.or_(
+                                                          sa.and_( sa.or_( app.model.Job.table.c.tool_id == 'gops_intersect_1',
+                                                                           app.model.Job.table.c.tool_id == 'gops_subtract_1',
+                                                                           app.model.Job.table.c.tool_id == 'gops_coverage_1',
+                                                                         ),
+                                                                   sa.not_( app.model.Job.table.c.command_line.like( '%-2 1,2,3%' ) )
+                                                                 ),
+                                                          sa.and_( sa.or_( app.model.Job.table.c.tool_id == 'gops_complement_1',
+                                                                           app.model.Job.table.c.tool_id == 'gops_merge_1',
+                                                                         ),
+                                                                   sa.not_( app.model.Job.table.c.command_line.like( '%-1 1,2,3%' ) )
+                                                                 )
+                                                          )
                                                 )
                                         ).all():
             print "# processing job id %s" % str( job.id )
