@@ -30,6 +30,7 @@ class Configuration( object ):
         # Galaxy and the reports in the same browser.
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/reports/compiled_templates" ), self.root )
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
