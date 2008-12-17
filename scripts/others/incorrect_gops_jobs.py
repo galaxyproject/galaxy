@@ -64,11 +64,7 @@ def main():
                         if history.user_id:
                             cmd_line = str( job.command_line )
                             new_output = tempfile.NamedTemporaryFile('w')
-                            if (sa.or_( app.model.Job.table.c.tool_id == 'gops_intersect_1',
-                                        app.model.Job.table.c.tool_id == 'gops_subtract_1',
-                                        app.model.Job.table.c.tool_id == 'gops_coverage_1'
-                                      )
-                               ):
+                            if job.tool_id in ['gops_intersect_1','gops_subtract_1','gops_coverage_1']:
                                 new_cmd_line = " ".join(map(str,cmd_line.split()[:4])) + " " + new_output.name + " " + " ".join(map(str,cmd_line.split()[5:]))
                                 job_output = cmd_line.split()[4]
                             else:
