@@ -25,7 +25,7 @@
 	if data.id in source_dataset_ids:
 	    checked = " checked"
 	%>
-	<div class="form-row"><input type="checkbox" name="source_dataset_ids" value="${data.id}"${checked}> ${data.hid}: ${data.name}</div>
+	<div class="form-row"><input type="checkbox" name="source_dataset_ids" value="${data.id}"${checked}/> ${data.hid}: ${data.name}</div>
 	%endfor 
   </div>
   </div>
@@ -41,7 +41,7 @@
 	if hist == trans.get_history():
 	    cur_history_text = " <strong>(current history)</strong>"
 	%>
-	<div class="form-row"><input type="checkbox" name="target_history_ids" value="${hist.id}"${checked}> ${i + 1}${cur_history_text}: ${hist.name}</div>
+	<div class="form-row"><input type="checkbox" name="target_history_ids" value="${hist.id}"${checked}/> ${i + 1}${cur_history_text}: ${hist.name}</div>
 	%endfor
 	%if trans.get_user():
 	<%
@@ -50,12 +50,12 @@
 	    checked = " checked"
 	%>
 	<br>
-	<div class="form-row"><input type="checkbox" name="target_history_ids" value="create_new_history"${checked}>New history named: <input type="textbox" name="new_history_name" value="${new_history_name}"></div>
+	<div class="form-row"><input type="checkbox" name="target_history_ids" value="create_new_history"${checked}/>New history named: <input type="textbox" name="new_history_name" value="${new_history_name}"/></div>
 	%endif
   </div>
   </div>
   <div style="clear: both"></div>
-  <div class="form-row" align="center"><input type="submit" class="primary-button" name="do_copy" value="Copy History Items"></div>
+  <div class="form-row" align="center"><input type="submit" class="primary-button" name="do_copy" value="Copy History Items"/></div>
   </form>
 </div>
 </p>
