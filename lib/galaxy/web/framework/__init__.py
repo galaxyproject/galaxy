@@ -77,9 +77,9 @@ def form( *args, **kwargs ):
     return FormBuilder( *args, **kwargs )
     
 class WebApplication( base.WebApplication ):
-    def __init__( self, galaxy_app ):
+    def __init__( self, galaxy_app, session_cookie='galaxysession' ):
         base.WebApplication.__init__( self )
-        self.set_transaction_factory( lambda e: UniverseWebTransaction( e, galaxy_app, self ) )
+        self.set_transaction_factory( lambda e: UniverseWebTransaction( e, galaxy_app, self, session_cookie ) )
         # Mako support
         self.mako_template_lookup = mako.lookup.TemplateLookup(
             directories = [ galaxy_app.config.template_path ] ,
@@ -101,7 +101,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
     Encapsulates web transaction specific state for the Universe application
     (specifically the user's "cookie" session and history)
     """
-    def __init__( self, environ, app, webapp ):
+    def __init__( self, environ, app, webapp, session_cookie ):
         self.app = app
         self.webapp = webapp
         self.security = webapp.security
@@ -118,7 +118,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         # and such).
         self.workflow_building_mode = False
         # Always have a valid galaxy session
-        self.__ensure_valid_session()
+        self.__ensure_valid_session( session_cookie )
     @property
     def sa_session( self ):
         """
@@ -148,7 +148,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             event.session_id = self.galaxy_session.id   
             event.flush()
     def get_cookie( self, name='galaxysession' ):
-        """Convienience method for getting the galaxysession cookie"""
+        """Convenience method for getting a session cookie"""
         try:
             # If we've changed the cookie during the request return the new value
             if name in self.response.cookies:
@@ -158,7 +158,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         except:
             return None
     def set_cookie( self, value, name='galaxysession', path='/', age=90, version='1' ):
-        """Convienience method for setting the galaxysession cookie"""
+        """Convenience method for setting a session cookie"""
         # The galaxysession cookie value must be a high entropy 128 bit random number encrypted 
         # using a server secret key.  Any other value is invalid and could pose security issues.
         self.response.cookies[name] = value
@@ -172,7 +172,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
     #    if not self.__galaxy_session:
     #        self.__ensure_valid_session()
     #    return self.__galaxy_session  
-    def __ensure_valid_session( self ):
+    def __ensure_valid_session( self, session_cookie ):
         """
         Ensure that a valid Galaxy session exists and is available as
         trans.session (part of initialization)
@@ -182,7 +182,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         sa_session = self.sa_session
         # Try to load an existing session
-        secure_id = self.get_cookie( name='galaxysession' )
+        secure_id = self.get_cookie( name=session_cookie )
         galaxy_session = None
         prev_galaxy_session = None
         user_for_new_session = None
@@ -193,11 +193,17 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if secure_id:
             # Decode the cookie value to get the session_key
             session_key = self.security.decode_session_key( secure_id )
-            # Retrieve the galaxy_session id via the unique session_key
-            galaxy_session = self.app.model.GalaxySession.filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key,
-                                                                        self.app.model.GalaxySession.table.c.is_valid==True ) ).first()
-        # If remote user is in use it can invalidate the session, so we need to
-        # to check some things now.
+            try:
+                # Make sure we have a valid UTF-8 string 
+                session_key = session_key.encode( 'utf8' )
+            except UnicodeDecodeError:
+                # We'll end up creating a new galaxy_session
+                session_key = None
+            if session_key:
+                # Retrieve the galaxy_session id via the unique session_key
+                galaxy_session = self.app.model.GalaxySession.filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key,
+                                                                            self.app.model.GalaxySession.table.c.is_valid==True ) ).first()
+        # If remote user is in use it can invalidate the session, so we need to to check some things now.
         if self.app.config.use_remote_user:
             assert "HTTP_REMOTE_USER" in self.environ, \
                 "use_remote_user is set but no HTTP_REMOTE_USER variable"
@@ -232,7 +238,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             galaxy_session = self.__create_new_session( prev_galaxy_session, user_for_new_session )
             galaxy_session_requires_flush = True
             self.galaxy_session = galaxy_session
-            self.__update_session_cookie()
+            self.__update_session_cookie( name=session_cookie )
         else:
             self.galaxy_session = galaxy_session
         # Do we need to flush the session?
@@ -279,11 +285,11 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             user.external = True
             #self.log_event( "Automatically created account '%s'", user.email )
         return user
-    def __update_session_cookie( self ):
+    def __update_session_cookie( self, name='galaxysession' ):
         """
-        Update the 'galaxysession' cookie to match the current session.
+        Update the session cookie to match the current session.
         """
-        self.set_cookie( self.security.encode_session_key( self.galaxy_session.session_key ), name='galaxysession' )
+        self.set_cookie( self.security.encode_session_key( self.galaxy_session.session_key ), name=name )
             
     def handle_user_login( self, user ):
         """
@@ -304,7 +310,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session, history ] )
         else:
             self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session ] )
-        self.__update_session_cookie()
+        # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
+        self.__update_session_cookie( name='galaxysession' )
     def handle_user_logout( self ):
         """
         Logout the current user:
@@ -315,7 +322,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         prev_galaxy_session.is_valid = False
         self.galaxy_session = self.__create_new_session( prev_galaxy_session, None )
         self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session ] )
-        self.__update_session_cookie()
+        # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
+        self.__update_session_cookie( name='galaxysession' )
         
     def get_galaxy_session( self ):
         """

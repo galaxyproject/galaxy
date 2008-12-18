@@ -52,7 +52,7 @@ def app_factory( global_conf, **kwargs ):
         app = UniverseApplication( global_conf = global_conf, **kwargs )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
-    webapp = galaxy.web.framework.WebApplication( app )
+    webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxyreportssession' )
     add_controllers( webapp, app )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/:controller/:action', controller="root", action='index' )
