@@ -25,9 +25,6 @@ class Configuration( object ):
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
-        # CRITICAL: the value of id_secret MUST be the same in universe_wsgi.ini and reports_wsgi.ini
-        # or the framework's __ensure_valid_session method will throw exceptions when switching between
-        # Galaxy and the reports in the same browser.
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )

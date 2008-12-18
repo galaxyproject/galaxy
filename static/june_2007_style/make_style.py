@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 
-import sys
+import sys, string, os.path
+from galaxy import eggs
+import pkg_resources
+pkg_resources.require( "Cheetah" )
+
 from Cheetah.Template import Template
-import string
 from subprocess import Popen, PIPE
-import os.path
 
 assert sys.version_info[:2] >= ( 2, 4 )
+
+# To create a new style ( this is an example ):
+# python make_style.py blue_colors.ini blue
 
 def run( cmd ):
     return Popen( cmd, stdout=PIPE).communicate()[0]

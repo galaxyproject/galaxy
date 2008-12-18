@@ -37,7 +37,6 @@ session_key = galaxysessions
 session_secret = changethisinproduction
 
 # Galaxy session security
-# The value of id_secret MUST be the same as the value of id_secret in universe_wsgi.ini
 id_secret = changethisinproductiontoo
 
 # Configuration for debugging middleware

@@ -86,8 +86,7 @@ class WebApplication( base.WebApplication ):
             module_directory = galaxy_app.config.template_cache,
             collection_size = 500 )
         # Security helper
-        from galaxy.web import security
-        self.security = security.SecurityHelper( id_secret = galaxy_app.config.id_secret )
+        self.security = galaxy_app.security
     def handle_controller_exception( self, e, trans, **kwargs ):
         if isinstance( e, MessageException ):
             return trans.show_message( e.message, e.type )

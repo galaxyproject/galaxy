@@ -1,5 +1,4 @@
-import sys
-import new
+import sys, new
 from galaxy.tools.parameters import grouping
 from galaxy.tools.parameters import basic
 from base.twilltestcase import TwillTestCase
@@ -9,6 +8,7 @@ toolbox = None
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
     def do_it( self ):
+        print "###self.testdef: ", self.testdef
         # If the test generation had an error, raise
         if self.testdef.error:
             if self.testdef.exception:
@@ -126,10 +126,10 @@ def setup():
         return
     # Push all the toolbox tests to module level
     G = globals()
-    for i, section in enumerate( toolbox.sections ):
-        for j, tool in enumerate( section.tools ):
-            if tool.tests:
-                for k, testdef in enumerate( tool.tests ):
-                    name = "%s > %s > %s" % ( section.name, tool.name, testdef.name )
-                    testcase = get_testcase( testdef, name )
-                    G[ 'testcase_%d_%d_%d' % ( i, j, k ) ] = testcase
+    for i, tool_id in enumerate( toolbox.tools_by_id ):
+        tool = toolbox.tools_by_id[ tool_id ]
+        if tool.tests:
+            for j, testdef in enumerate( tool.tests ):
+                name = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
+                testcase = get_testcase( testdef, name )
+                G[ 'testcase_%d_%d' % ( i, j ) ] = testcase

@@ -344,6 +344,11 @@
         padding-bottom: 0px;
         font-weight: bold;
     }
+    div.toolPanelLabel {
+      padding-top: 5px;
+      padding-bottom: 5px;
+      font-weight: bold;
+    }
     div.toolMenuGroupHeader {
         font-weight: bold;
         padding-top: 0.5em;
@@ -353,7 +358,6 @@
         border-bottom: dotted #333 1px;
         margin-bottom: 0.5em;
     }
-    
     div.toolTitle {
         padding-top: 5px;
         padding-bottom: 5px;
@@ -361,6 +365,10 @@
         margin-right: 10px;
         display: list-item;
         list-style: square outside;
+    }
+    div.toolTitleNoSection {
+      padding-bottom: 0px;
+      font-weight: bold;
     }
     div.toolTitleDisabled {
         padding-top: 5px;
@@ -371,6 +379,11 @@
         list-style: square outside;
         font-style: italic;
         color: gray;
+    }
+    div.toolTitleNoSectionDisabled {
+      padding-bottom: 0px;
+      font-style: italic;
+      color: gray;
     }
     div.toolFormRow {
         position: relative;
@@ -467,6 +480,50 @@
     </style>
 </%def>
 
+## Render a tool in the tool panel
+<%def name="render_tool( tool, section )">
+    %if not tool.hidden:
+        %if tool.is_workflow_compatible:
+            %if section:
+                <div class="toolTitle">
+            %else:
+                <div class="toolTitleNoSection">
+            %endif
+                %if "[[" in tool.description and "]]" in tool.description:
+                    ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="javascript:add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
+                %elif tool.name:
+                    <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
+                %else:
+                    <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                %endif
+            </div>
+        %else:
+            %if section:
+                <div class="toolTitleDisabled">
+            %else:
+                <div class="toolTitleNoSectionDisabled">
+            %endif
+                %if "[[" in tool.description and "]]" in tool.description:
+                    ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}
+                %elif tool.name:
+                    ${tool.name} ${tool.description}
+                %else:
+                    ${tool.description}
+                %endif
+            </div>
+        %endif
+    %endif
+</%def>
+
+## Render a label in the tool panel
+<%def name="render_label( label )">
+    <div class="toolSectionPad"></div>
+    <div class="toolPanelLabel" id="title_${label.id}">
+        <span>${label.text}</span>
+    </div>
+    <div class="toolSectionPad"></div>
+</%def>
+
 <div id="overlay">
     ## Need a table here for centering in IE6
     <table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"><tr><td>
@@ -501,43 +558,30 @@
     <div class="unified-panel-body" style="overflow: auto;">
         <div class="toolMenu">
             <div class="toolSectionList">
-            %for i, section in enumerate( app.toolbox.sections ):
-               %if i > 0:
-                  <div class="toolSectionPad"></div> 
-               %endif
-               <div class="toolSectionTitle" id="title_${section.id}">
-                  <span>${section.name}</span>
-               </div>
-               <div id="${section.id}" class="toolSectionBody">
-                  <div class="toolSectionBg">
-                     %for tool in section.tools:
-                        %if not tool.hidden:
-                            %if tool.is_workflow_compatible:
-                                <div class="toolTitle ">
-                                    %if "[[" in tool.description and "]]" in tool.description:
-                                        ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="javascript:add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
-                                    %elif tool.name:
-                                        <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
-                                    %else:
-                                        <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                %for key, val in app.toolbox.tool_panel.items():
+                    %if key.startswith( 'tool' ):
+                        ${render_tool( val, False )}
+                    %elif key.startswith( 'section' ):
+                        <% section = val %>
+                        <div class="toolSectionTitle" id="title_${section.id}">
+                            <span>${section.name}</span>
+                        </div>
+                        <div id="${section.id}" class="toolSectionBody">
+                            <div class="toolSectionBg">
+                                %for section_key, section_val in section.elems.items():
+                                    %if section_key.startswith( 'tool' ):
+                                        ${render_tool( section_val, True )}
+                                    %elif section_key.startswith( 'label' ):
+                                        ${render_label( section_val )}
                                     %endif
-                                </div>
-                            %else:
-                                <div class="toolTitleDisabled">
-                                    %if "[[" in tool.description and "]]" in tool.description:
-                                        ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}
-                                    %elif tool.name:
-                                        ${tool.name} ${tool.description}
-                                    %else:
-                                        ${tool.description}
-                                    %endif
-                                </div>
-                            %endif
-                        %endif
-                    %endfor
-                  </div>
-               </div>
-            %endfor
+                                %endfor
+                            </div>
+                        </div>
+                        <div class="toolSectionPad"></div>
+                    %elif key.startswith( 'label' ):
+                        ${render_label( val )}
+                    %endif
+                %endfor
             </div>
             <div>&nbsp;</div>
             <div class="toolMenuGroupHeader">Workflow control</div>

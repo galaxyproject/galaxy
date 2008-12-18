@@ -1,6 +1,7 @@
 import sys, os, atexit
 
 from galaxy import config, jobs, util, tools, web
+from galaxy.web import security
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
@@ -26,6 +27,8 @@ class UniverseApplication( object ):
                                                 db_url,
                                                 self.config.database_engine_options,
                                                 create_tables = True )
+        # Security helper
+        self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         #Load datatype converters

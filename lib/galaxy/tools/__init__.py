@@ -42,8 +42,8 @@ class ToolBox( object ):
         individual tool config files.
         """
         self.tools_by_id = {}
-        self.tools_and_sections_by_id = {}
-        self.sections = []
+        self.workflows_by_id = {}
+        self.tool_panel = odict()
         self.tool_root_dir = tool_root_dir
         self.app = app
         try:
@@ -54,24 +54,68 @@ class ToolBox( object ):
     def init_tools( self, config_filename ):
         """
         Read the configuration file and load each tool.
+        The following tags are currently supported:
+        <toolbox>
+            <tool file="data_source/upload.xml"/>            # tools outside sections
+            <label text="Basic Tools" id="basic_tools" />    # labels outside sections
+            <workflow id="529fd61ab1c6cc36" />               # workflows outside sections
+            <section name="Get Data" id="getext">            # sections
+                <tool file="data_source/biomart.xml" />      # tools inside sections
+                <label text="In Section" id="in_section" />  # labels inside sections
+                <workflow id="adb5f5c93f827949" />           # workflows inside sections
+            </section>
+        </toolbox>
         """
+        def load_tool( elem, panel_dict ):
+            try:
+                path = elem.get( "file" )
+                tool = self.load_tool( os.path.join( self.tool_root_dir, path ) )
+                self.tools_by_id[ tool.id ] = tool
+                key = 'tool_' + tool.id
+                panel_dict[ key ] = tool
+                log.debug( "Loaded tool: %s %s" % ( tool.id, tool.version ) )
+            except:
+                log.exception( "error reading tool from path: %s" % path )
+        def load_workflow( elem, panel_dict ):
+            try:
+                # TODO: should id be encoded?
+                workflow_id = elem.get( 'id' )
+                workflow = self.load_workflow( workflow_id )
+                self.workflows_by_id[ workflow_id ] = workflow
+                key = 'workflow_' + workflow_id
+                panel_dict[ key ] = workflow
+                log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
+            except:
+                log.exception( "error loading workflow: %s" % workflow_id )
+        def load_label( elem, panel_dict ):
+            label = ToolSectionLabel( elem )
+            key = 'label_' + label.id
+            panel_dict[ key ] = label
+        def load_section( elem, panel_dict ):
+            section = ToolSection( elem )
+            log.debug( "Loading section: %s" % section.name )
+            for section_elem in elem:
+                if section_elem.tag == 'tool':
+                    load_tool( section_elem, section.elems )
+                elif section_elem.tag == 'workflow':
+                    load_workflow( section_elem, section.elems )
+                elif section_elem.tag == 'label':
+                    load_label( section_elem, section.elems )
+            key = 'section_' + section.id
+            panel_dict[ key ] = section
+                
         log.info("parsing the tool configuration")
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
-        for elem in root.findall("section"):
-            section = ToolSection(elem)
-            log.debug( "Loading tools in section: %s" % section.name )
-            for tool in elem.findall("tool"):
-                try:
-                    path = tool.get("file")
-                    tool = self.load_tool( os.path.join( self.tool_root_dir, path ) )
-                    log.debug( "Loaded tool: %s %s" %( tool.id, tool.version ) )
-                    self.tools_by_id[tool.id] = tool
-                    self.tools_and_sections_by_id[tool.id] = tool, section
-                    section.tools.append(tool)
-                except Exception, exc:
-                    log.exception( "error reading tool from path: %s" % path )
-            self.sections.append(section)
+        for elem in root:
+            if elem.tag == 'tool':
+                load_tool( elem, self.tool_panel )
+            elif elem.tag == 'workflow':
+                load_workflow( elem, self.tool_panel )
+            elif elem.tag == 'section' :
+                load_section( elem, self.tool_panel )
+            elif elem.tag == 'label':
+                load_label( elem, self.tool_panel )
         
     def load_tool( self, config_file ):
         """
@@ -94,28 +138,36 @@ class ToolBox( object ):
         
     def reload( self, tool_id ):
         """
-        Attempt to reload the tool identified by 'tool_id', if successfull 
+        Attempt to reload the tool identified by 'tool_id', if successful
         replace the old tool.
         """
-        if tool_id not in self.tools_and_sections_by_id:
+        if tool_id not in self.tools_by_id:
             raise ToolNotFoundException( "No tool with id %s" % tool_id )
-        old_tool, section = self.tools_and_sections_by_id[ tool_id ]
+        old_tool = self.tools_by_id[ tool_id ]
         new_tool = self.load_tool( old_tool.config_file )
-        log.debug( "Reloaded tool %s %s" %( old_tool.id, old_tool.version ) )
-        # Is there a potential sync problem here? This should be roughly 
-        # atomic. Too many indexes for tools...
-        section.tools[ section.tools.index( old_tool ) ] = new_tool
+        # Replace old_tool with new_tool in self.tool_panel
+        tool_key = 'tool_' + tool_id
+        for key, val in self.tool_panel.items():
+            if key == tool_key:
+                self.tool_panel[ key ] = new_tool
+                break
+            elif key.startswith( 'section' ):
+                section = val
+                for section_key, section_val in section.elems.items():
+                    if section_key == tool_key:
+                        self.tool_panel[ key ].elems[ section_key ] = new_tool
+                        break
         self.tools_by_id[ tool_id ] = new_tool
-        self.tools_and_sections_by_id[ tool_id ] = new_tool, section
-        
-    def itertools( self ):
+        log.debug( "Reloaded tool %s %s" %( old_tool.id, old_tool.version ) )
+
+    def load_workflow( self, workflow_id ):
         """
-        Iterate over all the tools in the toolbox (ordered by section but
-        without grouping).
+        Return an instance of 'Workflow' identified by `id`, 
+        which is encoded in the tool panel.
         """
-        for section in self.sections:
-            for tool in section.tools:
-                yield tool
+        id = self.app.security.decode_id( workflow_id )
+        stored = self.app.model.StoredWorkflow.get( id )
+        return stored.latest_workflow
 
 class ToolSection( object ):
     """
@@ -126,7 +178,17 @@ class ToolSection( object ):
         self.name = elem.get( "name" )
         self.id = elem.get( "id" )
         self.version = elem.get( "version" )
-        self.tools = []
+        self.elems = odict()
+
+class ToolSectionLabel( object ):
+    """
+    A label for a set of tools that can be displayed above groups of tools
+    and sections in the user interface
+    """
+    def __init__( self, elem ):
+        self.text = elem.get( "text" )
+        self.id = elem.get( "id" )
+        self.version = elem.get( "version" )
 
 class DefaultToolState( object ):
     """

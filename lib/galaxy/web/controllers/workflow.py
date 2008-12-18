@@ -439,13 +439,14 @@ class WorkflowController( BaseController ):
             ##     % ( workflow_name, web.url_for( action='editor', id=trans.security.encode_id(stored.id) ) ) )       
         
     @web.expose
-    def run( self, trans, id, **kwargs ):
+    def run( self, trans, id, check_user=True, **kwargs ):
         stored = get_stored_workflow( trans, id, check_ownership=False )
-        user = trans.get_user()
-        if stored.user != user:
-            if trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
-                    .filter_by( user=user, stored_workflow=stored ).count() == 0:
-                error( "Workflow is not owned by or shared with current user" )
+        if check_user:
+            user = trans.get_user()
+            if stored.user != user:
+                if trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
+                        .filter_by( user=user, stored_workflow=stored ).count() == 0:
+                    error( "Workflow is not owned by or shared with current user" )
         # Get the latest revision
         workflow = stored.latest_workflow
         # It is possible for a workflow to have 0 steps
