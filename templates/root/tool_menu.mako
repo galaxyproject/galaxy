@@ -142,8 +142,7 @@
                     </div>
                 </div>
             </div>
-        %endfor
-      </div>
-   </div>
-%endfor
+        </div>
+    </body>
+</html>
 

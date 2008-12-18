@@ -14,12 +14,19 @@
                 Tool to reload:
             </label>
             <select name="tool_id">
-              %for i, section in enumerate( toolbox.sections ):
-                <optgroup label="${section.name}">
-                %for t in section.tools:
-                  <option value="${t.id}">${t.name}</option>
+                %for key, val in toolbox.tool_panel.items():
+                    %if key.startswith( 'tool' ):
+                        <option value="${val.id}">${val.name}</option>
+                    %elif key.startswith( 'section' ):
+                        <optgroup label="${val.name}">
+                        <% section = val %>
+                        %for section_key, section_val in section.elems.items():
+                            %if section_key.startswith( 'tool' ):
+                                <option value="${section_val.id}">${section_val.name}</option>
+                            %endif
+                        %endfor
+                    %endif
                 %endfor
-              %endfor
             </select>
         </div>
         <div class="form-row">
