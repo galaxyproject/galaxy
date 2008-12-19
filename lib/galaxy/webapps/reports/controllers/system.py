@@ -93,7 +93,7 @@ class System( BaseController ):
                     if not hda.dataset.purged:
                         dataset_count += 1
                         try:
-                            disk_space += dataset.file_size
+                            disk_space += hda.dataset.file_size
                         except:
                             pass
                 history_count += 1
