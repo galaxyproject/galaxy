@@ -62,9 +62,9 @@ def merge_to_20_datapoints( score ):
     return score_points
 
 def __main__():
-    
+
     invalid_lines = 0
-    
+
     infile_score_name = sys.argv[1].strip()
     outfile_R_name = sys.argv[2].strip()
 
@@ -153,7 +153,6 @@ def __main__():
         number_of_points = 20
     else:
         number_of_points = read_length
-
     read_length_threshold = 100 # minimal read length for 454 file
     score_points = []   
     score_matrix = []
@@ -180,7 +179,6 @@ def __main__():
                     big = 0
                 tmp_array.append( big )                        
             score_points.append( tmp_array )
-
     elif seq_method == '454':
         # skip the last fasta sequence
         score = ''
