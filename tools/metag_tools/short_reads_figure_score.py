@@ -62,6 +62,9 @@ def merge_to_20_datapoints( score ):
     return score_points
 
 def __main__():
+    
+    invalid_lines = 0
+    
     infile_score_name = sys.argv[1].strip()
     outfile_R_name = sys.argv[2].strip()
 
@@ -150,7 +153,7 @@ def __main__():
         number_of_points = 20
     else:
         number_of_points = read_length
-    quality_score = {} # quantile dictionary
+
     read_length_threshold = 100 # minimal read length for 454 file
     score_points = []   
     score_matrix = []
@@ -177,12 +180,7 @@ def __main__():
                     big = 0
                 tmp_array.append( big )                        
             score_points.append( tmp_array )
-            # quartile
-            for j, k in enumerate( tmp_array ):
-                if quality_score.has_key( ( j, k ) ):
-                    quality_score[ ( j, k ) ] += 1
-                else:
-                    quality_score[ ( j, k ) ] = 1
+
     elif seq_method == '454':
         # skip the last fasta sequence
         score = ''
@@ -203,12 +201,6 @@ def __main__():
                         score_points_tmp = merge_to_20_datapoints( score )
                         score_points.append( score_points_tmp )
                         tmp_array = score_points_tmp
-                    # quartile
-                    for j, k in enumerate( tmp_array ):
-                        if quality_score.has_key( ( j, k ) ):
-                            quality_score[ ( j, k ) ] += 1
-                        else:
-                            quality_score[ ( j ,k ) ] = 1
                 score = ''
             else:
                 score = "%s %s" % ( score, line )
@@ -222,19 +214,16 @@ def __main__():
                 score_points_tmp = merge_to_20_datapoints( score )
                 score_points.append( score_points_tmp )
                 tmp_array = score_points_tmp
-            for j, k in enumerate( tmp_array ):
-                if quality_score.has_key( ( j, k ) ):
-                    quality_score[ ( j, k ) ] += 1
-                else:
-                    quality_score[ ( j, k ) ] = 1
 
     # reverse the matrix, for R
-    tmp_array = []
     for i in range( number_of_points - 1 ):
-        for j in range( len( score_points ) ):
-            tmp_array.append( int( score_points[j][i] ) )
-        score_matrix.append( tmp_array )
         tmp_array = []
+        for j in range( len( score_points ) ):
+            try:
+                tmp_array.append( int( score_points[j][i] ) )
+            except:
+                invalid_lines += 1
+        score_matrix.append( tmp_array )
 
     # generate pdf figures
     #outfile_R_pdf = outfile_R_name 
@@ -268,6 +257,8 @@ def __main__():
 
     if invalid_scores > 0:
         print 'Skipped %d invalid scores. ' % invalid_scores
+    if invalid_lines > 0:
+        print 'Skipped %d invalid lines. ' % invalid_lines
     if empty_score_matrix_columns > 0:
         print '%d missing scores in score_matrix. ' % empty_score_matrix_columns
 
