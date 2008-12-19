@@ -43,10 +43,10 @@ from galaxy.tools.parameters import DataToolParameter
     %elif input.type == "conditional":
       <% group_values = values[input.name] %>
       <% current_case = group_values['__current_case__'] %>
-      <% prefix = prefix + input.name + "|" %>
+      <% new_prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step )}
-      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, prefix + input.name + "|", step, other_values )}
+      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values )}
     %else:
       ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step )}
     %endif
@@ -88,9 +88,10 @@ from galaxy.tools.parameters import DataToolParameter
 
 <body>
     <h2>Running workflow "${workflow.name}"</h2>
+
     <form method="POST">
     ## <input type="hidden" name="workflow_name" value="${workflow.name | h}" />
-    %for i, step in enumerate( steps ):
+    %for i, step in enumerate( steps ):    
         %if step.type == 'tool' or step.type is None:
           <% tool = app.toolbox.tools_by_id[step.tool_id] %>
           <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
