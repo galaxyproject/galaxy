@@ -89,8 +89,8 @@ class System( BaseController ):
             
             histories = h.query().filter( where ).options( eagerload( 'datasets' ) )   
             for history in histories:
-                for dataset in history.datasets:
-                    if not dataset.purged:
+                for hda in history.datasets:
+                    if not hda.dataset.purged:
                         dataset_count += 1
                         try:
                             disk_space += dataset.file_size
