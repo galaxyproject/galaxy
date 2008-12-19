@@ -4,7 +4,7 @@ Galaxy web application framework
 
 import pkg_resources
 
-import os, sys, time
+import os, sys, time, socket
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 import base
@@ -31,6 +31,17 @@ import logging
 log = logging.getLogger( __name__ )
 
 url_for = base.routes.url_for
+
+UCSC_SERVERS = (
+    'hgw1.cse.ucsc.edu',
+    'hgw2.cse.ucsc.edu',
+    'hgw3.cse.ucsc.edu',
+    'hgw4.cse.ucsc.edu',
+    'hgw5.cse.ucsc.edu',
+    'hgw6.cse.ucsc.edu',
+    'hgw7.cse.ucsc.edu',
+    'hgw8.cse.ucsc.edu',
+)
 
 def expose( func ):
     """
@@ -273,8 +284,17 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             url_for( controller='user', action='reset_password' ),
             url_for( controller='library', action='browse' )
         )
-        if self.galaxy_session.user is None and self.request.path not in allowed_paths:
-            self.response.send_redirect( url_for( controller='root', action='index' ) )
+        display_as = url_for( controller='root', action='display_as' )
+        if self.galaxy_session.user is None:
+            if self.app.config.ucsc_display_sites and self.request.path == display_as:
+                try:
+                    host = socket.gethostbyaddr( self.environ[ 'REMOTE_ADDR' ] )[0]
+                except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
+                    host = None
+                if host in UCSC_SERVERS:
+                    return
+            if self.request.path not in allowed_paths:
+                self.response.send_redirect( url_for( controller='root', action='index' ) )
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """
         Create a new GalaxySession for this request, possibly with a connection
