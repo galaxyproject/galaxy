@@ -1,5 +1,6 @@
 import sys, config
 import galaxy.model
+from galaxy.web import security
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -19,5 +20,7 @@ class UniverseApplication( object ):
                                                 db_url,
                                                 self.config.database_engine_options,
                                                 create_tables = True )
+        # Security helper
+        self.security = security.SecurityHelper( id_secret=self.config.id_secret )
     def shutdown( self ):
         pass
