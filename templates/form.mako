@@ -10,6 +10,10 @@ $(function(){
 </script>
 </%def>
 
+%if header:
+    ${header}
+%endif
+
 <div class="toolForm">
     <div class="toolFormTitle">${form.title}</div>
     <div class="toolFormBody">
@@ -21,9 +25,11 @@ $(function(){
                 cls += " form-row-error"
             %>
             <div class="${cls}">
+              %if input.use_label:
               <label>
                   ${input.label}:
               </label>
+              %endif
               <div style="float: left; width: 250px; margin-right: 10px;">
                   <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
               </div>
