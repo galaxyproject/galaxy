@@ -170,22 +170,14 @@ def main():
         else:
             print_warning( "%s already has a private role, (re)setting defaults anyway" % user.email )
         print "Setting DefaultUserPermissions for user %s" % user.email
-        # Delete all of the current default permissions for the user
-        for dup in user.default_permissions:
-            dup.delete()
-            dup.flush()
         # Add the new default permissions for the user
-        dup = self.model.DefaultUserPermissions( user, default_user_action, private_role )
+        dup = app.model.DefaultUserPermissions( user, default_user_action, private_role )
         dup.flush()
         print "Setting DefaultHistoryPermissions for %d histories" % len( user.active_histories )
         # Set DefaultHistoryPermissions on all of the user's active histories and associated datasets
         for history in user.active_histories:
-            # Delete all of the current default permission for the history
-            for dhp in history.default_permissions:
-                dhp.delete()
-                dhp.flush()
             # Add the new default permissions for the history
-            dhp = self.model.DefaultHistoryPermissions( history, default_user_action, private_role )
+            dhp = app.model.DefaultHistoryPermissions( history, default_user_action, private_role )
             dhp.flush()
             print "Setting ActionDatasetRoleAssociations for %d datasets in history %d" % ( len( history.activatable_datasets ), history.id )
             # Set the permissions on the current history's datasets that are not purged
@@ -197,12 +189,8 @@ def main():
                 if [ assoc for assoc in dataset.history_associations if assoc.history not in user.histories ]:
                     # Don't change permissions on a dataset associated with a history not owned by the user
                     continue
-                # Delete all of the current permissions on the dataset
-                for adra in dataset.actions:
-                    adra.delete()
-                    adra.flush()
                 # Add the new permissions on the dataset
-                adra = self.model.ActionDatasetRoleAssociation( default_user_action, dataset, private_role )
+                adra = app.model.ActionDatasetRoleAssociation( default_user_action, dataset, private_role )
                 adra.flush()
     app.shutdown()
     print
