@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
-Fetch jobs using gops_intersect, gops_merge, gops_subtract, gops_complement, gops_coverage 
-wherein the second dataset doesn't have chr, start and end in standard columns 1, 2 and 3.
+Fetch gops_join wherein the use specified minimum coverage is not 1.
 """
 
 from galaxy import eggs
@@ -40,21 +39,10 @@ def main():
     app = TestApplication( database_connection=database_connection, file_path=file_path )
     jobs = {}
     try:
-        for job in app.model.Job.filter( sa.and_( app.model.Job.table.c.create_time.between( '2008-05-23', '2008-11-29' ),
+        for job in app.model.Job.filter( sa.and_( app.model.Job.table.c.create_time < '2008-12-16',
                                                   app.model.Job.table.c.state == 'ok',
-                                                  sa.or_(
-                                                          sa.and_( sa.or_( app.model.Job.table.c.tool_id == 'gops_intersect_1',
-                                                                           app.model.Job.table.c.tool_id == 'gops_subtract_1',
-                                                                           app.model.Job.table.c.tool_id == 'gops_coverage_1',
-                                                                         ),
-                                                                   sa.not_( app.model.Job.table.c.command_line.like( '%-2 1,2,3%' ) )
-                                                                 ),
-                                                          sa.and_( sa.or_( app.model.Job.table.c.tool_id == 'gops_complement_1',
-                                                                           app.model.Job.table.c.tool_id == 'gops_merge_1',
-                                                                         ),
-                                                                   sa.not_( app.model.Job.table.c.command_line.like( '%-1 1,2,3%' ) )
-                                                                 )
-                                                          )
+                                                  app.model.Job.table.c.tool_id == 'gops_join_1',
+                                                  sa.not_( app.model.Job.table.c.command_line.like( '%-m 1 %' ) )
                                                 )
                                         ).all():
             print "# processing job id %s" % str( job.id )
@@ -70,12 +58,8 @@ def main():
                         if history.user_id:
                             cmd_line = str( job.command_line )
                             new_output = tempfile.NamedTemporaryFile('w')
-                            if job.tool_id in ['gops_intersect_1','gops_subtract_1','gops_coverage_1']:
-                                new_cmd_line = " ".join(map(str,cmd_line.split()[:4])) + " " + new_output.name + " " + " ".join(map(str,cmd_line.split()[5:]))
-                                job_output = cmd_line.split()[4]
-                            else:
-                                new_cmd_line = " ".join(map(str,cmd_line.split()[:3])) + " " +  new_output.name + " " + " ".join(map(str,cmd_line.split()[4:]))
-                                job_output = cmd_line.split()[3]
+                            new_cmd_line = " ".join(map(str,cmd_line.split()[:4])) + " " + new_output.name + " " + " ".join(map(str,cmd_line.split()[5:]))
+                            job_output = cmd_line.split()[4]
                             try:
                                 os.system(new_cmd_line)
                             except:
