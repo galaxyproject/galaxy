@@ -69,8 +69,9 @@ def main():
         start a key at POS1, end it at POS2 (origin 1)
         In other words, column positions start at 1 rather than 0, so 
         we need to add 1 to group_col.
+        if POS2 is not specified, the newer versions of sort will consider the entire line for sorting. To prevent this, we set POS2=POS1.
         """
-        command_line = "sort -f -k " + str(group_col+1) + " -o " + tmpfile.name + " " + inputfile
+        command_line = "sort -f -k " + str(group_col+1) +"," + str(group_col+1) + " -o " + tmpfile.name + " " + inputfile
     except Exception, exc:
         stop_err( 'Initialization error -> %s' %str(exc) )
     
