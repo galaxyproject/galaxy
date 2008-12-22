@@ -153,22 +153,57 @@ def main():
         #SQLite ignores (but parses on initial table creation) foreign key constraints anyway, see: http://www.sqlite.org/omitted.html (there is someway to set up behavior using triggers)
         print_warning( "Adding foreign key constraints to table is not supported in SQLite." )
     
-    #create default permisions for users, histories, etc
     print "creating private roles and setting defaults for existing users and their histories and datasets"
-    
-    #Setup each user with a private role and then set their default permisions and set permisions on existing histories and datasets
+    security_agent = app.security_agent
+    # For each user:
+    # 1. make sure they have a private role
+    # 2. set DefauultUserPermissions
+    # 3. set DefaultHisstoryPermissions on existing histories 
+    # 4. set ActionDatasetRoleAssociations on each history's activatable_datasets
+    default_user_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
     for user in app.model.User.query().all():
-        print "Setting up user: %s." % user.email
-        if not app.model.security_agent.get_private_user_role( user ):
-            app.model.security_agent.create_private_user_role( user )
+        print "Setting up user %s." % user.email
+        private_role = security_agent.get_private_user_role( user )
+        if not private_role:
+            security_agent.create_private_user_role( user )
+            print "Created private role for %s" % user.email
         else:
-            print_warning( "user (%s) already has a private role, (re)setting defaults anyway" % ( user.email ) )
-        #set default permissions and permissions on existing items
-        #we will do this even if a role for the user already exists (slower, but safer)
-        app.model.security_agent.user_set_default_permissions( user, history=True, dataset=True, bypass_manage_permission=True )
-    
-    app.model.flush()
-    
+            print_warning( "%s already has a private role, (re)setting defaults anyway" % user.email )
+        print "Setting DefaultUserPermissions for user %s" % user.email
+        # Delete all of the current default permissions for the user
+        for dup in user.default_permissions:
+            dup.delete()
+            dup.flush()
+        # Add the new default permissions for the user
+        dup = self.model.DefaultUserPermissions( user, default_user_action, private_role )
+        dup.flush()
+        print "Setting DefaultHistoryPermissions for %d histories" % len( user.active_histories )
+        # Set DefaultHistoryPermissions on all of the user's active histories and associated datasets
+        for history in user.active_histories:
+            # Delete all of the current default permission for the history
+            for dhp in history.default_permissions:
+                dhp.delete()
+                dhp.flush()
+            # Add the new default permissions for the history
+            dhp = self.model.DefaultHistoryPermissions( history, default_user_action, private_role )
+            dhp.flush()
+            print "Setting ActionDatasetRoleAssociations for %d datasets in history %d" % ( len( history.activatable_datasets ), history.id )
+            # Set the permissions on the current history's datasets that are not purged
+            for hda in history.activatable_datasets:
+                dataset = hda.dataset
+                if dataset.library_associations:
+                    # Don't change permissions on a dataset associated with a library
+                    continue
+                if [ assoc for assoc in dataset.history_associations if assoc.history not in user.histories ]:
+                    # Don't change permissions on a dataset associated with a history not owned by the user
+                    continue
+                # Delete all of the current permissions on the dataset
+                for adra in dataset.actions:
+                    adra.delete()
+                    adra.flush()
+                # Add the new permissions on the dataset
+                adra = self.model.ActionDatasetRoleAssociation( default_user_action, dataset, private_role )
+                adra.flush()
     app.shutdown()
     print
     print "Update finished, please review output for warnings and errors."
