@@ -79,7 +79,12 @@ function make_left_panel( panel_el, center_el, border_el ) {
             }
         }
     ).find( "div" ).show();;
-    
+    var force_panel = function( op ) {
+        if ( ( hidden && op == 'show' ) || ( ! hidden && op == 'hide' ) ) { 
+            toggle();
+        }
+    }
+    return { force_panel: force_panel };
 };
 
 function make_right_panel( panel_el, center_el, border_el ) {
@@ -173,7 +178,12 @@ function make_right_panel( panel_el, center_el, border_el ) {
             }
         }
     ).find( "div" ).show();
-    return { handle_minwidth_hint: handle_minwidth_hint };
+    var force_panel = function( op ) {
+        if ( ( hidden && op == 'show' ) || ( ! hidden && op == 'hide' ) ) { 
+            toggle();
+        }
+    }
+    return { handle_minwidth_hint: handle_minwidth_hint, force_panel: force_panel };
 };
 
 // Modal dialog boxes
