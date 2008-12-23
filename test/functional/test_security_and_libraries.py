@@ -69,7 +69,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( admin_user.email )
         self.logout()
     def test_010_login_as_regular_user1( self ):
-        """Testing logging in as regular user test1@bx.psu.edu - tests private role creation, changing DefaultHistoryPermissions for new histories"""
+        """Testing logging in as regular user test1@bx.psu.edu - tests private role creation, changing DefaultHistoryPermissions for new histories, and sharing histories with another user"""
         self.login( email='test1@bx.psu.edu' ) # test1@bx.psu.edu is not an admin user
         global regular_user1
         regular_user1 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
@@ -101,6 +101,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         permissions_in = []
         actions_in = []
         for key, value in galaxy.model.Dataset.permitted_actions.items():
+            # NOTE: setting the 'access' permission with the private role makes this dataset private
             permissions_in.append( key )
             actions_in.append( value.action )
         # Sort actions for later comparison
@@ -112,7 +113,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         latest_history = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         if len( latest_history.default_permissions ) != len( galaxy.model.Dataset.permitted_actions.items() ):
             raise AssertionError( '%d DefaultHistoryPermissions were created for history id %d, should have been %d' % \
-                                  ( len( latest_history.default_permissions ), latest_history.id, len( galaxy.model.Dataset.permitted_actions ) ) )
+                                  ( len( latest_history.default_permissions ), latest_history.id, len( galaxy.model.Dataset.permitted_actions.items() ) ) )
         dhps = []
         for dhp in latest_history.default_permissions:
             dhps.append( dhp.action )
@@ -141,6 +142,34 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if adras != dhps:
                 raise AssertionError( 'ActionDatasetRoleAssociations "%s" for dataset id %d differ from DefaultHistoryPermissions "%s" for history id %d' \
                                       % ( str( adras ), latest_dataset.id, str( dhps ), latest_history.id ) )
+        # Since the dataset in the history is now private, we can test sharing with another user
+        self.share_history_containing_private_datasets( str( latest_history.id ), email=admin_user.email )
+        # Test making the dataset in the history public
+        self.make_datasets_public( str( latest_history.id ), email=admin_user.email )
+        # Add another dataset to the history, it should be private since that is now our default
+        self.upload_file( '2.bed' )
+        self.share_history_containing_private_datasets( str( latest_history.id ), email=admin_user.email )
+        # A sharing role may have been created during a previous test run
+        role_type = 'sharing'
+        role_name = 'Sharing role for: %s, %s' % ( regular_user1.email, admin_user.email )
+        global sharing_role
+        sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
+                                                       galaxy.model.Role.table.c.name==role_name ) ).first()
+        if not sharing_role:
+            # Test creating a new sharing role for sharing the private datasets
+            self.privately_share_dataset( str( latest_history.id ), email=admin_user.email )
+            sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
+                                                           galaxy.model.Role.table.c.name==role_name ) ).first()
+        if not sharing_role:
+            raise AssertionError( "Privately sharing a dataset did not properly create a sharing role" )
+        if not sharing_role.users:
+            # Since sharing_role was created during a previous test run, we need to associate admin_user and test_user1 with it
+            role_ids = [ str( sharing_role.id ) ]
+            for user_id in [ str( admin_user.id ), str( regular_user1.id ) ]:
+                self.user_roles_edit( user_id, role_ids=role_ids )
+            sharing_role.refresh()
+        if len( sharing_role.users ) != 2:
+            raise AssertionError( "sharing_role not correctly associated with 2 users" )
         self.logout()
     def test_015_login_as_regular_user2( self ):
         """Testing logging in as regular user test2@bx.psu.edu - tests changing DefaultHistoryPermissions for the current history"""
@@ -290,8 +319,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if len( role_one.users ) != len( user_ids ):
             raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created ( should have been %d )' \
                                   % ( len( role_one.users ), role_one.id, len( user_ids ) ) )
-        # Each user should now have 2 role associations, their private role and role_one
-        for user in [ admin_user, regular_user1, regular_user3 ]:
+        # Each of the following users should now have 3 role associations, their private role, role_one and sharing_role
+        for user in [ admin_user, regular_user1 ]:
+            user.refresh()
+            if not previously_created and len( user.roles ) != 3:
+                raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 3 )' \
+                                      % ( len( user.roles ), user.email ) )
+        # Each of the following users should now have 2 role associations, their private role and role_one
+        for user in [ regular_user3 ]:
             user.refresh()
             if not previously_created and len( user.roles ) != 2:
                 raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 2 )' \
@@ -414,10 +449,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if len( role_two.users ) != len( user_ids ):
             raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created with %d members' \
                                   % ( len( role_two.users ), role_two.id, len( user_ids ) ) )
-        # admin_user should now have 3 role associations, private role, role_one, role_two
+        # admin_user should now have 4 role associations, private role, role_one, role_two and sharing_role
         admin_user.refresh()
-        if len( admin_user.roles ) != 3:
-            raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 3 )' % ( len( admin_user.roles ), admin_user.email ) )
+        if len( admin_user.roles ) != 4:
+            raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 4 )' % ( len( admin_user.roles ), admin_user.email ) )
         # Make sure GroupRoleAssociations are correct
         role_two.refresh()
         if len( role_two.groups ) != len( group_ids ):
@@ -454,9 +489,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         role_ids = [ str( role_three.id ) ]
         self.user_roles_edit( str( admin_user.id ), role_ids=role_ids )
         admin_user.refresh()
-        # admin_user should now be associated with 4 roles: private, role_one, role_two, role_three
-        if len( admin_user.roles) != 4:
-            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 4 )' % ( len( admin_user.roles ), admin_user.email ) )
+        # admin_user should now be associated with 5 roles: private, role_one, role_two, role_three and sharing_role
+        if len( admin_user.roles ) != 5:
+            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 5 )' % ( len( admin_user.roles ), admin_user.email ) )
     def test_070_create_library( self ):
         """Testing creating a new library, then renaming it and renaming the root folder"""
         name = "Library One's Name"
@@ -1033,6 +1068,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Eliminate all role associations except private
         self.remove_user_from_role( str( admin_user.id ), str( role_one.id ) )
         self.remove_user_from_role( str( admin_user.id ), str( role_three.id ) )
+        self.remove_user_from_role( str( admin_user.id ), str( sharing_role.id ) )
         admin_user.refresh()
         if len( admin_user.roles) != 1:
             raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 1 )' % ( len( admin_user.roles ), admin_user.email ) )
@@ -1055,6 +1091,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.login( email='test@bx.psu.edu' )
         # Eliminate all role associations except private
         self.remove_user_from_role( str( regular_user1.id ), str( role_one.id ) )
+        self.remove_user_from_role( str( regular_user1.id ), str( sharing_role.id ) )
         regular_user1.refresh()
         if len( regular_user1.roles) != 1:
             raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 1 )' % ( len( regular_user1.roles ), regular_user1.email ) )

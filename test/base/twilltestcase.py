@@ -173,7 +173,6 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_page( "history?id=%s" % self.history_id )
         else:
             self.new_history()
-
     def share_history( self, id=None, email='test2@bx.psu.edu' ):
         """Share a history with a different user"""
         history_list = self.get_histories()
@@ -189,9 +188,29 @@ class TwillTestCase( unittest.TestCase ):
         id = str( id )
         name = elem.get( 'name' )
         self.assertTrue( name )
-        self.visit_page( "history_share?id=%s&email=%s" %(id, email) )
+        self.visit_url( "%s/history_share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, id, email ) )
         return id, name, email
-
+    def share_history_containing_private_datasets( self, history_id, email='test@bx.psu.edu' ):
+        """Attempt to share a history containing private datasets with a different user"""
+        self.visit_url( "%s/history_share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, history_id, email ) )
+        self.last_page()
+        self.check_page_for_string( "The history or histories you've chosen to share contain datasets" )
+        self.check_page_for_string( "How would you like to proceed?" )
+        self.home()
+    def make_datasets_public( self, history_id, email='test@bx.psu.edu' ):
+        """Make private datasets public in order to share a history with a different user"""
+        self.visit_url( "%s/history_share?id=%s&email=%s&action=public&submit=Ok" % ( self.url, history_id, email ) )
+        self.last_page()
+        check_str = "History (Unnamed history) has been shared with: %s" % email
+        self.check_page_for_string( check_str )
+        self.home()
+    def privately_share_dataset( self, history_id, email='test@bx.psu.edu' ):
+        """Make private datasets public in order to share a history with a different user"""
+        self.visit_url( "%s/history_share?id=%s&email=%s&action=private&submit=Ok" % ( self.url, history_id, email ) )
+        self.last_page()
+        check_str = "History (Unnamed history) has been shared with: %s" % email
+        self.check_page_for_string( check_str )
+        self.home()
     def switch_history( self, hid=None ):
         """Switches to a history in the current list of histories"""
         data_list = self.get_histories()
