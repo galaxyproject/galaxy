@@ -16,6 +16,11 @@ sys.path = new_path
 from galaxy import eggs
 import pkg_resources
 
+if 'LOG_TEMPFILES' in os.environ:
+    from log_tempfile import TempFile
+    _log_tempfile = TempFile()
+    import tempfile
+
 pkg_resources.require( "PasteScript" )
 
 from paste.script import command
