@@ -147,7 +147,7 @@ class DefaultToolAction( object ):
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
                 # Commit the dataset immediately so it gets database assigned unique id
                 data.flush()
-                trans.app.security_agent.set_dataset_permissions( data.dataset, output_permissions )
+                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
             # Create an empty file immediately
             open( data.file_name, "w" ).close()
             # This may not be neccesary with the new parent/child associations

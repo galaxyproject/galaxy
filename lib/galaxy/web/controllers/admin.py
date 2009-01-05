@@ -1314,7 +1314,7 @@ class Admin( BaseController ):
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
                     in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( p.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-                trans.app.security_agent.set_dataset_permissions( lda.dataset, permissions )
+                trans.app.security_agent.set_all_dataset_permissions( lda.dataset, permissions )
                 lda.dataset.refresh()
             elif p.change:
                 # The user clicked the Save button on the 'Change data type' form
@@ -1395,7 +1395,7 @@ class Admin( BaseController ):
                     in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 for lfda in lfdas:
-                    trans.app.security_agent.set_dataset_permissions( lfda.dataset, permissions )
+                    trans.app.security_agent.set_all_dataset_permissions( lfda.dataset, permissions )
                     lfda.dataset.refresh()
                 msg = 'Permissions and roles have been updated on %d datasets' % len( lfdas )
                 trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )

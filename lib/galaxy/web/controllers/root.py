@@ -294,7 +294,7 @@ class RootController( BaseController ):
                             in_roles = [ in_roles ]
                         in_roles = [ trans.app.model.Role.get( x ) for x in in_roles ]
                         permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-                    trans.app.security_agent.set_dataset_permissions( data.dataset, permissions )
+                    trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
                     data.dataset.refresh()
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permissions" )
@@ -514,9 +514,6 @@ class RootController( BaseController ):
     @web.expose
     @web.require_login( "share histories with other users" )
     def history_share( self, trans, id=None, email="", **kwd ):
-        if trans.app.memory_usage:
-            # Keep track of memory usage
-            m0 = self.app.memory_usage.memory()
         send_to_err = ""
         if not id:
             id = trans.get_history().id
@@ -531,53 +528,70 @@ class RootController( BaseController ):
             return trans.fill_template("/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
         user = trans.get_user()  
         send_to_user = trans.app.model.User.filter( trans.app.model.User.table.c.email==email ).first()
-        p = util.Params( kwd )
-        if p.action and p.action == "no_share":
+        params = util.Params( kwd )
+        action = params.get( 'action', None )
+        if action == "no_share":
             trans.response.send_redirect( url_for( action='history_options' ) )
         if not send_to_user:
             send_to_err = "No such user"
         elif user.email == email:
             send_to_err = "You can't send histories to yourself"
         else:
-            # if we're not checking or changing permissions, skip this step
-            if not p.action or ( p.action and p.action != 'share' ):
-                # ugly
+            if 'history_share_btn' in kwd or action != 'share':
+                # The user is attempting to share a history whose datasets cannot all be accessed by the other user.  In this case,
+                # the user sharing the history can chose to make the datasets public ( action == 'public' ) if he has the authority
+                # to do so, or automatically create a new "sharing role" that allows the user to share his private datasets only with the 
+                # desired user ( action == 'private' ).
                 can_change = {}
                 cannot_change = {}
                 for history in histories:
-                    for hda in history.active_datasets:
-                        if not trans.app.security_agent.allow_action( send_to_user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=hda ):
-                            if trans.app.security_agent.allow_action( user, trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=hda ) and \
-                               not hda.dataset.library_associations:
-                                # don't change perms on datasets that exist in the library.
-                                if p.action and p.action == "private":
+                    for hda in history.activatable_datasets:
+                        # Only deal with datasets that have not been purged
+                        if not trans.app.security_agent.allow_action( send_to_user, 
+                                                                      trans.app.security_agent.permitted_actions.DATASET_ACCESS, 
+                                                                      dataset=hda ):
+                            # The user with which we are sharing the history does not have access permission on the current dataset
+                            if trans.app.security_agent.allow_action( user, 
+                                                                      trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, 
+                                                                      dataset=hda ) and not hda.dataset.library_associations:
+                                # The current user has authority to change permissions on the current dataset because
+                                # they have permission to manage permissions on the dataset and the dataset is not associated 
+                                # with a library.
+                                if action == "private":
                                     trans.app.security_agent.privately_share_dataset( hda.dataset, users=[ user, send_to_user ] )
-                                elif p.action and p.action == "public":
-                                    trans.app.security_agent.set_dataset_permissions( hda.dataset, { trans.app.security_agent.permitted_actions.DATASET_ACCESS : [] } )
+                                elif action == "public":
+                                    trans.app.security_agent.make_dataset_public( hda.dataset )
                                 elif history not in can_change:
-                                    can_change[history] = [ hda ]
+                                    # Build the set of histories / datasets on which the current user has authority
+                                    # to "manage permissions".  This is used in /history/share.mako
+                                    can_change[ history ] = [ hda ]
                                 else:
-                                    can_change[history].append( hda )
+                                    can_change[ history ].append( hda )
                             else:
-                                if p.action and p.action in [ "private", "public" ]:
-                                    pass # don't change stuff that the user doesn't have permission to change
+                                if action in [ "private", "public" ]:
+                                    # Don't change stuff that the user doesn't have permission to change
+                                    continue
                                 elif history not in cannot_change:
-                                    cannot_change[history] = [ hda ]
+                                    # Build the set of histories / datasets on which the current user does
+                                    # not have authority to "manage permissions".  This is used in /history/share.mako
+                                    cannot_change[ history ] = [ hda ]
                                 else:
-                                    cannot_change[history].append( hda )
+                                    cannot_change[ history ].append( hda )
                 if can_change or cannot_change:
-                    return trans.fill_template("/history/share.mako", histories=histories, email=email, send_to_err=send_to_err, can_change=can_change, cannot_change=cannot_change)
+                    return trans.fill_template( "/history/share.mako", 
+                                                histories=histories, 
+                                                email=email, 
+                                                send_to_err=send_to_err, 
+                                                can_change=can_change, 
+                                                cannot_change=cannot_change )
             for history in histories:
                 new_history = history.copy( target_user=send_to_user )
-                new_history.name = history.name+" from "+user.email
+                new_history.name = history.name + " from " + user.email
                 new_history.user_id = send_to_user.id
-                trans.log_event( "History share, id: %s, name: '%s': to new id: %s" % (str(history.id), history.name, str(new_history.id)) )
+                trans.log_event( "History share, id: %s, name: '%s': to new id: %s" % ( str( history.id ), history.name, str( new_history.id ) ) )
             self.app.model.flush()
-            return trans.show_message( "History (%s) has been shared with: %s" % (",".join(history_names),email) )
-        if self.app.memory_usage:
-            m1 = trans.app.memory_usage.memory( m0, pretty=True )
-            log.info( "End of root/history_share, memory used increased by %s"  % m1 )
-        return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err)
+            return trans.show_message( "History (%s) has been shared with: %s" % ( ",".join( history_names ),email ) )
+        return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err )
 
     @web.expose
     @web.require_login( "work with multiple histories" )
@@ -765,7 +779,7 @@ class RootController( BaseController ):
                 trans.app.security_agent.copy_dataset_permissions( copy_access_from.dataset, data.dataset )
             else:
                 permissions = trans.app.security_agent.history_get_default_permissions( history )
-                trans.app.security_agent.set_dataset_permissions( data.dataset, permissions )
+                trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
             data.flush()
             data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )

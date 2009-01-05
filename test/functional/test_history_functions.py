@@ -49,10 +49,7 @@ class TestHistory( TwillTestCase ):
         self.upload_file('1.bed', dbkey='hg18')
         id, name, email = self.share_history()
         self.last_page()
-        try:
-            self.check_page_for_string( 'History (%s) has been shared with: %s' %(name, email) )
-        except:
-            self.check_page_for_string( "The history or histories you've chosen to share contain datasets that the user you're sharing with does not have permission to access." )
+        self.check_page_for_string( 'History (%s) has been shared with: %s' %(name, email) )
         self.logout()
         self.login( email='test2@bx.psu.edu' )
         self.view_stored_histories()

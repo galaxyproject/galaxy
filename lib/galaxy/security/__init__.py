@@ -34,7 +34,7 @@ class RBACAgent:
         return default
     def get_actions( self ):
         """
-        Get all permitted actions as a list
+        Get all permitted actions as a list of Action objects
         """
         return self.permitted_actions.__dict__.values()
     def allow_action( self, user, action, **kwd ):
@@ -51,7 +51,11 @@ class RBACAgent:
         raise "Unimplemented Method"
     def history_set_default_permissions( self, history, permissions=None, dataset=False, bypass_manage_permission=False ):
         raise "Unimplemented Method"
-    def set_dataset_permissions( self, dataset, permissions ):
+    def set_all_dataset_permissions( self, dataset, permissions ):
+        raise "Unimplemented Method"
+    def set_dataset_permission( self, dataset, permission ):
+        raise "Unimplemented Method"
+    def make_dataset_public( self, dataset ):
         raise "Unimplemented Method"
     def get_component_associations( self, **kwd ):
         raise "Unimplemented Method"
@@ -165,95 +169,129 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 return None
         return role
-    def user_set_default_permissions( self, user, permissions = {}, history=False, dataset=False, bypass_manage_permission=False ):
+    def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False, bypass_manage_permission=False ):
+        # bypass_manage_permission is used to change permissions of datasets in a userless history when logging in
         if user is None:
             return None
         if not permissions:
             permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS : [ self.get_private_user_role( user, auto_create=True ) ] }
-        # Delete all of the previous defaults
+        # Delete all of the current default permissions for the user
         for dup in user.default_permissions:
             dup.delete()
             dup.flush()
-        # Add the new defaults (if any)
+        # Add the new default permissions for the user
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
-            for role in roles:
-                dup = self.model.DefaultUserPermissions( user, action, role )
+            for dup in [ self.model.DefaultUserPermissions( user, action, role ) for role in roles ]:
                 dup.flush()
         if history:
             for history in user.active_histories:
+                """
+                TODO: instead of user.active_histories, a faster approach would be the following, but we need the 
+                history.activatable_datasets mapper corrected so that eagerload can be used.
+                histories = app.model.History.filter( and_( app.model.History.table.c.user_id==user.id,
+                                                            app.model.History.table.c.purged==False ) ) \
+                                             .options( eagerload( 'activatable_datasets' ) ).all()
+                """
                 self.history_set_default_permissions( history, permissions=permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission )
     def user_get_default_permissions( self, user ):
-        perms = {}
-        for action in self.get_actions():
-            perms[ action ] = []
+        permissions = {}
         for dup in user.default_permissions:
-            perms[ self.get_action( dup.action ) ].append( dup.role )
-        return perms
+            action = self.get_action( dup.action )
+            if action in permissions:
+                permissions[ action ].append( dup.role )
+            else:
+                permissions[ action ] = [ dup.role ]
+        return permissions
     def history_set_default_permissions( self, history, permissions={}, dataset=False, bypass_manage_permission=False ):
-        if not history.user:
-            return None # default permissions on a userless history are none
+        # bypass_manage_permission is used to change permissions of datasets in a user-less history when logging in
+        user = history.user
+        if not user:
+            # default permissions on a user-less history are None
+            return None
         if not permissions:
-            permissions = self.user_get_default_permissions( history.user )
+            permissions = self.user_get_default_permissions( user )
+        # Delete all of the current default permission for the history
         for dhp in history.default_permissions:
             dhp.delete()
             dhp.flush()
+        # Add the new default permissions for the history
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
-            for role in roles:
-                dhp = self.model.DefaultHistoryPermissions( history, action, role )
+            for dhp in [ self.model.DefaultHistoryPermissions( history, action, role ) for role in roles ]:
                 dhp.flush()
         if dataset:
-            for hda_in_history in history.datasets:
-                if len( hda_in_history.dataset.library_associations ):
-                    continue # dataset has a library association, don't change the permissions
-                if len( [ hda for hda in hda_in_history.dataset.history_associations if hda.history not in history.user.histories ] ):
-                    continue # dataset has a history association in a history the user doesn't own, don't change the permissions
-                # bypass is used to change permissions of datasets in a userless history when logging in
-                if bypass_manage_permission or self.allow_action( history.user, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=hda_in_history.dataset ):
-                    self.set_dataset_permissions( hda_in_history.dataset, permissions )
+            # Only deal with datasets that are not purged
+            for hda in history.activatable_datasets:
+                dataset = hda.dataset
+                if dataset.library_associations:
+                    # Don't change permissions on a dataset associated with a library
+                    continue
+                if [ assoc for assoc in dataset.history_associations if assoc.history not in user.histories ]:
+                    # Don't change permissions on a dataset associated with a history not owned by the user
+                    continue
+                if bypass_manage_permission or self.allow_action( user, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=dataset ):
+                    self.set_all_dataset_permissions( dataset, permissions )
     def history_get_default_permissions( self, history ):
-        perms = {}
-        for action in self.get_actions():
-            perms[ action ] = []
+        permissions = {}
         for dhp in history.default_permissions:
-            perms[ self.get_action( dhp.action ) ].append( dhp.role )
-        return perms
-    def set_dataset_permissions( self, dataset, permissions={} ):
-	# to delete permission on an action, pass in a blank list of
-	# roles with that action.  leaving an action out of the perm
-	# dict simply leaves those perms untouched (if they exist)
-        incoming_actions = []
-        for action in permissions.keys():
-            if isinstance( action, Action ):
-                action = action.action
-            incoming_actions.append( action )
+            action = self.get_action( dhp.action )
+            if action in permissions:
+                permissions[ action ].append( dhp.role )
+            else:
+                permissions[ action ] = [ dhp.role ]
+        return permissions
+    def set_all_dataset_permissions( self, dataset, permissions={} ):
+        # Set new permissions on a dataset, eliminating all current permissions        
+        # Delete all of the current permissions on the dataset
         for adra in dataset.actions:
-            if adra.action in incoming_actions:
-                adra.delete()
-                adra.flush()
+            adra.delete()
+            adra.flush()
+        # Add the new permissions on the dataset
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
-            for role in roles:
-                self.associate_components( action=action, dataset=dataset, role=role )
+            for adra in [ self.model.ActionDatasetRoleAssociation( action, dataset, role ) for role in roles ]:
+                adra.flush()
+    def set_dataset_permission( self, dataset, permission={} ):
+        # Set a specific permission on a dataset, leaving all other current permissions on the dataset alone
+        for action, roles in permission.items():
+            if isinstance( action, Action ):
+                action = action.action
+            # Delete the current specific permission on the dataset if one exists
+            for adra in dataset.actions:
+                if adra.action == action:
+                    adra.delete()
+                    adra.flush()
+            # Add the new specific permission on the dataset
+            for adra in [ self.model.ActionDatasetRoleAssociation( action, dataset, role ) for role in roles ]:
+                adra.flush()
+    def make_dataset_public( self, dataset ):
+        # A dataset is considered public if there are no "access" actions associated with it.  Any
+        # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
+        for adra in dataset.actions:
+            if adra.action == self.permitted_actions.DATASET_ACCESS.action:
+                adra.delete()
+                adra.flush()
     def get_dataset_permissions( self, dataset ):
         if not isinstance( dataset, self.model.Dataset ):
             dataset = dataset.dataset
-        perms = {}
-        for action in self.model.Dataset.permitted_actions.__dict__.values():
-            perms[ action ] = []
+        permissions = {}
         for adra in dataset.actions:
-            perms[ self.get_action( adra.action ) ].append( adra.role )
-        return perms
+            action = self.get_action( adra.action )
+            if action in permissions:
+                permissions[ action ].append( adra.role )
+            else:
+                permissions[ action ] = [ adra.role ]
+        return permissions
     def copy_dataset_permissions( self, src, dst ):
         if not isinstance( src, self.model.Dataset ):
             src = src.dataset
         if not isinstance( dst, self.model.Dataset ):
             dst = dst.dataset
-        self.set_dataset_permissions( dst, self.get_dataset_permissions( src ) )
+        self.set_all_dataset_permissions( dst, self.get_dataset_permissions( src ) )
     def privately_share_dataset( self, dataset, users = [] ):
         intersect = None
         for user in users:
@@ -279,7 +317,7 @@ class GalaxyRBACAgent( RBACAgent ):
             sharing_role.flush()
             for user in users:
                 self.associate_components( user=user, role=sharing_role )
-        self.set_dataset_permissions( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
+        self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
     def set_entity_role_associations( self, roles=[], users=[], groups=[], delete_existing_assocs=True ):
         for role in roles:
             if delete_existing_assocs:
