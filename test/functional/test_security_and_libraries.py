@@ -149,25 +149,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Add another dataset to the history, it should be private since that is now our default
         self.upload_file( '2.bed' )
         self.share_history_containing_private_datasets( str( latest_history.id ), email=admin_user.email )
-        # A sharing role may have been created during a previous test run
+        # Test creating a new sharing role for sharing the private datasets
+        self.privately_share_dataset( str( latest_history.id ), email=admin_user.email )
         role_type = 'sharing'
         role_name = 'Sharing role for: %s, %s' % ( regular_user1.email, admin_user.email )
         global sharing_role
         sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
                                                        galaxy.model.Role.table.c.name==role_name ) ).first()
         if not sharing_role:
-            # Test creating a new sharing role for sharing the private datasets
-            self.privately_share_dataset( str( latest_history.id ), email=admin_user.email )
-            sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
-                                                           galaxy.model.Role.table.c.name==role_name ) ).first()
-        if not sharing_role:
             raise AssertionError( "Privately sharing a dataset did not properly create a sharing role" )
-        if not sharing_role.users:
-            # Since sharing_role was created during a previous test run, we need to associate admin_user and test_user1 with it
-            role_ids = [ str( sharing_role.id ) ]
-            for user_id in [ str( admin_user.id ), str( regular_user1.id ) ]:
-                self.user_roles_edit( user_id, role_ids=role_ids )
-            sharing_role.refresh()
         if len( sharing_role.users ) != 2:
             raise AssertionError( "sharing_role not correctly associated with 2 users" )
         self.logout()
@@ -1100,6 +1090,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
         regular_user1.refresh()
         if regular_user1.groups:
             raise AssertionError( '%d UserGroupAssociations are associated with %s ( should be 0 )' % ( len( regular_user1.groups ), regular_user1.email ) )
+        # Delete the record for sharing_role from the role table so that it can be created correctly in later test runs
+        self.mark_role_deleted( str( sharing_role.id ) )
+        self.purge_role( str( sharing_role.id ) )
+        sharing_role.refresh()
+        sharing_role.delete()
+        sharing_role.flush()
         #################
         # Reset group_one
         #################
