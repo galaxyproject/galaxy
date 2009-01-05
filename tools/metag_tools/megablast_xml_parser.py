@@ -1,6 +1,6 @@
 #! /usr/bin/python
     
-import sys, os
+import sys, os, re
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -55,6 +55,8 @@ def __main__():
                # for every <Hit> within <Iteration>
                for hit in elem.findall( "Iteration_hits/Hit/" ):
                    subject = hit.findtext( "Hit_id" )
+                   if re.search( '^gi', subject ):
+                       subject = subject.split('|')[1]
                    sLen = hit.findtext( "Hit_len" )
                    # for every <Hsp> within <Hit>
                    for hsp in hit.findall( "Hit_hsps/Hsp" ):
