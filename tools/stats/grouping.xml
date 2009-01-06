@@ -1,10 +1,12 @@
-<tool id="Grouping1" name="Group" version="1.4.0">
+<tool id="Grouping1" name="Group" version="1.5.0">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <command interpreter="python">
     grouping.py 
       $out_file1
       $input1
       $groupcol
+      $othercols
+      ${input1.metadata.columns}
       #for $op in $operations
        '${op.optype}
         ${op.opcol}
@@ -31,6 +33,10 @@
 	     <option value="yes">YES</option>
 	   </param>
   	</repeat>
+  	<param name="othercols" type="select" label="Randomly pick an entry from each of the remaining columns (besides the columns chosen for group and aggregate operations above) ?">
+         <option value="no">NO</option>
+         <option value="yes">YES</option>
+       </param>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input1" />
@@ -46,9 +52,9 @@
       <param name="optype" value="mean"/>
       <param name="opcol" value="2"/>
       <param name="opround" value="no"/>
+      <param name="othercols" value="no"/>
       <output name="out_file1" file="groupby_out1.dat"/>
     </test>
-    
     <!-- Test data with an invalid value in a column -->
     <test>
       <param name="input1" value="1.tabular"/>
@@ -56,6 +62,7 @@
       <param name="optype" value="mean"/>
       <param name="opcol" value="2"/>
       <param name="opround" value="no"/>
+      <param name="othercols" value="no"/>
       <output name="out_file1" file="groupby_out2.dat"/>
     </test>
   </tests>
