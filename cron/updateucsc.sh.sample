@@ -6,7 +6,7 @@
 
 # Edit this line to refer to galaxy's path:
 GALAXY=/galaxy/path
-export PYTHONPATH=${GALAXY}/modules:${GALAXY}/eggs:${GALAXY}/lib
+export PYTHONPATH=${GALAXY}/lib
 
 # setup directories
 mkdir ${GALAXY}/tool-data/shared/ucsc/new

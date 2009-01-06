@@ -1,6 +1,18 @@
 <%inherit file="/base_panels.mako"/>
 
-<%def name="title()">Galaxy Workflow Editor</%def>
+<%def name="init()">
+<%
+    self.active_view="workflow"
+    self.message_box_visible=True
+    self.message_box_class="warning"
+%>
+</%def>
+
+<%def name="message_box_content()">
+    Workflow support is currently in <b><i>beta</i></b> testing.
+    Workflows may not work with all tools, may fail unexpectedly, and may
+    not be compatible with future updates to <b>Galaxy</b>.
+</%def>
 
 <%def name="late_javascripts()">
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.panels.js')}"> </script>
@@ -229,7 +241,7 @@
     }
     
     var close_editor = function() {
-        <% next_url = h.url_for( controller='root', m_c='workflow' ) %>
+        <% next_url = h.url_for( controller='workflow', action='index' ) %>
         if ( workflow && workflow.has_changes ) {
             do_close = function() {
                 window.onbeforeunload = undefined;
@@ -301,10 +313,11 @@
 
 <%def name="stylesheets()">
 
-    ${parent.stylesheets()}
-    
-    ## Also include "base.css" for styling tool menu and forms (details)
+    ## Include "base.css" for styling tool menu and forms (details)
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
+
+    ## But make sure styles for the layout take precedence
+    ${parent.stylesheets()}    
 
     <style type="text/css">
     body { margin: 0; padding: 0; overflow: hidden; }
@@ -542,11 +555,6 @@
     </div>
     </td></tr></table>
 </div>
-
-<%def name="masthead()">
-    <div style="float: right; color: black; padding: 3px;"><div class="warningmessagesmall" style="display: inline-block; min-height: 15px;">Workflow support is currently in <b><i>beta</i></b></div></div>
-    <div class="title"><b>Galaxy workflow editor</b></div>
-</%def>
 
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
