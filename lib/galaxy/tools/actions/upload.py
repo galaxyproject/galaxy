@@ -63,7 +63,7 @@ class UploadToolAction( object ):
                     # Attempt to remove temporary file
                     os.unlink( temp_name )
                 except:
-                    pass
+                    log.exception( 'failure removing temporary file: %s' % temp_name )
                 errmsg = 'exception in sniff.stream_to_file using file %s: %s' % ( data_file.filename, str( e ) )
                 return self.upload_empty( trans, job, "Error:", errmsg )
             try:
@@ -84,7 +84,7 @@ class UploadToolAction( object ):
                                 # Attempt to remove temporary file
                                 os.unlink( temp_name )
                             except:
-                                pass
+                                log.exception( 'failure removing temporary file: %s' % temp_name )
                             errmsg = 'exception in sniff.stream_to_file using url_paste %s: %s' % ( url_paste, str( e ) )
                             return self.upload_empty( trans, job, "Error:", errmsg )
                         try:
@@ -107,7 +107,7 @@ class UploadToolAction( object ):
                             # Attempt to remove temporary file
                             os.unlink( temp_name )
                         except:
-                            pass
+                            log.exception( 'failure removing temporary file: %s' % temp_name )
                         errmsg = 'exception in sniff.stream_to_file using StringIO.StringIO( url_paste ) %s: %s' % ( url_paste, str( e ) )
                         return self.upload_empty( trans, job, "Error:", errmsg )
                     try:
