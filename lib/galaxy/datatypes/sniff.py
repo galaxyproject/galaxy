@@ -12,11 +12,11 @@ def get_test_fname(fname):
     full_path = os.path.join(path, 'test', fname)
     return full_path
 
-def stream_to_file(stream):
+def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
     """
     Writes a stream to a temporary file, returns the temporary file's name
     """
-    fd, temp_name = tempfile.mkstemp()
+    fd, temp_name = tempfile.mkstemp( suffix=suffix, prefix=prefix, dir=dir, text=text )
     while 1:
         chunk = stream.read(1048576)
         if not chunk:

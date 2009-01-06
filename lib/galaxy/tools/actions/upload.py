@@ -44,22 +44,33 @@ class UploadToolAction( object ):
         trans.log_event( 'created job id %d' % job.id, tool_id=tool.id )
         if 'local_filename' in dir( data_file ):
             # Use the existing file
+            file_name = data_file.filename
+            file_name = file_name.split( '\\' )[-1]
+            file_name = file_name.split( '/' )[-1]
             try:
-                file_name = data_file.filename
-                file_name = file_name.split( '\\' )[-1]
-                file_name = file_name.split( '/' )[-1]
                 data_list.append( self.add_file( trans, data_file.local_filename, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
-                return self.upload_empty( trans, job, "Error:", str( e ) )
+                errmsg = 'exception in add_file using datafile.local_filename %s: %s' % ( data_file.local_filename, str( e ) )
+                return self.upload_empty( trans, job, "Error:", errmsg )
         elif 'filename' in dir( data_file ):
+            file_name = data_file.filename
+            file_name = file_name.split( '\\' )[-1]
+            file_name = file_name.split( '/' )[-1]
             try:
-                file_name = data_file.filename
-                file_name = file_name.split( '\\' )[-1]
-                file_name = file_name.split( '/' )[-1]
-                temp_name = sniff.stream_to_file( data_file.file )
+                temp_name = sniff.stream_to_file( data_file.file, prefix='upload' )
+            except Exception, e:
+                try:
+                    # Attempt to remove temporary file
+                    os.unlink( temp_name )
+                except:
+                    pass
+                errmsg = 'exception in sniff.stream_to_file using file %s: %s' % ( data_file.filename, str( e ) )
+                return self.upload_empty( trans, job, "Error:", errmsg )
+            try:
                 data_list.append( self.add_file( trans, temp_name, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
-                return self.upload_empty( trans, job, "Error:", str( e ) )
+                errmsg = 'exception in add_file using file temp_name %s: %s' % ( str( temp_name ), str( e ) )
+                return self.upload_empty( trans, job, "Error:", errmsg )
         if url_paste not in [ None, "" ]:
             if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
                 url_paste = url_paste.replace( '\r', '' ).split( '\n' )
@@ -67,10 +78,20 @@ class UploadToolAction( object ):
                     line = line.rstrip( '\r\n' )
                     if line:
                         try:
-                            temp_name = sniff.stream_to_file( urllib.urlopen( line ) )
+                            temp_name = sniff.stream_to_file( urllib.urlopen( line ), prefix='url_paste' )
+                        except Exception, e:
+                            try:
+                                # Attempt to remove temporary file
+                                os.unlink( temp_name )
+                            except:
+                                pass
+                            errmsg = 'exception in sniff.stream_to_file using url_paste %s: %s' % ( url_paste, str( e ) )
+                            return self.upload_empty( trans, job, "Error:", errmsg )
+                        try:
                             data_list.append( self.add_file( trans, temp_name, line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
                         except Exception, e:
-                            return self.upload_empty( trans, job, "Error:", str( e ) )
+                            errmsg = 'exception in add_file using url_paste temp_name %s: %s' % ( str( temp_name ), str( e ) )
+                            return self.upload_empty( trans, job, "Error:", errmsg )
             else:
                 is_valid = False
                 for line in url_paste:
@@ -80,10 +101,20 @@ class UploadToolAction( object ):
                         break
                 if is_valid:
                     try:
-                        temp_name = sniff.stream_to_file( StringIO.StringIO( url_paste ) )
+                        temp_name = sniff.stream_to_file( StringIO.StringIO( url_paste ), prefix='strio_url_paste' )
+                    except Exception, e:
+                        try:
+                            # Attempt to remove temporary file
+                            os.unlink( temp_name )
+                        except:
+                            pass
+                        errmsg = 'exception in sniff.stream_to_file using StringIO.StringIO( url_paste ) %s: %s' % ( url_paste, str( e ) )
+                        return self.upload_empty( trans, job, "Error:", errmsg )
+                    try:
                         data_list.append( self.add_file( trans, temp_name, 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
                     except Exception, e:
-                        return self.upload_empty( trans, job, "Error:", str( e ) )
+                        errmsg = 'exception in add_file using StringIO.StringIO( url_paste ) temp_name %s: %s' % ( str( temp_name ), str( e ) )
+                        return self.upload_empty( trans, job, "Error:", errmsg )
                 else:
                     return self.upload_empty( trans, job, "No data error:", "you pasted no data." )
         if self.empty:
@@ -103,7 +134,7 @@ class UploadToolAction( object ):
             log.info("End of tool %s execution for job id %d, memory used increased by %s"  % ( tool.id, job.id, m1 ) )
         return dict( output=hda )
 
-    def upload_empty(self, trans, job, err_code, err_msg):
+    def upload_empty( self, trans, job, err_code, err_msg ):
         data = trans.app.model.HistoryDatasetAssociation( create_dataset = True )
         data.name = err_code 
         data.extension = "txt"
@@ -119,8 +150,8 @@ class UploadToolAction( object ):
         job.info = err_msg
         job.add_output_dataset( data.name, data )
         job.flush()
-        log.info( 'job id %d ended with errors' % job.id )
-        trans.log_event( 'job id %d ended with errors' % job.id, tool_id=job.tool_id )
+        log.info( 'job id %d ended with errors, err_msg: %s' % ( job.id, err_msg ) )
+        trans.log_event( 'job id %d ended with errors, err_msg: %s' % ( job.id, err_msg ), tool_id=job.tool_id )
         return dict( output=data )
 
     def add_file( self, trans, temp_name, file_name, file_type, dbkey, info=None, space_to_tab=False ):

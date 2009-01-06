@@ -8,7 +8,6 @@ toolbox = None
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
     def do_it( self ):
-        print "###self.testdef: ", self.testdef
         # If the test generation had an error, raise
         if self.testdef.error:
             if self.testdef.exception:
