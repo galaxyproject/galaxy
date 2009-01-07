@@ -141,6 +141,30 @@
     <datatype extension="wobble" type="galaxy.datatypes.data:Text"/>
     <datatype extension="wordcount" type="galaxy.datatypes.data:Text"/>
     <datatype extension="tagseq" type="galaxy.datatypes.data:Text"/>
+  <!-- Start RGenetics Datatypes -->
+    <!-- genome graphs ucsc file - first col is always marker then numeric values to plot -->
+    <datatype extension="gg" type="galaxy.datatypes.genetics:GenomeGraphs"/>
+    <datatype extension="rgenetics" type="galaxy.datatypes.genetics:Rgenetics"/>
+    <!-- linkage format pedigree (separate .map file) -->
+    <datatype extension="lped" type="galaxy.datatypes.genetics:Lped"/>
+    <!-- plink compressed file - has bed extension unfortunately -->
+    <datatype extension="pbed" type="galaxy.datatypes.genetics:Pbed"/>
+    <!-- eigenstrat pedigree input file -->
+    <datatype extension="eigenstratgeno" type="galaxy.datatypes.genetics:Eigenstratgeno"/>
+    <!-- eigenstrat pca output file for adjusted eigenQTL eg -->
+    <datatype extension="eigenstratpca" type="galaxy.datatypes.genetics:Eigenstratpca"/>
+    <!-- fbat/pbat format pedigree (header row of marker names) -->
+    <datatype extension="fped" type="galaxy.datatypes.genetics:Fped"/>
+    <!-- part of linkage format pedigree -->
+    <datatype extension="lmap" type="galaxy.datatypes.genetics:Lmap"/>
+    <!-- phenotype file - fbat format -->
+    <datatype extension="fphe" type="galaxy.datatypes.genetics:Fphe"/>
+    <!-- phenotype file - plink format -->
+    <datatype extension="pphe" type="galaxy.datatypes.genetics:Pphe"/>
+    <datatype extension="snptest" type="galaxy.datatypes.genetics:Snptest"/>
+    <datatype extension="snpmatrix" type="galaxy.datatypes.genetics:SNPMatrix"/>
+    <datatype extension="xls" type="galaxy.datatypes.tabular:Tabular"/>
+  <!-- End RGenetics Datatypes -->
   </registration>
   <sniffers>
     <!--
