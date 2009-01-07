@@ -152,7 +152,7 @@ select, textarea, input[type="text"], input[type="file"]
 
 /* Messages */
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed
+.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed , .screencastBox, .yellowbox, .redbox, .bluebox, .greenbox
 {
     padding: 10px;
     padding-left: 52px;
@@ -200,6 +200,85 @@ select, textarea, input[type="text"], input[type="file"]
     background-color: $error_message_bg;
     background-image: none;
 }
+
+.screencastBox 
+{   
+    padding-left: 10px;
+    border-color: #AAAA66;
+    background-color: #FFFFCC;
+    background-image: none;
+}
+
+.redbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #FF6666;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+    
+}
+
+.yellowbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #FFCC00;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+}
+
+.bluebox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #6666FF;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    color: #FFFFFF;
+    min-height: 32px;
+}
+
+.greenbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #00CC00;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+}
+
+.redbox li, .yellowbox li, .bluebox li, .greenbox li {
+   list-style: disc;	
+   text-transform: none;
+   list-style-position: inside;
+   list-style-image: none;
+   margin: 3px;
+}
+
 
 .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall 
 {
@@ -283,6 +362,11 @@ table.colored tr
   background: $table_row_bg;
 }
 
+table.colored tr.odd_row
+{ 
+  background: $odd_row_bg;
+}
+
 div.debug
 {
     margin: 10px;
@@ -348,6 +432,16 @@ span.toolParameterExpandableCollapsable
 ul.toolParameterExpandableCollapsable
 {
   list-style: none;
+}
+
+ul.manage-table-actions {
+    float: right;
+    margin-top: -2.5em;
+}
+ul.manage-table-actions li {
+    display: block;
+    float: left;
+    margin-left: 0.5em;
 }
 
 .action-button {
@@ -416,4 +510,8 @@ div.popupmenu-item:hover {
 
 .popup-arrow:hover {
     color: black;
+}
+
+div.permissionContainer {
+    padding-left: 20px;
 }
