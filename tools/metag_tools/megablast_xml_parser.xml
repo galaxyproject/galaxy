@@ -2,7 +2,7 @@
 <description></description>
 <command interpreter="python">megablast_xml_parser.py $input1 $output1</command>
 <inputs>
-	<param name="input1" type="data" format="txt" label="Megablast XML output" />
+	<param name="input1" type="data" format="blastxml" label="Megablast XML output" />
 </inputs>
 <outputs>
 	<data name="output1" format="tabular"/>
@@ -12,7 +12,7 @@
 </requirements>
 <tests>
 	<test>
-		<param name="input1" value="megablast_xml_parser_test1.gz" />
+		<param name="input1" value="megablast_xml_parser_test1.gz" ftype="blastxml" />
 		<output name="output1" file="megablast_xml_parser_test1_out.tabular" ftype="tabular" />
 	</test>
 </tests>

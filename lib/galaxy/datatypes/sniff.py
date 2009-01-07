@@ -160,6 +160,9 @@ def guess_ext( fname, sniff_order=None ):
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
 
+    >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
+    >>> guess_ext(fname)
+    'blastxml'
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname)
     'interval'

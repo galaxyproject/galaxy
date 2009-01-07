@@ -3,7 +3,7 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 """
 import os
 import logging
-import data, tabular, interval, images, sequence, qualityscore, genetics	
+import data, tabular, interval, images, sequence, qualityscore, genetics, xml
 import galaxy.util
 from galaxy.util.odict import odict
 
@@ -96,6 +96,7 @@ class Registry( object ):
                 'axt'         : sequence.Axt(),
                 'bed'         : interval.Bed(), 
                 'binseq.zip'  : images.Binseq(),
+                'blastxml'    : xml.BlastXml(),
                 'customtrack' : interval.CustomTrack(),
                 'csfasta'     : sequence.csFasta(),
                 'fasta'       : sequence.Fasta(),
@@ -119,6 +120,7 @@ class Registry( object ):
                 'axt'         : 'text/plain',
                 'bed'         : 'text/plain', 
                 'binseq.zip'  : 'application/zip',
+                'blastxml'    : 'text/plain', 
                 'customtrack' : 'text/plain',
                 'csfasta'     : 'text/plain',
                 'fasta'       : 'text/plain',
@@ -141,6 +143,7 @@ class Registry( object ):
         # because some formats are much more flexibly defined than others.
         if len(self.sniff_order) < 1:
             self.sniff_order = [
+                xml.BlastXml(),
                 sequence.Maf(),
                 sequence.Lav(),
                 sequence.Fasta(),

@@ -50,8 +50,8 @@ class UploadToolAction( object ):
             try:
                 data_list.append( self.add_file( trans, data_file.local_filename, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
-                errmsg = 'exception in add_file using datafile.local_filename %s: %s' % ( data_file.local_filename, str( e ) )
-                return self.upload_empty( trans, job, "Error:", errmsg )
+                log.exception( 'exception in add_file using datafile.local_filename %s: %s' % ( data_file.local_filename, str( e ) ) )
+                return self.upload_empty( trans, job, "Error:", str( e ) )
         elif 'filename' in dir( data_file ):
             file_name = data_file.filename
             file_name = file_name.split( '\\' )[-1]
@@ -59,18 +59,18 @@ class UploadToolAction( object ):
             try:
                 temp_name = sniff.stream_to_file( data_file.file, prefix='upload' )
             except Exception, e:
+                log.exception( 'exception in sniff.stream_to_file using file %s: %s' % ( data_file.filename, str( e ) ) )
                 try:
                     # Attempt to remove temporary file
                     os.unlink( temp_name )
                 except:
                     log.exception( 'failure removing temporary file: %s' % temp_name )
-                errmsg = 'exception in sniff.stream_to_file using file %s: %s' % ( data_file.filename, str( e ) )
-                return self.upload_empty( trans, job, "Error:", errmsg )
+                return self.upload_empty( trans, job, "Error:", str( e ) )
             try:
                 data_list.append( self.add_file( trans, temp_name, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
-                errmsg = 'exception in add_file using file temp_name %s: %s' % ( str( temp_name ), str( e ) )
-                return self.upload_empty( trans, job, "Error:", errmsg )
+                log.exception( 'exception in add_file using file temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
+                return self.upload_empty( trans, job, "Error:", str( e ) )
         if url_paste not in [ None, "" ]:
             if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
                 url_paste = url_paste.replace( '\r', '' ).split( '\n' )
@@ -80,18 +80,18 @@ class UploadToolAction( object ):
                         try:
                             temp_name = sniff.stream_to_file( urllib.urlopen( line ), prefix='url_paste' )
                         except Exception, e:
+                            log.exception( 'exception in sniff.stream_to_file using url_paste %s: %s' % ( url_paste, str( e ) ) )
                             try:
                                 # Attempt to remove temporary file
                                 os.unlink( temp_name )
                             except:
                                 log.exception( 'failure removing temporary file: %s' % temp_name )
-                            errmsg = 'exception in sniff.stream_to_file using url_paste %s: %s' % ( url_paste, str( e ) )
-                            return self.upload_empty( trans, job, "Error:", errmsg )
+                            return self.upload_empty( trans, job, "Error:", str( e ) )
                         try:
                             data_list.append( self.add_file( trans, temp_name, line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
                         except Exception, e:
-                            errmsg = 'exception in add_file using url_paste temp_name %s: %s' % ( str( temp_name ), str( e ) )
-                            return self.upload_empty( trans, job, "Error:", errmsg )
+                            log.exception( 'exception in add_file using url_paste temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
+                            return self.upload_empty( trans, job, "Error:", str( e ) )
             else:
                 is_valid = False
                 for line in url_paste:
@@ -103,18 +103,18 @@ class UploadToolAction( object ):
                     try:
                         temp_name = sniff.stream_to_file( StringIO.StringIO( url_paste ), prefix='strio_url_paste' )
                     except Exception, e:
+                        log.exception( 'exception in sniff.stream_to_file using StringIO.StringIO( url_paste ) %s: %s' % ( url_paste, str( e ) ) )
                         try:
                             # Attempt to remove temporary file
                             os.unlink( temp_name )
                         except:
                             log.exception( 'failure removing temporary file: %s' % temp_name )
-                        errmsg = 'exception in sniff.stream_to_file using StringIO.StringIO( url_paste ) %s: %s' % ( url_paste, str( e ) )
-                        return self.upload_empty( trans, job, "Error:", errmsg )
+                        return self.upload_empty( trans, job, "Error:", str( e ) )
                     try:
                         data_list.append( self.add_file( trans, temp_name, 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
                     except Exception, e:
-                        errmsg = 'exception in add_file using StringIO.StringIO( url_paste ) temp_name %s: %s' % ( str( temp_name ), str( e ) )
-                        return self.upload_empty( trans, job, "Error:", errmsg )
+                        log.excception( 'exception in add_file using StringIO.StringIO( url_paste ) temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
+                        return self.upload_empty( trans, job, "Error:", str( e ) )
                 else:
                     return self.upload_empty( trans, job, "No data error:", "you pasted no data." )
         if self.empty:
@@ -226,6 +226,7 @@ class UploadToolAction( object ):
             else:
                 self.line_count = sniff.convert_newlines( temp_name )
             if file_type == 'auto':
+                log.debug("In upload, in if file_type == 'auto':")
                 ext = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
             else:
                 ext = file_type
@@ -304,11 +305,14 @@ class UploadToolAction( object ):
             temp = open(temp_name, "U")
         else:
             temp = chunk
-        regexp = re.compile( "<([A-Z][A-Z0-9]*)[^>]*>", re.I )
+        regexp1 = re.compile( "<A\s+[^>]*HREF[^>]+>", re.I )
+        regexp2 = re.compile( "<IFRAME[^>]*>", re.I )
+        regexp3 = re.compile( "<FRAMESET[^>]*>", re.I )
+        regexp4 = re.compile( "<META[^>]*>", re.I )
         lineno = 0
         for line in temp:
             lineno += 1
-            matches = regexp.search( line )
+            matches = regexp1.search( line ) or regexp2.search( line ) or regexp3.search( line ) or regexp4.search( line )
             if matches:
                 if chunk is None:
                     temp.close()

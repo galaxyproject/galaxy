@@ -108,6 +108,13 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_metadata_for_string('value="1.wig" value="\?"')
         self.check_metadata_for_string('Change data type selected value="wig" selected="yes"')
         self.delete_history_item( 1 )
+    def test_60_blastxml_datatype( self ):
+        """Testing correctly sniffing blastxml data type upon upload"""
+        self.upload_file( 'megablast_xml_parser_test1.blastxml' )
+        self.verify_dataset_correctness( 'megablast_xml_parser_test1.blastxml' )
+        self.check_history_for_string( 'NCBI Blast XML data' )
+        self.check_history_for_string( 'format: <span class="blastxml">blastxml</span>' )
+        self.delete_history_item( 1 )
     def test_9999_clean_up( self ):
         self.delete_history()
         self.logout()
