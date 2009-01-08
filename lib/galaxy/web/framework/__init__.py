@@ -138,13 +138,22 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                 event.message = message % kwargs
             except:
                 event.message = message
-            event.history = self.history
+            try:
+                event.history = self.history
+            except:
+                event.history = None
             try:
                 event.history_id = self.history.id
             except:
                 event.history_id = None
-            event.user = self.user
-            event.session_id = self.galaxy_session.id   
+            try:
+                event.user = self.user
+            except:
+                event.user = None
+            try:
+                event.session_id = self.galaxy_session.id   
+            except:
+                event.session_id = None
             event.flush()
     def get_cookie( self, name='galaxysession' ):
         """Convenience method for getting a session cookie"""
