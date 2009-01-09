@@ -1,4 +1,4 @@
-import logging, threading, sys, os, time, subprocess, string, tempfile, re, traceback
+import logging, threading, sys, os, time, subprocess, string, tempfile, re, traceback, shutil
 
 from galaxy import util, model
 from galaxy.model import mapping
@@ -396,6 +396,13 @@ class JobWrapper( object ):
         # if the job was deleted, don't fail it
         if not job.state == model.Job.states.DELETED:
             for dataset_assoc in job.output_datasets:
+                if self.app.config.outputs_to_working_directory:
+                    false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.id ) )
+                    if os.path.exists( false_path ):
+                        shutil.move( false_path, dataset_assoc.dataset.file_name )
+                        log.debug( "fail(): Moved %s to %s" % ( false_path, dataset_assoc.dataset.file_name ) )
+                    else:
+                        log.warning( "fail(): Missing output file in working directory: %s" % false_path )
                 dataset = dataset_assoc.dataset
                 dataset.refresh()
                 dataset.state = dataset.states.ERROR
@@ -474,10 +481,10 @@ class JobWrapper( object ):
             if self.app.config.outputs_to_working_directory:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.id ) )
                 if os.path.exists( false_path ):
-                    os.rename( false_path, dataset_assoc.dataset.file_name )
-                    log.debug( "Moved %s to %s" % ( false_path, dataset_assoc.dataset.file_name ) )
+                    shutil.move( false_path, dataset_assoc.dataset.file_name )
+                    log.debug( "finish(): Moved %s to %s" % ( false_path, dataset_assoc.dataset.file_name ) )
                 else:
-                    log.warning( "Missing output file in working directory: %s" % false_path )
+                    log.warning( "finish(): Missing output file in working directory: %s" % false_path )
             for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'

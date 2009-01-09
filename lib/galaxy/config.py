@@ -48,6 +48,7 @@ class Configuration( object ):
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_scheduler_policy = kwargs.get("job_scheduler_policy", "FIFO")
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
+        self.cluster_files_directory = resolve_path( kwargs.get( "cluster_files_directory", "database/pbs" ), self.root )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.admin_users = kwargs.get( "admin_users", "" )
@@ -101,7 +102,7 @@ class Configuration( object ):
             return default
     def check( self ):
         # Check that required directories exist
-        for path in self.root, self.file_path, self.tool_path, self.tool_data_path, self.template_path, self.job_working_directory:
+        for path in self.root, self.file_path, self.tool_path, self.tool_data_path, self.template_path, self.job_working_directory, self.cluster_files_directory:
             if not os.path.isdir( path ):
                 raise ConfigurationError("Directory does not exist: %s" % path )
         # Check that required files exist
