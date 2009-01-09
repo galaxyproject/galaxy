@@ -166,8 +166,8 @@ class PBSJobRunner( object ):
             raise Exception( "Connection to PBS server for submit failed" )
 
         # define job attributes
-        ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_wrapper.job_id)
-        efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_wrapper.job_id)
+        ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
+        efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
 
         # If an application server is set, we're staging
         if self.app.config.pbs_application_server:
@@ -201,7 +201,7 @@ class PBSJobRunner( object ):
             script = pbs_symlink_template % (job_wrapper.galaxy_lib_dir, " ".join(job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames()), self.app.config.pbs_stage_path, exec_dir, command_line)
         else:
             script = pbs_template % (job_wrapper.galaxy_lib_dir, exec_dir, command_line)
-        job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job_wrapper.job_id)
+        job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         fh = file(job_file, "w")
         fh.write(script)
         fh.close()
@@ -436,9 +436,9 @@ class PBSJobRunner( object ):
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         pbs_job_state = PBSJobState()
-        pbs_job_state.ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job.id)
-        pbs_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), job.id)
-        pbs_job_state.job_file = "%s/database/pbs/%s.sh" % (os.getcwd(), job.id)
+        pbs_job_state.ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job.id)
+        pbs_job_state.efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job.id)
+        pbs_job_state.job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.job_id = str( job.job_runner_external_id )
         pbs_job_state.runner_url = job_wrapper.tool.job_runner
         job_wrapper.command_line = job.command_line
