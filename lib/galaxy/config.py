@@ -15,7 +15,7 @@ def resolve_path( path, root ):
     if not( os.path.isabs( path ) ):
         path = os.path.join( root, path )
     return path
-      
+
 class ConfigurationError( Exception ):
     pass
 
@@ -48,7 +48,7 @@ class Configuration( object ):
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_scheduler_policy = kwargs.get("job_scheduler_policy", "FIFO")
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
-        self.cluster_files_directory = resolve_path( kwargs.get( "cluster_files_directory", "database/pbs" ), self.root )
+        self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.admin_users = kwargs.get( "admin_users", "" )
