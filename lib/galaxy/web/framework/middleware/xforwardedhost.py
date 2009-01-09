@@ -14,4 +14,8 @@ class XForwardedHostMiddleware( object ):
         if x_forwarded_for:
             environ[ 'ORGINAL_REMOTE_ADDR' ] = environ[ 'REMOTE_ADDR' ]
             environ[ 'REMOTE_ADDR' ] = x_forwarded_for
+        x_url_scheme = environ.get( 'HTTP_X_URL_SCHEME', None )
+        if x_url_scheme:
+            environ[ 'original_wsgi.url_scheme' ] = environ[ 'wsgi.url_scheme' ]
+            environ[ 'wsgi.url_scheme' ] = x_url_scheme
         return self.app( environ, start_response )

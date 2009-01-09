@@ -62,6 +62,7 @@ class RemoteUser( object ):
                 # in the event of a lookup failure, deny access
                 host = None
             if host in UCSC_SERVERS:
+                environ[ 'HTTP_REMOTE_USER' ] = 'ucsc_browser_display@example.org'
                 return self.app( environ, start_response )
         # Apache sets REMOTE_USER to the string '(null)' when using the
         # Rewrite* method for passing REMOTE_USER and a user is
