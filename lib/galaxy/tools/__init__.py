@@ -1045,7 +1045,7 @@ class Tool:
                     input.validate( value, None )
                     input_values[ input.name ] = value
     
-    def build_param_dict( self, incoming, input_datasets, output_datasets ):
+    def build_param_dict( self, incoming, input_datasets, output_datasets, working_directory = None ):
         """
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
@@ -1090,7 +1090,13 @@ class Tool:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for name, data in output_datasets.items():
-            param_dict[name] = DatasetFilenameWrapper( data )
+            # Write outputs to the working directory (for security purposes) if desired.
+            if self.app.config.outputs_to_working_directory and working_directory is not None:
+                false_path = os.path.abspath( os.path.join( working_directory, "galaxy_dataset_%d.dat" % data.id ) )
+                param_dict[name] = DatasetFilenameWrapper( data, false_path = false_path )
+                open( false_path, 'w' ).close()
+            else:
+                param_dict[name] = DatasetFilenameWrapper( data )
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
             param_dict[name].files_path = os.path.abspath(os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) ))
@@ -1433,7 +1439,7 @@ class DatasetFilenameWrapper( object ):
         def items( self ):
             return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
     
-    def __init__( self, dataset, datatypes_registry = None, tool = None, name = None ):
+    def __init__( self, dataset, datatypes_registry = None, tool = None, name = None, false_path = None ):
         if not dataset:
             try:
                 #TODO: allow this to work when working with grouping
@@ -1444,10 +1450,17 @@ class DatasetFilenameWrapper( object ):
         else:
             self.dataset = dataset
             self.metadata = self.MetadataWrapper( dataset.metadata )
+        self.false_path = false_path
     def __str__( self ):
-        return self.dataset.file_name
+        if self.false_path is not None:
+            return self.false_path
+        else:
+            return self.dataset.file_name
     def __getattr__( self, key ):
-        return getattr( self.dataset, key )
+        if self.false_path is not None and key == 'file_name':
+            return self.false_path
+        else:
+            return getattr( self.dataset, key )
         
 def json_fix( val ):
     if isinstance( val, list ):
