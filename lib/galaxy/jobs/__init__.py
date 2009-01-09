@@ -350,7 +350,7 @@ class JobWrapper( object ):
         incoming['userId'] = userId
         incoming['userEmail'] = userEmail
         # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data )
+        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.working_directory )
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         if self.tool.tool_type is not None:
@@ -471,6 +471,13 @@ class JobWrapper( object ):
         else:
             job.state = 'ok'
         for dataset_assoc in job.output_datasets:
+            if self.app.config.outputs_to_working_directory:
+                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.id ) )
+                if os.path.exists( false_path ):
+                    os.rename( false_path, dataset_assoc.dataset.file_name )
+                    log.debug( "Moved %s to %s" % ( false_path, dataset_assoc.dataset.file_name ) )
+                else:
+                    log.warning( "Missing output file in working directory: %s" % false_path )
             for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
