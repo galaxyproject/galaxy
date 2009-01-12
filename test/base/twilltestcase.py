@@ -13,7 +13,7 @@ from elementtree import ElementTree
 buffer = StringIO.StringIO()
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-## twill.set_output(buffer)
+twill.set_output(buffer)
 tc.config('use_tidy', 0)
 
 # Dial ClientCookie logging down (very noisy)
@@ -629,51 +629,56 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "reset_user_password_button" )
         self.check_page_for_string( "Password reset" )
         self.home()
-    def mark_user_deleted( self, user_id=4, email='' ):
+    def mark_user_deleted( self, user_id=4 ):
         """Mark a user as deleted"""
         self.home()
         self.visit_url( "%s/admin/mark_user_deleted?user_id=%s" % ( self.url, str( user_id ) ) )
-        check_str = "User '%s' has been marked as deleted." % email
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( "The user has been marked as deleted." )
         self.home()
-    def undelete_user( self, user_id=4, email='' ):
+    def undelete_user( self, user_id ):
         """Undelete a user"""
         self.home()
         self.visit_url( "%s/admin/undelete_user?user_id=%s" % ( self.url, user_id ) )
-        check_str = "User '%s' has been marked as not deleted" % email
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'The user has been marked as not deleted' )
         self.home()
-    def purge_user( self, user_id, email ):
+    def purge_user( self, user_id ):
         """Purge a user account"""
         self.home()
         self.visit_url( "%s/admin/purge_user?user_id=%s" % ( self.url, user_id ) )
-        check_str = "User '%s' has been marked as purged." % email
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'The user has been marked as purged.' )
         self.home()
-    def associate_roles_and_groups_with_user( self, user_id, email, role_ids=[], group_ids=[] ):
+    def user_roles_edit( self, user_id, role_ids=[] ):
+        """Change roles associated with an existing user"""
         self.home()
-        url = "%s/admin/user?user_id=%s&user_roles_groups_edit_button=Save" % ( self.url, user_id )
-        if role_ids:
-            url += "&in_roles=%s" % ','.join( role_ids )
-        if group_ids:
-            url += "&in_groups=%s" % ','.join( group_ids )
-        self.visit_url( url )
-        check_str = "User '%s' has been updated with %d associated roles and %d associated groups" % ( email, len( role_ids ), len( group_ids ) )
-        self.check_page_for_string( check_str )
+        self.visit_url( "%s/admin/user_roles_edit?user_id=%s" % ( self.url, user_id ) )
+        self.check_page_for_string( 'Select to associate role with' )
+        for role_id in role_ids:
+            tc.fv( "1", "roles", role_id )
+        tc.submit( "user_roles_edit_button" )
+        self.check_page_for_string( 'User updated with a total of' )
         self.home()
 
     # Tests associated with roles
-    def create_role( self, name='Role One', description="This is Role One", in_user_ids=[], in_group_ids=[], private_role='' ):
+    def create_role( self, name='Role One', description="This is Role One", user_ids=[], group_ids=[], private_role='' ):
         """Create a new role"""
-        url = "%s/admin/create_role?create_role_button=Save&name=%s&description=%s" % ( self.url, name.replace( ' ', '+' ), description.replace( ' ', '+' ) )
-        if in_user_ids:
-            url += "&in_users=%s" % ','.join( in_user_ids )
-        if in_group_ids:
-            url += "&in_groups=%s" % ','.join( in_group_ids )
         self.home()
-        self.visit_url( url )
-        check_str = "Role '%s' has been created with %d associated users and %d associated groups" % ( name, len( in_user_ids ), len( in_group_ids ) ) 
-        self.check_page_for_string( check_str )
+        self.visit_url( "%s/admin/create_role" % self.url )
+        self.check_page_for_string( "Create Role" )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", description )
+        for user_id in user_ids:
+            tc.fv( "1", "users", user_id )
+        for group_id in group_ids:
+            tc.fv( "1", "groups", group_id )
+        tc.submit( "create_role_button" )
+        check_str = "The new role has been created with %s associated users and %s associated groups" % ( str( len( user_ids ) ), str( len( group_ids ) ) )
+        try:
+            self.check_page_for_string( check_str )
+            previously_created = False
+        except:
+            # The role may have been created on a previous test run
+            self.check_page_for_string( "A role with that name already exists" )
+            previously_created = True
         if private_role:
             # Make sure no private roles are displayed
             try:
@@ -684,9 +689,10 @@ class TwillTestCase( unittest.TestCase ):
                 # Reaching here is the behavior we want since no private roles should be displayed
                 pass
         self.home()
-        self.visit_url( "%s/admin/roles" % self.url )
-        self.check_page_for_string( name )
+        self.visit_page( "admin/roles" )
+        self.check_page_for_string( description )
         self.home()
+        return previously_created
     def rename_role( self, role_id, name='Role One Renamed', description='This is Role One Re-described' ):
         """Rename a role"""
         self.home()
@@ -696,56 +702,82 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "description", description )
         tc.submit( "rename_role_button" )
         self.home()
-    def mark_role_deleted( self, role_id, role_name ):
+    def mark_role_deleted( self, role_id ):
         """Mark a role as deleted"""
         self.home()
         self.visit_url( "%s/admin/mark_role_deleted?role_id=%s" % ( self.url, role_id ) )
-        check_str = "Role '%s' has been marked as deleted" % role_name
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'The role has been marked as deleted' )
         self.home()
-    def undelete_role( self, role_id, role_name ):
+    def undelete_role( self, role_id ):
         """Undelete an existing role"""
         self.home()
         self.visit_url( "%s/admin/undelete_role?role_id=%s" % ( self.url, role_id ) )
-        check_str = "Role '%s' has been marked as not deleted" % role_name
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'The role has been marked as not deleted' )
         self.home()
-    def purge_role( self, role_id, role_name ):
+    def purge_role( self, role_id ):
         """Purge an existing role"""
         self.home()
         self.visit_url( "%s/admin/purge_role?role_id=%s" % ( self.url, role_id ) )
-        check_str = "The following have been purged from the database for role '%s': " % role_name
+        check_str = "The following have been purged from the database for the role: "
         check_str += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, ActionDatasetRoleAssociations."
         self.check_page_for_string( check_str )
         self.home()
-    def associate_users_and_groups_with_role( self, role_id, role_name, user_ids=[], group_ids=[] ):
+    def associate_groups_with_role( self, role_id, group_names=[] ):
+        """Add groups to an existing role"""
+        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
+        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
         self.home()
-        url = "%s/admin/role?role_id=%s&role_members_edit_button=Save" % ( self.url, role_id )
-        if user_ids:
-            url += "&in_users=%s" % ','.join( user_ids )
-        if group_ids:
-            url += "&in_groups=%s" % ','.join( group_ids )
-        self.visit_url( url )
-        check_str = "Role '%s' has been updated with %d associated users and %d associated groups" % ( role_name, len( user_ids ), len( group_ids ) )
-        self.check_page_for_string( check_str )
+        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Groups associated with' )
+        # All group_ids passed in  MUST be in the out_groups form field
+        for group_name in group_names:
+            tc.fv( "1", "out_groups", group_name ) # note the buttons...
+            tc.submit( "groups_add_button" )
+        tc.submit( "role_members_edit_button" )
         self.home()
-
+    def associate_users_with_role( self, role_id, user_emails=[] ):
+        """Add a users to an existing role"""
+        # NOTE: To get this to work with twill, all select lists must contain at least 1 option value
+        # before tc.submit or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        self.home()
+        self.visit_url( "%s/admin/role?role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Users associated with' )
+        for user_email in user_emails:
+            tc.fv( "1", "out_users", user_email )
+            tc.submit( "users_add_button" )
+        tc.submit( "role_members_edit_button" )
+        self.home()
+    
     # Tests associated with groups
-    def create_group( self, name='Group One', in_user_ids=[], in_role_ids=[] ):
-        """Create a new group"""
-        url = "%s/admin/create_group?create_group_button=Save&name=%s" % ( self.url, name.replace( ' ', '+' ) )
-        if in_user_ids:
-            url += "&in_users=%s" % ','.join( in_user_ids )
-        if in_role_ids:
-            url += "&in_roles=%s" % ','.join( in_role_ids )
+    def create_group( self, name='Group One', user_ids=[], role_ids=[] ):
+        """Create a new group with members and associated role"""
         self.home()
-        self.visit_url( url )
-        check_str = "Group '%s' has been created with %d associated users and %d associated roles" % ( name, len( in_user_ids ), len( in_role_ids ) ) 
-        self.check_page_for_string( check_str )
+        self.visit_url( "%s/admin/create_group" % self.url )
+        self.check_page_for_string( "Create Group" )
+        # Make sure no private roles are displayed
+        try:
+            self.check_page_for_string( 'Private Role for'  )
+            raise AssertionError( 'Private role displayed on Create Group page' )
+        except AssertionError:
+            # Reaching here is the behavior we want since no private roles should be displayed
+            pass
+        tc.fv( "1", "name", name )
+        for user_id in user_ids:
+            tc.fv( "1", "members", user_id )
+        for role_id in role_ids:
+            tc.fv( "1", "roles", role_id )
+        tc.submit( "create_group_button" )
+        try:
+            self.check_page_for_string( "The new group has been created" )
+            previously_created = False
+        except:
+            self.check_page_for_string( "A group with that name already exists" )
+            previously_created = True
         self.home()
-        self.visit_url( "%s/admin/groups" % self.url )
+        self.visit_page( "admin/groups" )
         self.check_page_for_string( name )
         self.home()
+        return previously_created
     def rename_group( self, group_id, name='Group One Renamed' ):
         """Rename a group"""
         self.home()
@@ -754,60 +786,63 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "name", name )
         tc.submit( "rename_group_button" )
         self.home()
-    def associate_users_and_roles_with_group( self, group_id, group_name, user_ids=[], role_ids=[] ):
+    def group_members_edit( self, group_id, user_ids=[] ):
+        """Add members to an existing group"""
         self.home()
-        url = "%s/admin/group?group_id=%s&group_roles_users_edit_button=Save" % ( self.url, group_id )
-        if user_ids:
-            url += "&in_users=%s" % ','.join( user_ids )
-        if role_ids:
-            url += "&in_roles=%s" % ','.join( role_ids )
-        self.visit_url( url )
-        check_str = "Group '%s' has been updated with %d associated roles and %d associated users" % ( group_name, len( role_ids ), len( user_ids ) )
-        self.check_page_for_string( check_str )
+        self.visit_url( "%s/admin/group_members_edit?group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'Select to add user to' )
+        for user_id in user_ids:
+            tc.fv( "1", "members", user_id )
+        tc.submit( "group_members_edit_button" )
+        self.check_page_for_string( 'Group membership has been updated' )
         self.home()
-    def mark_group_deleted( self, group_id, group_name ):
+    def group_roles_edit( self, group_id, role_ids=[] ):
+        """Change roles associated with an existing group"""
+        self.home()
+        self.visit_url( "%s/admin/group_roles_edit?group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'Select to associate role with' )
+        for role_id in role_ids:
+            tc.fv( "1", "roles", role_id )
+        tc.submit( "group_roles_edit_button" )
+        self.check_page_for_string( 'Group updated with a total of' )
+        self.home()
+    def mark_group_deleted( self, group_id ):
         """Mark a group as deleted"""
         self.home()
         self.visit_url( "%s/admin/mark_group_deleted?group_id=%s" % ( self.url, group_id ) )
-        check_str = "Group '%s' has been marked as deleted" % group_name
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'The group has been marked as deleted' )
         self.home()
-    def undelete_group( self, group_id, group_name ):
+    def undelete_group( self, group_id ):
         """Undelete an existing group"""
         self.home()
         self.visit_url( "%s/admin/undelete_group?group_id=%s" % ( self.url, group_id ) )
-        check_str = "Group '%s' has been marked as not deleted" % group_name
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'The group has been marked as not deleted' )
         self.home()
-    def purge_group( self, group_id, group_name ):
+    def purge_group( self, group_id ):
         """Purge an existing group"""
         self.home()
         self.visit_url( "%s/admin/purge_group?group_id=%s" % ( self.url, group_id ) )
-        check_str = "The following have been purged from the database for group '%s': UserGroupAssociations, GroupRoleAssociations." % group_name
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( "The following have been purged from the database for the group: UserGroupAssociations, GroupRoleAssociations." )
         self.home()
 
     # Utility methods to test removal of associations
-    def remove_role_from_group( self, role_id, role_name, group_id, group_name ):
+    def remove_role_from_group( self, role_id, group_id ):
         """Remove a role from a group"""
         self.home()
         self.visit_url( "%s/admin/remove_role_from_group?role_id=%s&group_id=%s" % ( self.url, role_id, group_id ) )
-        check_str = "Role '%s' removed from group '%s'" % ( role_name, group_name )
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'Role removed from group' )
         self.home()
-    def remove_user_from_group( self, user_id, email, group_id, group_name ):
+    def remove_user_from_group( self, user_id, group_id ):
         """Remove a user from a group"""
         self.home()
         self.visit_url( "%s/admin/remove_user_from_group?user_id=%s&group_id=%s" % ( self.url, user_id, group_id ) )
-        check_str = "User '%s' removed from group '%s'" % ( email, group_name )
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'User removed from group' )
         self.home()
-    def remove_user_from_role( self, user_id, email, role_id, role_name ):
+    def remove_user_from_role( self, user_id, role_id ):
         """Remove a user from a role"""
         self.home()
         self.visit_url( "%s/admin/remove_user_from_role?user_id=%s&role_id=%s" % ( self.url, user_id, role_id ) )
-        check_str = "User '%s' removed from role '%s'" % ( email, role_name )
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'User removed from role' )
         self.home()
 
     # Library stuff
@@ -889,28 +924,25 @@ class TwillTestCase( unittest.TestCase ):
         library_dir = "%s" % self.file_dir
         tc.fv( "1", "server_dir", "library" )
         for role_tuple in roles_tuple:
-            tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role name
+            tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role description
         tc.submit( "new_dataset_button" )
         self.check_page_for_string( '3 new datasets added to the library' )
         self.home()
-    def mark_library_deleted( self, library_id, library_name ):
+    def mark_library_deleted( self, library_id ):
         """Mark a library as deleted"""
         self.home()
         self.visit_url( "%s/admin/library?id=%s&delete=True" % ( self.url, library_id ) )
-        check_str = "Library '%s' and all of its contents have been marked deleted" % library_name
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'The library and all of its contents have been marked deleted' )
         self.home()
-    def undelete_library( self, library_id, library_name ):
+    def undelete_library( self, library_id ):
         """Mark a library as not deleted"""
         self.home()
         self.visit_url( "%s/admin/undelete_library?id=%s" % ( self.url, library_id ) )
-        check_str = "Library '%s' and all of its contents have been marked not deleted" % library_name
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'The library and all of its contents have been marked not deleted' )
         self.home()
-    def purge_library( self, library_id, library_name ):
+    def purge_library( self, library_id ):
         """Purge a library"""
         self.home()
         self.visit_url( "%s/admin/purge_library?id=%s" % ( self.url, library_id ) )
-        check_str = "Library '%s' and all of its contents have been purged" % library_name
-        self.check_page_for_string( check_str )
+        self.check_page_for_string( 'The library and all of its contents have been purged' )
         self.home()
