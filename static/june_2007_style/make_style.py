@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require("Cheetah")
+#from galaxy import eggs
+#import pkg_resources
+#pkg_resources.require("Cheetah")
 
 import sys, string, os.path
-from galaxy import eggs
+#from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "Cheetah" )
 

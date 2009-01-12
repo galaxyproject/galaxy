@@ -142,6 +142,7 @@ div.form-row label
 
 select, input, textarea
 {
+    font: inherit;
     font-size: 115%;
 }
 
@@ -152,7 +153,7 @@ select, textarea, input[type="text"], input[type="file"]
 
 /* Messages */
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed, .screencastBox, .yellowbox, .redbox, .bluebox, .greenbox
+.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed , .screencastBox, .yellowbox, .redbox, .bluebox, .greenbox
 {
     padding: 10px;
     padding-left: 52px;
@@ -443,6 +444,28 @@ ul.manage-table-actions li {
     margin-left: 0.5em;
 }
 
+
+.state-color-queued {
+    border-color: #888888;
+    background: #EEEEEE;
+}
+
+.state-color-ok {
+    border-color: #66AA66;
+    background: #CCFFCC;
+}
+
+.state-color-error {
+    border-color: #AA6666;
+    background: #FFCCCC;
+}
+
+.state-color-running {
+    border-color: #AAAA66;
+    background: #FFFFCC;
+}
+
+
 .action-button {
     background: #eeeeee;
     color: #333;
@@ -458,6 +481,9 @@ ul.manage-table-actions li {
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 .action-button > * {
@@ -466,12 +492,13 @@ ul.manage-table-actions li {
 
 .action-button:hover {
     color: black;
-    background: #aaaaaa;
+    background: #dddddd;
 }
 .action-button:active {
     color: white;
     background: #aaaaaa;
 }
+
 
 div.popupmenu {
     display: none;
@@ -487,6 +514,9 @@ div.popupmenu {
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 div.popupmenu-item {
@@ -513,4 +543,35 @@ div.popupmenu-item:hover {
 
 div.permissionContainer {
     padding-left: 20px;
+}
+
+
+.grid {
+    padding-top: 1em;
+    border-collapse: collapse;
+    width: 100%;
+}
+.grid tbody td {
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid thead th {
+    background: #ebd9b2;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-top: solid #d8b365 1px;
+    border-bottom: solid #d8b365 1px;
+    padding: 0.5em 1em;
+    text-align: left;
+}
+.grid tfoot td {
+    background-color: #F8F8F8;
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid .current {
+    background-color: #EEEEFF;
 }

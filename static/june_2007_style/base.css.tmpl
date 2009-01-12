@@ -142,6 +142,7 @@ div.form-row label
 
 select, input, textarea
 {
+    font: inherit;
     font-size: 115%;
 }
 
@@ -444,6 +445,30 @@ ul.manage-table-actions li {
     margin-left: 0.5em;
 }
 
+## State colors
+
+.state-color-queued {
+    border-color: $history_queued_border;
+    background: $history_queued_bg;
+}
+
+.state-color-ok {
+    border-color: $history_ok_border;
+    background: $history_ok_bg;
+}
+
+.state-color-error {
+    border-color: $history_error_border;
+    background: $history_error_bg;
+}
+
+.state-color-running {
+    border-color: $history_running_border;
+    background: $history_running_bg;
+}
+
+## Button styles
+
 .action-button {
     background: #eeeeee;
     color: #333;
@@ -459,6 +484,9 @@ ul.manage-table-actions li {
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 .action-button > * {
@@ -467,12 +495,14 @@ ul.manage-table-actions li {
 
 .action-button:hover {
     color: black;
-    background: #aaaaaa;
+    background: #dddddd;
 }
 .action-button:active {
     color: white;
     background: #aaaaaa;
 }
+
+## Popup menu styles
 
 div.popupmenu {
     display: none;
@@ -488,6 +518,9 @@ div.popupmenu {
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 div.popupmenu-item {
@@ -514,4 +547,36 @@ div.popupmenu-item:hover {
 
 div.permissionContainer {
     padding-left: 20px;
+}
+
+## Data grid style
+
+.grid {
+    padding-top: 1em;
+    border-collapse: collapse;
+    width: 100%;
+}
+.grid tbody td {
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid thead th {
+    background: $table_header_bg;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-top: solid $table_border 1px;
+    border-bottom: solid $table_border 1px;
+    padding: 0.5em 1em;
+    text-align: left;
+}
+.grid tfoot td {
+    background-color: #F8F8F8;
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid .current {
+    background-color: #EEEEFF;
 }

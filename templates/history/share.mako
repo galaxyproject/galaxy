@@ -5,7 +5,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Share Histories</div>
         <table>
-            <form action="${h.url_for( action='history_share' )}" method="post" >
+            <form action="${h.url_for( controller="history", action='share' )}" method="post" >
                 <tr><th>History Name:</td><th>Number of Datasets:</th><th>Share Link</th></tr>
                 %for history in histories:
                     <tr>
@@ -39,7 +39,7 @@
             vertical-align: top;
         }
     </style>
-    <form action="${h.url_for( controller='root', action='history_share' )}" method="post">
+    <form action="${h.url_for( controller='history', action='share' )}" method="post">
         %for history in histories:
             <input type="hidden" name="id" value="${history.id}">
         %endfor

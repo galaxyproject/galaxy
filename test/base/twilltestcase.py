@@ -13,7 +13,7 @@ from elementtree import ElementTree
 buffer = StringIO.StringIO()
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-twill.set_output(buffer)
+## twill.set_output(buffer)
 tc.config('use_tidy', 0)
 
 # Dial ClientCookie logging down (very noisy)
@@ -107,10 +107,10 @@ class TwillTestCase( unittest.TestCase ):
         history_list = self.get_histories()
         self.assertTrue( history_list )
         if id is None:
-            history = history_list[-1]
+            history = history_list[0]
             id = history.get( 'id' )
         id = str( id )
-        self.visit_page( "history_delete?id=%s" %(id) )
+        self.visit_page( "history/list?operation=delete&id=%s" %(id) )
 
     def get_histories( self ):
         """Returns all histories"""
@@ -135,7 +135,7 @@ class TwillTestCase( unittest.TestCase ):
     def histories_as_xml_tree( self ):
         """Returns a parsed xml object of all histories"""
         self.home()
-        self.visit_page( 'history_available?as_xml=True' )
+        self.visit_page( 'history/list_as_xml' )
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
@@ -164,7 +164,7 @@ class TwillTestCase( unittest.TestCase ):
         old_name = elem.get( 'name' )
         self.assertTrue( old_name )
         id = str( id )
-        self.visit_page( "history_rename?id=%s&name=%s" %(id, name) )
+        self.visit_page( "history/rename?id=%s&name=%s" %(id, name) )
         return id, old_name, name
 
     def set_history( self ):
@@ -188,25 +188,25 @@ class TwillTestCase( unittest.TestCase ):
         id = str( id )
         name = elem.get( 'name' )
         self.assertTrue( name )
-        self.visit_url( "%s/history_share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, id, email ) )
+        self.visit_url( "%s/history/share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, id, email ) )
         return id, name, email
     def share_history_containing_private_datasets( self, history_id, email='test@bx.psu.edu' ):
         """Attempt to share a history containing private datasets with a different user"""
-        self.visit_url( "%s/history_share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, history_id, email ) )
+        self.visit_url( "%s/history/share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, history_id, email ) )
         self.last_page()
         self.check_page_for_string( "The history or histories you've chosen to share contain datasets" )
         self.check_page_for_string( "How would you like to proceed?" )
         self.home()
     def make_datasets_public( self, history_id, email='test@bx.psu.edu' ):
         """Make private datasets public in order to share a history with a different user"""
-        self.visit_url( "%s/history_share?id=%s&email=%s&action=public&submit=Ok" % ( self.url, history_id, email ) )
+        self.visit_url( "%s/history/share?id=%s&email=%s&action=public&submit=Ok" % ( self.url, history_id, email ) )
         self.last_page()
         check_str = "History (Unnamed history) has been shared with: %s" % email
         self.check_page_for_string( check_str )
         self.home()
     def privately_share_dataset( self, history_id, email='test@bx.psu.edu' ):
         """Make private datasets public in order to share a history with a different user"""
-        self.visit_url( "%s/history_share?id=%s&email=%s&action=private&submit=Ok" % ( self.url, history_id, email ) )
+        self.visit_url( "%s/history/share?id=%s&email=%s&action=private&submit=Ok" % ( self.url, history_id, email ) )
         self.last_page()
         check_str = "History (Unnamed history) has been shared with: %s" % email
         self.check_page_for_string( check_str )
@@ -223,10 +223,10 @@ class TwillTestCase( unittest.TestCase ):
         hid = str(hid)
         elems = [ elem for elem in data_list if elem.get('hid') == hid ]
         self.assertEqual(len(elems), 1)
-        self.visit_page( "history_switch?id=%s" % elems[0].get('id') )
+        self.visit_page( "history/list?operation=switch&id=%s" % elems[0].get('id') )
 
     def view_stored_histories( self ):
-        self.visit_page( "history_available" )
+        self.visit_page( "history/list" )
 
     # Functions associated with datasets (history items) and meta data
     def get_job_stderr( self, id ):
@@ -554,7 +554,10 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( button )
 
     def visit_page( self, page ):
-        tc.go("./%s" % page)
+        # tc.go("./%s" % page)
+        if not page.startswith( "/" ):
+            page = "/" + page 
+        tc.go( self.url + page )
         tc.code( 200 )
 
     def visit_url( self, url ):
