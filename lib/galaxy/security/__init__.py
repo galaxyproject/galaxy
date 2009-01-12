@@ -318,6 +318,26 @@ class GalaxyRBACAgent( RBACAgent ):
             for user in users:
                 self.associate_components( user=user, role=sharing_role )
         self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
+    def set_entity_user_associations( self, users=[], roles=[], groups=[], delete_existing_assocs=True ):
+        for user in users:
+            if delete_existing_assocs:
+                for a in user.non_private_roles + user.groups:
+                    a.delete()
+                    a.flush()
+            for role in roles:
+                self.associate_components( user=user, role=role )
+            for group in groups:
+                self.associate_components( user=user, group=group )
+    def set_entity_group_associations( self, groups=[], users=[], roles=[], delete_existing_assocs=True ):
+        for group in groups:
+            if delete_existing_assocs:
+                for a in group.roles + group.users:
+                    a.delete()
+                    a.flush()
+            for role in roles:
+                self.associate_components( group=group, role=role )
+            for user in users:
+                self.associate_components( group=group, user=user )
     def set_entity_role_associations( self, roles=[], users=[], groups=[], delete_existing_assocs=True ):
         for role in roles:
             if delete_existing_assocs:

@@ -56,47 +56,43 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all()
-        groups = trans.app.model.Group.query() \
-                .filter( trans.app.model.Group.table.c.deleted==False ) \
-                .order_by( trans.app.model.Group.table.c.name ) \
-                .all()
-        return trans.fill_template( '/admin/dataset_security/role_create.mako', 
-                                    users=users,
-                                    groups=groups,
+        if params.get( 'create_role_button', False ):
+            name = util.restore_text( params.name )
+            description = util.restore_text( params.description )
+            in_users = util.listify( params.get( 'in_users', [] ) )
+            in_groups = util.listify( params.get( 'in_groups', [] ) )
+            if not name or not description:
+                msg = "Enter a valid name and a description"
+            elif trans.app.model.Role.filter( trans.app.model.Role.table.c.name==name ).first():
+                msg = "A role with that name already exists"
+            else:
+                # Create the role
+                role = trans.app.model.Role( name=name, description=description, type=trans.app.model.Role.types.ADMIN )
+                role.flush()
+                # Create the UserRoleAssociations
+                for user in [ trans.app.model.User.get( x ) for x in in_users ]:
+                    ura = trans.app.model.UserRoleAssociation( user, role )
+                    ura.flush()
+                # Create the GroupRoleAssociations
+                for group in [ trans.app.model.Group.get( x ) for x in in_groups ]:
+                    gra = trans.app.model.GroupRoleAssociation( group, role )
+                    gra.flush()
+                msg = "Role '%s' has been created with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
+                trans.response.send_redirect( web.url_for( controller='admin', action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
+            trans.response.send_redirect( web.url_for( controller='admin', action='create_role', msg=util.sanitize_text( msg ), messagetype='error' ) )
+        out_users = []
+        for user in trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all():
+            out_users.append( ( user.id, user.email ) )
+        out_groups = []
+        for group in trans.app.model.Group.filter( trans.app.model.Group.table.c.deleted==False ).order_by( trans.app.model.Group.table.c.name ).all():
+            out_groups.append( ( group.id, group.name ) )
+        return trans.fill_template( '/admin/dataset_security/role_create.mako',
+                                    in_users=[],
+                                    out_users=out_users,
+                                    in_groups=[],
+                                    out_groups=out_groups,
                                     msg=msg,
                                     messagetype=messagetype )
-    @web.expose
-    @web.require_admin
-    def new_role( self, trans, **kwd ):
-        params = util.Params( kwd )
-        name = util.restore_text( params.name )
-        description = util.restore_text( params.description )
-        if not name or not description:
-            msg = "Enter a valid name and a description"
-        elif trans.app.model.Role.filter( trans.app.model.Role.table.c.name==name ).first():
-            msg = "A role with that name already exists"
-        else:
-            # Create the role
-            role = trans.app.model.Role( name=name, description=description, type=trans.app.model.Role.types.ADMIN )
-            role.flush()
-            # Add the users
-            users = util.listify( params.users )
-            for user_id in users:
-                user = trans.app.model.User.get( user_id )
-                # Create the UserRoleAssociation
-                ura = trans.app.model.UserRoleAssociation( user, role )
-                ura.flush()
-            # Add the groups
-            groups = util.listify( params.groups )
-            for group_id in groups:
-                group = trans.app.model.Group.get( group_id )
-                # Create the GroupRoleAssociation
-                gra = trans.app.model.GroupRoleAssociation( group, role )
-                gra.flush()
-            msg = "The new role has been created with %s associated users and %s associated groups" % ( str( len( users ) ), str( len( groups ) ) )
-            trans.response.send_redirect( web.url_for( controller='admin', action='roles', msg=msg, messagetype='done' ) )
-        trans.response.send_redirect( web.url_for( controller='admin', action='create_role', msg=msg, messagetype='error' ) )
     @web.expose
     @web.require_admin
     def role( self, trans, **kwd ):
@@ -105,9 +101,29 @@ class Admin( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         role = trans.app.model.Role.get( int( params.role_id ) )
         if params.get( 'role_members_edit_button', False ):
-            self.role_members_edit( trans, **kwd )
-        if params.get( 'rename', False ):
+            in_users = [ trans.app.model.User.get( x ) for x in util.listify( params.in_users ) ]
+            for ura in role.users:
+                user = trans.app.model.User.get( ura.user_id )
+                if user not in in_users:
+                    # Delete DefaultUserPermissions for previously associated users that have been removed from the role
+                    for dup in user.default_permissions:
+                        if role == dup.role:
+                            dup.delete()
+                            dup.flush()
+                    # Delete DefaultHistoryPermissions for previously associated users that have been removed from the role
+                    for history in user.histories:
+                        for dhp in history.default_permissions:
+                            if role == dhp.role:
+                                dhp.delete()
+                                dhp.flush()
+            in_groups = [ trans.app.model.Group.get( x ) for x in util.listify( params.in_groups ) ]
+            trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
+            role.refresh()
+            msg = "Role '%s' has been updated with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
+            trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
+        elif params.get( 'rename', False ):
             if params.rename == 'submitted':
+                old_name = role.name
                 new_name = util.restore_text( params.name )
                 new_description = util.restore_text( params.description )
                 if not new_name:
@@ -120,8 +136,8 @@ class Admin( BaseController ):
                     role.name = new_name
                     role.description = new_description
                     role.flush()
-                    msg = 'The role has been renamed to %s' % new_name
-                    return trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
+                    msg = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
+                    return trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
             return trans.fill_template( '/admin/dataset_security/role_rename.mako', role=role, msg=msg, messagetype=messagetype )
         in_users = []
         out_users = []
@@ -132,7 +148,7 @@ class Admin( BaseController ):
                 in_users.append( ( user.id, user.email ) )
             else:
                 out_users.append( ( user.id, user.email ) )
-        for group in trans.app.model.Group.query().order_by( trans.app.model.Group.table.c.name ).all():
+        for group in trans.app.model.Group.filter( trans.app.model.Group.table.c.deleted==False ).order_by( trans.app.model.Group.table.c.name ).all():
             if group in [ x.group for x in role.groups ]:
                 in_groups.append( ( group.id, group.name ) )
             else:
@@ -173,40 +189,13 @@ class Admin( BaseController ):
                                     messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def role_members_edit( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        role = trans.app.model.Role.get( int( params.role_id ) )
-        in_users = [ trans.app.model.User.get( x ) for x in util.listify( params.in_users ) ]
-        for ura in role.users:
-            user = trans.app.model.User.get( ura.user_id )
-            if user not in in_users:
-                # Delete DefaultUserPermissions for previously associated users that have been removed from the role
-                for dup in user.default_permissions:
-                    if role == dup.role:
-                        dup.delete()
-                        dup.flush()
-                # Delete DefaultHistoryPermissions for previously associated users that have been removed from the role
-                for history in user.histories:
-                    for dhp in history.default_permissions:
-                        if role == dhp.role:
-                            dhp.delete()
-                            dhp.flush()
-        in_groups = [ trans.app.model.Group.get( x ) for x in util.listify( params.in_groups ) ]
-        trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
-        role.refresh()
-        msg = "The role has been updated with %s associated users and %s associated groups" % ( str( len( in_users ) ), str( len( in_groups ) ) )
-        trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype=messagetype ) )
-    @web.expose
-    @web.require_admin
     def mark_role_deleted( self, trans, **kwd ):
         params = util.Params( kwd )
         role = trans.app.model.Role.get( int( params.role_id ) )
         role.deleted = True
         role.flush()
-        msg = "The role has been marked as deleted."
-        trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
+        msg = "Role '%s' has been marked as deleted." % role.name
+        trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def deleted_roles( self, trans, **kwd ):
@@ -239,8 +228,8 @@ class Admin( BaseController ):
         role = trans.app.model.Role.get( int( params.role_id ) )
         role.deleted = False
         role.flush()
-        msg = "The role has been marked as not deleted."
-        trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
+        msg = "Role '%s' has been marked as not deleted." % role.name
+        trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def purge_role( self, trans, **kwd ):
@@ -255,8 +244,8 @@ class Admin( BaseController ):
         role = trans.app.model.Role.get( int( params.role_id ) )
         if not role.deleted:
             # We should never reach here, but just in case there is a bug somewhere...
-            msg = "The role has not been deleted, so it cannot be purged."
-            trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='error' ) )
+            msg = "Role '%s' has not been deleted, so it cannot be purged." % role.name
+            trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='error' ) )
         # Delete UserRoleAssociations
         for ura in role.users:
             user = trans.app.model.User.get( ura.user_id )
@@ -281,9 +270,9 @@ class Admin( BaseController ):
         for adra in role.actions:
             adra.delete()
             adra.flush()
-        msg = "The following have been purged from the database for the role: "
+        msg = "The following have been purged from the database for role '%s': " % role.name
         msg += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, ActionDatasetRoleAssociations."
-        trans.response.send_redirect( web.url_for( action='deleted_roles', msg=msg, messagetype='done' ) )
+        trans.response.send_redirect( web.url_for( action='deleted_roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
 
     # Galaxy Group Stuff
     @web.expose
@@ -315,12 +304,19 @@ class Admin( BaseController ):
     @web.require_admin
     def group( self, trans, **kwd ):
         params = util.Params( kwd )
-        group_id = int( params.group_id )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        group = trans.app.model.Group.get( group_id )
+        group = trans.app.model.Group.get( int( params.group_id ) )
+        if params.get( 'group_roles_users_edit_button', False ):
+            in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.in_roles ) ]
+            in_users = [ trans.app.model.User.get( x ) for x in util.listify( params.in_users ) ]
+            trans.app.security_agent.set_entity_group_associations( groups=[ group ], roles=in_roles, users=in_users )
+            group.refresh()
+            msg += "Group '%s' has been updated with %d associated roles and %d associated users" % ( group.name, len( in_roles ), len( in_users ) )
+            trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
         if params.get( 'rename', False ):
             if params.rename == 'submitted':
+                old_name = group.name
                 new_name = util.restore_text( params.name )
                 if not new_name:
                     msg = 'Enter a valid name'
@@ -331,133 +327,74 @@ class Admin( BaseController ):
                 else:
                     group.name = new_name
                     group.flush()
-                    msg = 'The group has been renamed to %s' % new_name
-                    return trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
+                    msg = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
+                    return trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
             return trans.fill_template( '/admin/dataset_security/group_rename.mako', group=group, msg=msg, messagetype=messagetype )
-        # Get the group members
-        users = []
-        for uga in group.members:
-            users.append( trans.app.model.User.get( uga.user_id ) )
-        roles = []
-        for gra in group.roles:
-            roles.append( trans.app.model.Role.get( gra.role_id ) )
-        msg += 'Group %s currently has %d members and is associated with %d roles' % ( group.name, len( users ), len( roles ) )
-        return trans.fill_template( '/admin/dataset_security/group.mako', group=group, users=users, roles=roles, msg=msg, messagetype='done' )
+        in_roles = []
+        out_roles = []
+        in_users = []
+        out_users = []
+        for role in trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all():
+            if role in [ x.role for x in group.roles ]:
+                in_roles.append( ( role.id, role.name ) )
+            else:
+                out_roles.append( ( role.id, role.name ) )
+        for user in trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all():
+            if user in [ x.user for x in group.users ]:
+                in_users.append( ( user.id, user.email ) )
+            else:
+                out_users.append( ( user.id, user.email ) )
+        msg += 'Group %s is currently associated with %d roles and %d users' % ( group.name, len( in_roles ), len( in_users ) )
+        return trans.fill_template( '/admin/dataset_security/group.mako',
+                                    group=group,
+                                    in_roles=in_roles,
+                                    out_roles=out_roles,
+                                    in_users=in_users,
+                                    out_users=out_users,
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     @web.require_admin
     def create_group( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ) \
-                                    .order_by( trans.app.model.User.table.c.email ).all()
-        roles = trans.app.model.Role.query() \
-                .filter( and_( trans.app.model.Role.table.c.deleted == False, 
-                               trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) ) \
-                .order_by( trans.app.model.Role.table.c.name ).all()
-        return trans.fill_template( '/admin/dataset_security/group_create.mako', users=users, roles=roles, msg=msg, messagetype=messagetype )
-    @web.expose
-    @web.require_admin
-    def new_group( self, trans, **kwd ):
-        params = util.Params( kwd )
-        name = util.restore_text( params.name )
-        if not name:
-            msg = "Enter a valid name"
-        elif trans.app.model.Group.filter( trans.app.model.Group.table.c.name==name ).first():
-            msg = "A group with that name already exists"
-        else:
-            # Create the group
-            group = trans.app.model.Group( name )
-            group.flush()
-            # Add the members
-            members = util.listify( params.members )
-            for user_id in members:
-                user = trans.app.model.User.get( user_id )
-                # Create the UserGroupAssociation
-                uga = trans.app.model.UserGroupAssociation( user, group )
-                uga.flush()
-            # Add the roles
-            roles = util.listify( params.roles )
-            for role_id in roles:
-                role = trans.app.model.Role.get( role_id )
-                # Create the GroupRoleAssociation
-                gra = trans.app.model.GroupRoleAssociation( group, role )
-                gra.flush()
-            msg = "The new group has been created with %s members and %s associated roles" % ( str( len( members ) ), str( len( roles ) ) )
-            trans.response.send_redirect( web.url_for( controller='admin', action='groups', msg=msg, messagetype='done' ) )
-        trans.response.send_redirect( web.url_for( controller='admin', action='create_group', msg=msg, messagetype='error' ) )
-    @web.expose
-    @web.require_admin
-    def group_members_edit( self, trans, **kwd ):
-        params = util.Params( kwd )
-        group = trans.app.model.Group.get( int( params.group_id ) )
-        if 'group_members_edit_button' in kwd:
-            members = util.listify( params.members )
-            # This is tricky since we have default association tables with
-            # records referring to members of this group.  Because of this,
-            # we'll need to handle changes to the member list rather than the
-            # simpler approach of deleting all existing members and creating 
-            # new records for user_ids in the received members param.
-            # First remove existing members that are not in the received members param
-            for uga in group.members:
-                if uga.user_id not in members:
-                    # Delete the UserGroupAssociation
-                    uga.delete()
-                    uga.flush()
-            # Then add all new members to the group
-            for user_id in members:
-                user = trans.app.model.User.get( user_id )
-                if user not in group.members:
+        if params.get( 'create_group_button', False ):
+            name = util.restore_text( params.name )
+            in_users = util.listify( params.get( 'in_users', [] ) )
+            in_roles = util.listify( params.get( 'in_roles', [] ) )
+            if not name:
+                msg = "Enter a valid name"
+            elif trans.app.model.Group.filter( trans.app.model.Group.table.c.name==name ).first():
+                msg = "A group with that name already exists"
+            else:
+                # Create the group
+                group = trans.app.model.Group( name=name )
+                group.flush()
+                # Create the UserRoleAssociations
+                for user in [ trans.app.model.User.get( x ) for x in in_users ]:
                     uga = trans.app.model.UserGroupAssociation( user, group )
                     uga.flush()
-            msg = "Group membership has been updated with a total of %d members" % len( members )
-            trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
-        members = []
-        for uga in group.members:
-            members.append ( trans.app.model.User.get( uga.user_id ) )
-        users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all()
-        msg = "%s currently has %s members" % ( group.name, len( members ) )
-        return trans.fill_template( '/admin/dataset_security/group_members_edit.mako', group=group, members=members, users=users, msg=msg, messagetype='done' )
-    @web.expose
-    @web.require_admin
-    def group_roles_edit( self, trans, **kwd ):
-        params = util.Params( kwd )
-        group = trans.app.model.Group.get( int( params.group_id ) )
-        if 'group_roles_edit_button' in kwd:
-            roles = util.listify( params.roles )
-            # This is tricky since we have default association tables with
-            # records referring to roles of this group.  Because of this,
-            # we'll need to handle changes to the role list rather than the
-            # simpler approach of deleting all existing roles and creating 
-            # new records for role_ids in the received roles param.
-            # First remove existing roles that are not in the received roles param
-            for gra in group.roles:
-                if gra.role_id not in roles:
-                    # Delete the GroupRoleAssociation
-                    gra.delete()
-                    gra.flush()
-            group.refresh()
-            # Then add all new roles to the group
-            for role_id in roles:
-                role = trans.app.model.Role.get( role_id )
-                if role not in group.roles:
+                # Create the GroupRoleAssociations
+                for role in [ trans.app.model.Role.get( x ) for x in in_roles ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     gra.flush()
-            msg = "Group updated with a total of %s associated roles" % len( roles )
-            trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
-        roles=trans.app.model.Role.filter( and_( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE,
-                                                 trans.app.model.Role.table.c.deleted == False ) ) \
-                                  .order_by( trans.app.model.Role.table.c.name ).all()
-        group_roles = []
-        for gra in group.roles:
-            group_roles.append ( trans.app.model.Role.get( gra.role_id ) )
-        msg = "%s is currently associated with %s roles" % ( group.name, len( group_roles ) )
-        return trans.fill_template( '/admin/dataset_security/group_roles_edit.mako',
-                                    group=group,
-                                    group_roles=group_roles,
-                                    roles=roles,
+                msg = "Group '%s' has been created with %d associated users and %d associated roles" % ( name, len( in_users ), len( in_roles ) )
+                trans.response.send_redirect( web.url_for( controller='admin', action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
+            trans.response.send_redirect( web.url_for( controller='admin', action='create_group', msg=util.sanitize_text( msg ), messagetype='error' ) )
+        out_users = []
+        for user in trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all():
+            out_users.append( ( user.id, user.email ) )
+        out_roles = []
+        for role in trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all():
+            out_roles.append( ( role.id, role.name ) )
+        return trans.fill_template( '/admin/dataset_security/group_create.mako',
+                                    in_users=[],
+                                    out_users=out_users,
+                                    in_roles=[],
+                                    out_roles=out_roles,
                                     msg=msg,
-                                    messagetype='done' )
+                                    messagetype=messagetype )
     @web.expose
     @web.require_admin
     def mark_group_deleted( self, trans, **kwd ):
@@ -465,8 +402,8 @@ class Admin( BaseController ):
         group = trans.app.model.Group.get( int( params.group_id ) )
         group.deleted = True
         group.flush()
-        msg = "The group has been marked as deleted."
-        trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
+        msg = "Group '%s' has been marked as deleted." % group.name
+        trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def deleted_groups( self, trans, **kwd ):
@@ -499,8 +436,8 @@ class Admin( BaseController ):
         group = trans.app.model.Group.get( int( params.group_id ) )
         group.deleted = False
         group.flush()
-        msg = "The group has been marked as not deleted."
-        trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='done' ) )
+        msg = "Group '%s' has been marked as not deleted." % group.name
+        trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def purge_group( self, trans, **kwd ):
@@ -510,8 +447,8 @@ class Admin( BaseController ):
         group = trans.app.model.Group.get( int( params.group_id ) )
         if not group.deleted:
             # We should never reach here, but just in case there is a bug somewhere...
-            msg = "The group has not been deleted, so it cannot be purged."
-            trans.response.send_redirect( web.url_for( action='groups', msg=msg, messagetype='error' ) )
+            msg = "Group '%s' has not been deleted, so it cannot be purged." % group.name
+            trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='error' ) )
         # Delete UserGroupAssociations
         for uga in group.users:
             uga.delete()
@@ -521,8 +458,8 @@ class Admin( BaseController ):
             gra.delete()
             gra.flush()
         # Delete the Group
-        msg = "The following have been purged from the database for the group: UserGroupAssociations, GroupRoleAssociations."
-        trans.response.send_redirect( web.url_for( action='deleted_groups', msg=msg, messagetype='done' ) )
+        msg = "The following have been purged from the database for group '%s': UserGroupAssociations, GroupRoleAssociations." % group.name
+        trans.response.send_redirect( web.url_for( action='deleted_groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
 
     # Galaxy User Stuff
     @web.expose
@@ -571,7 +508,7 @@ class Admin( BaseController ):
                     if mail.close():
                         msg + ". However, subscribing to the mailing list has failed."
                         messagetype = 'error'
-                trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype=messagetype ) )
+                trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
         return trans.fill_template( '/admin/user/create.mako',
                                     msg=msg,
                                     messagetype=messagetype,
@@ -605,7 +542,7 @@ class Admin( BaseController ):
                 trans.log_event( "Admin reset password for user %s" % user.email )
                 msg = 'Password reset'
                 messagetype = 'done'
-                trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype=messagetype ) )
+                trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
         return trans.fill_template( '/admin/user/reset_password.mako',
                                     msg=msg,
                                     messagetype=messagetype,
@@ -621,8 +558,8 @@ class Admin( BaseController ):
         user = trans.app.model.User.get( int( params.user_id ) )
         user.deleted = True
         user.flush()
-        msg = "The user has been marked as deleted."
-        trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='done' ) )
+        msg = "User '%s' has been marked as deleted." % user.email
+        trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def undelete_user( self, trans, **kwd ):
@@ -630,8 +567,8 @@ class Admin( BaseController ):
         user = trans.app.model.User.get( int( params.user_id ) )
         user.deleted = False
         user.flush()
-        msg = "The user has been marked as not deleted."
-        trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='done' ) )
+        msg = "User '%s' has been marked as not deleted." % user.email
+        trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def purge_user( self, trans, **kwd ):
@@ -652,8 +589,8 @@ class Admin( BaseController ):
         user = trans.app.model.User.get( int( params.user_id ) )
         if not user.deleted:
             # We should never reach here, but just in case there is a bug somewhere...
-            msg = "The account has not been deleted, so it cannot be purged."
-            trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='error' ) )
+            msg = "User '%s' has not been deleted, so it cannot be purged." % user.email
+            trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='error' ) )
         private_role = trans.app.security_agent.get_private_user_role( user )
         # Delete DefaultUserPermissions EXCEPT FOR THE PRIVATE ROLE
         for dup in user.default_permissions:
@@ -691,8 +628,8 @@ class Admin( BaseController ):
         # Purge the user
         user.purged = True
         user.flush()
-        msg = "The user has been marked as purged."
-        trans.response.send_redirect( web.url_for( action='deleted_users', msg=msg, messagetype='done' ) )
+        msg = "User '%s' has been marked as purged." % user.email
+        trans.response.send_redirect( web.url_for( action='deleted_users', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def deleted_users( self, trans, **kwd ):
@@ -730,169 +667,125 @@ class Admin( BaseController ):
     @web.require_admin
     def user( self, trans, **kwd ):
         params = util.Params( kwd )
-        user_id = int( params.user_id )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        user = trans.app.model.User.get( user_id )
-        # Get the groups to which the user belongs
-        groups = []
-        for uga in user.groups:
-            groups.append( trans.app.model.Group.get( uga.group_id ) )
-        # Get the roles associated with the user
-        roles = []
-        for ura in user.roles:
-            roles.append( trans.app.model.Role.get( ura.role_id ) )
-        msg += 'User %s is currently a member of %s groups and is associated with %s roles' % ( user.email, str( len( groups ) ), str( len( roles ) ) )
-        return trans.fill_template( '/admin/dataset_security/user.mako', user=user, groups=groups, roles=roles, msg=msg, messagetype='done' )
-    @web.expose
-    @web.require_admin
-    def user_groups_edit( self, trans, **kwd ):
-        params = util.Params( kwd )
         user = trans.app.model.User.get( int( params.user_id ) )
-        user_groups = []
-        for uga in user.groups:
-            user_groups.append ( trans.app.model.Group.get( uga.group_id ) )
-        groups = trans.app.model.Group.query() \
-            .filter( trans.app.model.Group.table.c.deleted==False ) \
-            .order_by( trans.app.model.Group.table.c.name ) \
-            .all()
-        msg = 'User %s is currently a member of %d groups' % ( user.email, len( user_groups ) )
-        return trans.fill_template( '/admin/dataset_security/user_groups_edit.mako', 
-                                    user=user,
-                                    user_groups=user_groups,
-                                    groups=groups,
-                                    msg=msg,
-                                    messagetype='done' )
-    @web.expose
-    @web.require_admin
-    def user_roles_edit( self, trans, **kwd ):
-        params = util.Params( kwd )
-        user = trans.app.model.User.get( int( params.user_id ) )
-        if 'user_roles_edit_button' in kwd:
-            roles = util.listify( params.roles )
-            # This is tricky since we have default association tables with
-            # records referring to roles of this user.  Because of this,
-            # we'll need to handle changes to the role list rather than the
-            # simpler approach of deleting all existing roles and creating 
-            # new records for role_ids in the received roles param.
-            # First remove existing roles that are not in the received roles param
-            for ura in user.roles:
-                role = trans.app.model.Role.get( ura.role_id )
-                if role.type != trans.app.model.Role.types.PRIVATE and ura.role_id not in roles:
-                    # Delete the UserRoleAssociation
-                    ura.delete()
-                    ura.flush()
+        if params.get( 'user_roles_groups_edit_button', False ):
+            in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.in_roles ) ]
+            in_groups = [ trans.app.model.Group.get( x ) for x in util.listify( params.in_groups ) ]
+            trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
             user.refresh()
-            # Then associate all new roles with the user
-            for role_id in roles:
-                role = trans.app.model.Role.get( role_id )
-                if role not in user.roles:
-                    ura = trans.app.model.UserRoleAssociation( user, role )
-                    ura.flush()
-            msg = "User updated with a total of %d associated roles" % len( roles )
-            trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='done' ) )
-        roles=trans.app.model.Role.filter( trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) \
-                                  .order_by( trans.app.model.Role.table.c.name ).all()
-        user_roles = []
-        for ura in user.roles:
-            user_roles.append ( trans.app.model.Role.get( ura.role_id ) )
-        msg = "%s is currently associated with %s roles ( private roles are not displayed )" % ( user.email, len( user_roles ) )
-        return trans.fill_template( '/admin/dataset_security/user_roles_edit.mako', user=user, user_roles=user_roles, roles=roles, msg=msg, messagetype='done' )
-    @web.expose
-    @web.require_admin
-    def update_user_groups( self, trans, **kwd ):
-        params = util.Params( kwd )
-        user_id = int( params.user_id )
-        groups = util.listify( params.groups )
-        user = trans.app.model.User.get( user_id )
-        # First remove existing UserGroupAssociations that are not in the received groups param
-        for uga in user.groups:
-            if uga.group_id not in groups:
-                # Delete the UserGroupAssociation
-                uga.delete()
-                uga.flush()
-        # Then add all new groups to the user
-        for group_id in groups:
-            group = trans.app.model.Group.get( group_id )
-            if group not in user.groups:
-                uga = trans.app.model.UserGroupAssociation( user, group )
-                uga.flush()
-        msg = "User %s now belongs to %s groups" % ( user.email, len( groups ) )
-        trans.response.send_redirect( web.url_for( action='users', msg=msg, messagetype='done' ) )
-
+            msg += "User '%s' has been updated with %d associated roles and %d associated groups (private roles are not displayed)" % \
+                ( user.email, len( in_roles ), len( in_groups ) )
+            trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
+        in_roles = []
+        out_roles = []
+        in_groups = []
+        out_groups = []
+        for role in trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all():
+            if role in [ x.role for x in user.roles ]:
+                in_roles.append( ( role.id, role.name ) )
+            else:
+                out_roles.append( ( role.id, role.name ) )
+        for group in trans.app.model.Group.filter( trans.app.model.Group.table.c.deleted==False ).order_by( trans.app.model.Group.table.c.name ).all():
+            if group in [ x.group for x in user.groups ]:
+                in_groups.append( ( group.id, group.name ) )
+            else:
+                out_groups.append( ( group.id, group.name ) )
+        msg += "User '%s' is currently associated with %d roles and is a member of %d groups" % ( user.email, len( in_roles ), len( in_groups ) )
+        return trans.fill_template( '/admin/dataset_security/user.mako',
+                                    user=user,
+                                    in_roles=in_roles,
+                                    out_roles=out_roles,
+                                    in_groups=in_groups,
+                                    out_groups=out_groups,
+                                    msg=msg,
+                                    messagetype=messagetype )
     # Utility methods to enable removal of associations - redirects are key
     @web.expose
     @web.require_admin
     def remove_group_from_role( self, trans, **kwd ):
         params = util.Params( kwd )
         group_id = int( params.group_id )
+        group = trans.app.model.Group.get( group_id )
         role_id = int( params.role_id )
+        role = trans.app.model.Role.get( role_id )
         gra = trans.app.model.GroupRoleAssociation.filter( and_( trans.app.model.GroupRoleAssociation.table.c.group_id==group_id,
                                                                  trans.app.model.GroupRoleAssociation.table.c.role_id==role_id ) ).first()
         gra.delete()
         gra.flush()
-        msg = "Group removed from role.  "
-        trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
+        msg = "Group '%s' removed from role '%s'" % ( group.name, role.name )
+        trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def remove_group_from_user( self, trans, **kwd ):
         params = util.Params( kwd )
         group_id = int( params.group_id )
+        group = trans.app.model.Group.get( group_id )
         user_id = int( params.user_id )
+        user = trans.app.model.User.get( user_id )
         uga = trans.app.model.UserGroupAssociation.filter( and_( trans.app.model.UserGroupAssociation.table.c.group_id==group_id,
                                                                  trans.app.model.UserGroupAssociation.table.c.user_id==user_id ) ).first()
         uga.delete()
         uga.flush()
-        msg = "User removed from group.  "
-        trans.response.send_redirect( web.url_for( action='user', msg=msg, messagetype='done' ) )
+        msg = "Group '%s' removed from user '%s'" % ( group.name, user.email )
+        trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def remove_role_from_group( self, trans, **kwd ):
         params = util.Params( kwd )
         role_id = int( params.role_id )
+        role = trans.app.model.Role.get( role_id )
         group_id = int( params.group_id )
+        group = trans.app.model.Group.get( group_id )
         gra = trans.app.model.GroupRoleAssociation.filter( and_( trans.app.model.GroupRoleAssociation.table.c.role_id==role_id,
                                                                  trans.app.model.GroupRoleAssociation.table.c.group_id==group_id ) ).first()
         gra.delete()
         gra.flush()
-        msg = "Role removed from group.  "
-        trans.response.send_redirect( web.url_for( action='group', group_id=group_id, msg=msg, messagetype='done' ) )
+        msg = "Role '%s' removed from group '%s'" % ( role.name, group.name )
+        trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def remove_role_from_user( self, trans, **kwd ):
         params = util.Params( kwd )
         user_id = int( params.user_id )
+        user = trans.app.model.User.get( user_id )
         role_id = int( params.role_id )
+        role = trans.app.model.Role.get( role_id )
         ura = trans.app.model.UserRoleAssociation.filter( and_( trans.app.model.UserRoleAssociation.table.c.user_id==user_id,
                                                                 trans.app.model.UserRoleAssociation.table.c.role_id==role_id ) ).first()
         ura.delete()
         ura.flush()
-        msg = "User removed from role.  "
-        trans.response.send_redirect( web.url_for( action='roles', msg=msg, messagetype='done' ) )
+        msg = "Role '%s' removed from user '%s'" % ( role.name, user.email )
+        trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def remove_user_from_group( self, trans, **kwd ):
         params = util.Params( kwd )
         user_id = int( params.user_id )
+        user = trans.app.model.User.get( user_id )
         group_id = int( params.group_id )
+        group = trans.app.model.Group.get( group_id )
         uga = trans.app.model.UserGroupAssociation.filter( and_( trans.app.model.UserGroupAssociation.table.c.user_id==user_id,
                                                                  trans.app.model.UserGroupAssociation.table.c.group_id==group_id ) ).first()
         uga.delete()
         uga.flush()
-        msg = "User removed from group.  "
-        trans.response.send_redirect( web.url_for( action='group', group_id=group_id, msg=msg, messagetype='done' ) )
+        msg = "User '%s' removed from group '%s'" % ( user.email, group.name )
+        trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def remove_user_from_role( self, trans, **kwd ):
         params = util.Params( kwd )
         user_id = int( params.user_id )
+        user = trans.app.model.User.get( user_id )
         role_id = int( params.role_id )
+        role = trans.app.model.Role.get( role_id )
         ura = trans.app.model.UserRoleAssociation.filter( and_( trans.app.model.UserRoleAssociation.table.c.user_id==user_id,
                                                                 trans.app.model.UserRoleAssociation.table.c.role_id==role_id ) ).first()
         ura.delete()
         ura.flush()
-        msg = "User removed from role.  "
-        trans.response.send_redirect( web.url_for( action='user', user_id=user_id, msg=msg, messagetype='done' ) )
+        msg = "User '%s' removed from role '%s'" % ( user.email, role.name )
+        trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
 
     # Galaxy Library Stuff
     @web.expose
@@ -924,10 +817,10 @@ class Admin( BaseController ):
             action = 'delete'
         else:
             msg = 'Invalid action attempted on library'
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         if not id and not action == 'new':
             msg = "You must specify a library to %s." % action
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         if not action == 'new':
             library = trans.app.model.Library.get( int( id ) )
         if action == 'new':
@@ -939,10 +832,11 @@ class Admin( BaseController ):
                 library.root_folder = root_folder
                 library.flush()
                 msg = 'The new library named %s has been created' % library.name
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             return trans.fill_template( '/admin/library/new_library.mako', msg=msg, messagetype=messagetype )
         elif action == 'rename':
             if params.rename == 'submitted':
+                old_name = library.name
                 new_name = util.restore_text( params.name )
                 new_description = util.restore_text( params.description )
                 if not new_name:
@@ -956,8 +850,8 @@ class Admin( BaseController ):
                     library.name = new_name
                     library.description = new_description
                     library.flush()
-                    msg = 'The library has been renamed to %s' % new_name
-                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+                    msg = "Library '%s' has been renamed to '%s'" % ( old_name, new_name )
+                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             return trans.fill_template( '/admin/library/rename_library.mako', library=library, msg=msg, messagetype=messagetype )
         elif action == 'delete':
             def delete_folder( library_folder ):
@@ -975,8 +869,8 @@ class Admin( BaseController ):
             delete_folder( library.root_folder )
             library.deleted = True
             library.flush()
-            msg = 'The library and all of its contents have been marked deleted'
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+            msg = "Library '%s' and all of its contents have been marked deleted" % library.name
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def deleted_libraries( self, trans, **kwd ):
@@ -1007,8 +901,8 @@ class Admin( BaseController ):
         undelete_folder( library.root_folder )
         library.deleted = False
         library.flush()
-        msg = "The library and all of its contents have been marked not deleted"
-        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+        msg = "Library '%s' and all of its contents have been marked not deleted" % library.name
+        return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def purge_library( self, trans, **kwd ):
@@ -1034,8 +928,8 @@ class Admin( BaseController ):
         purge_folder( library.root_folder )
         library.purged = True
         library.flush()
-        msg = "The library and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script"
-        return trans.response.send_redirect( web.url_for( action='deleted_libraries', msg=msg, messagetype='done' ) )
+        msg = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
+        return trans.response.send_redirect( web.url_for( action='deleted_libraries', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def folder( self, trans, id, **kwd ):
@@ -1050,11 +944,11 @@ class Admin( BaseController ):
             action = 'delete'
         else:
             msg = "Invalid action attempted on folder."
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         folder = trans.app.model.LibraryFolder.get( id )
         if not folder:
             msg = "Invalid folder specified, id: %s" % str( id )
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         if action == 'new':
             if params.new == 'submitted':
                 new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
@@ -1065,11 +959,12 @@ class Admin( BaseController ):
                 new_folder.genome_build = util.dbnames.default_value
                 folder.add_folder( new_folder )
                 new_folder.flush()
-                msg = 'The new folder named %s has been added to this library' % new_folder.name
-                return trans.response.send_redirect( web.url_for( action='folder', id=new_folder.id, msg=msg, messagetype='done' ) )
+                msg = "New folder named '%s' has been added to this library" % new_folder.name
+                return trans.response.send_redirect( web.url_for( action='folder', id=new_folder.id, msg=util.sanitize_text( msg ), messagetype='done' ) )
             return trans.fill_template( '/admin/library/new_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
         elif action == 'rename':
             if params.rename == 'submitted':
+                old_name = folder.name
                 new_name = util.restore_text( params.name )
                 new_description = util.restore_text( params.description )
                 if not new_name:
@@ -1079,8 +974,8 @@ class Admin( BaseController ):
                     folder.name = new_name
                     folder.description = new_description
                     folder.flush()
-                    msg = 'The folder has been renamed to %s' % new_name
-                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+                    msg = "Folder '%s'has been renamed to '%s'" % ( old_name, new_name )
+                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             return trans.fill_template( '/admin/library/rename_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
         elif action == 'delete':
             def delete_folder( folder ):
@@ -1093,8 +988,8 @@ class Admin( BaseController ):
                 folder.deleted = True
                 folder.flush()
             delete_folder( folder )
-            msg = 'The folder %s and all of its contents have been marked deleted' % folder.name
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+            msg = "Folder '%s' and all of its contents have been marked deleted" % folder.name
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def dataset( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, dbkey=None, **kwd ):
@@ -1189,7 +1084,7 @@ class Admin( BaseController ):
                     msg = 'Select a file, enter a URL or Text, or select a server directory.'
                 else:
                     msg = 'Select a file, enter a URL or enter Text.'
-                trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=msg, messagetype='done' ) )
+                trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, msg=util.sanitize_text( msg ), messagetype='done' ) )
             space_to_tab = params.get( 'space_to_tab', False )
             if space_to_tab and space_to_tab not in [ "None", None ]:
                 space_to_tab = True
@@ -1269,10 +1164,16 @@ class Admin( BaseController ):
                 total_added = len( created_lfda_ids.split( ',' ) )
                 msg = "%i new datasets added to the library ( each is selected below ).  " % total_added
                 msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
-                trans.response.send_redirect( web.url_for( action='library_browser', created_lfda_ids=created_lfda_ids, msg=msg, messagetype='done' ) )
+                trans.response.send_redirect( web.url_for( action='library_browser',
+                                                           created_lfda_ids=created_lfda_ids, 
+                                                           msg=util.sanitize_text( msg ), 
+                                                           messagetype='done' ) )
             else:
                 msg = "Upload failed"
-                trans.response.send_redirect( web.url_for( action='library_browser', created_lfda_ids=created_lfda_ids, msg=msg, messagetype='error' ) )
+                trans.response.send_redirect( web.url_for( action='library_browser',
+                                                           created_lfda_ids=created_lfda_ids,
+                                                           msg=util.sanitize_text( msg ),
+                                                           messagetype='error' ) )
 
         # No dataset(s) specified, display upload form
         elif not id:
@@ -1304,7 +1205,7 @@ class Admin( BaseController ):
             lda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
             if not lda:
                 msg = "Invalid dataset specified, id: %s" %str( id )
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
 
             # Copied from edit attributes for 'regular' datasets with some additions
             p = util.Params(kwd, safe=False)
@@ -1339,7 +1240,7 @@ class Admin( BaseController ):
                 lda.datatype.after_edit( lda )
                 trans.app.model.flush()
                 msg = 'Attributes updated for dataset %s' % lda.name
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             elif p.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
                 for name, spec in lda.datatype.metadata_spec.items():
@@ -1351,13 +1252,13 @@ class Admin( BaseController ):
                 lda.datatype.after_edit( lda )
                 trans.app.model.flush()
                 msg = 'Attributes updated for dataset %s' % lda.name
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+                return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             elif p.delete:
                 # The user selected the "Remove this dataset from the library" pop-up menu option
                 lda.deleted = True
                 lda.flush()
                 msg = 'Dataset %s has been removed from this library' % lda.name
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             lda.datatype.before_edit( lda )
             if "dbkey" in lda.datatype.metadata_spec and not lda.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
@@ -1383,11 +1284,11 @@ class Admin( BaseController ):
                 lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
                 if lfda is None:
                     msg = 'You specified an invalid dataset id: %s' %str( id )
-                    trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+                    trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
                 lfdas.append( lfda )
             if len( lfdas ) < 2:
                 msg = 'You must specify at least two datasets on which to modify permissions, ids you sent: %s' % str( ids )
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
             if 'update_roles' in kwd:
                 #p = util.Params( kwd )
                 permissions = {}
@@ -1398,7 +1299,7 @@ class Admin( BaseController ):
                     trans.app.security_agent.set_all_dataset_permissions( lfda.dataset, permissions )
                     lfda.dataset.refresh()
                 msg = 'Permissions and roles have been updated on %d datasets' % len( lfdas )
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             # Ensure that the permissions across all datasets are identical.  Otherwise, we can't update together.
             tmp = []
             for lfda in lfdas:
@@ -1407,7 +1308,7 @@ class Admin( BaseController ):
                     tmp.append( perms )
             if len( tmp ) != 1:
                 msg = 'The datasets you selected do not have identical permissions, so they can not be updated together'
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
             else:
                 return trans.fill_template( "/admin/library/dataset.mako", dataset=lfdas )
     @web.expose
@@ -1417,7 +1318,7 @@ class Admin( BaseController ):
             folder = trans.app.model.LibraryFolder.get( folder_id )
         except:
             msg = "Invalid folder id: %s" % str( folder_id )
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -1426,7 +1327,7 @@ class Admin( BaseController ):
         history.refresh()
         if not history.active_datasets:
             msg = 'Your current history is empty'
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         if params.get( 'add_dataset_from_history_button', False ):
             if not isinstance( ids, list ):
                 if ids:
@@ -1442,10 +1343,10 @@ class Admin( BaseController ):
                         dataset_names.append( data.name )
                     else:
                         msg = "The requested dataset id %s is invalid" % str( data_id )
-                        return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+                        return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
                 if dataset_names:
                     msg = "Added the following datasets to the library folder: %s" % ( ", ".join( dataset_names ) )
-                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             else:
                 msg = 'Select at least one dataset from the list'
                 messagetype = 'error'
@@ -1459,7 +1360,7 @@ class Admin( BaseController ):
         dataset = trans.app.model.Dataset.get( lfda.dataset_id )
         if not dataset:
             msg = 'Invalid id %s received for file downlaod' % str( id )
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         mime = trans.app.datatypes_registry.get_mimetype_by_extension( lfda.extension.lower() )
         trans.response.set_content_type( mime )
         fStat = os.stat( lfda.file_name )
@@ -1472,7 +1373,7 @@ class Admin( BaseController ):
             return open( lfda.file_name )
         except: 
             msg = 'This dataset contains no content'
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
 
     def check_gzip( self, temp_name ):
         """
@@ -1500,12 +1401,12 @@ class Admin( BaseController ):
         if params.get( 'action_on_datasets_button', False ):
             if not params.dataset_ids:
                 msg = "At least one dataset must be selected for %s" % params.action
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
             dataset_ids = util.listify( params.dataset_ids )
             if params.action == 'edit':
                 trans.response.send_redirect( web.url_for( action='dataset',
                                                            id=",".join( dataset_ids ),
-                                                           msg=msg,
+                                                           msg=util.sanitize_text( msg ),
                                                            messagetype=messagetype ) )
             elif params.action == 'delete':
                 for id in dataset_ids:
@@ -1513,12 +1414,12 @@ class Admin( BaseController ):
                     lfda.deleted = True
                     lfda.flush()
                     msg = "The selected datasets have been removed from this library"
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='done' ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             else:
                 msg = "Action %s is not yet implemented" % str( params.action )
-                trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
+                trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         else:
-            trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype=messagetype ) )
+            trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
     @web.expose
     @web.require_admin
     def delete_dataset( self, trans, id=None, **kwd):
@@ -1530,12 +1431,12 @@ class Admin( BaseController ):
             msg = "Dataset %s was deleted from library folder %s" % ( lfda.name, lfda.folder.name )
             trans.response.send_redirect( web.url_for( action='folder', 
                                                        id=str( lfda.folder.id ),
-                                                       msg=msg,
+                                                       msg=util.sanitize_text( msg ),
                                                        messagetype='done' ) )
         msg = "You did not specify a dataset to delete."
         return trans.response.send_redirect( web.url_for( action='folder',
                                                           id=str( lfda.folder.id ),
-                                                          msg=msg,
+                                                          msg=util.sanitize_text( msg ),
                                                           messagetype='error' ) )
 
     @web.expose

@@ -13,8 +13,7 @@
             <a id="user-${user.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="user-${user.id}-popup">
                 <a class="action-button" href="${h.url_for( action='reset_user_password', user_id=user.id )}">Reset password</a>
-                <a class="action-button" href="${h.url_for( action='user_groups_edit', user_id=user.id )}">Change associated groups</a>
-                <a class="action-button" href="${h.url_for( action='user_roles_edit', user_id=user.id )}">Change associated roles</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='user', user_id=user.id )}">Change associated groups and roles</a>
                 %if allow_user_deletion:
                     <a class="action-button" href="${h.url_for( action='mark_user_deleted', user_id=user.id )}">Mark user deleted</a>
                 %endif
@@ -23,14 +22,26 @@
         <td>
             <ul>
                 %for group in groups:
-                    <li><a href="${h.url_for( controller='admin', action='group', group_id=group.id )}">${group.name}</a></li>
+                    <li>
+                        <a href="${h.url_for( controller='admin', action='group', group_id=group.id )}">${group.name}</a>
+                        <a id="group-${group.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        <div popupmenu="group-${group.id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='admin', action='remove_group_from_user', user_id=user.id, group_id=group.id )}">Remove group from user</a>
+                        </div>
+                    </li>
                 %endfor
             </ul>
         </td>
         <td>
             <ul>
                 %for role in roles:
-                    <li><a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.description}</a></li>
+                    <li>
+                        <a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.name}</a>
+                        <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        <div popupmenu="role-${role.id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='admin', action='remove_role_from_user', user_id=user.id, role_id=role.id )}">Remove role from user</a>
+                        </div>
+                    </li>
                 %endfor
             </ul>
             %if not anchored:

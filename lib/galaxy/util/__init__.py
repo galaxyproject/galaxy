@@ -85,6 +85,7 @@ mapped_chars = { '>' :'__gt__',
                  ']' :'__cb__',
                  '{' :'__oc__',
                  '}' :'__cc__',
+                 '@' : '__at__'
                  }
 
 def restore_text(text):
@@ -273,6 +274,8 @@ def listify( item ):
         return []
     elif isinstance( item, list ):
         return item
+    elif isinstance( item, str ) and item.count( ',' ):
+        return item.split( ',' )
     else:
         return [ item ]
 

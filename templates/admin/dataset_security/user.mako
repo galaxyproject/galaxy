@@ -1,57 +1,83 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-## Render a role
-<%def name="render_role( user, role )">
-    <li>
-        %if role and not role.type == trans.app.model.Role.types.PRIVATE:
-            <a href="${h.url_for( action='role', role_id=role.id, edit=True )}">${role.description}</a>
-            <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            <div popupmenu="role-${role.id}-popup">
-                <a class="action-button" href="${h.url_for( controller='admin', action='remove_user_from_role', user_id=user.id, role_id=role.id )}">Remove user from role</a>
-            </div>
-        %elif role:
-            ${role.description}
-        %endif
-    </li>
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    <script type="text/javascript">
+        $(function(){
+            $("input:text:first").focus();
+        })
+    </script>
 </%def>
 
-## Render a group
-<%def name="render_group( user, group )">
-    <li>
-        <a href="${h.url_for( controller='admin', action='group_members_edit', group_id=group.id )}">${group.name}</a>
-        <a id="group-${group.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-        <div popupmenu="group-${group.id}-popup">
-            <a class="action-button" href="${h.url_for( controller='admin', action='remove_user_from_group', user_id=user.id, group_id=group.id )}">Remove user from group</a>
-        </div>
-    </li>
+<%def name="render_select( name, options )">
+    <select name="${name}" id="${name}" style="min-width: 250px; height: 150px;" multiple>
+        %for option in options:
+            <option value="${option[0]}">${option[1]}</option>
+        %endfor
+    </select>
 </%def>
+
+<script type="text/javascript">
+$().ready(function() {  
+    $('#roles_add_button').click(function() {
+        return !$('#out_roles option:selected').remove().appendTo('#in_roles');
+    });
+    $('#roles_remove_button').click(function() {
+        return !$('#in_roles option:selected').remove().appendTo('#out_roles');
+    });
+    $('#groups_add_button').click(function() {
+        return !$('#out_groups option:selected').remove().appendTo('#in_groups');
+    });
+    $('#groups_remove_button').click(function() {
+        return !$('#in_groups option:selected').remove().appendTo('#out_groups');
+    });
+    $('form#associate_user_role_group').submit(function() {
+        $('#in_roles option').each(function(i) {
+            $(this).attr("selected", "selected");
+        });
+        $('#in_groups option').each(function(i) {
+            $(this).attr("selected", "selected");
+        });
+    });
+});
+</script>
 
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
 
-%if len( groups ) > 0 or len( roles ) > 0:
-    <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-        <tr class="header">
-            <td>Groups of which ${user.email} is a member</td>
-            <td>Roles associated with ${user.email}</td>
-        </tr>
-        <tr>
-            <td>
-                <ul>
-                    %for group in groups:
-                        ${render_group( user, group )}
-                    %endfor
-                </ul>
-            </td>
-            <td>
-                <ul>
-                    %for role in roles:
-                        ${render_role( user, role )}
-                    %endfor
-                </ul>
-            </td>
-        </tr>
-    </table>
-%endif
+<div class="toolForm">
+    <div class="toolFormTitle">User '${user.email}'</div>
+    <div class="toolFormBody">
+        <form name="associate_user_role_group" id="associate_user_role_group" action="${h.url_for( action='user', user_id=user.id )}" method="post" >
+            <div class="form-row">
+                <div style="float: left; margin-right: 10px;">
+                    Roles associated with '${user.email}'<br/>
+                    ${render_select( "in_roles", in_roles )}<br/>
+                    <input type="submit" id="roles_remove_button" value=">>"/>
+                </div>
+                <div>
+                    Roles not associated with '${user.email}'<br/>
+                    ${render_select( "out_roles", out_roles )}<br/>
+                    <input type="submit" id="roles_add_button" value="<<"/>
+                </div>
+            </div>
+            <div class="form-row">
+                <div style="float: left; margin-right: 10px;">
+                    Groups associated with '${user.email}'<br/>
+                    ${render_select( "in_groups", in_groups )}<br/>
+                    <input type="submit" id="groups_remove_button" value=">>"/>
+                </div>
+                <div>
+                    Groups not associated with '${user.email}'<br/>
+                    ${render_select( "out_groups", out_groups )}<br/>
+                    <input type="submit" id="groups_add_button" value="<<"/>
+                </div>
+            </div>
+            <div class="form-row">
+                <input type="submit" name="user_roles_groups_edit_button" value="Save"/>
+            </div>
+        </form>
+    </div>
+</div>

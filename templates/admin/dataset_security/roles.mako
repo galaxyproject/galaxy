@@ -9,7 +9,7 @@
         <tr>
     %endif
         <td>
-            ${role.name}
+            <a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.name}</a>
             <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="role-${role.id}-popup">
                 <a class="action-button" href="${h.url_for( controller='admin', action='role', rename=True, role_id=role.id )}">Rename this role</a>

@@ -1,115 +1,86 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-## Render a user row
-<%def name="render_user_row( user, ctr )">
-    %if ctr % 2 == 1:
-        <tr class="odd_row">
-    %else:
-        <tr>
-    %endif
-        <td><input type="checkbox" name="members" value="${user.id}"/> ${user.email}</td>
-    </tr>
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    <script type="text/javascript">
+        $(function(){
+            $("input:text:first").focus();
+        })
+    </script>
 </%def>
 
-## Render a role row
-<%def name="render_role_row( role, ctr, anchored, curr_anchor )">
-    %if ctr % 2 == 1:
-        <tr class="odd_row">
-    %else:
-        <tr>
-    %endif
-        <td>
-            %if not anchored:
-                <div style="float: right;"><a href="#TOP">top</a></div>
-                <a name="${curr_anchor}"><input type="checkbox" name="roles" value="${role.id}"/>&nbsp;${role.name}:&nbsp;${role.description}</a>
-            %else:
-                <input type="checkbox" name="roles" value="${role.id}"/>&nbsp;${role.name}:&nbsp;${role.description}
-            %endif
-        </td>
-    </tr>
+<%def name="render_select( name, options )">
+    <select name="${name}" id="${name}" style="min-width: 250px; height: 150px;" multiple>
+        %for option in options:
+            <option value="${option[0]}">${option[1]}</option>
+        %endfor
+    </select>
 </%def>
 
-<a name="TOP"><h2>Create Group</h2></a>
+<script type="text/javascript">
+$().ready(function() {  
+    $('#roles_add_button').click(function() {
+        return !$('#out_roles option:selected').remove().appendTo('#in_roles');
+    });
+    $('#roles_remove_button').click(function() {
+        return !$('#in_roles option:selected').remove().appendTo('#out_roles');
+    });
+    $('#users_add_button').click(function() {
+        return !$('#out_users option:selected').remove().appendTo('#in_users');
+    });
+    $('#users_remove_button').click(function() {
+        return !$('#in_users option:selected').remove().appendTo('#out_users');
+    });
+    $('form#associate_group_role_user').submit(function() {
+        $('#in_roles option').each(function(i) {
+            $(this).attr("selected", "selected");
+        });
+        $('#in_users option').each(function(i) {
+            $(this).attr("selected", "selected");
+        });
+    });
+});
+</script>
   
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
 
-<form name="group_create" action="${h.url_for( controller='admin', action='new_group' )}" method="post" >
-    <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-        <tr><td colspan="2">Name: <input  name="name" type="textfield" value="" size=40"/></td></tr>
-        <%
-            render_quick_find = len( users ) > 50
-            ctr = 0
-        %>
-        %if render_quick_find:
-            <%
-                anchors = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
-                anchor_loc = 0
-                anchored = False
-                curr_anchor = 'A'
-            %>
-            <tr style="background: #EEE">
-                <td colspan="2" style="border-bottom: 1px solid #D8B365; text-align: center;">
-                    Jump to letter:
-                    %for a in anchors:
-                        | <a href="#${a}">${a}</a>
-                    %endfor
-                </td>
-            </tr>
-        %endif
-        <tr class="header">
-            <td>Select to add users to group</td>
-            <td>Select to associate roles with group</td>
-        </tr>
-        <tr>
-            ## Render users
-            <td valign="top">
-                <table border="0" cellspacing="0" cellpadding="0" width="100%">
-                    %for ctr, user in enumerate( users ):
-                        ${render_user_row( user, ctr )}
-                    %endfor
-                </table>
-            </td>
-            ## Render roles
-            <td valign="top">
-                <% curr_anchor = 'A' %>
-                <table border="0" cellspacing="0" cellpadding="0" width="100%">
-                    %for ctr, role in enumerate( roles ):
-                        %if render_quick_find and not role.description.upper().startswith( curr_anchor ):
-                          <% anchored = False %>
-                        %endif 
-                        %if render_quick_find and role.description.upper().startswith( curr_anchor ):
-                            %if not anchored:
-                                ${render_role_row( role, ctr, anchored, curr_anchor )}
-                                <% anchored = True %>
-                            %else:
-                                ${render_role_row( role, ctr, anchored, curr_anchor )}
-                            %endif
-                        %elif render_quick_find:
-                            %for anchor in anchors[ anchor_loc: ]:
-                                %if role.description.upper().startswith( anchor ):
-                                    %if not anchored:
-                                        <% curr_anchor = anchor %>
-                                        ${render_role_row( role, ctr, anchored, curr_anchor )}
-                                        <% anchored = True %>
-                                    %else:
-                                        ${render_role_row( role, ctr, anchored, curr_anchor )}
-                                    %endif
-                                    <% 
-                                        anchor_loc = anchors.index( anchor )
-                                        break 
-                                    %>
-                                %endif
-                            %endfor
-                        %else:
-                            ${render_role_row( role, ctr, True, '' )}
-                        %endif
-                    %endfor
-                </table>
-            </td>
-        </tr>
-        <tr><td colspan="2"><input type="submit" name="create_group_button" value="Create"/></td></tr>
-    </table>
-</form>
+<div class="toolForm">
+    <div class="toolFormTitle">Create Role</div>
+    <div class="toolFormBody">
+        <form name="associate_group_role_user" id="associate_group_role_user" action="${h.url_for( action='create_group' )}" method="post" >
+            <div class="form-row">
+                Name: <input  name="name" type="textfield" value="" size=40"/>
+            </div>
+            <div class="form-row">
+                <div style="float: left; margin-right: 10px;">
+                    Groups associated with new role<br/>
+                    ${render_select( "in_roles", in_roles )}<br/>
+                    <input type="submit" id="roles_remove_button" value=">>"/>
+                </div>
+                <div>
+                    Groups not associated with new role<br/>
+                    ${render_select( "out_roles", out_roles )}<br/>
+                    <input type="submit" id="roles_add_button" value="<<"/>
+                </div>
+            </div>
+            <div class="form-row">
+                <div style="float: left; margin-right: 10px;">
+                    Users associated with new role<br/>
+                    ${render_select( "in_users", in_users )}<br/>
+                    <input type="submit" id="users_remove_button" value=">>"/>
+                </div>
+                <div>
+                    Users not associated with new role<br/>
+                    ${render_select( "out_users", out_users )}<br/>
+                    <input type="submit" id="users_add_button" value="<<"/>
+                </div>
+            </div>
+            <div class="form-row">
+                <input type="submit" name="create_group_button" value="Save"/>
+            </div>
+        </form>
+    </div>
+</div>
