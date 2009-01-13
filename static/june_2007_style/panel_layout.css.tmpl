@@ -45,6 +45,19 @@ body
     font-weight: bold;
 }
 
+#messagebox
+{
+    position:absolute; 
+    top:33px; 
+    left:0; 
+    width:100%; 
+    height:24px !important;
+    overflow: hidden; 
+    border-bottom: solid #999 1px;
+    font-size: 90%;
+}
+
+
 #left, #left-border, #center, #right-border, #right
 {
     position: absolute; 
@@ -118,31 +131,6 @@ body
     right: 0px; 
     z-index: 200;
 }
-td.panel-header
-{
-    background: ${panel_header_bg_top};
-    background-image: url(panel_header_bg.png);
-    background-position: top center;
-    background-repeat: repeat-x;
-    padding: 0;
-    border-bottom: solid ${layout_border} 1px;
-}
-div.panel-header
-{
-    margin: 0;
-    padding: 4px;
-    padding-right: 10px;
-    padding-left: 10px;
-    color: #333;
-    font-weight: bold;
-}
-
-table.column-layout
-{
-    position: absolute; 
-    width: 100%; 
-    height: 100%;
-}
 
 .unified-panel-header {
     height: 2em;
@@ -158,6 +146,9 @@ table.column-layout
     padding-left: 10px;
     color: #333;
     font-weight: bold;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
   
 .unified-panel-header-inner {
@@ -201,43 +192,6 @@ div.unified-panel-body {
     background: #aaaaaa;
 }
 
-div.popupmenu {
-    display: none;
-    background: #eee;
-    position: fixed;
-    z-index: 20000;
-    background: ${panel_header_bg_bottom};
-    background-image: url(panel_header_bg.png);
-    background-position: top center;
-    background-repeat: repeat-x;
-    border: solid ${layout_border} 1px;
-    padding-top: 3px;
-    padding-bottom: 3px;
-}
-
-div.popupmenu-top {
-    padding-bottom: 3px;
-}
-div.popupmenu-top-inner {
-    height: 10px;
-    width: 20px;
-    margin-top: -13px;
-    margin-left: auto;
-    margin-right: 20px;
-    background: url(popupmenu_callout_top.png);
-}
-
-div.popupmenu-item {
-    padding: 3px;
-    padding-left: 10px;
-    padding-right: 10px;
-    cursor: pointer;
-}
-
-div.popupmenu-item:hover {
-    background: ${layout_hover};
-}
-
 #overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -268,4 +222,37 @@ div.popupmenu-item:hover {
 
 .dialog-box .body, .dialog-box .buttons {
     padding: 5px;
+}
+
+## Messages for message box, slightly different style
+
+.panel-error-message, .panel-warning-message, .panel-done-message, .panel-info-message
+{
+    height: 24px;
+    line-height: 24px;
+    color: $base_text;
+    padding: 0px;
+    padding-left: 26px;
+    background-color: $error_message_bg;
+    background-image: url(error_small.png);
+    background-repeat: no-repeat;
+    background-position: 6px 50%;
+}
+
+.panel-warning-message 
+{
+    background-image: url(warn_small.png);
+    background-color: $warn_message_bg;
+}
+
+.panel-done-message 
+{
+    background-image: url(done_small.png);
+    background-color: $done_message_bg;
+}
+
+.panel-info-message 
+{
+    background-image: url(info_small.png);
+    background-color: $info_message_bg;
 }
