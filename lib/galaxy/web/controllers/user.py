@@ -70,9 +70,6 @@ class User( BaseController ):
 
     @web.expose
     def login( self, trans, email='', password='' ):
-        if trans.app.memory_usage:
-            # Keep track of memory usage
-            m0 = trans.app.memory_usage.memory()
         email_error = password_error = None
         # Attempt login
         if email or password:
@@ -88,9 +85,6 @@ class User( BaseController ):
                 trans.handle_user_login( user )
                 trans.log_event( "User logged in" )
                 return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
-        if trans.app.memory_usage:
-            m1 = trans.app.memory_usage.memory( m0, pretty=True )
-            log.info( "End of user/login, memory used increased by %s"  % m1 )
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Login", submit_text="Login" )
                 .add_text( "email", "Email address", value=email, error=email_error )
@@ -98,22 +92,13 @@ class User( BaseController ):
                                 help="<a href='%s'>Forgot password? Reset here</a>" % web.url_for( action='reset_password' ) ) )
     @web.expose
     def logout( self, trans ):
-        if trans.app.memory_usage:
-            # Keep track of memory usage
-            m0 = trans.app.memory_usage.memory()
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
         trans.handle_user_logout()
-        if trans.app.memory_usage:
-            m1 = trans.app.memory_usage.memory( m0, pretty=True )
-            log.info( "End of user/logout, memory used increased by %s"  % m1 )
         return trans.show_ok_message( "You are no longer logged in", refresh_frames=['masthead', 'history'] )
             
     @web.expose
     def create( self, trans, email='', password='', confirm='',subscribe=False ):
-        if trans.app.memory_usage:
-            # Keep track of memory usage
-            m0 = trans.app.memory_usage.memory()
         email_error = password_error = confirm_error = None
         if email:
             if len( email ) == 0 or "@" not in email or "." not in email:
@@ -139,9 +124,6 @@ class User( BaseController ):
                     mail.write("To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % (trans.app.config.mailing_join_addr,email) )
                     if mail.close():
                         return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=['masthead', 'history'] )
-                if trans.app.memory_usage:
-                    m1 = trans.app.memory_usage.memory( m0, pretty=True )
-                    log.info( "End of user/create, memory used increased by %s"  % m1 )
                 return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Create account", submit_text="Create" )

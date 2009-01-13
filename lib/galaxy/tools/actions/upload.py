@@ -15,9 +15,6 @@ class UploadToolAction( object ):
         self.line_count = None
     
     def execute( self, tool, trans, incoming={}, set_output_hid = True ):
-        if trans.app.memory_usage:
-            # Keep track of memory usage
-            m0 = trans.app.memory_usage.memory()
         data_file = incoming['file_data']
         file_type = incoming['file_type']
         dbkey = incoming['dbkey']
@@ -129,9 +126,6 @@ class UploadToolAction( object ):
         job.flush()
         log.info( 'job id %d ended ok, file size: %s' % ( job.id, file_size_str ) )
         trans.log_event( 'job id %d ended ok, file size: %s' % ( job.id, file_size_str ), tool_id=tool.id )
-        if trans.app.memory_usage:
-            m1 = trans.app.memory_usage.memory( m0, pretty=True )
-            log.info("End of tool %s execution for job id %d, memory used increased by %s"  % ( tool.id, job.id, m1 ) )
         return dict( output=hda )
 
     def upload_empty( self, trans, job, err_code, err_msg ):
