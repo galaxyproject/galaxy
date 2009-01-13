@@ -13,7 +13,7 @@ from elementtree import ElementTree
 buffer = StringIO.StringIO()
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-## twill.set_output(buffer)
+twill.set_output(buffer)
 tc.config('use_tidy', 0)
 
 # Dial ClientCookie logging down (very noisy)
