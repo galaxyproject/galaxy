@@ -57,6 +57,8 @@ def app_factory( global_conf, **kwargs ):
     # Create the universe WSGI application
     webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxysession' )
     add_controllers( webapp, app )
+    # Force /history to go to /root/history -- needed since the tests assume this
+    webapp.add_route( '/history', controller='root', action='history' )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
