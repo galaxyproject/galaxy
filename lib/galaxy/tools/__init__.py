@@ -1068,7 +1068,10 @@ class Tool:
                     wrap_values( input.cases[current].inputs, values )
                 elif isinstance( input, DataToolParameter ):
                     input_values[ input.name ] = \
-                        DatasetFilenameWrapper( input_values[ input.name ], datatypes_registry = self.app.datatypes_registry, tool = self, name = input.name )
+                        DatasetFilenameWrapper( input_values[ input.name ],
+                                                datatypes_registry = self.app.datatypes_registry,
+                                                tool = self,
+                                                name = input.name )
                 else:
                     input_values[ input.name ] = \
                         InputValueWrapper( input, input_values[ input.name ], param_dict )
@@ -1085,7 +1088,10 @@ class Tool:
         # but this should be considered DEPRECATED, instead use:
         #   $dataset.get_child( 'name' ).filename
         for name, data in input_datasets.items():
-            param_dict[name] = DatasetFilenameWrapper( data, datatypes_registry = self.app.datatypes_registry, tool = self, name = name )
+            param_dict[name] = DatasetFilenameWrapper( data, 
+                                                       datatypes_registry = self.app.datatypes_registry, 
+                                                       tool = self, 
+                                                       name = name )
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
@@ -1263,8 +1269,13 @@ class Tool:
                 if data_type not in app.datatypes_registry.datatypes_by_extension: 
                     data_type = 'interval'
                 data = app.datatypes_registry.change_datatype( data, data_type )
-                # Store external data source's request parameters temporarily in output file
-                out = open( data.file_name, 'w' )
+                # Store external data source's request parameters temporarily in output file.
+                # In case the config setting for "outputs_to_working_directory" is True, we must write to
+                # the DatasetFilenameWrapper object in the param_dict since it's "false_path" attribute
+                # is the temporary path to the output dataset ( until the job is run ).  However,
+                # even if the "outputs_to_working_directory" setting is False, we can still open the file
+                # the same way for temporarily storing the request parameters.
+                out = open( str( param_dict.get( name ) ), 'w' )
                 for key, value in param_dict.items():
                     print >> out, '%s\t%s' % ( key, value )
                 out.close()
