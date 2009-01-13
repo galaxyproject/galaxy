@@ -16,6 +16,7 @@ img
     border: 0;
 }
 
+
 a:link, a:visited, a:active
 {
     color: #303030;
@@ -141,6 +142,7 @@ div.form-row label
 
 select, input, textarea
 {
+    font: inherit;
     font-size: 115%;
 }
 
@@ -151,7 +153,7 @@ select, textarea, input[type="text"], input[type="file"]
 
 /* Messages */
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed
+.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed , .screencastBox, .yellowbox, .redbox, .bluebox, .greenbox
 {
     padding: 10px;
     padding-left: 52px;
@@ -199,6 +201,85 @@ select, textarea, input[type="text"], input[type="file"]
     background-color: #FFCCCC;
     background-image: none;
 }
+
+.screencastBox 
+{   
+    padding-left: 10px;
+    border-color: #AAAA66;
+    background-color: #FFFFCC;
+    background-image: none;
+}
+
+.redbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #FF6666;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+    
+}
+
+.yellowbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #FFCC00;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+}
+
+.bluebox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #6666FF;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    color: #FFFFFF;
+    min-height: 32px;
+}
+
+.greenbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #00CC00;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+}
+
+.redbox li, .yellowbox li, .bluebox li, .greenbox li {
+   list-style: disc;	
+   text-transform: none;
+   list-style-position: inside;
+   list-style-image: none;
+   margin: 3px;
+}
+
 
 .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall 
 {
@@ -282,6 +363,11 @@ table.colored tr
   background: white;
 }
 
+table.colored tr.odd_row
+{ 
+  background: #DADFEF;
+}
+
 div.debug
 {
     margin: 10px;
@@ -293,7 +379,7 @@ div.debug
 
 div.odd_row
 {
-    background: #FFFF99;
+    background: #DADFEF;
 }
     
 #footer {
@@ -348,6 +434,38 @@ ul.toolParameterExpandableCollapsable
   list-style: none;
 }
 
+ul.manage-table-actions {
+    float: right;
+    margin-top: -2.5em;
+}
+ul.manage-table-actions li {
+    display: block;
+    float: left;
+    margin-left: 0.5em;
+}
+
+
+.state-color-queued {
+    border-color: #888888;
+    background: #EEEEEE;
+}
+
+.state-color-ok {
+    border-color: #66AA66;
+    background: #CCFFCC;
+}
+
+.state-color-error {
+    border-color: #AA6666;
+    background: #FFCCCC;
+}
+
+.state-color-running {
+    border-color: #AAAA66;
+    background: #FFFFCC;
+}
+
+
 .action-button {
     background: #eeeeee;
     color: #333;
@@ -363,6 +481,9 @@ ul.toolParameterExpandableCollapsable
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 .action-button > * {
@@ -371,12 +492,13 @@ ul.toolParameterExpandableCollapsable
 
 .action-button:hover {
     color: black;
-    background: #aaaaaa;
+    background: #dddddd;
 }
 .action-button:active {
     color: white;
     background: #aaaaaa;
 }
+
 
 div.popupmenu {
     display: none;
@@ -392,6 +514,9 @@ div.popupmenu {
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 div.popupmenu-item {
@@ -414,4 +539,39 @@ div.popupmenu-item:hover {
 
 .popup-arrow:hover {
     color: black;
+}
+
+div.permissionContainer {
+    padding-left: 20px;
+}
+
+
+.grid {
+    padding-top: 1em;
+    border-collapse: collapse;
+    width: 100%;
+}
+.grid tbody td {
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid thead th {
+    background: #ebd9b2;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-top: solid #d8b365 1px;
+    border-bottom: solid #d8b365 1px;
+    padding: 0.5em 1em;
+    text-align: left;
+}
+.grid tfoot td {
+    background-color: #F8F8F8;
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid .current {
+    background-color: #EEEEFF;
 }
