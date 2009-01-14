@@ -13,12 +13,17 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
+from galaxy.model.orm import *
 
 class WorkflowController( BaseController ):
     
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
     def index( self, trans ):
+        return trans.fill_template( "workflow/index.mako" )
+                                   
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def list( self, trans ):
         """
         Render workflow main page (management of existing workflows)
         """
@@ -33,7 +38,29 @@ class WorkflowController( BaseController ):
             .filter( model.StoredWorkflow.c.deleted == False ) \
             .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
             .all()
-        return trans.fill_template( "workflow/index.mako",
+        return trans.fill_template( "workflow/list.mako",
+                                    workflows = workflows,
+                                    shared_by_others = shared_by_others )
+    
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def list_for_run( self, trans ):
+        """
+        Render workflow list for analysis view (just allows running workflow
+        or switching to management view)
+        """
+        user = trans.get_user()
+        workflows = trans.sa_session.query( model.StoredWorkflow ) \
+            .filter_by( user=user, deleted=False ) \
+            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+            .all()
+        shared_by_others = trans.sa_session \
+            .query( model.StoredWorkflowUserShareAssociation ) \
+            .filter_by( user=user ) \
+            .filter( model.StoredWorkflow.c.deleted == False ) \
+            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+            .all()
+        return trans.fill_template( "workflow/list_for_run.mako",
                                     workflows = workflows,
                                     shared_by_others = shared_by_others )
     
@@ -44,7 +71,8 @@ class WorkflowController( BaseController ):
         # Load workflow from database
         stored = get_stored_workflow( trans, id )
         if email:
-            other = model.User.filter_by( email=email ).first()
+            other = model.User.filter( and_( model.user.table.c.email==email,
+                                             model.User.table.c.deleted==False ) ).first()
             if not other:
                 mtype = "error"
                 msg = ( "User '%s' does not exist" % email )
@@ -61,10 +89,10 @@ class WorkflowController( BaseController ):
                 share.stored_workflow = stored
                 share.user = other
                 session = trans.sa_session
-                session.save( share )
+                session.save_or_update( share )
                 session.flush()
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
-                return self.index( trans )
+                return self.list( trans )
         return trans.fill_template( "workflow/share.mako",
                                     message = msg,
                                     messagetype = mtype,
@@ -79,7 +107,7 @@ class WorkflowController( BaseController ):
             stored.name = new_name
             trans.sa_session.flush()
             trans.set_message( "Workflow renamed to '%s'." % new_name )
-            return self.index( trans )
+            return self.list( trans )
         else:
             return form( url_for( id=trans.security.encode_id(stored.id) ), "Rename workflow", submit_text="Rename" ) \
                 .add_text( "new_name", "Workflow Name", value=stored.name )
@@ -104,11 +132,11 @@ class WorkflowController( BaseController ):
         new_stored.user = user
         # Persist
         session = trans.sa_session
-        session.save( new_stored )
+        session.save_or_update( new_stored )
         session.flush()
         # Display the management page
         trans.set_message( 'Clone created with name "%s"' % new_stored.name )
-        return self.index( trans )
+        return self.list( trans )
     
     @web.expose
     @web.require_login( "create workflows" )
@@ -129,11 +157,11 @@ class WorkflowController( BaseController ):
             stored_workflow.latest_workflow = workflow
             # Persist
             session = trans.sa_session
-            session.save( stored_workflow )
+            session.save_or_update( stored_workflow )
             session.flush()
             # Display the management page
             trans.set_message( "Workflow '%s' created" % stored_workflow.name )
-            return self.index( trans )
+            return self.list( trans )
         else:
             return form( url_for(), "Create new workflow", submit_text="Create" ) \
                 .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" )
@@ -150,7 +178,7 @@ class WorkflowController( BaseController ):
         stored.flush()
         # Display the management page
         trans.set_message( "Workflow '%s' deleted" % stored.name )
-        return self.index( trans )
+        return self.list( trans )
         
     @web.expose
     @web.require_login( "edit workflows" )
@@ -430,11 +458,10 @@ class WorkflowController( BaseController ):
             stored.name = workflow_name
             workflow.stored_workflow = stored
             stored.latest_workflow = workflow
-            trans.sa_session.save( stored )
+            trans.sa_session.save_or_update( stored )
             trans.sa_session.flush()
             # Index page with message
-            trans.template_context['message'] = "Workflow '%s' created" % workflow_name
-            return self.index( trans )
+            return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
             ## return trans.show_ok_message( "<p>Workflow '%s' created.</p><p><a target='_top' href='%s'>Click to load in workflow editor</a></p>"
             ##     % ( workflow_name, web.url_for( action='editor', id=trans.security.encode_id(stored.id) ) ) )       
         
@@ -507,8 +534,8 @@ class WorkflowController( BaseController ):
                                 elif isinstance( input, Conditional ):
                                     values = input_values[ input.name ]
                                     current = values["__current_case__"]
-                                    prefix = prefix + "|" + input.name
-                                    visitor( input.cases[current].inputs, values, prefix )
+                                    new_prefix = prefix + input.name + "|"
+                                    visitor( input.cases[current].inputs, values, new_prefix )
                                 else:
                                     if isinstance( input, DataToolParameter ):
                                         prefixed_name = prefix + input.name

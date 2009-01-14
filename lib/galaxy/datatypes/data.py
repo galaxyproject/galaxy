@@ -45,6 +45,9 @@ class Data( object ):
     """Stores the set of display applications, and viewing methods, supported by this datatype """
     supported_display_apps = {}
     
+    """If False, the peek is regenerated whenever a dataset of this type is copied"""
+    copy_safe_peek = True
+    
     def __init__(self, **kwd):
         """Initialize the datatype"""
         object.__init__(self, **kwd)
@@ -181,12 +184,17 @@ class Data( object ):
         return "This display type (%s) is not implemented for this datatype (%s)." % ( type, dataset.ext)
         
     def get_display_links(self, dataset, type, app, base_url, **kwd):
-        """Returns a list of tuples of (name, link) for a particular display type """
-        try:
-            if type in self.get_display_types():
-                return getattr (self, self.supported_display_apps[type]['links_function']) (dataset, type, app, base_url, **kwd)
-        except:
-            log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' % (self.supported_display_apps[type]['links_function'], self.__class__.__name__, type) )
+        """
+        Returns a list of tuples of (name, link) for a particular display type
+        as long as the dataset is not associated with a role restricting its access.
+        We determine this by sending None as the user to the allow_action method.
+        """
+        if app.security_agent.allow_action( None, dataset.permitted_actions.DATASET_ACCESS, dataset=dataset ):
+            try:
+                if type in self.get_display_types():
+                    return getattr (self, self.supported_display_apps[type]['links_function']) (dataset, type, app, base_url, **kwd)
+            except:
+                log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' % (self.supported_display_apps[type]['links_function'], self.__class__.__name__, type) )
         return []
 
     def get_converter_types(self, original_dataset, datatypes_registry):
