@@ -1,0 +1,12 @@
+<tool id="lca1" name="Least Common Ancestor" version="1.0.0">
+  <description></description>
+  <command interpreter="python">
+    lca.py $input1 $out_file1
+  </command>
+  <inputs>
+    <param format="taxonomy" name="input1" type="data" label="Select taxonomy dataset"/>
+  </inputs>
+  <outputs>
+    <data format="taxonomy" name="out_file1" metadata_source="input1" />
+  </outputs>
+</tool>
