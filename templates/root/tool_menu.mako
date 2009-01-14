@@ -38,11 +38,9 @@
 
 ## Render a label
 <%def name="render_label( label )">
-    <div class="toolSectionPad"></div>
     <div class="toolPanelLabel" id="title_${label.id}">
         <span>${label.text}</span>
     </div>
-    <div class="toolSectionPad"></div>
 </%def>
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -91,7 +89,6 @@
                 %for key, val in toolbox.tool_panel.items():
                     %if key.startswith( 'tool' ):
                         ${render_tool( val, False )}
-                        <div class="toolSectionPad"></div>
                     %elif key.startswith( 'workflow' ):
                         ${render_workflow( key, val, False )}
                     %elif key.startswith( 'section' ):
@@ -112,10 +109,10 @@
                                 %endfor
                             </div>
                         </div>
-                        <div class="toolSectionPad"></div>
                     %elif key.startswith( 'label' ):
                         ${render_label( val )}
                     %endif
+                    <div class="toolSectionPad"></div>
                 %endfor
 
                 ## Link to workflow management. The location of this may change, but eventually
@@ -128,18 +125,16 @@
                     <span>Workflow <i>(beta)</i></span>
                 </div>
                 <div id="XXinternalXXworkflow" class="toolSectionBody">
-                    <div class="toolSectionBg">
-                        <div class="toolTitle">
-                            <a href="${h.url_for( controller='workflow', action='index' )}" target="galaxy_main">Manage</a> workflows
-                        </div>
-                        %if t.user:
-                            %for m in t.user.stored_workflow_menu_entries:
-                                <div class="toolTitle">
-                                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${m.stored_workflow.name}</a>
-                                </div>
-                            %endfor
-                        %endif
+                    <div class="toolTitle">
+                        <a href="${h.url_for( controller='workflow', action='index' )}" target="galaxy_main">Manage</a> workflows
                     </div>
+                    %if t.user:
+                        %for m in t.user.stored_workflow_menu_entries:
+                            <div class="toolTitle">
+                                <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${m.stored_workflow.name}</a>
+                            </div>
+                        %endfor
+                    %endif
                 </div>
             </div>
         </div>
