@@ -125,6 +125,8 @@ class JobQueue( object ):
             if job.job_runner_name is not None:
                 # why are we passing the queue to the wrapper?
                 job_wrapper = JobWrapper( job, self.app.toolbox.tools_by_id[ job.tool_id ], self )
+                job_wrapper.working_directory = \
+                            os.path.join( self.app.config.job_working_directory, str( job.id ) )
                 self.dispatcher.recover( job, job_wrapper )
 
     def __monitor( self ):
