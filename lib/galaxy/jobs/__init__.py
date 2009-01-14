@@ -125,8 +125,6 @@ class JobQueue( object ):
             if job.job_runner_name is not None:
                 # why are we passing the queue to the wrapper?
                 job_wrapper = JobWrapper( job, self.app.toolbox.tools_by_id[ job.tool_id ], self )
-                job_wrapper.working_directory = \
-                            os.path.join( self.app.config.job_working_directory, str( job.id ) )
                 self.dispatcher.recover( job, job_wrapper )
 
     def __monitor( self ):
@@ -300,9 +298,13 @@ class JobWrapper( object ):
         self.queue = queue
         self.app = queue.app
         self.extra_filenames = []
-        self.working_directory = None
         self.command_line = None
         self.galaxy_lib_dir = None
+        # With job outputs in the working directory, we need the working
+        # directory to be set before prepare is run, or else premature deletion
+        # and job recovery fail.
+        self.working_directory = \
+            os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         
     def get_param_dict( self ):
         """
@@ -319,9 +321,6 @@ class JobWrapper( object ):
         config files.
         """
         mapping.context.current.clear() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
-        # Create the working directory
-        self.working_directory = \
-            os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         if not os.path.exists( self.working_directory ):
             os.mkdir( self.working_directory )
         # Restore parameters from the database
