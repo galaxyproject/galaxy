@@ -1098,7 +1098,7 @@ class Tool:
         for name, data in output_datasets.items():
             # Write outputs to the working directory (for security purposes) if desired.
             if self.app.config.outputs_to_working_directory and working_directory is not None:
-                false_path = os.path.abspath( os.path.join( working_directory, "galaxy_dataset_%d.dat" % data.id ) )
+                false_path = os.path.abspath( os.path.join( working_directory, "galaxy_dataset_%d.dat" % data.dataset.id ) )
                 param_dict[name] = DatasetFilenameWrapper( data, false_path = false_path )
                 open( false_path, 'w' ).close()
             else:
