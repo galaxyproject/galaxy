@@ -376,7 +376,7 @@ class History( object ):
         des.flush()
         des.name = self.name
         des.user_id = self.user_id
-        for data in self.datasets:
+        for data in self.active_datasets:
             new_data = data.copy( copy_children = True )
             des.add_dataset( new_data )
             new_data.flush()
