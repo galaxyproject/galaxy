@@ -132,7 +132,8 @@ class Data( object ):
     def display_info(self, dataset):
         """Returns formated html of dataset info"""
         try:
-            return escape(dataset.info)
+            # Change new line chars to html
+            return escape( dataset.info ).replace( "\r", "\n" ).replace( "\n", "<br>" )
         except:
             return "info unavailable"
     def validate(self, dataset):

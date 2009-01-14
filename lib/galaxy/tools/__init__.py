@@ -1072,10 +1072,11 @@ class Tool:
                                                 datatypes_registry = self.app.datatypes_registry,
                                                 tool = self,
                                                 name = input.name )
+                elif isinstance( input, SelectToolParameter ):
+                    input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], self.app )
                 else:
-                    input_values[ input.name ] = \
-                        InputValueWrapper( input, input_values[ input.name ], param_dict )
-        # HACK: only wrap if check_values is false, this deals with external
+                    input_values[ input.name ] = InputValueWrapper( input, input_values[ input.name ], param_dict )
+        # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.check_values:
@@ -1416,7 +1417,21 @@ class InputValueWrapper( object ):
         return self.input.to_param_dict_string( self.value, self._other_values )
     def __getattr__( self, key ):
         return getattr( self.value, key )
-        
+
+class SelectToolParameterWrapper( object ):
+    """
+    Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
+    attributes are accessible.
+    """
+    def __init__( self, input, value, app ):
+        self.input = input
+        self.value = value
+        self.input.value_label = input.value_to_display_text( value, app )
+    def __str__( self ):
+        return self.input.to_param_dict_string( self.value )
+    def __getattr__( self, key ):
+        return getattr( self.input, key )
+
 class DatasetFilenameWrapper( object ):
     """
     Wraps a dataset so that __str__ returns the filename, but all other
