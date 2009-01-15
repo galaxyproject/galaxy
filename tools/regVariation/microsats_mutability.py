@@ -409,19 +409,9 @@ def main():
     blk=0
     win=0
     linestr=""
-    ff=open("junkmabc","w")
     
     if region == 'win':
         
-        """
-        sorted_infile = tempfile.NamedTemporaryFile()
-        if winspecies == 1:
-            cmdline = "sort -n -k 3"+" -o "+sorted_infile.name+" "+infile
-        elif winspecies == 2:
-            cmdline = "sort -n -k 10"+" -o "+sorted_infile.name+" "+infile
-        os.system(cmdline)
-        print >>ff, "Finished sorting"
-        """ 
         msats = NiceReaderWrapper( fileinput.FileInput( infile ),
                                 chrom_col = speciesind,
                                 start_col = speciesind+1,
