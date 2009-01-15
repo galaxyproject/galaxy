@@ -128,11 +128,13 @@ def output_writer(blk, blk_lines):
         uniq_s_elems_2 = get_binned_lists(uniq_s_elems_2,s_bin_size)
 
     for pitem1 in uniq_elems_1:
-        repeats1 = []
-        repeats2 = []
+        #repeats1 = []
+        #repeats2 = []
         thresholds = []
         if s_group_cols[0] != -1:    #Sub-group by feature is not None
             for sitem1 in uniq_s_elems_1:
+                repeats1 = []
+                repeats2 = []
                 if type(sitem1) == type(''):
                     sitem1 = sitem1.strip()
                 for bline in blk_lines:
@@ -223,11 +225,13 @@ def output_writer(blk, blk_lines):
                     count1[str(pitem1)]=sum(repeats2)
                 
     for pitem2 in uniq_elems_2:
-        repeats1 = []
-        repeats2 = []
+        #repeats1 = []
+        #repeats2 = []
         thresholds = []
         if s_group_cols[0] != -1:    #Sub-group by feature is not None
             for sitem2 in uniq_s_elems_2:
+                repeats1 = []
+                repeats2 = []
                 if type(sitem2)==type(''):
                     sitem2 = sitem2.strip()
                 for bline in blk_lines:
@@ -349,11 +353,10 @@ def output_writer(blk, blk_lines):
                 count = count1[key]
         mut = "%.2e" %(mut/num_generations)
         if region == 'align':
-            print >>fout, str(blk) + '\t'+seq1 + '\t' + start1+ '\t'+end1+ '\t'+seq2 + '\t'+start2+ '\t'+end2+ '\t'+key.strip()+ '\t'+str(mut) + '\t'+ str(count)
+            print >>fout, str(blk) + '\t'+seq1 + '\t' + seq2 + '\t' +key.strip()+ '\t'+str(mut) + '\t'+ str(count)
         elif region == 'win':
             fout.write("%s\t%s\t%s\t%s\n" %(blk,key.strip(),mut,count))
             fout.flush()
-            #print >>fout, blk + '\t'+key.strip()+ '\t'+str(mut)+ '\t'+ str(count)
             
     #catch any remaining repeats, for instance if the orthologous position contained different repeat units
     for remaining_key in mut2.keys():
@@ -361,7 +364,7 @@ def output_writer(blk, blk_lines):
         mut = "%.2e" %(mut/num_generations)
         count = count2[remaining_key]
         if region == 'align':
-            print >>fout, str(blk) + '\t'+seq1 + '\t' + start1+ '\t'+end1+ '\t'+seq2 + '\t'+start2+ '\t'+end2+ '\t'+remaining_key.strip()+ '\t'+str(mut)+ '\t'+ str(count)
+            print >>fout, str(blk) + '\t'+seq1 + '\t'+seq2 + '\t'+remaining_key.strip()+ '\t'+str(mut)+ '\t'+ str(count)
         elif region == 'win':
             fout.write("%s\t%s\t%s\t%s\n" %(blk,remaining_key.strip(),mut,count))
             fout.flush()
@@ -420,17 +423,9 @@ def main():
                                 fix_strand = True)
         msatTree = quicksect.IntervalTree()
         for item in msats:
-            #print >>sys.stderr, item
             if type( item ) is GenomicInterval:
                 msatTree.insert( item, msats.linenum, item.fields )
-        """
-        result = []
-        msatTree.traverse(lambda node: result.append( node ))
-        for n in result:
-            print >>sys.stderr,n.other
-        print >>sys.stderr,msatTree.chroms
-        #sys.exit()
-        """
+        
         for iline in fint:
             try:
                 iline = iline.rstrip('\r\n')
@@ -460,7 +455,7 @@ def main():
             print "Skipped %d intervals as invalid." %(skipped)
     elif region == 'align':
         if s_group_cols[0] != -1:
-            print >>fout, "#Window\tSpecies_1\tWindow_Start\tWindow_End\tSpecies_2\tGroupby_Feature\tSubGroupby_Feature\tMutability\tCount"
+            print >>fout, "#Window\tSpecies_1\tSpecies_2\tGroupby_Feature\tSubGroupby_Feature\tMutability\tCount"
         else:
             print >>fout, "#Window\tSpecies_1\tWindow_Start\tWindow_End\tSpecies_2\tGroupby_Feature\tMutability\tCount"
         prev_bnum = -1

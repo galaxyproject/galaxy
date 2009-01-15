@@ -106,6 +106,10 @@
 
 This tool computes microsatellite mutability for the orthologous microsatellites fetched from  'Extract Orthologous Microsatellites from pair-wise alignments' tool.
 
+Mutability is computed according to the method described in the following paper:
+
+*Webster et al., Microsatellite evolution inferred from human-chimpanzee genomic  sequence alignments, Proc Natl Acad Sci 2002 June 25; 99(13): 8748-8753*
+
 -----
 
 .. class:: warningmark
