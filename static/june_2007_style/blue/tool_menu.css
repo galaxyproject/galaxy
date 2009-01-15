@@ -31,15 +31,16 @@ div.toolSectionDetailsInner
 
 div.toolSectionTitle
 {
-  padding-bottom: 0px;
   font-weight: bold;
 }
 
 div.toolPanelLabel
 {
-  padding-top: 5px;
+  padding-top: 10px;
   padding-bottom: 5px;
   font-weight: bold;
+  color: gray;
+  text-transform: uppercase;
 }
 
 div.toolTitle
@@ -52,9 +53,17 @@ div.toolTitle
   list-style: square outside;
 }
 
+div.toolSectionBody div.toolPanelLabel
+{
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-left: 16px;
+  margin-right: 10px;
+  display: list-item;
+  list-style: none outside;
+}
 
 div.toolTitleNoSection
 {
   padding-bottom: 0px;
-  font-weight: bold;
 }

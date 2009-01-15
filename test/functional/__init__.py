@@ -37,7 +37,6 @@ def setup():
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', default_galaxy_test_port )
     
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ   
-    
     if start_server:
         if 'GALAXY_TEST_DBPATH' in os.environ:
             db_path = os.environ['GALAXY_TEST_DBPATH']
@@ -73,8 +72,12 @@ def setup():
                                    tool_path = "tools",
                                    test_conf = "test.conf",
                                    log_destination = "stdout",
-                                   use_heartbeat=False,
-                                   global_conf= { "__file__": "universe_wsgi.ini.sample" } )
+                                   use_heartbeat = False,
+                                   allow_user_creation = True,
+                                   allow_user_deletion = True,
+                                   admin_users = 'test@bx.psu.edu',
+                                   library_import_dir = galaxy_test_file_dir,
+                                   global_conf = { "__file__": "universe_wsgi.ini.sample" } )
                                    
         log.info( "Embedded Universe application started" )
 
