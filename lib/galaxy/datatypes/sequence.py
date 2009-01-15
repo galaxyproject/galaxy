@@ -5,6 +5,7 @@ Image classes
 import data
 import logging
 import re
+import string
 from cgi import escape
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
@@ -94,15 +95,37 @@ class csFasta( Sequence ):
         Color-space sequence: 
             >2_15_85_F3
             T213021013012303002332212012112221222112212222
-        
-        TODO:
-            add sniff function
-        """
-        
-        return False
-        
 
-                
+        >>> fname = get_test_fname( 'sequence.fasta' )
+        >>> csFasta().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'sequence.csfasta' )
+        >>> csFasta().sniff( fname )
+        True
+        """
+        try:
+            fh = open( filename )
+            while True:
+                line = fh.readline()
+                if not line:
+                    break #EOF
+                line = line.strip()
+                if line and not line.startswith( '#' ): #first non-empty non-comment line
+                    if line.startswith( '>' ):
+                        line = fh.readline().strip()
+                        if line == '' or line.startswith( '>' ):
+                            break
+                        elif line[0] not in string.ascii_uppercase:
+                            return False
+                        elif len( line ) > 1 and not re.search( '^\d+$', line[1:] ):
+                            return False
+                        return True
+                    else:
+                        break #we found a non-empty line, but it's not a header
+        except:
+            pass
+        return False
+
 class FastqSolexa( Sequence ):
     """Class representing a FASTQ sequence ( the Solexa variant )"""
     file_ext = "fastqsolexa"

@@ -142,6 +142,7 @@ div.form-row label
 
 select, input, textarea
 {
+    font: inherit;
     font-size: 115%;
 }
 
@@ -152,7 +153,7 @@ select, textarea, input[type="text"], input[type="file"]
 
 /* Messages */
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed
+.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed , .screencastBox, .yellowbox, .redbox, .bluebox, .greenbox
 {
     padding: 10px;
     padding-left: 52px;
@@ -200,6 +201,85 @@ select, textarea, input[type="text"], input[type="file"]
     background-color: $error_message_bg;
     background-image: none;
 }
+
+.screencastBox 
+{   
+    padding-left: 10px;
+    border-color: #AAAA66;
+    background-color: #FFFFCC;
+    background-image: none;
+}
+
+.redbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #FF6666;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+    
+}
+
+.yellowbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #FFCC00;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+}
+
+.bluebox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #6666FF;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    color: #FFFFFF;
+    min-height: 32px;
+}
+
+.greenbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #00CC00;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+}
+
+.redbox li, .yellowbox li, .bluebox li, .greenbox li {
+   list-style: disc;	
+   text-transform: none;
+   list-style-position: inside;
+   list-style-image: none;
+   margin: 3px;
+}
+
 
 .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall 
 {
@@ -283,6 +363,11 @@ table.colored tr
   background: $table_row_bg;
 }
 
+table.colored tr.odd_row
+{ 
+  background: $odd_row_bg;
+}
+
 div.debug
 {
     margin: 10px;
@@ -350,6 +435,40 @@ ul.toolParameterExpandableCollapsable
   list-style: none;
 }
 
+ul.manage-table-actions {
+    float: right;
+    margin-top: -2.5em;
+}
+ul.manage-table-actions li {
+    display: block;
+    float: left;
+    margin-left: 0.5em;
+}
+
+## State colors
+
+.state-color-queued {
+    border-color: $history_queued_border;
+    background: $history_queued_bg;
+}
+
+.state-color-ok {
+    border-color: $history_ok_border;
+    background: $history_ok_bg;
+}
+
+.state-color-error {
+    border-color: $history_error_border;
+    background: $history_error_bg;
+}
+
+.state-color-running {
+    border-color: $history_running_border;
+    background: $history_running_bg;
+}
+
+## Button styles
+
 .action-button {
     background: #eeeeee;
     color: #333;
@@ -365,6 +484,9 @@ ul.toolParameterExpandableCollapsable
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 .action-button > * {
@@ -373,12 +495,14 @@ ul.toolParameterExpandableCollapsable
 
 .action-button:hover {
     color: black;
-    background: #aaaaaa;
+    background: #dddddd;
 }
 .action-button:active {
     color: white;
     background: #aaaaaa;
 }
+
+## Popup menu styles
 
 div.popupmenu {
     display: none;
@@ -394,6 +518,9 @@ div.popupmenu {
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 div.popupmenu-item {
@@ -416,4 +543,40 @@ div.popupmenu-item:hover {
 
 .popup-arrow:hover {
     color: black;
+}
+
+div.permissionContainer {
+    padding-left: 20px;
+}
+
+## Data grid style
+
+.grid {
+    padding-top: 1em;
+    border-collapse: collapse;
+    width: 100%;
+}
+.grid tbody td {
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid thead th {
+    background: $table_header_bg;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-top: solid $table_border 1px;
+    border-bottom: solid $table_border 1px;
+    padding: 0.5em 1em;
+    text-align: left;
+}
+.grid tfoot td {
+    background-color: #F8F8F8;
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid .current {
+    background-color: #EEEEFF;
 }

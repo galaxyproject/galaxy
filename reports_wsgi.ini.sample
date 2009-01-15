@@ -46,6 +46,9 @@ use_lint = false
 # NEVER enable this on a public site (even test or QA)
 # use_interactive = true
 
+# Force everyone to log in (disable anonymous access)
+require_login = False
+
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
 

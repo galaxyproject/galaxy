@@ -8,8 +8,12 @@ build   description
 
 import sys
 import urllib
-import pkg_resources; pkg_resources.require( "elementtree" )
-from elementtree import ElementTree
+if sys.version_info[:2] >= ( 2, 5 ):
+    import xml.etree.ElementTree as ElementTree
+else:
+    from galaxy import eggs
+    import pkg_resources; pkg_resources.require( "elementtree" )
+    from elementtree import ElementTree
 
 URL = "http://genome-test.cse.ucsc.edu/cgi-bin/das/dsn"
 
