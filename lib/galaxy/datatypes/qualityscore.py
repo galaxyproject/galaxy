@@ -16,11 +16,15 @@ class QualityScore ( data.Text ):
     file_ext = "qual"
     
     def set_peek( self, dataset, line_count=None ):
-        dataset.peek  = data.get_file_peek( dataset.file_name )
-        if line_count is None:
-            dataset.blurb = data.nice_size( dataset.get_size() )
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name )
+            if line_count is None:
+                dataset.blurb = data.nice_size( dataset.get_size() )
+            else:
+                dataset.blurb = "%s lines, Quality score file" % util.commaify( str( line_count ) )
         else:
-            dataset.blurb = "%s lines, Quality score file" % util.commaify( str( line_count ) )
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
     
     def display_peek(self, dataset):
         try:

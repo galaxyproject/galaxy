@@ -103,8 +103,12 @@ class Data( object ):
         return False
     def set_peek( self, dataset ):
         """Set the peek and blurb text"""
-        dataset.peek  = ''
-        dataset.blurb = 'data'
+        if not dataset.dataset.purged:
+            dataset.peek = ''
+            dataset.blurb = 'data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
     def display_peek(self, dataset):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -275,19 +279,27 @@ class Text( Data ):
         return 'text/plain'
    
     def set_peek( self, dataset, line_count=None ):
-        dataset.peek  = get_file_peek( dataset.file_name )
-        if line_count is None:
-            dataset.blurb = "%s lines" % util.commaify( str( get_line_count( dataset.file_name ) ) )
+        if not dataset.dataset.purged:
+            # The file must exist on disk for the get_file_peek() method
+            dataset.peek = get_file_peek( dataset.file_name )
+            if line_count is None:
+                dataset.blurb = "%s lines" % util.commaify( str( get_line_count( dataset.file_name ) ) )
+            else:
+                dataset.blurb = "%s lines" % util.commaify( str( line_count ) )
         else:
-            dataset.blurb = "%s lines" % util.commaify( str( line_count ) )
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
 class Binary( Data ):
     """Binary data"""
-
     def set_peek( self, dataset ):
         """Set the peek and blurb text"""
-        dataset.peek  = 'binary data'
-        dataset.blurb = 'data'
+        if not dataset.dataset.purged:
+            dataset.peek = 'binary data'
+            dataset.blurb = 'data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
 def get_test_fname( fname ):
     """Returns test data filename"""

@@ -59,11 +59,15 @@ class Interval( Tabular ):
     
     def set_peek( self, dataset, line_count=None ):
         """Set the peek and blurb text"""
-        dataset.peek  = data.get_file_peek( dataset.file_name )
-        if line_count is None:
-            dataset.blurb = "%s regions" % util.commaify( str( data.get_line_count( dataset.file_name ) ) )
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name )
+            if line_count is None:
+                dataset.blurb = "%s regions" % util.commaify( str( data.get_line_count( dataset.file_name ) ) )
+            else:
+                dataset.blurb = "%s regions" % util.commaify( str( line_count ) )
         else:
-            dataset.blurb = "%s regions" % util.commaify( str( line_count ) )
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
     
     def set_meta( self, dataset, overwrite = True, first_line_is_header = False, **kwd ):
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 0 )

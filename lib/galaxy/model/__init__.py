@@ -287,14 +287,26 @@ class HistoryDatasetAssociation( object ):
         return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
     
     def copy( self, copy_children = False, parent_id = None ):
-        des = HistoryDatasetAssociation( hid=self.hid, name=self.name, info=self.info, blurb=self.blurb, peek=self.peek, extension=self.extension, dbkey=self.dbkey, dataset = self.dataset, visible=self.visible, deleted=self.deleted, parent_id=parent_id, copied_from_history_dataset_association = self )
+        des = HistoryDatasetAssociation( hid=self.hid,
+                                         name=self.name,
+                                         info=self.info,
+                                         blurb=self.blurb,
+                                         peek=self.peek,
+                                         extension=self.extension,
+                                         dbkey=self.dbkey,
+                                         dataset=self.dataset,
+                                         visible=self.visible,
+                                         deleted=self.deleted,
+                                         parent_id=parent_id,
+                                         copied_from_history_dataset_association=self )
         des.flush()
         des.set_size()
         des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         if copy_children:
             for child in self.children:
                 child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
-        des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        # In some instances peek relies on dataset_id ( e.g., gmaj.zip for viewing MAFs )
+        des.set_peek()
         des.flush()
         return des
 
@@ -376,7 +388,7 @@ class History( object ):
         des.flush()
         des.name = self.name
         des.user_id = self.user_id
-        for data in self.active_datasets:
+        for data in self.datasets:
             new_data = data.copy( copy_children = True )
             des.add_dataset( new_data )
             new_data.flush()

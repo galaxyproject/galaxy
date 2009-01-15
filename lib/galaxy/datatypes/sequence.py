@@ -31,8 +31,12 @@ class Fasta( Sequence ):
     file_ext = "fasta"
 
     def set_peek( self, dataset ):
-        dataset.peek = data.get_file_peek( dataset.file_name )
-        dataset.blurb = data.nice_size( dataset.get_size() )
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name )
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
     def sniff( self, filename ):
         """
@@ -86,8 +90,12 @@ class csFasta( Sequence ):
     file_ext = "csfasta"
     
     def set_peek( self, dataset ):
-        dataset.peek = data.get_file_peek( dataset.file_name )
-        dataset.blurb = data.nice_size( dataset.get_size() )
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name )
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
     def sniff( self, filename ):
         """
@@ -108,8 +116,12 @@ class FastqSolexa( Sequence ):
     file_ext = "fastqsolexa"
 
     def set_peek( self, dataset ):
-        dataset.peek = data.get_file_peek( dataset.file_name )
-        dataset.blurb = data.nice_size( dataset.get_size() )
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name )
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
     def sniff( self, filename ):
         """
