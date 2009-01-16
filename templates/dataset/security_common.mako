@@ -29,7 +29,8 @@
     </div>
 </%def>
 
-<%def name="render_permission_form( obj, obj_name, form_url, id_name, id, all_roles )">
+## Any permission ( e.g., 'DATASET_ACCESS' ) included in the do_not_render param will not be rendered on the page.
+<%def name="render_permission_form( obj, obj_name, form_url, id_name, id, all_roles, do_not_render=[] )">
     <%
         if isinstance( obj, trans.app.model.User ):
             current_actions = obj.default_permissions
@@ -73,9 +74,11 @@
                 <input type="hidden" name="${id_name}" value="${id}"/>
                 <div class="form-row"></div>
                 %for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    <div class="form-row">
-                        ${render_select( current_actions, k, v, all_roles )}
-                    </div>
+                    %if k not in do_not_render:
+                        <div class="form-row">
+                            ${render_select( current_actions, k, v, all_roles )}
+                        </div>
+                    %endif
                 %endfor
                 <div class="form-row">
                     <input type="submit" name="update_roles" value="Save"/>
