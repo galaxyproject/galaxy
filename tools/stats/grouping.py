@@ -12,15 +12,13 @@ def stop_err(msg):
 
 def main():
     inputfile = sys.argv[2]
-    in_columns = int( sys.argv[5] )
-    show_remaining_cols = sys.argv[4]
     
     ops = []
     cols = []
     rounds = []
     elems = []
     
-    for var in sys.argv[6:]:
+    for var in sys.argv[4:]:
         ops.append(var.split()[0])
         cols.append(var.split()[1])
         rounds.append(var.split()[2])
@@ -81,19 +79,9 @@ def main():
     
     if error_code != 0:
         stop_err( "Sorting input dataset resulted in error: %s: %s" %( error_code, stdout ))
-    
-    if show_remaining_cols == 'yes':
-        show_cols_list = [1]*in_columns
-        show_cols_list[group_col] = 0
-        for c in cols:
-            c = int(c)-1
-            show_cols_list[c] = 0
-        #at the end of this, only the indices of the remaining columns will be set to 1
-        remaining_cols = [j for j,k in enumerate(show_cols_list) if k==1] #this is the list of remaining column indices
-      
+        
     prev_item = ""
     prev_vals = []
-    remaining_vals = []
     skipped_lines = 0
     first_invalid_line = 0
     invalid_line = ''
@@ -128,30 +116,22 @@ def main():
                                         invalid_column = col+1
                             if valid:
                                 prev_vals[i].append(fields[col].strip())
-                        #Store values from all the remaning columns
-                        if show_remaining_cols == 'yes':
-                            for j, index in enumerate(remaining_cols):
-                                remaining_vals[j].append(fields[index].strip())
                     else:   
                         """
                         When a new value is encountered, write the previous value and the 
                         corresponding aggregate values into the output file.  This works 
                         due to the sort on group_col we've applied to the data above.
                         """
-                        out_list = ['']*in_columns
-                        out_list[group_col] = str(prev_item)
-                        
+                        out_str = prev_item
+    
                         for i, op in enumerate( ops ):
                             rfunc = "r." + op 
                             if op not in ['c','length','unique','random']:
                                 for j, elem in enumerate( prev_vals[i] ):
                                     prev_vals[i][j] = float( elem )
+                                rout = "%g" %( eval( rfunc )( prev_vals[i] ))
                                 if rounds[i] == 'yes':
-                                    rout = "%f" %( eval( rfunc )( prev_vals[i] ))
                                     rout = int(round(float(rout)))
-                                else:
-                                    rout = "%g" %( eval( rfunc )( prev_vals[i] ))
-                                
                             else:
                                 if op != 'random':
                                     rout = eval( rfunc )( prev_vals[i] )
@@ -162,21 +142,9 @@ def main():
                             if op == 'unique':
                                 rfunc = "r.length" 
                                 rout = eval( rfunc )( rout )
-
-                            out_list[int(cols[i])-1] = str(rout)
-                        
-                        if show_remaining_cols == 'yes':
-                            for index,el in enumerate(remaining_cols):
-                                if index == 0:
-                                    try:
-                                        random_index = random.randint(0,len(remaining_vals[index])-1)
-                                    except:
-                                        random_index = 0
-                                #pick a random value from each of the remaning columns 
-                                rand_out = remaining_vals[index][random_index]
-                                out_list[el] = str(rand_out)
-                            
-                        print >>fout, '\t'.join([elem for elem in out_list if elem != ''])
+                            out_str += "\t" + str(rout)
+    
+                        print >>fout, out_str
     
                         prev_item = item   
                         prev_vals = [] 
@@ -185,14 +153,6 @@ def main():
                             val_list = []
                             val_list.append(fields[col].strip())
                             prev_vals.append(val_list)
-                        
-                        if show_remaining_cols == 'yes':
-                            remaining_vals = []
-                            for index in remaining_cols:
-                                remaining_val_list = []
-                                remaining_val_list.append(fields[index].strip())
-                                remaining_vals.append(remaining_val_list)
-                        
                 else:
                     # This only occurs once, right at the start of the iteration.
                     prev_item = item
@@ -201,15 +161,8 @@ def main():
                         val_list = []
                         val_list.append(fields[col].strip())
                         prev_vals.append(val_list)
-                    
-                    if show_remaining_cols == 'yes':
-                        remaining_vals = []
-                        for index in remaining_cols:
-                            remaining_val_list = []
-                            remaining_val_list.append(fields[index].strip())
-                            remaining_vals.append(remaining_val_list)
     
-            except Exception:
+            except Exception, exc:
                 skipped_lines += 1
                 if not first_invalid_line:
                     first_invalid_line = ii+1
@@ -219,8 +172,7 @@ def main():
                 first_invalid_line = ii+1
     
     # Handle the last grouped value
-    out_list = ['']*in_columns
-    out_list[group_col] = str(prev_item)
+    out_str = prev_item
     
     for i, op in enumerate(ops):
         rfunc = "r." + op 
@@ -228,11 +180,9 @@ def main():
             if op not in ['c','length','unique','random']:
                 for j, elem in enumerate( prev_vals[i] ):
                     prev_vals[i][j] = float( elem )
+                rout = '%g' %( eval( rfunc )( prev_vals[i] ))
                 if rounds[i] == 'yes':
-                    rout = '%f' %( eval( rfunc )( prev_vals[i] ))
                     rout = int(round(float(rout)))
-                else:
-                    rout = '%g' %( eval( rfunc )( prev_vals[i] ))
             else:
                 if op != 'random':
                     rout = eval( rfunc )( prev_vals[i] )
@@ -243,22 +193,13 @@ def main():
             if op == 'unique':
                 rfunc = "r.length" 
                 rout = eval( rfunc )( rout )    
-            out_list[int(cols[i])-1] = str(rout)
+            out_str += "\t" + str( rout )
         except:
             skipped_lines += 1
             if not first_invalid_line:
                 first_invalid_line = ii+1
-    if show_remaining_cols == 'yes':
-        for index,el in enumerate(remaining_cols):
-            if index == 0:
-                try:
-                    random_index = random.randint(0,len(remaining_vals[index])-1)
-                except:
-                    random_index = 0
-            rand_out = remaining_vals[index][random_index]
-            out_list[el] = str(rand_out)
     
-    print >>fout, '\t'.join([elem for elem in out_list if elem != ''])
+    print >>fout, out_str
     
     # Generate a useful info message.
     msg = "--Group by c%d: " %(group_col+1)
