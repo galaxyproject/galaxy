@@ -71,7 +71,8 @@ taxRank = {
         'genus'       :20,
         'subgenus'    :21,
         'species'     :22,
-        'subspecies'  :23
+        'subspecies'  :23,
+        'order'       :13
     }
 
 
@@ -157,12 +158,16 @@ try:
             for item in cur.fetchall():
                 out_string = '%s\t%s\t%d\t' % ( item[0], item[1], item[2] )
                 out_string += rankName
+                out_string += '\t'
+                out_string += str(taxRank[rankName])
                 print >>out_file, out_string
         else:
             cur.execute('select rank, count(*) from %s_count where N = 1 and length(rank)>1 group by rank' % rank)
             for item in cur.fetchall():
                 out_string = '%s\t%s\t' % ( item[0], item[1] )
                 out_string += rankName
+                out_string += '\t'
+                out_string += str(taxRank[rankName])
                 print >>out_file, out_string
 except Exception, e:
     stop_err("%s\n" % e)
