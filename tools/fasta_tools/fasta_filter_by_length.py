@@ -15,7 +15,7 @@ def stop_err( msg ):
 
 def __main__():
     
-    input_filename = sys.argv[1]
+    infile = sys.argv[1]
     try:
         min_length = int( sys.argv[2] )
     except:
@@ -24,49 +24,62 @@ def __main__():
         max_length = int( sys.argv[3] )
     except:
         stop_err( "Maximum length of the return sequence requires a numerical value." )
-    output_filename = sys.argv[4]
-    tmp_title = tmp_seq = ''
-    tmp_seq_count = 0
-    seq_hash = {}
+    outfile = sys.argv[4]
+    fasta_title = fasta_seq = ''
+    at_least_one = 0
+    
+    out = open( outfile, 'w' )
 
-    for i, line in enumerate( file( input_filename ) ):
+    for i, line in enumerate( file( infile ) ):
         line = line.rstrip( '\r\n' )
         if not line or line.startswith( '#' ):
             continue
+        
         if line[0] == '>':
-            if len( tmp_seq ) > 0:
-                tmp_seq_count += 1
-                seq_hash[ ( tmp_seq_count, tmp_title ) ] = tmp_seq
-            tmp_title = line
-            tmp_seq = ''
+            if len( fasta_seq ) > 0:
+
+                if max_length <= 0: 
+                    compare_max_length = len( fasta_seq ) + 1
+                else:
+                    compare_max_length = max_length
+                    
+                l = len( fasta_seq )
+                
+                if l >= min_length and l <= compare_max_length:
+                    at_least_one += 1
+                    out.write( "%s\n" % fasta_title )
+                    c = 0
+                    s = fasta_seq
+                    while c < l:
+                        b = min( c + 50, l )
+                        out.write( "%s\n" % s[ c:b ] )   
+                        c = b
+                                        
+            fasta_title = line
+            fasta_seq = ''
         else:
-            tmp_seq = "%s%s" % ( tmp_seq, line ) 
-            if line.split()[0].isdigit():
-                tmp_seq = "%s " % tmp_seq
-    if len( tmp_seq ) > 0:
-        seq_hash[ ( tmp_seq_count, tmp_title ) ] = tmp_seq
+            fasta_seq = "%s%s" % ( fasta_seq, line ) 
     
-    title_keys = seq_hash.keys()
-    title_keys.sort()
-    output_handle = open( output_filename, 'w' )
-    at_least_one = 0
-    for i, fasta_title in title_keys:
-        tmp_seq = seq_hash[ ( i, fasta_title ) ]
+    if len( fasta_seq ) > 0:
+                
         if max_length <= 0: 
-            compare_max_length = len( tmp_seq ) + 1
+            compare_max_length = len( fasta_seq ) + 1
         else:
             compare_max_length = max_length
-        l = len( tmp_seq )
+            
+        l = len( fasta_seq )
+        
         if l >= min_length and l <= compare_max_length:
             at_least_one += 1
-            output_handle.write( "%s\n" % fasta_title )
+            out.write( "%s\n" % fasta_title )
             c = 0
-            s = tmp_seq
+            s = fasta_seq
             while c < l:
                 b = min( c + 50, l )
-                output_handle.write( "%s\n" % s[ c:b ] )   
+                out.write( "%s\n" % s[ c:b ] )   
                 c = b
-    output_handle.close()
+
+    out.close()
 
     if at_least_one == 0:
         print "There is no sequence that falls within your range."
