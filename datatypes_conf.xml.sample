@@ -82,6 +82,8 @@
     <datatype extension="garnier" type="galaxy.datatypes.data:Text"/>
     <datatype extension="gcg" type="galaxy.datatypes.data:Text"/>
     <datatype extension="geecee" type="galaxy.datatypes.data:Text"/>
+    <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack"/>
+    <datatype extension="coverage" type="galaxy.datatypes.coverage:LastzCoverage"/>
     <datatype extension="genbank" type="galaxy.datatypes.data:Text"/>
     <datatype extension="helixturnhelix" type="galaxy.datatypes.data:Text"/>
     <datatype extension="hennig86" type="galaxy.datatypes.data:Text"/>
