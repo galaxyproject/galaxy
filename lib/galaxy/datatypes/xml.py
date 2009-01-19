@@ -12,8 +12,12 @@ class BlastXml( data.Text ):
     file_ext = "blastxml"
     def set_peek( self, dataset ):
         """Set the peek and blurb text"""
-        dataset.peek  = data.get_file_peek( dataset.file_name )
-        dataset.blurb = 'NCBI Blast XML data'
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name )
+            dataset.blurb = 'NCBI Blast XML data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
     def sniff( self, filename ):
         """
         Determines whether the file is blastxml

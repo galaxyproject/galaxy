@@ -912,3 +912,4 @@ def directory_hash_id( id ):
     # Break into chunks of three
     return [ padded[i*3:(i+1)*3] for i in range( len( padded ) // 3 ) ]
 
+

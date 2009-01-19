@@ -59,18 +59,15 @@ class Registry( object ):
                                 self.converters.append( ( converter_config, extension, target_datatype ) )
                 except Exception, e:
                     self.log.warning( 'Error loading datatype "%s", problem: %s' % ( extension, str( e ) ) )
-            # Load datatype sniffers from config
+            # Load datatype sniffers from the config
             sniff_order = []
             sniffers = root.find( 'sniffers' )
             for elem in sniffers.findall( 'sniffer' ):
-                order = elem.get( 'order', None ) 
                 type = elem.get( 'type', None )
-                if order and type:
-                    sniff_order.append( ( order, type ) )
-            sniff_order.sort()
-            for ele in sniff_order:
+                if type:
+                    sniff_order.append( type )
+            for type in sniff_order:
                 try:
-                    type = ele[1]
                     fields = type.split( ":" )
                     datatype_module = fields[0]
                     datatype_class = fields[1]
@@ -149,6 +146,7 @@ class Registry( object ):
                 sequence.Maf(),
                 sequence.Lav(),
                 sequence.Fasta(),
+                sequence.FastqSolexa(),
                 interval.Wiggle(),
                 images.Html(),
                 sequence.Axt(),

@@ -43,11 +43,14 @@ class GenomeGraphs( Tabular ):
     
     def set_peek( self, dataset ):
         """Set the peek and blurb text"""
-        dataset.peek  = data.get_file_peek( dataset.file_name )
-        ## dataset.peek  = self.make_html_table( dataset.peek )
-        dataset.blurb = util.commaify( str( data.get_line_count( dataset.file_name ) ) ) + " rows"
-        #i don't think set_meta should not be called here, it should be called separately
-        self.set_meta( dataset )
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name )
+            dataset.blurb = util.commaify( str( data.get_line_count( dataset.file_name ) ) ) + " rows"
+            #i don't think set_meta should not be called here, it should be called separately
+            self.set_meta( dataset )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
         
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
@@ -130,8 +133,12 @@ class SNPMatrix(Rgenetics):
     file_ext="snpmatrix"
 
     def set_peek( self, dataset ):
-        dataset.peek  = "Binary RGenetics file"
-        dataset.blurb = data.nice_size( dataset.get_size() )
+        if not dataset.dataset.purged:
+            dataset.peek  = "Binary RGenetics file"
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
     #def sniff( self, filename ):
     #    """
     #    """

@@ -111,19 +111,19 @@ class JobQueue( object ):
 
     def __check_jobs_at_startup( self ):
         """
-        Checks all jobs that are in the 'running' or 'queued' state in the
-        database and requeues or cleans up as necessary.  Only run as the
+        Checks all jobs that are in the 'new', 'queued' or 'running' state in
+        the database and requeues or cleans up as necessary.  Only run as the
         job manager starts.
         """
         model = self.app.model
-        # Jobs in the NEW state won't be requeued unless we're tracking in the database
-        if not self.track_jobs_in_database:
-            for job in model.Job.filter( model.Job.c.state==model.Job.states.NEW ).all():
-                log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
-                self.queue.put( ( job.id, job.tool_id ) )
+        for job in model.Job.filter( model.Job.c.state==model.Job.states.NEW ).all():
+            log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
+            self.queue.put( ( job.id, job.tool_id ) )
         for job in model.Job.filter( (model.Job.c.state == model.Job.states.RUNNING) | (model.Job.c.state == model.Job.states.QUEUED) ).all():
-            if job.job_runner_name is not None:
-                # why are we passing the queue to the wrapper?
+            if job.job_runner_name is None:
+                log.debug( "no runner: %s is still in queued state, adding to the jobs queue" %job.id )
+                self.queue.put( ( job.id, job.tool_id ) )
+            else:
                 job_wrapper = JobWrapper( job, self.app.toolbox.tools_by_id[ job.tool_id ], self )
                 self.dispatcher.recover( job, job_wrapper )
 
@@ -298,9 +298,13 @@ class JobWrapper( object ):
         self.queue = queue
         self.app = queue.app
         self.extra_filenames = []
-        self.working_directory = None
         self.command_line = None
         self.galaxy_lib_dir = None
+        # With job outputs in the working directory, we need the working
+        # directory to be set before prepare is run, or else premature deletion
+        # and job recovery fail.
+        self.working_directory = \
+            os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         
     def get_param_dict( self ):
         """
@@ -317,9 +321,6 @@ class JobWrapper( object ):
         config files.
         """
         mapping.context.current.clear() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
-        # Create the working directory
-        self.working_directory = \
-            os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         if not os.path.exists( self.working_directory ):
             os.mkdir( self.working_directory )
         # Restore parameters from the database
@@ -382,12 +383,12 @@ class JobWrapper( object ):
         if not job.state == model.Job.states.DELETED:
             for dataset_assoc in job.output_datasets:
                 if self.app.config.outputs_to_working_directory:
-                    false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.id ) )
-                    if os.path.exists( false_path ):
+                    false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.dataset.id ) )
+                    try:
                         shutil.move( false_path, dataset_assoc.dataset.file_name )
                         log.debug( "fail(): Moved %s to %s" % ( false_path, dataset_assoc.dataset.file_name ) )
-                    else:
-                        log.warning( "fail(): Missing output file in working directory: %s" % false_path )
+                    except ( IOError, OSError ), e:
+                        log.error( "fail(): Missing output file in working directory: %s" % e )
                 dataset = dataset_assoc.dataset
                 dataset.refresh()
                 dataset.state = dataset.states.ERROR
@@ -452,12 +453,13 @@ class JobWrapper( object ):
             job.state = 'ok'
         for dataset_assoc in job.output_datasets:
             if self.app.config.outputs_to_working_directory:
-                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.id ) )
-                if os.path.exists( false_path ):
+                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.dataset.id ) )
+                try:
                     shutil.move( false_path, dataset_assoc.dataset.file_name )
                     log.debug( "finish(): Moved %s to %s" % ( false_path, dataset_assoc.dataset.file_name ) )
-                else:
-                    log.warning( "finish(): Missing output file in working directory: %s" % false_path )
+                except ( IOError, OSError ):
+                    self.fail( "The job's output dataset(s) could not be read" )
+                    return
             for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'

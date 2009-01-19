@@ -1,9 +1,11 @@
 from galaxy.util.bunch import Bunch
 from galaxy.tools.parameters import *
+from galaxy.tools.parameters.grouping import *
 from galaxy.util.template import fill_template
 from galaxy.util.none_like import NoneDataset
 from galaxy.web import url_for
 from galaxy.jobs import JOB_OK
+import galaxy.tools
 
 import logging
 log = logging.getLogger( __name__ )
@@ -68,6 +70,26 @@ class DefaultToolAction( object ):
         return input_datasets
     
     def execute(self, tool, trans, incoming={}, set_output_hid=True ):
+        def wrap_values( inputs, input_values ):
+            # Wrap tool inputs as necessary
+            for input in inputs.itervalues():
+                if isinstance( input, Repeat ):
+                    for d in input_values[ input.name ]:
+                        wrap_values( input.inputs, d )
+                elif isinstance( input, Conditional ):
+                    values = input_values[ input.name ]
+                    current = values["__current_case__"]
+                    wrap_values( input.cases[current].inputs, values )
+                elif isinstance( input, DataToolParameter ):
+                    input_values[ input.name ] = \
+                        galaxy.tools.DatasetFilenameWrapper( input_values[ input.name ],
+                                                             datatypes_registry = trans.app.datatypes_registry,
+                                                             tool = tool,
+                                                             name = input.name )
+                elif isinstance( input, SelectToolParameter ):
+                    input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app )
+                else:
+                    input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
         out_data = {}
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
@@ -163,6 +185,11 @@ class DefaultToolAction( object ):
             # Set output label
             if output.label:
                 params = dict( incoming )
+                # wrapping the params allows the tool config to contain things like
+                # <outputs>
+                #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
+                # </outputs>
+                wrap_values( tool.inputs, params )
                 params['tool'] = tool
                 params['on_string'] = on_text
                 data.name = fill_template( output.label, context=params )
