@@ -4,7 +4,7 @@ Galaxy web application framework
 
 import pkg_resources
 
-import os, sys, time
+import os, sys, time, random, string
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 import base
@@ -229,6 +229,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                     user_for_new_session = self.__get_or_create_remote_user( remote_user_email )
                     log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
                                  remote_user_email, prev_galaxy_session.user.email )
+            else:
+                # No session exists, get/create user for new session
+                user_for_new_session = self.__get_or_create_remote_user( remote_user_email )
         else:
             if galaxy_session is not None and galaxy_session.user and galaxy_session.user.external:
                 # Remote user support is not enabled, but there is an existing
@@ -282,15 +285,15 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
     def __get_or_create_remote_user( self, remote_user_email ):
         """
         Return the user in $HTTP_REMOTE_USER and create if necessary
-        
-        Caller is responsible for flushing the returned user.
         """
         # remote_user middleware ensures HTTP_REMOTE_USER exists
         user = self.app.model.User.filter_by( email=remote_user_email ).first()
         if user is None:
+            random.seed()
             user = self.app.model.User( email=remote_user_email )
-            user.set_password_cleartext( 'external' )
+            user.set_password_cleartext( ''.join( random.sample( string.letters + string.digits, 12 ) ) )
             user.external = True
+            user.flush()
             #self.log_event( "Automatically created account '%s'", user.email )
         return user
     def __update_session_cookie( self, name='galaxysession' ):
