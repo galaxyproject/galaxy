@@ -14,6 +14,32 @@ def main():
     try:
         inputfile = sys.argv[1]
         outfile = sys.argv[2]
+        rank_bound = int( sys.argv[3] )
+        """
+        Mapping of ranks:
+        root        :2, 
+        superkingdom:3, 
+        kingdom     :4, 
+        subkingdom  :5, 
+        superphylum :6, 
+        phylum      :7, 
+        subphylum   :8, 
+        superclass  :9, 
+        class       :10, 
+        subclass    :11, 
+        superorder  :12, 
+        order       :13, 
+        suborder    :14, 
+        superfamily :15,
+        family      :16,
+        subfamily   :17,
+        tribe       :18,
+        subtribe    :19,
+        genus       :20,
+        subgenus    :21,
+        species     :22,
+        subspecies  :23,
+        """
     except:
         stop_err("Syntax error: Use correct syntax: program infile outfile")
     group_col = 0
@@ -91,7 +117,16 @@ def main():
                             out_list[k+1] = 'n' 
                             k += 1
                             
-                        print >>fout, '\t'.join(out_list)
+                        # print >>fout, '\t'.join(out_list)
+                        
+                        if rank_bound == 0:     
+                            print >>fout, ''.join(out_list)
+                            print 'n'*( 24 - rank_bound )
+                        else:
+                            print '\t'.join(out_list[rank_bound:24])
+                            if ''.join(out_list[rank_bound:24]) != 'n'*( 24 - rank_bound ):
+                                print >>fout, '\t'.join(out_list)
+
                         
                         block_valid = True
                         prev_item = item   
@@ -134,9 +169,15 @@ def main():
     while k < 23:
         out_list[k+1] = 'n' 
         k += 1
-        
-    print >>fout, '\t'.join(out_list)
     
+    if rank_bound == 0:     
+        print >>fout, '\t'.join(out_list)
+    else:
+        print ''.join(out_list[rank_bound:24])
+        print 'n'*( 24 - rank_bound )
+        if ''.join(out_list[rank_bound:24]) != 'n'*( 24 - rank_bound ):
+            print >>fout, '\t'.join(out_list)
+        
     if skipped_lines > 0:
         msg= "Skipped %d invalid lines starting with line %d.  Value '%s' in column %d is not numeric." % ( skipped_lines, first_invalid_line, invalid_value, invalid_column )
         print msg
