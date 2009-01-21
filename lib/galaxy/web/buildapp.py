@@ -28,13 +28,18 @@ def add_controllers( webapp, app ):
     them to the webapp.
     """
     from galaxy.web.base.controller import BaseController
+    from galaxy.web.base.controller import ControllerUnavailable
     import galaxy.web.controllers
     controller_dir = galaxy.web.controllers.__path__[0]
     for fname in os.listdir( controller_dir ):
         if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
             name = fname[:-3]
             module_name = "galaxy.web.controllers." + name
-            module = __import__( module_name )
+            try:
+                module = __import__( module_name )
+            except ControllerUnavailable, exc:
+                log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                continue
             for comp in module_name.split( "." )[1:]:
                 module = getattr( module, comp )
             # Look for a controller inside the modules

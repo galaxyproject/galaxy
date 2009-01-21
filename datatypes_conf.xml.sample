@@ -5,8 +5,10 @@
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
+      <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
     </datatype>
     <datatype extension="binseq.zip" type="galaxy.datatypes.images:Binseq" mimetype="application/zip" display_in_upload="true"/>
+    <datatype extension="coverage" type="galaxy.datatypes.coverage:LastzCoverage" display_in_upload="true"/>
     <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
     <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream"/>
@@ -17,6 +19,7 @@
       <converter file="fastqsolexa_to_fasta_converter.xml" target_datatype="fasta"/>
       <converter file="fastqsolexa_to_qual_converter.xml" target_datatype="qual"/>
     </datatype>
+    <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack"/>
     <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true">
       <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>
     </datatype>
