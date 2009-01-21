@@ -1,22 +1,127 @@
 import time, glob, os
+from itertools import cycle
 
-import pkg_resources
-pkg_resources.require("GeneTrack")
-
-import atlas
-from atlas import sql
-from atlas import util as atlas_utils
-from atlas.web import formlib
 from mako import exceptions
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from galaxy.web.base.controller import *
 
+try:
+    import pkg_resources
+    pkg_resources.require("GeneTrack")
+    import atlas
+    from atlas import sql
+    from atlas import hdf
+    from atlas import util as atlas_utils
+    from atlas.web import formlib, feature_query, feature_filter
+    from atlas.web import label_cache as atlas_label_cache
+    from atlas.plotting.const import *
+    from atlas.plotting.tracks import prefab
+    from atlas.plotting.tracks import chart
+    from atlas.plotting import tracks
+except Exception, exc:
+    raise ControllerUnavailable("GeneTrack could not import a required dependency: %s" % str(exc))
+
 pkg_resources.require( "Paste" )
 import paste.httpexceptions
 
+# Database helpers
+SHOW_LABEL_LIMIT = 10000
+color = cycle( [LIGHT, WHITE] )
+
+def list_labels(session):
+    """
+    Returns a list of labels that will be plotted in order.
+    """
+    labels = sql.Label
+    query = session.query(labels).order_by("-id")
+    return query
+
+def open_databases( conf ):
+    """
+    A helper function that returns handles to the hdf and sql databases
+    """
+    db = hdf.hdf_open( conf.HDF_DATABASE, mode='r' )
+    session = sql.get_session( conf.SQL_URI )
+    return db, session
+
+def hdf_query(db, name, param, autosize=False ):
+    """
+    Schema specific hdf query. 
+    Note that returns data as columns not rows.
+    """
+    if not hdf.has_node(db=db, name=name):
+        atlas.warn( 'missing label %s' % name )
+        return [], [], [], []
+    data  = hdf.GroupData( db=db, name=name)
+    istart, iend = data.get_indices(label=param.chrom, start=param.start, stop=param.end)
+    table = data.get_table(label=param.chrom)
+    if autosize:
+        # attempts to reduce the number of points
+        size = len( table.cols.ix[istart:iend] )
+        step = max( [1, size/1200] )
+    else:
+        step = 1
+
+    ix = table.cols.ix[istart:iend:step].tolist()
+    wx = table.cols.wx[istart:iend:step].tolist()
+    cx = table.cols.cx[istart:iend:step].tolist()
+    ax = table.cols.ax[istart:iend:step].tolist()
+    return ix, wx, cx, ax
+
+# Chart helpers
+def build_tracks( param, conf, data_label, fit_label, pred_label, strand, show=False ):
+    """
+    Builds tracks
+    """
+    # gets all the labels for a fast lookup
+    label_cache = atlas_label_cache( conf )       
+
+    # get database handles for hdf and sql
+    db, session = open_databases( conf )
+
+    # fetching x and y coordinates for bar and fit (line) for 
+    # each strand plus (p), minus (m), all (a) 
+    bix, bpy, bmy, bay = hdf_query( db=db, name=data_label, param=param )
+    fix, fpy, fmy, fay = hdf_query( db=db, name=fit_label, param=param )
+
+    # close the hdf database
+    db.close()
+
+    # get all features within the range
+    all = feature_query( session=session,  param=param )
+
+    # draws the barchart and the nucleosome chart below it
+    if strand == 'composite':
+        bar = prefab.composite_bartrack( fix=fix, fay=fay, bix=bix, bay=bay, param=param)
+    else:
+        bar = prefab.twostrand_bartrack( fix=fix, fmy=fmy, fpy=fpy, bix=bix, bmy=bmy, bpy=bpy, param=param)
+    
+    charts = list()
+    charts.append( bar )            
+
+    return charts
+
+def feature_chart(param=None, session=None, label=None, label_dict={}):
+    # draw the ORF tracks
+    all = feature_filter(feature_query(session=session,  param=param), name=label, kdict=label_dict)
+    if len(all) == 0: return []
+    opts  = track_options( 
+        xscale=param.xscale, w=param.width, fgColor=PURPLE,
+        show_labels=param.show_labels, ylabel=str(label),
+        bgColor=color.next()
+    )
+    return [
+       tracks.split_tracks(features=all, options=opts, split=param.show_labels, track_type='vector')
+    ]
+
+def consolidate_charts( charts, param ):
+    # create the multiplot
+    opt = chart_options( w=param.width )
+    multi = chart.MultiChart(options=opt, charts=charts)
+    return multi
+
 # SETUP Track Builders
-from mod454.trackbuilder import build_tracks
 import functools
 def twostrand_tracks( param=None, conf=None ):
     return build_tracks( data_label=conf.LABEL, fit_label=conf.FIT_LABEL, pred_label=conf.PRED_LABEL, param=param, conf=conf, strand='twostrand')
@@ -96,6 +201,7 @@ class WebRoot(BaseController):
         """
         Main request handler
         """
+        color = cycle( [LIGHT, WHITE] )
         data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
@@ -108,10 +214,15 @@ class WebRoot(BaseController):
             FIT_LABEL = "%s-SIGMA-%d" % (data.metadata.label, 20),
             PRED_LABEL = "PRED-%s-SIGMA-%d" % (data.metadata.label, 20),
             )
-        from atlas import hdf
-        db = hdf.hdf_open( conf.HDF_DATABASE, mode='r' )
-        conf.CHROM_FIELDS = [(x,x) for x in hdf.GroupData(db=db, name=conf.LABEL).labels]
-        db.close()
+        session = sql.get_session( conf.SQL_URI )
+
+        if os.path.exists( conf.HDF_DATABASE ):
+            db = hdf.hdf_open( conf.HDF_DATABASE, mode='r' )
+            conf.CHROM_FIELDS = [(x,x) for x in hdf.GroupData(db=db, name=conf.LABEL).labels]
+            db.close()
+        else:
+            query = session.execute(sql.select([sql.feature_table.c.chrom]).distinct())
+            conf.CHROM_FIELDS = [(x.chrom,x.chrom) for x in query]
 
         # generate a new form based on the configuration
         form = formlib.main_form( conf )
@@ -147,14 +258,25 @@ class WebRoot(BaseController):
         # get the template and the function used to generate the tracks
         tmpl_name, track_maker  = conf.PLOT_MAPPER[param.plot]
         
-        if track_maker is not None:
-            # generate the name that the image will be stored at
-            fname, fpath = atlas_utils.make_tempfile( dir=conf.IMAGE_DIR, suffix='.png')
-            param.fname  = fname
+        charts = []
 
-            # generate the track
-            track_chart = track_maker( param=param, conf=conf )
-            track_chart.save(fname=fpath)
+        fname, fpath = atlas_utils.make_tempfile( dir=conf.IMAGE_DIR, suffix='.png')
+        param.fname  = fname
+        
+        # set the scale of the plot        
+        param.xscale = [ param.start, param.end ] 
+    
+        # when visualizing on wide scales labels are not useful
+        param.show_labels = ( param.end - param.start ) <= SHOW_LABEL_LIMIT    
+
+        if track_maker is not None and os.path.exists( conf.HDF_DATABASE ):
+            # generate the fit track
+            charts = track_maker( param=param, conf=conf )
+            
+        for label in list_labels( session ):
+            charts.extend( feature_chart(param=param, session=session, label=label.name, label_dict={label.name:label.id}) )
+        track_chart = consolidate_charts( charts, param )
+        track_chart.save(fname=fpath)
         
         return trans.fill_template_mako(tmpl_name, conf=conf, form=form, param=param, dataset_id=dataset_id)
 

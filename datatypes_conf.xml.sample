@@ -26,6 +26,7 @@
     <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
+      <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
     </datatype>
     <datatype extension="jpg" type="galaxy.datatypes.images:Image" mimetype="image/jpeg"/>
     <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
@@ -38,7 +39,6 @@
     <datatype extension="png" type="galaxy.datatypes.images:Image" mimetype="image/png"/>
     <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" display_in_upload="true"/>
     <datatype extension="scf" type="galaxy.datatypes.images:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="solidqual" type="galaxy.datatypes.qualityscore:SolidQualityScore" display_in_upload="true"/>
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
@@ -173,24 +173,20 @@
     <!--
       The order in which Galaxy attempts to determine data types is 
       important because some formats are much more loosely defined 
-      than others.  The following list should be the most rigidly 
-      defined format first, followed by next-most rigidly defined, 
-      and so on.
+      than others.
     -->
-    <sniffer type="galaxy.datatypes.xml:BlastXml"/>
-    <sniffer type="galaxy.datatypes.sequence:Maf"/>
-    <sniffer type="galaxy.datatypes.sequence:Lav"/>
-    <sniffer type="galaxy.datatypes.sequence:csFasta"/>
-    <sniffer type="galaxy.datatypes.qualityscore:SolidQualityScore"/>
-    <sniffer type="galaxy.datatypes.sequence:Fasta"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqSolexa"/>
-    <sniffer type="galaxy.datatypes.interval:Wiggle"/>
-    <sniffer type="galaxy.datatypes.images:Html"/>
-    <sniffer type="galaxy.datatypes.sequence:Axt"/>
-    <sniffer type="galaxy.datatypes.interval:Bed"/>
-    <sniffer type="galaxy.datatypes.interval:CustomTrack"/>
-    <sniffer type="galaxy.datatypes.interval:Gff"/>
-    <sniffer type="galaxy.datatypes.interval:Gff3"/>
-    <sniffer type="galaxy.datatypes.interval:Interval"/>
+    <sniffer order="005" type="galaxy.datatypes.xml:BlastXml"/>
+    <sniffer order="010" type="galaxy.datatypes.sequence:Maf"/>
+    <sniffer order="015" type="galaxy.datatypes.sequence:Lav"/>
+    <sniffer order="020" type="galaxy.datatypes.sequence:Fasta"/>
+    <sniffer order="025" type="galaxy.datatypes.sequence:FastqSolexa"/>
+    <sniffer order="030" type="galaxy.datatypes.interval:Wiggle"/>
+    <sniffer order="035" type="galaxy.datatypes.images:Html"/>
+    <sniffer order="040" type="galaxy.datatypes.sequence:Axt"/>
+    <sniffer order="045" type="galaxy.datatypes.interval:Bed"/>
+    <sniffer order="050" type="galaxy.datatypes.interval:CustomTrack"/>
+    <sniffer order="055" type="galaxy.datatypes.interval:Gff"/>
+    <sniffer order="060" type="galaxy.datatypes.interval:Gff3"/>
+    <sniffer order="065" type="galaxy.datatypes.interval:Interval"/>
   </sniffers>
 </datatypes>

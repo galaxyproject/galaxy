@@ -1,0 +1,55 @@
+## search.html
+<%!
+from itertools import cycle 
+colors = cycle( [ 'even', 'odd' ] )
+%>
+
+<%inherit file="base.html"/>
+<%def name="title()">
+    Search
+</%def>
+
+<h1 align="center">Search</h1>
+
+<div align="center">
+	<form action="search" method="get">
+	Search terms <input type="text" name="word" value="${param.word}">
+	<input type="hidden" name="dataset_id" id="dataset_id" value="${dataset_id}" />
+	<input type="submit" name="submit" value="Search!">
+	</form>
+</div>
+
+% if param.word:
+		
+	% if len(query)>0:
+		<h4 align="center">Showing the best ${len(query)} matches</h4>
+	
+		<table align="center" class="data_table" cellpadding="6" cellspacing="0">
+			<tr align="center">
+				<th width="25%">Name</td>
+				<th width="25%">Chromosome</td>
+				<th width="25%">Start:End</td>
+				<th width="25%">Type</td>
+			</tr>
+			% for color, row in zip(colors, query):
+				${makerow(color, row)}
+			% endfor
+		</table>
+
+	% else:
+		<h4 align="center">No results found</h4>
+	% endif
+		
+%endif
+
+<br>
+<%def name="makerow(color, row)">
+    <tr class="${color}" align="center">
+		<td><a href="${h.url_for(controller='genetrack', action='index', chrom=row.chrom, feature=row.start, dataset_id=dataset_id)}">${row.name}</a></td>
+		<td>${row.chrom}</td>
+		<td>${row.start}:${row.end}</td>
+		<td>${row.label.name}</td>
+    </tr>
+</%def>
+
+</form>

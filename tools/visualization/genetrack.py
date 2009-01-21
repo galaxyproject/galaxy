@@ -14,15 +14,19 @@ import pkg_resources
 pkg_resources.require("GeneTrack")
 pkg_resources.require("bx-python")
 
-from atlas import commands
-from bx.cookbook import doc_optparse
-import os
 import commands as oscommands
+from atlas import commands
+from atlas import sql
+from bx.cookbook import doc_optparse
+from bx.intervals import io
+
+import os
 import tempfile
+from functools import partial
 
 SIGMA = 20
 WIDTH = 5 * SIGMA
-EXCLUSION_ZONE = 147
+EXCLUSION_ZONE = 147    
 
 def main(label, fit, feats, data_dir, output):
     os.mkdir(data_dir)
@@ -31,14 +35,14 @@ def main(label, fit, feats, data_dir, output):
         CLOBBER = True,
         DATA_SIZE = 3*10**6,
         MINIMUM_PEAK_SIZE = 0.1,
-        LOADER_ENABLED = True,
-        FITTER_ENABLED = True,
-        PREDICTOR_ENABLED = True,
-        EXPORTER_ENABLED = True,
+        LOADER_ENABLED = False,
+        FITTER_ENABLED = False,
+        PREDICTOR_ENABLED = False,
+        EXPORTER_ENABLED = False,
         LOADER = loader,
         FITTER = fitter,
         PREDICTOR = predictor,
-        EXPORTER = exporter,
+        EXPORTER = partial( commands.exporter, formatter=commands.bed_formatter),
         HDF_DATABASE = os.path.join( data_dir, "data.hdf" ),
         SQL_URI = "sqlite:///%s" % os.path.join( data_dir, "features.sqlite" ),
         SIGMA = SIGMA,
@@ -51,12 +55,23 @@ def main(label, fit, feats, data_dir, output):
         RIGHT_SHIFT = EXCLUSION_ZONE / 2,
         EXPORT_LABELS = [ "PRED-%s-SIGMA-%d" % ( label,SIGMA ) ],
         EXPORT_DIR = os.path.join( data_dir ),
-        DATA_FILE=fit[1],
+        DATA_FILE=fit and fit[1] or None,
         fit=fit,
         feats=feats,
         )
+    if fit:
+        # Turn on fit processing.
+        conf.LOADER_ENABLED = True,
+        conf.FITTER_ENABLED = True,
+        conf.PREDICTOR_ENABLED = True,
+        conf.EXPORTER_ENABLED = True,
+    for feat in feats:
+        load_feature_files(conf, feats)
     commands.execute(conf)
-
+    outname = "%s.%s.txt" % (conf.__name__, conf.EXPORT_LABELS[0] )
+    if os.path.exists( os.path.join(data_dir, outname) ):
+        os.rename( os.path.join(data_dir, outname), output)
+    
 # mod454 seems to be a module without a package.  The necessary funcitons are
 # stubbed out here until I'm sure of their final home. INS
 
@@ -97,8 +112,40 @@ def predictor( conf ):
     from mod454.predictor import predictor as mod454_predictor
     return mod454_predictor( conf )
 
-def exporter( conf ):
-    return commands.bed_exporter(conf)
+def load_feature_files( conf, feats):
+    """
+    Loads features from file names
+    """
+    engine = sql.get_engine( conf.SQL_URI )
+    sql.drop_indices(engine)
+    conn = engine.connect()
+    for label, fname, col_spec in feats:
+        label_id = sql.make_label(engine, name=label, clobber=False)
+        reader = io.NiceReaderWrapper( open(fname,"r"),
+                                       chrom_col=col_spec.chromCol,
+                                       start_col=col_spec.startCol,
+                                       end_col=col_spec.endCol,
+                                       strand_col=col_spec.strandCol,
+                                       fix_strand=False )
+        values = list()
+        for interval in reader:
+            print interval
+            if not type( interval ) is io.GenomicInterval: continue
+            row = {'label_id':label_id, 
+                   'name':col_spec.nameCol == -1 and "%s-%s" % (str(interval.start), str(interval.end)) or interval.fields[col_spec.nameCol],
+                   'altname':"",
+                   'chrom':interval.chrom,
+                   'start':interval.start,
+                   'end':interval.end,
+                   'strand':interval.strand,
+                   'value':0,
+                   'freetext':""}
+            values.append(row)
+        insert = sql.feature_table.insert()
+        conn.execute( insert, values)
+    conn.close()
+    sql.create_indices(engine)
+
 
 class Bunch( object ):
     def __init__(self, **kwargs):
@@ -115,9 +162,12 @@ if __name__ == "__main__":
     options, args = doc_optparse.parse( __doc__ )
     try:
         label = options.label
-        fit_name, fit_meta = options.fits.split(':')[0], [int(x)-1 for x in options.fits.split(':')[1:]]
-        fit_meta = Bunch(chromCol=fit_meta[0], positionCol=fit_meta[1], forwardCol=fit_meta[2], reverseCol=fit_meta[3])
-        fit = ( label, fit_name, fit_meta, )
+        if options.fits:
+            fit_name, fit_meta = options.fits.split(':')[0], [int(x)-1 for x in options.fits.split(':')[1:]]
+            fit_meta = Bunch(chromCol=fit_meta[0], positionCol=fit_meta[1], forwardCol=fit_meta[2], reverseCol=fit_meta[3])
+            fit = ( label, fit_name, fit_meta, )
+        else:
+            fit = []
         # split apart the string into nested lists, preserves order
         if options.feats:
             feats = [ ( 
@@ -127,7 +177,7 @@ if __name__ == "__main__":
                          strandCol=int(strandCol)-1, nameCol=int(nameCol)-1),
                     ) 
                  for feat_label, fname, chromCol, startCol, endCol, strandCol, nameCol
-                 in ( feat.split(':') for feat in options.feats.split(',') )]
+                 in ( feat.split(':') for feat in options.feats.split(',') if len(feat) > 0 )]
         else:
             feats = []
         data_dir = options.data
