@@ -21,17 +21,21 @@
                 <param_from_source name="GALAXY_URL" missing="0" />
             </add_to_url>
         </request_param>
+        <request_param galaxy_name="data_type" remote_name="exportView_outputformat" missing="tabular" >
+            <data_type_translation>
+                <format galaxy_format="tabular" remote_format="TSV" />
+            </data_type_translation>
+        </request_param>
         <request_param galaxy_name="dbkey" remote_name="dbkey" missing="?" />
         <request_param galaxy_name="organism" remote_name="organism" missing="" />
         <request_param galaxy_name="table" remote_name="table" missing="" />
         <request_param galaxy_name="description" remote_name="description" missing="" />
         <request_param galaxy_name="name" remote_name="name" missing="Biomart query" />
         <request_param galaxy_name="info" remote_name="info" missing="" />
-        <request_param galaxy_name="data_type" remote_name="type" missing="txt" />
     </request_param_translation>
 	<uihints minwidth="800"/>
 	<outputs>
-		<data name="output" format="txt" />
+		<data name="output" format="tabular" />
 	</outputs>
 	<options sanitize="False" refresh="True"/>
 </tool>

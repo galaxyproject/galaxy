@@ -1237,8 +1237,6 @@ class Tool:
 
     def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
         if self.tool_type == 'data_source':
-            # List for converting UCSC to Galaxy exts, if not in following dictionary, use provided datatype
-            data_type_to_ext = { 'wigdata':'wig', 'tab':'interval', 'hyperlinks':'html', 'sequence':'fasta' }
             dbkey = param_dict.get( 'dbkey' )
             organism = param_dict.get( 'organism' )
             table = param_dict.get( 'table' )
@@ -1260,12 +1258,9 @@ class Tool:
                     data.name = '%s on %s' % ( data.name, gb_landmark_region )
                 data.info = info
                 data.dbkey = dbkey
-                try:
-                    data_type = data_type_to_ext[ data_type ]
-                except: 
-                    pass
-                if data_type not in app.datatypes_registry.datatypes_by_extension: 
-                    data_type = 'interval'
+                if data_type not in app.datatypes_registry.datatypes_by_extension:
+                    # Setting data_type to tabular will force the data to be sniffed in exec_after_process()
+                    data_type = 'tabular'
                 data = app.datatypes_registry.change_datatype( data, data_type )
                 # Store external data source's request parameters temporarily in output file.
                 # In case the config setting for "outputs_to_working_directory" is True, we must write to
@@ -1281,8 +1276,6 @@ class Tool:
             return out_data
 
     def exec_after_process( self, app, inp_data, out_data, param_dict ):
-        # TODO: for data_source tools at least, this code can probably be handled more optimally by adding a new
-        # tag set in the tool config.
         if self.tool_type == 'data_source':
             name, data = out_data.items()[0]
             data.set_size()
@@ -1291,9 +1284,10 @@ class Tool:
                 data.info = param_dict.get( 'info', data.name )
                 data.dbkey = param_dict.get( 'dbkey', data.dbkey )
                 data.extension = param_dict.get( 'data_type', data.extension )
-            if data.extension == 'txt':
+            if data.extension in [ 'txt', 'tabular' ]:
                 data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order )
-                data = app.datatypes_registry.change_datatype( data, data_type )
+                if data.extension != data_type:
+                    data = app.datatypes_registry.change_datatype( data, data_type )
             elif not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
                 data.set_meta()
                 if data.missing_meta(): 
