@@ -82,7 +82,7 @@
         <when input="out_format" value="maf" format="maf" />
       </change_format>
     </data>
-    <data format="coverage" name="output2" />
+    <data format="tabular" name="output2" />
   </outputs>
   	<requirements>
 	  <requirement type="binary">lastz</requirement>

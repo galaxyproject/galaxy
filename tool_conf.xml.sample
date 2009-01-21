@@ -11,6 +11,7 @@
     <tool file="data_source/wormbase.xml" />
     <tool file="data_source/wormbase_test.xml" />
     <tool file="data_source/flymine.xml" />
+    <tool file="data_source/flymine_test.xml" />
     <tool file="data_source/encode_db.xml" />
     <tool file="data_source/epigraph_import.xml" />
     <tool file="data_source/epigraph_import_test.xml" />
@@ -301,8 +302,5 @@
    <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="metag_tools/blat_wrapper.xml" />
    <tool file="metag_tools/mapping_to_ucsc.xml" />
-   </section>
-  <section name="Tracks" id="tracks">
-   <tool file="visualization/genetrack.xml" />
    </section>
 </toolbox>
