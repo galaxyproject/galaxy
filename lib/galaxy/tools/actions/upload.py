@@ -13,7 +13,11 @@ class UploadToolAction( object ):
     def __init__( self ):
         self.empty = False
         self.line_count = None
-    
+    def remove_tempfile( self, filename ):
+        try:
+            os.unlink( filename )
+        except:
+            log.exception( 'failure removing temporary file: %s' % filename )
     def execute( self, tool, trans, incoming={}, set_output_hid = True ):
         data_file = incoming['file_data']
         file_type = incoming['file_type']
@@ -48,6 +52,7 @@ class UploadToolAction( object ):
                 data_list.append( self.add_file( trans, data_file.local_filename, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
                 log.exception( 'exception in add_file using datafile.local_filename %s: %s' % ( data_file.local_filename, str( e ) ) )
+                self.remove_tempfile( data_file.local_filename )
                 return self.upload_empty( trans, job, "Error:", str( e ) )
         elif 'filename' in dir( data_file ):
             file_name = data_file.filename
@@ -57,16 +62,13 @@ class UploadToolAction( object ):
                 temp_name = sniff.stream_to_file( data_file.file, prefix='upload' )
             except Exception, e:
                 log.exception( 'exception in sniff.stream_to_file using file %s: %s' % ( data_file.filename, str( e ) ) )
-                try:
-                    # Attempt to remove temporary file
-                    os.unlink( temp_name )
-                except:
-                    log.exception( 'failure removing temporary file: %s' % temp_name )
+                self.remove_tempfile( temp_name )
                 return self.upload_empty( trans, job, "Error:", str( e ) )
             try:
                 data_list.append( self.add_file( trans, temp_name, file_name, file_type, dbkey, space_to_tab=space_to_tab ) )
             except Exception, e:
                 log.exception( 'exception in add_file using file temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
+                self.remove_tempfile( temp_name )
                 return self.upload_empty( trans, job, "Error:", str( e ) )
         if url_paste not in [ None, "" ]:
             if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
@@ -90,16 +92,13 @@ class UploadToolAction( object ):
                             temp_name = sniff.stream_to_file( urllib.urlopen( line ), prefix='url_paste' )
                         except Exception, e:
                             log.exception( 'exception in sniff.stream_to_file using url_paste %s: %s' % ( url_paste, str( e ) ) )
-                            try:
-                                # Attempt to remove temporary file
-                                os.unlink( temp_name )
-                            except:
-                                log.exception( 'failure removing temporary file: %s' % temp_name )
+                            self.remove_tempfile( temp_name )
                             return self.upload_empty( trans, job, "Error:", str( e ) )
                         try:
                             data_list.append( self.add_file( trans, temp_name, NAME, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
                         except Exception, e:
                             log.exception( 'exception in add_file using url_paste temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
+                            self.remove_tempfile( temp_name )
                             return self.upload_empty( trans, job, "Error:", str( e ) )
             else:
                 is_valid = False
@@ -113,16 +112,13 @@ class UploadToolAction( object ):
                         temp_name = sniff.stream_to_file( StringIO.StringIO( url_paste ), prefix='strio_url_paste' )
                     except Exception, e:
                         log.exception( 'exception in sniff.stream_to_file using StringIO.StringIO( url_paste ) %s: %s' % ( url_paste, str( e ) ) )
-                        try:
-                            # Attempt to remove temporary file
-                            os.unlink( temp_name )
-                        except:
-                            log.exception( 'failure removing temporary file: %s' % temp_name )
+                        self.remove_tempfile( temp_name )
                         return self.upload_empty( trans, job, "Error:", str( e ) )
                     try:
                         data_list.append( self.add_file( trans, temp_name, 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
                     except Exception, e:
                         log.excception( 'exception in add_file using StringIO.StringIO( url_paste ) temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
+                        self.remove_tempfile( temp_name )
                         return self.upload_empty( trans, job, "Error:", str( e ) )
                 else:
                     return self.upload_empty( trans, job, "No data error:", "you pasted no data." )
