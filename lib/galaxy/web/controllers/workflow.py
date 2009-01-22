@@ -71,7 +71,7 @@ class WorkflowController( BaseController ):
         # Load workflow from database
         stored = get_stored_workflow( trans, id )
         if email:
-            other = model.User.filter( and_( model.user.table.c.email==email,
+            other = model.User.filter( and_( model.User.table.c.email==email,
                                              model.User.table.c.deleted==False ) ).first()
             if not other:
                 mtype = "error"
