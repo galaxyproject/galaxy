@@ -128,16 +128,22 @@ class Data( object ):
             out = "Can't create peek %s" % str( exc )
         return out
     def display_name(self, dataset):
-        """Returns formated html of dataset name"""
+        """Returns formatted html of dataset name"""
         try:
             return escape(dataset.name)
         except:
             return "name unavailable"
     def display_info(self, dataset):
-        """Returns formated html of dataset info"""
+        """Returns formatted html of dataset info"""
         try:
             # Change new line chars to html
-            return escape( dataset.info ).replace( "\r", "\n" ).replace( "\n", "<br>" )
+            if dataset.info.find( '\r\n' ) >= 0:
+                dataset.info = dataset.info.replace( '\r\n', '<br/>' )
+            if dataset.info.find( '\r' ) >= 0:
+                dataset.info = dataset.info.replace( '\r', '<br/>' )
+            if dataset.info.find( '\n' ) >= 0:
+                dataset.info = dataset.info.replace( '\n', '<br/>' )
+            return escape( dataset.info )
         except:
             return "info unavailable"
     def validate(self, dataset):
@@ -154,7 +160,7 @@ class Data( object ):
         Adds a display app to the datatype.
         app_id is a unique id
         label is the primary display label, ie display at 'UCSC'
-        file_function is a string containing the name of the function that returns a properly formated display
+        file_function is a string containing the name of the function that returns a properly formatted display
         links_function is a string containing the name of the function that returns a list of (link_name,link)
         """
         self.supported_display_apps = self.supported_display_apps.copy()
