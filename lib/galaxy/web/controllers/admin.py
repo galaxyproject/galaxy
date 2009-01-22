@@ -1038,8 +1038,14 @@ class Admin( BaseController ):
 
             if space_to_tab:
                 line_count = sniff.convert_newlines_sep2tabs( temp_name )
-            else:
+            elif os.stat( temp_name ).st_size < 262144000: # 250MB
                 line_count = sniff.convert_newlines( temp_name )
+            else:
+                if sniff.check_newlines( temp_name ):
+                    line_count = sniff.convert_newlines( temp_name )
+                else:
+                    line_count = None
+
             if extension == 'auto':
                 data_type = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
             else:
