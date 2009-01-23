@@ -381,6 +381,10 @@ class JobWrapper( object ):
         job.refresh()
         # if the job was deleted, don't fail it
         if not job.state == model.Job.states.DELETED:
+            # If the failure is due to a Galaxy framework exception, save the traceback
+            # Do this first in case we generate a traceback below
+            if exception:
+                job.traceback = traceback.format_exc()
             for dataset_assoc in job.output_datasets:
                 if self.app.config.outputs_to_working_directory:
                     false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.dataset.id ) )
@@ -399,9 +403,6 @@ class JobWrapper( object ):
             job.state = model.Job.states.ERROR
             job.command_line = self.command_line
             job.info = message
-            # If the failure is due to a Galaxy framework exception, save the traceback
-            if exception:
-                job.traceback = traceback.format_exc()
             job.flush()
         # If the job was deleted, just clean up
         self.cleanup()
