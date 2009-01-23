@@ -107,7 +107,10 @@ def name_sorted( l ):
 
 <%def name="render_folder( parent, parent_pad )">
     <%
-        if not trans.app.security_agent.check_folder_contents( trans.user, parent ):
+        def show_folder():
+            if trans.app.security_agent.check_folder_contents( trans.user, parent ) or trans.app.model.library_security_agent.show_library_item( trans.user, parent ):
+                return True
+        if not show_folder:
             return ""
         pad = parent_pad + 20
         if parent_pad == 0:
@@ -127,8 +130,17 @@ def name_sorted( l ):
             %if parent.description:
                 <i>- ${parent.description}</i>
             %endif
+            %if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, parent ) or trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, parent ) or trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, parent ):
+            <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            %endif
             </span>
+        
         </div>
+        
+            <div popupmenu="folder-${parent.id}-popup">
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', id=parent.id )}">Manage Folder</a>
+			</div>
+        
     </li>
     %if subfolder:
         <ul id="subFolder" style="display: none;">
@@ -159,7 +171,7 @@ def name_sorted( l ):
     <form name="import_from_library" action="${h.url_for( controller='library', action='import_datasets' )}" method="post">
         <ul>
             %for library in libraries:
-                %if trans.app.security_agent.check_folder_contents( trans.user, library ):
+                %if trans.app.security_agent.check_folder_contents( trans.user, library ) or trans.app.model.library_security_agent.show_library_item( trans.user, library ):
                     <% can_access = True %>
                     <li class="libraryRow libraryOrFolderRow">
                         <div class="rowTitle">
@@ -171,6 +183,9 @@ def name_sorted( l ):
                                         %if library.description:
                                             <i>- ${library.description}</i>
                                         %endif
+							            %if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, library ) or trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, library ) or trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, library ):
+							            <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+							            %endif
                                         </span>
                                     </th>
                                     <th width="100">Format</th>
@@ -179,6 +194,9 @@ def name_sorted( l ):
                                 </tr>
                             </table>
                         </div>
+                        <div popupmenu="library-${library.id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='library', action='edit_library', id=library.id )}">Manage Library</a>
+			            </div>
                     </li>
                     <ul>
                         ${render_folder( library.root_folder, 0 )}
@@ -188,7 +206,7 @@ def name_sorted( l ):
             %endfor
         </ul>
         %if can_access:
-            <select name="action" id="action_on_datasets_select">
+            <select name="do_action" id="action_on_datasets_select">
                 %if default_action == 'add':
                     <option value="add" selected>Add selected datasets to history</option>
                 %else:

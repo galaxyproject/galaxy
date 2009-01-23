@@ -141,6 +141,8 @@ def maf_index_by_uid( maf_uid, index_location_file ):
                     maf_files = fields[4].replace( "\n", "" ).replace( "\r", "" ).split( "," )
                     return bx.align.maf.MultiIndexed( maf_files, keep_open = True, parse_e_rows = False )
                 except Exception, e:
+                    print maf_uid
+                    print e
                     raise 'MAF UID (%s) found, but configuration appears to be malformed: %s' % ( maf_uid, e )
         except:
             pass

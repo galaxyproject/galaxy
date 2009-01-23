@@ -1,4 +1,7 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/library/common.mako" import="render_existing_library_item_info" />
+
 <%def name="title()">Edit Dataset Attributes</%def>
 
 
@@ -20,9 +23,14 @@
         id_name = 'id'
     elif isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
         id_name = 'lid'
+    lda_source, library_source = data.source_library_dataset
 %>
 
-%if ( id_name == 'id' or trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_EDIT_METADATA, dataset = data ) ):
+%if library_source:
+    ${render_msg( 'You are currently viewing a Dataset from a library, you can go <a href="%s">here</a> to view versions.' % ( h.url_for( controller='library', action='library_dataset', id=library_source.id, refer_id=lda_source.id ) ), 'info' )}
+%endif
+
+%if edit_allowed:
     <div class="toolForm">
         <div class="toolFormTitle">Edit Attributes</div>
         <div class="toolFormBody">
@@ -192,4 +200,10 @@
             </div>
         </div>
     </div>
+%endif
+<p/>
+${render_existing_library_item_info( data )}
+<p/>
+%if isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
+    ${render_msg( 'This is a Library Dataset, you can click <a href="%s">here</a> to import it into your history.' % ( h.url_for( controller='library', action='import_datasets', import_ids=data.id, do_action='add' ) ), 'info' )}
 %endif

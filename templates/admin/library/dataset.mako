@@ -1,6 +1,12 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
+<%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/admin/library/common.mako" import="render_available_templates" />
 
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
 <%def name="title()">Edit Dataset Attributes</%def>
 
@@ -25,9 +31,15 @@
     <%
         name_str = '%d selected datasets' % len( dataset )
     %>
-    ${render_permission_form( dataset[0].dataset, name_str, h.url_for( action='dataset' ), 'id', ",".join( [ str(d.id) for d in dataset ] ), roles )}
+    ${render_permission_form( dataset[0], name_str, h.url_for( action='dataset' ), 'id', ",".join( [ str(d.id) for d in dataset ] ), roles )}
 %else:
-    ${render_permission_form( dataset.dataset, dataset.name, h.url_for( action='dataset' ), 'id', dataset.id, roles )}
+    ${render_permission_form( dataset, dataset.name, h.url_for( action='dataset' ), 'id', dataset.id, roles )}
+%endif
+
+%if dataset.library_dataset.library_folder_dataset_association == dataset:
+    ${render_msg( 'You are currently viewing the latest version of this Library Dataset, you can go <a href="%s">here</a> to manage versions.' % ( h.url_for( controller='admin', action='library_dataset', id=dataset.library_dataset.id ) ), 'info' )}
+%else:
+    ${render_msg( 'You are currently viewing an expired version of this Library Dataset, you can go <a href="%s">here</a> to manage versions.' % ( h.url_for( controller='admin', action='library_dataset', id=dataset.library_dataset.id ) ), 'warning' )}
 %endif
 
 %if not isinstance( dataset, list ):
@@ -103,3 +115,5 @@
     </div>
     <p/>
 %endif
+
+${render_available_templates( dataset )}

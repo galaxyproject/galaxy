@@ -1,5 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/dataset/security_common.mako" import="render_permission_form" />
+<%namespace file="/admin/library/common.mako" import="render_available_templates" />
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -39,3 +41,13 @@
         </form>
     </div>
 </div>
+
+<p/>
+
+<%
+    roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
+%>
+
+${render_permission_form( folder, folder.name, h.url_for( action='folder' ), 'id', folder.id, roles )}
+
+${render_available_templates( folder )}

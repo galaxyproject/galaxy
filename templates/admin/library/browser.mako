@@ -106,7 +106,7 @@ def name_sorted( l ):
                 <a class="action-button" href="${h.url_for( controller='admin', action='dataset', folder_id=parent.id )}">Add a new dataset to this folder</a>
                 <a class="action-button" href="${h.url_for( controller='admin', action='add_dataset_to_folder_from_history', folder_id=parent.id )}">Copy a dataset from your history to this folder</a>
                 <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=parent.id )}">Create a new sub-folder in this folder</a>
-                <a class="action-button" href="${h.url_for( controller='admin', action='folder', rename=True, id=parent.id )}">Rename this folder</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='folder', rename=True, id=parent.id )}">Edit this folder</a>
                 %if subfolder:
                     <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
                 %endif
@@ -189,7 +189,7 @@ def name_sorted( l ):
                                 <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                                 %if not deleted:
                                     <div popupmenu="library-${library.id}-popup">
-                                        <a class="action-button" href="${h.url_for( action='library', rename=True, id=library.id )}">Rename this library</a>
+                                        <a class="action-button" href="${h.url_for( action='library', rename=True, id=library.id )}">Edit this library</a>
                                         <a class="action-button" confirm="Current state will not be saved, so undeleting the library will restore all of its contents.  Click OK to delete the library named '${library.name}'?" href="${h.url_for( action='library', delete=True, id=library.id )}">Delete this library and its contents</a>
                                     </div>
                                 %else:
