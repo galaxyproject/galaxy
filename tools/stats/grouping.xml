@@ -33,7 +33,7 @@
     </repeat>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input1" />
+    <data format="tabular" name="out_file1" />
   </outputs>
   <requirements>
     <requirement type="python-module">rpy</requirement>

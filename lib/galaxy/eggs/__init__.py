@@ -530,7 +530,7 @@ def require( pkg ):
         return
     except pkg_resources.VersionConflict, e:
         # there's a conflicting egg on the pythonpath, remove it
-        dist = pkg_resources.get_distribution( name )
+        dist = e.args[0]
         working_set = pkg_resources.working_set
         # use the canonical path for comparisons
         location = os.path.realpath( dist.location )
@@ -543,18 +543,6 @@ def require( pkg ):
         del working_set.by_key[dist.key]
         working_set.entry_keys[entry] = []
         sys.path.remove(entry)
-        # get
-        egg.find()
-        if not egg.have:
-            if not egg.fetch():
-                raise EggNotFetchable( egg.name )
-            pkg_resources.working_set.require( "%s==%s" % ( name, egg.get_vertag() ) )
-            if dist.project_name in sys.modules:
-                try:
-                    mod = sys.modules[dist.project_name]
-                    reload( mod )
-                except:
-                    raise NewEgg( "Galaxy downloaded a new egg (%s) but was unable to reload the module it contained.  Please try starting Galaxy again." % egg.name )
     except pkg_resources.DistributionNotFound, e:
         # the initial require itself is the first dep, but it can have
         # multiple deps, which will be fetched by the require below.
