@@ -17,13 +17,23 @@ class Action( object ):
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
-        DATASET_EDIT_METADATA = Action(
-            "edit metadata", "Role members can edit this dataset's metadata in the library", "grant" ),
+        #DATASET_EDIT_METADATA = Action(
+        #    "edit metadata", "Role members can edit this dataset's metadata in the library", "grant" ),
         DATASET_MANAGE_PERMISSIONS = Action(
             "manage permissions", "Role members can manage the roles associated with this dataset", "grant" ),
         DATASET_ACCESS = Action(
             "access", "Role members can import this dataset into their history for analysis", "restrict" )
     )
+    #Actions that can be performed on Library Items
+    library_actions = Bunch(
+        LIBRARY_ADD = Action(
+            "add library item", "Role members can add library items to this folder", "grant" ),
+        LIBRARY_MODIFY = Action(
+            "modify library item", "Role members can modify this library item", "grant" ),
+        LIBRARY_MANAGE = Action(
+            "manage library permissions", "Role members can manage roles associated with this library item", "grant" )
+    )
+
     def get_action( self, name, default=None ):
         """
         Get a permitted action by its dict key or action name
@@ -382,6 +392,137 @@ class GalaxyRBACAgent( RBACAgent ):
             return False
         else:
             raise 'Passed an illegal object to check_folder_contents: %s' % type( entry )
+
+class LibraryRBACAgent( RBACAgent ):
+    """Class that handles galaxy library security"""
+    #Actions that can be performed on Library Items
+    permitted_actions = Bunch(
+        LIBRARY_ADD = Action(
+            "add library item", "Role members can add library items", "grant" ),
+        LIBRARY_MODIFY = Action(
+            "modify library item", "Role members can modify and delete this library item", "grant" ),
+        LIBRARY_MANAGE = Action(
+            "manage library permissions", "Role members can manage roles associated with this library item", "grant" )
+    )
+    def __init__( self, model, permitted_actions=None ):
+        self.model = model
+        self.library_types = ( ( 'library', self.model.Library ) , ( 'library_folder', self.model.LibraryFolder ) , ( 'library_dataset', self.model.LibraryDataset ) )
+        if permitted_actions:
+            self.permitted_actions = permitted_actions
+    def get_action( self, name, default=None ):
+        """
+        Get a permitted action by its dict key or action name
+        """
+        for k, v in self.permitted_actions.items():
+            if k == name or v.action == name:
+                return v
+        return default
+    def get_actions( self ):
+        """
+        Get all permitted actions as a list of Action objects
+        """
+        return self.permitted_actions.__dict__.values()
+    def allow_action( self, user, action, library_item, **kwd ):
+        #action = self.get_action( action )
+        #assert action is not None, 'No valid method of checking action (%s) on %s for user %s.' % ( action, kwd, user )
+        if user is None: return False #all permissions are granted -> non-users cannot have permissions
+        if action.model == 'grant':
+            library_items = {}
+            for item_name, item_class in self.library_types:
+                if isinstance( library_item, item_class ):
+                    library_items[ "%s_id" % item_name ] = library_item.id
+                #else:
+                #    library_items[ "%s_id" % item_name ] = None
+            user_role_ids = [ r.id for r in user.all_roles() ]
+            #check to see if user has access to any of the roles
+            allowed_role_assocs = self.model.ActionLibraryItemRoleAssociation.filter_by( action = action.action, **library_items )
+            if allowed_role_assocs:
+                if not hasattr( allowed_role_assocs, '__iter__' ):
+                    allowed_role_assocs = [allowed_role_assocs]
+                for allowed_role_assoc in allowed_role_assocs:
+                    if allowed_role_assoc.role_id in user_role_ids:
+                        return True
+            return False
+        else:
+            raise 'Unimplemented model (%s) specified for action (%s)' % ( action.model, action.action )
+    
+    def set_all_permissions( self, library_item, permissions={} ):
+        # Set new permissions on a library item, eliminating all current permissions
+        # Delete all of the current permissions on the item
+        for role_assoc in library_item.actions:
+            role_assoc.delete()
+            role_assoc.flush()
+        # Add the new permissions on the dataset
+        for action, roles in permissions.items():
+            if isinstance( action, Action ):
+                action = action.action
+            for role_assoc in [ self.model.ActionLibraryItemRoleAssociation( action, library_item, role ) for role in roles ]:
+                role_assoc.flush()
+    
+    def copy_permissions( self, source_library_item, target_library_item, user=None ):
+        #copy all permissions from source, if user is provided ensure that user's private role is included
+        permissions = {}
+        for role_assoc in source_library_item.actions:
+            if role_assoc.action in permissions:
+                permissions[role_assoc.action].append( role_assoc.role )
+            else:
+                permissions[role_assoc.action] = [ role_assoc.role ]
+        self.set_all_permissions( target_library_item, permissions )
+        
+        #make sure user's private group is included
+        if user:
+            private_role = self.model.security_agent.get_private_user_role( user )
+            for name, action in self.permitted_actions.items():
+                library_items = {} #move to a _guess_library_items method
+                for item_name, item_class in self.library_types:
+                    if isinstance( target_library_item, item_class ):
+                        library_items[ "%s_id" % item_name ] = target_library_item.id
+                if not self.model.ActionLibraryItemRoleAssociation.filter_by( role_id=private_role.id, action = action.action, **library_items ).first():
+                    alira = self.model.ActionLibraryItemRoleAssociation( action.action, target_library_item, private_role )
+                    alira.flush()
+            
+    def show_library_item( self, user, library_item ):
+        if self.allow_action( user, self.permitted_actions.LIBRARY_MODIFY, library_item ) or self.allow_action( user, self.permitted_actions.LIBRARY_MANAGE, library_item ) or self.allow_action( trans.user, self.permitted_actions.LIBRARY_ADD, library_item ):
+            return True
+        if isinstance( library_item, self.model.Library ):
+            return self.show_library_item( user, library_item.root_folder )
+        elif isinstance( library_item, self.model.LibraryFolder ):
+            for folder in library_item.folders:
+                if self.show_library_item( user, folder ):
+                    return True
+        return False
+    
+    
+    def guess_derived_permissions_for_datasets( self, datasets = [] ):
+        raise "Unimplemented Method"
+    def associate_components( self, **kwd ):
+        raise 'No valid method of associating provided components: %s' % kwd
+    def create_private_user_role( self, user ):
+        raise "Unimplemented Method"
+    def get_private_user_role( self, user ):
+        raise "Unimplemented Method"
+    def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False ):
+        raise "Unimplemented Method"
+    def history_set_default_permissions( self, history, permissions=None, dataset=False, bypass_manage_permission=False ):
+        raise "Unimplemented Method"
+    def set_all_dataset_permissions( self, dataset, permissions ):
+        raise "Unimplemented Method"
+    def set_dataset_permission( self, dataset, permission ):
+        raise "Unimplemented Method"
+    def make_dataset_public( self, dataset ):
+        raise "Unimplemented Method"
+    def get_component_associations( self, **kwd ):
+        raise "Unimplemented Method"
+    def components_are_associated( self, **kwd ):
+        return bool( self.get_component_associations( **kwd ) )
+    def convert_permitted_action_strings( self, permitted_action_strings ):
+        """
+        When getting permitted actions from an untrusted source like a
+        form, ensure that they match our actual permitted actions.
+        """
+        return filter( lambda x: x is not None, [ self.permitted_actions.get( action_string ) for action_string in permitted_action_strings ] )
+
+
 
 def get_permitted_actions( self, filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''

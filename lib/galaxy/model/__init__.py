@@ -256,6 +256,22 @@ class ActionDatasetRoleAssociation( object ):
         self.dataset = dataset
         self.role = role
 
+class ActionLibraryItemRoleAssociation( object ):
+    def __init__( self, action, library_item, role ):
+        self.action = action
+        
+        if isinstance( library_item, LibraryDataset ):
+            self.library_dataset = library_item
+        elif isinstance( library_item, Library ):
+            self.library = library_item
+        elif isinstance( library_item, LibraryFolder ):
+            self.folder = library_item
+        elif isinstance( library_item, LibraryFolderDatasetAssociation ):
+            self.library_folder_dataset_association = library_item
+        else:
+            raise "Unknown library item type specified: %s" % library_item.__class__.__name__
+        self.role = role
+
 class DefaultUserPermissions( object ):
     def __init__( self, user, action, role ):
         self.user = user
@@ -514,6 +530,23 @@ class DatasetInstance( object ):
         if self.purged:
             return False
         return True
+    
+    @property
+    def source_library_dataset( self ):
+        def get_source( dataset ):
+            if isinstance( dataset, LibraryFolderDatasetAssociation ):
+                if dataset.library_dataset:
+                    return ( dataset, dataset.library_dataset )
+            if dataset.copied_from_library_folder_dataset_association:
+                source = get_source( dataset.copied_from_library_folder_dataset_association )
+                if source:
+                    return source
+            if dataset.copied_from_history_dataset_association:
+                source = get_source( dataset.copied_from_history_dataset_association )
+                if source:
+                    return source
+            return ( None, None )
+        return get_source( self )
 
 class HistoryDatasetAssociation( DatasetInstance ):
     def __init__( self, 
@@ -566,11 +599,14 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                          deleted=self.deleted, 
                                          parent_id=parent_id,
                                          copied_from_history_dataset_association = self,
-                                         folder = target_folder )
+                                         #folder = target_folder
+                                          )
         des.flush()
         des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         if target_folder:
-            target_folder.add_dataset( des )
+            new_data = LibraryDataset( library_folder_dataset_association = des )
+            target_folder.add_dataset( new_data )
+            new_data.flush()
         for child in self.children:
             child_copy = child.to_library_dataset_folder_association( parent_id = des.id )
         if not self.datatype.copy_safe_peek:
@@ -613,7 +649,7 @@ class History( object ):
             self.galaxy_sessions.append( association )
     def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
         if isinstance( dataset, Dataset ):
-            dataset = HistoryDatasetAssociation( dataset = dataset )
+            dataset = HistoryDatasetAssociation( dataset = dataset, copied_from = dataset )
             dataset.flush()
         elif not isinstance( dataset, HistoryDatasetAssociation ):
             raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history."
@@ -650,6 +686,11 @@ class Library( object ):
         self.description = description
         self.root_folder = root_folder
 
+    def get_library_item_info_templates( self, template_list = [] ):
+        if self.library_item_info_template_associations:
+            template_list.extend( [ library_item_info_template_association.library_item_info_template for library_item_info_template_association in self.library_item_info_template_associations if library_item_info_template_association.library_item_info_template not in template_list ] )
+        return template_list
+
 class LibraryFolder( object ):
     def __init__( self, name = None, description = None, item_count = 0, order_id = None ):
         self.name = name or "Unnamed folder"
@@ -658,6 +699,7 @@ class LibraryFolder( object ):
         self.order_id = order_id
         self.genome_build = None
     def add_dataset( self, dataset, genome_build=None ):
+        #this should create a LibraryDataset if lfda is passed
         dataset.folder_id = self.id
         dataset.order_id = self.item_count
         self.item_count += 1
@@ -668,20 +710,91 @@ class LibraryFolder( object ):
         folder.order_id = self.item_count
         self.item_count += 1
 
+    def get_library_item_info_templates( self, template_list = [] ):
+        if self.library_item_info_template_associations:
+            template_list.extend( [ library_item_info_template_association.library_item_info_template for library_item_info_template_association in self.library_item_info_template_associations if library_item_info_template_association.library_item_info_template not in template_list ] )
+        if self.parent:
+            self.parent.get_library_item_info_templates( template_list )
+        elif self.library_root:
+            for library_root in self.library_root:
+                library_root.get_library_item_info_templates( template_list )
+        return template_list
+
     @property
     def active_components( self ):
         return list( self.active_folders ) + list( self.active_datasets )
 
-class LibraryFolderDatasetAssociation( DatasetInstance ):
+class LibraryDataset( object ):
+    #This class acts as a proxy to the currently selected LFDA
     def __init__( self, 
                   folder = None, 
                   order_id = None, 
-                  copied_from_history_dataset_association = None, 
-                  copied_from_library_folder_dataset_association = None, 
-                  **kwd ):
-        DatasetInstance.__init__( self, **kwd )
+                  name = None,
+                  info = None,
+                  library_folder_dataset_association = None,
+                  create_dataset=False,
+                  **kwd
+                  ):
         self.folder = folder
         self.order_id = order_id
+        self.name = name
+        self.info = info
+        if create_dataset and not library_folder_dataset_association:
+            #self.flush() #we need to flush self, so that the lfda will have a ld id to point to
+            library_folder_dataset_association = LibraryFolderDatasetAssociation( name=name, info=info, create_dataset=create_dataset, **kwd )
+        self.library_folder_dataset_association = library_folder_dataset_association
+    
+    def set_library_folder_dataset_association( self, dataset ):
+        self.library_folder_dataset_association = dataset
+        dataset.library_dataset = self
+        dataset.flush()
+        self.flush()
+    
+    def get_info( self ):
+        #Use info from ldfa if versioned info is not set
+        if self._info:
+            return self._info
+        return self.library_folder_dataset_association.info
+    def set_info( self, info ):
+        self._info = info
+    info = property( get_info, set_info )
+    
+    def get_name( self ):
+        #Use info from ldfa if versioned info is not set
+        if self._name:
+            return self._name
+        return self.library_folder_dataset_association.name
+    def set_name( self, name ):
+        self._name = name
+    name = property( get_name, set_name )
+    
+    def display_name( self ):
+        #use name from ldfa is versioned info is not set
+        if self._name:
+            return self.datatype.display_name( self )
+        self.library_folder_dataset_association.display_name()
+    
+    def __getattr__( self, name ):
+        return getattr( self.library_folder_dataset_association, name ) #Any nonexistant attributes will be pulled from the lfda
+    
+    def get_library_item_info_templates( self, template_list = [] ):
+        if self.library_item_info_template_associations:
+            template_list.extend( [ library_item_info_template_association.library_item_info_template for library_item_info_template_association in self.library_item_info_template_associations if library_item_info_template_association.library_item_info_template not in template_list ] )
+        self.folder.get_library_item_info_templates( template_list )
+        return template_list
+    
+class LibraryFolderDatasetAssociation( DatasetInstance ):
+    def __init__( self, 
+                  #folder = None, 
+                  #order_id = None, 
+                  copied_from_history_dataset_association = None, 
+                  copied_from_library_folder_dataset_association = None, 
+                  library_dataset = None,
+                  **kwd ):
+        DatasetInstance.__init__( self, **kwd )
+        self.library_dataset = library_dataset
+        #self.folder = folder
+        #self.order_id = order_id
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
     def to_history_dataset_association( self, parent_id = None, target_history = None ):
@@ -734,6 +847,63 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
         return des
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return
+    def get_library_item_info_templates( self, template_list = [] ):
+        if self.library_item_info_template_associations:
+            template_list.extend( [ library_item_info_template_association.library_item_info_template for library_item_info_template_association in self.library_item_info_template_associations if library_item_info_template_association.library_item_info_template not in template_list ] )
+        self.library_dataset.get_library_item_info_templates( template_list )
+        return template_list
+
+class LibraryItemInfoTemplateAssociation( object ):
+    pass
+class LibraryItemInfoTemplate( object ):
+    def add_element( self, element = None, name = None, description = None ):
+        if element:
+            raise "undefined"
+        else:
+            new_elem = LibraryItemInfoTemplateElement()
+            new_elem.name = name
+            new_elem.description = description
+            new_elem.order_id = self.item_count
+            self.item_count += 1
+            self.flush()
+            new_elem.library_item_info_template_id = self.id
+            new_elem.flush()
+            return new_elem
+    
+    """class InfoField( object ):
+        def __init__( self, name, description, type ):
+            self.name = name
+            self.description = description
+            self.type = type
+    class StringInfoField( InfoField ):
+        def __init__( self, name, description, type = 'string' ):
+            InfoField.__init__( self, name, description, type )
+    def __init__( self, name='unnamed', contents=None ):
+        self.contents = contents
+    """
+class LibraryItemInfoTemplateElement( object ):
+    pass
+class LibraryItemInfoAssociation( object ):
+    def set_library_item( self, library_item ):
+        if isinstance( library_item, Library ):
+            self.library = library_item
+        elif isinstance( library_item, LibraryDataset ):
+            self.library_dataset = library_item
+        elif isinstance( library_item, LibraryFolder ):
+            self.folder = library_item
+        elif isinstance( library_item, LibraryFolderDatasetAssociation ):
+            self.library_folder_dataset_association = library_item
+        else:
+            raise 'unimplemented'
+
+class LibraryItemInfo( object ):
+    def get_element_by_template_element( self, template_element ):
+        for element in self.elements:
+            if element.library_item_info_template_element == template_element:
+                return element
+        raise 'element not found'
+class LibraryItemInfoElement( object ):
+    pass
 
 class LibraryTag( object ):
     def __init__( self, tag ):

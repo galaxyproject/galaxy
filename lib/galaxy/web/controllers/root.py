@@ -223,7 +223,8 @@ class RootController( BaseController ):
         if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=data ):
             params = util.Params( kwd, safe=False )
             
-            if lid is None or trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_EDIT_METADATA, dataset=data ):
+            if lid is None or trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, data ):
+            #trans.app.model.library_security_agent.allow_action( trans.user, data.permitted_actions.DATASET_EDIT_METADATA, dataset=data ):
                 edit_allowed = True
             else:
                 edit_allowed = False
@@ -306,7 +307,7 @@ class RootController( BaseController ):
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
-            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, datatypes=ldatatypes, err=None )
+            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, datatypes=ldatatypes, err=None, edit_allowed = edit_allowed )
         else:
             return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % id )
 
