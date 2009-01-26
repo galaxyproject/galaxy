@@ -6,6 +6,7 @@ from galaxy.util.none_like import NoneDataset
 from galaxy.web import url_for
 from galaxy.jobs import JOB_OK
 import galaxy.tools
+from types import *
 
 import logging
 log = logging.getLogger( __name__ )
@@ -68,8 +69,21 @@ class DefaultToolAction( object ):
                         param_values[input.name] = input_datasets[ prefix + input.name ]
         tool.visit_inputs( param_values, visitor )
         return input_datasets
-    
+
     def execute(self, tool, trans, incoming={}, set_output_hid=True ):
+        def make_dict_copy( from_dict ):
+            """
+            Makes a copy of input dictionary from_dict such that all values that are dictionaries
+            result in creation of a new dictionary ( a sort of deepcopy ).  We may need to handle 
+            other complex types ( e.g., lists, etc ), but not sure... 
+            """
+            copy_from_dict = {}
+            for key, value in from_dict.items():
+                if type( value ).__name__ == 'dict':
+                    copy_from_dict[ key ] = make_dict_copy( value )
+                else:
+                    copy_from_dict[ key ] = value
+            return copy_from_dict
         def wrap_values( inputs, input_values ):
             # Wrap tool inputs as necessary
             for input in inputs.itervalues():
@@ -78,7 +92,7 @@ class DefaultToolAction( object ):
                         wrap_values( input.inputs, d )
                 elif isinstance( input, Conditional ):
                     values = input_values[ input.name ]
-                    current = values["__current_case__"]
+                    current = values[ "__current_case__" ]
                     wrap_values( input.cases[current].inputs, values )
                 elif isinstance( input, DataToolParameter ):
                     input_values[ input.name ] = \
@@ -184,7 +198,7 @@ class DefaultToolAction( object ):
             data.blurb = "queued"
             # Set output label
             if output.label:
-                params = dict( incoming )
+                params = make_dict_copy( incoming )
                 # wrapping the params allows the tool config to contain things like
                 # <outputs>
                 #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
