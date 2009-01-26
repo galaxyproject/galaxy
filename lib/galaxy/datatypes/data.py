@@ -137,13 +137,14 @@ class Data( object ):
         """Returns formatted html of dataset info"""
         try:
             # Change new line chars to html
-            if dataset.info.find( '\r\n' ) >= 0:
-                dataset.info = dataset.info.replace( '\r\n', '<br/>' )
-            if dataset.info.find( '\r' ) >= 0:
-                dataset.info = dataset.info.replace( '\r', '<br/>' )
-            if dataset.info.find( '\n' ) >= 0:
-                dataset.info = dataset.info.replace( '\n', '<br/>' )
-            return escape( dataset.info )
+            info = escape( dataset.info )
+            if info.find( '\r\n' ) >= 0:
+                info = info.replace( '\r\n', '<br/>' )
+            if info.find( '\r' ) >= 0:
+                info = info.replace( '\r', '<br/>' )
+            if info.find( '\n' ) >= 0:
+                info = info.replace( '\n', '<br/>' )
+            return info
         except:
             return "info unavailable"
     def validate(self, dataset):
