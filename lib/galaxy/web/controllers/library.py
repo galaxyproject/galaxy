@@ -15,7 +15,11 @@ class Library( BaseController ):
     def browse( self, trans, msg=None, messagetype=None, **kwd ):
         libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                            .order_by( trans.app.model.Library.table.c.name ).all()
-        return trans.fill_template( '/library/browser.mako', libraries=libraries, default_action=kwd.get( 'default_action', None ), msg=msg, messagetype=messagetype )
+        return trans.fill_template( '/library/browser.mako',
+                                    libraries=libraries,
+                                    default_action=kwd.get( 'default_action', None ),
+                                    msg=msg,
+                                    messagetype=messagetype )
     index = browse
     @web.expose
     def import_datasets( self, trans, import_ids=[], **kwd ):
@@ -33,7 +37,7 @@ class Library( BaseController ):
                 history.add_dataset( dataset )
                 dataset.flush()
             history.flush()
-            return trans.show_ok_message( "%i dataset(s) have been imported in to your history" % len( import_ids ), refresh_frames=['history'] )
+            return trans.show_ok_message( "%i dataset(s) have been imported into your history" % len( import_ids ), refresh_frames=['history'] )
         else:
             # Can't use mkstemp - the file must not exist first
             try:

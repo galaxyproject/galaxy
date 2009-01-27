@@ -17,8 +17,6 @@ class Action( object ):
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
-        #DATASET_EDIT_METADATA = Action(
-        #    "edit metadata", "Role members can edit this dataset's metadata in the library", "grant" ),
         DATASET_MANAGE_PERMISSIONS = Action(
             "manage permissions", "Role members can manage the roles associated with this dataset", "grant" ),
         DATASET_ACCESS = Action(
@@ -482,7 +480,9 @@ class LibraryRBACAgent( RBACAgent ):
                     alira.flush()
             
     def show_library_item( self, user, library_item ):
-        if self.allow_action( user, self.permitted_actions.LIBRARY_MODIFY, library_item ) or self.allow_action( user, self.permitted_actions.LIBRARY_MANAGE, library_item ) or self.allow_action( trans.user, self.permitted_actions.LIBRARY_ADD, library_item ):
+        if self.allow_action( user, self.permitted_actions.LIBRARY_MODIFY, library_item ) or \
+            self.allow_action( user, self.permitted_actions.LIBRARY_MANAGE, library_item ) or \
+            self.allow_action( user, self.permitted_actions.LIBRARY_ADD, library_item ):
             return True
         if isinstance( library_item, self.model.Library ):
             return self.show_library_item( user, library_item.root_folder )
