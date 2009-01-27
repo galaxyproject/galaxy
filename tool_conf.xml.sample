@@ -156,6 +156,7 @@
     <tool file="taxonomy/t2t_report.xml" />
     <tool file="taxonomy/t2ps_wrapper.xml" />
     <tool file="taxonomy/find_diag_hits.xml" />
+    <tool file="taxonomy/lca.xml" />
     <tool file="taxonomy/poisson2test.xml" />
   </section>
   <section name="Solexa tools" id="solexa_tools">
@@ -301,5 +302,8 @@
    <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="metag_tools/blat_wrapper.xml" />
    <tool file="metag_tools/mapping_to_ucsc.xml" />
+   </section>
+  <section name="Tracks" id="tracks">
+   <tool file="visualization/genetrack.xml" />
    </section>
 </toolbox>

@@ -5,8 +5,10 @@
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
+      <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
     </datatype>
     <datatype extension="binseq.zip" type="galaxy.datatypes.images:Binseq" mimetype="application/zip" display_in_upload="true"/>
+    <datatype extension="coverage" type="galaxy.datatypes.coverage:LastzCoverage" display_in_upload="true"/>
     <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
     <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream"/>
@@ -17,6 +19,7 @@
       <converter file="fastqsolexa_to_fasta_converter.xml" target_datatype="fasta"/>
       <converter file="fastqsolexa_to_qual_converter.xml" target_datatype="qual"/>
     </datatype>
+    <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack"/>
     <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true">
       <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>
     </datatype>
@@ -38,6 +41,7 @@
     <datatype extension="png" type="galaxy.datatypes.images:Image" mimetype="image/png"/>
     <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" display_in_upload="true"/>
     <datatype extension="scf" type="galaxy.datatypes.images:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="solidqual" type="galaxy.datatypes.qualityscore:SolidQualityScore" display_in_upload="true"/>
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
@@ -141,6 +145,30 @@
     <datatype extension="wobble" type="galaxy.datatypes.data:Text"/>
     <datatype extension="wordcount" type="galaxy.datatypes.data:Text"/>
     <datatype extension="tagseq" type="galaxy.datatypes.data:Text"/>
+  <!-- Start RGenetics Datatypes -->
+    <!-- genome graphs ucsc file - first col is always marker then numeric values to plot -->
+    <datatype extension="gg" type="galaxy.datatypes.genetics:GenomeGraphs"/>
+    <datatype extension="rgenetics" type="galaxy.datatypes.genetics:Rgenetics"/>
+    <!-- linkage format pedigree (separate .map file) -->
+    <datatype extension="lped" type="galaxy.datatypes.genetics:Lped"/>
+    <!-- plink compressed file - has bed extension unfortunately -->
+    <datatype extension="pbed" type="galaxy.datatypes.genetics:Pbed"/>
+    <!-- eigenstrat pedigree input file -->
+    <datatype extension="eigenstratgeno" type="galaxy.datatypes.genetics:Eigenstratgeno"/>
+    <!-- eigenstrat pca output file for adjusted eigenQTL eg -->
+    <datatype extension="eigenstratpca" type="galaxy.datatypes.genetics:Eigenstratpca"/>
+    <!-- fbat/pbat format pedigree (header row of marker names) -->
+    <datatype extension="fped" type="galaxy.datatypes.genetics:Fped"/>
+    <!-- part of linkage format pedigree -->
+    <datatype extension="lmap" type="galaxy.datatypes.genetics:Lmap"/>
+    <!-- phenotype file - fbat format -->
+    <datatype extension="fphe" type="galaxy.datatypes.genetics:Fphe"/>
+    <!-- phenotype file - plink format -->
+    <datatype extension="pphe" type="galaxy.datatypes.genetics:Pphe"/>
+    <datatype extension="snptest" type="galaxy.datatypes.genetics:Snptest"/>
+    <datatype extension="snpmatrix" type="galaxy.datatypes.genetics:SNPMatrix"/>
+    <datatype extension="xls" type="galaxy.datatypes.tabular:Tabular"/>
+  <!-- End RGenetics Datatypes -->
   </registration>
   <sniffers>
     <!--
@@ -153,6 +181,8 @@
     <sniffer type="galaxy.datatypes.xml:BlastXml"/>
     <sniffer type="galaxy.datatypes.sequence:Maf"/>
     <sniffer type="galaxy.datatypes.sequence:Lav"/>
+    <sniffer type="galaxy.datatypes.sequence:csFasta"/>
+    <sniffer type="galaxy.datatypes.qualityscore:SolidQualityScore"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSolexa"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
