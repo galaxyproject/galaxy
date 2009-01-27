@@ -820,16 +820,20 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "2", description ) # form field 1 is the field named name...
         tc.submit( "create_library_button" )
         self.home()
-    def rename_library( self, library_id, name='Library One Renamed', description='This is Library One Re-described', root_folder='' ):
+    def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described', root_folder='' ):
         """Rename a library"""
         self.home()
         self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
         self.check_page_for_string( 'Change library name and description' )
-        tc.fv( "1", "name", name )
-        tc.fv( "1", "description", description )
+        # Since twill barfs on the form submisson, we ar forced to simulate it
+        url = "%s/admin/library?id=%s&rename=submitted&description=%s&name=%s" % \
+        ( self.url, library_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
         if root_folder:
-            tc.fv( "1", "root_folder", root_folder )
-        tc.submit( "rename_library_button" )
+            url += "&root_folder=on"
+        self.home()
+        self.visit_url( url )
+        check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
+        self.check_page_for_string( check_str )
         self.home()
     def add_folder( self, folder_id, name='Folder One', description='NThis is Folder One' ):
         """Create a new folder"""
@@ -840,14 +844,18 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "description", description ) # form field 2 is the field named description...
         tc.submit( "new_folder_button" )
         self.home()
-    def rename_folder( self, folder_id, name='Folder One Renamed', description='This is Folder One Re-described' ):
+    def rename_folder( self, folder_id, old_name, name='Folder One Renamed', description='This is Folder One Re-described' ):
         """Rename a Folder"""
         self.home()
         self.visit_url( "%s/admin/folder?rename=True&id=%s" % ( self.url, folder_id ) )
         self.check_page_for_string( 'Edit folder name and description' )
-        tc.fv( "1", "name", name ) # form field 1 is the field named name...
-        tc.fv( "1", "description", description ) # form field 2 is the field named description...
-        tc.submit( "rename_folder_button" )
+        # Since twill barfs on the form submisson, we ar forced to simulate it
+        url = "%s/admin/folder?id=%s&rename=submitted&description=%s&name=%s" % \
+        ( self.url, folder_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
+        self.home()
+        self.visit_url( url )
+        check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
+        self.check_page_for_string( check_str )
         self.home()
     def add_dataset( self, filename, folder_id, extension='auto', dbkey='hg18', roles=[] ):
         """Add a dataset to a folder"""

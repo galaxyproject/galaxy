@@ -873,7 +873,7 @@ class Admin( BaseController ):
             library.flush()
             msg = "Library '%s' and all of its contents have been marked deleted" % library.name
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
-        elif action =='update_roles':
+        elif action == 'update_roles':
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
             for k, v in trans.app.model.library_security_agent.permitted_actions.items():
@@ -989,7 +989,7 @@ class Admin( BaseController ):
                     folder.name = new_name
                     folder.description = new_description
                     folder.flush()
-                    msg = "Folder '%s'has been renamed to '%s'" % ( old_name, new_name )
+                    msg = "Folder '%s' has been renamed to '%s'" % ( old_name, new_name )
                     return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
             return trans.fill_template( '/admin/library/rename_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
         elif action == 'delete':

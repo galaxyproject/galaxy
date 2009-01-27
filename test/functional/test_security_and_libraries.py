@@ -169,9 +169,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         latest_history = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         self.upload_file( '1.bed' )
         latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
-        permissions_in = [ 'DATASET_EDIT_METADATA', 'DATASET_MANAGE_PERMISSIONS' ]
+        permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
         # Make sure these are in sorted order for later comparison
-        actions_in = [ 'edit metadata', 'manage permissions' ]
+        actions_in = [ 'manage permissions' ]
         permissions_out = [ 'DATASET_ACCESS' ]
         actions_out = [ 'access' ]
         private_role = None
@@ -452,24 +452,28 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Rename the library
         rename = "Library One's been Renamed"
         redescription="This is Library One's Re-described"
-        self.rename_library( str( library_one.id ), name=rename, description=redescription, root_folder='on' )
+        self.rename_library( str( library_one.id ), library_one.name, name=rename, description=redescription, root_folder='on' )
         self.home()
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( rename )
         self.check_page_for_string( redescription )
         # Reset the library back to the original name and description
-        self.rename_library( str( library_one.id ), name=name, description=description, root_folder='on' )
+        library_one.refresh()
+        self.rename_library( str( library_one.id ), library_one.name, name=name, description=description, root_folder='on' )
+        library_one.refresh()
         # Rename the root folder
         folder = library_one.root_folder
         rename = "Library One's Root Folder"
         redescription = "This is Library One's root folder"
-        self.rename_folder( str( folder.id ), name=rename, description=redescription )
+        self.rename_folder( str( folder.id ), folder.name, name=rename, description=redescription )
         self.home()
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( rename )
         self.check_page_for_string( redescription )
         # Reset the root folder back to the original name and description
-        self.rename_folder( str( folder.id ), name=name, description=description )
+        folder.refresh()
+        self.rename_folder( str( folder.id ), folder.name, name=name, description=description )
+        folder.refresh()
     def test_075_add_new_folder_to_root_folder( self ):
         """Testing adding a folder to a library root folder"""
         self.login( email = 'test@bx.psu.edu' )
@@ -593,8 +597,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Test importing the restricted dataset into a history, can't use the 
         # ~/admin/libraries form as twill barfs on it so we'll simulate the form submission
         # by going directly to the form action
-        self.visit_url( '%s/library/import_datasets?action=add&import_ids=%d' % ( self.url, lfda_two.id ) )
-        self.check_page_for_string( '1 dataset(s) have been imported in to your history' )
+        self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%d' % ( self.url, lfda_two.id ) )
+        self.check_page_for_string( '1 dataset(s) have been imported into your history' )
         self.logout()
         # regular_user2 should not be able to see 2.bed
         self.login( email = 'test2@bx.psu.edu' )
@@ -674,8 +678,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( 'This dataset is accessible by everyone (it is public).' )
         # Test importing a library dataset into a history
         self.home()
-        self.visit_url( '%s/library/import_datasets?action=add&import_ids=%d' % ( self.url, lfda_three.id ) )
-        self.check_page_for_string( '1 dataset(s) have been imported in to your history' )
+        self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%d' % ( self.url, lfda_three.id ) )
+        self.check_page_for_string( '1 dataset(s) have been imported into your history' )
         self.logout()
     def test_110_copy_dataset_from_history_to_root_folder( self ):
         """Testing copying a dataset from the current history to a library root folder"""
@@ -709,7 +713,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         for lfda in latest_3_lfdas:
             lfda_ids += '%s,' % str( lfda.id )
         lfda_ids = lfda_ids.rstrip( ',' )
-        permissions = [ 'DATASET_ACCESS', 'DATASET_EDIT_METADATA', 'DATASET_MANAGE_PERMISSIONS' ]
+        permissions = [ 'DATASET_ACCESS', 'DATASET_MANAGE_PERMISSIONS' ]
         def build_url( permissions, role ):
             # We'll bypass the admin/datasets method and directly call the admin/dataset method, setting
             # access, manage permissions, and edit metadata permissions to role_one
@@ -726,11 +730,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
             # be all of the above on any of the 3 datasets that are imported into a history
             for lfda in lfdas:
                 self.home()
-                self.visit_url( '%s/library/import_datasets?import_ids=%s' % ( self.url, str( lfda.id ) ) )
+                self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%s' % ( self.url, str( lfda.id ) ) )
                 self.home()
                 self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( lfda.id ) ) )
-                self.check_page_for_string( 'Edit Attributes' )
-                self.check_page_for_string( 'input type="text" name="name" value="%s"' % lfda.name )
+                self.check_page_for_string( 'You are currently viewing a Dataset from a library' )
                 self.check_page_for_string( 'Manage permissions and role associations for %s' % lfda.name )
                 self.check_page_for_string( 'select name="DATASET_MANAGE_PERMISSIONS_in"' )
         # admin_user is associated with role_one, so should have all permissions on imported datasets
@@ -758,7 +761,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.logout()
         self.login( email='test@bx.psu.edu' )
         # Change the permissions and test again
-        permissions = [ 'DATASET_ACCESS', 'DATASET_EDIT_METADATA' ]
+        permissions = [ 'DATASET_ACCESS' ]
         url = build_url( permissions, role_one )
         self.home()
         self.visit_url( url )
@@ -768,11 +771,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
             # be all of the above on any of the 3 datasets that are imported into a history
             for lfda in lfdas:
                 self.home()
-                self.visit_url( '%s/library/import_datasets?import_ids=%s' % ( self.url, str( lfda.id ) ) )
+                self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%s' % ( self.url, str( lfda.id ) ) )
                 self.home()
                 self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( lfda.id ) ) )
-                self.check_page_for_string( 'Edit Attributes' )
-                self.check_page_for_string( 'input type="text" name="name" value="%s"' % lfda.name )
+                self.check_page_for_string( 'View Attributes' )
                 try:
                     # This should no longer be possible
                     self.check_page_for_string( 'Manage permissions and role associations for %s' % lfda.name )
@@ -1039,7 +1041,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.login( email='test1@bx.psu.edu' )
         # Change DefaultHistoryPermissions for regular_user1 back to the default
         permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
-        permissions_out = [ 'DATASET_ACCESS', 'DATASET_EDIT_METADATA' ]
+        permissions_out = [ 'DATASET_ACCESS' ]
         role_id = str( regular_user1_private_role.id )
         self.user_set_default_permissions( permissions_in=permissions_in, permissions_out=permissions_out, role_id=role_id )
         self.logout()
