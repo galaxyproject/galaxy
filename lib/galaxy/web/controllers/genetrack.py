@@ -1,5 +1,6 @@
 import time, glob, os
 from itertools import cycle
+import hashlib
 
 from mako import exceptions
 from mako.template import Template
@@ -27,7 +28,6 @@ import paste.httpexceptions
 
 # Database helpers
 SHOW_LABEL_LIMIT = 10000
-color = cycle( [LIGHT, WHITE] )
 
 def list_labels(session):
     """
@@ -102,10 +102,9 @@ def build_tracks( param, conf, data_label, fit_label, pred_label, strand, show=F
 
     return charts
 
-def feature_chart(param=None, session=None, label=None, label_dict={}):
+def feature_chart(param=None, session=None, label=None, label_dict={}, color=cycle( [LIGHT, WHITE] ) ):
     # draw the ORF tracks
     all = feature_filter(feature_query(session=session,  param=param), name=label, kdict=label_dict)
-    if len(all) == 0: return []
     opts  = track_options( 
         xscale=param.xscale, w=param.width, fgColor=PURPLE,
         show_labels=param.show_labels, ylabel=str(label),
@@ -164,13 +163,8 @@ class WebRoot(BaseController):
             FIT_LABEL = "%s-SIGMA-%d" % (data.metadata.label, 20),
             PRED_LABEL = "PRED-%s-SIGMA-%d" % (data.metadata.label, 20),
             )
-        from atlas import hdf
-        db = hdf.hdf_open( conf.HDF_DATABASE, mode='r' )
-        conf.CHROM_FIELDS = [(x,x) for x in hdf.GroupData(db=db, name=conf.LABEL).labels]
-        db.close()
 
         param = atlas.Param( word=word )
-        # search with features based on param.feature
         
         # search for a given 
         session = sql.get_session( conf.SQL_URI )
@@ -252,32 +246,38 @@ class WebRoot(BaseController):
             # go and search for these
             return trans.response.send_redirect( web.url_for( controller='genetrack', action='search', word=param.feature, dataset_id=dataset_id ) )
 
-        # keep image at a sane size
         param.width  = min( [2000, int(param.img_size)] )
+        param.xscale = [ param.start, param.end ] 
+        param.show_labels = ( param.end - param.start ) <= SHOW_LABEL_LIMIT    
         
         # get the template and the function used to generate the tracks
         tmpl_name, track_maker  = conf.PLOT_MAPPER[param.plot]
         
-        charts = []
+        # check against a hash, display an image that already exists if it was previously created.
+        hash = hashlib.sha1()
+        hash.update(str(dataset_id))
+        for key in sorted(kwds.keys()):
+            hash.update(str(kwds[key]))
+        fname = "%s.png" % hash.hexdigest()
+        fpath = os.path.join(conf.IMAGE_DIR, fname)
 
-        fname, fpath = atlas_utils.make_tempfile( dir=conf.IMAGE_DIR, suffix='.png')
+        charts = []
         param.fname  = fname
         
-        # set the scale of the plot        
-        param.xscale = [ param.start, param.end ] 
-    
-        # when visualizing on wide scales labels are not useful
-        param.show_labels = ( param.end - param.start ) <= SHOW_LABEL_LIMIT    
-
+        # The SHA1 hash should uniquely identify the qs that created the plot...
+        if os.path.exists(fpath):
+            os.utime(fpath, (time.time(), time.time()))
+            return trans.fill_template_mako(tmpl_name, conf=conf, form=form, param=param, dataset_id=dataset_id)
+        
+        # If the hashed filename doesn't exist, create it.
         if track_maker is not None and os.path.exists( conf.HDF_DATABASE ):
             # generate the fit track
             charts = track_maker( param=param, conf=conf )
             
         for label in list_labels( session ):
-            charts.extend( feature_chart(param=param, session=session, label=label.name, label_dict={label.name:label.id}) )
+            charts.extend( feature_chart(param=param, session=session, label=label.name, label_dict={label.name:label.id}, color=color))
+
         track_chart = consolidate_charts( charts, param )
         track_chart.save(fname=fpath)
-        
+
         return trans.fill_template_mako(tmpl_name, conf=conf, form=form, param=param, dataset_id=dataset_id)
-
-
