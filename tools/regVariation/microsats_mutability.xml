@@ -1,4 +1,4 @@
-<tool id="microsats_mutability1" name="Estimate microsatellite mutability" version="1.0.0">
+<tool id="microsats_mutability1" name="Estimate microsatellite mutability" version="1.1.0">
   <description>by specified attributes</description>
   <command interpreter="python">
   	microsats_mutability.py 
