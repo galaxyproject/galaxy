@@ -167,7 +167,10 @@ class WebRoot(BaseController):
         param = atlas.Param( word=word )
         
         # search for a given 
-        session = sql.get_session( conf.SQL_URI )
+        try:
+            session = sql.get_session( conf.SQL_URI )
+        except:
+            return trans.fill_template_mako('genetrack/invalid.html', dataset_id=dataset_id)
 
         if param.word:
             def search_query( word, text ):
@@ -208,7 +211,11 @@ class WebRoot(BaseController):
             FIT_LABEL = "%s-SIGMA-%d" % (data.metadata.label, 20),
             PRED_LABEL = "PRED-%s-SIGMA-%d" % (data.metadata.label, 20),
             )
-        session = sql.get_session( conf.SQL_URI )
+
+        try:
+            session = sql.get_session( conf.SQL_URI )
+        except:
+            return trans.fill_template_mako('genetrack/invalid.html', dataset_id=dataset_id)
 
         if os.path.exists( conf.HDF_DATABASE ):
             db = hdf.hdf_open( conf.HDF_DATABASE, mode='r' )
