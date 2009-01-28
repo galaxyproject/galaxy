@@ -23,6 +23,18 @@ $( function() {
         location.replace( '${h.url_for( controller='root', action='index', tool_id=tool.id )}' );
     }
 %endif
+function checkUncheckAll( name, check )
+{
+    if ( check == 0 )
+    {
+        $("input[@name=" + name + "][type='checkbox']").attr('checked', false);
+    }
+    else
+    {
+        $("input[@name=" + name + "][type='checkbox']").attr('checked', true );
+    }
+}
+
 </script>
 </head>
 
@@ -169,6 +181,7 @@ $( function() {
 </body>
 
 <script type="text/javascript">
+##For Drilldown Parameters adds expand/collapse buttons and collapses collapsed elements
    $( function() {
        $( 'li > ul' ).each( function( i ) {
            if ( $( this )[0].className == 'toolParameterExpandableCollapsable' )
@@ -189,6 +202,14 @@ $( function() {
            }
        });
    });
+
+##inserts the Select All / Unselect All buttons for checkboxes
+$( function() {
+    $("div.checkUncheckAllPlaceholder").each( function( i ) {
+        $( this )[0].innerHTML = '<a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', 1 );"><span>Select All</span></a> <a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', 0 );"><span>Unselect All</span></a>';
+    });
+});
+
 </script>
 
 </html>
