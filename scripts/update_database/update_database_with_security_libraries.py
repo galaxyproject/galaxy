@@ -104,9 +104,9 @@ def main():
     
     # history_dataset_association table - these alters are the same, regardless if we are using sqlite
     try:
-        app.model.session.execute( "ALTER TABLE history_dataset_association ADD COLUMN copied_from_library_folder_dataset_association_id INTEGER" )
+        app.model.session.execute( "ALTER TABLE history_dataset_association ADD COLUMN copied_from_library_dataset_dataset_association_id INTEGER" )
     except ( sqlalchemy.exceptions.ProgrammingError, sqlalchemy.exceptions.OperationalError ), e:
-        print_warning( "adding column 'copied_from_library_folder_dataset_association_id' failed: %s" % ( e ) )
+        print_warning( "adding column 'copied_from_library_dataset_dataset_association_id' failed: %s" % ( e ) )
     
     # metadata_file table
     try:
@@ -147,11 +147,11 @@ def main():
     print "Adding foreign key constraints"
     if dialect != "sqlite":
         try:
-            app.model.session.execute( "ALTER TABLE history_dataset_association ADD FOREIGN KEY (copied_from_library_folder_dataset_association_id) REFERENCES library_folder_dataset_association(id)" )
+            app.model.session.execute( "ALTER TABLE history_dataset_association ADD FOREIGN KEY (copied_from_library_dataset_dataset_association_id) REFERENCES library_dataset_dataset_association(id)" )
         except Exception, e:
             print_warning( "Adding foreign key constraint to table has failed for an unknown reason: %s" % ( e ) )
         try:
-            app.model.session.execute( "ALTER TABLE metadata_file ADD FOREIGN KEY (lda_id) REFERENCES library_folder_dataset_association(id)" )
+            app.model.session.execute( "ALTER TABLE metadata_file ADD FOREIGN KEY (lda_id) REFERENCES library_dataset_dataset_association(id)" )
         except Exception, e:
             print_warning( "Adding foreign key constraint to table has failed for an unknown reason: %s" % ( e ) )
 
@@ -166,7 +166,7 @@ def main():
     # 1. make sure they have a private role
     # 2. set DefaultUserPermissions
     # 3. set DefaultHisstoryPermissions on existing histories 
-    # 4. set ActionDatasetRoleAssociations on each history's activatable_datasets
+    # 4. set DatasetPermissionss on each history's activatable_datasets
     default_user_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
     
     for user in app.model.User.query().all():
@@ -203,7 +203,7 @@ def main():
             # Add the new default permissions for the history
             dhp = app.model.DefaultHistoryPermissions( history, default_user_action, private_role )
             dhp.flush()
-            print "Setting ActionDatasetRoleAssociations for %d un-purged datasets in history %d" % ( len( history.active_datasets ), history.id )
+            print "Setting DatasetPermissionss for %d un-purged datasets in history %d" % ( len( history.active_datasets ), history.id )
             # Set the permissions on the current history's datasets that are not purged
             for hda in history.active_datasets:
                 dataset = hda.dataset
@@ -214,12 +214,12 @@ def main():
                     # Don't change permissions on a dataset associated with a history not owned by the user
                     continue
                 # Delete all of the current permissions on the dataset
-                for adra in dataset.actions:
-                    adra.delete()
-                    adra.flush()
+                for dp in dataset.actions:
+                    dp.delete()
+                    dp.flush()
                 # Add the new permissions on the dataset
-                adra = app.model.ActionDatasetRoleAssociation( default_user_action, dataset, private_role )
-                adra.flush()
+                dp = app.model.DatasetPermissions( default_user_action, dataset, private_role )
+                dp.flush()
     app.shutdown()
     print
     print "Update finished, please review output for warnings and errors."

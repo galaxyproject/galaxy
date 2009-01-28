@@ -21,7 +21,7 @@
 <%
     if isinstance( data, trans.app.model.HistoryDatasetAssociation ):
         id_name = 'id'
-    elif isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
+    elif isinstance( data, trans.app.model.LibraryDatasetDatasetAssociation ):
         id_name = 'lid'
     lda_source, library_source = data.source_library_dataset
 %>
@@ -204,6 +204,6 @@
 <p/>
 ${render_existing_library_item_info( data )}
 <p/>
-%if isinstance( data, trans.app.model.LibraryFolderDatasetAssociation ):
+%if isinstance( data, trans.app.model.LibraryDatasetDatasetAssociation ):
     ${render_msg( 'This is a Library Dataset, you can click <a href="%s">here</a> to import it into your history.' % ( h.url_for( controller='library', action='import_datasets', import_ids=data.id, do_action='add' ) ), 'info' )}
 %endif

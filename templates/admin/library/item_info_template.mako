@@ -103,8 +103,8 @@
                 <input type="hidden" name="library_dataset_id" value="${library_dataset_id}"/>
             %elif folder_id:
                 <input type="hidden" name="folder_id" value="${folder_id}"/>
-            %elif library_folder_dataset_association_id:
-                <input type="hidden" name="library_folder_dataset_association_id" value="${library_folder_dataset_association_id}"/>
+            %elif library_dataset_dataset_association_id:
+                <input type="hidden" name="library_dataset_dataset_association_id" value="${library_dataset_dataset_association_id}"/>
             %endif
             <input type="hidden" name="set_element_count" value="${new_element_count}"/>
             <div class="form-row">

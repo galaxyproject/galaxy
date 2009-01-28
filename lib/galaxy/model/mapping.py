@@ -72,7 +72,7 @@ HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
-    Column( "copied_from_library_folder_dataset_association_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), nullable=True ),
+    Column( "copied_from_library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
     Column( "hid", Integer ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
@@ -151,7 +151,7 @@ Role.table = Table( "role", metadata,
     Column( "type", String( 40 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-ActionDatasetRoleAssociation.table = Table( "action_dataset_role_association", metadata,
+DatasetPermissions.table = Table( "dataset_permissions", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -159,18 +159,52 @@ ActionDatasetRoleAssociation.table = Table( "action_dataset_role_association", m
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
     Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
-ActionLibraryItemRoleAssociation.table = Table( "action_library_item_role_association", metadata,
+LibraryPermissions.table = Table( "library_permissions", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "action", TEXT ),
+    Column( "library_id", Integer, ForeignKey( "library.id" ), nullable=True, index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
+
+LibraryFolderPermissions.table = Table( "library_folder_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "action", TEXT ),
     Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
-    Column( "library_id", Integer, ForeignKey( "library.id" ), nullable=True, index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
+
+LibraryDatasetPermissions.table = Table( "library_dataset_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "action", TEXT ),
     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), nullable=True, index=True ),
-    Column( "library_folder_dataset_association_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), nullable=True, index=True ),
-    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), nullable=True, index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
+
+LibraryDatasetDatasetAssociationPermissions.table = Table( "library_dataset_dataset_association_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "action", TEXT ),
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
+
+LibraryItemInfoPermissions.table = Table( "library_item_info_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "action", TEXT ),
     Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), nullable=True, index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
+
+LibraryItemInfoTemplatePermissions.table = Table( "library_item_info_template_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "action", TEXT ),
+    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), nullable=True, index=True ),
     Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
 DefaultUserPermissions.table = Table( "default_user_permissions", metadata,
@@ -187,7 +221,7 @@ DefaultHistoryPermissions.table = Table( "default_history_permissions", metadata
 
 LibraryDataset.table = Table( "library_dataset", metadata, 
     Column( "id", Integer, primary_key=True ),
-    Column( "library_folder_dataset_association_id", Integer, ForeignKey( "library_folder_dataset_association.id", use_alter=True, name="library_folder_dataset_association_id_fk" ), nullable=True, index=True ),#current version of dataset, if null, there is not a current version selected
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),#current version of dataset, if null, there is not a current version selected
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
     Column( "order_id", Integer ),
     Column( "create_time", DateTime, default=now ),
@@ -198,21 +232,21 @@ LibraryDataset.table = Table( "library_dataset", metadata,
     )
 
 #this should be renamed, no longer an association between dataset and folder
-LibraryFolderDatasetAssociation.table = Table( "library_folder_dataset_association", metadata, 
+LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey' ), nullable=True ),
-    Column( "copied_from_library_folder_dataset_association_id", Integer, ForeignKey( "library_folder_dataset_association.id", use_alter=True, name='library_folder_dataset_association_id_fkey' ), nullable=True ),
+    Column( "copied_from_library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name='library_dataset_dataset_association_id_fkey' ), nullable=True ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
     Column( "peek" , TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
-    Column( "parent_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), nullable=True ),
+    Column( "parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "visible", Boolean ) )
@@ -263,15 +297,32 @@ LibraryItemInfoTemplate.table = Table( "library_item_info_template", metadata,
     Column( "description", TEXT ),
     Column( "item_count", Integer, default=0 ) )
 
-LibraryItemInfoTemplateAssociation.table = Table( "library_item_info_template_association", metadata,
+LibraryInfoTemplateAssociation.table = Table( "library_info_template_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
     Column( "library_id", Integer, ForeignKey( "library.id" ), nullable=True, index=True ),
+    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), index=True ) )
+
+LibraryFolderInfoTemplateAssociation.table = Table( "library_folder_info_template_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
+    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), index=True ) )
+
+LibraryDatasetInfoTemplateAssociation.table = Table( "library_dataset_info_template_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), nullable=True, index=True ),
-    Column( "library_folder_dataset_association_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), nullable=True, index=True ),
+    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), index=True ) )
+
+LibraryDatasetDatasetInfoTemplateAssociation.table = Table( "library_dataset_dataset_info_template_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
     Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), index=True ) )
 
 LibraryItemInfoElement.table = Table( "library_item_info_element", metadata,
@@ -291,18 +342,37 @@ LibraryItemInfo.table = Table( "library_item_info", metadata,
     Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), nullable=True, index=True )
      )
 
-LibraryItemInfoAssociation.table = Table( "library_item_info_association", metadata,
+LibraryInfoAssociation.table = Table( "library_info_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
     Column( "library_id", Integer, ForeignKey( "library.id" ), nullable=True, index=True ),
-    Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), nullable=True, index=True ),
-    Column( "library_folder_dataset_association_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), nullable=True, index=True ),
     Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ) )
 
+LibraryFolderInfoAssociation.table = Table( "library_folder_info_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
+    Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ) )
+
+LibraryDatasetInfoAssociation.table = Table( "library_dataset_info_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), nullable=True, index=True ),
+    Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ) )
+
+LibraryDatasetDatasetInfoAssociation.table = Table( "library_dataset_dataset_info_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
+    Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ) )
 
 LibraryTag.table = Table( "library_tag", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -319,7 +389,7 @@ LibraryTagFolderAssociation.table = Table( "library_tag_folder_association", met
 
 LibraryTagDatasetAssociation.table = Table( "library_tag_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
-    Column( "dataset_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), index=True ),
+    Column( "dataset_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "library_tag.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ) )
@@ -452,7 +522,7 @@ MetadataFile.table = Table( "metadata_file", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "name", TEXT ),
     Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
-    Column( "lda_id", Integer, ForeignKey( "library_folder_dataset_association.id" ), index=True, nullable=True ),
+    Column( "lda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
     Column( "deleted", Boolean, index=True, default=False ),
@@ -473,14 +543,10 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ),
             backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
-        copied_to_library_folder_dataset_associations=relation( 
-            LibraryFolderDatasetAssociation, 
-            primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id], uselist=False ) ),
-        #copied_from_library_folder_dataset_associations=relation( 
-        #    LibraryFolderDatasetAssociation, 
-        #    primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ),
-        #    backref=backref( "copied_to_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
+        copied_to_library_dataset_dataset_associations=relation( 
+            LibraryDatasetDatasetAssociation, 
+            primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
+            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id], uselist=False ) ),
         implicitly_converted_datasets=relation( 
             ImplicitlyConvertedDatasetAssociation, 
             primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
@@ -502,17 +568,12 @@ assign_mapper( context, Dataset, Dataset.table,
             HistoryDatasetAssociation, 
             primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted == False ) ) ),
         library_associations=relation( 
-            LibraryFolderDatasetAssociation, 
-            primaryjoin=( Dataset.table.c.id == LibraryFolderDatasetAssociation.table.c.dataset_id ) ),
+            LibraryDatasetDatasetAssociation, 
+            primaryjoin=( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),
         active_library_associations=relation( 
-            LibraryFolderDatasetAssociation, 
-            primaryjoin=( ( Dataset.table.c.id == LibraryFolderDatasetAssociation.table.c.dataset_id ) & ( LibraryFolderDatasetAssociation.table.c.deleted == False ) ) )
+            LibraryDatasetDatasetAssociation, 
+            primaryjoin=( ( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( LibraryDatasetDatasetAssociation.table.c.deleted == False ) ) )
             ) )
-
-
-# assign_mapper( model.Query, model.Query.table,
-#     properties=dict( datasets=relation( model.Dataset.mapper, backref="query") ) )
-
 
 assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvertedDatasetAssociation.table, 
     properties=dict( parent=relation( 
@@ -579,22 +640,52 @@ assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
     )
 )
 
-assign_mapper( context, ActionDatasetRoleAssociation, ActionDatasetRoleAssociation.table,
+assign_mapper( context, DatasetPermissions, DatasetPermissions.table,
     properties=dict(
         dataset=relation( Dataset, backref="actions" ),
         role=relation( Role, backref="actions" )
     )
 )
 
-assign_mapper( context, ActionLibraryItemRoleAssociation, ActionLibraryItemRoleAssociation.table,
+assign_mapper( context, LibraryPermissions, LibraryPermissions.table,
+    properties=dict(
+        library=relation( Library, backref="actions" ),
+        role=relation( Role, backref="library_actions" )
+    )
+)
+
+assign_mapper( context, LibraryFolderPermissions, LibraryFolderPermissions.table,
     properties=dict(
         folder=relation( LibraryFolder, backref="actions" ),
-        library=relation( Library, backref="actions" ),
+        role=relation( Role, backref="library_folder_actions" )
+    )
+)
+
+assign_mapper( context, LibraryDatasetPermissions, LibraryDatasetPermissions.table,
+    properties=dict(
         library_dataset=relation( LibraryDataset, backref="actions" ),
-        library_folder_dataset_association = relation( LibraryFolderDatasetAssociation, backref="actions" ),
+        role=relation( Role, backref="library_dataset_actions" )
+    )
+)
+
+assign_mapper( context, LibraryDatasetDatasetAssociationPermissions, LibraryDatasetDatasetAssociationPermissions.table,
+    properties=dict(
+        library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, backref="actions" ),
+        role=relation( Role, backref="library_dataset_dataset_actions" )
+    )
+)
+
+assign_mapper( context, LibraryItemInfoPermissions, LibraryItemInfoPermissions.table,
+    properties=dict(
         library_item_info = relation( LibraryItemInfo, backref="actions" ),
+        role=relation( Role, backref="library_item_info_actions" )
+    )
+)
+
+assign_mapper( context, LibraryItemInfoTemplatePermissions, LibraryItemInfoTemplatePermissions.table,
+    properties=dict(
         library_item_info_template = relation( LibraryItemInfoTemplate, backref="actions" ),
-        role=relation( Role, backref="library_actions" )
+        role=relation( Role, backref="library_item_info_template_actions" )
     )
 )
 
@@ -633,65 +724,36 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
 
 assign_mapper( context, LibraryDataset, LibraryDataset.table,
     properties=dict( 
-        #dataset=relation( Dataset ),
         folder=relation( LibraryFolder ),
-        library_folder_dataset_association=relation( LibraryFolderDatasetAssociation, primaryjoin=( LibraryDataset.table.c.library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ) ),
-        expired_datasets = relation( LibraryFolderDatasetAssociation, foreign_keys=[LibraryDataset.table.c.id,LibraryDataset.table.c.library_folder_dataset_association_id ], primaryjoin=( ( LibraryDataset.table.c.id == LibraryFolderDatasetAssociation.table.c.library_dataset_id ) & ( not_( LibraryDataset.table.c.library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ) ) ), viewonly=True, uselist=True )
-        #expired_datasets = relation( LibraryFolderDatasetAssociation, secondary=LibraryFolderDatasetAssociation.table, primaryjoin=( LibraryDataset.table.c.id == LibraryFolderDatasetAssociation.table.c.library_dataset_id), secondaryjoin = ( LibraryDataset.table.c.library_folder_dataset_association_id != LibraryFolderDatasetAssociation.table.c.id ), viewonly=True )
-        
-        #expired_datasets = relation( LibraryFolderDatasetAssociation, primaryjoin=( and_( LibraryDataset.table.c.id == LibraryFolderDatasetAssociation.table.c.library_dataset_id, LibraryDataset.table.c.library_folder_dataset_association_id != LibraryFolderDatasetAssociation.table.c.id ) ) )
-        
-        #expired_datasets = relation( LibraryFolderDatasetAssociation, primaryjoin=( ( LibraryDataset.table.c.id == LibraryFolderDatasetAssociation.table.c.library_dataset_id ) & ( not_( LibraryDataset.table.c.library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ) ) ) )
-        #expired_datasets = relation( LibraryFolderDatasetAssociation, primaryjoin=( ( LibraryDataset.table.c.id == LibraryFolderDatasetAssociation.table.c.library_dataset_id ) & ( not_( LibraryDataset.table.c.library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ) ) ), 
-        #    order_by=asc( LibraryDataset.table.c.order_id ), 
-        #    lazy=False, 
-        #    viewonly=True ),
-        
-        
-        #copied_to_library_folder_dataset_associations=relation( 
-        #    LibraryFolderDatasetAssociation, 
-        #    primaryjoin=( LibraryFolderDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ),
-        #    backref=backref( "copied_from_library_folder_dataset_association", primaryjoin=( LibraryFolderDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id] ) ),
-        #children=relation( 
-        #    LibraryFolderDatasetAssociation, 
-        #    primaryjoin=( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ),
-        #    backref=backref( "parent", primaryjoin=( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id] ) ),
-        #visible_children=relation( 
-        #    LibraryFolderDatasetAssociation, 
-        #    primaryjoin=( ( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ) & ( LibraryFolderDatasetAssociation.table.c.visible == True ) ) ),
-        #tags=relation( 
-        #    LibraryTagDatasetAssociation, 
-        #    primaryjoin=( LibraryFolderDatasetAssociation.table.c.id == LibraryTagDatasetAssociation.table.c.dataset_id ),
-        #    backref=backref( "datasets" ) )
+        library_dataset_dataset_association=relation( LibraryDatasetDatasetAssociation, primaryjoin=( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
+        expired_datasets = relation( LibraryDatasetDatasetAssociation, foreign_keys=[LibraryDataset.table.c.id,LibraryDataset.table.c.library_dataset_dataset_association_id ], primaryjoin=( ( LibraryDataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.library_dataset_id ) & ( not_( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ) ), viewonly=True, uselist=True )
         ) )
 
-assign_mapper( context, LibraryFolderDatasetAssociation, LibraryFolderDatasetAssociation.table,
+assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetAssociation.table,
     properties=dict( 
         dataset=relation( Dataset ),
         library_dataset = relation( LibraryDataset,
-        primaryjoin=( LibraryFolderDatasetAssociation.table.c.library_dataset_id == LibraryDataset.table.c.id ) ),
-        #folder=relation( LibraryFolder ),
-        copied_to_library_folder_dataset_associations=relation( 
-            LibraryFolderDatasetAssociation, 
-            primaryjoin=( LibraryFolderDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_library_folder_dataset_association", primaryjoin=( LibraryFolderDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id] ) ),
+        primaryjoin=( LibraryDatasetDatasetAssociation.table.c.library_dataset_id == LibraryDataset.table.c.id ) ),
+        copied_to_library_dataset_dataset_associations=relation( 
+            LibraryDatasetDatasetAssociation, 
+            primaryjoin=( LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
+            backref=backref( "copied_from_library_dataset_dataset_association", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
         copied_to_history_dataset_associations=relation( 
             HistoryDatasetAssociation, 
-            primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_library_folder_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_folder_dataset_association_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id], uselist=False ) ),
+            primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
+            backref=backref( "copied_from_library_dataset_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id], uselist=False ) ),
         children=relation( 
-            LibraryFolderDatasetAssociation, 
-            primaryjoin=( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ),
-            backref=backref( "parent", primaryjoin=( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ), remote_side=[LibraryFolderDatasetAssociation.table.c.id] ) ),
+            LibraryDatasetDatasetAssociation, 
+            primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ),
+            backref=backref( "parent", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
         visible_children=relation( 
-            LibraryFolderDatasetAssociation, 
-            primaryjoin=( ( LibraryFolderDatasetAssociation.table.c.parent_id == LibraryFolderDatasetAssociation.table.c.id ) & ( LibraryFolderDatasetAssociation.table.c.visible == True ) ) ),
+            LibraryDatasetDatasetAssociation, 
+            primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == True ) ) ),
         tags=relation( 
             LibraryTagDatasetAssociation, 
-            primaryjoin=( LibraryFolderDatasetAssociation.table.c.id == LibraryTagDatasetAssociation.table.c.dataset_id ),
+            primaryjoin=( LibraryDatasetDatasetAssociation.table.c.id == LibraryTagDatasetAssociation.table.c.dataset_id ),
             backref=backref( "datasets" ) )
         ) )
-
 
 assign_mapper( context, LibraryItemInfoTemplateElement, LibraryItemInfoTemplateElement.table,
     properties=dict( library_item_info_template=relation( LibraryItemInfoTemplate, backref="elements" ),
@@ -699,14 +761,25 @@ assign_mapper( context, LibraryItemInfoTemplateElement, LibraryItemInfoTemplateE
 
 assign_mapper( context, LibraryItemInfoTemplate, LibraryItemInfoTemplate.table )
 
-assign_mapper( context, LibraryItemInfoTemplateAssociation, LibraryItemInfoTemplateAssociation.table,
-    properties=dict( folder=relation( LibraryFolder, backref="library_item_info_template_associations" ),
-                     library=relation( Library, backref="library_item_info_template_associations" ),
-                     library_dataset=relation( LibraryDataset, backref="library_item_info_template_associations" ),
-                     library_folder_dataset_association = relation( LibraryFolderDatasetAssociation, backref="library_item_info_template_associations" ),
-                     library_item_info_template = relation( LibraryItemInfoTemplate, backref="library_item_info_template_associations" ),
+assign_mapper( context, LibraryInfoTemplateAssociation, LibraryInfoTemplateAssociation.table,
+    properties=dict( library=relation( Library, backref="library_info_template_associations" ),
+                     library_item_info_template = relation( LibraryItemInfoTemplate, backref="library_info_template_associations" ),
                      ) )
 
+assign_mapper( context, LibraryFolderInfoTemplateAssociation, LibraryFolderInfoTemplateAssociation.table,
+    properties=dict( folder=relation( LibraryFolder, backref="library_folder_info_template_associations" ),
+                     library_item_info_template = relation( LibraryItemInfoTemplate, backref="library_folder_info_template_associations" ),
+                     ) )
+
+assign_mapper( context, LibraryDatasetInfoTemplateAssociation, LibraryDatasetInfoTemplateAssociation.table,
+    properties=dict( library_dataset=relation( LibraryDataset, backref="library_dataset_info_template_associations" ),
+                     library_item_info_template = relation( LibraryItemInfoTemplate, backref="library_dataset_info_template_associations" ),
+                     ) )
+
+assign_mapper( context, LibraryDatasetDatasetInfoTemplateAssociation, LibraryDatasetDatasetInfoTemplateAssociation.table,
+    properties=dict( library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, backref="library_dataset_dataset_info_template_associations" ),
+                     library_item_info_template = relation( LibraryItemInfoTemplate, backref="library_dataset_dataset_info_template_associations" ),
+                     ) )
 
 assign_mapper( context, LibraryItemInfoElement, LibraryItemInfoElement.table,
     properties=dict( library_item_info=relation( LibraryItemInfo, backref="elements" ),
@@ -717,12 +790,24 @@ assign_mapper( context, LibraryItemInfo, LibraryItemInfo.table,
     properties=dict( library_item_info_template=relation( LibraryItemInfoTemplate, backref="library_item_infos" ),
     ) )
 
-assign_mapper( context, LibraryItemInfoAssociation, LibraryItemInfoAssociation.table,
-    properties=dict( folder=relation( LibraryFolder, backref="library_item_info_associations" ),
-                     library=relation( Library, backref="library_item_info_associations" ),
-                     library_dataset=relation( LibraryDataset, backref="library_item_info_associations" ),
-                     library_folder_dataset_association = relation( LibraryFolderDatasetAssociation, backref="library_item_info_associations" ),
-                     library_item_info = relation( LibraryItemInfo, backref="library_item_info_associations" ),
+assign_mapper( context, LibraryInfoAssociation, LibraryInfoAssociation.table,
+    properties=dict( library=relation( Library, backref="library_info_associations" ),
+                     library_item_info = relation( LibraryItemInfo, backref="library_info_associations" ),
+                     ) )
+
+assign_mapper( context, LibraryFolderInfoAssociation, LibraryFolderInfoAssociation.table,
+    properties=dict( folder=relation( LibraryFolder, backref="library_folder_info_associations" ),
+                     library_item_info = relation( LibraryItemInfo, backref="library_folder_info_associations" ),
+                     ) )
+
+assign_mapper( context, LibraryDatasetInfoAssociation, LibraryDatasetInfoAssociation.table,
+    properties=dict( library_dataset=relation( LibraryDataset, backref="library_dataset_info_associations" ),
+                     library_item_info = relation( LibraryItemInfo, backref="library_dataset_info_associations" ),
+                     ) )
+
+assign_mapper( context, LibraryDatasetDatasetInfoAssociation, LibraryDatasetDatasetInfoAssociation.table,
+    properties=dict( library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, backref="library_dataset_dataset_info_associations" ),
+                     library_item_info = relation( LibraryItemInfo, backref="library_dataset_dataset_info_associations" ),
                      ) )
 
 assign_mapper( context, LibraryTag, LibraryTag.table )
@@ -733,7 +818,7 @@ assign_mapper( context, LibraryTagFolderAssociation, LibraryTagFolderAssociation
 
 assign_mapper( context, LibraryTagDatasetAssociation, LibraryTagDatasetAssociation.table,
     properties=dict( tag=relation( LibraryTag ),
-                     dataset=relation( LibraryFolderDatasetAssociation ) ) )
+                     dataset=relation( LibraryDatasetDatasetAssociation ) ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )
@@ -800,7 +885,7 @@ assign_mapper( context, StoredWorkflowMenuEntry, StoredWorkflowMenuEntry.table,
     properties=dict( stored_workflow=relation( StoredWorkflow ) ) )
 
 assign_mapper( context, MetadataFile, MetadataFile.table,
-    properties=dict( history_dataset=relation( HistoryDatasetAssociation ), library_dataset=relation( LibraryFolderDatasetAssociation ) ) )
+    properties=dict( history_dataset=relation( HistoryDatasetAssociation ), library_dataset=relation( LibraryDatasetDatasetAssociation ) ) )
 
 def db_next_hid( self ):
     """

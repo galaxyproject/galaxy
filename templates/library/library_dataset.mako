@@ -38,8 +38,8 @@
                 <label>Set Dataset Version:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <div class="form-row">
-                    <input type="radio" name="set_lda_id" value="${dataset.library_folder_dataset_association.id}" checked><a href="${h.url_for( controller='root', action='edit', lid=dataset.library_folder_dataset_association.id )}">${dataset.library_folder_dataset_association.name}</a> (current)
-                    %if refered_lda == dataset.library_folder_dataset_association:
+                    <input type="radio" name="set_lda_id" value="${dataset.library_dataset_dataset_association.id}" checked><a href="${h.url_for( controller='root', action='edit', lid=dataset.library_dataset_dataset_association.id )}">${dataset.library_dataset_dataset_association.name}</a> (current)
+                    %if refered_lda == dataset.library_dataset_dataset_association:
                         (your version)
                     %endif
                     %for expired_dataset in dataset.expired_datasets:
@@ -75,8 +75,8 @@
                 <div style="clear: both"></div>
                 <b>Dataset Versions:</b>
                 <div style="clear: both"></div>
-                    <a href="${h.url_for( controller='root', action='edit', lid=dataset.library_folder_dataset_association.id )}">${dataset.library_folder_dataset_association.name}</a> (current)
-                    %if refered_lda == dataset.library_folder_dataset_association:
+                    <a href="${h.url_for( controller='root', action='edit', lid=dataset.library_dataset_dataset_association.id )}">${dataset.library_dataset_dataset_association.name}</a> (current)
+                    %if refered_lda == dataset.library_dataset_dataset_association:
                         (your version)
                     %endif
                     %for expired_dataset in dataset.expired_datasets:

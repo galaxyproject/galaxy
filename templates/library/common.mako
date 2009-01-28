@@ -1,10 +1,11 @@
 ## Render the dataset `data`
 <%def name="render_dataset( data )">
     <%
-    #the data id should be the underlying lfda id, to prevent id collision (could happen when displaying children, which are always ldfas); and to function more seemlessly with existing code
+    ## The data id should be the underlying ldda id, to prevent id collision (could happen when displaying children,
+    ## which are always lddas); and to function more seemlessly with existing code
     data_id = data.id
     if isinstance( data, trans.app.model.LibraryDataset ):
-        data_id = data.library_folder_dataset_association.id
+        data_id = data.library_dataset_dataset_association.id
     %>
     <div class="historyItemWrapper historyItem historyItem-${data.state}" id="libraryItem-${data_id}">
 
@@ -62,90 +63,88 @@
     </div>
 </%def>
 
-
 <%def name="render_existing_library_item_info( library_item )">
-<%
-library_item_type = None
-if isinstance( library_item, trans.app.model.Library ):
-    library_item_type='library'
-elif isinstance( library_item, trans.app.model.LibraryDataset ):
-    library_item_type='library_dataset'
-elif isinstance( library_item, trans.app.model.LibraryFolder ):
-    library_item_type='folder'
-elif isinstance( library_item, trans.app.model.LibraryFolderDatasetAssociation ):
-    library_item_type='library_folder_dataset_association'
-else:
-    #unknown type
-    return ''
-%>
-<div class="toolForm">
-    <div class="toolFormTitle">Available Library Item Info</div>
-    <div class="toolFormBody">
-            %for available_info_assoc in library_item.library_item_info_associations:
-            <div class="form-row">
-                <a href="${h.url_for( controller='library', action='library_item_info', do_action='display', id=available_info_assoc.library_item_info.id )}">${available_info_assoc.library_item_info.library_item_info_template.name}</a>
-            </div>
-            <div style="clear: both"></div>
+    <%
+        library_item_type = None
+        library_item_info_associations = []
+        if isinstance( library_item, trans.app.model.Library ):
+            library_item_type = 'library'
+            library_item_info_associations = library_item.library_info_associations
+        elif isinstance( library_item, trans.app.model.LibraryFolder ):
+            library_item_type = 'folder'
+            library_item_info_associations = library_item.library_folder_info_associations
+        elif isinstance( library_item, trans.app.model.LibraryDataset ):
+            library_item_type = 'library_dataset'
+            library_item_info_associations = library_item.library_dataset_info_associations
+        elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
+            library_item_type = 'library_dataset_dataset_association'
+            library_item_info_associations = library_item.library_dataset_dataset_info_associations
+    %>
+    <div class="toolForm">
+        <div class="toolFormTitle">Available Library Item Info</div>
+        <div class="toolFormBody">
+            %for available_info_assoc in library_item_info_associations:
+                <div class="form-row">
+                    <a href="${h.url_for( controller='library',
+                                          action='library_item_info',
+                                          do_action='display',
+                                          id=available_info_assoc.library_item_info.id )}">${available_info_assoc.library_item_info.library_item_info_template.name}</a>
+                </div>
+                <div style="clear: both"></div>
             %endfor
             %if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, library_item ):
                 <div class="form-row">
                     Add <a href="${h.url_for( controller='library', action='library_item_info', do_action='new_info', library_item_id=library_item.id, library_item_type=library_item_type )}">new</a> info
                 </div>
             %endif
+        </div>
     </div>
-</div>
-
 </%def>
 
-
 <%def name="render_available_templates( library_item )">
-<%
-library_item_type = None
-if isinstance( library_item, trans.app.model.Library ):
-    library_item_type='library'
-elif isinstance( library_item, trans.app.model.LibraryDataset ):
-    library_item_type='library_dataset'
-elif isinstance( library_item, trans.app.model.LibraryFolder ):
-    library_item_type='folder'
-elif isinstance( library_item, trans.app.model.LibraryFolderDatasetAssociation ):
-    library_item_type='library_folder_dataset_association'
-
-%>
-<div class="toolForm">
-    <div class="toolFormTitle">Available Info Templates to be filled in</div>
-    <div class="toolFormBody">
-            %for available_template in library_item.get_library_item_info_templates( [] ): ##if we don't provide an empty list, strange things happen on reloads.... (why? - some sort of mako caching?)
-            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_item_info', do_action='new_info' )}" method="post">
-            <input type="hidden" name="library_item_id" value="${library_item.id}"/>
-            <input type="hidden" name="library_item_type" value="${library_item_type}"/>
-            <input type="hidden" name="library_item_info_template_id" value="${available_template.id}"/>
-            <div class="toolForm">
-            <div class="toolFormTitle">${available_template.name}: ${available_template.description}</div>
-            <div class="toolFormBody">
-            %for info_elem in available_template.elements:
-            <div class="form-row">
-                <label>${info_elem.name}</label>
-            <div class="toolParamHelp" style="clear: both;">
-                ${info_elem.description}
-            </div>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="info_element_${available_template.id}_${info_elem.id}" value="" size="40"/>
-                </div>
-                <div style="clear: both"></div>
-            </div>
-            %endfor
-            ##</div>
-            
-                <div class="form-row">
-                    <input type="submit" name="create_new_info_button" value="Save"/>
-                </div>
-            </form>
-            </div>
-            </div>
+    <%
+        library_item_type = None
+        if isinstance( library_item, trans.app.model.Library ):
+            library_item_type = 'library'
+        elif isinstance( library_item, trans.app.model.LibraryFolder ):
+            library_item_type = 'folder'
+        elif isinstance( library_item, trans.app.model.LibraryDataset ):
+            library_item_type = 'library_dataset'
+        elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
+            library_item_type = 'library_dataset_dataset_association'
+    %>
+    <div class="toolForm">
+        <div class="toolFormTitle">Available Info Templates to be filled in</div>
+        <div class="toolFormBody">
+            %for available_template in library_item.get_library_item_info_templates( [] ):
+                ##if we don't provide an empty list, strange things happen on reloads.... (why? - some sort of mako caching?)
+                <form name="edit_attributes" action="${h.url_for( controller='library', action='library_item_info', do_action='new_info' )}" method="post">
+                    <input type="hidden" name="library_item_id" value="${library_item.id}"/>
+                    <input type="hidden" name="library_item_type" value="${library_item_type}"/>
+                    <input type="hidden" name="library_item_info_template_id" value="${available_template.id}"/>
+                    <div class="toolForm">
+                        <div class="toolFormTitle">${available_template.name}: ${available_template.description}</div>
+                        <div class="toolFormBody">
+                            %for info_elem in available_template.elements:
+                                <div class="form-row">
+                                    <label>${info_elem.name}</label>
+                                    <div class="toolParamHelp" style="clear: both;">
+                                        ${info_elem.description}
+                                    </div>
+                                    <div style="float: left; width: 250px; margin-right: 10px;">
+                                        <input type="text" name="info_element_${available_template.id}_${info_elem.id}" value="" size="40"/>
+                                    </div>
+                                    <div style="clear: both"></div>
+                                </div>
+                            %endfor
+                            <div class="form-row">
+                                <input type="submit" name="create_new_info_button" value="Save"/>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             %endfor
             <p/>
-            ##</div>
+        </div>
     </div>
-</div>
-
 </%def>
