@@ -162,7 +162,8 @@ class SelectField(BaseField):
     def get_html_checkboxes( self, prefix="" ):
         rval = []
         ctr = 0
-        rval.append ( '<div class="checkUncheckAllPlaceholder" checkbox_name="%s%s"></div>' % ( prefix, self.name ) ) #placeholder for the insertion of the Select All/Unselect All buttons
+        if len( self.options ) > 1:
+            rval.append ( '<div class="checkUncheckAllPlaceholder" checkbox_name="%s%s"></div>' % ( prefix, self.name ) ) #placeholder for the insertion of the Select All/Unselect All buttons
         for text, value, selected in self.options:
             style = ""
             if len(self.options) > 2 and ctr % 2 == 1:
