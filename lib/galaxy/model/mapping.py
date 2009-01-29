@@ -374,26 +374,6 @@ LibraryDatasetDatasetInfoAssociation.table = Table( "library_dataset_dataset_inf
     Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ) )
 
-LibraryTag.table = Table( "library_tag", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "text", TEXT ) )
-
-LibraryTagFolderAssociation.table = Table( "library_tag_folder_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "library_tag.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
-LibraryTagDatasetAssociation.table = Table( "library_tag_dataset_association", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "dataset_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "library_tag.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
-
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -715,11 +695,7 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
             primaryjoin=( ( LibraryDataset.table.c.folder_id == LibraryFolder.table.c.id ) & ( not_( LibraryDataset.table.c.deleted ) ) ), 
             order_by=asc( LibraryDataset.table.c.order_id ), 
             lazy=False, 
-            viewonly=True ),
-        tags=relation( 
-            LibraryTagFolderAssociation, 
-            primaryjoin=( LibraryFolder.table.c.id == LibraryTagFolderAssociation.table.c.folder_id ),
-            backref=backref( "folders" ) )
+            viewonly=True )
     ) )
 
 assign_mapper( context, LibraryDataset, LibraryDataset.table,
@@ -748,11 +724,7 @@ assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetA
             backref=backref( "parent", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
         visible_children=relation( 
             LibraryDatasetDatasetAssociation, 
-            primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == True ) ) ),
-        tags=relation( 
-            LibraryTagDatasetAssociation, 
-            primaryjoin=( LibraryDatasetDatasetAssociation.table.c.id == LibraryTagDatasetAssociation.table.c.dataset_id ),
-            backref=backref( "datasets" ) )
+            primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == True ) ) )
         ) )
 
 assign_mapper( context, LibraryItemInfoTemplateElement, LibraryItemInfoTemplateElement.table,
@@ -809,16 +781,6 @@ assign_mapper( context, LibraryDatasetDatasetInfoAssociation, LibraryDatasetData
     properties=dict( library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, backref="library_dataset_dataset_info_associations" ),
                      library_item_info = relation( LibraryItemInfo, backref="library_dataset_dataset_info_associations" ),
                      ) )
-
-assign_mapper( context, LibraryTag, LibraryTag.table )
-                     
-assign_mapper( context, LibraryTagFolderAssociation, LibraryTagFolderAssociation.table,
-    properties=dict( tag=relation( LibraryTag ),
-                     folder=relation( LibraryFolder ) ) )
-
-assign_mapper( context, LibraryTagDatasetAssociation, LibraryTagDatasetAssociation.table,
-    properties=dict( tag=relation( LibraryTag ),
-                     dataset=relation( LibraryDatasetDatasetAssociation ) ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )

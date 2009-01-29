@@ -1,8 +1,7 @@
 import shutil, StringIO, operator, urllib, gzip, tempfile
 from galaxy import util, datatypes
 from galaxy.web.base.controller import *
-from galaxy.datatypes import sniff
-from galaxy.security import RBACAgent
+from galaxy.web.controllers.dataset import add_file
 from galaxy.model.orm import *
 
 import logging
@@ -1066,94 +1065,7 @@ class Admin( BaseController ):
         data_files = []
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-
-        # add_file method
-        def add_file( file_obj, name, extension, dbkey, last_used_build, roles, info='no info', space_to_tab=False, replace_dataset=None ):
-            data_type = None
-            temp_name = sniff.stream_to_file( file_obj )
-
-            # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress on the fly.
-            is_gzipped, is_valid = self.check_gzip( temp_name )
-            if is_gzipped and not is_valid:
-                raise BadFileException( "you attempted to upload an inappropriate file." )
-            elif is_gzipped and is_valid:
-                # We need to uncompress the temp_name file
-                CHUNK_SIZE = 2**20 # 1Mb   
-                fd, uncompressed = tempfile.mkstemp()   
-                gzipped_file = gzip.GzipFile( temp_name )
-                while 1:
-                    try:
-                        chunk = gzipped_file.read( CHUNK_SIZE )
-                    except IOError:
-                        os.close( fd )
-                        os.remove( uncompressed )
-                        raise BadFileException( 'problem uncompressing gzipped data.' )
-                    if not chunk:
-                        break
-                    os.write( fd, chunk )
-                os.close( fd )
-                gzipped_file.close()
-                # Replace the gzipped file with the decompressed file
-                shutil.move( uncompressed, temp_name )
-                name = name.rstrip( '.gz' )
-                data_type = 'gzip'
-
-            if space_to_tab:
-                line_count = sniff.convert_newlines_sep2tabs( temp_name )
-            elif os.stat( temp_name ).st_size < 262144000: # 250MB
-                line_count = sniff.convert_newlines( temp_name )
-            else:
-                if sniff.check_newlines( temp_name ):
-                    line_count = sniff.convert_newlines( temp_name )
-                else:
-                    line_count = None
-
-            if extension == 'auto':
-                data_type = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
-            else:
-                data_type = extension
-            if replace_dataset:
-                library_dataset = replace_dataset
-            else:
-                library_dataset = trans.app.model.LibraryDataset( name=name, info=info, extension=data_type, dbkey=dbkey )
-                library_dataset.flush()
-            
-            dataset = trans.app.model.LibraryDatasetDatasetAssociation( name=name, 
-                                                                       info=info, 
-                                                                       extension=data_type, 
-                                                                       dbkey=dbkey, 
-                                                                       library_dataset = library_dataset,
-                                                                       create_dataset=True )
-            dataset.flush()
-            #library_item.set_library_dataset_dataset_association( dataset )
-            if not replace_dataset:
-                folder = trans.app.model.LibraryFolder.get( folder_id )
-                folder.add_dataset( library_dataset, genome_build=last_used_build )
-            library_dataset.library_dataset_dataset_association_id = dataset.id
-            #library_dataset.library_dataset_dataset_association = dataset
-            library_dataset.flush()
-            if roles:
-                for role in roles:
-                    dp = trans.app.model.DatasetPermissions( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, role )
-                    dp.flush()
-            shutil.move( temp_name, dataset.dataset.file_name )
-            dataset.dataset.state = dataset.dataset.states.OK
-            dataset.init_meta()
-            if line_count is not None:
-                try:
-                    dataset.set_peek( line_count=line_count )
-                except:
-                    dataset.set_peek()
-            else:
-                dataset.set_peek()
-            dataset.set_size()
-            if dataset.missing_meta():
-                dataset.datatype.set_meta( dataset )
-            trans.app.model.flush()
-            return dataset
-        # END add_file method
-        
+        messagetype = params.get( 'messagetype', 'done' )        
         replace_id = params.get( 'replace_id', None )
         try:
             replace_dataset = trans.app.model.LibraryDataset.get( replace_id )
@@ -1171,7 +1083,11 @@ class Admin( BaseController ):
                     msg = 'Select a file, enter a URL or Text, or select a server directory.'
                 else:
                     msg = 'Select a file, enter a URL or enter Text.'
-                trans.response.send_redirect( web.url_for( action='dataset', folder_id=folder_id, replace_id=replace_id, msg=util.sanitize_text( msg ), messagetype='done' ) )
+                trans.response.send_redirect( web.url_for( action='dataset',
+                                                           folder_id=folder_id,
+                                                           replace_id=replace_id,
+                                                           msg=util.sanitize_text( msg ),
+                                                           messagetype='done' ) )
             space_to_tab = params.get( 'space_to_tab', False )
             if space_to_tab and space_to_tab not in [ "None", None ]:
                 space_to_tab = True
@@ -1186,7 +1102,8 @@ class Admin( BaseController ):
                 file_name = data_file.filename
                 file_name = file_name.split( '\\' )[-1]
                 file_name = file_name.split( '/' )[-1]
-                created_ldda = add_file( data_file.file,
+                created_ldda = add_file( trans,
+                                         data_file.file,
                                          file_name,
                                          extension,
                                          dbkey,
@@ -1194,7 +1111,8 @@ class Admin( BaseController ):
                                          roles,
                                          info="uploaded file",
                                          space_to_tab=space_to_tab,
-                                         replace_dataset=replace_dataset )
+                                         replace_dataset=replace_dataset,
+                                         folder_id=folder_id )
                 created_ldda_ids = str( created_ldda.id )
             elif url_paste not in [ None, "" ]:
                 if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
@@ -1202,7 +1120,8 @@ class Admin( BaseController ):
                     for line in url_paste:
                         line = line.rstrip( '\r\n' )
                         if line:
-                            created_ldda = add_file( urllib.urlopen( line ),
+                            created_ldda = add_file( trans,
+                                                     urllib.urlopen( line ),
                                                      line,
                                                      extension,
                                                      dbkey,
@@ -1210,7 +1129,8 @@ class Admin( BaseController ):
                                                      roles,
                                                      info="uploaded url",
                                                      space_to_tab=space_to_tab,
-                                                     replace_dataset=replace_dataset )
+                                                     replace_dataset=replace_dataset,
+                                                     folder_id=folder_id )
                             created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
                 else:
                     is_valid = False
@@ -1220,14 +1140,17 @@ class Admin( BaseController ):
                             is_valid = True
                             break
                     if is_valid:
-                        created_ldda = add_file( StringIO.StringIO( url_paste ),
+                        created_ldda = add_file( trans,
+                                                 StringIO.StringIO( url_paste ),
                                                  'Pasted Entry',
                                                  extension,
                                                  dbkey,
                                                  last_used_build,
                                                  roles,
                                                  info="pasted entry",
-                                                 space_to_tab=space_to_tab )
+                                                 space_to_tab=space_to_tab,
+                                                 replace_dataset=replace_dataset,
+                                                 folder_id=folder_id )
                         created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
             elif server_dir not in [ None, "", "None" ]:
                 full_dir = os.path.join( trans.app.config.library_import_dir, server_dir )
@@ -1239,14 +1162,17 @@ class Admin( BaseController ):
                     full_file = os.path.join( full_dir, file )
                     if not os.path.isfile( full_file ):
                         continue
-                    created_ldda = add_file( open( full_file, 'rb' ),
+                    created_ldda = add_file( trans,
+                                             open( full_file, 'rb' ),
                                              file,
                                              extension,
                                              dbkey,
                                              last_used_build,
                                              roles,
                                              info="imported file",
-                                             space_to_tab=space_to_tab )
+                                             space_to_tab=space_to_tab,
+                                             replace_dataset=replace_dataset,
+                                             folder_id=folder_id )
                     created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
             if created_ldda_ids:
                 created_ldda_ids = created_ldda_ids.lstrip( ',' )
@@ -1564,23 +1490,6 @@ class Admin( BaseController ):
         except: 
             msg = 'This dataset contains no content'
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
-
-    def check_gzip( self, temp_name ):
-        """
-        Utility method to check gzipped uploads
-        """
-        temp = open( temp_name, "U" )
-        magic_check = temp.read( 2 )
-        temp.close()
-        if magic_check != util.gzip_magic:
-            return ( False, False )
-        CHUNK_SIZE = 2**15 # 32Kb
-        gzipped_file = gzip.GzipFile( temp_name )
-        chunk = gzipped_file.read( CHUNK_SIZE )
-        gzipped_file.close()
-        #if self.check_html( temp_name, chunk=chunk ) or self.check_binary( temp_name, chunk=chunk ):
-        #    return( True, False )
-        return ( True, True )
     @web.expose
     @web.require_admin
     def datasets( self, trans, **kwd ):

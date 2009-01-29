@@ -970,20 +970,6 @@ class LibraryItemInfo( object ):
 class LibraryItemInfoElement( object ):
     pass
 
-class LibraryTag( object ):
-    def __init__( self, tag ):
-        self.tag = tag
-
-class LibraryTagFolderAssociation( object ):
-    def __init__( self, tag, folder ):
-        self.tag = tag
-        self.folder = folder
-
-class LibraryTagDatasetAssociation( object ):
-    def __init__( self, tag, dataset ):
-        self.tag = tag
-        self.dataset = dataset
-
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
 #         self.name = name or "Unnamed query"

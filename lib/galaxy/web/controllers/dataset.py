@@ -5,7 +5,8 @@ import re, socket
 import mimetypes
 
 from galaxy import util, datatypes, jobs, web, util, model
-
+from galaxy.datatypes import sniff
+from galaxy.security import RBACAgent
 from cgi import escape, FieldStorage
 
 import smtplib
@@ -217,4 +218,108 @@ class DatasetInterface( BaseController ):
         if user:
            target_histories = user.histories 
         
-        return trans.fill_template( "/dataset/copy_view.mako", source_dataset_ids = source_dataset_ids, target_history_ids = target_history_ids, source_datasets = source_datasets, target_histories = target_histories, new_history_name = new_history_name, done_msg = done_msg, error_msg = error_msg )
+        return trans.fill_template( "/dataset/copy_view.mako",
+                                    source_dataset_ids = source_dataset_ids,
+                                    target_history_ids = target_history_ids,
+                                    source_datasets = source_datasets,
+                                    target_histories = target_histories,
+                                    new_history_name = new_history_name,
+                                    done_msg = done_msg,
+                                    error_msg = error_msg )
+
+def add_file( trans, file_obj, name, extension, dbkey, last_used_build, roles,
+              info='no info', space_to_tab=False, replace_dataset=None, permission_source=None, folder_id=None ):
+    # This method is called from various places in the admin and library controllers.  Since it is used
+    # for adding datasets to libraries, it differs from the add_file method in the upload tool.
+    def check_gzip( temp_name ):
+        # Utility method to check gzipped uploads
+        temp = open( temp_name, "U" )
+        magic_check = temp.read( 2 )
+        temp.close()
+        if magic_check != util.gzip_magic:
+            return ( False, False )
+        CHUNK_SIZE = 2**15 # 32Kb
+        gzipped_file = gzip.GzipFile( temp_name )
+        chunk = gzipped_file.read( CHUNK_SIZE )
+        gzipped_file.close()
+        return ( True, True )
+    data_type = None
+    temp_name = sniff.stream_to_file( file_obj )
+    # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress on the fly.
+    is_gzipped, is_valid = check_gzip( temp_name )
+    if is_gzipped and not is_valid:
+        raise BadFileException( "you attempted to upload an inappropriate file." )
+    elif is_gzipped and is_valid:
+        # We need to uncompress the temp_name file
+        CHUNK_SIZE = 2**20 # 1Mb   
+        fd, uncompressed = tempfile.mkstemp()   
+        gzipped_file = gzip.GzipFile( temp_name )
+        while 1:
+            try:
+                chunk = gzipped_file.read( CHUNK_SIZE )
+            except IOError:
+                os.close( fd )
+                os.remove( uncompressed )
+                raise BadFileException( 'problem uncompressing gzipped data.' )
+            if not chunk:
+                break
+            os.write( fd, chunk )
+        os.close( fd )
+        gzipped_file.close()
+        # Replace the gzipped file with the decompressed file
+        shutil.move( uncompressed, temp_name )
+        name = name.rstrip( '.gz' )
+        data_type = 'gzip'
+    if space_to_tab:
+        line_count = sniff.convert_newlines_sep2tabs( temp_name )
+    elif os.stat( temp_name ).st_size < 262144000: # 250MB
+        line_count = sniff.convert_newlines( temp_name )
+    else:
+        if sniff.check_newlines( temp_name ):
+            line_count = sniff.convert_newlines( temp_name )
+        else:
+            line_count = None
+    if extension == 'auto':
+        data_type = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
+    else:
+        data_type = extension
+    if replace_dataset:
+        library_dataset = replace_dataset
+    else:
+        library_dataset = trans.app.model.LibraryDataset( name=name, info=info, extension=data_type, dbkey=dbkey )
+        library_dataset.flush()
+        if permission_source:
+            trans.app.model.library_security_agent.copy_permissions( permission_source, library_dataset, user = trans.get_user() )
+    dataset = trans.app.model.LibraryDatasetDatasetAssociation( name=name, 
+                                                               info=info, 
+                                                               extension=data_type, 
+                                                               dbkey=dbkey, 
+                                                               library_dataset = library_dataset,
+                                                               create_dataset=True )
+    dataset.flush()
+    if permission_source:
+        trans.app.model.library_security_agent.copy_permissions( permission_source, dataset, user = trans.get_user() )
+    if not replace_dataset:
+        folder = trans.app.model.LibraryFolder.get( folder_id )
+        folder.add_dataset( library_dataset, genome_build=last_used_build )
+    library_dataset.library_dataset_dataset_association_id = dataset.id
+    library_dataset.flush()
+    if roles:
+        for role in roles:
+            dp = trans.app.model.DatasetPermissions( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, role )
+            dp.flush()
+    shutil.move( temp_name, dataset.dataset.file_name )
+    dataset.dataset.state = dataset.dataset.states.OK
+    dataset.init_meta()
+    if line_count is not None:
+        try:
+            dataset.set_peek( line_count=line_count )
+        except:
+            dataset.set_peek()
+    else:
+        dataset.set_peek()
+    dataset.set_size()
+    if dataset.missing_meta():
+        dataset.datatype.set_meta( dataset )
+    trans.app.model.flush()
+    return dataset
