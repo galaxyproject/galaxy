@@ -103,15 +103,19 @@ def build_tracks( param, conf, data_label, fit_label, pred_label, strand, show=F
     return charts
 
 def feature_chart(param=None, session=None, label=None, label_dict={}, color=cycle( [LIGHT, WHITE] ) ):
-    # draw the ORF tracks
     all = feature_filter(feature_query(session=session,  param=param), name=label, kdict=label_dict)
+    flipped = []
+    for feature in all:
+        if feature.strand == "-":
+            feature.start, feature.end = feature.end, feature.start
+        flipped.append(feature)
     opts  = track_options( 
         xscale=param.xscale, w=param.width, fgColor=PURPLE,
         show_labels=param.show_labels, ylabel=str(label),
         bgColor=color.next()
     )
     return [
-       tracks.split_tracks(features=all, options=opts, split=param.show_labels, track_type='vector')
+       tracks.split_tracks(features=flipped, options=opts, split=param.show_labels, track_type='vector')
     ]
 
 def consolidate_charts( charts, param ):
