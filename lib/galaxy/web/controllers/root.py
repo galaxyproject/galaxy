@@ -209,7 +209,7 @@ class RootController( BaseController ):
             # TODO: hid handling
             data = history.datasets[ int( hid ) - 1 ]
         elif lid is not None:
-            data = self.app.model.LibraryFolderDatasetAssociation.get( lid )
+            data = self.app.model.LibraryDatasetDatasetAssociation.get( lid )
         elif id is not None: 
             data = self.app.model.HistoryDatasetAssociation.get( id )
         else:

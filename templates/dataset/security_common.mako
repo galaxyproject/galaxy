@@ -42,7 +42,7 @@
         elif isinstance( obj, trans.app.model.Dataset ):
             current_actions = obj.actions
             obj_str = obj_name
-        elif isinstance( obj, trans.app.model.LibraryFolderDatasetAssociation ):
+        elif isinstance( obj, trans.app.model.LibraryDatasetDatasetAssociation ):
             current_actions = obj.actions + obj.dataset.actions
             obj_str = obj_name
             permitted_actions = permitted_actions + trans.model.library_security_agent.permitted_actions.items()

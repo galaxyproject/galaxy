@@ -715,7 +715,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_url( "%s/admin/purge_role?role_id=%s" % ( self.url, role_id ) )
         check_str = "The following have been purged from the database for role '%s': " % role_name
-        check_str += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, ActionDatasetRoleAssociations."
+        check_str += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, DatasetPermissionss."
         self.check_page_for_string( check_str )
         self.home()
     def associate_users_and_groups_with_role( self, role_id, role_name, user_ids=[], group_ids=[] ):

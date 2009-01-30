@@ -36,7 +36,7 @@
     ${render_permission_form( dataset, dataset.name, h.url_for( action='dataset' ), 'id', dataset.id, roles )}
 %endif
 
-%if dataset.library_dataset.library_folder_dataset_association == dataset:
+%if dataset.library_dataset.library_dataset_dataset_association == dataset:
     ${render_msg( 'You are currently viewing the latest version of this Library Dataset, you can go <a href="%s">here</a> to manage versions.' % ( h.url_for( controller='admin', action='library_dataset', id=dataset.library_dataset.id ) ), 'info' )}
 %else:
     ${render_msg( 'You are currently viewing an expired version of this Library Dataset, you can go <a href="%s">here</a> to manage versions.' % ( h.url_for( controller='admin', action='library_dataset', id=dataset.library_dataset.id ) ), 'warning' )}

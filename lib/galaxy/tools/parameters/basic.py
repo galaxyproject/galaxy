@@ -441,10 +441,12 @@ class SelectToolParameter( ToolParameter ):
     >>> print p.name
     blah
     >>> print p.get_html()
+    <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
     <div><input type="checkbox" name="blah" value="x">I am X</div>
     <div class="odd_row"><input type="checkbox" name="blah" value="y" checked>I am Y</div>
     <div><input type="checkbox" name="blah" value="z" checked>I am Z</div>
     >>> print p.get_html( value=["x","y"])
+    <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
     <div><input type="checkbox" name="blah" value="x" checked>I am X</div>
     <div class="odd_row"><input type="checkbox" name="blah" value="y" checked>I am Y</div>
     <div><input type="checkbox" name="blah" value="z">I am Z</div>

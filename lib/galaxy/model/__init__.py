@@ -250,26 +250,64 @@ class Role( object ):
         self.type = type
         self.deleted = deleted
 
-class ActionDatasetRoleAssociation( object ):
+class DatasetPermissions( object ):
     def __init__( self, action, dataset, role ):
         self.action = action
         self.dataset = dataset
         self.role = role
 
-class ActionLibraryItemRoleAssociation( object ):
+class LibraryPermissions( object ):
     def __init__( self, action, library_item, role ):
         self.action = action
-        
+        if isinstance( library_item, Library ):
+            self.library = library_item
+        else:
+            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+        self.role = role
+
+class LibraryFolderPermissions( object ):
+    def __init__( self, action, library_item, role ):
+        self.action = action
+        if isinstance( library_item, LibraryFolder ):
+            self.library_folder = library_item
+        else:
+            raise "Invalid LibraryFolder specified: %s" % library_item.__class__.__name__
+        self.role = role
+
+class LibraryDatasetPermissions( object ):
+    def __init__( self, action, library_item, role ):
+        self.action = action
         if isinstance( library_item, LibraryDataset ):
             self.library_dataset = library_item
-        elif isinstance( library_item, Library ):
-            self.library = library_item
-        elif isinstance( library_item, LibraryFolder ):
-            self.folder = library_item
-        elif isinstance( library_item, LibraryFolderDatasetAssociation ):
-            self.library_folder_dataset_association = library_item
         else:
-            raise "Unknown library item type specified: %s" % library_item.__class__.__name__
+            raise "Invalid LibraryDataset specified: %s" % library_item.__class__.__name__
+        self.role = role
+
+class LibraryDatasetDatasetAssociationPermissions( object ):
+    def __init__( self, action, library_item, role ):
+        self.action = action
+        if isinstance( library_item, LibraryDatasetDatasetAssociation ):
+            self.library_dataset_dataset_association = library_item
+        else:
+            raise "Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__
+        self.role = role
+
+class LibraryItemInfoPermissions( object ):
+    def __init__( self, action, library_item, role ):
+        self.action = action
+        if isinstance( library_item, LibraryItemInfo ):
+            self.library_item_info = library_item
+        else:
+            raise "Invalid LibraryItemInfo specified: %s" % library_item.__class__.__name__
+        self.role = role
+
+class LibraryItemInfoTemplatePermissions( object ):
+    def __init__( self, action, library_item, role ):
+        self.action = action
+        if isinstance( library_item, LibraryItemInfoTemplate ):
+            self.library_item_info_template = library_item
+        else:
+            raise "Invalid LibraryItemInfoTemplate specified: %s" % library_item.__class__.__name__
         self.role = role
 
 class DefaultUserPermissions( object ):
@@ -534,11 +572,11 @@ class DatasetInstance( object ):
     @property
     def source_library_dataset( self ):
         def get_source( dataset ):
-            if isinstance( dataset, LibraryFolderDatasetAssociation ):
+            if isinstance( dataset, LibraryDatasetDatasetAssociation ):
                 if dataset.library_dataset:
                     return ( dataset, dataset.library_dataset )
-            if dataset.copied_from_library_folder_dataset_association:
-                source = get_source( dataset.copied_from_library_folder_dataset_association )
+            if dataset.copied_from_library_dataset_dataset_association:
+                source = get_source( dataset.copied_from_library_dataset_dataset_association )
                 if source:
                     return source
             if dataset.copied_from_history_dataset_association:
@@ -553,14 +591,14 @@ class HistoryDatasetAssociation( DatasetInstance ):
                   hid = None, 
                   history = None, 
                   copied_from_history_dataset_association = None, 
-                  copied_from_library_folder_dataset_association = None, 
+                  copied_from_library_dataset_dataset_association = None, 
                   **kwd ):
         DatasetInstance.__init__( self, **kwd )
         self.hid = hid
         # Relationships
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
-        self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
+        self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
     def copy( self, copy_children = False, parent_id = None, target_history = None ):
         des = HistoryDatasetAssociation( hid=self.hid, 
                                          name=self.name, 
@@ -588,7 +626,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         
     def to_library_dataset_folder_association( self, parent_id = None, target_folder = None ):
 
-        des = LibraryFolderDatasetAssociation( name=self.name, 
+        des = LibraryDatasetDatasetAssociation( name=self.name, 
                                          info=self.info, 
                                          blurb=self.blurb, 
                                          peek=self.peek, 
@@ -604,7 +642,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         des.flush()
         des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         if target_folder:
-            new_data = LibraryDataset( library_folder_dataset_association = des )
+            new_data = LibraryDataset( library_dataset_dataset_association = des )
             target_folder.add_dataset( new_data )
             new_data.flush()
         for child in self.children:
@@ -699,7 +737,7 @@ class LibraryFolder( object ):
         self.order_id = order_id
         self.genome_build = None
     def add_dataset( self, dataset, genome_build=None ):
-        #this should create a LibraryDataset if lfda is passed
+        #this should create a LibraryDataset if ldda is passed
         dataset.folder_id = self.id
         dataset.order_id = self.item_count
         self.item_count += 1
@@ -731,7 +769,7 @@ class LibraryDataset( object ):
                   order_id = None, 
                   name = None,
                   info = None,
-                  library_folder_dataset_association = None,
+                  library_dataset_dataset_association = None,
                   create_dataset=False,
                   **kwd
                   ):
@@ -739,13 +777,13 @@ class LibraryDataset( object ):
         self.order_id = order_id
         self.name = name
         self.info = info
-        if create_dataset and not library_folder_dataset_association:
-            #self.flush() #we need to flush self, so that the lfda will have a ld id to point to
-            library_folder_dataset_association = LibraryFolderDatasetAssociation( name=name, info=info, create_dataset=create_dataset, **kwd )
-        self.library_folder_dataset_association = library_folder_dataset_association
+        if create_dataset and not library_dataset_dataset_association:
+            #self.flush() #we need to flush self, so that the ldda will have a ld id to point to
+            library_dataset_dataset_association = LibraryDatasetDatasetAssociation( name=name, info=info, create_dataset=create_dataset, **kwd )
+        self.library_dataset_dataset_association = library_dataset_dataset_association
     
-    def set_library_folder_dataset_association( self, dataset ):
-        self.library_folder_dataset_association = dataset
+    def set_library_dataset_dataset_association( self, dataset ):
+        self.library_dataset_dataset_association = dataset
         dataset.library_dataset = self
         dataset.flush()
         self.flush()
@@ -754,7 +792,7 @@ class LibraryDataset( object ):
         #Use info from ldfa if versioned info is not set
         if self._info:
             return self._info
-        return self.library_folder_dataset_association.info
+        return self.library_dataset_dataset_association.info
     def set_info( self, info ):
         self._info = info
     info = property( get_info, set_info )
@@ -763,7 +801,7 @@ class LibraryDataset( object ):
         #Use info from ldfa if versioned info is not set
         if self._name:
             return self._name
-        return self.library_folder_dataset_association.name
+        return self.library_dataset_dataset_association.name
     def set_name( self, name ):
         self._name = name
     name = property( get_name, set_name )
@@ -772,10 +810,10 @@ class LibraryDataset( object ):
         #use name from ldfa is versioned info is not set
         if self._name:
             return self.datatype.display_name( self )
-        self.library_folder_dataset_association.display_name()
+        self.library_dataset_dataset_association.display_name()
     
     def __getattr__( self, name ):
-        return getattr( self.library_folder_dataset_association, name ) #Any nonexistant attributes will be pulled from the lfda
+        return getattr( self.library_dataset_dataset_association, name ) #Any nonexistant attributes will be pulled from the ldda
     
     def get_library_item_info_templates( self, template_list = [] ):
         if self.library_item_info_template_associations:
@@ -783,12 +821,12 @@ class LibraryDataset( object ):
         self.folder.get_library_item_info_templates( template_list )
         return template_list
     
-class LibraryFolderDatasetAssociation( DatasetInstance ):
+class LibraryDatasetDatasetAssociation( DatasetInstance ):
     def __init__( self, 
                   #folder = None, 
                   #order_id = None, 
                   copied_from_history_dataset_association = None, 
-                  copied_from_library_folder_dataset_association = None, 
+                  copied_from_library_dataset_dataset_association = None, 
                   library_dataset = None,
                   **kwd ):
         DatasetInstance.__init__( self, **kwd )
@@ -796,7 +834,7 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
         #self.folder = folder
         #self.order_id = order_id
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
-        self.copied_from_library_folder_dataset_association = copied_from_library_folder_dataset_association
+        self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
     def to_history_dataset_association( self, parent_id = None, target_history = None ):
         if target_history:
             hid = target_history._next_hid()
@@ -812,7 +850,7 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
                                          visible=self.visible, 
                                          deleted=self.deleted, 
                                          parent_id=parent_id, 
-                                         copied_from_library_folder_dataset_association = self,
+                                         copied_from_library_dataset_dataset_association = self,
                                          history = target_history,
                                          hid = hid )
         des.flush()
@@ -824,7 +862,7 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
         des.flush()
         return des
     def copy( self, copy_children = False, parent_id = None, target_folder = None ):
-        des = LibraryFolderDatasetAssociation( name=self.name, 
+        des = LibraryDatasetDatasetAssociation( name=self.name, 
                                                info=self.info, 
                                                blurb=self.blurb, 
                                                peek=self.peek, 
@@ -834,7 +872,7 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
                                                visible=self.visible, 
                                                deleted=self.deleted, 
                                                parent_id=parent_id, 
-                                               copied_from_library_folder_dataset_association = self,
+                                               copied_from_library_dataset_dataset_association = self,
                                                folder = target_folder )
         des.flush()
         des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
@@ -853,8 +891,18 @@ class LibraryFolderDatasetAssociation( DatasetInstance ):
         self.library_dataset.get_library_item_info_templates( template_list )
         return template_list
 
-class LibraryItemInfoTemplateAssociation( object ):
+class LibraryInfoTemplateAssociation( object ):
     pass
+
+class LibraryFolderInfoTemplateAssociation( object ):
+    pass
+
+class LibraryDatasetInfoTemplateAssociation( object ):
+    pass
+
+class LibraryDatasetDatasetInfoTemplateAssociation( object ):
+    pass
+
 class LibraryItemInfoTemplate( object ):
     def add_element( self, element = None, name = None, description = None ):
         if element:
@@ -883,18 +931,34 @@ class LibraryItemInfoTemplate( object ):
     """
 class LibraryItemInfoTemplateElement( object ):
     pass
-class LibraryItemInfoAssociation( object ):
+
+class LibraryInfoAssociation( object ):
     def set_library_item( self, library_item ):
         if isinstance( library_item, Library ):
             self.library = library_item
-        elif isinstance( library_item, LibraryDataset ):
-            self.library_dataset = library_item
-        elif isinstance( library_item, LibraryFolder ):
-            self.folder = library_item
-        elif isinstance( library_item, LibraryFolderDatasetAssociation ):
-            self.library_folder_dataset_association = library_item
         else:
-            raise 'unimplemented'
+            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+
+class LibraryFolderInfoAssociation( object ):
+    def set_library_item( self, library_item ):
+        if isinstance( library_item, LibraryFolder ):
+            self.folder = library_item
+        else:
+            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+
+class LibraryDatasetInfoAssociation( object ):
+    def set_library_item( self, library_item ):
+        if isinstance( library_item, LibraryDataset ):
+            self.library_dataset = library_item
+        else:
+            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+
+class LibraryDatasetDatasetInfoAssociation( object ):
+    def set_library_item( self, library_item ):
+        if isinstance( library_item, LibraryDatasetDatasetAssociation ):
+            self.library_dataset_dataset_association = library_item
+        else:
+            raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryItemInfo( object ):
     def get_element_by_template_element( self, template_element ):
@@ -902,22 +966,9 @@ class LibraryItemInfo( object ):
             if element.library_item_info_template_element == template_element:
                 return element
         raise 'element not found'
+
 class LibraryItemInfoElement( object ):
     pass
-
-class LibraryTag( object ):
-    def __init__( self, tag ):
-        self.tag = tag
-
-class LibraryTagFolderAssociation( object ):
-    def __init__( self, tag, folder ):
-        self.tag = tag
-        self.folder = folder
-
-class LibraryTagDatasetAssociation( object ):
-    def __init__( self, tag, dataset ):
-        self.tag = tag
-        self.dataset = dataset
 
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
@@ -1050,7 +1101,7 @@ class MetadataFile( object ):
     def __init__( self, dataset = None, name = None ):
         if isinstance( dataset, HistoryDatasetAssociation ):
             self.history_dataset = dataset
-        elif isinstance( dataset, LibraryFolderDatasetAssociation ):
+        elif isinstance( dataset, LibraryDatasetDatasetAssociation ):
             self.library_dataset = dataset
         self.name = name
     @property

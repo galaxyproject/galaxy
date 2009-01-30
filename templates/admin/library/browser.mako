@@ -73,7 +73,7 @@ def name_sorted( l ):
     }
 </script>
 
-<%def name="render_folder( parent, parent_pad, deleted, created_lfda_ids )">
+<%def name="render_folder( parent, parent_pad, deleted, created_ldda_ids )">
     <%
         ##if not trans.app.security_agent.check_folder_contents( trans.user, parent ):
         ##  return ""
@@ -87,10 +87,10 @@ def name_sorted( l ):
             folder = "/static/images/silk/folder.png"
             subfolder = True
 
-        if created_lfda_ids and not isinstance ( created_lfda_ids, list ):
-            created_lfda_id_list = created_lfda_ids.split( ',' )
-            if created_lfda_id_list:
-               created_lfda_ids = [ int( lfda_id ) for lfda_id in created_lfda_id_list ]
+        if created_ldda_ids and not isinstance ( created_ldda_ids, list ):
+            created_ldda_id_list = created_ldda_ids.split( ',' )
+            if created_ldda_id_list:
+               created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
     %>
     <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
         <div class="rowTitle">
@@ -130,11 +130,11 @@ def name_sorted( l ):
         %>
     %endif
     %for folder in name_sorted( parent_folders ):
-        ${render_folder( folder, pad, deleted, created_lfda_ids )}
+        ${render_folder( folder, pad, deleted, created_ldda_ids )}
     %endfor
     %for dataset in name_sorted( parent_datasets ):
         <%
-            if created_lfda_ids and dataset.id in created_lfda_ids:
+            if created_ldda_ids and dataset.id in created_ldda_ids:
                 selected = True
             else:
                 selected = False
@@ -206,7 +206,7 @@ def name_sorted( l ):
                     </div>
                 </li>
                 <ul>
-                    ${render_folder( library.root_folder, 0, deleted, created_lfda_ids )}
+                    ${render_folder( library.root_folder, 0, deleted, created_ldda_ids )}
                 </ul>
                 <br/>
                 ##%endif

@@ -1,4 +1,5 @@
 from galaxy.web.base.controller import *
+from galaxy.web.controllers.dataset import add_file
 from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 import logging, tempfile, zipfile, tarfile, os, sys, StringIO, shutil, urllib
@@ -24,16 +25,18 @@ class Library( BaseController ):
     @web.expose
     def import_datasets( self, trans, import_ids=[], **kwd ):
         if not import_ids:
-            return trans.show_error_message( "You must select at least one dataset" )
+            msg = "You must select at least one dataset"
+            return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
         if not isinstance( import_ids, list ):
             import_ids = [ import_ids ]
         p = util.Params( kwd )
         if not p.do_action:
-            return trans.show_error_message( "You must select an action to perform on selected datasets" )
+            msg = "You must select an action to perform on selected datasets"
+            return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
         if p.do_action == 'add':
             history = trans.get_history()
             for id in import_ids:
-                dataset = trans.app.model.LibraryFolderDatasetAssociation.get( id ).to_history_dataset_association()
+                dataset = trans.app.model.LibraryDatasetDatasetAssociation.get( id ).to_history_dataset_association()
                 history.add_dataset( dataset )
                 dataset.flush()
             history.flush()
@@ -48,7 +51,11 @@ class Library( BaseController ):
                         archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                     except RuntimeError:
                         log.exception( "Compression error when opening zipfile for library download" )
-                        return trans.show_error_message( "ZIP compression is not available in this Python, please notify an administrator" )
+                        msg = "ZIP compression is not available in this Python, please notify an administrator"
+                        return trans.response.send_redirect( web.url_for( controller='library',
+                                                                          action='browse',
+                                                                          msg=util.sanitize_text( msg ),
+                                                                          messagetype='error' ) )
                     except (TypeError, zipfile.LargeZipFile):
                         # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
                         log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
@@ -59,37 +66,55 @@ class Library( BaseController ):
                         archive = tarfile.open( tmpf, 'w:gz' )
                     except tarfile.CompressionError:
                         log.exception( "Compression error when opening tarfile for library download" )
-                        return trans.show_error_message( "gzip compression is not available in this Python, please notify an administrator" )
+                        msg = "gzip compression is not available in this Python, please notify an administrator"
+                        return trans.response.send_redirect( web.url_for( controller='library',
+                                                                          action='browse',
+                                                                          msg=util.sanitize_text( msg ),
+                                                                          messagetype='error' ) )
                 elif p.do_action == 'tbz':
                     try:
                         archive = tarfile.open( tmpf, 'w:bz2' )
                     except tarfile.CompressionError:
                         log.exception( "Compression error when opening tarfile for library download" )
-                        return trans.show_error_message( "bzip2 compression is not available in this Python, please notify an administrator" )
+                        msg = "bzip2 compression is not available in this Python, please notify an administrator"
+                        return trans.response.send_redirect( web.url_for( controller='library',
+                                                                          action='browse',
+                                                                          msg=util.sanitize_text( msg ),
+                                                                          messagetype='error' ) )
             except (OSError, zipfile.BadZipFile, tarfile.ReadError):
                 log.exception( "Unable to create archive for download" )
-                return trans.show_error_message( "Unable to create archive for download, please report this error" )
+                msg = "Unable to create archive for download, please report this error"
+                return trans.response.send_redirect( web.url_for( controller='library',
+                                                                  action='browse',
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='error' ) )
             seen = []
             for id in import_ids:
-                lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-                if not lfda or not trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset = lfda.dataset ):
+                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
+                if not ldda or not trans.app.security_agent.allow_action( trans.user,
+                                                                          trans.app.security_agent.permitted_actions.DATASET_ACCESS,
+                                                                          dataset = ldda.dataset ):
                     continue
                 path = ""
-                parent_folder = lfda.folder
+                parent_folder = ldda.folder
                 while parent_folder is not None:
                     path = os.path.join( parent_folder.name, path )
                     if parent_folder.parent is None:
                         path = os.path.join( parent_folder.library_root[0].name, path )
                     parent_folder = parent_folder.parent
-                path += lfda.name
+                path += ldda.name
                 while path in seen:
                     path += '_'
                 seen.append( path )
                 try:
-                    archive.add( lfda.dataset.file_name, path )
+                    archive.add( ldda.dataset.file_name, path )
                 except IOError:
                     log.exception( "Unable to write to temporary library download archive" )
-                    return trans.show_error_message( "Unable to create archive for download, please report this error" )
+                    msg = "Unable to create archive for download, please report this error"
+                    return trans.response.send_redirect( web.url_for( controller='library',
+                                                                      action='browse',
+                                                                      msg=util.sanitize_text( msg ),
+                                                                      messagetype='error' ) )
             archive.close()
             tmpfh = open( tmpf )
             # clean up now
@@ -98,28 +123,32 @@ class Library( BaseController ):
                 os.rmdir( tmpd )
             except OSError:
                 log.exception( "Unable to remove temporary library download archive and directory" )
-                return trans.show_error_message( "Unable to create archive for download, please report this error" )
+                msg = "Unable to create archive for download, please report this error"
+                return trans.response.send_redirect( web.url_for( controller='library',
+                                                                  action='browse',
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='error' ) )
             trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % kwd['action']
             return tmpfh
     @web.expose
     def download_dataset_from_folder(self, trans, id, **kwd):
         """Catches the dataset id and displays file contents as directed"""
-        # id refers to a LibraryFolderDatasetAssociation object
-        lfda = trans.app.model.LibraryFolderDatasetAssociation.get( id )
-        dataset = trans.app.model.Dataset.get( lfda.dataset_id )
+        # id refers to a LibraryDatasetDatasetAssociation object
+        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
+        dataset = trans.app.model.Dataset.get( ldda.dataset_id )
         if not dataset:
             msg = 'Invalid id %s received for file downlaod' % str( id )
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
-        mime = trans.app.datatypes_registry.get_mimetype_by_extension( lfda.extension.lower() )
+        mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
         trans.response.set_content_type( mime )
-        fStat = os.stat( lfda.file_name )
+        fStat = os.stat( ldda.file_name )
         trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = lfda.name
+        fname = ldda.name
         fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
         trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( id ), fname )
         try:
-            return open( lfda.file_name )
+            return open( ldda.file_name )
         except: 
             msg = 'This dataset contains no content'
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
@@ -135,108 +164,23 @@ class Library( BaseController ):
             permission_source = replace_dataset
         msg = ""
         messagetype="done"
-        
-        
-        
-        #### Copied/modified from admin controller this should be modular
-        # add_file method
-        def add_file( file_obj, name, extension, dbkey, last_used_build, roles, info='no info', space_to_tab=False, replace_dataset=None ):
-            data_type = None
-            temp_name = sniff.stream_to_file( file_obj )
-
-            # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress on the fly.
-            is_gzipped, is_valid = self.check_gzip( temp_name )
-            if is_gzipped and not is_valid:
-                raise BadFileException( "you attempted to upload an inappropriate file." )
-            elif is_gzipped and is_valid:
-                # We need to uncompress the temp_name file
-                CHUNK_SIZE = 2**20 # 1Mb   
-                fd, uncompressed = tempfile.mkstemp()   
-                gzipped_file = gzip.GzipFile( temp_name )
-                while 1:
-                    try:
-                        chunk = gzipped_file.read( CHUNK_SIZE )
-                    except IOError:
-                        os.close( fd )
-                        os.remove( uncompressed )
-                        raise BadFileException( 'problem uncompressing gzipped data.' )
-                    if not chunk:
-                        break
-                    os.write( fd, chunk )
-                os.close( fd )
-                gzipped_file.close()
-                # Replace the gzipped file with the decompressed file
-                shutil.move( uncompressed, temp_name )
-                name = name.rstrip( '.gz' )
-                data_type = 'gzip'
-
-            if space_to_tab:
-                line_count = sniff.convert_newlines_sep2tabs( temp_name )
-            else:
-                line_count = sniff.convert_newlines( temp_name )
-            if extension == 'auto':
-                data_type = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )
-            else:
-                data_type = extension
-            if replace_dataset:
-                library_dataset = replace_dataset
-            else:
-                library_dataset = trans.app.model.LibraryDataset( name=name, info=info, extension=data_type, dbkey=dbkey )
-                library_dataset.flush()
-                trans.app.model.library_security_agent.copy_permissions( permission_source, library_dataset, user = trans.get_user() )
-            
-            dataset = trans.app.model.LibraryFolderDatasetAssociation( name=name, 
-                                                                       info=info, 
-                                                                       extension=data_type, 
-                                                                       dbkey=dbkey, 
-                                                                       library_dataset = library_dataset,
-                                                                       create_dataset=True )
-            dataset.flush()
-            trans.app.model.library_security_agent.copy_permissions( permission_source, dataset, user = trans.get_user() )
-            #library_item.set_library_folder_dataset_association( dataset )
-            if not replace_dataset:
-                folder = trans.app.model.LibraryFolder.get( folder_id )
-                folder.add_dataset( library_dataset, genome_build=last_used_build )
-            library_dataset.library_folder_dataset_association_id = dataset.id
-            #library_dataset.library_folder_dataset_association = dataset
-            library_dataset.flush()
-            if roles:
-                for role in roles:
-                    adra = trans.app.model.ActionDatasetRoleAssociation( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, role )
-                    adra.flush()
-            shutil.move( temp_name, dataset.dataset.file_name )
-            dataset.dataset.state = dataset.dataset.states.OK
-            dataset.init_meta()
-            if line_count is not None:
-                try:
-                    dataset.set_peek( line_count=line_count )
-                except:
-                    dataset.set_peek()
-            else:
-                dataset.set_peek()
-            dataset.set_size()
-            if dataset.missing_meta():
-                dataset.datatype.set_meta( dataset )
-            trans.app.model.flush()
-            return dataset
-        # END add_file method
-        
-        
-        
-        
         if not folder and not replace_dataset:
             msg = "Invalid library target specifed (folder id: %s, Library Dataset: %s)" %( str( folder_id ), replace_id )
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
-        
-        if ( folder and trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, folder ) ) or ( replace_dataset and trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, replace_dataset ) ):
+        if ( folder and \
+             trans.app.model.library_security_agent.allow_action( trans.user,
+                                                                  trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD,
+                                                                  folder ) ) or \
+             ( replace_dataset and \
+               trans.app.model.library_security_agent.allow_action( trans.user,
+                                                                    trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD,
+                                                                    replace_dataset ) ):
             if 'new_dataset_button' in kwd:
                 params = util.Params( kwd )
-                
-                #todo: populate these vars better
+                #TODO: populate these vars better
                 dbkey = params.get( 'dbkey', '?' )
                 last_used_build = dbkey
                 extension = params.get( 'extension', 'auto' )
-                
                 #### Copied from admin controller this should be unified
                 # Copied from upload tool action
                 data_file = params.get( 'file_data', '' )
@@ -257,12 +201,13 @@ class Library( BaseController ):
                     roles.append( trans.app.model.Role.get( role_id ) )
                 temp_name = ""
                 data_list = []
-                created_lfda_ids = ''
+                created_ldda_ids = ''
                 if 'filename' in dir( data_file ):
                     file_name = data_file.filename
                     file_name = file_name.split( '\\' )[-1]
                     file_name = file_name.split( '/' )[-1]
-                    created_lfda = add_file( data_file.file,
+                    created_ldda = add_file( trans,
+                                             data_file.file,
                                              file_name,
                                              extension,
                                              dbkey,
@@ -270,15 +215,18 @@ class Library( BaseController ):
                                              roles,
                                              info="uploaded file",
                                              space_to_tab=space_to_tab,
-                                             replace_dataset=replace_dataset )
-                    created_lfda_ids = str( created_lfda.id )
+                                             replace_dataset=replace_dataset,
+                                             permission_source=permission_source,
+                                             folder_id=folder_id )
+                    created_ldda_ids = str( created_ldda.id )
                 elif url_paste not in [ None, "" ]:
                     if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
                         url_paste = url_paste.replace( '\r', '' ).split( '\n' )
                         for line in url_paste:
                             line = line.rstrip( '\r\n' )
                             if line:
-                                created_lfda = add_file( urllib.urlopen( line ),
+                                created_ldda = add_file( trans,
+                                                         urllib.urlopen( line ),
                                                          line,
                                                          extension,
                                                          dbkey,
@@ -286,8 +234,10 @@ class Library( BaseController ):
                                                          roles,
                                                          info="uploaded url",
                                                          space_to_tab=space_to_tab,
-                                                         replace_dataset=replace_dataset )
-                                created_lfda_ids = '%s,%s' % ( created_lfda_ids, str( created_lfda.id ) )
+                                                         replace_dataset=replace_dataset,
+                                                         permission_source=permission_source,
+                                                         folder_id=folder_id )
+                                created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
                     else:
                         is_valid = False
                         for line in url_paste:
@@ -296,7 +246,8 @@ class Library( BaseController ):
                                 is_valid = True
                                 break
                         if is_valid:
-                            created_lfda = add_file( StringIO.StringIO( url_paste ),
+                            created_ldda = add_file( trans,
+                                                     StringIO.StringIO( url_paste ),
                                                      'Pasted Entry',
                                                      extension,
                                                      dbkey,
@@ -304,8 +255,10 @@ class Library( BaseController ):
                                                      roles,
                                                      info="pasted entry",
                                                      space_to_tab=space_to_tab,
-                                                     replace_dataset=replace_dataset )
-                            created_lfda_ids = '%s,%s' % ( created_lfda_ids, str( created_lfda.id ) )
+                                                     replace_dataset=replace_dataset,
+                                                     permission_source=permission_source,
+                                                     folder_id=folder_id )
+                            created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
                 elif server_dir not in [ None, "", "None" ]:
                     full_dir = os.path.join( trans.app.config.library_import_dir, server_dir )
                     try:
@@ -316,7 +269,8 @@ class Library( BaseController ):
                         full_file = os.path.join( full_dir, file )
                         if not os.path.isfile( full_file ):
                             continue
-                        created_lfda = add_file( open( full_file, 'rb' ),
+                        created_ldda = add_file( trans,
+                                                 open( full_file, 'rb' ),
                                                  file,
                                                  extension,
                                                  dbkey,
@@ -324,29 +278,30 @@ class Library( BaseController ):
                                                  roles,
                                                  info="imported file",
                                                  space_to_tab=space_to_tab,
-                                                 replace_dataset=replace_dataset )
-                        created_lfda_ids = '%s,%s' % ( created_lfda_ids, str( created_lfda.id ) )
-                if created_lfda_ids:
-                    created_lfda_ids = created_lfda_ids.lstrip( ',' )
-                    created_lfda_ids = created_lfda_ids.split(',')
-                    msg = "%i new datasets added to the library.  " % len( created_lfda_ids )
+                                                 replace_dataset=replace_dataset,
+                                                 permission_source=permission_source,
+                                                 folder_id=folder_id )
+                        created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
+                if created_ldda_ids:
+                    created_ldda_ids = created_ldda_ids.lstrip( ',' )
+                    created_ldda_ids = created_ldda_ids.split(',')
+                    msg = "%i new datasets added to the library.  " % len( created_ldda_ids )
                     return trans.fill_template( "/library/dataset_manage_list.mako", 
-                                                lfdas=[ trans.app.model.LibraryFolderDatasetAssociation.get( lfda_id ) for lfda_id in created_lfda_ids ],
+                                                lddas=[ trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ) for ldda_id in created_ldda_ids ],
                                                 err=None,
                                                 msg=msg,
                                                 messagetype=messagetype )
-                    
-                    #total_added = len( created_lfda_ids.split( ',' ) )
+                    #total_added = len( created_ldda_ids.split( ',' ) )
                     #msg = "%i new datasets added to the library ( each is selected below ).  " % total_added
                     #msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                     #trans.response.send_redirect( web.url_for( action='browse',
-                    #                                           created_lfda_ids=created_lfda_ids, 
+                    #                                           created_ldda_ids=created_ldda_ids, 
                     #                                           msg=util.sanitize_text( msg ), 
                     #                                           messagetype='done' ) )
                 else:
                     msg = "Upload failed"
                     trans.response.send_redirect( web.url_for( action='browse',
-                                                               created_lfda_ids=created_lfda_ids,
+                                                               created_ldda_ids=created_ldda_ids,
                                                                msg=util.sanitize_text( msg ),
                                                                messagetype='error' ) )
             elif "add_dataset_from_history_button" in kwd:
@@ -375,7 +330,7 @@ class Library( BaseController ):
                                 elif replace_dataset:
                                     #if we are replacing versions and we recieve a list, we add all the datasets, and set the last one in the list as current
                                     if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, replace_dataset ):
-                                        replace_dataset.set_library_folder_dataset_association( data )
+                                        replace_dataset.set_library_dataset_dataset_association( data )
                                     else:
                                         data.library_dataset = replace_dataset
                                 data.flush()
@@ -406,13 +361,11 @@ class Library( BaseController ):
                                         err=None,
                                         msg=msg,
                                         messagetype=messagetype )
-
-    
     @web.expose
     def library_dataset( self, trans, id, name = None, info = None, refer_id = None, **kwd ):
         dataset = trans.app.model.LibraryDataset.get( id )
         if refer_id:
-            refered_lda = trans.app.model.LibraryFolderDatasetAssociation.get( refer_id )
+            refered_lda = trans.app.model.LibraryDatasetDatasetAssociation.get( refer_id )
         else:
             refered_lda=None
         msg = ""
@@ -426,8 +379,8 @@ class Library( BaseController ):
             if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, dataset ):
                 dataset.name  = name
                 dataset.info  = info
-                target_lda = trans.app.model.LibraryFolderDatasetAssociation.get( kwd.get( 'set_lda_id' ) )
-                dataset.library_folder_dataset_association = target_lda
+                target_lda = trans.app.model.LibraryDatasetDatasetAssociation.get( kwd.get( 'set_lda_id' ) )
+                dataset.library_dataset_dataset_association = target_lda
                 trans.app.model.flush()
                 msg = 'Attributes updated for library dataset %s' % dataset.name
             else:
@@ -521,8 +474,8 @@ class Library( BaseController ):
             library_item = trans.app.model.LibraryDataset.get( library_item_id )
         elif library_item_type == 'folder':
             library_item = trans.app.model.LibraryFolder.get( library_item_id )
-        elif library_item_type == 'library_folder_dataset_association':
-            library_item = trans.app.model.LibraryFolderDatasetAssociation.get( library_item_id )
+        elif library_item_type == 'library_dataset_dataset_association':
+            library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( library_item_id )
         else:
             library_item_type == None
             library_item = None
@@ -562,11 +515,18 @@ class Library( BaseController ):
                             info_element.library_item_info_template_element = template_element
                             info_element.library_item_info = library_item_info
                             info_element.flush()
-                        library_item_info_association = trans.app.model.LibraryItemInfoAssociation()
-                        library_item_info_association.set_library_item( library_item )
-                        library_item_info_association.library_item_info = library_item_info
-                        library_item_info_association.user = user
-                        library_item_info_association.flush()
+                        info_association_class = None
+                        for item_class, permission_class, info_association_class in trans.app.model.library_security_agent.library_item_assocs:
+                            if isinstance( library_item, item_class ):
+                                break
+                        if info_association_class:
+                            library_item_info_association = info_association_class()
+                            library_item_info_association.set_library_item( library_item )
+                            library_item_info_association.library_item_info = library_item_info
+                            library_item_info_association.user = user
+                            library_item_info_association.flush()
+                        else:
+                            raise 'Invalid class (%s) specified for library_item (%s)' % ( library_item.__class__, library_item.__class__.__name__ )
                         #don't need to set permissions on the association object?
                         
                         msg = 'Library Item Info has been save, you can now fill out more templates.'

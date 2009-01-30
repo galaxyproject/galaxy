@@ -88,14 +88,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Add a dataset to the history
         self.upload_file( '1.bed' )
         latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
-        # Make sure ActionDatasetRoleAssociation is correct - default is 'manage permissions'
+        # Make sure DatasetPermissions is correct - default is 'manage permissions'
         if len( latest_dataset.actions ) > 1:
-            raise AssertionError( '%d ActionDatasetRoleAssociations were created for dataset id %d when it was created ( should have been 1 )' \
+            raise AssertionError( '%d DatasetPermissionss were created for dataset id %d when it was created ( should have been 1 )' \
                                   % ( len( latest_dataset.actions ), latest_dataset.id ) )
-        adra = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.dataset_id==latest_dataset.id ).first()
-        if not adra.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
-            raise AssertionError( 'The ActionDatasetRoleAssociation.action for dataset id %d is "%s", but it should be "manage permissions"' \
-                                  % ( latest_dataset.id, adra.action ) )
+        dp = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==latest_dataset.id ).first()
+        if not dp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+            raise AssertionError( 'The DatasetPermissions.action for dataset id %d is "%s", but it should be "manage permissions"' \
+                                  % ( latest_dataset.id, dp.action ) )
         # Change DefaultHistoryPermissions for regular_user1
         permissions_in = []
         actions_in = []
@@ -124,23 +124,23 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Add a dataset to the history
         self.upload_file( '1.bed' )
         latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
-        # Make sure ActionDatasetRoleAssociations are correct
+        # Make sure DatasetPermissionss are correct
         if len( latest_dataset.actions ) != len( latest_history.default_permissions ):
-            raise AssertionError( '%d ActionDatasetRoleAssociations were created for dataset id %d when it was created ( should have been %d )' % \
+            raise AssertionError( '%d DatasetPermissionss were created for dataset id %d when it was created ( should have been %d )' % \
                                   ( len( latest_dataset.actions ), latest_dataset.id, len( latest_history.default_permissions ) ) )
-        adras = []
-        for adra in latest_dataset.actions:
-            adras.append( adra.action )
+        dps = []
+        for dp in latest_dataset.actions:
+            dps.append( dp.action )
         # Sort actions for later comparison
-        adras.sort()
-        # Compare ActionDatasetRoleAssociations with permissions_in - should be the same
-        if adras != actions_in:
-            raise AssertionError( 'ActionDatasetRoleAssociations "%s" for dataset id %d differ from changed default permissions "%s"' \
-                                      % ( str( adras ), latest_dataset.id, str( actions_in ) ) )
-        # Compare DefaultHistoryPermissions and ActionDatasetRoleAssociations - should be the same
-        if adras != dhps:
-                raise AssertionError( 'ActionDatasetRoleAssociations "%s" for dataset id %d differ from DefaultHistoryPermissions "%s" for history id %d' \
-                                      % ( str( adras ), latest_dataset.id, str( dhps ), latest_history.id ) )
+        dps.sort()
+        # Compare DatasetPermissionss with permissions_in - should be the same
+        if dps != actions_in:
+            raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from changed default permissions "%s"' \
+                                      % ( str( dps ), latest_dataset.id, str( actions_in ) ) )
+        # Compare DefaultHistoryPermissions and DatasetPermissionss - should be the same
+        if dps != dhps:
+                raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from DefaultHistoryPermissions "%s" for history id %d' \
+                                      % ( str( dps ), latest_dataset.id, str( dhps ), latest_history.id ) )
         # Since the dataset in the history is now private, we can test sharing with another user
         self.share_history_containing_private_datasets( str( latest_history.id ), email=admin_user.email )
         # Test making the dataset in the history public
@@ -197,19 +197,19 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if dhps != actions_in:
                 raise AssertionError( 'DefaultHistoryPermissions "%s" for history id %d differ from actions "%s" passed for changing' \
                                       % ( str( dhps ), latest_history.id, str( actions_in ) ) )
-        # Make sure ActionDatasetRoleAssociations are correct
+        # Make sure DatasetPermissionss are correct
         if len( latest_dataset.actions ) != len( latest_history.default_permissions ):
-            raise AssertionError( '%d ActionDatasetRoleAssociations were created for dataset id %d when it was created ( should have been %d )' \
+            raise AssertionError( '%d DatasetPermissionss were created for dataset id %d when it was created ( should have been %d )' \
                                   % ( len( latest_dataset.actions ), latest_dataset.id, len( latest_history.default_permissions ) ) )
-        adras = []
-        for adra in latest_dataset.actions:
-            adras.append( adra.action )
+        dps = []
+        for dp in latest_dataset.actions:
+            dps.append( dp.action )
         # Sort actions for comparison
-        adras.sort()
-        # Compare ActionDatasetRoleAssociations and DefaultHistoryPermissions - should be the same
-        if adras != dhps:
-                raise AssertionError( 'ActionDatasetRoleAssociations "%s" for dataset id %d differ from DefaultHistoryPermissions "%s"' \
-                                      % ( str( adras ), latest_dataset.id, str( dhps ) ) )
+        dps.sort()
+        # Compare DatasetPermissionss and DefaultHistoryPermissions - should be the same
+        if dps != dhps:
+                raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from DefaultHistoryPermissions "%s"' \
+                                      % ( str( dps ), latest_dataset.id, str( dhps ) ) )
         self.logout()
     def test_020_create_new_user_account_as_admin( self ):
         """Testing creating a new user account as admin"""
@@ -267,10 +267,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Upload a file to create a HistoryDatasetAssociation
         self.upload_file( '1.bed' )
         latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
-        for adra in latest_dataset.actions:
-            # Should only have 1 ActionDatasetRoleAssociation
-            if adra.action != galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
-                raise AssertionError( 'The ActionDatasetRoleAssociation for dataset id %d is %s ( should have been %s )' \
+        for dp in latest_dataset.actions:
+            # Should only have 1 DatasetPermissions
+            if dp.action != galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+                raise AssertionError( 'The DatasetPermissions for dataset id %d is %s ( should have been %s )' \
                                       % ( latest_dataset.id,
                                           latest_dataset.actions.action, 
                                           galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
@@ -494,10 +494,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing adding a dataset with a private role restriction to a folder"""
         # Add a dataset restricted by regular_user1 private role
         self.add_dataset( '1.bed', str( folder_one.id ), extension='bed', dbkey='hg18', roles=[ str( regular_user1_private_role.id ) ] )
-        global lfda_three
-        lfda_three = galaxy.model.LibraryFolderDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryFolderDatasetAssociation.table.c.create_time ) ).first()
-        assert lfda_three is not None, 'Problem retrieving LibraryFolderDatasetAssociation lfda_three from the database'
+        global ldda_three
+        ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        assert ldda_three is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_three from the database'
         self.home()
         self.visit_url( '%s/admin/libraries' % self.url )
         self.check_page_for_string( "1.bed" )
@@ -565,10 +565,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # groups: group_two
         # users: test@bx.psu.edu, test1@bx.psu.edu via group_two
         self.add_dataset( '2.bed', str( folder_one.id ), extension='bed', dbkey='hg17', roles=[ str( role_two.id ) ] )
-        global lfda_two
-        lfda_two = galaxy.model.LibraryFolderDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryFolderDatasetAssociation.table.c.create_time ) ).first()
-        assert lfda_two is not None, 'Problem retrieving LibraryFolderDatasetAssociation lfda_two from the database'
+        global ldda_two
+        ldda_two = galaxy.model.LibraryDatasetDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        assert ldda_two is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_two from the database'
         self.home()
         self.visit_url( '%s/admin/libraries' % self.url )
         self.check_page_for_string( "2.bed" )
@@ -590,14 +590,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( "hg17" )
         # Check the permissions on the dataset - should be 'access'
         self.home()
-        self.visit_url( '%s/root/edit?lid=%d' % ( self.url, lfda_two.id ) )
+        self.visit_url( '%s/root/edit?lid=%d' % ( self.url, ldda_two.id ) )
         self.check_page_for_string( '2.bed' )
         self.check_page_for_string( 'Role members can import this dataset into their history for analysis' )
         self.home()
         # Test importing the restricted dataset into a history, can't use the 
         # ~/admin/libraries form as twill barfs on it so we'll simulate the form submission
         # by going directly to the form action
-        self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%d' % ( self.url, lfda_two.id ) )
+        self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%d' % ( self.url, ldda_two.id ) )
         self.check_page_for_string( '1 dataset(s) have been imported into your history' )
         self.logout()
         # regular_user2 should not be able to see 2.bed
@@ -638,10 +638,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.login( email='test@bx.psu.edu' )
         folder = library_one.root_folder
         self.add_dataset( '3.bed', str( folder.id ), extension='bed', dbkey='hg16', roles=[] )
-        global lfda_three
-        lfda_three = galaxy.model.LibraryFolderDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryFolderDatasetAssociation.table.c.create_time ) ).first()
-        assert lfda_three is not None, 'Problem retrieving LibraryFolderDatasetAssociation lfda_three from the database'
+        global ldda_three
+        ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        assert ldda_three is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_three from the database'
         self.visit_page( 'admin/libraries' )
         self.check_page_for_string( "3.bed" )
         self.check_page_for_string( "hg16" )
@@ -673,12 +673,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( "hg16" )
         # Test selecting "View or edit this dataset's attributes and permissions"
         self.home()
-        self.visit_url( '%s/root/edit?lid=%d' % ( self.url, lfda_three.id ) )
+        self.visit_url( '%s/root/edit?lid=%d' % ( self.url, ldda_three.id ) )
         self.check_page_for_string( '3.bed' )
         self.check_page_for_string( 'This dataset is accessible by everyone (it is public).' )
         # Test importing a library dataset into a history
         self.home()
-        self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%d' % ( self.url, lfda_three.id ) )
+        self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%d' % ( self.url, ldda_three.id ) )
         self.check_page_for_string( '1 dataset(s) have been imported into your history' )
         self.logout()
     def test_110_copy_dataset_from_history_to_root_folder( self ):
@@ -686,17 +686,17 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.login( email='test@bx.psu.edu' )
         folder = library_one.root_folder
         self.add_dataset_to_folder_from_history( str( folder.id ) )
-        # Test for ActionDatasetRoleAssociations, the default setting is "manage permissions"
+        # Test for DatasetPermissionss, the default setting is "manage permissions"
         last_dataset_created = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
-        adras = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.dataset_id==last_dataset_created.id ).all()
-        if not adras:
-            raise AssertionError( 'No ActionDatasetRoleAssociations created for dataset id: %d' % last_dataset_created.id )
-        if len( adras ) > 1:
-            raise AssertionError( 'More than 1 ActionDatasetRoleAssociations created for dataset id: %d' % last_dataset_created.id )
-        for adra in adras:
-            if not adra.action == 'manage permissions':
-                raise AssertionError( 'ActionDatasetRoleAssociation.action "%s" is not the DefaultHistoryPermission setting of "manage permissions"' % \
-                                      str( adra.action ) )
+        dps = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==last_dataset_created.id ).all()
+        if not dps:
+            raise AssertionError( 'No DatasetPermissionss created for dataset id: %d' % last_dataset_created.id )
+        if len( dps ) > 1:
+            raise AssertionError( 'More than 1 DatasetPermissionss created for dataset id: %d' % last_dataset_created.id )
+        for dp in dps:
+            if not dp.action == 'manage permissions':
+                raise AssertionError( 'DatasetPermissions.action "%s" is not the DefaultHistoryPermission setting of "manage permissions"' % \
+                                      str( dp.action ) )
     def test_115_add_datasets_from_library_dir( self ):
         """Testing adding 3 datasets from a library directory to a folder"""
         roles_tuple = [ ( str( role_one.id ), role_one.name ) ] 
@@ -706,18 +706,18 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # It would be nice if twill functioned such that the above test resulted in a
         # form with the uploaded datasets selected, but it does not ( they're not checked ),
         # so we'll have to simulate this behavior ( not ideal ) for the 'edit' action.  We
-        # first need to get the lfda.id for the 3 new datasets
-        latest_3_lfdas = galaxy.model.LibraryFolderDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryFolderDatasetAssociation.table.c.update_time ) ).limit( 3 )
-        lfda_ids = ''
-        for lfda in latest_3_lfdas:
-            lfda_ids += '%s,' % str( lfda.id )
-        lfda_ids = lfda_ids.rstrip( ',' )
+        # first need to get the ldda.id for the 3 new datasets
+        latest_3_lddas = galaxy.model.LibraryDatasetDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.update_time ) ).limit( 3 )
+        ldda_ids = ''
+        for ldda in latest_3_lddas:
+            ldda_ids += '%s,' % str( ldda.id )
+        ldda_ids = ldda_ids.rstrip( ',' )
         permissions = [ 'DATASET_ACCESS', 'DATASET_MANAGE_PERMISSIONS' ]
         def build_url( permissions, role ):
             # We'll bypass the admin/datasets method and directly call the admin/dataset method, setting
             # access, manage permissions, and edit metadata permissions to role_one
-            url = '/admin/dataset?id=%s&update_roles=Save' % lfda_ids
+            url = '/admin/dataset?id=%s&update_roles=Save' % ldda_ids
             for p in permissions:
                 url += '&%s_in=%s' % ( p, str( role.id ) )
             return url
@@ -725,23 +725,23 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.visit_url( url )
         self.check_page_for_string( 'Permissions and roles have been updated on 3 datasets' )
-        def check_edit_page1( lfdas ):
+        def check_edit_page1( lddas ):
             # Make sure the permissions have been correctly updated for the 3 datasets.  Permissions should 
             # be all of the above on any of the 3 datasets that are imported into a history
-            for lfda in lfdas:
+            for ldda in lddas:
                 self.home()
-                self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%s' % ( self.url, str( lfda.id ) ) )
+                self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%s' % ( self.url, str( ldda.id ) ) )
                 self.home()
-                self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( lfda.id ) ) )
+                self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( ldda.id ) ) )
                 self.check_page_for_string( 'You are currently viewing a Dataset from a library' )
-                self.check_page_for_string( 'Manage permissions and role associations for %s' % lfda.name )
+                self.check_page_for_string( 'Manage permissions and role associations for %s' % ldda.name )
                 self.check_page_for_string( 'select name="DATASET_MANAGE_PERMISSIONS_in"' )
         # admin_user is associated with role_one, so should have all permissions on imported datasets
-        check_edit_page1( latest_3_lfdas )
+        check_edit_page1( latest_3_lddas )
         self.logout()
         # regular_user1 is associated with role_one, so should have all permissions on imported datasets
         self.login( email='test1@bx.psu.edu' )
-        check_edit_page1( latest_3_lfdas )
+        check_edit_page1( latest_3_lddas )
         self.logout()
         # Since regular_user2 is not associated with role_one, she should not have
         # access to any of the 3 datasets, so she will not see folder_one on the libraries page
@@ -757,7 +757,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.logout()
         # regular_user3 is associated with role_one, so should have all permissions on imported datasets
         self.login( email='test3@bx.psu.edu' )
-        check_edit_page1( latest_3_lfdas )
+        check_edit_page1( latest_3_lddas )
         self.logout()
         self.login( email='test@bx.psu.edu' )
         # Change the permissions and test again
@@ -766,23 +766,23 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.visit_url( url )
         self.check_page_for_string( 'Permissions and roles have been updated on 3 datasets' )
-        def check_edit_page2( lfdas ):
+        def check_edit_page2( lddas ):
             # Make sure the permissions have been correctly updated for the 3 datasets.  Permissions should 
             # be all of the above on any of the 3 datasets that are imported into a history
-            for lfda in lfdas:
+            for ldda in lddas:
                 self.home()
-                self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%s' % ( self.url, str( lfda.id ) ) )
+                self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%s' % ( self.url, str( ldda.id ) ) )
                 self.home()
-                self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( lfda.id ) ) )
+                self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( ldda.id ) ) )
                 self.check_page_for_string( 'View Attributes' )
                 try:
                     # This should no longer be possible
-                    self.check_page_for_string( 'Manage permissions and role associations for %s' % lfda.name )
+                    self.check_page_for_string( 'Manage permissions and role associations for %s' % ldda.name )
                     self.check_page_for_string( 'select name="DATASET_MANAGE_PERMISSIONS_in"' )
                     raise AssertionError( '%s incorrectly has DATASET_MANAGE_PERMISSIONS on datasets imported from a library' % admin_user.email )
                 except:
                     pass # This is the behavior we want
-        check_edit_page2( latest_3_lfdas )
+        check_edit_page2( latest_3_lddas )
     def test_125_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         self.home()
@@ -835,16 +835,16 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The library_folder named "%s" has not been marked as deleted ( library.id: %s ).' % \
                                           ( folder.name, str( library_one.id ) ) )
                 check_folder( folder )
-            # Make sure all of the library_folder_dataset_associations are deleted
-            for lfda in library_folder.datasets:
-                lfda.refresh()
-                if not lfda.deleted:
-                    raise AssertionError( 'The library_folder_dataset_association id %s named "%s" has not been marked as deleted ( library.id: %s ).' % \
-                                          ( str( lfda.id ), lfda.name, str( library_one.id ) ) )
+            # Make sure all of the library_dataset_dataset_associations are deleted
+            for ldda in library_folder.datasets:
+                ldda.refresh()
+                if not ldda.deleted:
+                    raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as deleted ( library.id: %s ).' % \
+                                          ( str( ldda.id ), ldda.name, str( library_one.id ) ) )
                 # Make sure none of the datasets have been deleted since that should occur only when the library is purged
-                lfda.dataset.refresh()
-                if lfda.dataset.deleted:
-                    raise AssertionError( 'The dataset with id "%s" has been marked as deleted when it should not have been.' % lfda.dataset.id )
+                ldda.dataset.refresh()
+                if ldda.dataset.deleted:
+                    raise AssertionError( 'The dataset with id "%s" has been marked as deleted when it should not have been.' % ldda.dataset.id )
         check_folder( library_one.root_folder )
     def test_150_undelete_library( self ):
         """Testing marking a library as not deleted"""
@@ -861,15 +861,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The library_folder id %s named "%s" has not been marked as undeleted ( library.id: %s ).' % \
                                           ( str( folder.id ), folder.name, str( library_one.id ) ) )
                 check_folder( folder )
-            # Make sure all of the library_folder_dataset_associations are undeleted
-            for lfda in library_folder.datasets:
-                lfda.refresh()
-                if lfda.deleted:
-                    raise AssertionError( 'The library_folder_dataset_association id %s named "%s" has not been marked as undeleted ( library.id: %s ).' % \
-                                          ( str( lfda.id ), lfda.name, str( library_one.id ) ) )
+            # Make sure all of the library_dataset_dataset_associations are undeleted
+            for ldda in library_folder.datasets:
+                ldda.refresh()
+                if ldda.deleted:
+                    raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as undeleted ( library.id: %s ).' % \
+                                          ( str( ldda.id ), ldda.name, str( library_one.id ) ) )
                 # Make sure all of the datasets have been undeleted
-                if lfda.dataset.deleted:
-                    raise AssertionError( 'The dataset with id "%s" has not been marked as undeleted.' % lfda.dataset.id )
+                if ldda.dataset.deleted:
+                    raise AssertionError( 'The dataset with id "%s" has not been marked as undeleted.' % ldda.dataset.id )
         check_folder( library_one.root_folder )
         # Mark library as deleted again so we can test purging it
         self.mark_library_deleted( str( library_one.id ), library_one.name )
@@ -967,10 +967,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         gra = galaxy.model.GroupRoleAssociation.filter( galaxy.model.GroupRoleAssociation.table.c.role_id == role_id ).all()
         if gra:
             raise AssertionError( "Purging the role did not delete the GroupRoleAssociations for role_id '%s'" % role_id )
-        # Make sure there are no ActionDatasetRoleAssociations
-        adra = galaxy.model.ActionDatasetRoleAssociation.filter( galaxy.model.ActionDatasetRoleAssociation.table.c.role_id == role_id ).all()
-        if adra:
-            raise AssertionError( "Purging the role did not delete the ActionDatasetRoleAssociations for role_id '%s'" % role_id )
+        # Make sure there are no DatasetPermissionss
+        dp = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.role_id == role_id ).all()
+        if dp:
+            raise AssertionError( "Purging the role did not delete the DatasetPermissionss for role_id '%s'" % role_id )
     def test_175_manually_unpurge_role( self ):
         """Testing manually un-purging a role"""
         # Manually unpurge, then undelete the role for later test runs
@@ -992,18 +992,18 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 if not folder.purged:
                     raise AssertionError( 'The library_folder id %s named "%s" has not been marked purged.' % ( str( folder.id ), folder.name ) )
                 check_folder( folder )
-            # Make sure all of the library_folder_dataset_associations are deleted ( no purged column )
-            for lfda in library_folder.datasets:
-                lfda.refresh()
-                if not lfda.deleted:
-                    raise AssertionError( 'The library_folder_dataset_association id %s named "%s" has not been marked as deleted.' % \
-                                          ( str( lfda.id ), lfda.name ) )
+            # Make sure all of the library_dataset_dataset_associations are deleted ( no purged column )
+            for ldda in library_folder.datasets:
+                ldda.refresh()
+                if not ldda.deleted:
+                    raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as deleted.' % \
+                                          ( str( ldda.id ), ldda.name ) )
                 # Make sure all of the datasets have been deleted
-                dataset = lfda.dataset
+                dataset = ldda.dataset
                 dataset.refresh()
                 if not dataset.deleted:
                     raise AssertionError( 'The dataset with id "%s" has not been marked as deleted when it should have been.' % \
-                                          str( lfda.dataset.id ) )
+                                          str( ldda.dataset.id ) )
         check_folder( library_one.root_folder )
     def test_185_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""

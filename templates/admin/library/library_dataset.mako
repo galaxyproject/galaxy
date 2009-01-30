@@ -39,7 +39,7 @@ ${render_permission_form( dataset, dataset.name, h.url_for( action='library_data
                 <label>Set Dataset Version:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <div class="form-row">
-                    <input type="radio" name="set_lda_id" value="${dataset.library_folder_dataset_association.id}" checked><a href="${h.url_for( controller='admin', action='dataset', id=dataset.library_folder_dataset_association.id )}">${dataset.library_folder_dataset_association.name}</a> (current)
+                    <input type="radio" name="set_lda_id" value="${dataset.library_dataset_dataset_association.id}" checked><a href="${h.url_for( controller='admin', action='dataset', id=dataset.library_dataset_dataset_association.id )}">${dataset.library_dataset_dataset_association.name}</a> (current)
                     %for expired_dataset in dataset.expired_datasets:
                     <br>
                     <input type="radio" name="set_lda_id" value="${expired_dataset.id}" ><a href="${h.url_for( controller='admin', action='dataset', id=expired_dataset.id )}">${expired_dataset.name}</a>
