@@ -1,9 +1,13 @@
 """
-usage: fetch_eggs.py [egg_name]
+usage: fetch_eggs.py [egg_name] [platform]
     With no arguments, fetches all eggs necessary according to the
     settings in universe_wsgi.ini.
   egg_name - Fetch only this egg (as defined in eggs.ini) or 'all' for
     all eggs (even those not required by your settings).
+  platform - Fetch eggs for a specific platform (if not provided, fetch
+    eggs for *this* platform).  Useful for fetching eggs for cluster
+    nodes which are of a different architecture than the head node.
+    Platform name can be determined with the get_platforms.py script.
 """
 import os, sys, logging
 
@@ -17,6 +21,8 @@ sys.path.append( lib )
 from galaxy.eggs import *
 
 c = Crate()
+if len( sys.argv ) == 3:
+    c.platform = { 'peak' : sys.argv[2].rsplit('-',1)[0], 'galaxy' : sys.argv[2] }
 c.parse()
 try:
     if len( sys.argv ) == 1:

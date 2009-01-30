@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
-import sys
+import os, sys
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
-from eggs import get_full_platform, get_noplatform
-print get_noplatform()
-print get_full_platform()
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "lib" ) )
+sys.path.append( lib )
+
+from galaxy.eggs import get_platform
+print get_platform()
+print get_platform( True )
