@@ -17,7 +17,7 @@
 <div class="toolForm" id="new_dataset">
     <div class="toolFormTitle">Create a new library dataset</div>
     <div class="toolFormBody">
-        <form name="tool_form" action="${h.url_for( controller='library', action='add_dataset' )}" enctype="multipart/form-data" method="post">
+        <form name="tool_form" action="${h.url_for( controller='library', action='dataset' )}" enctype="multipart/form-data" method="post">
             %if replace_dataset is not None:
             <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
             <div class="form-row">
@@ -128,7 +128,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
     <div class="toolFormBody">
-        <form name="add_dataset_from_history" action="${h.url_for( controller='library', action='add_dataset' )}" enctype="multipart/form-data" method="post">
+        <form name="add_dataset_from_history" action="${h.url_for( controller='library', action='dataset' )}" enctype="multipart/form-data" method="post">
             %if replace_dataset is not None:
             <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
             <div class="form-row">

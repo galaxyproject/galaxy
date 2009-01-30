@@ -1,7 +1,7 @@
 import shutil, StringIO, operator, urllib, gzip, tempfile
 from galaxy import util, datatypes
 from galaxy.web.base.controller import *
-from galaxy.web.controllers.dataset import add_file
+from galaxy.web.controllers.dataset import upload_dataset
 from galaxy.model.orm import *
 
 import logging
@@ -1049,12 +1049,14 @@ class Admin( BaseController ):
                                         err=None,
                                         msg=msg,
                                         messagetype=messagetype )
-
-
-    
     @web.expose
     @web.require_admin
-    def dataset( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, dbkey=None, **kwd ):
+    def dataset( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )        
+        replace_id = params.get( 'replace_id', None )
+        dbkey = params.get( 'dbkey', None )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
         else:
@@ -1063,119 +1065,20 @@ class Admin( BaseController ):
             folder = trans.app.model.LibraryFolder.get( folder_id )
             last_used_build = folder.genome_build
         data_files = []
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )        
-        replace_id = params.get( 'replace_id', None )
         try:
             replace_dataset = trans.app.model.LibraryDataset.get( replace_id )
         except:
             replace_dataset = None
-        
-        # Dataset upload
         if params.get( 'new_dataset_button', False ):
-            # Copied from upload tool action
-            data_file = params.get( 'file_data', '' )
-            url_paste = params.get( 'url_paste', '' )
-            server_dir = params.get( 'server_dir', 'None' )
-            if data_file == '' and url_paste == '' and server_dir in [ 'None', '' ]:
-                if trans.app.config.library_import_dir is not None:
-                    msg = 'Select a file, enter a URL or Text, or select a server directory.'
-                else:
-                    msg = 'Select a file, enter a URL or enter Text.'
-                trans.response.send_redirect( web.url_for( action='dataset',
-                                                           folder_id=folder_id,
-                                                           replace_id=replace_id,
-                                                           msg=util.sanitize_text( msg ),
-                                                           messagetype='done' ) )
-            space_to_tab = params.get( 'space_to_tab', False )
-            if space_to_tab and space_to_tab not in [ "None", None ]:
-                space_to_tab = True
-            roles = []
-            role_ids = params.get( 'roles', [] )
-            for role_id in util.listify( role_ids ):
-                roles.append( trans.app.model.Role.get( role_id ) )
-            temp_name = ""
-            data_list = []
-            created_ldda_ids = ''
-            if 'filename' in dir( data_file ):
-                file_name = data_file.filename
-                file_name = file_name.split( '\\' )[-1]
-                file_name = file_name.split( '/' )[-1]
-                created_ldda = add_file( trans,
-                                         data_file.file,
-                                         file_name,
-                                         extension,
-                                         dbkey,
-                                         last_used_build,
-                                         roles,
-                                         info="uploaded file",
-                                         space_to_tab=space_to_tab,
-                                         replace_dataset=replace_dataset,
-                                         folder_id=folder_id )
-                created_ldda_ids = str( created_ldda.id )
-            elif url_paste not in [ None, "" ]:
-                if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
-                    url_paste = url_paste.replace( '\r', '' ).split( '\n' )
-                    for line in url_paste:
-                        line = line.rstrip( '\r\n' )
-                        if line:
-                            created_ldda = add_file( trans,
-                                                     urllib.urlopen( line ),
-                                                     line,
-                                                     extension,
-                                                     dbkey,
-                                                     last_used_build,
-                                                     roles,
-                                                     info="uploaded url",
-                                                     space_to_tab=space_to_tab,
-                                                     replace_dataset=replace_dataset,
-                                                     folder_id=folder_id )
-                            created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
-                else:
-                    is_valid = False
-                    for line in url_paste:
-                        line = line.rstrip( '\r\n' )
-                        if line:
-                            is_valid = True
-                            break
-                    if is_valid:
-                        created_ldda = add_file( trans,
-                                                 StringIO.StringIO( url_paste ),
-                                                 'Pasted Entry',
-                                                 extension,
-                                                 dbkey,
-                                                 last_used_build,
-                                                 roles,
-                                                 info="pasted entry",
-                                                 space_to_tab=space_to_tab,
-                                                 replace_dataset=replace_dataset,
-                                                 folder_id=folder_id )
-                        created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
-            elif server_dir not in [ None, "", "None" ]:
-                full_dir = os.path.join( trans.app.config.library_import_dir, server_dir )
-                try:
-                    files = os.listdir( full_dir )
-                except:
-                    log.debug( "Unable to get file list for %s" % full_dir )
-                for file in files:
-                    full_file = os.path.join( full_dir, file )
-                    if not os.path.isfile( full_file ):
-                        continue
-                    created_ldda = add_file( trans,
-                                             open( full_file, 'rb' ),
-                                             file,
-                                             extension,
-                                             dbkey,
-                                             last_used_build,
-                                             roles,
-                                             info="imported file",
-                                             space_to_tab=space_to_tab,
-                                             replace_dataset=replace_dataset,
-                                             folder_id=folder_id )
-                    created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
+            # Dataset upload
+            created_ldda_ids = upload_dataset( trans,
+                                               controller='admin', 
+                                               last_used_build=last_used_build,
+                                               folder_id=folder_id, 
+                                               replace_dataset=replace_dataset, 
+                                               replace_id=replace_id, 
+                                               **kwd )
             if created_ldda_ids:
-                created_ldda_ids = created_ldda_ids.lstrip( ',' )
                 total_added = len( created_ldda_ids.split( ',' ) )
                 msg = "%i new datasets added to the library ( each is selected below ).  " % total_added
                 msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
@@ -1189,7 +1092,6 @@ class Admin( BaseController ):
                                                            created_ldda_ids=created_ldda_ids,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
-
         # No dataset(s) specified, display upload form
         elif not id or replace_dataset:
             # Send list of data formats to the form so the "extension" select list can be populated dynamically

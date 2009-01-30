@@ -178,7 +178,7 @@
     ${render_permission_form( data.dataset, data.name, h.url_for( action='edit' ), id_name, data.id, trans.user.all_roles() )}
 %elif trans.user:
     <div class="toolForm">
-        <div class="toolFormTitle">View permissions</div>
+        <div class="toolFormTitle">View Permissions</div>
         <div class="toolFormBody">
             <div class="form-row">
                 %if data.dataset.actions:

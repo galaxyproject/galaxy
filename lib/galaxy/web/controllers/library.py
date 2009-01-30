@@ -1,8 +1,8 @@
 from galaxy.web.base.controller import *
-from galaxy.web.controllers.dataset import add_file
+from galaxy.web.controllers.dataset import upload_dataset
 from galaxy.model.orm import *
 from galaxy.datatypes import sniff
-import logging, tempfile, zipfile, tarfile, os, sys, StringIO, shutil, urllib
+import logging, tempfile, zipfile, tarfile, os, sys
 
 if sys.version_info[:2] < ( 2, 6 ):
     zipfile.BadZipFile = zipfile.error
@@ -152,18 +152,24 @@ class Library( BaseController ):
         except: 
             msg = 'This dataset contains no content'
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
-    
     @web.expose
-    def add_dataset( self, trans, folder_id=None, replace_id = None, name = None, info = None, refer_id = None, **kwd ):
+    def dataset( self, trans, folder_id=None, replace_id=None, name=None, info=None, refer_id=None, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        dbkey = params.get( 'dbkey', '?' )
+        last_used_build = params.get( 'last_used_build', None )
         folder = replace_dataset = None
         if folder_id:
             folder = trans.app.model.LibraryFolder.get( folder_id )
+            if not last_used_build:
+                last_used_build = folder.genome_build
             permission_source = folder
         else:
             replace_dataset = trans.app.model.LibraryDataset.get( replace_id )
+            if not last_used_build:
+                last_used_build = replace_dataset.library_dataset_dataset_association.dataset.dbkey
             permission_source = replace_dataset
-        msg = ""
-        messagetype="done"
         if not folder and not replace_dataset:
             msg = "Invalid library target specifed (folder id: %s, Library Dataset: %s)" %( str( folder_id ), replace_id )
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
@@ -176,136 +182,30 @@ class Library( BaseController ):
                                                                     trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD,
                                                                     replace_dataset ) ):
             if 'new_dataset_button' in kwd:
-                params = util.Params( kwd )
-                #TODO: populate these vars better
-                dbkey = params.get( 'dbkey', '?' )
-                last_used_build = dbkey
-                extension = params.get( 'extension', 'auto' )
-                #### Copied from admin controller this should be unified
-                # Copied from upload tool action
-                data_file = params.get( 'file_data', '' )
-                url_paste = params.get( 'url_paste', '' )
-                server_dir = params.get( 'server_dir', 'None' )
-                if data_file == '' and url_paste == '' and server_dir in [ 'None', '' ]:
-                    if trans.app.config.library_import_dir is not None:
-                        msg = 'Select a file, enter a URL or Text, or select a server directory.'
-                    else:
-                        msg = 'Select a file, enter a URL or enter Text.'
-                    trans.response.send_redirect( web.url_for( action='add_dataset', folder_id=folder_id, replace_id=replace_id, msg=util.sanitize_text( msg ), messagetype='done' ) )
-                space_to_tab = params.get( 'space_to_tab', False )
-                if space_to_tab and space_to_tab not in [ "None", None ]:
-                    space_to_tab = True
-                roles = []
-                role_ids = params.get( 'roles', [] )
-                for role_id in util.listify( role_ids ):
-                    roles.append( trans.app.model.Role.get( role_id ) )
-                temp_name = ""
-                data_list = []
-                created_ldda_ids = ''
-                if 'filename' in dir( data_file ):
-                    file_name = data_file.filename
-                    file_name = file_name.split( '\\' )[-1]
-                    file_name = file_name.split( '/' )[-1]
-                    created_ldda = add_file( trans,
-                                             data_file.file,
-                                             file_name,
-                                             extension,
-                                             dbkey,
-                                             last_used_build,
-                                             roles,
-                                             info="uploaded file",
-                                             space_to_tab=space_to_tab,
-                                             replace_dataset=replace_dataset,
-                                             permission_source=permission_source,
-                                             folder_id=folder_id )
-                    created_ldda_ids = str( created_ldda.id )
-                elif url_paste not in [ None, "" ]:
-                    if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
-                        url_paste = url_paste.replace( '\r', '' ).split( '\n' )
-                        for line in url_paste:
-                            line = line.rstrip( '\r\n' )
-                            if line:
-                                created_ldda = add_file( trans,
-                                                         urllib.urlopen( line ),
-                                                         line,
-                                                         extension,
-                                                         dbkey,
-                                                         last_used_build,
-                                                         roles,
-                                                         info="uploaded url",
-                                                         space_to_tab=space_to_tab,
-                                                         replace_dataset=replace_dataset,
-                                                         permission_source=permission_source,
-                                                         folder_id=folder_id )
-                                created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
-                    else:
-                        is_valid = False
-                        for line in url_paste:
-                            line = line.rstrip( '\r\n' )
-                            if line:
-                                is_valid = True
-                                break
-                        if is_valid:
-                            created_ldda = add_file( trans,
-                                                     StringIO.StringIO( url_paste ),
-                                                     'Pasted Entry',
-                                                     extension,
-                                                     dbkey,
-                                                     last_used_build,
-                                                     roles,
-                                                     info="pasted entry",
-                                                     space_to_tab=space_to_tab,
-                                                     replace_dataset=replace_dataset,
-                                                     permission_source=permission_source,
-                                                     folder_id=folder_id )
-                            created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
-                elif server_dir not in [ None, "", "None" ]:
-                    full_dir = os.path.join( trans.app.config.library_import_dir, server_dir )
-                    try:
-                        files = os.listdir( full_dir )
-                    except:
-                        log.debug( "Unable to get file list for %s" % full_dir )
-                    for file in files:
-                        full_file = os.path.join( full_dir, file )
-                        if not os.path.isfile( full_file ):
-                            continue
-                        created_ldda = add_file( trans,
-                                                 open( full_file, 'rb' ),
-                                                 file,
-                                                 extension,
-                                                 dbkey,
-                                                 last_used_build,
-                                                 roles,
-                                                 info="imported file",
-                                                 space_to_tab=space_to_tab,
-                                                 replace_dataset=replace_dataset,
-                                                 permission_source=permission_source,
-                                                 folder_id=folder_id )
-                        created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
+                # Dataset upload
+                created_ldda_ids = upload_dataset( trans,
+                                                   controller='library', 
+                                                   last_used_build=last_used_build,
+                                                   folder_id=folder_id, 
+                                                   replace_dataset=replace_dataset, 
+                                                   replace_id=replace_id, 
+                                                   permission_source=permission_source, 
+                                                   **kwd )
                 if created_ldda_ids:
-                    created_ldda_ids = created_ldda_ids.lstrip( ',' )
-                    created_ldda_ids = created_ldda_ids.split(',')
+                    created_ldda_ids = created_ldda_ids.split( ',' )
                     msg = "%i new datasets added to the library.  " % len( created_ldda_ids )
                     return trans.fill_template( "/library/dataset_manage_list.mako", 
                                                 lddas=[ trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ) for ldda_id in created_ldda_ids ],
                                                 err=None,
                                                 msg=msg,
                                                 messagetype=messagetype )
-                    #total_added = len( created_ldda_ids.split( ',' ) )
-                    #msg = "%i new datasets added to the library ( each is selected below ).  " % total_added
-                    #msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
-                    #trans.response.send_redirect( web.url_for( action='browse',
-                    #                                           created_ldda_ids=created_ldda_ids, 
-                    #                                           msg=util.sanitize_text( msg ), 
-                    #                                           messagetype='done' ) )
                 else:
                     msg = "Upload failed"
-                    trans.response.send_redirect( web.url_for( action='browse',
-                                                               created_ldda_ids=created_ldda_ids,
-                                                               msg=util.sanitize_text( msg ),
+                    trans.response.send_redirect( web.url_for( action='browse', 
+                                                               created_ldda_ids=created_ldda_ids, 
+                                                               msg=util.sanitize_text( msg ), 
                                                                messagetype='error' ) )
             elif "add_dataset_from_history_button" in kwd:
-                
                 # See if the current history is empty
                 history = trans.get_history()
                 history.refresh()
@@ -352,15 +252,15 @@ class Library( BaseController ):
         def get_dbkey_options( last_used_build ):
             for dbkey, build_name in util.dbnames:
                 yield build_name, dbkey, ( dbkey==last_used_build )
-        
         return trans.fill_template( "/library/new_dataset.mako", 
-                                        folder=folder,
-                                        replace_dataset = replace_dataset,
-                                        file_formats=trans.app.datatypes_registry.upload_file_formats,
-                                        dbkeys = get_dbkey_options( '?' ),
-                                        err=None,
-                                        msg=msg,
-                                        messagetype=messagetype )
+                                    folder=folder,
+                                    replace_dataset=replace_dataset,
+                                    file_formats=trans.app.datatypes_registry.upload_file_formats,
+                                    dbkeys=get_dbkey_options( '?' ),
+                                    last_used_build=last_used_build,
+                                    err=None,
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def library_dataset( self, trans, id, name = None, info = None, refer_id = None, **kwd ):
         dataset = trans.app.model.LibraryDataset.get( id )
@@ -409,25 +309,32 @@ class Library( BaseController ):
 
     @web.expose
     def folder( self, trans, id, name = None, description = None, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        if name:
+            name = util.restore_text( name )
+        if description:
+            description = util.restore_text( description )
         folder = trans.app.model.LibraryFolder.get( id )
-        msg = ""
-        messagetype="done"
-        
         if not id or not folder:
             msg = "Invalid library folder specified, id: %s" %str( id )
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
-        
         if 'save' in kwd:
-            if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, folder ):
-                folder.name  = name
-                folder.description  = description
+            if trans.app.model.library_security_agent.allow_action( trans.user, 
+                                                                    trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, 
+                                                                    folder ):
+                folder.name = name
+                folder.description = description
                 trans.app.model.flush()
                 msg = 'Attributes updated for library folder %s' % folder.name
             else:
-                msg = "Permission Denied"
+                msg = "You are not authorized to modify this folder"
                 messagetype = "error"
         elif 'update_roles' in kwd:
-            if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, folder ):
+            if trans.app.model.library_security_agent.allow_action( trans.user, 
+                                                                    trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, 
+                                                                    folder ):
             # The user clicked the Save button on the 'Associate With Roles' form
                 permissions = {}
                 for k, v in trans.app.model.library_security_agent.permitted_actions.items():
@@ -437,7 +344,7 @@ class Library( BaseController ):
                 folder.refresh()
                 msg = 'Permissions updated for library folder %s' % folder.name
             else:
-                msg = "Permission Denied"
+                msg = "You are not authorized to manage permissions on this library"
                 messagetype = "error"
         elif 'create_new' in kwd:
             #create folder then return manage_folder template for new folder
@@ -454,15 +361,11 @@ class Library( BaseController ):
                                         err=None,
                                         msg=msg,
                                         messagetype=messagetype )
-
     @web.expose
     def edit_library( self, trans, id=None, **kwd ):
         raise Exception( 'Not yet implemented' )
-
-
     @web.expose
     def library_item_info( self, trans, do_action='display', id=None, library_item_id=None, library_item_type=None, **kwd ):
-        #dataset = trans.app.model.LibraryDataset.get( id )
         if id:
             item_info = trans.app.model.LibraryItemInfo.get( id )
         else:

@@ -51,7 +51,7 @@
                     %endfor
                     </div>
                     <div class="form-row">
-                        Click <a href="${h.url_for( controller='library', action='add_dataset', replace_id=dataset.id )}">here</a> to replace this dataset with a new version.
+                        Click <a href="${h.url_for( controller='library', action='dataset', replace_id=dataset.id )}">here</a> to replace this dataset with a new version.
                     </div>
                     <div style="clear: both"></div>
                     

@@ -79,7 +79,7 @@
     </div>
 </div>
 <p/>
-Click <a href="${h.url_for( controller='library', action='add_dataset', folder_id=folder.id )}">here</a> to add a dataset.
+Click <a href="${h.url_for( controller='library', action='dataset', folder_id=folder.id )}">here</a> to add a dataset.
 <p/> 
 %endif
 
