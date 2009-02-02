@@ -45,6 +45,19 @@ body
     font-weight: bold;
 }
 
+#messagebox
+{
+    position:absolute; 
+    top:33px; 
+    left:0; 
+    width:100%; 
+    height:24px !important;
+    overflow: hidden; 
+    border-bottom: solid #999 1px;
+    font-size: 90%;
+}
+
+
 #left, #left-border, #center, #right-border, #right
 {
     position: absolute; 
@@ -118,35 +131,9 @@ body
     right: 0px; 
     z-index: 200;
 }
-td.panel-header
-{
-    background: #f5f5f5;
-    background-image: url(panel_header_bg.png);
-    background-position: top center;
-    background-repeat: repeat-x;
-    padding: 0;
-    border-bottom: solid #999 1px;
-}
-div.panel-header
-{
-    margin: 0;
-    padding: 4px;
-    padding-right: 10px;
-    padding-left: 10px;
-    color: #333;
-    font-weight: bold;
-}
-
-table.column-layout
-{
-    position: absolute; 
-    width: 100%; 
-    height: 100%;
-}
 
 .unified-panel-header {
     height: 2em;
-    overflow: hidden;
     z-index: 1000;
     background: #cccccc;
     background-image: url(panel_header_bg.png);
@@ -159,19 +146,21 @@ table.column-layout
     padding-left: 10px;
     color: #333;
     font-weight: bold;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
-
+  
 .unified-panel-header-inner {
     padding-top: 0.45em;
 }
-
+  
 .menu-bg {
     background: #C1C9E5 url(menu_bg.png) top repeat-x;
 }
     
 div.unified-panel-body {
     position: absolute;
-    z-index: 1;
     top: 2em;
     bottom: 0;
     width: 100%;
@@ -197,50 +186,14 @@ div.unified-panel-body {
     color: black;
     background: #aaaaaa;
 }
+
 .panel-header-button:active {
     color: white;
     background: #aaaaaa;
 }
 
-div.popupmenu {
-    display: none;
-    background: #eee;
-    position: fixed;
-    z-index: 20000;
-    background: #cccccc;
-    background-image: url(panel_header_bg.png);
-    background-position: top center;
-    background-repeat: repeat-x;
-    border: solid #999 1px;
-    padding-top: 3px;
-    padding-bottom: 3px;
-}
-
-div.popupmenu-top {
-    padding-bottom: 3px;
-}
-div.popupmenu-top-inner {
-    height: 10px;
-    width: 20px;
-    margin-top: -13px;
-    margin-left: auto;
-    margin-right: 20px;
-    background: url(popupmenu_callout_top.png);
-}
-
-div.popupmenu-item {
-    padding: 3px;
-    padding-left: 10px;
-    padding-right: 10px;
-    cursor: pointer;
-}
-
-div.popupmenu-item:hover {
-    background: #AAAAEE;
-}
-
 #overlay {
-    position: absolute;
+    position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     z-index: 20000;
 }
@@ -271,6 +224,34 @@ div.popupmenu-item:hover {
     padding: 5px;
 }
 
-.dialog-box body {
-    overflow: scroll;
+
+.panel-error-message, .panel-warning-message, .panel-done-message, .panel-info-message
+{
+    height: 24px;
+    line-height: 24px;
+    color: #303030;
+    padding: 0px;
+    padding-left: 26px;
+    background-color: #FFCCCC;
+    background-image: url(error_small.png);
+    background-repeat: no-repeat;
+    background-position: 6px 50%;
+}
+
+.panel-warning-message 
+{
+    background-image: url(warn_small.png);
+    background-color: #FFFFCC;
+}
+
+.panel-done-message 
+{
+    background-image: url(done_small.png);
+    background-color: #CCFFCC;
+}
+
+.panel-info-message 
+{
+    background-image: url(info_small.png);
+    background-color: #CCCCFF;
 }

@@ -25,6 +25,22 @@ def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
     os.close(fd)
     return temp_name
 
+def check_newlines( fname, bytes_to_read=52428800 ):
+    """
+    Determines if there are any non-POSIX newlines in the first
+    number_of_bytes (by default, 50MB) of the file.
+    """
+    CHUNK_SIZE = 2 ** 20
+    f = open( fname, 'r' )
+    for chunk in f.read( CHUNK_SIZE ):
+        if f.tell() > bytes_to_read:
+            break
+        if chunk.count( '\r' ):
+            f.close()
+            return True
+    f.close()
+    return False
+
 def convert_newlines( fname ):
     """
     Converts in place a file from universal line endings 

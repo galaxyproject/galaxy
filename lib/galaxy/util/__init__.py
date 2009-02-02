@@ -85,6 +85,7 @@ mapped_chars = { '>' :'__gt__',
                  ']' :'__cb__',
                  '{' :'__oc__',
                  '}' :'__cc__',
+                 '@' : '__at__'
                  }
 
 def restore_text(text):
@@ -123,7 +124,7 @@ class Params:
     
     Operates on string or list values only (HTTP parameters).
     
-    >>> values = { 'status':'on', 'symbols':[  'alpha', '<>', '$rm&#@!' ]  }
+    >>> values = { 'status':'on', 'symbols':[  'alpha', '<>', '$rm&#!' ]  }
     >>> par = Params(values)
     >>> par.status
     'on'
@@ -132,9 +133,9 @@ class Params:
     >>> par.get('price', 0)
     0
     >>> par.symbols            # replaces unknown symbols with X
-    ['alpha', '__lt____gt__', 'XrmXXX!']
+    ['alpha', '__lt____gt__', 'XrmXX!']
     >>> par.flatten()          # flattening to a list
-    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmXXX!')]
+    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmXX!')]
     """
     
     # HACK: Need top prevent sanitizing certain parameter types. The 
@@ -263,6 +264,20 @@ def string_as_bool( string ):
         return True
     else:
         return False
+
+def listify( item ):
+    """
+    Make a single item a single item list, or return a list if passed a
+    list.  Passing a None returns an empty list.
+    """
+    if item is None:
+        return []
+    elif isinstance( item, list ):
+        return item
+    elif isinstance( item, str ) and item.count( ',' ):
+        return item.split( ',' )
+    else:
+        return [ item ]
 
 def commaify(amount):
     orig = amount

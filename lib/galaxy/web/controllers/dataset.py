@@ -1,11 +1,12 @@
 from galaxy.web.base.controller import *
 
-import logging, os, sets, string, shutil
+import logging, os, sets, string, shutil, tempfile, StringIO, urllib
 import re, socket
 import mimetypes
 
 from galaxy import util, datatypes, jobs, web, util, model
-
+from galaxy.datatypes import sniff
+from galaxy.security import RBACAgent
 from cgi import escape, FieldStorage
 
 import smtplib
@@ -104,31 +105,30 @@ class DatasetInterface( BaseController ):
     @web.expose
     def display(self, trans, dataset_id=None, filename=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
-        if filename is None or filename.lower() == "index":
-            try:
-                data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
-                if data:
-                    mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-                    trans.response.set_content_type(mime)
-                    trans.log_event( "Display dataset id: %s" % str(dataset_id) )
-                    try:
-                        return open( data.file_name )
-                    except: 
-                        return "This item contains no content"
-            except:
-                pass
-            return "Invalid dataset specified"
-        else:
-            #display files from directory here
-            try:
-                file_path = os.path.join(trans.app.model.HistoryDatasetAssociation.get( dataset_id ).extra_files_path, filename)
-                mime, encoding = mimetypes.guess_type(file_path)
-                if mime is None:
-                    mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
+        data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+        if not data:
+            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
+        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
+            if filename is None or filename.lower() == "index":
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
-                return open(file_path)
-            except:
-                raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % (filename) )
+                trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
+                try:
+                    return open( data.file_name )
+                except:
+                    raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
+            else:
+                file_path = os.path.join( data.extra_files_path, filename )
+                mime, encoding = mimetypes.guess_type( file_path )
+                if mime is None:
+                    mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
+                trans.response.set_content_type( mime )
+                try:
+                    return open( file_path )
+                except:
+                    raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
+        else:
+            return trans.show_error_message( "You are not allowed to access this dataset" )
     
     def _undelete( self, trans, id ):
         history = trans.get_history()
@@ -156,7 +156,6 @@ class DatasetInterface( BaseController ):
         if self._undelete( trans, id ):
             return "OK"
         raise "Error undeleting"
-        
     
     @web.expose
     def copy_datasets( self, trans, source_dataset_ids = "", target_history_ids = "", new_history_name="", do_copy = False ):
@@ -219,4 +218,224 @@ class DatasetInterface( BaseController ):
         if user:
            target_histories = user.histories 
         
-        return trans.fill_template( "/dataset/copy_view.mako", source_dataset_ids = source_dataset_ids, target_history_ids = target_history_ids, source_datasets = source_datasets, target_histories = target_histories, new_history_name = new_history_name, done_msg = done_msg, error_msg = error_msg )
+        return trans.fill_template( "/dataset/copy_view.mako",
+                                    source_dataset_ids = source_dataset_ids,
+                                    target_history_ids = target_history_ids,
+                                    source_datasets = source_datasets,
+                                    target_histories = target_histories,
+                                    new_history_name = new_history_name,
+                                    done_msg = done_msg,
+                                    error_msg = error_msg )
+
+def add_file( trans, file_obj, name, extension, dbkey, last_used_build, roles, info='no info', 
+              space_to_tab=False, replace_dataset=None, permission_source=None, folder_id=None ):
+    def check_gzip( temp_name ):
+        # Utility method to check gzipped uploads
+        temp = open( temp_name, "U" )
+        magic_check = temp.read( 2 )
+        temp.close()
+        if magic_check != util.gzip_magic:
+            return ( False, False )
+        CHUNK_SIZE = 2**15 # 32Kb
+        gzipped_file = gzip.GzipFile( temp_name )
+        chunk = gzipped_file.read( CHUNK_SIZE )
+        gzipped_file.close()
+        return ( True, True )
+    data_type = None
+    temp_name = sniff.stream_to_file( file_obj )
+    # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress on the fly.
+    is_gzipped, is_valid = check_gzip( temp_name )
+    if is_gzipped and not is_valid:
+        raise BadFileException( "you attempted to upload an inappropriate file." )
+    elif is_gzipped and is_valid:
+        # We need to uncompress the temp_name file
+        CHUNK_SIZE = 2**20 # 1Mb   
+        fd, uncompressed = tempfile.mkstemp()   
+        gzipped_file = gzip.GzipFile( temp_name )
+        while 1:
+            try:
+                chunk = gzipped_file.read( CHUNK_SIZE )
+            except IOError:
+                os.close( fd )
+                os.remove( uncompressed )
+                raise BadFileException( 'problem uncompressing gzipped data.' )
+            if not chunk:
+                break
+            os.write( fd, chunk )
+        os.close( fd )
+        gzipped_file.close()
+        # Replace the gzipped file with the decompressed file
+        shutil.move( uncompressed, temp_name )
+        name = name.rstrip( '.gz' )
+        data_type = 'gzip'
+    if space_to_tab:
+        line_count = sniff.convert_newlines_sep2tabs( temp_name )
+    elif os.stat( temp_name ).st_size < 262144000: # 250MB
+        line_count = sniff.convert_newlines( temp_name )
+    else:
+        if sniff.check_newlines( temp_name ):
+            line_count = sniff.convert_newlines( temp_name )
+        else:
+            line_count = None
+    if extension == 'auto':
+        data_type = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
+    else:
+        data_type = extension
+    if replace_dataset:
+        library_dataset = replace_dataset
+    else:
+        library_dataset = trans.app.model.LibraryDataset( name=name, info=info, extension=data_type, dbkey=dbkey )
+        library_dataset.flush()
+        if permission_source:
+            trans.app.security_agent.copy_library_permissions( permission_source, library_dataset, user=trans.get_user() )
+    dataset = trans.app.model.LibraryDatasetDatasetAssociation( name=name, 
+                                                               info=info, 
+                                                               extension=data_type, 
+                                                               dbkey=dbkey, 
+                                                               library_dataset = library_dataset,
+                                                               create_dataset=True )
+    dataset.flush()
+    if permission_source:
+        trans.app.security_agent.copy_library_permissions( permission_source, dataset, user=trans.get_user() )
+    if not replace_dataset:
+        folder = trans.app.model.LibraryFolder.get( folder_id )
+        folder.add_dataset( library_dataset, genome_build=last_used_build )
+    library_dataset.library_dataset_dataset_association_id = dataset.id
+    library_dataset.flush()
+    if roles:
+        for role in roles:
+            dp = trans.app.model.DatasetPermissions( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, role )
+            dp.flush()
+    shutil.move( temp_name, dataset.dataset.file_name )
+    dataset.dataset.state = dataset.dataset.states.OK
+    dataset.init_meta()
+    if line_count is not None:
+        try:
+            dataset.set_peek( line_count=line_count )
+        except:
+            dataset.set_peek()
+    else:
+        dataset.set_peek()
+    dataset.set_size()
+    if dataset.missing_meta():
+        dataset.datatype.set_meta( dataset )
+    trans.app.model.flush()
+    return dataset
+
+def upload_dataset( trans, controller=None, last_used_build='?', folder_id=None, replace_dataset=None, replace_id=None, permission_source=None, **kwd ):
+    # This method is called from both the admin and library controllers.  Since it is used
+    # for adding datasets to libraries, it differs slightly from the method in the upload tool.
+    # We should merge the 2 methods, if possible, when time permits.
+    params = util.Params( kwd )
+    msg = util.restore_text( params.get( 'msg', ''  ) )
+    messagetype = params.get( 'messagetype', 'done' )
+    dbkey = params.get( 'dbkey', '?' )
+    extension = params.get( 'extension', 'auto' )
+    data_file = params.get( 'file_data', '' )
+    url_paste = params.get( 'url_paste', '' )
+    server_dir = params.get( 'server_dir', 'None' )
+    if data_file == '' and url_paste == '' and server_dir in [ 'None', '' ]:
+        if trans.app.config.library_import_dir is not None:
+            msg = 'Select a file, enter a URL or Text, or select a server directory.'
+        else:
+            msg = 'Select a file, enter a URL or enter Text.'
+        trans.response.send_redirect( web.url_for( controller=controller,
+                                                   action='dataset',
+                                                   folder_id=folder_id,
+                                                   replace_id=replace_id, 
+                                                   msg=util.sanitize_text( msg ),
+                                                   messagetype='done' ) )
+    space_to_tab = params.get( 'space_to_tab', False )
+    if space_to_tab and space_to_tab not in [ "None", None ]:
+        space_to_tab = True
+    roles = []
+    for role_id in util.listify( params.get( 'roles', [] ) ):
+        roles.append( trans.app.model.Role.get( role_id ) )
+    temp_name = ""
+    data_list = []
+    created_ldda_ids = ''
+    if 'filename' in dir( data_file ):
+        file_name = data_file.filename
+        file_name = file_name.split( '\\' )[-1]
+        file_name = file_name.split( '/' )[-1]
+        created_ldda = add_file( trans,
+                                 data_file.file,
+                                 file_name,
+                                 extension,
+                                 dbkey,
+                                 last_used_build,
+                                 roles,
+                                 info="uploaded file",
+                                 space_to_tab=space_to_tab,
+                                 replace_dataset=replace_dataset,
+                                 permission_source=permission_source,
+                                 folder_id=folder_id )
+        created_ldda_ids = str( created_ldda.id )
+    elif url_paste not in [ None, "" ]:
+        if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
+            url_paste = url_paste.replace( '\r', '' ).split( '\n' )
+            for line in url_paste:
+                line = line.rstrip( '\r\n' )
+                if line:
+                    created_ldda = add_file( trans,
+                                             urllib.urlopen( line ),
+                                             line,
+                                             extension,
+                                             dbkey,
+                                             last_used_build,
+                                             roles,
+                                             info="uploaded url",
+                                             space_to_tab=space_to_tab,
+                                             replace_dataset=replace_dataset,
+                                             permission_source=permission_source,
+                                             folder_id=folder_id )
+                    created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
+        else:
+            is_valid = False
+            for line in url_paste:
+                line = line.rstrip( '\r\n' )
+                if line:
+                    is_valid = True
+                    break
+            if is_valid:
+                created_ldda = add_file( trans,
+                                         StringIO.StringIO( url_paste ),
+                                         'Pasted Entry',
+                                         extension,
+                                         dbkey,
+                                         last_used_build,
+                                         roles,
+                                         info="pasted entry",
+                                         space_to_tab=space_to_tab,
+                                         replace_dataset=replace_dataset,
+                                         permission_source=permission_source,
+                                         folder_id=folder_id )
+                created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
+    elif server_dir not in [ None, "", "None" ]:
+        full_dir = os.path.join( trans.app.config.library_import_dir, server_dir )
+        try:
+            files = os.listdir( full_dir )
+        except:
+            log.debug( "Unable to get file list for %s" % full_dir )
+        for file in files:
+            full_file = os.path.join( full_dir, file )
+            if not os.path.isfile( full_file ):
+                continue
+            created_ldda = add_file( trans,
+                                     open( full_file, 'rb' ),
+                                     file,
+                                     extension,
+                                     dbkey,
+                                     last_used_build,
+                                     roles,
+                                     info="imported file",
+                                     space_to_tab=space_to_tab,
+                                     replace_dataset=replace_dataset,
+                                     permission_source=permission_source,
+                                     folder_id=folder_id )
+            created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
+    if created_ldda_ids:
+        created_ldda_ids = created_ldda_ids.lstrip( ',' )
+        return created_ldda_ids
+    else:
+        return ''

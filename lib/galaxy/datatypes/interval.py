@@ -457,7 +457,7 @@ class Gff( Tabular ):
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app ( 'elegans', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
+        self.add_display_app ( 'c_elegans', 'display in Wormbase', 'as_gbrowse_display_file', 'gbrowse_links' )
 
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
@@ -875,7 +875,7 @@ class GBrowseTrack ( Tabular ):
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app ('elegans', 'display in GBrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
+        self.add_display_app ('c_elegans', 'display in Wormbase', 'as_gbrowse_display_file', 'gbrowse_links' )
     
     def set_readonly_meta( self, dataset, skip=1, **kwd ):
         """Resets the values of readonly metadata elements."""

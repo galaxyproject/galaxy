@@ -139,10 +139,10 @@ class SNPMatrix(Rgenetics):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
-    def sniff( self, filename ):
-        """
-        """
-        return True
+    #def sniff( self, filename ):
+    #    """
+    #    """
+    #    return True
 
 class Lped(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
