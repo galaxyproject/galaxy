@@ -368,143 +368,281 @@ function _processAGene (_geneID, nwk_file, ps_file)
 
 BranchLengthsMF = """
 VERBOSITY_LEVEL            = -1;
+
 fscanf                  (PROMPT_FOR_FILE, "Lines", inLines);
+
+
 
 _linesIn = Columns (inLines);
 
+
+
 /*---------------------------------------------------------*/
 
+
+
 _currentGene   = 1; 
+
 _currentState = 0;
+
 geneSeqs      = "";
+
 geneSeqs      * 128;
 
+
+
 for (l=0; l<_linesIn; l=l+1)
+
 {
+
     if (Abs(inLines[l]) == 0)
+
     {
+
         if (_currentState == 1)
+
         {
+
             geneSeqs      * 0;
+
             DataSet       ds            = ReadFromString (geneSeqs);
+
             _processAGene (_currentGene);
-            geneSeqs * 128;
+
+             geneSeqs * 128;
+
             _currentGene = _currentGene + 1;
+
         }
+
     }
+
     else
+
     {
+
         if (_currentState == 0)
+
         {
+
             _currentState = 1;
+
         }
+
         geneSeqs * inLines[l];
+
         geneSeqs * "\\n";
+
     }
+
 }
 
+
+
 if (_currentState == 1)
+
 {
+
     geneSeqs      * 0;
+
     if (Abs(geneSeqs))
+
     {
+
         DataSet       ds            = ReadFromString (geneSeqs);
+
         _processAGene (_currentGene);
+
     }
+
 }
+
+
 
 fprintf (resultFile,CLOSE_FILE);
 
+
+
 /*---------------------------------------------------------*/
 
+
+
 function _processAGene (_geneID)
+
 {
+
     DataSetFilter             filteredData = CreateFilter (ds,1);
+
     if (_currentGene == 1)
+
     {
+
         SelectTemplateModel        (filteredData);
+
         
-        SetDialogPrompt         ("Tree file");
+
+        SetDialogPrompt           ("Tree file");
+
         fscanf                    (PROMPT_FOR_FILE, "Tree",  givenTree);
+
         fscanf                    (stdin, "String", resultFile);
+
         
+
         /* do sequence to branch map */
+
         
+
         validNames = {};
+
         taxonNameMap = {};
+
         
+
         for (k=0; k<TipCount(givenTree); k=k+1)
+
         {
+
             validNames[TipName(givenTree,k)&&1] = 1;
+
         }
+
         
+
         for (k=0; k<BranchCount(givenTree); k=k+1)
+
         {
+
             thisName = BranchName(givenTree,k);
+
             taxonNameMap[thisName&&1] = thisName;
+
         }
+
         
+
         storeValidNames = validNames;
+
         fprintf         (resultFile,CLEAR_FILE,KEEP_OPEN,"Block\\tBranch\\tLength\\tLowerBound\\tUpperBound\\n"); 
+
     }
+
     else
+
     {
+
+        HarvestFrequencies (vectorOfFrequencies, filteredData, 1,1,1);
+
         validNames = storeValidNames;
+
     }
+
     
+
     for (k=0; k<ds.species; k=k+1)
+
     {
+
         GetString (thisName, ds,k);
+
         shortName = (thisName^{{"\\\\..+",""}})&&1;
+
         if (validNames[shortName])
+
         {
+
             taxonNameMap[shortName] = thisName;
+
             validNames - (shortName);
+
             SetParameter (ds,k,shortName);
+
         }
+
         else
+
         {
+
             fprintf         (resultFile,"ERROR:", thisName, " could not be matched to any of the leaves in tree ", givenTree,"\\n"); 
+
             return 0;
+
         }
+
     }
+
     
+
     /* */
+
     
+
     LikelihoodFunction lf = (filteredData,givenTree);
-    
+
     Optimize                 (res,lf);
+
     
+
     timer = Time(0)-timer;
+
     
+
     branchNames   = BranchName   (givenTree,-1);
+
     branchLengths = BranchLength (givenTree,-1);
+
     
+
     
+
     for (k=0; k<Columns(branchNames)-1; k=k+1)
+
     {
+
         COVARIANCE_PARAMETER = "givenTree."+branchNames[k]+".t";
+
         COVARIANCE_PRECISION = 0.95;
+
         CovarianceMatrix (cmx,lf);
+
         if (k==0)
+
         {
+
             /* compute a scaling factor */
+
             ExecuteCommands ("givenTree."+branchNames[0]+".t=1");
+
             scaleFactor = BranchLength (givenTree,0);
+
             ExecuteCommands ("givenTree."+branchNames[0]+".t="+cmx[0][1]);
+
         }
+
         fprintf (resultFile,_geneID,"\\t",taxonNameMap[branchNames[k]&&1],"\\t",branchLengths[k],"\\t",scaleFactor*cmx[0][0],"\\t",scaleFactor*cmx[0][2],"\\n");
+
     }
+
     
+
     ttl = (branchLengths*(Transpose(branchLengths["1"])))[0];
+
     global treeScaler = 1;
+
     ReplicateConstraint ("this1.?.t:=treeScaler*this2.?.t__",givenTree,givenTree);
+
     COVARIANCE_PARAMETER = "treeScaler";
+
     COVARIANCE_PRECISION = 0.95;
+
     CovarianceMatrix (cmx,lf);
+
     fprintf (resultFile,_geneID,"\\tTotal Tree\\t",ttl,"\\t",ttl*cmx[0][0],"\\t",ttl*cmx[0][2],"\\n");
+
     ClearConstraints (givenTree);
+
     return 0;
+
 }
 """
 
