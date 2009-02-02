@@ -2,6 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.web.controllers.dataset import upload_dataset
 from galaxy.model.orm import *
 from galaxy.datatypes import sniff
+from galaxy import util
 import logging, tempfile, zipfile, tarfile, os, sys
 
 if sys.version_info[:2] < ( 2, 6 ):
@@ -27,8 +28,7 @@ class Library( BaseController ):
         if not import_ids:
             msg = "You must select at least one dataset"
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
-        if not isinstance( import_ids, list ):
-            import_ids = [ import_ids ]
+        import_ids = util.listify( import_ids )
         p = util.Params( kwd )
         if not p.do_action:
             msg = "You must select an action to perform on selected datasets"
@@ -168,19 +168,19 @@ class Library( BaseController ):
         else:
             replace_dataset = trans.app.model.LibraryDataset.get( replace_id )
             if not last_used_build:
-                last_used_build = replace_dataset.library_dataset_dataset_association.dataset.dbkey
+                last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
             permission_source = replace_dataset
         if not folder and not replace_dataset:
             msg = "Invalid library target specifed (folder id: %s, Library Dataset: %s)" %( str( folder_id ), replace_id )
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
         if ( folder and \
-             trans.app.model.library_security_agent.allow_action( trans.user,
-                                                                  trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD,
-                                                                  folder ) ) or \
+             trans.app.security_agent.allow_action( trans.user,
+                                                    trans.app.security_agent.permitted_actions.LIBRARY_ADD,
+                                                    library_item=folder ) ) or \
              ( replace_dataset and \
-               trans.app.model.library_security_agent.allow_action( trans.user,
-                                                                    trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD,
-                                                                    replace_dataset ) ):
+               trans.app.security_agent.allow_action( trans.user,
+                                                      trans.app.security_agent.permitted_actions.LIBRARY_ADD,
+                                                      library_item=replace_dataset ) ):
             if 'new_dataset_button' in kwd:
                 # Dataset upload
                 created_ldda_ids = upload_dataset( trans,
@@ -228,15 +228,20 @@ class Library( BaseController ):
                                 if folder:
                                     folder.add_dataset( data )
                                 elif replace_dataset:
-                                    #if we are replacing versions and we recieve a list, we add all the datasets, and set the last one in the list as current
-                                    if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, replace_dataset ):
+                                    # If we are replacing versions and we receive a list,
+                                    # we add all the datasets and set the last one in the list as current
+                                    if trans.app.security_agent.allow_action( trans.user, 
+                                                                              trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, 
+                                                                              library_item=replace_dataset ):
                                         replace_dataset.set_library_dataset_dataset_association( data )
                                     else:
                                         data.library_dataset = replace_dataset
                                 data.flush()
                             else:
                                 msg = "The requested dataset id %s is invalid" % str( data_id )
-                                return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+                                return trans.response.send_redirect( web.url_for( action='library_browser', 
+                                                                                  msg=util.sanitize_text( msg ), 
+                                                                                  messagetype='error' ) )
                         if dataset_names:
                             if folder:
                                 msg = "Added the following datasets to the library folder: %s" % ( ", ".join( dataset_names ) )
@@ -276,7 +281,9 @@ class Library( BaseController ):
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
         
         if 'save' in kwd:
-            if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, dataset ):
+            if trans.app.security_agent.allow_action( trans.user,
+                                                      trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
+                                                      library_item=dataset ):
                 dataset.name  = name
                 dataset.info  = info
                 target_lda = trans.app.model.LibraryDatasetDatasetAssociation.get( kwd.get( 'set_lda_id' ) )
@@ -287,28 +294,28 @@ class Library( BaseController ):
                 msg = "Permission Denied"
                 messagetype = "error"
         elif 'update_roles' in kwd:
-            if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, dataset ):
+            if trans.app.security_agent.allow_action( trans.user,
+                                                      trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
+                                                      library_item=dataset ):
             # The user clicked the Save button on the 'Associate With Roles' form
                 permissions = {}
-                for k, v in trans.app.model.library_security_agent.permitted_actions.items():
+                for k, v in trans.app.model.Library.permitted_actions.items():
                     in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                    permissions[ trans.app.model.library_security_agent.get_action( v.action ) ] = in_roles
-                trans.app.model.library_security_agent.set_all_permissions( dataset, permissions )
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                trans.app.security_agent.set_all_library_permissions( dataset, permissions )
                 dataset.refresh()
                 msg = 'Permissions updated for library dataset %s' % dataset.name
             else:
                 msg = "Permission Denied"
                 messagetype = "error"
-        
         return trans.fill_template( "/library/library_dataset.mako", 
                                         dataset=dataset,
                                         refered_lda = refered_lda,
                                         err=None,
                                         msg=msg,
                                         messagetype=messagetype )
-
     @web.expose
-    def folder( self, trans, id, name = None, description = None, **kwd ):
+    def folder( self, trans, folder_id, name=None, description=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -316,14 +323,14 @@ class Library( BaseController ):
             name = util.restore_text( name )
         if description:
             description = util.restore_text( description )
-        folder = trans.app.model.LibraryFolder.get( id )
-        if not id or not folder:
+        folder = trans.app.model.LibraryFolder.get( int( folder_id ) )
+        if not folder:
             msg = "Invalid library folder specified, id: %s" %str( id )
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
         if 'save' in kwd:
-            if trans.app.model.library_security_agent.allow_action( trans.user, 
-                                                                    trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, 
-                                                                    folder ):
+            if trans.app.security_agent.allow_action( trans.user, 
+                                                      trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, 
+                                                      library_item=folder ):
                 folder.name = name
                 folder.description = description
                 trans.app.model.flush()
@@ -332,28 +339,28 @@ class Library( BaseController ):
                 msg = "You are not authorized to modify this folder"
                 messagetype = "error"
         elif 'update_roles' in kwd:
-            if trans.app.model.library_security_agent.allow_action( trans.user, 
-                                                                    trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, 
-                                                                    folder ):
             # The user clicked the Save button on the 'Associate With Roles' form
+            if trans.app.security_agent.allow_action( trans.user, 
+                                                      trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, 
+                                                      library_item=folder ):
                 permissions = {}
-                for k, v in trans.app.model.library_security_agent.permitted_actions.items():
+                for k, v in trans.app.model.Library.permitted_actions.items():
                     in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                    permissions[ trans.app.model.library_security_agent.get_action( v.action ) ] = in_roles
-                trans.app.model.library_security_agent.set_all_permissions( folder, permissions )
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                trans.app.security_agent.set_all_library_permissions( folder, permissions )
                 folder.refresh()
                 msg = 'Permissions updated for library folder %s' % folder.name
             else:
                 msg = "You are not authorized to manage permissions on this library"
                 messagetype = "error"
         elif 'create_new' in kwd:
-            #create folder then return manage_folder template for new folder
-            #new folders default to having the same permissions as their parent folder
+            # Create the new folder, then return manage_folder template for new folder.
+            # New folders default to having the same permissions as their parent folder
             new_folder = trans.app.model.LibraryFolder( name = name, description = description )
             new_folder.flush()
             folder.add_folder( new_folder )
             new_folder.flush()
-            trans.app.model.library_security_agent.copy_permissions( folder, new_folder, user = trans.get_user() )
+            trans.app.security_agent.copy_library_permissions( folder, new_folder, user = trans.get_user() )
             folder = new_folder
             msg = "New folder (%s) created." % ( new_folder.name )
         return trans.fill_template( "/library/manage_folder.mako", 
@@ -382,14 +389,11 @@ class Library( BaseController ):
         else:
             library_item_type == None
             library_item = None
-        
         msg = ""
         messagetype="done"
-        
         if not item_info and not library_item_type:
             msg = "Unable to perform requested action (%s)." % do_action
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
-        
         if do_action == 'display':
             return trans.fill_template( "/library/display_info.mako", 
                                         item_info=item_info,
@@ -398,7 +402,9 @@ class Library( BaseController ):
                                         messagetype=messagetype )
         elif do_action == 'new_info':
             if library_item:
-                if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, library_item ):
+                if trans.app.security_agent.allow_action( trans.user,
+                                                          trans.app.security_agent.permitted_actions.LIBRARY_ADD,
+                                                          library_item=library_item ):
                     if 'create_new_info_button' in kwd:
                         user = trans.get_user()
                         #create new info then send back to make more
@@ -408,9 +414,7 @@ class Library( BaseController ):
                         library_item_info.library_item_info_template = library_item_info_template
                         library_item_info.user = user
                         library_item_info.flush()
-                        
-                        trans.app.model.library_security_agent.copy_permissions( library_item_info_template, library_item_info, user = user )
-                        
+                        trans.app.security_agent.copy_permissions( library_item_info_template, library_item_info, user = user )
                         for template_element in library_item_info_template.elements:
                             info_element_value = kwd.get( "info_element_%s_%s" % ( library_item_info_template.id, template_element.id), None )
                             info_element = trans.app.model.LibraryItemInfoElement()
@@ -419,7 +423,7 @@ class Library( BaseController ):
                             info_element.library_item_info = library_item_info
                             info_element.flush()
                         info_association_class = None
-                        for item_class, permission_class, info_association_class in trans.app.model.library_security_agent.library_item_assocs:
+                        for item_class, permission_class, info_association_class in trans.app.security_agent.library_item_assocs:
                             if isinstance( library_item, item_class ):
                                 break
                         if info_association_class:
@@ -430,8 +434,7 @@ class Library( BaseController ):
                             library_item_info_association.flush()
                         else:
                             raise 'Invalid class (%s) specified for library_item (%s)' % ( library_item.__class__, library_item.__class__.__name__ )
-                        #don't need to set permissions on the association object?
-                        
+                        # TODO: make sure we don't need to set permissions on the association object.
                         msg = 'Library Item Info has been save, you can now fill out more templates.'
                     return trans.fill_template( "/library/new_info.mako", 
                                             library_item=library_item,
@@ -448,84 +451,3 @@ class Library( BaseController ):
                                         err=None,
                                         msg="Unable to perform requested action (%s)." % do_action,
                                         messagetype=messagetype )
-
-
-
-#methods used when adding files, copied from upload...
-    def check_gzip( self, temp_name ):
-        temp = open( temp_name, "U" )
-        magic_check = temp.read( 2 )
-        temp.close()
-        if magic_check != util.gzip_magic:
-            return ( False, False )
-        CHUNK_SIZE = 2**15 # 32Kb
-        gzipped_file = gzip.GzipFile( temp_name )
-        chunk = gzipped_file.read( CHUNK_SIZE )
-        gzipped_file.close()
-        if self.check_html( temp_name, chunk=chunk ) or self.check_binary( temp_name, chunk=chunk ):
-            return( True, False )
-        return ( True, True )
-
-    def check_zip( self, temp_name ):
-        if not zipfile.is_zipfile( temp_name ):
-            return ( False, False, None )
-        zip_file = zipfile.ZipFile( temp_name, "r" )
-        # Make sure the archive consists of valid files.  The current rules are:
-        # 1. Archives can only include .ab1, .scf or .txt files
-        # 2. All file extensions within an archive must be the same
-        name = zip_file.namelist()[0]
-        test_ext = name.split( "." )[1].strip().lower()
-        if not ( test_ext == 'scf' or test_ext == 'ab1' or test_ext == 'txt' ):
-            return ( True, False, test_ext )
-        for name in zip_file.namelist():
-            ext = name.split( "." )[1].strip().lower()
-            if ext != test_ext:
-                return ( True, False, test_ext )
-        return ( True, True, test_ext )
-
-    def check_html( self, temp_name, chunk=None ):
-        if chunk is None:
-            temp = open(temp_name, "U")
-        else:
-            temp = chunk
-        regexp1 = re.compile( "<A\s+[^>]*HREF[^>]+>", re.I )
-        regexp2 = re.compile( "<IFRAME[^>]*>", re.I )
-        regexp3 = re.compile( "<FRAMESET[^>]*>", re.I )
-        regexp4 = re.compile( "<META[^>]*>", re.I )
-        lineno = 0
-        for line in temp:
-            lineno += 1
-            matches = regexp1.search( line ) or regexp2.search( line ) or regexp3.search( line ) or regexp4.search( line )
-            if matches:
-                if chunk is None:
-                    temp.close()
-                return True
-            if lineno > 100:
-                break
-        if chunk is None:
-            temp.close()
-        return False
-
-    def check_binary( self, temp_name, chunk=None ):
-        if chunk is None:
-            temp = open( temp_name, "U" )
-        else:
-            temp = chunk
-        lineno = 0
-        for line in temp:
-            lineno += 1
-            line = line.strip()
-            if line:
-                for char in line:
-                    if ord( char ) > 128:
-                        if chunk is None:
-                            temp.close()
-                        return True
-            if lineno > 10:
-                break
-        if chunk is None:
-            temp.close()
-        return False
-
-class BadFileException( Exception ):
-    pass

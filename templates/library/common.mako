@@ -92,7 +92,7 @@
                 </div>
                 <div style="clear: both"></div>
             %endfor
-            %if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, library_item ):
+            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library_item ):
                 <div class="form-row">
                     Add <a href="${h.url_for( controller='library', action='library_item_info', do_action='new_info', library_item_id=library_item.id, library_item_type=library_item_type )}">new</a> info
                 </div>

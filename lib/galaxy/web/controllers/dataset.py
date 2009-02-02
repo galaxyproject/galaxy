@@ -287,7 +287,7 @@ def add_file( trans, file_obj, name, extension, dbkey, last_used_build, roles, i
         library_dataset = trans.app.model.LibraryDataset( name=name, info=info, extension=data_type, dbkey=dbkey )
         library_dataset.flush()
         if permission_source:
-            trans.app.model.library_security_agent.copy_permissions( permission_source, library_dataset, user = trans.get_user() )
+            trans.app.security_agent.copy_library_permissions( permission_source, library_dataset, user=trans.get_user() )
     dataset = trans.app.model.LibraryDatasetDatasetAssociation( name=name, 
                                                                info=info, 
                                                                extension=data_type, 
@@ -296,7 +296,7 @@ def add_file( trans, file_obj, name, extension, dbkey, last_used_build, roles, i
                                                                create_dataset=True )
     dataset.flush()
     if permission_source:
-        trans.app.model.library_security_agent.copy_permissions( permission_source, dataset, user = trans.get_user() )
+        trans.app.security_agent.copy_library_permissions( permission_source, dataset, user=trans.get_user() )
     if not replace_dataset:
         folder = trans.app.model.LibraryFolder.get( folder_id )
         folder.add_dataset( library_dataset, genome_build=last_used_build )

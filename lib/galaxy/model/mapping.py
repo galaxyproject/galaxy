@@ -13,7 +13,7 @@ from galaxy.model.orm import *
 from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
-from galaxy.security import GalaxyRBACAgent, LibraryRBACAgent
+from galaxy.security import GalaxyRBACAgent
 
 metadata = MetaData()
 context = Session = scoped_session( sessionmaker( autoflush=False, transactional=False ) )
@@ -913,7 +913,6 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.create_tables = create_tables
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
-    result.library_security_agent = LibraryRBACAgent( result )
     return result
     
 def get_suite():

@@ -9,12 +9,12 @@
 
 <%def name="title()">Edit Library Dataset Attributes</%def>
 
-%if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, dataset ):
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=dataset ):
     <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
     ${render_permission_form( dataset, dataset.name, h.url_for( action='library_dataset' ), 'id', dataset.id, trans.user.all_roles() )}
 %endif
 
-%if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, dataset ):
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=dataset ):
 <div class="toolForm">
     <div class="toolFormTitle">Edit Attributes</div>
     <div class="toolFormBody">

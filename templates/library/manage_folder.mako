@@ -6,7 +6,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, folder ):
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
 <div class="toolForm">
     <div class="toolFormTitle">Edit folder name and description</div>
     <div class="toolFormBody">
@@ -45,11 +45,11 @@
 <p/>
 %endif
 
-%if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, folder ):
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=folder ):
     ${render_permission_form( folder, folder.name, h.url_for( action='folder' ), 'id', folder.id, trans.user.all_roles() )}
 %endif
 
-%if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, folder ):
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
 <div class="toolForm">
     <div class="toolFormTitle">Add a subfolder</div>
     <div class="toolFormBody">

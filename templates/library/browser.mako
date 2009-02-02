@@ -108,8 +108,7 @@ def name_sorted( l ):
 <%def name="render_folder( parent, parent_pad )">
     <%
         def show_folder():
-            if trans.app.security_agent.check_folder_contents( trans.user, parent ) or \
-                trans.app.model.library_security_agent.show_library_item( trans.user, parent ):
+            if trans.app.security_agent.check_folder_contents( trans.user, parent ) or trans.app.security_agent.show_library_item( trans.user, parent ):
                 return True
         if not show_folder:
             return ""
@@ -131,15 +130,15 @@ def name_sorted( l ):
             %if parent.description:
                 <i>- ${parent.description}</i>
             %endif
-            %if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, parent ) or \
-                trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, parent ) or \
-                trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, parent ):
+            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent ) or \
+                trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent ) or \
+                trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent ):
                 <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             %endif
             </span>
         </div>
         <div popupmenu="folder-${parent.id}-popup">
-            <a class="action-button" href="${h.url_for( controller='library', action='folder', id=parent.id )}">Manage Folder</a>
+            <a class="action-button" href="${h.url_for( controller='library', action='folder', folder_id=parent.id )}">Manage folder</a>
         </div>
     </li>
     %if subfolder:
@@ -171,8 +170,7 @@ def name_sorted( l ):
     <form name="import_from_library" action="${h.url_for( controller='library', action='import_datasets' )}" method="post">
         <ul>
             %for library in libraries:
-                %if trans.app.security_agent.check_folder_contents( trans.user, library ) or \
-                    trans.app.model.library_security_agent.show_library_item( trans.user, library ):
+                %if trans.app.security_agent.check_folder_contents( trans.user, library ) or trans.app.security_agent.show_library_item( trans.user, library ):
                     <% can_access = True %>
                     <li class="libraryRow libraryOrFolderRow">
                         <div class="rowTitle">
@@ -184,7 +182,9 @@ def name_sorted( l ):
                                             %if library.description:
                                                 <i>- ${library.description}</i>
                                             %endif
-                                            %if trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, library ) or trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_ADD, library ) or trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MANAGE, library ):
+                                            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ) or \
+                                                trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ) or \
+                                                trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
                                                 <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                                             %endif
                                         </span>

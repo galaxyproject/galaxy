@@ -223,8 +223,9 @@ class RootController( BaseController ):
         if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=data ):
             params = util.Params( kwd, safe=False )
             
-            if lid is None or trans.app.model.library_security_agent.allow_action( trans.user, trans.app.model.library_security_agent.permitted_actions.LIBRARY_MODIFY, data ):
-            #trans.app.model.library_security_agent.allow_action( trans.user, data.permitted_actions.DATASET_EDIT_METADATA, dataset=data ):
+            if lid is None or trans.app.security_agent.allow_action( trans.user,
+                                                                     trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
+                                                                     library_item=data ):
                 edit_allowed = True
             else:
                 edit_allowed = False
@@ -247,7 +248,7 @@ class RootController( BaseController ):
                         continue
                     optional = params.get("is_"+name, None)
                     if optional and optional == 'true':
-                        # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
+                        # optional element... == 'true' actually means it is NOT checked (and therefore omitted)
                         setattr(data.metadata, name, None)
                     else:
                         setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )

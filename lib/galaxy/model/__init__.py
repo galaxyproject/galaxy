@@ -719,6 +719,7 @@ class History( object ):
         return des
 
 class Library( object ):
+    permitted_actions = galaxy.security.get_permitted_actions( 'LIBRARY' )
     def __init__( self, name = None, description = None, root_folder = None ):
         self.name = name or "Unnamed library"
         self.description = description
@@ -763,7 +764,7 @@ class LibraryFolder( object ):
         return list( self.active_folders ) + list( self.active_datasets )
 
 class LibraryDataset( object ):
-    #This class acts as a proxy to the currently selected LFDA
+    #This class acts as a proxy to the currently selected LDDA
     def __init__( self, 
                   folder = None, 
                   order_id = None, 

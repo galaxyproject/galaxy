@@ -875,10 +875,10 @@ class Admin( BaseController ):
         elif action == 'update_roles':
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
-            for k, v in trans.app.model.library_security_agent.permitted_actions.items():
+            for k, v in trans.app.model.Library.permitted_actions.items():
                 in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                permissions[ trans.app.model.library_security_agent.get_action( v.action ) ] = in_roles
-            trans.app.model.library_security_agent.set_all_permissions( library, permissions )
+                permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+            trans.app.security_agent.set_all_library_permissions( library, permissions )
             library.refresh()
             msg = "Permissions updated for library '%s'" % library.name
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
@@ -1007,15 +1007,13 @@ class Admin( BaseController ):
         elif action =='update_roles':
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
-            for k, v in trans.app.model.library_security_agent.permitted_actions.items():
+            for k, v in trans.app.model.Library.permitted_actions.items():
                 in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                permissions[ trans.app.model.library_security_agent.get_action( v.action ) ] = in_roles
-            trans.app.model.library_security_agent.set_all_permissions( folder, permissions )
+                permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+            trans.app.security_agent.set_all_library_permissions( folder, permissions )
             folder.refresh()
             msg = "Permissions updated for folder '%s'" % folder.name
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
-    
-    
     @web.expose
     @web.require_admin
     def library_dataset( self, trans, id=None, name=None, info=None, **kwd ):
@@ -1037,13 +1035,11 @@ class Admin( BaseController ):
         elif 'update_roles' in kwd:
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
-            for k, v in trans.app.model.library_security_agent.permitted_actions.items():
+            for k, v in trans.app.model.Library.permitted_actions.items():
                 in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                permissions[ trans.app.model.library_security_agent.get_action( v.action ) ] = in_roles
-            trans.app.model.library_security_agent.set_all_permissions( dataset, permissions )
+                permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+            trans.app.security_agent.set_all_library_permissions( dataset, permissions )
             dataset.refresh()
-
-        
         return trans.fill_template( "/admin/library/library_dataset.mako", 
                                         dataset=dataset,
                                         err=None,
@@ -1124,7 +1120,6 @@ class Admin( BaseController ):
             if not lda:
                 msg = "Invalid dataset specified, id: %s" %str( id )
                 return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
-
             # Copied from edit attributes for 'regular' datasets with some additions
             p = util.Params(kwd, safe=False)
             if p.update_roles:
@@ -1134,16 +1129,13 @@ class Admin( BaseController ):
                     in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( p.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 trans.app.security_agent.set_all_dataset_permissions( lda.dataset, permissions )
-                #need to set/display library security info
+                # Set/display library security info
                 permissions = {}
-                for k, v in trans.app.model.library_security_agent.permitted_actions.items():
+                for k, v in trans.app.model.Library.permitted_actions.items():
                     in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                    permissions[ trans.app.model.library_security_agent.get_action( v.action ) ] = in_roles
-                trans.app.model.library_security_agent.set_all_permissions( lda, permissions )
-                
-                
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                trans.app.security_agent.set_all_library_permissions( lda, permissions )
                 lda.dataset.refresh()
-                
             elif p.change:
                 # The user clicked the Save button on the 'Change data type' form
                 trans.app.datatypes_registry.change_datatype( lda, p.datatype )

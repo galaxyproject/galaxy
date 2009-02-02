@@ -32,34 +32,37 @@
 ## Any permission ( e.g., 'DATASET_ACCESS' ) included in the do_not_render param will not be rendered on the page.
 <%def name="render_permission_form( obj, obj_name, form_url, id_name, id, all_roles, do_not_render=[] )">
     <%
-        permitted_actions = trans.app.model.Dataset.permitted_actions.items()
         if isinstance( obj, trans.app.model.User ):
             current_actions = obj.default_permissions
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = 'user %s' % obj_name
         elif isinstance( obj, trans.app.model.History ):
             current_actions = obj.default_permissions
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = 'history %s' % obj_name
         elif isinstance( obj, trans.app.model.Dataset ):
             current_actions = obj.actions
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = obj_name
         elif isinstance( obj, trans.app.model.LibraryDatasetDatasetAssociation ):
             current_actions = obj.actions + obj.dataset.actions
+            permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = obj_name
-            permitted_actions = permitted_actions + trans.model.library_security_agent.permitted_actions.items()
         elif isinstance( obj, trans.app.model.Library ):
             current_actions = obj.actions
+            permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library %s' % obj_name
-            permitted_actions = trans.model.library_security_agent.permitted_actions.items()
         elif isinstance( obj, trans.app.model.LibraryDataset ):
             current_actions = obj.actions
+            permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library dataset %s' % obj_name
-            permitted_actions = trans.model.library_security_agent.permitted_actions.items()
         elif isinstance( obj, trans.app.model.LibraryFolder ):
             current_actions = obj.actions
+            permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library folder %s' % obj_name
-            permitted_actions = trans.model.library_security_agent.permitted_actions.items()
         else:
             current_actions = obj.dataset.actions
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = 'unknown object %s' %obj_name
     %>
     <script type="text/javascript">
