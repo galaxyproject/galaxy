@@ -17,16 +17,11 @@ class Action( object ):
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
-        DATASET_MANAGE_PERMISSIONS = Action(
-            "manage permissions", "Role members can manage the roles associated with this dataset", "grant" ),
-        DATASET_ACCESS = Action(
-            "access", "Role members can import this dataset into their history for analysis", "restrict" ),
-        LIBRARY_ADD = Action(
-            "add library item", "Role members can add library items to this folder", "grant" ),
-        LIBRARY_MODIFY = Action(
-            "modify library item", "Role members can modify this library item", "grant" ),
-        LIBRARY_MANAGE = Action(
-            "manage library permissions", "Role members can manage roles associated with this library item", "grant" )
+        DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Role members can manage the roles associated with this dataset", "grant" ),
+        DATASET_ACCESS = Action( "access", "Role members can import this dataset into their history for analysis", "restrict" ),
+        LIBRARY_ADD = Action( "add library item", "Role members can add library items to this folder", "grant" ),
+        LIBRARY_MODIFY = Action( "modify library item", "Role members can modify this library item", "grant" ),
+        LIBRARY_MANAGE = Action( "manage library permissions", "Role members can manage roles associated with this library item", "grant" )
     )
     def get_action( self, name, default=None ):
         """Get a permitted action by its dict key or action name"""
@@ -459,12 +454,10 @@ class GalaxyRBACAgent( RBACAgent ):
         else:
             raise 'Passed an illegal object to check_folder_contents: %s' % type( entry )
 
-def get_permitted_actions( self, filter=None ):
+def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''
     if filter is None:
         return RBACAgent.permitted_actions
-    if not filter.endswith('_'):
-        filter += '_'
     tmp_bunch = Bunch()
-    [tmp_bunch.__dict__.__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)]
+    [ tmp_bunch.__dict__.__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith( filter ) ]
     return tmp_bunch

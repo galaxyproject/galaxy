@@ -46,7 +46,7 @@
             obj_str = obj_name
         elif isinstance( obj, trans.app.model.LibraryDatasetDatasetAssociation ):
             current_actions = obj.actions + obj.dataset.actions
-            permitted_actions = trans.app.model.Library.permitted_actions.items()
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = obj_name
         elif isinstance( obj, trans.app.model.Library ):
             current_actions = obj.actions
@@ -61,8 +61,8 @@
             permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library folder %s' % obj_name
         else:
-            current_actions = obj.dataset.actions
-            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+            current_actions = []
+            permitted_actions = {}.items()
             obj_str = 'unknown object %s' %obj_name
     %>
     <script type="text/javascript">

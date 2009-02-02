@@ -13,7 +13,7 @@ from galaxy import util
 import tempfile
 import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import MetadataCollection
-from galaxy.security import RBACAgent
+from galaxy.security import RBACAgent, get_permitted_actions
 
 import logging
 log = logging.getLogger( __name__ )
@@ -142,7 +142,7 @@ class JobToOutputDatasetAssociation( object ):
         self.dataset = dataset
 
 class Group( object ):
-    permitted_actions = galaxy.security.get_permitted_actions( 'GROUP' )
+    permitted_actions = get_permitted_actions( filter='GROUP' )
     def __init__( self, name = None ):
         self.name = name
         self.deleted = False
@@ -330,7 +330,7 @@ class Dataset( object ):
                     EMPTY = 'empty',
                     ERROR = 'error',
                     DISCARDED = 'discarded' )
-    permitted_actions = galaxy.security.get_permitted_actions( 'DATASET' )
+    permitted_actions = get_permitted_actions( filter='DATASET' )
     file_path = "/tmp/"
     engine = None
     def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
@@ -719,7 +719,7 @@ class History( object ):
         return des
 
 class Library( object ):
-    permitted_actions = galaxy.security.get_permitted_actions( 'LIBRARY' )
+    permitted_actions = get_permitted_actions( filter='LIBRARY' )
     def __init__( self, name = None, description = None, root_folder = None ):
         self.name = name or "Unnamed library"
         self.description = description

@@ -130,15 +130,12 @@ def name_sorted( l ):
             %if parent.description:
                 <i>- ${parent.description}</i>
             %endif
-            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent ) or \
-                trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent ) or \
-                trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent ):
-                <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            %endif
-            </span>
-        </div>
-        <div popupmenu="folder-${parent.id}-popup">
-            <a class="action-button" href="${h.url_for( controller='library', action='folder', folder_id=parent.id )}">Manage folder</a>
+            <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="folder-${parent.id}-popup">
+                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent ):
+                    <a class="action-button" href="${h.url_for( controller='library', action='folder', folder_id=parent.id )}">Manage folder</a>
+                %endif
+            </div>
         </div>
     </li>
     %if subfolder:
