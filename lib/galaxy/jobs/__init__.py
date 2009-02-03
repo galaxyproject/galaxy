@@ -305,6 +305,7 @@ class JobWrapper( object ):
         # and job recovery fail.
         self.working_directory = \
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
+        self.output_paths = None
         
     def get_param_dict( self ):
         """
@@ -342,7 +343,7 @@ class JobWrapper( object ):
         incoming['userId'] = userId
         incoming['userEmail'] = userEmail
         # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.working_directory )
+        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames() )
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         if self.tool.tool_type is not None:
@@ -371,7 +372,7 @@ class JobWrapper( object ):
         self.param_dict = param_dict
         self.extra_filenames = extra_filenames
         return extra_filenames
-        
+
     def fail( self, message, exception=False ):
         """
         Indicate job failure by setting state and message on all output 
@@ -385,14 +386,14 @@ class JobWrapper( object ):
             # Do this first in case we generate a traceback below
             if exception:
                 job.traceback = traceback.format_exc()
-            for dataset_assoc in job.output_datasets:
-                if self.app.config.outputs_to_working_directory:
-                    false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.dataset.id ) )
+            if self.app.config.outputs_to_working_directory:
+                for dataset_path in self.get_output_fnames():
                     try:
-                        shutil.move( false_path, dataset_assoc.dataset.file_name )
-                        log.debug( "fail(): Moved %s to %s" % ( false_path, dataset_assoc.dataset.file_name ) )
+                        shutil.move( dataset_path.false_path, dataset_path.real_path )
+                        log.debug( "fail(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
                     except ( IOError, OSError ), e:
                         log.error( "fail(): Missing output file in working directory: %s" % e )
+            for dataset_assoc in job.output_datasets:
                 dataset = dataset_assoc.dataset
                 dataset.refresh()
                 dataset.state = dataset.states.ERROR
@@ -452,15 +453,15 @@ class JobWrapper( object ):
             job.state = "error"
         else:
             job.state = 'ok'
-        for dataset_assoc in job.output_datasets:
-            if self.app.config.outputs_to_working_directory:
-                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset_assoc.dataset.dataset.id ) )
+        if self.app.config.outputs_to_working_directory:
+            for dataset_path in self.get_output_fnames():
                 try:
-                    shutil.move( false_path, dataset_assoc.dataset.file_name )
-                    log.debug( "finish(): Moved %s to %s" % ( false_path, dataset_assoc.dataset.file_name ) )
+                    shutil.move( dataset_path.false_path, dataset_path.real_path )
+                    log.debug( "finish(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
                 except ( IOError, OSError ):
-                    self.fail( "The job's output dataset(s) could not be read" )
+                    self.fail( "Job %s's output dataset(s) could not be read" % job.id )
                     return
+        for dataset_assoc in job.output_datasets:
             for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
@@ -519,7 +520,7 @@ class JobWrapper( object ):
             for fname in self.extra_filenames: 
                 os.remove( fname )
             if self.working_directory is not None:
-                os.rmdir( self.working_directory ) 
+                shutil.rmtree( self.working_directory )
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
         
@@ -543,9 +544,36 @@ class JobWrapper( object ):
         return filenames
 
     def get_output_fnames( self ):
-        job = model.Job.get( self.job_id )
-        return [ da.dataset.file_name for da in job.output_datasets ]
+        if self.output_paths is not None:
+            return self.output_paths
 
+        class DatasetPath( object ):
+            def __init__( self, real_path, false_path = None ):
+                self.real_path = real_path
+                self.false_path = false_path
+            def __str__( self ):
+                if false_path is None:
+                    return self.real_path
+                else:
+                    return self.false_path
+
+        job = model.Job.get( self.job_id )
+        if self.app.config.outputs_to_working_directory:
+            self.output_paths = []
+            for name, data in [ ( da.name, da.dataset ) for da in job.output_datasets ]:
+                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
+                self.output_paths.append( DatasetPath( data.file_name, false_path ) )
+        else:
+            self.output_paths = [ DatasetPath( da.dataset.file_name ) for da in job.output_datasets ]
+        return self.output_paths
+
+    def check_output_sizes( self ):
+        sizes = []
+        output_paths = self.get_output_fnames()
+        for outfile in [ str( o ) for o in output_paths ]:
+            sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+        return sizes
+        
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app

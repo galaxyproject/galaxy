@@ -2,6 +2,8 @@ import os, logging, threading, time
 from Queue import Queue, Empty
 
 from galaxy import model
+from galaxy.datatypes.data import nice_size
+
 from paste.deploy.converters import asbool
 
 import pkg_resources
@@ -60,6 +62,7 @@ class PBSJobState( object ):
         self.ofile = None
         self.efile = None
         self.runner_url = None
+        self.check_count = 0
 
 class PBSJobRunner( object ):
     """
@@ -71,6 +74,8 @@ class PBSJobRunner( object ):
         # Check if PBS was importable, fail if not
         if pbs is None:
             raise Exception( "PBSJobRunner requires pbs-python which was not found" )
+        if app.config.pbs_application_server and app.config.outputs_to_working_directory:
+            raise Exception( "pbs_application_server (file staging) and outputs_to_working_directory options are mutually exclusive" )
         self.app = app
         # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
@@ -132,6 +137,8 @@ class PBSJobRunner( object ):
                     self.queue_job( obj )
                 elif op == 'finish':
                     self.finish_job( obj )
+                elif op == 'fail_oversize_job':
+                    self.fail_oversize_job( obj )
             except:
                 log.exception( "Uncaught exception %sing job" % op )
 
@@ -173,8 +180,9 @@ class PBSJobRunner( object ):
         if self.app.config.pbs_application_server:
             pbs_ofile = self.app.config.pbs_application_server + ':' + ofile
             pbs_efile = self.app.config.pbs_application_server + ':' + efile
-            stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames(), symlink=True )
-            stageout = self.get_stage_in_out( job_wrapper.get_output_fnames() )
+            output_files = [ str( o ) for o in job_wrapper.get_output_fnames() ]
+            stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + output_files, symlink=True )
+            stageout = self.get_stage_in_out( output_files )
             job_attrs = pbs.new_attropl(5)
             job_attrs[0].name = pbs.ATTR_o
             job_attrs[0].value = pbs_ofile
@@ -298,6 +306,20 @@ class PBSJobRunner( object ):
                 if state == "R" and not pbs_job_state.running:
                     pbs_job_state.running = True
                     pbs_job_state.job_wrapper.change_state( "running" )
+                if self.app.config.output_size_limit > 0 and state == "R" and (pbs_job_state.check_count % 10) == 0:
+                    # Every 10th time a job is checked, check the size of its outputs.
+                    fail = False
+                    for outfile, size in pbs_job_state.job_wrapper.check_output_sizes():
+                        if size > self.app.config.output_size_limit:
+                            pbs_job_state.fail_message = 'Job output grew too large (greater than %s), please try different job parameters or' \
+                                % nice_size( self.app.config.output_size_limit )
+                            log.warning( '(%s/%s) Dequeueing job due to output %s growing larger than %s limit' \
+                                % ( galaxy_job_id, job_id, os.path.basename( outfile ), nice_size( self.app.config.output_size_limit ) ) )
+                            self.work_queue.put( ( 'fail_oversize_job', pbs_job_state ) )
+                            fail = True
+                            break
+                    if fail:
+                        continue
                 pbs_job_state.old_state = state
                 new_watched.append( pbs_job_state )
             else:
@@ -329,6 +351,7 @@ class PBSJobRunner( object ):
             pbs_server_name = self.determine_pbs_server( pbs_job_state.runner_url )
             if pbs_server_name not in servers:
                 servers.append( pbs_server_name )
+            pbs_job_state.check_count += 1
         for pbs_server_name in servers:
             c = pbs.pbs_connect( pbs_server_name )
             if c <= 0:
@@ -386,6 +409,14 @@ class PBSJobRunner( object ):
         # clean up the pbs files
         self.cleanup( ( ofile, efile, job_file ) )
 
+    def fail_oversize_job( self, pbs_job_state ):
+        """
+        Seperated out so we can use the worker threads for it.
+        """
+        self.stop_job( self.app.model.Job.get( pbs_job_state.job_wrapper.job_id ) )
+        pbs_job_state.job_wrapper.fail( pbs_job_state.fail_message )
+        self.cleanup( ( pbs_job_state.ofile, pbs_job_state.efile, pbs_job_state.job_file ) )
+
     def cleanup( self, files ):
         if not asbool( self.app.config.get( 'debug', False ) ):
             for file in files:
@@ -431,7 +462,7 @@ class PBSJobRunner( object ):
             return
         pbs.pbs_deljob( c, str( job.job_runner_external_id ), 'NULL' )
         pbs.pbs_disconnect( c )
-        log.debug( "(%s/%s) Removed from PBS queue at user's request" % ( job.id, job.job_runner_external_id ) )
+        log.debug( "(%s/%s) Removed from PBS queue before job completion" % ( job.id, job.job_runner_external_id ) )
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""

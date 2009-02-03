@@ -4,6 +4,7 @@ from Queue import Queue
 import threading
 
 from galaxy import model
+from galaxy.datatypes.data import nice_size
 
 import os, errno
 from time import sleep
@@ -68,9 +69,31 @@ class LocalJobRunner( object ):
                                          env = env,
                                          preexec_fn = os.setpgrp )
                 job_wrapper.set_runner( 'local:///', proc.pid )
+                if self.app.config.output_size_limit > 0:
+                    sleep_time = 1
+                    while proc.poll() is None:
+                        for outfile, size in job_wrapper.check_output_sizes():
+                            if size > self.app.config.output_size_limit:
+                                # Error the job immediately
+                                job_wrapper.fail( 'Job output grew too large (greater than %s), please try different job parameters or' \
+                                    % nice_size( self.app.config.output_size_limit ) )
+                                log.warning( 'Terminating job %s due to output %s growing larger than %s limit' \
+                                    % ( job_wrapper.job_id, os.path.basename( outfile ), nice_size( self.app.config.output_size_limit ) ) )
+                                # Then kill it
+                                os.killpg( proc.pid, 15 )
+                                sleep( 1 )
+                                if proc.poll() is None:
+                                    os.killpg( proc.pid, 9 )
+                                proc.wait() # reap
+                                log.debug( 'Job %s (pid %s) terminated' % ( job_wrapper.job_id, proc.pid ) )
+                                return
+                            sleep( sleep_time )
+                            if sleep_time < 8:
+                                # So we don't stat every second
+                                sleep_time *= 2
                 stdout = proc.stdout.read() 
                 stderr = proc.stderr.read()
-                proc.wait()
+                proc.wait() # reap
                 log.debug('execution finished: %s' % command_line)
             except Exception, exc:
                 job_wrapper.fail( "failure running job", exception=True )
