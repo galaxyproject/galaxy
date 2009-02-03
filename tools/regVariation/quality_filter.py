@@ -12,11 +12,7 @@ from galaxy import eggs
 import pkg_resources 
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "lrucache" )
-try:
-    pkg_resources.require("numpy")
-    pkg_resources.require( "python-lzo" )
-except:
-    pass
+pkg_resources.require("numpy")
 
 import psyco_full
 import sys

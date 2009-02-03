@@ -11,7 +11,9 @@
   <inputs>
     <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
     <param name="response_col" label="Response column (Y)" type="data_column" data_ref="input1" />
-    <param name="predictor_cols" label="Predictor columns (X)" type="data_column" data_ref="input1" multiple="true" />
+    <param name="predictor_cols" label="Predictor columns (X)" type="data_column" data_ref="input1" multiple="true">
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input1" />

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-Estimate INDELs for pait-wise alignments.
+Estimate INDELs for pair-wise alignments.
 
 usage: %prog maf_input out_file1 out_file2
 """
@@ -10,22 +10,10 @@ from __future__ import division
 from galaxy import eggs
 import pkg_resources 
 pkg_resources.require( "bx-python" )
-pkg_resources.require( "lrucache" )
-try:
-    pkg_resources.require("numpy")
-    pkg_resources.require( "python-lzo" )
-except:
-    pass
+pkg_resources.require("numpy")
 
 import psyco_full
 import sys
-import os, os.path
-from UserDict import DictMixin
-import bx.wiggle
-from bx.binned_array import BinnedArray, FileBinnedArray
-from bx.bitset import *
-from bx.bitset_builders import *
-from fpconst import isNaN
 from bx.cookbook import doc_optparse
 from galaxy.tools.exception_handling import *
 import bx.align.maf
