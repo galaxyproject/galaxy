@@ -130,6 +130,7 @@ class SelectField(BaseField):
     >>> t.add_option( "automatic", 3 )
     >>> t.add_option( "bazooty", 4, selected=True )
     >>> print t.get_html()
+    <div class="checkUncheckAllPlaceholder" checkbox_name="bar"></div>
     <div><input type="checkbox" name="bar" value="3">automatic</div>
     <div><input type="checkbox" name="bar" value="4" checked>bazooty</div>
     """
@@ -161,6 +162,8 @@ class SelectField(BaseField):
     def get_html_checkboxes( self, prefix="" ):
         rval = []
         ctr = 0
+        if len( self.options ) > 1:
+            rval.append ( '<div class="checkUncheckAllPlaceholder" checkbox_name="%s%s"></div>' % ( prefix, self.name ) ) #placeholder for the insertion of the Select All/Unselect All buttons
         for text, value, selected in self.options:
             style = ""
             if len(self.options) > 2 and ctr % 2 == 1:

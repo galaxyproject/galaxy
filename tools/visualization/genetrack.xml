@@ -1,0 +1,73 @@
+<tool id="genetrack1" name="GeneTrack">
+  
+    <description>Track creator/viewer</description>
+	
+	<code file="genetrack_code.py">
+         <hook exec_after_process="exec_after_process" />
+       </code>
+  	
+    <command interpreter="python">
+        genetrack.py -l $data_label
+        #if not str($fit_data) == "None"
+          -1 
+          ${fit_data}:${fit_data.metadata.chromCol}:${fit_data.metadata.positionCol}:${fit_data.metadata.forwardCol}:${fit_data.metadata.reverseCol}
+        #end if
+        #if $feature_data
+          -2
+        #end if 
+        #for $data in $feature_data
+          ${data.name}:${data.input}:${data.input.metadata.chromCol}:${data.input.metadata.startCol}:${data.input.metadata.endCol}:${data.input.metadata.strandCol}:${data.input.metadata.nameCol},
+        #end for
+        -d ${genetrack.files_path}
+        -o ${bed_out}
+    </command>
+    
+    <inputs>
+    	  <param name="data_label" type="text" label="Track Label" size="50">
+	        <validator type="regex" message="Please name the track with only alphanumeric characters.">[a-zA-Z0-9]{1,25}</validator>
+    	  </param>
+          <param name="fit_data" type="data" format="coverage" label="Coverage Dataset (optional)" optional="true" />
+    	  <repeat name="feature_data" title="Features">
+    	  	<param name="input" type="data" format="interval" label="Dataset" />
+    	  	<param name="name" type="text" label="Feature Type (mRNA, ESTs, ORFs, etc.)" size="25">
+	        	<validator type="regex" message="Please name the feature with only alphanumeric characters.">[a-zA-Z0-9]{1,25}</validator>
+		</param>
+    	  </repeat>
+   </inputs>
+
+   <outputs>  
+       <data format="genetrack" name="genetrack" />
+       <data format="bed" name="bed_out" />
+   </outputs>
+   
+   <requirements>
+     <requirement type="python-module">tables</requirement>
+     <requirement type="python-module">atlas</requirement>
+     <requirement type="python-module">pychartdir</requirement>
+     <requirement type="python-module">numpy</requirement>
+   </requirements>
+ <help>
+This tool takes the input Fit Data and creates a peak and curve plot
+showing the reads and fitness on each basepair.  Features can be
+plotted below as tracks.  Fit data is coverage output from tools like
+the Lastz tool.  Features are simply interval datasets that may be
+plotted as tracks below the optional fit data.  Both the fit data and
+feature datasets are optional, but at least one of either is required
+to generate a track.
+
+-----
+
+**Syntax**
+
+- **Track Label** is the name of the generated track.
+
+- **Fit Data** is the dataset to calculate coverage/reads across
+    basepairs and generate a curve.  This is optional, and tracks may
+    be created simply showing features.
+
+- **Features** are datasets (interval format) to be plotted as tracks.
+    These are also optional, but at least 1 feature track or 1 fit
+    data is required to generate a track.
+
+</help>
+</tool>
