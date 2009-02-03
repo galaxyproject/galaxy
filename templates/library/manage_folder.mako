@@ -33,11 +33,11 @@
             </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="id" value="${folder.id}" size="40"/>
+                    <input type="hidden" name="folder_id" value="${folder.id}" size="40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>
-            <input type="submit" name="save" value="Save"/>
+            <input type="submit" name="rename_folder_button" value="Save"/>
         </form>
     </div>
 </div>
@@ -46,7 +46,7 @@
 %endif
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=folder ):
-    ${render_permission_form( folder, folder.name, h.url_for( action='folder' ), 'id', folder.id, trans.user.all_roles() )}
+    ${render_permission_form( folder, folder.name, h.url_for( action='folder' ), 'folder_id', folder.id, trans.user.all_roles() )}
 %endif
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
@@ -70,11 +70,11 @@
             </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="id" value="${folder.id}" size="40"/>
+                    <input type="hidden" name="folder_id" value="${folder.id}" size="40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>
-            <input type="submit" name="create_new" value="Create New Folder"/>
+            <input type="submit" name="create_new_folder_button" value="Create New Folder"/>
         </form>
     </div>
 </div>

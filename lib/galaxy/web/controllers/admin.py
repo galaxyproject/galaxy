@@ -958,11 +958,11 @@ class Admin( BaseController ):
             action = 'update_roles'
         else:
             msg = "Invalid action attempted on folder."
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='admin', action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         folder = trans.app.model.LibraryFolder.get( id )
         if not folder:
             msg = "Invalid folder specified, id: %s" % str( id )
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='admin', action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
         if action == 'new':
             if params.new == 'submitted':
                 new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
@@ -973,8 +973,11 @@ class Admin( BaseController ):
                 new_folder.genome_build = util.dbnames.default_value
                 folder.add_folder( new_folder )
                 new_folder.flush()
-                msg = "New folder named '%s' has been added to this library" % new_folder.name
-                return trans.response.send_redirect( web.url_for( action='folder', id=new_folder.id, msg=util.sanitize_text( msg ), messagetype='done' ) )
+                msg = "New folder named '%s' has been added to the library" % new_folder.name
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='library_browser',
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='done' ) )
             return trans.fill_template( '/admin/library/new_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
         elif action == 'rename':
             if params.rename == 'submitted':
@@ -989,7 +992,10 @@ class Admin( BaseController ):
                     folder.description = new_description
                     folder.flush()
                     msg = "Folder '%s' has been renamed to '%s'" % ( old_name, new_name )
-                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
+                    return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                      action='library_browser',
+                                                                      msg=util.sanitize_text( msg ),
+                                                                      messagetype='done' ) )
             return trans.fill_template( '/admin/library/rename_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
         elif action == 'delete':
             def delete_folder( folder ):
@@ -1008,12 +1014,15 @@ class Admin( BaseController ):
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
             for k, v in trans.app.model.Library.permitted_actions.items():
-                in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                in_roles = [ trans.app.model.Role.get( int( x ) ) for x in util.listify( params.get( k + '_in', [] ) ) ]
                 permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
             trans.app.security_agent.set_all_library_permissions( folder, permissions )
             folder.refresh()
             msg = "Permissions updated for folder '%s'" % folder.name
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='library_browser',
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='done' ) )
     @web.expose
     @web.require_admin
     def library_dataset( self, trans, id=None, name=None, info=None, **kwd ):

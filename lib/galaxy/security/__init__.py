@@ -114,7 +114,18 @@ class GalaxyRBACAgent( RBACAgent ):
             allowed_role_assocs = []
             for item_class, permission_class, info_association_class in self.library_item_assocs:
                 if isinstance( library_item, item_class ):
-                    allowed_role_assocs = permission_class.filter_by( action = action.action ).all()
+                    if permission_class == self.model.LibraryPermissions:
+                        allowed_role_assocs = permission_class.filter_by( action=action.action, library_id=library_item.id ).all()
+                    elif permission_class == self.model.LibraryFolderPermissions:
+                        allowed_role_assocs = permission_class.filter_by( action=action.action, library_folder_id=library_item.id ).all()
+                    elif permission_class == self.model.LibraryDatasetPermissions:
+                        allowed_role_assocs = permission_class.filter_by( action=action.action, library_dataset_id=library_item.id ).all()
+                    elif permission_class == self.model.LibraryDatasetDatasetAssociationPermissions:
+                        allowed_role_assocs = permission_class.filter_by( action=action.action, library_dataset_dataset_association_id=library_item.id ).all()
+                    elif permission_class == self.model.LibraryItemInfoPermissions:
+                        allowed_role_assocs = permission_class.filter_by( action=action.action, library_item_info_id=library_item.id ).all()
+                    elif permission_class == self.model.LibraryItemInfoTemplatePermissions:
+                        allowed_role_assocs = permission_class.filter_by( action=action.action, library_item_info_template_id=library_item.id ).all()
             for allowed_role_assoc in allowed_role_assocs:
                 if allowed_role_assoc.role_id in user_role_ids:
                     return True

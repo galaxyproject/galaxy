@@ -110,6 +110,7 @@ def name_sorted( l ):
         def show_folder():
             if trans.app.security_agent.check_folder_contents( trans.user, parent ) or trans.app.security_agent.show_library_item( trans.user, parent ):
                 return True
+            return False
         if not show_folder:
             return ""
         pad = parent_pad + 20
@@ -121,6 +122,9 @@ def name_sorted( l ):
             expander = "/static/images/silk/resultset_next.png"
             folder = "/static/images/silk/folder.png"
             subfolder = True
+        add_folder_item = trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent )
+        modify_folder = trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent )
+        manage_folder = trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent )
     %>
     <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
         <input type="checkbox" class="folderCheckbox" style="float: left;"/>
@@ -130,12 +134,23 @@ def name_sorted( l ):
             %if parent.description:
                 <i>- ${parent.description}</i>
             %endif
-            <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            <div popupmenu="folder-${parent.id}-popup">
-                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent ):
-                    <a class="action-button" href="${h.url_for( controller='library', action='folder', folder_id=parent.id )}">Manage folder</a>
-                %endif
-            </div>
+            %if add_folder_item or modify_folder or manage_folder:
+                <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                <div popupmenu="folder-${parent.id}-popup">
+            %endif
+            %if add_folder_item:
+                <a class="action-button" href="${h.url_for( controller='library', action='dataset', folder_id=parent.id )}">Add a new dataset to this folder</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, folder_id=parent.id )}">Create a new sub-folder in this folder</a>
+            %endif
+            %if modify_folder:
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', rename=True, folder_id=parent.id )}">Rename this folder</a>
+            %endif
+            %if manage_folder:
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', rename=True, folder_id=parent.id )}">Manage this folder</a>
+            %endif
+            %if add_folder_item or modify_folder or manage_folder:
+                </div>
+            %endif
         </div>
     </li>
     %if subfolder:
@@ -179,10 +194,11 @@ def name_sorted( l ):
                                             %if library.description:
                                                 <i>- ${library.description}</i>
                                             %endif
-                                            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ) or \
-                                                trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ) or \
-                                                trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
+                                            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
                                                 <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                                                <div popupmenu="library-${library.id}-popup">
+                                                    <a class="action-button" href="${h.url_for( controller='library', action='edit_library', id=library.id )}">Manage library</a>
+                                                </div>
                                             %endif
                                         </span>
                                     </th>
@@ -192,9 +208,6 @@ def name_sorted( l ):
                                 </tr>
                             </table>
                         </div>
-                        <div popupmenu="library-${library.id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='library', action='edit_library', id=library.id )}">Manage Library</a>
-			            </div>
                     </li>
                     <ul>
                         ${render_folder( library.root_folder, 0 )}

@@ -14,7 +14,10 @@ log = logging.getLogger( __name__ )
 
 class Library( BaseController ):
     @web.expose
-    def browse( self, trans, msg=None, messagetype=None, **kwd ):
+    def browse( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
         libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                            .order_by( trans.app.model.Library.table.c.name ).all()
         return trans.fill_template( '/library/browser.mako',
@@ -315,59 +318,88 @@ class Library( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype )
     @web.expose
-    def folder( self, trans, folder_id, name=None, description=None, **kwd ):
+    def folder( self, trans, folder_id, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        if name:
-            name = util.restore_text( name )
-        if description:
-            description = util.restore_text( description )
+        if params.get( 'new', False ):
+            action = 'new'
+        elif params.get( 'rename', False ):
+            action = 'rename'
+        elif params.get( 'delete', False ):
+            action = 'delete'
+        elif params.get( 'update_roles', False ):
+            action = 'update_roles'
+        else:
+            msg = "Invalid action attempted on folder."
+            return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
         folder = trans.app.model.LibraryFolder.get( int( folder_id ) )
         if not folder:
-            msg = "Invalid library folder specified, id: %s" %str( id )
+            msg = "Invalid folder specified, id: %s" %str( id )
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
-        if 'save' in kwd:
-            if trans.app.security_agent.allow_action( trans.user, 
-                                                      trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, 
-                                                      library_item=folder ):
-                folder.name = name
-                folder.description = description
-                trans.app.model.flush()
-                msg = 'Attributes updated for library folder %s' % folder.name
-            else:
-                msg = "You are not authorized to modify this folder"
-                messagetype = "error"
-        elif 'update_roles' in kwd:
+        if action == 'new':
+            if params.new == 'submitted':
+                # Create the new folder, then return manage_folder template for new folder.
+                # New folders default to having the same permissions as their parent folder
+                new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
+                                                            description=util.restore_text( params.description ) )
+                new_folder.genome_build = util.dbnames.default_value
+                folder.add_folder( new_folder )
+                new_folder.flush()
+                trans.app.security_agent.copy_library_permissions( folder, new_folder, user = trans.get_user() )
+                folder = new_folder
+                msg = "New folder named '%s' has been added to the library" % new_folder.name
+                return trans.response.send_redirect( web.url_for( controller='library',
+                                                                  action='browse',
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='done' ) )
+            return trans.fill_template( '/library/new_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
+        elif action == 'rename':
+            if params.rename == 'submitted':
+                if trans.app.security_agent.allow_action( trans.user, 
+                                                          trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, 
+                                                          library_item=folder ):
+                    old_name = folder.name
+                    new_name = util.restore_text( params.name )
+                    new_description = util.restore_text( params.description )
+                    if not new_name:
+                        msg = 'Enter a valid name'
+                        return trans.fill_template( "/library/manage_folder.mako", folder=folder, msg=msg, messagetype='error' )
+                    else:
+                        folder.name = new_name
+                        folder.description = new_description
+                        folder.flush()
+                        msg = "Folder '%s' has been renamed to '%s'" % ( old_name, new_name )
+                        return trans.response.send_redirect( web.url_for( controller='library',
+                                                                          action='browse',
+                                                                          msg=util.sanitize_text( msg ),
+                                                                          messagetype='done' ) )
+                else:
+                    msg = "You are not authorized to rename this folder"
+                    messagetype = "error"
+        elif action == 'update_roles':
             # The user clicked the Save button on the 'Associate With Roles' form
             if trans.app.security_agent.allow_action( trans.user, 
                                                       trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, 
                                                       library_item=folder ):
                 permissions = {}
                 for k, v in trans.app.model.Library.permitted_actions.items():
-                    in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                    in_roles = [ trans.app.model.Role.get( int( x ) ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 trans.app.security_agent.set_all_library_permissions( folder, permissions )
                 folder.refresh()
-                msg = 'Permissions updated for library folder %s' % folder.name
+                msg = 'Permissions updated for folder %s' % folder.name
+                return trans.response.send_redirect( web.url_for( controller='library',
+                                                                  action='browse',
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='done' ) )
             else:
-                msg = "You are not authorized to manage permissions on this library"
-                messagetype = "error"
-        elif 'create_new' in kwd:
-            # Create the new folder, then return manage_folder template for new folder.
-            # New folders default to having the same permissions as their parent folder
-            new_folder = trans.app.model.LibraryFolder( name = name, description = description )
-            new_folder.flush()
-            folder.add_folder( new_folder )
-            new_folder.flush()
-            trans.app.security_agent.copy_library_permissions( folder, new_folder, user = trans.get_user() )
-            folder = new_folder
-            msg = "New folder (%s) created." % ( new_folder.name )
-        return trans.fill_template( "/library/manage_folder.mako", 
-                                        folder=folder,
-                                        err=None,
-                                        msg=msg,
-                                        messagetype=messagetype )
+                msg = "You are not authorized to manage permissions on this folder"
+                return trans.response.send_redirect( web.url_for( controller='library',
+                                                                  action='browse',
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='error' ) )
+        return trans.fill_template( "/library/manage_folder.mako", folder=folder, msg=msg, messagetype=messagetype )
     @web.expose
     def edit_library( self, trans, id=None, **kwd ):
         raise Exception( 'Not yet implemented' )

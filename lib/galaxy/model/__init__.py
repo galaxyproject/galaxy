@@ -142,7 +142,6 @@ class JobToOutputDatasetAssociation( object ):
         self.dataset = dataset
 
 class Group( object ):
-    permitted_actions = get_permitted_actions( filter='GROUP' )
     def __init__( self, name = None ):
         self.name = name
         self.deleted = False
@@ -269,7 +268,7 @@ class LibraryFolderPermissions( object ):
     def __init__( self, action, library_item, role ):
         self.action = action
         if isinstance( library_item, LibraryFolder ):
-            self.library_folder = library_item
+            self.folder = library_item
         else:
             raise "Invalid LibraryFolder specified: %s" % library_item.__class__.__name__
         self.role = role
