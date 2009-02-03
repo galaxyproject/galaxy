@@ -27,6 +27,7 @@ database/compiled_templates
 database/job_working_directory
 database/import
 database/pbs
+static/genetrack/plots
 "
 
 for sample in $SAMPLES; do

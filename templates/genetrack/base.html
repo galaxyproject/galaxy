@@ -1,0 +1,29 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>${self.title()}</title>
+<link rel="stylesheet" href="${h.url_for('/static/genetrack/genetrack.css')}" type="text/css" media="screen">
+<script type="text/javascript" src="${h.url_for('/static/genetrack/genetrack.js')}">var dummy1=0;</script>
+</head>
+
+<%def name="title()">
+    Title
+</%def>
+
+<%def name="footer()">
+	<div align="center" id="footer">
+	<a href="/">Home</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="${h.url_for(controller='genetrack',action='search',dataset_id=dataset_id)}">Search</a>
+	</div>
+	<div align="center" id="tag"> 
+	Powered by <a href="http://genetrack.googlecode.com">GeneTrack</a> | 
+	<a href="http://atlas.bx.psu.edu/">Penn State Genome Cartography (2008)</a>
+	</div>
+</%def>
+
+<body>
+	${self.body()}
+	${self.footer()}
+</body>
+
+</html>

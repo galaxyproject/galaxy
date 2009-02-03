@@ -1,0 +1,18 @@
+<tool id="CONVERTER_interval_to_coverage_0" name="Convert Genomic Intervals To COVERAGE">
+  <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <!-- Used on the metadata edit page. -->
+  <command interpreter="python">interval_to_coverage.py $input1 $output1 
+  -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol}
+  -2 ${output1.metadata.chromCol},${output1.metadata.positionCol},${output1.metadata.forwardCol},${output1.metadata.reverseCol}
+  </command>
+  <inputs>
+    <page>
+      <param format="interval" name="input1" type="data" label="Choose intervals"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="coverage" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>
