@@ -1045,7 +1045,7 @@ class Tool:
                     input.validate( value, None )
                     input_values[ input.name ] = value
     
-    def build_param_dict( self, incoming, input_datasets, output_datasets, working_directory = None ):
+    def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths ):
         """
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
@@ -1098,10 +1098,14 @@ class Tool:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for name, data in output_datasets.items():
             # Write outputs to the working directory (for security purposes) if desired.
-            if self.app.config.outputs_to_working_directory and working_directory is not None:
-                false_path = os.path.abspath( os.path.join( working_directory, "galaxy_dataset_%d.dat" % data.dataset.id ) )
-                param_dict[name] = DatasetFilenameWrapper( data, false_path = false_path )
-                open( false_path, 'w' ).close()
+            if self.app.config.outputs_to_working_directory:
+                try:
+                    false_path = [ dp.false_path for dp in output_paths if dp.real_path == data.file_name ][0]
+                    param_dict[name] = DatasetFilenameWrapper( data, false_path = false_path )
+                    open( false_path, 'w' ).close()
+                except IndexError:
+                    log.warning( "Unable to determine alternate path for writing job outputs, outputs will be written to their real paths" )
+                    param_dict[name] = DatasetFilenameWrapper( data )
             else:
                 param_dict[name] = DatasetFilenameWrapper( data )
             # Provide access to a path to store additional files
