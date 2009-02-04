@@ -520,7 +520,14 @@ class SelectToolParameter( ToolParameter ):
         if self.is_dynamic and ( trans and trans.workflow_building_mode ) \
            and ( self.options is None or self.options.has_dataset_dependencies ):
             if self.multiple:
-                value = value.split( "\n" )
+                #While it is generally allowed that a select value can be '', 
+                #we do not allow this to be the case in a dynamically generated multiple select list being set in workflow building mode
+                #we instead treat '' as 'No option Selected' (None)
+                if value == '':
+                    value = None
+                else:
+                    value = value.split( "\n" )
+            #See comments above in get_html_field about workflows and specifying 'no option selected'
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, other_values )
         if isinstance( value, list ):
@@ -558,7 +565,7 @@ class SelectToolParameter( ToolParameter ):
         return value
     def get_initial_value( self, trans, context ):
         # More working around dynamic options for workflow
-        if self.is_dynamic and trans.workflow_building_mode \
+        if self.is_dynamic and ( trans is None or trans.workflow_building_mode )\
            and ( self.options is None or self.options.has_dataset_dependencies ):
             # Really the best we can do?
             return UnvalidatedValue( None )

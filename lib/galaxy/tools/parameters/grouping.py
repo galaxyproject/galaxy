@@ -52,7 +52,10 @@ class Repeat( Group ):
             rval_dict['__index__'] = d.get( '__index__', i )
             # Restore child inputs
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
+                if ignore_errors and input.name not in d: #this wasn't tested
+                    rval_dict[ input.name ] = input.get_initial_value( None, d )
+                else:
+                    rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
             rval.append( rval_dict )
         return rval 
     def visit_inputs( self, prefix, value, callback ):
@@ -90,7 +93,13 @@ class Conditional( Group ):
         current_case = rval['__current_case__'] = value['__current_case__']
         rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
         for input in self.cases[current_case].inputs.itervalues():
-            rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
+            if ignore_errors and input.name not in value:
+                #two options here, either try to use unvalidated None or use initial==default value
+                #using unvalidated values here will cause, i.e., integer fields within groupings to be filled in workflow building mode like '<galaxy.tools.parameters.basic.UnvalidatedValue object at 0x981818c>'
+                #we will go with using the default value
+                rval[ input.name ] = input.get_initial_value( None, value ) #use default value
+            else:
+                rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
         return rval
     def visit_inputs( self, prefix, value, callback ):
         current_case = value['__current_case__']

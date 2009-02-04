@@ -28,7 +28,12 @@
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, group_prefix )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, group_prefix )}
     %else:
-      ${row_for_param( input, values[ input.name ], errors, prefix )}
+      %if input.name in values:
+        ${row_for_param( input, values[ input.name ], errors, prefix )}
+      %else:
+        <% errors[ input.name ] = 'Value not stored, displaying default' %>
+        ${row_for_param( input, input.get_initial_value( trans, values ), errors, prefix )}
+      %endif
     %endif
   %endfor  
 </%def>

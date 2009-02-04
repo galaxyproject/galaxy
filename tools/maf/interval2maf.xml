@@ -1,8 +1,8 @@
-<tool id="Interval2Maf1" name="Extract MAF blocks">
+<tool id="Interval2Maf1" name="Extract MAF blocks" version="1.0.1">
   <description>given a set of genomic intervals</description>
   <command interpreter="python">
-    #if $maf_source_type.maf_source == "user":#interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafFile=$maf_source_type.mafFile --mafIndex=$maf_source_type.mafFile.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc
-    #else:#interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType=$maf_source_type.mafType --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc
+    #if $maf_source_type.maf_source == "user":#interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafFile=$maf_source_type.mafFile --mafIndex=$maf_source_type.mafFile.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
+    #else:#interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType=$maf_source_type.mafType --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
     #end if
   </command>
   <inputs>
@@ -21,6 +21,11 @@
           </options>
           <validator type="dataset_ok_validator" />
         </param>
+        <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
+          <options>
+            <filter type="data_meta" ref="mafFile" key="species" />
+          </options>
+        </param>
       </when>
       <when value="cached">
         <param name="mafType" type="select" label="Choose alignments">
@@ -32,7 +37,16 @@
             <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
             <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
           </options>
-        </param> 
+        </param>
+        <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
+          <options from_file="maf_index.loc">
+            <column name="uid" index="1"/>
+            <column name="value" index="3"/>
+            <column name="name" index="3"/>
+            <filter type="param_value" ref="mafType" name="uid" column="1"/>
+            <filter type="multiple_splitter" column="3" separator=","/>
+          </options>
+        </param>
       </when>
     </conditional>
    </inputs>
@@ -44,12 +58,14 @@
        <param name="input1" value="1.bed"/>
        <param name="maf_source" value="cached"/>
        <param name="mafType" value="ENCODE_TBA_hg17"/>
+       <param name="species" value="hg17,panTro1,baboon,marmoset,galago,rn3,mm6,rabbit,cow,canFam1,rfbat,shrew,armadillo,tenrec,monDom1,tetNig1,fr1,rheMac1,galGal2,xenTro1,danRer2,elephant,platypus,hedgehog,colobus_monkey,dusky_titi,owl_monkey,mouse_lemur"/>
        <output name="out_file1" file="fsa_interval2maf.dat" />
      </test>
      <test>
        <param name="input1" value="1.bed"/>
        <param name="maf_source" value="user"/>
        <param name="mafFile" value="fsa_interval2maf.dat"/>
+       <param name="species" value="hg17,panTro1,baboon,marmoset,galago,rn3,mm6,rabbit,cow,canFam1,rfbat,shrew,armadillo,tenrec,monDom1,tetNig1,fr1,rheMac1,galGal2,xenTro1,danRer2,elephant,platypus,hedgehog,colobus_monkey,dusky_titi,owl_monkey,mouse_lemur"/>
        <output name="out_file1" file="fsa_interval2maf.dat" />
      </test>
    </tests>
