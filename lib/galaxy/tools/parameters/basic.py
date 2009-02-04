@@ -527,7 +527,6 @@ class SelectToolParameter( ToolParameter ):
                     value = None
                 else:
                     value = value.split( "\n" )
-            #See comments above in get_html_field about workflows and specifying 'no option selected'
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, other_values )
         if isinstance( value, list ):
