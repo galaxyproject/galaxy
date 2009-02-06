@@ -496,12 +496,12 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Convenience method for displaying an warn message. See `show_message`.
         """
         return self.show_message( message, 'warning', refresh_frames )
-    def show_form( self, form, header=None ):
+    def show_form( self, form, header=None, template="form.mako" ):
         """
         Convenience method for displaying a simple page with a single HTML
         form.
         """    
-        return self.fill_template( "form.mako", form=form, header=header )
+        return self.fill_template( template, form=form, header=header )
     def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.

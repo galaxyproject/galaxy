@@ -275,7 +275,7 @@ class Response( object ):
         """
         Send an HTTP redirect response to (target `url`)
         """
-        raise httpexceptions.HTTPFound( url )
+        raise httpexceptions.HTTPFound( url, headers=self.wsgi_headeritems() )
     def wsgi_headeritems( self ):
         """
         Return headers in format appropriate for WSGI `start_response`
