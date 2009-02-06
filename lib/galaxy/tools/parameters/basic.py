@@ -485,8 +485,12 @@ class SelectToolParameter( ToolParameter ):
         else:
             return self.static_options
     def get_legal_values( self, trans, other_values ):
+        def _get_UnvalidatedValue_value( value ):
+            if isinstance( value, UnvalidatedValue ):
+                return value.value
+            return value
         if self.options:
-            return set( v for _, v, _ in self.options.get_options( trans, other_values ) )
+            return map( _get_UnvalidatedValue_value, set( v for _, v, _ in self.options.get_options( trans, other_values ) ) )
         elif self.dynamic_options:
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
         else:
@@ -511,6 +515,9 @@ class SelectToolParameter( ToolParameter ):
         field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change )
         options = self.get_options( trans, other_values )
         for text, optval, selected in options:
+            if isinstance( optval, UnvalidatedValue ):
+                optval = optval.value
+                text = "%s (unvalidated)" % text
             if value: 
                 selected = ( optval in value )
             field.add_option( text, optval, selected )
