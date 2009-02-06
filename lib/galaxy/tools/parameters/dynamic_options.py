@@ -108,7 +108,8 @@ class DataMetaFilter( Filter ):
         if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ):
             return [] #not a valid dataset
         meta_value = ref.metadata.get( self.key, None )
-        assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key
+        if meta_value is None: #assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key
+            return [ ( disp_name, basic.UnvalidatedValue( optval ), selected ) for disp_name, optval, selected in options ]
         
         if self.column is not None:
             rval = []
