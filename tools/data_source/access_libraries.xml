@@ -4,4 +4,5 @@
     <inputs action="/library/browse" method="get">
         <param name="default_action" type="hidden" value="add" />
     </inputs>
+    <uihints minwidth="800"/>
 </tool>
