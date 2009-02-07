@@ -26,6 +26,7 @@ templates = [ ( "base.css.tmpl", "base.css" ),
               ( "library.css.tmpl", "library.css"),
               ( "history.css.tmpl", "history.css" ),
               ( "tool_menu.css.tmpl", "tool_menu.css" ),
+              ( "iphone.css.tmpl", "iphone.css" ),
               ( "reset.css.tmpl", "reset.css" ) ]
               
 images = [ 

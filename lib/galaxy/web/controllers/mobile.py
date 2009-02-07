@@ -26,6 +26,15 @@ class Mobile( BaseController ):
         dataset = trans.app.model.HistoryDatasetAssociation.get( id )
         assert dataset.history.user == trans.user
         return trans.fill_template( "mobile/dataset/detail.mako", dataset=dataset )
+
+    @web.expose
+    def dataset_peek( self, trans, id ):
+        if trans.user is None: trans.response.send_redirect( url_for( action='index' ) )
+        dataset = trans.app.model.HistoryDatasetAssociation.get( id )
+        assert dataset.history.user == trans.user
+        yield "<html><body>"
+        yield dataset.display_peek()
+        yield "</body></html>"
         
     def __login( self, trans, email="", password="" ):
         email_error = password_error = None

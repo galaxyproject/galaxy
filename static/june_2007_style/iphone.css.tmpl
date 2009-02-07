@@ -239,6 +239,8 @@ body > .dialog {
     color: #999999;
 }
 
+
+
 input:not(input[type|=radio]):not(input[type|=checkbox]) {
     box-sizing: border-box;
     -webkit-box-sizing: border-box;
@@ -277,6 +279,8 @@ body > .panel {
     border-bottom: 1px solid #999999;
     -webkit-border-radius: 0;
     text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 fieldset > .row:last-child {
@@ -304,6 +308,16 @@ fieldset > .row:last-child {
     margin: 0 0 0 14px;
     line-height: 42px;
     font-weight: bold;
+}
+
+.row > a {
+    font-weight: bold;
+    text-align: left;
+    display: block;
+    padding: 8px 32px 8px 14px;
+    text-decoration: none;
+    color: inherit;
+    background: url(../iui/listArrow.png) no-repeat right center;
 }
 
 .row > .error {
