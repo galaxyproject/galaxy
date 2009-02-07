@@ -9,6 +9,11 @@
   <style type="text/css" media="screen">@import "${h.url_for('/static/style/iphone.css')}";</style>
   ## <script type="application/x-javascript" src="${h.url_for('/static/iui/iui.js')}"></script>
   <style>
+    li > a > div {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     div.secondary {
         font-size: 13px;
         color: gray;
@@ -50,7 +55,7 @@
                
                <a href="${h.url_for( action="dataset_detail", id=data.id )}">
               
-        <div>${hid}: ${data.display_name()}</div>
+        <div class="primary">${hid}: ${data.display_name()}</div>
         
         <div class="secondary">
         ## Body for history items, extra info and actions, data "peek"

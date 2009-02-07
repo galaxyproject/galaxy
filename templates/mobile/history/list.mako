@@ -9,6 +9,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <style type="text/css" media="screen">@import "${h.url_for('/static/style/iphone.css')}";</style>
   <style>
+    li > a > div {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     div.date {
         font-size: 13px;
         color: gray;
