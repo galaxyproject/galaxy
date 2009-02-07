@@ -32,14 +32,14 @@
       </div>
       <div class="row">
 	<label>Info</label>
-	<span>
+	<div style="padding: 12px 10px 0 110px; overflow: auto;">
 	${dataset.display_info()}
-	</span>
+	</div>
       </div>
       %if dataset.state == "ok":
       <div class="row">
 	<label>Peek</label>
-	<div style="padding: 12px 10px 0 110px;">
+	<div style="padding: 12px 10px 0 110px; overflow: auto;">
 	${dataset.display_peek()}
 	</div>
       </div>
