@@ -1,29 +1,46 @@
-<tool id="mergeCols1" name="Merge columns">
+<tool id="mergeCols1" name="Merge Columns" version="1.0.1">
   <description>together</description>
-  <command interpreter="python">mergeCols.py $input "$columnList" $out_file1</command>
+  <command interpreter="python">
+   mergeCols.py 
+      $input1
+      $out_file1
+      $col1
+      $col2
+      #for $col in $columns
+        ${col.datacol}
+      #end for
+  </command>
   <inputs>
-    <param name="columnList" size="10" type="text" value="c1,c2" label="Merge columns"/>
-    <param format="tabular" name="input" type="data" label="In"/>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param name="col1" label="Merge column" type="data_column" data_ref="input1" />
+    <param name="col2" label="with column" type="data_column" data_ref="input1" help="Need to add more columns? Use controls below."/>
+    <repeat name="columns" title="Columns">
+      <param name="datacol" label="Add column" type="data_column" data_ref="input1" />
+    </repeat>
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
-<tests>
+  <tests>
     <test>
-      <param name="columnList" value="c4, c1"/>
-      <param name="input" value="1.bed"/>
+      <param name="input1" value="1.bed"/>
+      <param name="col1" value="4" />
+      <param name="col2" value="1" />
+      <param name="datacol" value="6" />
       <output name="out_file1" file="mergeCols.dat"/>
     </test>
   </tests>
 <help>
 
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
+
+-----
+
 **What it does**
 
-This tool merges columns together
-
-- Columns are specified as **c1**, **c2**, and so on. Column count begins with **1**
-- Columns can be specified in any order (e.g., **c2,c1,c6**)
-
+This tool merges columns together. Any number of valid columns can be merged in any order.
 
 -----
 
@@ -39,9 +56,8 @@ merging columns "**c5,c1**" will return::
    1 10   1000  gene1 chr chr1
    2 100  1500  gene2 chr chr2
 
-.. class:: infomark
+.. class:: warningmark
    
 Note that all original columns are preserved and the result of merge is added as the rightmost column.
-
-</help>
+  </help>
 </tool>
