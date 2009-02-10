@@ -41,7 +41,8 @@
     <tool file="filters/fixedValueColumn.xml" />
     <tool file="stats/column_maker.xml" />
     <tool file="filters/catWrapper.xml" />
-    <tool file="filters/condense_characters.xml" />
+    <tool file="filters/cutWrapper.xml" />
+    <tool file="filters/mergeCols.xml" />
     <tool file="filters/convert_characters.xml" />
     <tool file="filters/CreateInterval.xml" />
     <tool file="filters/cutWrapper.xml" />
