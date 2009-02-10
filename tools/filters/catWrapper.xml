@@ -11,7 +11,7 @@
     </command>
     <inputs>
         <param name="input1" type="data" label="Concatenate Query"/>
-        <param name="input2" type="data" label="Concatenate Query" help="Need to concatenate more than two datasets? Use controls below."/>
+        <param name="input2" type="data" label="with Query" help="Need to concatenate more than two datasets? Use controls below."/>
         <repeat name="queries" title="Query">
             <param name="input3" type="data" label="Select" />
         </repeat>
