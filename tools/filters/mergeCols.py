@@ -7,7 +7,6 @@ def stop_err( msg ):
 def __main__():
     try:
         infile =  open ( sys.argv[1], 'r')
-#    cols   =  ( re.sub( '\s*','',sys.argv[2] ) ).split( ',' )
         outfile = open ( sys.argv[2], 'w')
     except:
         stop_err( 'Cannot open or create a file\n' )
