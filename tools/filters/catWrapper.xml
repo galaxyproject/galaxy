@@ -4,16 +4,14 @@
         catWrapper.py 
         $out_file1 
         $input1
-        $input2
         #for $q in $queries
-            ${q.input3}
+            ${q.input2}
         #end for
     </command>
     <inputs>
         <param name="input1" type="data" label="Concatenate Query"/>
-        <param name="input2" type="data" label="with Query" help="Need to concatenate more than two datasets? Use controls below."/>
         <repeat name="queries" title="Query">
-            <param name="input3" type="data" label="Select" />
+            <param name="input2" type="data" label="Select" />
         </repeat>
     </inputs>
     <outputs>
@@ -23,7 +21,6 @@
         <test>
             <param name="input1" value="1.bed"/>
             <param name="input2" value="2.bed"/>
-            <param name="input3" value="3.bed"/>
             <output name="out_file1" file="cat_wrapper_out1.bed"/>
         </test>
         <!--TODO: if possible, enhance the underlying test code to handle this test
