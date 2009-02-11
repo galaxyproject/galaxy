@@ -283,27 +283,22 @@ class Library( BaseController ):
                                                                           library_item=replace_dataset ) ):
             if params.get( 'new_dataset_button', False ):
                 created_ldda_ids = upload_dataset( trans,
-                                                              controller='library', 
-                                                              last_used_build=last_used_build,
-                                                              folder_id=folder_id, 
-                                                              replace_dataset=replace_dataset, 
-                                                              permission_source=permission_source, 
-                                                              **kwd )
+                                                   controller='library', 
+                                                   last_used_build=last_used_build,
+                                                   folder_id=folder_id, 
+                                                   replace_dataset=replace_dataset, 
+                                                   permission_source=permission_source, 
+                                                   **kwd )
                 if created_ldda_ids:
-                    #msg = "%i new datasets added to the library.  " % len( created_ldda_ids )
-                    #return trans.fill_template( "/library/dataset_manage_list.mako", 
-                    #                            lddas=[ trans.app.model.LibraryDataset.get( id ) for id in util.listify( created_ldda_ids ) ],
-                    #                            msg=msg,
-                    #                            messagetype=messagetype )
-                
                     total_added = len( created_ldda_ids.split( ',' ) )
-                    msg = "%i new datasets added to the library ( each is selected below ).  " % total_added
                     if trans.app.security_agent.allow_action( trans.user,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
                                                               library_item=permission_source ):
-                        msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
+                        msg = "%i new datasets added to the library ( each is selected below ).  " + \
+                            "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary." % total_added
                         default_action = 'manage_permissions'
                     else:
+                        msg = "%i new datasets added to the library." % total_added
                         default_action = 'add'
                     trans.response.send_redirect( web.url_for( controller='library',
                                                                action='browse',

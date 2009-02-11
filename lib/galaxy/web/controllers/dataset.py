@@ -328,6 +328,8 @@ def upload_dataset( trans, controller=None, last_used_build='?', folder_id=None,
     msg = util.restore_text( params.get( 'msg', ''  ) )
     messagetype = params.get( 'messagetype', 'done' )
     dbkey = params.get( 'dbkey', '?' )
+    if last_used_build is None:
+        last_used_build = dbkey
     extension = params.get( 'extension', 'auto' )
     data_file = params.get( 'file_data', '' )
     url_paste = params.get( 'url_paste', '' )

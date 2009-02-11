@@ -230,8 +230,8 @@ def name_sorted( l ):
                 %endif
                 %if default_action == 'manage_permissions':
                     <option value="manage_permissions" selected>Edit selected datasets' permissions</option>
-                %else:
-                    <option value="manage_permissions">Edit selected datasets' permissions</option>
+                    # This condition should not contain an else clause because the user is not authorized
+                    # to manage dataset permissions unless the default action is 'manage_permissions'
                 %endif
                 %if default_action == 'download':
                     <option value="zip" selected>Download selected datasets as a .zip file</option>
