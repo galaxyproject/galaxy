@@ -14,6 +14,9 @@ log = logging.getLogger( __name__ )
 
 class Library( BaseController ):
     @web.expose
+    def index( self, trans ):
+        return trans.fill_template( "/library/index.mako" )
+    @web.expose
     def browse( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -25,7 +28,6 @@ class Library( BaseController ):
                                     default_action=kwd.get( 'default_action', None ),
                                     msg=msg,
                                     messagetype=messagetype )
-    index = browse
     @web.expose
     def datasets( self, trans, ldda_ids=[], **kwd ):
         # This method is used by the select list labeled "Perform action on selected datasets"
