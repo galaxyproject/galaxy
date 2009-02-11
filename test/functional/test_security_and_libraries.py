@@ -451,7 +451,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         assert library_one is not None, 'Problem retrieving library named "%s" from the database' % name
         # Rename the library
         rename = "Library One's been Renamed"
-        redescription="This is Library One's Re-described"
+        redescription = "This is Library One's Re-described"
         self.rename_library( str( library_one.id ), library_one.name, name=rename, description=redescription, root_folder='on' )
         self.home()
         self.visit_page( 'admin/libraries' )
@@ -597,7 +597,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Test importing the restricted dataset into a history, can't use the 
         # ~/admin/libraries form as twill barfs on it so we'll simulate the form submission
         # by going directly to the form action
-        self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%d' % ( self.url, ldda_two.id ) )
+        self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%d' % ( self.url, ldda_two.id ) )
         self.check_page_for_string( '1 dataset(s) have been imported into your history' )
         self.logout()
         # regular_user2 should not be able to see 2.bed
@@ -678,14 +678,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( 'This dataset is accessible by everyone (it is public).' )
         # Test importing a library dataset into a history
         self.home()
-        self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%d' % ( self.url, ldda_three.id ) )
+        self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%d' % ( self.url, ldda_three.id ) )
         self.check_page_for_string( '1 dataset(s) have been imported into your history' )
         self.logout()
     def test_110_copy_dataset_from_history_to_root_folder( self ):
         """Testing copying a dataset from the current history to a library root folder"""
         self.login( email='test@bx.psu.edu' )
         folder = library_one.root_folder
-        self.add_dataset_to_folder_from_history( str( folder.id ) )
+        self.add_history_datasets_to_library( str( folder.id ) )
         # Test for DatasetPermissionss, the default setting is "manage permissions"
         last_dataset_created = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
         dps = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==last_dataset_created.id ).all()
@@ -717,7 +717,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         def build_url( permissions, role ):
             # We'll bypass the admin/datasets method and directly call the admin/dataset method, setting
             # access, manage permissions, and edit metadata permissions to role_one
-            url = '/admin/dataset?id=%s&update_roles=Save' % ldda_ids
+            url = '/admin/dataset?ldda_id=%s&update_roles=Save' % ldda_ids
             for p in permissions:
                 url += '&%s_in=%s' % ( p, str( role.id ) )
             return url
@@ -729,13 +729,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
             # Make sure the permissions have been correctly updated for the 3 datasets.  Permissions should 
             # be all of the above on any of the 3 datasets that are imported into a history
             for ldda in lddas:
+                # TODO: need to redo these tests based on new page features...
                 self.home()
-                self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%s' % ( self.url, str( ldda.id ) ) )
+                self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%s' % ( self.url, str( ldda.id ) ) )
                 self.home()
                 self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( ldda.id ) ) )
-                self.check_page_for_string( 'You are currently viewing a Dataset from a library' )
-                self.check_page_for_string( 'Manage permissions and role associations for %s' % ldda.name )
-                self.check_page_for_string( 'select name="DATASET_MANAGE_PERMISSIONS_in"' )
+                self.check_page_for_string( 'You are currently viewing a dataset from a library' )
         # admin_user is associated with role_one, so should have all permissions on imported datasets
         check_edit_page1( latest_3_lddas )
         self.logout()
@@ -771,7 +770,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             # be all of the above on any of the 3 datasets that are imported into a history
             for ldda in lddas:
                 self.home()
-                self.visit_url( '%s/library/import_datasets?do_action=add&import_ids=%s' % ( self.url, str( ldda.id ) ) )
+                self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%s' % ( self.url, str( ldda.id ) ) )
                 self.home()
                 self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( ldda.id ) ) )
                 self.check_page_for_string( 'View Attributes' )
@@ -822,6 +821,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.undelete_role( str( role_two.id ), role_two.name )
     def test_145_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
+        # TODO: this needs to be re-engineered...
         self.mark_library_deleted( str( library_one.id ), library_one.name )
         # Make sure the library was deleted
         library_one.refresh()

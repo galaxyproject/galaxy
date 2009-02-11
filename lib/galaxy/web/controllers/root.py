@@ -222,7 +222,6 @@ class RootController( BaseController ):
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
         if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=data ):
             params = util.Params( kwd, safe=False )
-            
             if lid is None or trans.app.security_agent.allow_action( trans.user,
                                                                      trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                                      library_item=data ):

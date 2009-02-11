@@ -823,10 +823,10 @@ class TwillTestCase( unittest.TestCase ):
     def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described', root_folder='' ):
         """Rename a library"""
         self.home()
-        self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
+        self.visit_url( "%s/admin/library?manage=True&id=%s" % ( self.url, library_id ) )
         self.check_page_for_string( 'Change library name and description' )
         # Since twill barfs on the form submisson, we ar forced to simulate it
-        url = "%s/admin/library?id=%s&rename=submitted&description=%s&name=%s" % \
+        url = "%s/admin/library?manage=True&id=%s&rename_library_button=Save&description=%s&name=%s" % \
         ( self.url, library_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
         if root_folder:
             url += "&root_folder=on"
@@ -847,10 +847,10 @@ class TwillTestCase( unittest.TestCase ):
     def rename_folder( self, folder_id, old_name, name='Folder One Renamed', description='This is Folder One Re-described' ):
         """Rename a Folder"""
         self.home()
-        self.visit_url( "%s/admin/folder?rename=True&id=%s" % ( self.url, folder_id ) )
+        self.visit_url( "%s/admin/folder?manage=True&id=%s" % ( self.url, folder_id ) )
         self.check_page_for_string( 'Edit folder name and description' )
         # Since twill barfs on the form submisson, we ar forced to simulate it
-        url = "%s/admin/folder?id=%s&rename=submitted&description=%s&name=%s" % \
+        url = "%s/admin/folder?manage=True&id=%s&rename_folder_button=Save&description=%s&name=%s" % \
         ( self.url, folder_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
         self.home()
         self.visit_url( url )
@@ -872,17 +872,13 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "new_dataset_button" )
         self.check_page_for_string( '1 new datasets added to the library ( each is selected below )' )
         self.home()
-    def add_dataset_to_folder_from_history( self, folder_id ):
+    def add_history_datasets_to_library( self, folder_id ):
         """Copy a dataset from the current history to a library folder"""
         # Create a new history
         self.new_history()
         self.upload_file( "1.bed" )
         self.home()
-        self.visit_url( "%s/admin/add_dataset_to_folder_from_history?folder_id=%s" % ( self.url, folder_id ) )
-        self.check_page_for_string( 'Active datasets in your current history' )
-        tc.fv( "1", "folder_id", folder_id )
-        tc.fv( "1", "ids", "1" )
-        tc.submit( "add_dataset_from_history_button" )
+        self.visit_url( "%s/admin/add_history_datasets_to_library?folder_id=%s&ids=1&add_dataset_from_history_button=Add+selected+datasets" % ( self.url, folder_id ) )
         self.check_page_for_string( 'Added the following datasets to the library folder: 1.bed' )
         self.home()
     def add_datasets_from_library_dir( self, folder_id, extension='auto', dbkey='hg18', roles_tuple=[] ):

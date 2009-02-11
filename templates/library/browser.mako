@@ -14,7 +14,6 @@ def name_sorted( l ):
 %>
 
 <script type="text/javascript">
-    //var q = jQuery.noConflict();
     $( document ).ready( function () {
         // Check/uncheck boxes in subfolders.
         $("input.folderCheckbox").click( function() {
@@ -139,14 +138,14 @@ def name_sorted( l ):
                 <div popupmenu="folder-${parent.id}-popup">
             %endif
             %if add_folder_item:
-                <a class="action-button" href="${h.url_for( controller='library', action='dataset', folder_id=parent.id )}">Add a new dataset to this folder</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='dataset', folder_id=parent.id )}">Add datasets to this folder</a>
                 <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, folder_id=parent.id )}">Create a new sub-folder in this folder</a>
             %endif
             %if modify_folder:
-                <a class="action-button" href="${h.url_for( controller='library', action='folder', rename=True, folder_id=parent.id )}">Rename this folder</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', rename=True, folder_id=parent.id )}">Edit this folder</a>
             %endif
             %if manage_folder:
-                <a class="action-button" href="${h.url_for( controller='library', action='folder', rename=True, folder_id=parent.id )}">Manage this folder</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', manage=True, folder_id=parent.id )}">Manage this folder's permissions</a>
             %endif
             %if add_folder_item or modify_folder or manage_folder:
                 </div>
@@ -161,9 +160,9 @@ def name_sorted( l ):
     %for folder in name_sorted( parent.active_folders ):
         ${render_folder( folder, pad )}
     %endfor
-    %for dataset in name_sorted( parent.active_datasets ):
-        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=dataset.dataset ):
-            <li class="datasetRow" style="padding-left: ${pad + 20}px;">${render_dataset( dataset )}</li>
+    %for library_dataset in name_sorted( parent.active_datasets ):
+        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=library_dataset.dataset ):
+            <li class="datasetRow" style="padding-left: ${pad + 20}px;">${render_dataset( library_dataset )}</li>
         %endif
     %endfor
     </ul>
@@ -179,7 +178,7 @@ def name_sorted( l ):
     No libraries contain datasets that you are allowed to access
 %else:
     <% can_access = False %>
-    <form name="import_from_library" action="${h.url_for( controller='library', action='import_datasets' )}" method="post">
+    <form name="import_from_library" action="${h.url_for( controller='library', action='datasets' )}" method="post">
         <ul>
             %for library in libraries:
                 %if trans.app.security_agent.check_folder_contents( trans.user, library ) or trans.app.security_agent.show_library_item( trans.user, library ):
@@ -194,10 +193,16 @@ def name_sorted( l ):
                                             %if library.description:
                                                 <i>- ${library.description}</i>
                                             %endif
+                                            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
+                                                <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                                                <div popupmenu="library-${library.id}-popup">
+                                                    <a class="action-button" href="${h.url_for( controller='library', action='library', rename=True, id=library.id )}">Edit this library</a>
+                                                </div>
+                                            %endif
                                             %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
                                                 <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                                                 <div popupmenu="library-${library.id}-popup">
-                                                    <a class="action-button" href="${h.url_for( controller='library', action='edit_library', id=library.id )}">Manage library</a>
+                                                    <a class="action-button" href="${h.url_for( controller='library', action='library', manage=True, id=library.id )}">Manage this library's permissions</a>
                                                 </div>
                                             %endif
                                         </span>
@@ -222,6 +227,11 @@ def name_sorted( l ):
                     <option value="add" selected>Add selected datasets to history</option>
                 %else:
                     <option value="add">Add selected datasets to history</option>
+                %endif
+                %if default_action == 'manage_permissions':
+                    <option value="manage_permissions" selected>Edit selected datasets' permissions</option>
+                %else:
+                    <option value="manage_permissions">Edit selected datasets' permissions</option>
                 %endif
                 %if default_action == 'download':
                     <option value="zip" selected>Download selected datasets as a .zip file</option>

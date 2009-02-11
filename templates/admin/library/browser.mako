@@ -1,6 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="common.mako" import="render_dataset" />
 <%namespace file="/message.mako" import="render_msg" />
+<% from galaxy import util %>
 
 <%def name="title()">Import from Library</%def>
 <%def name="stylesheets()">
@@ -14,7 +15,6 @@ def name_sorted( l ):
 %>
 
 <script type="text/javascript">
-    //var q = jQuery.noConflict();
     $( document ).ready( function () {
         // Hide all the folder contents
         $("ul").filter("ul#subFolder").hide();
@@ -75,8 +75,6 @@ def name_sorted( l ):
 
 <%def name="render_folder( parent, parent_pad, deleted, created_ldda_ids )">
     <%
-        ##if not trans.app.security_agent.check_folder_contents( trans.user, parent ):
-        ##  return ""
         pad = parent_pad + 20
         if parent_pad == 0:
             expander = "/static/images/silk/resultset_bottom.png"
@@ -86,11 +84,9 @@ def name_sorted( l ):
             expander = "/static/images/silk/resultset_next.png"
             folder = "/static/images/silk/folder.png"
             subfolder = True
-
-        if created_ldda_ids and not isinstance ( created_ldda_ids, list ):
-            created_ldda_id_list = created_ldda_ids.split( ',' )
-            if created_ldda_id_list:
-               created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
+        created_ldda_id_list = util.listify( created_ldda_ids )
+        if created_ldda_id_list:
+           created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
     %>
     <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
         <div class="rowTitle">
@@ -103,13 +99,13 @@ def name_sorted( l ):
         </div>
         %if not deleted:
             <div popupmenu="folder-${parent.id}-popup">
-                <a class="action-button" href="${h.url_for( controller='admin', action='dataset', folder_id=parent.id )}">Add a new dataset to this folder</a>
-                <a class="action-button" href="${h.url_for( controller='admin', action='add_dataset_to_folder_from_history', folder_id=parent.id )}">Copy a dataset from your history to this folder</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='dataset', folder_id=parent.id )}">Add datasets to this folder</a>
                 <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=parent.id )}">Create a new sub-folder in this folder</a>
-                <a class="action-button" href="${h.url_for( controller='admin', action='folder', rename=True, id=parent.id )}">Edit this folder</a>
-                %if subfolder:
-                    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
-                %endif
+                <a class="action-button" href="${h.url_for( controller='admin', action='folder', manage=True, id=parent.id )}">Edit this folder</a>
+                ## TODO: need to revamp the way folders and contained LibraryDatasets are deleted
+                ##%if subfolder:
+                ##    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
+                ##%endif
             </div>
         %endif
     </li>
@@ -131,15 +127,12 @@ def name_sorted( l ):
     %endif
     %for folder in name_sorted( parent_folders ):
         ${render_folder( folder, pad, deleted, created_ldda_ids )}
-    %endfor
-    %for dataset in name_sorted( parent_datasets ):
+    %endfor    
+    %for library_dataset in name_sorted( parent_datasets ):
         <%
-            if created_ldda_ids and dataset.id in created_ldda_ids:
-                selected = True
-            else:
-                selected = False
+            selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
         %>
-        <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( dataset, selected, deleted )}</li>
+        <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( library_dataset, selected, deleted )}</li>
     %endfor
     </ul>
 </%def>
@@ -173,10 +166,9 @@ def name_sorted( l ):
         There are no libraries.
     %endif
 %else:
-    <form name="update_multiple_datasets" action="${h.url_for( action='datasets' )}" onSubmit="javascript:return checkForm();" method="post">
+    <form name="update_multiple_datasets" action="${h.url_for( controller='admin', action='datasets' )}" onSubmit="javascript:return checkForm();" method="post">
         <ul>
             %for library in libraries:
-                ##%if trans.app.security_agent.check_folder_contents( trans.user, library ):
                 <li class="libraryRow libraryOrFolderRow" id="libraryRow">
                     <div class="rowTitle">
                         <table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle">
@@ -189,14 +181,15 @@ def name_sorted( l ):
                                 <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                                 %if not deleted:
                                     <div popupmenu="library-${library.id}-popup">
-                                        <a class="action-button" href="${h.url_for( action='library', rename=True, id=library.id )}">Edit this library</a>
-                                        <a class="action-button" confirm="Current state will not be saved, so undeleting the library will restore all of its contents.  Click OK to delete the library named '${library.name}'?" href="${h.url_for( action='library', delete=True, id=library.id )}">Delete this library and its contents</a>
+                                        <a class="action-button" href="${h.url_for( action='library', manage=True, id=library.id )}">Edit this library</a>
+                                        ## TODO: need to revamp the way libraries, folders, and contained LibraryDatasets are deleted
+                                        ##<a class="action-button" confirm="Current state will not be saved, so undeleting the library will restore all of its contents.  Click OK to delete the library named '${library.name}'?" href="${h.url_for( action='library', delete=True, id=library.id )}">Delete this library and its contents</a>
                                     </div>
-                                %else:
-                                    <div popupmenu="library-${library.id}-popup">
-                                        <a class="action-button" href="${h.url_for( action='undelete_library', id=library.id )}">Undelete this library and its contents</a>
-                                        <a class="action-button" href="${h.url_for( action='purge_library', id=library.id )}">Purge this library and its contents</a>
-                                    </div>
+                                ##%else:
+                                ##    <div popupmenu="library-${library.id}-popup">
+                                ##        <a class="action-button" href="${h.url_for( action='undelete_library', id=library.id )}">Undelete this library and its contents</a>
+                                ##        <a class="action-button" href="${h.url_for( action='purge_library', id=library.id )}">Purge this library and its contents</a>
+                                ##    </div>
                                 %endif
                             </th>
                             <th width="100">Format</th>
@@ -209,15 +202,14 @@ def name_sorted( l ):
                     ${render_folder( library.root_folder, 0, deleted, created_ldda_ids )}
                 </ul>
                 <br/>
-                ##%endif
             %endfor
         </ul>
         %if not deleted:
             <p>
                 <b>Perform action on selected datasets:</b>
                 <select name="action" id="action_on_datasets_select">
-                    <option value="edit">Edit selected datasets' attributes and permissions</option>
-                    <option value="delete">Remove selected datasets from this library</option>
+                    <option value="edit">Edit selected datasets' permissions</option>
+                    ##TODO: fix deleting library items<option value="delete">Remove selected datasets from this library</option>
                 </select>
                 <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
             </p>

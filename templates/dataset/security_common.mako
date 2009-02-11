@@ -6,7 +6,7 @@
                 in_roles.append( a.role )
         out_roles = filter( lambda x: x not in in_roles, all_roles )
     %>
-    <p><label>${action.action}:</label> ${action.description}</p>
+    <p><b>${action.action}:</b> ${action.description}</p>
     <div style="width: 100%; white-space: nowrap;">
         <div style="float: left; width: 50%;">
             Roles associated:<br/>
@@ -66,23 +66,22 @@
             obj_str = 'unknown object %s' %obj_name
     %>
     <script type="text/javascript">
-        var q = jQuery.noConflict();
-        q( document ).ready( function () {
-            q( '.role_add_button' ).click( function() {
+        $( document ).ready( function () {
+            $( '.role_add_button' ).click( function() {
                 var action = this.id.substring( 0, this.id.lastIndexOf( '_add_button' ) )
                 var in_select = '#' + action + '_in_select';
                 var out_select = '#' + action + '_out_select';
-                return !q( out_select + ' option:selected' ).remove().appendTo( in_select );
+                return !$( out_select + ' option:selected' ).remove().appendTo( in_select );
             });
-            q( '.role_remove_button' ).click( function() {
+            $( '.role_remove_button' ).click( function() {
                 var action = this.id.substring( 0, this.id.lastIndexOf( '_remove_button' ) )
                 var in_select = '#' + action + '_in_select';
                 var out_select = '#' + action + '_out_select';
-                return !q( in_select + ' option:selected' ).remove().appendTo( out_select );
+                return !$( in_select + ' option:selected' ).remove().appendTo( out_select );
             });
-            q( 'form#edit_role_associations' ).submit( function() {
-                q( '.in_select option' ).each(function( i ) {
-                    q( this ).attr( "selected", "selected" );
+            $( 'form#edit_role_associations' ).submit( function() {
+                $( '.in_select option' ).each(function( i ) {
+                    $( this ).attr( "selected", "selected" );
                 });
             });
         });

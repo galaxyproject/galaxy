@@ -270,7 +270,7 @@ def listify( item ):
     Make a single item a single item list, or return a list if passed a
     list.  Passing a None returns an empty list.
     """
-    if item is None:
+    if not item:
         return []
     elif isinstance( item, list ):
         return item

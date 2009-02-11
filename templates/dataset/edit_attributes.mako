@@ -27,7 +27,7 @@
 %>
 
 %if library_source:
-    ${render_msg( 'You are currently viewing a Dataset from a library, you can go <a href="%s">here</a> to view versions.' % ( h.url_for( controller='library', action='library_dataset', id=library_source.id, refer_id=lda_source.id ) ), 'info' )}
+    ${render_msg( 'You are currently viewing a dataset from a library, you can go <a href="%s">here</a> to view versions.' % ( h.url_for( controller='library', action='library_dataset', id=library_source.id, refer_id=lda_source.id ) ), 'info' )}
 %endif
 
 %if edit_allowed:
@@ -81,7 +81,7 @@
                 </div>
             </form>
             %if data.missing_meta():
-                <div class="errormessagesmall">Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.</div>
+                <div class="errormessagesmall">Required metadata values are missing. Some of these values may not be changeable by the user. Selecting "Auto-detect" will attempt to fix these values.</div>
             %endif
         </div>
     </div>
@@ -205,5 +205,5 @@
 ${render_existing_library_item_info( data )}
 <p/>
 %if isinstance( data, trans.app.model.LibraryDatasetDatasetAssociation ):
-    ${render_msg( 'This is a Library Dataset, you can click <a href="%s">here</a> to import it into your history.' % ( h.url_for( controller='library', action='import_datasets', import_ids=data.id, do_action='add' ) ), 'info' )}
+    ${render_msg( 'This is a Library Dataset, you can click <a href="%s">here</a> to import it into your history.' % ( h.url_for( controller='library', action='datasets', ldda_ids=data.id, do_action='add' ) ), 'info' )}
 %endif

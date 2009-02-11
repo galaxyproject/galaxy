@@ -1,54 +1,54 @@
 ## Render the dataset `data`
 <%def name="render_dataset( data )">
     <%
-    ## The data id should be the underlying ldda id, to prevent id collision (could happen when displaying children,
-    ## which are always lddas); and to function more seemlessly with existing code
-    data_id = data.id
-    if isinstance( data, trans.app.model.LibraryDataset ):
-        data_id = data.library_dataset_dataset_association.id
+        ## The received data must always be a LibraryDataset object, but the object id passed to methods from the drop down menu
+        ## should be the underlying ldda id to prevent id collision, which could happen when displaying children, which are always
+        ## lddas and to function correctly with existing code.  We also need to make sure we're displaying the latest version of
+        ## this library_dataset, so we display the attributes from the ldda.
+        ldda = data.library_dataset_dataset_association
     %>
-    <div class="historyItemWrapper historyItem historyItem-${data.state}" id="libraryItem-${data_id}">
+    <div class="historyItemWrapper historyItem historyItem-${data.state}" id="libraryItem-${ldda.id}">
 
         ## Header row for library items (name, state, action buttons)
-    	<div style="overflow: hidden;" class="historyItemTitleBar">		
+        <div style="overflow: hidden;" class="historyItemTitleBar">     
             <table cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                     <td width="*">
-                        <input type="checkbox" name="import_ids" value="${data_id}"/>
-                        <span class="historyItemTitle"><b>${data.display_name()}</b></span>
-                        <a id="dataset-${data_id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                        <div popupmenu="dataset-${data_id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='root', action='edit', lid=data_id )}">View or edit this dataset's attributes and permissions</a>
+                        <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
+                        <span class="historyItemTitle"><b>${ldda.name}</b></span>
+                        <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        <div popupmenu="dataset-${ldda.id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='root', action='edit', lid=ldda.id )}">View or edit this dataset's attributes and permissions</a>
                             %if data.has_data:
-                                <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=data_id )}">Download this dataset</a>
+                                <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id )}">Download this dataset</a>
                             %endif
                         </div>
                     </td>
-                    <td width="100">${data.ext}</td>
-                    <td width="50"><span class="${data.dbkey}">${data.dbkey}</span></td>
-                    <td width="200">${data.info}</td>
+                    <td width="100">${ldda.ext}</td>
+                    <td width="50"><span class="${ldda.dbkey}">${ldda.dbkey}</span></td>
+                    <td width="200">${ldda.info}</td>
                 </tr>
             </table>
         </div>
             
         ## Body for library items, extra info and actions, data "peek"
-        <div id="info${data_id}" class="historyItemBody">
-            <div>${data.blurb}</div>
+        <div id="info${ldda.id}" class="historyItemBody">
+            <div>${ldda.blurb}</div>
             <div> 
                 %if data.has_data:
                     %for display_app in data.datatype.get_display_types():
                         <% display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                         %if len( display_links ) > 0:
                             ${data.datatype.get_display_label(display_app)}
-    			            %for display_name, display_link in display_links:
-    			                <a target="_blank" href="${display_link}">${display_name}</a> 
-    			            %endfor
+                            %for data.name, display_link in display_links:
+                                <a target="_blank" href="${display_link}">${data.name}</a> 
+                            %endfor
                         %endif
                     %endfor
                 %endif
             </div>
-            %if data.peek != "no peek":
-                <div><pre id="peek${data_id}" class="peek">${data.display_peek()}</pre></div>
+            %if ldda.peek != "no peek":
+                <div><pre id="peek${ldda.id}" class="peek">${ldda.display_peek()}</pre></div>
             %endif
             ## Recurse for child datasets
             %if len( data.visible_children ) > 0:

@@ -164,7 +164,7 @@ class DatasetInterface( BaseController ):
         create_new_history = False
         if source_dataset_ids:
             if not isinstance( source_dataset_ids, list ):
-            	source_dataset_ids = source_dataset_ids.split( "," )
+                source_dataset_ids = source_dataset_ids.split( "," )
             source_dataset_ids = map( int, source_dataset_ids )
         else:
             source_dataset_ids = []
@@ -288,44 +288,42 @@ def add_file( trans, file_obj, name, extension, dbkey, last_used_build, roles, i
         library_dataset.flush()
         if permission_source:
             trans.app.security_agent.copy_library_permissions( permission_source, library_dataset, user=trans.get_user() )
-    dataset = trans.app.model.LibraryDatasetDatasetAssociation( name=name, 
-                                                               info=info, 
-                                                               extension=data_type, 
-                                                               dbkey=dbkey, 
-                                                               library_dataset = library_dataset,
-                                                               create_dataset=True )
-    dataset.flush()
+    ldda = trans.app.model.LibraryDatasetDatasetAssociation( name=name, 
+                                                             info=info, 
+                                                             extension=data_type, 
+                                                             dbkey=dbkey, 
+                                                             library_dataset = library_dataset,
+                                                             create_dataset=True )
+    ldda.flush()
     if permission_source:
-        trans.app.security_agent.copy_library_permissions( permission_source, dataset, user=trans.get_user() )
+        trans.app.security_agent.copy_library_permissions( permission_source, ldda, user=trans.get_user() )
     if not replace_dataset:
         folder = trans.app.model.LibraryFolder.get( folder_id )
         folder.add_dataset( library_dataset, genome_build=last_used_build )
-    library_dataset.library_dataset_dataset_association_id = dataset.id
+    library_dataset.library_dataset_dataset_association_id = ldda.id
     library_dataset.flush()
     if roles:
         for role in roles:
-            dp = trans.app.model.DatasetPermissions( RBACAgent.permitted_actions.DATASET_ACCESS.action, dataset.dataset, role )
+            dp = trans.app.model.DatasetPermissions( RBACAgent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role )
             dp.flush()
-    shutil.move( temp_name, dataset.dataset.file_name )
-    dataset.dataset.state = dataset.dataset.states.OK
-    dataset.init_meta()
+    shutil.move( temp_name, ldda.dataset.file_name )
+    ldda.dataset.state = ldda.dataset.states.OK
+    ldda.init_meta()
     if line_count is not None:
         try:
-            dataset.set_peek( line_count=line_count )
+            ldda.set_peek( line_count=line_count )
         except:
-            dataset.set_peek()
+            ldda.set_peek()
     else:
-        dataset.set_peek()
-    dataset.set_size()
-    if dataset.missing_meta():
-        dataset.datatype.set_meta( dataset )
+        ldda.set_peek()
+    ldda.set_size()
+    if ldda.missing_meta():
+        ldda.datatype.set_meta( ldda )
     trans.app.model.flush()
-    return dataset
+    return ldda
 
 def upload_dataset( trans, controller=None, last_used_build='?', folder_id=None, replace_dataset=None, replace_id=None, permission_source=None, **kwd ):
-    # This method is called from both the admin and library controllers.  Since it is used
-    # for adding datasets to libraries, it differs slightly from the method in the upload tool.
-    # We should merge the 2 methods, if possible, when time permits.
+    # This method is called from both the admin and library controllers
     params = util.Params( kwd )
     msg = util.restore_text( params.get( 'msg', ''  ) )
     messagetype = params.get( 'messagetype', 'done' )

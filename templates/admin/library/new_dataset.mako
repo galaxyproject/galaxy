@@ -14,7 +14,7 @@
             %if replace_dataset is not None:
             <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
             <div class="form-row">
-                You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='dataset', id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='dataset', ldda_id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
                 <div style="clear: both"></div>
             </div>
             %else:
@@ -116,3 +116,27 @@
         </form>
     </div>
 </div>
+%if history and history.active_datasets:
+    <div class="toolForm">
+        <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
+        <div class="toolFormBody">
+            <form name="add_history_datasets_to_library" action="${h.url_for( controller='admin', action='add_history_datasets_to_library' )}" enctype="multipart/form-data" method="post">
+                %if replace_dataset:
+                    <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
+                    <div class="form-row">
+                        You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='dataset', ldda_id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                        <div style="clear: both"></div>
+                    </div>
+                %else:
+                    <input type="hidden" name="folder_id" value="${folder_id}"/>
+                %endif
+                %for dataset in history.active_datasets:
+                    <div class="form-row">
+                        <input name="ids" value="${dataset.id}" type="checkbox"/>${dataset.hid}: ${dataset.name}
+                    </div>
+                %endfor
+                <input type="submit" name="add_history_datasets_to_library" value="Add selected datasets"/>
+            </form>
+        </div>
+    </div>
+%endif
