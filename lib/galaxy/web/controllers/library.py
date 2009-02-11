@@ -21,10 +21,12 @@ class Library( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        created_ldda_ids = params.get( 'created_ldda_ids', '' )
         libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                            .order_by( trans.app.model.Library.table.c.name ).all()
         return trans.fill_template( '/library/browser.mako',
                                     libraries=libraries,
+                                    created_ldda_ids=created_ldda_ids,
                                     default_action=kwd.get( 'default_action', None ),
                                     msg=msg,
                                     messagetype=messagetype )
@@ -61,8 +63,7 @@ class Library( BaseController ):
             trans.response.send_redirect( web.url_for( controller='library',
                                                        action='dataset',
                                                        ldda_id=','.join( ldda_ids ),
-                                                       msg=util.sanitize_text( msg ),
-                                                       messagetype=messagetype ) )
+                                                       **kwd ) )
         else:
             # Can't use mkstemp - the file must not exist first
             try:
@@ -229,6 +230,23 @@ class Library( BaseController ):
                                                                       ldda_id=ldda_id,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
+                ldda.datatype.before_edit( ldda )
+                if "dbkey" in ldda.datatype.metadata_spec and not ldda.metadata.dbkey:
+                    # Copy dbkey into metadata, for backwards compatability
+                    # This looks like it does nothing, but getting the dbkey
+                    # returns the metadata dbkey unless it is None, in which
+                    # case it resorts to the old dbkey.  Setting the dbkey
+                    # sets it properly in the metadata
+                    ldda.metadata.dbkey = ldda.dbkey
+                # let's not overwrite the imported datatypes module with the variable datatypes?
+                ### the built-in 'id' is overwritten in lots of places as well
+                ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
+                ldatatypes.sort()
+                return trans.fill_template( "/library/manage_dataset.mako",
+                                            dataset=ldda,
+                                            datatypes=ldatatypes,
+                                            msg=msg,
+                                            messagetype=messagetype )
             elif ldda_ids:
                 # Multiple ids specfied, display permission form, permissions will be updated for all simultaneously.
                 lddas = []
@@ -247,8 +265,7 @@ class Library( BaseController ):
                                                                action='browser',
                                                                msg=util.sanitize_text( msg ),
                                                                messagetype='error' ) )
-                if 'update_roles' in kwd:
-                    #p = util.Params( kwd )
+                if params.get( 'do_action', False ):
                     permissions = {}
                     for k, v in trans.app.model.Dataset.permitted_actions.items():
                         in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
@@ -284,7 +301,6 @@ class Library( BaseController ):
             if params.get( 'new_dataset_button', False ):
                 created_ldda_ids = upload_dataset( trans,
                                                    controller='library', 
-                                                   last_used_build=last_used_build,
                                                    folder_id=folder_id, 
                                                    replace_dataset=replace_dataset, 
                                                    permission_source=permission_source, 
@@ -294,8 +310,8 @@ class Library( BaseController ):
                     if trans.app.security_agent.allow_action( trans.user,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
                                                               library_item=permission_source ):
-                        msg = "%i new datasets added to the library ( each is selected below ).  " + \
-                            "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary." % total_added
+                        msg = "%i new datasets added to the library ( each is selected below ).  "  % total_added + \
+                            "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                         default_action = 'manage_permissions'
                     else:
                         msg = "%i new datasets added to the library." % total_added

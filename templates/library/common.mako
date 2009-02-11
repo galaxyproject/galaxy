@@ -1,5 +1,5 @@
 ## Render the dataset `data`
-<%def name="render_dataset( data )">
+<%def name="render_dataset( data, selected )">
     <%
         ## The received data must always be a LibraryDataset object, but the object id passed to methods from the drop down menu
         ## should be the underlying ldda id to prevent id collision, which could happen when displaying children, which are always
@@ -8,13 +8,16 @@
         ldda = data.library_dataset_dataset_association
     %>
     <div class="historyItemWrapper historyItem historyItem-${data.state}" id="libraryItem-${ldda.id}">
-
         ## Header row for library items (name, state, action buttons)
         <div style="overflow: hidden;" class="historyItemTitleBar">     
             <table cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                     <td width="*">
-                        <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
+                        %if selected:
+                            <input type="checkbox" name="ldda_ids" value="${ldda.id}" checked/>
+                        %else:
+                            <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
+                        %endif
                         <span class="historyItemTitle"><b>${ldda.name}</b></span>
                         <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="dataset-${ldda.id}-popup">
@@ -55,7 +58,7 @@
                 <div>
                     There are ${len( data.visible_children )} secondary datasets.
                     %for idx, child in enumerate( data.visible_children ):
-                        ${render_dataset( child )}
+                        ${render_dataset( child, selected )}
                     %endfor
                 </div>
             %endif

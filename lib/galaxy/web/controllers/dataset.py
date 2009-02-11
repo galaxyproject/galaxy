@@ -227,8 +227,8 @@ class DatasetInterface( BaseController ):
                                     done_msg = done_msg,
                                     error_msg = error_msg )
 
-def add_file( trans, file_obj, name, extension, dbkey, last_used_build, roles, info='no info', 
-              space_to_tab=False, replace_dataset=None, permission_source=None, folder_id=None ):
+def add_file( trans, file_obj, name, extension, dbkey, roles, info='no info', space_to_tab=False,
+              replace_dataset=None, permission_source=None, folder_id=None ):
     def check_gzip( temp_name ):
         # Utility method to check gzipped uploads
         temp = open( temp_name, "U" )
@@ -299,7 +299,7 @@ def add_file( trans, file_obj, name, extension, dbkey, last_used_build, roles, i
         trans.app.security_agent.copy_library_permissions( permission_source, ldda, user=trans.get_user() )
     if not replace_dataset:
         folder = trans.app.model.LibraryFolder.get( folder_id )
-        folder.add_dataset( library_dataset, genome_build=last_used_build )
+        folder.add_dataset( library_dataset, genome_build=dbkey )
     library_dataset.library_dataset_dataset_association_id = ldda.id
     library_dataset.flush()
     if roles:
@@ -322,14 +322,12 @@ def add_file( trans, file_obj, name, extension, dbkey, last_used_build, roles, i
     trans.app.model.flush()
     return ldda
 
-def upload_dataset( trans, controller=None, last_used_build='?', folder_id=None, replace_dataset=None, replace_id=None, permission_source=None, **kwd ):
+def upload_dataset( trans, controller=None, folder_id=None, replace_dataset=None, replace_id=None, permission_source=None, **kwd ):
     # This method is called from both the admin and library controllers
     params = util.Params( kwd )
     msg = util.restore_text( params.get( 'msg', ''  ) )
     messagetype = params.get( 'messagetype', 'done' )
     dbkey = params.get( 'dbkey', '?' )
-    if last_used_build is None:
-        last_used_build = dbkey
     extension = params.get( 'extension', 'auto' )
     data_file = params.get( 'file_data', '' )
     url_paste = params.get( 'url_paste', '' )
@@ -363,7 +361,6 @@ def upload_dataset( trans, controller=None, last_used_build='?', folder_id=None,
                                  file_name,
                                  extension,
                                  dbkey,
-                                 last_used_build,
                                  roles,
                                  info="uploaded file",
                                  space_to_tab=space_to_tab,
@@ -382,7 +379,6 @@ def upload_dataset( trans, controller=None, last_used_build='?', folder_id=None,
                                              line,
                                              extension,
                                              dbkey,
-                                             last_used_build,
                                              roles,
                                              info="uploaded url",
                                              space_to_tab=space_to_tab,
@@ -403,7 +399,6 @@ def upload_dataset( trans, controller=None, last_used_build='?', folder_id=None,
                                          'Pasted Entry',
                                          extension,
                                          dbkey,
-                                         last_used_build,
                                          roles,
                                          info="pasted entry",
                                          space_to_tab=space_to_tab,
@@ -426,7 +421,6 @@ def upload_dataset( trans, controller=None, last_used_build='?', folder_id=None,
                                      file,
                                      extension,
                                      dbkey,
-                                     last_used_build,
                                      roles,
                                      info="imported file",
                                      space_to_tab=space_to_tab,

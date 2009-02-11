@@ -1,6 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="common.mako" import="render_dataset" />
 <%namespace file="/message.mako" import="render_msg" />
+<% from galaxy import util %>
 
 <%def name="title()">Import from Library</%def>
 <%def name="stylesheets()">
@@ -104,7 +105,7 @@ def name_sorted( l ):
 </script>
 <![endif]>
 
-<%def name="render_folder( parent, parent_pad )">
+<%def name="render_folder( parent, parent_pad, created_ldda_ids )">
     <%
         def show_folder():
             if trans.app.security_agent.check_folder_contents( trans.user, parent ) or trans.app.security_agent.show_library_item( trans.user, parent ):
@@ -124,6 +125,9 @@ def name_sorted( l ):
         add_folder_item = trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent )
         modify_folder = trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent )
         manage_folder = trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent )
+        created_ldda_id_list = util.listify( created_ldda_ids )
+        if created_ldda_id_list:
+           created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
     %>
     <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
         <input type="checkbox" class="folderCheckbox" style="float: left;"/>
@@ -158,11 +162,14 @@ def name_sorted( l ):
         <ul>
     %endif
     %for folder in name_sorted( parent.active_folders ):
-        ${render_folder( folder, pad )}
+        ${render_folder( folder, pad, created_ldda_ids )}
     %endfor
     %for library_dataset in name_sorted( parent.active_datasets ):
+        <%
+            selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
+        %>
         %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=library_dataset.dataset ):
-            <li class="datasetRow" style="padding-left: ${pad + 20}px;">${render_dataset( library_dataset )}</li>
+            <li class="datasetRow" style="padding-left: ${pad + 20}px;">${render_dataset( library_dataset, selected )}</li>
         %endif
     %endfor
     </ul>
@@ -215,7 +222,7 @@ def name_sorted( l ):
                         </div>
                     </li>
                     <ul>
-                        ${render_folder( library.root_folder, 0 )}
+                        ${render_folder( library.root_folder, 0, created_ldda_ids )}
                     </ul>
                     <br/>
                 %endif

@@ -1103,11 +1103,10 @@ class Admin( BaseController ):
             replace_dataset = None
         if params.get( 'new_dataset_button', False ):
             created_ldda_ids = upload_dataset( trans,
-                                                          controller='admin', 
-                                                          last_used_build=last_used_build,
-                                                          folder_id=folder_id, 
-                                                          replace_dataset=replace_dataset,
-                                                          **kwd )
+                                               controller='admin', 
+                                               folder_id=folder_id, 
+                                               replace_dataset=replace_dataset,
+                                               **kwd )
             if created_ldda_ids:
                 total_added = len( created_ldda_ids.split( ',' ) )
                 msg = "%i new datasets added to the library ( each is selected below ).  " % total_added
@@ -1257,7 +1256,6 @@ class Admin( BaseController ):
             return trans.fill_template( "/admin/library/manage_dataset.mako", 
                                         dataset=ldda, 
                                         datatypes=ldatatypes,
-                                        err=None,
                                         msg=msg,
                                         messagetype=messagetype )
         elif ldda_ids:
