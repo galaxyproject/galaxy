@@ -36,8 +36,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/folder?id=1&new=True" % self.url )
         self.check_page_for_string( not_logged_in_security_msg )
-        self.visit_url( "%s/admin/dataset" % self.url )
-        self.check_page_for_string( not_logged_in_security_msg )
     def test_005_login_as_admin_user( self ):
         """Testing logging in as an admin user test@bx.psu.edu - tests initial settings for DefaultUserPermissions and DefaultHistoryPermissions"""
         self.login( email='test@bx.psu.edu' ) # test@bx.psu.edu is configured as our admin user
@@ -717,7 +715,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         def build_url( permissions, role ):
             # We'll bypass the admin/datasets method and directly call the admin/dataset method, setting
             # access, manage permissions, and edit metadata permissions to role_one
-            url = '/admin/dataset?ldda_id=%s&update_roles=Save' % ldda_ids
+            url = '/admin/library_dataset_dataset_association?id=%s&update_roles=Save' % ldda_ids
             for p in permissions:
                 url += '&%s_in=%s' % ( p, str( role.id ) )
             return url
@@ -776,7 +774,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 self.check_page_for_string( 'View Attributes' )
                 try:
                     # This should no longer be possible
-                    self.check_page_for_string( 'Manage permissions and role associations for %s' % ldda.name )
+                    self.check_page_for_string( 'Manage permissions and role associations of %s' % ldda.name )
                     self.check_page_for_string( 'select name="DATASET_MANAGE_PERMISSIONS_in"' )
                     raise AssertionError( '%s incorrectly has DATASET_MANAGE_PERMISSIONS on datasets imported from a library' % admin_user.email )
                 except:

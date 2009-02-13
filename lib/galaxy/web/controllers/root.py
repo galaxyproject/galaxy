@@ -210,6 +210,7 @@ class RootController( BaseController ):
             data = history.datasets[ int( hid ) - 1 ]
         elif lid is not None:
             data = self.app.model.LibraryDatasetDatasetAssociation.get( lid )
+            # TODO: not sure if lid will ever be received here, using library controller instead...
         elif id is not None: 
             data = self.app.model.HistoryDatasetAssociation.get( id )
         else:
@@ -309,7 +310,7 @@ class RootController( BaseController ):
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
             return trans.fill_template( "/dataset/edit_attributes.mako", data=data, datatypes=ldatatypes, err=None, edit_allowed = edit_allowed )
         else:
-            return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % id )
+            return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( id ) )
 
     def __delete_dataset( self, trans, id ):
         data = self.app.model.HistoryDatasetAssociation.get( id )

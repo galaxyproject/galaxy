@@ -21,7 +21,22 @@
                         <span class="historyItemTitle"><b>${ldda.name}</b></span>
                         <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="dataset-${ldda.id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='root', action='edit', lid=ldda.id )}">View or edit this dataset's attributes and permissions</a>
+                            <%
+                                if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda ) or \
+                                    trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=ldda ) or \
+                                    trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=ldda.dataset ):
+                                    menu_label = "Edit this dataset's information"
+                                else:
+                                    menu_label = "View this dataset's information"
+                            %>
+                            <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=ldda.id )}">${menu_label}</a>
+                            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=data ):
+                                <%
+                                    library_item_ids = {}
+                                    library_item_ids[ 'library_dataset' ] = data.id
+                                %>
+                                <a class="action-button" href="${h.url_for( controller='library', action='library_item_info_template', library_dataset_id=data.id, new_element_count=5, **library_item_ids )}">Create a new information template for this dataset</a>
+                            %endif
                             %if data.has_data:
                                 <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id )}">Download this dataset</a>
                             %endif
@@ -72,34 +87,39 @@
         library_item_info_associations = []
         if isinstance( library_item, trans.app.model.Library ):
             library_item_type = 'library'
+            library_item_desc = 'library'
             library_item_info_associations = library_item.library_info_associations
         elif isinstance( library_item, trans.app.model.LibraryFolder ):
             library_item_type = 'folder'
+            library_item_desc = 'folder'
             library_item_info_associations = library_item.library_folder_info_associations
         elif isinstance( library_item, trans.app.model.LibraryDataset ):
             library_item_type = 'library_dataset'
+            library_item_desc = 'library dataset'
             library_item_info_associations = library_item.library_dataset_info_associations
         elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
             library_item_type = 'library_dataset_dataset_association'
+            library_item_desc = 'library dataset <-> dataset association'
             library_item_info_associations = library_item.library_dataset_dataset_info_associations
     %>
     <div class="toolForm">
-        <div class="toolFormTitle">Available Library Item Info</div>
+        <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
         <div class="toolFormBody">
             %for available_info_assoc in library_item_info_associations:
-                <div class="form-row">
-                    <a href="${h.url_for( controller='library',
-                                          action='library_item_info',
-                                          do_action='display',
-                                          id=available_info_assoc.library_item_info.id )}">${available_info_assoc.library_item_info.library_item_info_template.name}</a>
-                </div>
+                %for template_info_element in available_info_assoc.library_item_info.library_item_info_template.elements:
+                    <div class="form-row">
+                        <b>${template_info_element.name}:</b>
+                        ${available_info_assoc.library_item_info.get_element_by_template_element( template_info_element ).contents}
+                        <div style="clear: both"></div>
+                    </div>
+                %endfor
                 <div style="clear: both"></div>
             %endfor
-            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library_item ):
-                <div class="form-row">
-                    Add <a href="${h.url_for( controller='library', action='library_item_info', do_action='new_info', library_item_id=library_item.id, library_item_type=library_item_type )}">new</a> info
-                </div>
-            %endif
+            ##%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library_item ):
+            ##    <div class="form-row">
+            ##        Add <a href="${h.url_for( controller='library', action='library_item_info', do_action='new_info', library_item_id=library_item.id, library_item_type=library_item_type )}">new</a> info
+            ##    </div>
+            ##%endif
         </div>
     </div>
 </%def>
@@ -109,22 +129,57 @@
         library_item_type = None
         if isinstance( library_item, trans.app.model.Library ):
             library_item_type = 'library'
+            library_item_desc = 'library'
         elif isinstance( library_item, trans.app.model.LibraryFolder ):
             library_item_type = 'folder'
+            library_item_desc = 'folder'
         elif isinstance( library_item, trans.app.model.LibraryDataset ):
             library_item_type = 'library_dataset'
+            library_item_desc = 'library dataset'
         elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
             library_item_type = 'library_dataset_dataset_association'
+            library_item_desc = 'library dataset <-> dataset association'
     %>
     <div class="toolForm">
-        <div class="toolFormTitle">Available Info Templates to be filled in</div>
+        <div class="toolFormTitle">Available templates that provide information about this ${library_item_desc}</div>
         <div class="toolFormBody">
+            ## TODO: add the following new feature
+            ##%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library_item ):
+            ##    <div class="form-row">
+            ##        <a class="action-button" href="${h.url_for( controller='library', action='library_item_info_template', new_element_count=1, **library_item_ids )}"><span>Create a new template</span></a></li>
+            ##    </div>
+            ##%endif
             %for available_template in library_item.get_library_item_info_templates( [] ):
                 ##if we don't provide an empty list, strange things happen on reloads.... (why? - some sort of mako caching?)
-                <form name="edit_attributes" action="${h.url_for( controller='library', action='library_item_info', do_action='new_info' )}" method="post">
-                    <input type="hidden" name="library_item_id" value="${library_item.id}"/>
-                    <input type="hidden" name="library_item_type" value="${library_item_type}"/>
-                    <input type="hidden" name="library_item_info_template_id" value="${available_template.id}"/>
+                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library_item ):
+                    <form name="add_template_info" action="${h.url_for( controller='library', action='library_item_info', do_action='new_info' )}" method="post">
+                        <input type="hidden" name="library_item_id" value="${library_item.id}"/>
+                        <input type="hidden" name="library_item_type" value="${library_item_type}"/>
+                        <input type="hidden" name="library_item_info_template_id" value="${available_template.id}"/>
+                        <div class="toolForm">
+                            <div class="toolFormTitle">${available_template.name}: ${available_template.description}</div>
+                            <div class="toolFormBody">
+                                <b>Add more information about this ${library_item_desc} using this template</b>
+                                <p/>
+                                %for info_elem in available_template.elements:
+                                    <div class="form-row">
+                                        <b>${info_elem.name}</b>
+                                        <div class="toolParamHelp" style="clear: both;">
+                                            ${info_elem.description}
+                                        </div>
+                                        <div style="float: left; width: 250px; margin-right: 10px;">
+                                            <input type="text" name="info_element_${available_template.id}_${info_elem.id}" value="" size="40"/>
+                                        </div>
+                                        <div style="clear: both"></div>
+                                    </div>
+                                %endfor
+                                <div class="form-row">
+                                    <input type="submit" name="create_new_info_button" value="Save"/>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                %else:
                     <div class="toolForm">
                         <div class="toolFormTitle">${available_template.name}: ${available_template.description}</div>
                         <div class="toolFormBody">
@@ -134,18 +189,12 @@
                                     <div class="toolParamHelp" style="clear: both;">
                                         ${info_elem.description}
                                     </div>
-                                    <div style="float: left; width: 250px; margin-right: 10px;">
-                                        <input type="text" name="info_element_${available_template.id}_${info_elem.id}" value="" size="40"/>
-                                    </div>
                                     <div style="clear: both"></div>
                                 </div>
                             %endfor
-                            <div class="form-row">
-                                <input type="submit" name="create_new_info_button" value="Save"/>
-                            </div>
                         </div>
                     </div>
-                </form>
+                %endif
             %endfor
             <p/>
         </div>

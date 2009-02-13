@@ -338,7 +338,7 @@ def upload_dataset( trans, controller=None, folder_id=None, replace_dataset=None
         else:
             msg = 'Select a file, enter a URL or enter Text.'
         trans.response.send_redirect( web.url_for( controller=controller,
-                                                   action='dataset',
+                                                   action='library_dataset_dataset_association',
                                                    folder_id=folder_id,
                                                    replace_id=replace_id, 
                                                    msg=util.sanitize_text( msg ),

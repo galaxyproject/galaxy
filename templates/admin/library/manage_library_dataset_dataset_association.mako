@@ -6,10 +6,10 @@
 
 <%def name="title()">Edit Dataset Attributes</%def>
 
-<%def name="datatype( dataset, datatypes )">
+<%def name="datatype( ldda, datatypes )">
     <select name="datatype">
         %for ext in datatypes:
-            %if dataset.ext == ext:
+            %if ldda.ext == ext:
                 <option value="${ext}" selected="yes">${ext}</option>
             %else:
                 <option value="${ext}">${ext}</option>
@@ -20,11 +20,11 @@
 
 <%
     roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
-    data_list = util.listify( dataset )
+    data_list = util.listify( ldda )
     if len( data_list ) > 1:
         name_str = '%d selected datasets' % len( data_list )
     else:
-        name_str = dataset.name
+        name_str = ldda.name
 %>
 
 %if msg:
@@ -35,27 +35,19 @@
 
 <p/>
 <table cellspacing="0" cellpadding="5" border="0" width="100%" class="libraryTitle">
-    %for d in data_list:
-        <%
-            if isinstance( d, trans.app.model.LibraryDataset ):
-                library_dataset_id = d.id
-            elif isinstance( d, trans.app.model.LibraryDatasetDatasetAssociation ):
-                library_dataset_id = d.library_dataset_id
-            library_item_ids = {}
-            library_item_ids[ 'library_dataset_id' ] = library_dataset_id
-        %>
+    %for ldd_assoc in data_list:
         <tr>
             <td>
                 <div class="rowTitle">
-                    <span class="historyItemTitle"><b>${d.name}</b></span>
-                    <a id="dataset-${library_dataset_id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                    <span class="historyItemTitle"><b>${ldd_assoc.name}</b></span>
+                    <a id="ldda-${ldd_assoc.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </div>
-                <div popupmenu="dataset-${library_dataset_id}-popup">
-                    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset', id=library_dataset_id )}">Manage this dataset's versions</a>
+                <div popupmenu="ldd_assoc-${ldd_assoc.id}-popup">
+                    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset', id=ldd_assoc.library_dataset_id )}">Manage this dataset's versions</a>
                 </div>
             </td>
             <td>
-                %if d == d.library_dataset.library_dataset_dataset_association:
+                %if ldd_assoc == ldd_assoc.library_dataset.library_dataset_dataset_association:
                     <i>This is the latest version of this library dataset</i>
                 %else:
                     <font color="red"><i>This is an expired version of this library dataset</i></font>
@@ -66,34 +58,34 @@
 </table>
 <p/>
 
-${render_permission_form( data_list[0], name_str, h.url_for( action='dataset' ), 'ldda_id', ",".join( [ str( d.id ) for d in data_list ] ), roles )}
+${render_permission_form( data_list[0], name_str, h.url_for( action='library_dataset_dataset_association' ), 'id', ",".join( [ str( d.id ) for d in data_list ] ), roles )}
 
 %if len( data_list ) == 1:
     <div class="toolForm">
-        <div class="toolFormTitle">Edit Attributes for ${dataset.name}</div>
+        <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( controller='admin', action='dataset' )}" method="post">
-                <input type="hidden" name="ldda_id" value="${dataset.id}"/>
+            <form name="edit_attributes" action="${h.url_for( controller='admin', action='library_dataset_dataset_association' )}" method="post">
+                <input type="hidden" name="id" value="${ldda.id}"/>
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="name" value="${dataset.name}" size="40"/>
+                        <input type="text" name="name" value="${ldda.name}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Info:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="info" value="${dataset.info}" size="40"/>
+                        <input type="text" name="info" value="${ldda.info}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div> 
-                %for name, spec in dataset.metadata.spec.items():
+                %for name, spec in ldda.metadata.spec.items():
                     %if spec.visible:
                         <div class="form-row">
                             <label>${spec.desc}:</label>
                             <div style="float: left; width: 250px; margin-right: 10px;">
-                                ${dataset.metadata.get_html_by_name( name )}
+                                ${ldda.metadata.get_html_by_name( name )}
                             </div>
                             <div style="clear: both"></div>
                         </div>
@@ -103,8 +95,8 @@ ${render_permission_form( data_list[0], name_str, h.url_for( action='dataset' ),
                     <input type="submit" name="save" value="Save"/>
                 </div>
             </form>
-            <form name="auto_detect" action="${h.url_for( controller='admin', action='dataset' )}" method="post">
-                <input type="hidden" name="ldda_id" value="${dataset.id}"/>
+            <form name="auto_detect" action="${h.url_for( controller='admin', action='library_dataset_dataset_association' )}" method="post">
+                <input type="hidden" name="id" value="${ldda.id}"/>
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="submit" name="detect" value="Auto-detect"/>
                 </div>
@@ -116,14 +108,14 @@ ${render_permission_form( data_list[0], name_str, h.url_for( action='dataset' ),
     </div>
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Change data type</div>
+        <div class="toolFormTitle">Change data type of ${ldda.name}</div>
         <div class="toolFormBody">
-            <form name="change_datatype" action="${h.url_for( controller='admin', action='dataset' )}" method="post">
-                <input type="hidden" name="ldda_id" value="${dataset.id}"/>
+            <form name="change_datatype" action="${h.url_for( controller='admin', action='library_dataset_dataset_association' )}" method="post">
+                <input type="hidden" name="id" value="${ldda.id}"/>
                 <div class="form-row">
                     <label>New Type:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        ${datatype( dataset, datatypes )}
+                        ${datatype( ldda, datatypes )}
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
                         This will change the datatype of the existing dataset
@@ -139,6 +131,5 @@ ${render_permission_form( data_list[0], name_str, h.url_for( action='dataset' ),
         </div>
     </div>
     <p/>
+    ${render_available_templates( ldda.library_dataset )}
 %endif
-
-##${render_available_templates( dataset )}

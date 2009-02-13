@@ -861,7 +861,7 @@ class TwillTestCase( unittest.TestCase ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
-        self.visit_url( "%s/admin/dataset?folder_id=%s&new=True" % ( self.url, folder_id ) )
+        self.visit_url( "%s/admin/library_dataset_dataset_association?folder_id=%s&new=True" % ( self.url, folder_id ) )
         self.check_page_for_string( 'Create a new library dataset' )
         tc.fv( "1", "folder_id", folder_id ) # form field 1 is the field named folder_id...
         tc.formfile( "1", "file_data", filename ) # form field 2 is the field named file_data...
@@ -885,7 +885,7 @@ class TwillTestCase( unittest.TestCase ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
-        self.visit_url( "%s/admin/dataset?folder_id=%s" % ( self.url, folder_id ) )
+        self.visit_url( "%s/admin/library_dataset_dataset_association?folder_id=%s" % ( self.url, folder_id ) )
         self.check_page_for_string( 'Create a new library dataset' )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "extension", extension )

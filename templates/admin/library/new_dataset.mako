@@ -10,11 +10,11 @@
 <div class="toolForm" id="new_dataset">
     <div class="toolFormTitle">Create a new library dataset</div>
     <div class="toolFormBody">
-        <form name="tool_form" action="${h.url_for( controller='admin', action='dataset' )}" enctype="multipart/form-data" method="post">
+        <form name="tool_form" action="${h.url_for( controller='admin', action='library_dataset_dataset_association' )}" enctype="multipart/form-data" method="post">
             %if replace_dataset is not None:
             <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
             <div class="form-row">
-                You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='dataset', ldda_id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
                 <div style="clear: both"></div>
             </div>
             %else:
@@ -124,7 +124,7 @@
                 %if replace_dataset:
                     <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                     <div class="form-row">
-                        You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='dataset', ldda_id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                        You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
                         <div style="clear: both"></div>
                     </div>
                 %else:

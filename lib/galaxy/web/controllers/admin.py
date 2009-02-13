@@ -1049,7 +1049,7 @@ class Admin( BaseController ):
                                                               messagetype='done' ) )
     @web.expose
     @web.require_admin
-    def library_dataset( self, trans, id=None, name=None, info=None, **kwd ):
+    def library_dataset( self, trans, id, name=None, info=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -1084,7 +1084,7 @@ class Admin( BaseController ):
                                     messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def dataset( self, trans, ldda_id=None, name="Unnamed", info='no info', extension=None, folder_id=None, **kwd ):
+    def library_dataset_dataset_association( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )        
@@ -1123,7 +1123,7 @@ class Admin( BaseController ):
                                                            created_ldda_ids=created_ldda_ids,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
-        elif not ldda_id or replace_dataset:
+        elif not id or replace_dataset:
             # No dataset(s) specified, so display the upload form.
             # Send list of data formats to the form so the "extension" select list can be populated dynamically
             file_formats = trans.app.datatypes_registry.upload_file_formats
@@ -1148,16 +1148,16 @@ class Admin( BaseController ):
                                         messagetype=messagetype,
                                         replace_dataset=replace_dataset )
         else:
-            if ldda_id.count( ',' ):
-                ldda_ids = ldda_id.split( ',' )
-                ldda_id = None
+            if id.count( ',' ):
+                ids = id.split( ',' )
+                id = None
             else:
-                ldda_ids = None
-        if ldda_id:
+                ids = None
+        if id:
             # ldda_id specified, display attributes form
-            ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+            ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
             if not ldda:
-                msg = "Invalid LibraryDatasetDatasetAssociation specified, id: %s" % str( ldda_id )
+                msg = "Invalid LibraryDatasetDatasetAssociation specified, id: %s" % str( id )
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action='library_browser',
                                                                   msg=util.sanitize_text( msg ),
@@ -1178,8 +1178,8 @@ class Admin( BaseController ):
                 ldda.dataset.refresh()
                 msg = "Permissions updated for dataset '%s'" % ldda.name
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='dataset',
-                                                                  ldda_id=ldda_id,
+                                                                  action='library_dataset_dataset_association',
+                                                                  id=id,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
             elif params.get( 'change', False ):
@@ -1188,8 +1188,8 @@ class Admin( BaseController ):
                 trans.app.model.flush()
                 msg = "Data type changed for dataset '%s'" % ldda.name
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='dataset',
-                                                                  ldda_id=ldda_id,
+                                                                  action='library_dataset_dataset_association',
+                                                                  id=id,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
             elif params.get( 'save', False ):
@@ -1211,8 +1211,8 @@ class Admin( BaseController ):
                 trans.app.model.flush()
                 msg = 'Attributes updated for dataset %s' % ldda.name
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='dataset',
-                                                                  ldda_id=ldda_id,
+                                                                  action='library_dataset_dataset_association',
+                                                                  id=id,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
             elif params.get( 'detect', False ):
@@ -1227,8 +1227,8 @@ class Admin( BaseController ):
                 trans.app.model.flush()
                 msg = 'Attributes updated for dataset %s' % ldda.name
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='dataset',
-                                                                  ldda_id=ldda_id,
+                                                                  action='library_dataset_dataset_association',
+                                                                  id=id,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
             elif params.get( 'delete', False ):
@@ -1253,25 +1253,25 @@ class Admin( BaseController ):
             ### the built-in 'id' is overwritten in lots of places as well
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
-            return trans.fill_template( "/admin/library/manage_dataset.mako", 
-                                        dataset=ldda, 
+            return trans.fill_template( "/admin/library/manage_library_dataset_dataset_association.mako", 
+                                        ldda=ldda, 
                                         datatypes=ldatatypes,
                                         msg=msg,
                                         messagetype=messagetype )
-        elif ldda_ids:
+        elif ids:
             # Multiple ids specfied, display permission form, permissions will be updated for all simultaneously.
             lddas = []
-            for ldda_id in [ int( ldda_id ) for ldda_id in ldda_ids ]:
-                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+            for id in [ int( id ) for id in ids ]:
+                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
                 if ldda is None:
-                    msg = 'You specified an invalid LibraryDatasetDatasetAssociation id: %s' %str( ldda_id )
+                    msg = 'You specified an invalid LibraryDatasetDatasetAssociation id: %s' %str( id )
                     trans.response.send_redirect( web.url_for( controller='admin',
                                                                action='library_browser',
                                                                msg=util.sanitize_text( msg ),
                                                                messagetype='error' ) )
                 lddas.append( ldda )
             if len( lddas ) < 2:
-                msg = 'You must specify at least two datasets on which to modify permissions, ids you sent: %s' % str( ldda_ids )
+                msg = 'You must specify at least two datasets on which to modify permissions, ids you sent: %s' % str( ids )
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='library_browser',
                                                            msg=util.sanitize_text( msg ),
@@ -1286,7 +1286,10 @@ class Admin( BaseController ):
                     trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
                     ldda.dataset.refresh()
                 msg = 'Permissions and roles have been updated on %d datasets' % len( lddas )
-                return trans.fill_template( "/admin/library/manage_dataset.mako", msg=msg, messagetype=messagetype, dataset=lddas )
+                return trans.fill_template( "/admin/library/manage_library_dataset_dataset_association.mako",
+                                            ldda=lddas,
+                                            msg=msg,
+                                            messagetype=messagetype )
             # Ensure that the permissions across all datasets are identical.  Otherwise, we can't update together.
             tmp = []
             for ldda in lddas:
@@ -1300,7 +1303,10 @@ class Admin( BaseController ):
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
             else:
-                return trans.fill_template( "/admin/library/manage_dataset.mako", msg=msg, messagetype=messagetype, dataset=lddas )
+                return trans.fill_template( "/admin/library/manage_library_dataset_dataset_association.mako",
+                                            ldda=lddas,
+                                            msg=msg,
+                                            messagetype=messagetype )
     @web.expose
     @web.require_admin
     def add_history_datasets_to_library( self, trans, ids="", folder_id=None, **kwd ):
@@ -1339,83 +1345,107 @@ class Admin( BaseController ):
         return trans.fill_template( "/admin/library/new_dataset.mako", history=history, folder=folder, msg=msg, messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def library_item_info_template( self, trans, id=None, new_element_count=0, library_id=None, folder_id=None,
-                                    library_dataset_id=None, library_dataset_dataset_association_id=None, **kwd ):
+    def library_item_info_template( self, trans, id=None, new_element_count=0, library_id=None,
+                                    folder_id=None, library_dataset_id=None, ldda_id=None, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
         new_element_count = int( new_element_count )
-        library_item_info_template = None
-        #library_item_info_template = library = folder = library_dataset = library_dataset_dataset_association = None
-        try:
-            library_item_info_template = trans.app.model.LibraryItemInfoTemplate.get( id )
-        except:
-            library_item_info_template = None
-        msg = ""
-        messagetype="done"
-        if id and not library_item_info_template:
-            msg = "Invalid library info template specified, id: %s" %str( id )
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
-        if 'library_item_info_template_create_button' in kwd:
-            #create template then display edit screen
-            library_item_info_template = trans.app.model.LibraryItemInfoTemplate()
-            library_item_info_template.name = kwd.get( 'name', 'unnamed' )
-            library_item_info_template.description = kwd.get( 'description', '' )
-            library_item_info_template.flush()
+        liit = None
+        if id:
+            try:
+                liit = trans.app.model.LibraryItemInfoTemplate.get( id )
+            except:
+                msg = "Invalid library info template specified, id: %s" % str( id )
+                # TODO: this should probably redirect to the dataset method...
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='library_browser',
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='error' ) )
+        if params.get( 'liit_create_button', False ):
+            # Create template then display edit screen
+            liit = trans.app.model.LibraryItemInfoTemplate()
+            liit.name = params.get( 'name', 'unnamed' )
+            liit.description = params.get( 'description', '' )
+            liit.flush()
             # Create template association
             if library_id:
-                library_item_info_template_assoc = trans.app.model.LibraryInfoTemplateAssociation()
-                library_item_info_template_assoc.library = trans.app.model.Library.get( library_id )
+                liit_assoc = trans.app.model.LibraryInfoTemplateAssociation()
+                liit_assoc.library = trans.app.model.Library.get( library_id )
             elif folder_id:
-                library_item_info_template_assoc = trans.app.model.LibraryFolderInfoTemplateAssociation()
-                library_item_info_template_assoc.folder = trans.app.model.LibraryFolder.get( folder_id )
+                liit_assoc = trans.app.model.LibraryFolderInfoTemplateAssociation()
+                liit_assoc.folder = trans.app.model.LibraryFolder.get( folder_id )
             elif library_dataset_id:
-                library_item_info_template_assoc = trans.app.model.LibraryDatasetInfoTemplateAssociation()
-                library_item_info_template_assoc.library_dataset = trans.app.model.LibraryDataset.get( library_dataset_id )
-            elif library_dataset_dataset_association_id:
-                library_item_info_template_assoc = trans.app.model.LibraryDatasetDatasetInfoTemplateAssociation()
-                library_item_info_template_assoc.library_dataset_dataset_association = trans.app.model.LibraryDatasetDatasetAssociation.get( library_dataset_dataset_association_id )
-            library_item_info_template_assoc.library_item_info_template = library_item_info_template
-            library_item_info_template_assoc.flush()
-            #now create and add elements
-            for i in range( int( kwd.get( 'set_element_count', 0 ) ) ):
-                elem_name = kwd.get( 'new_element_name_%i' % i, None )
-                elem_description = kwd.get( 'new_element_description_%i' % i, None )
-                #skip any elements that have a missing name and description
+                liit_assoc = trans.app.model.LibraryDatasetInfoTemplateAssociation()
+                liit_assoc.library_dataset = trans.app.model.LibraryDataset.get( library_dataset_id )
+            elif ldda_id:
+                liit_assoc = trans.app.model.LibraryDatasetDatasetInfoTemplateAssociation()
+                liit_assoc.library_dataset_dataset_association = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+            liit_assoc.library_item_info_template = liit
+            liit_assoc.flush()
+            # Create and add elements
+            for i in range( int( params.get( 'set_element_count', 0 ) ) ):
+                elem_name = params.get( 'new_element_name_%i' % i, None )
+                elem_description = params.get( 'new_element_description_%i' % i, None )
+                # Skip any elements that have a missing name and description
                 if not elem_name:
-                    elem_name = elem_description #if we have a description but no name, the description will be both; a name cannot be empty, but a description can
-                if elem_name:
-                    library_item_info_template.add_element( name = elem_name, description = elem_description )
-        elif 'library_item_info_template_edit_button' in kwd:
-            #save changes to existing attributes
-            #only set name if nonempty/nonNone is passed, but always set description
-            name = kwd.get( 'name', None )
+                    # If we have a description but no name, the description will be both
+                    # ( a name cannot be empty, but a description can )
+                    elem_name = elem_description
+                else:
+                    liit.add_element( name=elem_name, description=elem_description )
+        elif params.get( 'liit_edit_button', False ):
+            # Save changes to existing attributes, only set name if nonempty/nonNone is passed, but always set description
+            name = params.get( 'name', None )
             if name:
-                library_item_info_template.name = name
-            library_item_info_template.description = kwd.get( 'description', '' )
-            library_item_info_template.flush()
-            #save changes to exisiting elements
-            for elem_id in kwd.get( 'element_ids', [] ):
-                library_item_info_template_element = trans.app.model.LibraryItemInfoTemplateElement.get( elem_id )
-                name = kwd.get( 'element_name_%s' % elem_id, None )
+                liit.name = name
+            liit.description = params.get( 'description', '' )
+            liit.flush()
+            # Save changes to exisiting elements
+            for elem_id in params.get( 'element_ids', [] ):
+                liit_element = trans.app.model.LibraryItemInfoTemplateElement.get( elem_id )
+                name = params.get( 'element_name_%s' % elem_id, None )
                 if name:
-                    library_item_info_template_element.name = name
-                library_item_info_template_element.description = kwd.get( 'element_description_%s' % elem_id, None )
-                library_item_info_template_element.flush()
-            #add new elements
-            for i in range( int( kwd.get( 'set_element_count', 0 ) ) ):
-                elem_name = kwd.get( 'new_element_name_%i' % i, None )
-                elem_description = kwd.get( 'new_element_description_%i' % i, None )
-                #skip any elements that have a missing name and description
+                    liit_element.name = name
+                liit_element.description = params.get( 'element_description_%s' % elem_id, None )
+                liit_element.flush()
+            # Add new elements
+            for i in range( int( params.get( 'set_element_count', 0 ) ) ):
+                elem_name = params.get( 'new_element_name_%i' % i, None )
+                elem_description = params.get( 'new_element_description_%i' % i, None )
+                # Skip any elements that have a missing name and description
                 if not elem_name:
-                    elem_name = elem_description #if we have a description but no name, the description will be both; a name cannot be empty, but a description can
+                     # If we have a description but no name, the description will be both
+                     # ( a name cannot be empty, but a description can )
+                    elem_name = elem_description
                 if elem_name:
-                    library_item_info_template.add_element( name = elem_name, description = elem_description )
-            library_item_info_template.refresh()
+                    liit.add_element( name=elem_name, description=elem_description )
+            liit.refresh()
+        if library_id:
+            library_item_name = trans.app.model.Library.get( library_id ).name
+            library_item_desc = 'library'
+        elif folder_id:
+            library_item_name = trans.app.model.LibraryFolder.get( folder_id ).name
+            library_item_desc = 'folder'
+        elif library_dataset_id:
+            ld = trans.app.model.LibraryDataset.get( library_dataset_id )
+            library_item_name = ld.name
+            library_item_desc = 'library dataset'
+        elif ldda_id:
+            library_item_name = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ).name
+            library_item_desc = 'library dataset <-> dataset association'
+        else:
+            library_item_name = 'unknown'
+            library_item_desc = ''
         return trans.fill_template( "/admin/library/item_info_template.mako",
-                                    library_item_info_template = library_item_info_template,
+                                    liit=liit,
                                     new_element_count=new_element_count,
                                     library_id=library_id,
                                     library_dataset_id=library_dataset_id,
-                                    library_dataset_dataset_association_id=library_dataset_dataset_association_id,
+                                    ldda_id=ldda_id,
                                     folder_id=folder_id,
+                                    library_item_name=library_item_name,
+                                    library_item_desc=library_item_desc,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -1458,8 +1488,8 @@ class Admin( BaseController ):
             ldda_ids = util.listify( params.ldda_ids )
             if params.action == 'edit':
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='dataset',
-                                                           ldda_id=",".join( ldda_ids ),
+                                                           action='library_dataset_dataset_association',
+                                                           id=",".join( ldda_ids ),
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype=messagetype ) )
             elif params.action == 'delete':

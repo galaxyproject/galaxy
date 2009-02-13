@@ -61,8 +61,8 @@ class Library( BaseController ):
         elif params.do_action == 'manage_permissions':
             # Do we need a security check here?
             trans.response.send_redirect( web.url_for( controller='library',
-                                                       action='dataset',
-                                                       ldda_id=','.join( ldda_ids ),
+                                                       action='library_dataset_dataset_association',
+                                                       id=','.join( ldda_ids ),
                                                        **kwd ) )
         else:
             # Can't use mkstemp - the file must not exist first
@@ -175,7 +175,7 @@ class Library( BaseController ):
             msg = 'This dataset contains no content'
             return trans.response.send_redirect( web.url_for( action='library_browser', msg=msg, messagetype='error' ) )
     @web.expose
-    def dataset( self, trans, ldda_id=None, name=None, info=None, folder_id=None, replace_id=None, refer_id=None, **kwd ):
+    def library_dataset_dataset_association( self, trans, id=None, name=None, info=None, folder_id=None, replace_id=None, refer_id=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -194,18 +194,18 @@ class Library( BaseController ):
             permission_source = replace_dataset
         except:
             replace_dataset = None
-        if ldda_id:
+        if id:
             # The user is updating the permissions on 1 or more datasets
-            if ldda_id.count( ',' ):
-                ldda_ids = ldda_id.split( ',' )
-                ldda_id = None
+            if id.count( ',' ):
+                ids = id.split( ',' )
+                id = None
             else:
-                ldda_ids = None
-            if ldda_id:
-                # ldda_id specified, display attributes form
-                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+                ids = None
+            if id:
+                # id specified, display attributes form
+                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
                 if not ldda:
-                    msg = "Invalid LibraryDatasetDatasetAssociation specified, id: %s" % str( ldda_id )
+                    msg = "Invalid LibraryDatasetDatasetAssociation specified, id: %s" % str( id )
                     return trans.response.send_redirect( web.url_for( controller='library',
                                                                       action='browser',
                                                                       msg=util.sanitize_text( msg ),
@@ -226,8 +226,8 @@ class Library( BaseController ):
                     ldda.dataset.refresh()
                     msg = "Permissions updated for dataset '%s'" % ldda.name
                     return trans.response.send_redirect( web.url_for( controller='library',
-                                                                      action='dataset',
-                                                                      ldda_id=ldda_id,
+                                                                      action='library_dataset_dataset_association',
+                                                                      id=id,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
                 ldda.datatype.before_edit( ldda )
@@ -242,25 +242,25 @@ class Library( BaseController ):
                 ### the built-in 'id' is overwritten in lots of places as well
                 ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
                 ldatatypes.sort()
-                return trans.fill_template( "/library/manage_dataset.mako",
-                                            dataset=ldda,
+                return trans.fill_template( "/library/manage_library_dataset_dataset_association.mako",
+                                            ldda=ldda,
                                             datatypes=ldatatypes,
                                             msg=msg,
                                             messagetype=messagetype )
-            elif ldda_ids:
+            elif ids:
                 # Multiple ids specfied, display permission form, permissions will be updated for all simultaneously.
                 lddas = []
-                for ldda_id in [ int( ldda_id ) for ldda_id in ldda_ids ]:
-                    ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+                for id in [ int( id ) for id in ids ]:
+                    ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
                     if ldda is None:
-                        msg = 'You specified an invalid LibraryDatasetDatasetAssociation id: %s' %str( ldda_id )
+                        msg = 'You specified an invalid LibraryDatasetDatasetAssociation id: %s' %str( id )
                         trans.response.send_redirect( web.url_for( controller='library',
                                                                    action='browser',
                                                                    msg=util.sanitize_text( msg ),
                                                                    messagetype='error' ) )
                     lddas.append( ldda )
                 if len( lddas ) < 2:
-                    msg = 'You must specify at least two datasets on which to modify permissions, ids you sent: %s' % str( ldda_ids )
+                    msg = 'You must specify at least two datasets on which to modify permissions, ids you sent: %s' % str( ids )
                     trans.response.send_redirect( web.url_for( controller='library',
                                                                action='browser',
                                                                msg=util.sanitize_text( msg ),
@@ -274,7 +274,10 @@ class Library( BaseController ):
                         trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
                         ldda.dataset.refresh()
                     msg = 'Permissions and roles have been updated on %d datasets' % len( lddas )
-                    return trans.fill_template( "/library/manage_dataset.mako", msg=msg, messagetype=messagetype, dataset=lddas )
+                    return trans.fill_template( "/library/manage_library_dataset_dataset_association.mako",
+                                                ldda=lddas,
+                                                msg=msg,
+                                                messagetype=messagetype )
                 # Ensure that the permissions across all datasets are identical.  Otherwise, we can't update together.
                 tmp = []
                 for ldda in lddas:
@@ -288,7 +291,10 @@ class Library( BaseController ):
                                                                msg=util.sanitize_text( msg ),
                                                                messagetype='error' ) )
                 else:
-                    return trans.fill_template( "/library/manage_dataset.mako", msg=msg, messagetype=messagetype, dataset=lddas )
+                    return trans.fill_template( "/library/manage_library_dataset_dataset_association.mako",
+                                                ldda=lddas,
+                                                msg=msg,
+                                                messagetype=messagetype )
         if not folder and not replace_dataset:
             msg = "Invalid library target specified (LibraryFolder id: %s, LibraryDataset id: %s)" % ( str( folder_id ), str( replace_id ) )
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
@@ -403,7 +409,6 @@ class Library( BaseController ):
                                     file_formats=trans.app.datatypes_registry.upload_file_formats,
                                     dbkeys=get_dbkey_options( '?' ),
                                     last_used_build=last_used_build,
-                                    err=None,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -457,12 +462,12 @@ class Library( BaseController ):
                 msg = "Permission Denied"
                 messagetype = "error"
         return trans.fill_template( "/library/manage_library_dataset.mako", 
-                                    dataset=library_dataset,
+                                    library_dataset=library_dataset,
                                     refered_lda=refered_lda,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
-    def folder( self, trans, folder_id, **kwd ):
+    def folder( self, trans, id, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -479,7 +484,7 @@ class Library( BaseController ):
         else:
             msg = "Invalid action attempted on folder."
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
-        folder = trans.app.model.LibraryFolder.get( int( folder_id ) )
+        folder = trans.app.model.LibraryFolder.get( int( id ) )
         if not folder:
             msg = "Invalid folder specified, id: %s" %str( id )
             return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
@@ -518,7 +523,7 @@ class Library( BaseController ):
                         msg = "Folder '%s' has been renamed to '%s'" % ( old_name, new_name )
                         return trans.response.send_redirect( web.url_for( controller='library',
                                                                           action='folder',
-                                                                          folder_id=folder_id,
+                                                                          id=id,
                                                                           rename=True,
                                                                           msg=util.sanitize_text( msg ),
                                                                           messagetype='done' ) )
@@ -539,7 +544,7 @@ class Library( BaseController ):
                 msg = 'Permissions updated for folder %s' % folder.name
                 return trans.response.send_redirect( web.url_for( controller='library',
                                                                   action='folder',
-                                                                  folder_id=folder_id,
+                                                                  id=id,
                                                                   manage=True,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
@@ -613,32 +618,144 @@ class Library( BaseController ):
                                                               messagetype='done' ) )
         return trans.fill_template( '/library/manage_library.mako', library=library, msg=msg, messagetype=messagetype )
     @web.expose
+    def library_item_info_template( self, trans, id=None, new_element_count=0, library_id=None,
+                                    folder_id=None, library_dataset_id=None, ldda_id=None, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        new_element_count = int( new_element_count )
+        liit = None
+        if id:
+            try:
+                liit = trans.app.model.LibraryItemInfoTemplate.get( id )
+            except:
+                msg = "Invalid library info template specified, id: %s" % str( id )
+                # TODO: this should probably redirect to the library_dataset_dataset_association method...
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='library_browser',
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='error' ) )
+        if params.get( 'liit_create_button', False ):
+            # Create template then display edit screen
+            liit = trans.app.model.LibraryItemInfoTemplate()
+            liit.name = params.get( 'name', 'unnamed' )
+            liit.description = params.get( 'description', '' )
+            liit.flush()
+            # Create template association
+            if library_id:
+                liit_assoc = trans.app.model.LibraryInfoTemplateAssociation()
+                liit_assoc.library = trans.app.model.Library.get( library_id )
+            elif folder_id:
+                liit_assoc = trans.app.model.LibraryFolderInfoTemplateAssociation()
+                liit_assoc.folder = trans.app.model.LibraryFolder.get( folder_id )
+            elif library_dataset_id:
+                liit_assoc = trans.app.model.LibraryDatasetInfoTemplateAssociation()
+                liit_assoc.library_dataset = trans.app.model.LibraryDataset.get( library_dataset_id )
+            elif ldda_id:
+                liit_assoc = trans.app.model.LibraryDatasetDatasetInfoTemplateAssociation()
+                liit_assoc.library_dataset_dataset_association = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+            liit_assoc.library_item_info_template = liit
+            liit_assoc.flush()
+            # Create and add elements
+            for i in range( int( params.get( 'set_element_count', 0 ) ) ):
+                elem_name = params.get( 'new_element_name_%i' % i, None )
+                elem_description = params.get( 'new_element_description_%i' % i, None )
+                # Skip any elements that have a missing name and description
+                if not elem_name:
+                    # If we have a description but no name, the description will be both
+                    # ( a name cannot be empty, but a description can )
+                    elem_name = elem_description
+                else:
+                    liit.add_element( name=elem_name, description=elem_description )
+        elif params.get( 'liit_edit_button', False ):
+            # Save changes to existing attributes, only set name if nonempty/nonNone is passed, but always set description
+            name = params.get( 'name', None )
+            if name:
+                liit.name = name
+            liit.description = params.get( 'description', '' )
+            liit.flush()
+            # Save changes to exisiting elements
+            for elem_id in params.get( 'element_ids', [] ):
+                liit_element = trans.app.model.LibraryItemInfoTemplateElement.get( elem_id )
+                name = params.get( 'element_name_%s' % elem_id, None )
+                if name:
+                    liit_element.name = name
+                liit_element.description = params.get( 'element_description_%s' % elem_id, None )
+                liit_element.flush()
+            # Add new elements
+            for i in range( int( params.get( 'set_element_count', 0 ) ) ):
+                elem_name = params.get( 'new_element_name_%i' % i, None )
+                elem_description = params.get( 'new_element_description_%i' % i, None )
+                # Skip any elements that have a missing name and description
+                if not elem_name:
+                     # If we have a description but no name, the description will be both
+                     # ( a name cannot be empty, but a description can )
+                    elem_name = elem_description
+                if elem_name:
+                    liit.add_element( name=elem_name, description=elem_description )
+            liit.refresh()
+        if library_id:
+            library_item_name = trans.app.model.Library.get( library_id ).name
+            library_item_desc = 'library'
+        elif folder_id:
+            library_item_name = trans.app.model.LibraryFolder.get( folder_id ).name
+            library_item_desc = 'folder'
+        elif library_dataset_id:
+            ld = trans.app.model.LibraryDataset.get( library_dataset_id )
+            library_item_name = ld.name
+            library_item_desc = 'library dataset'
+        elif ldda_id:
+            library_item_name = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ).name
+            library_item_desc = 'library dataset <-> dataset association'
+        else:
+            library_item_name = 'unknown'
+            library_item_desc = ''
+        return trans.fill_template( "/library/item_info_template.mako",
+                                    liit=liit,
+                                    new_element_count=new_element_count,
+                                    library_id=library_id,
+                                    library_dataset_id=library_dataset_id,
+                                    ldda_id=ldda_id,
+                                    folder_id=folder_id,
+                                    library_item_name=library_item_name,
+                                    library_item_desc=library_item_desc,
+                                    msg=msg,
+                                    messagetype=messagetype )
+    @web.expose
     def library_item_info( self, trans, do_action='display', id=None, library_item_id=None, library_item_type=None, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
         if id:
             item_info = trans.app.model.LibraryItemInfo.get( id )
         else:
             item_info = None
-        
         if library_item_type == 'library':
             library_item = trans.app.model.Library.get( library_item_id )
+            error_action = 'browse'
         elif library_item_type == 'library_dataset':
             library_item = trans.app.model.LibraryDataset.get( library_item_id )
+            error_action = 'library_dataset'
         elif library_item_type == 'folder':
             library_item = trans.app.model.LibraryFolder.get( library_item_id )
         elif library_item_type == 'library_dataset_dataset_association':
+            error_action = 'folder'
             library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( library_item_id )
+            error_action = 'library_dataset_dataset_association'
         else:
             library_item_type == None
             library_item = None
-        msg = ""
-        messagetype="done"
         if not item_info and not library_item_type:
             msg = "Unable to perform requested action (%s)." % do_action
-            return trans.response.send_redirect( web.url_for( controller='library', action='browse', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='library',
+                                                              action=error_action,
+                                                              id=library_item_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
+        #TODO: not sure we need the display option or the display_info.mako template any longer...
         if do_action == 'display':
             return trans.fill_template( "/library/display_info.mako", 
                                         item_info=item_info,
-                                        err=None,
                                         msg=msg,
                                         messagetype=messagetype )
         elif do_action == 'new_info':
@@ -655,7 +772,7 @@ class Library( BaseController ):
                         library_item_info.library_item_info_template = library_item_info_template
                         library_item_info.user = user
                         library_item_info.flush()
-                        trans.app.security_agent.copy_permissions( library_item_info_template, library_item_info, user = user )
+                        trans.app.security_agent.copy_library_permissions( library_item_info_template, library_item_info, user=user )
                         for template_element in library_item_info_template.elements:
                             info_element_value = kwd.get( "info_element_%s_%s" % ( library_item_info_template.id, template_element.id), None )
                             info_element = trans.app.model.LibraryItemInfoElement()
@@ -676,18 +793,16 @@ class Library( BaseController ):
                         else:
                             raise 'Invalid class (%s) specified for library_item (%s)' % ( library_item.__class__, library_item.__class__.__name__ )
                         # TODO: make sure we don't need to set permissions on the association object.
-                        msg = 'Library Item Info has been save, you can now fill out more templates.'
+                        msg = 'The information has been saved.  You can add more information if necessary.'
                     return trans.fill_template( "/library/new_info.mako", 
                                             library_item=library_item,
                                             library_item_type=library_item_type,
-                                            err=None,
                                             msg=msg,
                                             messagetype=messagetype )
                 else:
-                    return trans.show_error_message( "You do not have permission to add info to this library item." )
-            #add more functionality -> user's should be able to edit/delete, etc, and create/delete and edit templates
+                    return trans.show_error_message( "You do not have permission to add information to this library item." )
+            # TODO: add more functionality -> user's should be able to edit/delete, etc, and create/delete and edit templates
             return trans.fill_template( "/library/display_info.mako", 
                                         item_info=item_info,
-                                        err=None,
                                         msg="Unable to perform requested action (%s)." % do_action,
                                         messagetype=messagetype )

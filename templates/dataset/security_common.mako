@@ -87,7 +87,7 @@
         });
     </script>
     <div class="toolForm">
-        <div class="toolFormTitle">Manage permissions and role associations for ${obj_str}</div>
+        <div class="toolFormTitle">Manage permissions and role associations of ${obj_str}</div>
         <div class="toolFormBody">
             <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
                 <input type="hidden" name="${id_name}" value="${id}"/>

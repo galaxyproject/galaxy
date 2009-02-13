@@ -159,11 +159,7 @@
                 %for name, spec in data.metadata.spec.items():
                     %if spec.visible:
                         <b>${spec.desc}:</b>
-                        %if spec.unwrap( spec.get( name ) ):
-                            ${spec.unwrap( spec.get( name ) )}
-                        %else:
-                            ${spec.no_value}
-                        %endif
+                        ${data.metadata.get( name )}
                         <div style="clear: both"></div>
                     %endif
                 %endfor

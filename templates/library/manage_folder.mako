@@ -27,7 +27,7 @@
             </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="folder_id" value="${folder.id}" size="40"/>
+                    <input type="hidden" name="id" value="${folder.id}" size="40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>
@@ -73,7 +73,7 @@
         </div>
     </div>
     <p/>
-    Click <a href="${h.url_for( controller='library', action='dataset', folder_id=folder.id )}">here</a> to add a dataset.
+    Click <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', folder_id=folder.id )}">here</a> to add a dataset.
     <p/> 
 %endif
 

@@ -98,10 +98,15 @@ def name_sorted( l ):
             <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
         </div>
         %if not deleted:
+            <%
+                library_item_ids = {}
+                library_item_ids[ 'folder' ] = parent.id
+            %>
             <div popupmenu="folder-${parent.id}-popup">
-                <a class="action-button" href="${h.url_for( controller='admin', action='dataset', folder_id=parent.id )}">Add datasets to this folder</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', folder_id=parent.id )}">Add datasets to this folder</a>
                 <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=parent.id )}">Create a new sub-folder in this folder</a>
-                <a class="action-button" href="${h.url_for( controller='admin', action='folder', manage=True, id=parent.id )}">Edit this folder</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='folder', manage=True, id=parent.id )}">Edit this folder's information</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='library_item_info_template', folder_id=parent.id, new_element_count=5, **library_item_ids )}">Create a new information template for this folder</a>
                 ## TODO: need to revamp the way folders and contained LibraryDatasets are deleted
                 ##%if subfolder:
                 ##    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( action='folder', delete=True, id=parent.id )}">Remove this folder and its contents from the library</a>
@@ -180,15 +185,20 @@ def name_sorted( l ):
                                 %endif
                                 <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                                 %if not deleted:
+                                    <%
+                                        library_item_ids = {}
+                                        library_item_ids[ 'library' ] = library.id
+                                    %>
                                     <div popupmenu="library-${library.id}-popup">
-                                        <a class="action-button" href="${h.url_for( action='library', manage=True, id=library.id )}">Edit this library</a>
+                                        <a class="action-button" href="${h.url_for( controller='admin', action='library', manage=True, id=library.id )}">Edit this library's information</a>
+                                        <a class="action-button" href="${h.url_for( controller='admin', action='library_item_info_template', library_id=library.id, new_element_count=5, **library_item_ids )}">Create a new information template for this library</a>
                                         ## TODO: need to revamp the way libraries, folders, and contained LibraryDatasets are deleted
-                                        ##<a class="action-button" confirm="Current state will not be saved, so undeleting the library will restore all of its contents.  Click OK to delete the library named '${library.name}'?" href="${h.url_for( action='library', delete=True, id=library.id )}">Delete this library and its contents</a>
+                                        ##<a class="action-button" confirm="Current state will not be saved, so undeleting the library will restore all of its contents.  Click OK to delete the library named '${library.name}'?" href="${h.url_for( controller='admin', action='library', delete=True, id=library.id )}">Delete this library and its contents</a>
                                     </div>
                                 ##%else:
                                 ##    <div popupmenu="library-${library.id}-popup">
-                                ##        <a class="action-button" href="${h.url_for( action='undelete_library', id=library.id )}">Undelete this library and its contents</a>
-                                ##        <a class="action-button" href="${h.url_for( action='purge_library', id=library.id )}">Purge this library and its contents</a>
+                                ##        <a class="action-button" href="${h.url_for( controller='admin', action='undelete_library', id=library.id )}">Undelete this library and its contents</a>
+                                ##        <a class="action-button" href="${h.url_for( controller='admin', action='purge_library', id=library.id )}">Purge this library and its contents</a>
                                 ##    </div>
                                 %endif
                             </th>

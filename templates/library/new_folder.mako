@@ -31,7 +31,7 @@
             </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="folder_id" value="${folder.id}" size="40"/>
+                    <input type="hidden" name="id" value="${folder.id}" size="40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>

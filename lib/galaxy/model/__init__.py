@@ -788,18 +788,14 @@ class LibraryDataset( object ):
         self.flush()
     
     def get_info( self ):
-        #Use info from ldfa if versioned info is not set
-        if self._info:
-            return self._info
+        # Use info from ldfa
         return self.library_dataset_dataset_association.info
     def set_info( self, info ):
         self._info = info
     info = property( get_info, set_info )
     
     def get_name( self ):
-        # Use info from ldda if versioned info is not set
-        if self._name:
-            return self._name
+        # Use info from ldda
         return self.library_dataset_dataset_association.name
     def set_name( self, name ):
         self._name = name

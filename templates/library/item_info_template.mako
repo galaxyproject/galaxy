@@ -9,7 +9,7 @@
 %endif
 
 %if liit:
-    <form name="library_item_info_template_edit" action="${h.url_for( controller='admin', action='library_item_info_template' )}" method="post" >
+    <form name="library_item_info_template_edit" action="${h.url_for( controller='library', action='library_item_info_template' )}" method="post" >
         <div class="toolForm">
             <div class="toolFormTitle">Edit Library Item Info Template</div>
             <div class="toolFormBody">
@@ -83,7 +83,7 @@
     </form>
     <p/>
 %else:
-    <form name="library_item_info_template_new" action="${h.url_for( controller='admin', action='library_item_info_template' )}" method="post" >
+    <form name="library_item_info_template_new" action="${h.url_for( controller='library', action='library_item_info_template' )}" method="post" >
         <div class="toolForm">
             <div class="toolFormTitle">Create information template for ${library_item_desc} ${library_item_name}</div>
             <div class="toolFormBody">

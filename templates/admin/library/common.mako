@@ -22,18 +22,18 @@
                         %if not deleted:
                             <%
                                 library_item_ids = {}
-                                library_item_ids[ 'library_dataset_dataset_association' ] = ldda.id
+                                library_item_ids[ 'ldda' ] = ldda.id
                             %>
                             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                             <div popupmenu="dataset-${ldda.id}-popup">
-                                <a class="action-button" href="${h.url_for( controller='admin', action='dataset', ldda_id=ldda.id )}">Edit this dataset's attributes and permissions</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda.id )}">Edit this dataset's information</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_item_info_template', library_dataset_id=data.id, new_element_count=5, **library_item_ids )}">Create a new information template for this dataset</a>
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset', id=data.id )}">Manage this dataset's versions</a>
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library_item_info_template', library_dataset_dataset_association_id=ldda.id, new_element_count=5, **library_item_ids )}">Create a new template for this dataset</a>
                                 %if data.has_data:
                                     <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=ldda.id )}">Download this dataset</a>
                                 %endif
                                 ##TODO: need to revamp the way we remove datasets from disk.
-                                ##<a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='dataset', delete=True, ldda_id=ldda.id )}">Remove this dataset from the library</a>
+                                ##<a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', delete=True, id=ldda.id )}">Remove this dataset from the library</a>
                             </div>
                         %endif
                     </td>
@@ -83,28 +83,37 @@
         if isinstance( library_item, trans.app.model.Library ):
             library_item_ids[ 'library_id' ] = library_item.id
             available_template_assocs = library_item.library_info_template_associations
+            library_item_desc = 'library'
         elif isinstance( library_item, trans.app.model.LibraryFolder ):
             library_item_ids[ 'folder_id' ] = library_item.id
             available_template_assocs = library_item.library_folder_info_template_associations
+            library_item_desc = 'folder'
         elif isinstance( library_item, trans.app.model.LibraryDataset ):
             library_item_ids[ 'library_dataset_id' ] = library_item.id
             available_template_assocs = library_item.library_dataset_info_template_associations
+            library_item_desc = 'library dataset'
         elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
-            library_item_ids[ 'library_dataset_dataset_association_id' ] = library_item.id
+            library_item_ids[ 'ldda_id' ] = library_item.id
             available_template_assocs = library_item.library_dataset_dataset_info_template_associations
+            library_item_desc = 'library dataset <-> dataset association'
     %>
-    %if available_template_assocs:
-        <div class="toolForm">
-            <div class="toolFormTitle">Available Templates</div>
-            <div class="toolFormBody">
-                %for available_template_assoc in available_template_assocs:
-                    <div class="form-row">
-                        <a href="${h.url_for( controller='admin', action='library_item_info_template', id=available_template_assoc.library_item_info_template.id )}">${available_template_assoc.library_item_info_template.name}</a>: ${available_template_assoc.library_item_info_template.description}
-                        <div style="clear: both"></div>
-                    </div>
-                %endfor
+    <div class="toolForm">
+        <div class="toolFormTitle">Available templates that provide information about ${library_item_desc} ${library_item.name}</div>
+        <div class="toolFormBody">
+            <div class="form-row">
+                <form name="library_item_template" action="${h.url_for( controller='admin', action='library_item_info_template', **library_item_ids )}" method="post">
+                    ##<a class="action-button" href="${h.url_for( controller='admin', action='library_item_info_template', new_element_count=5, **library_item_ids )}"><span>Create a new template</span></a></li>
+                    Create a new template with <input type="text" size="3" name="new_element_count" value="5"/> elements for ${library_item_desc} ${library_item.name}
+                    <input type="submit" class="primary-button" name="library_item_template_button" id="library_item_template_button" value="Go"/>
+                </form>
             </div>
+            %for available_template_assoc in available_template_assocs:
+                <div class="form-row">
+                    <a href="${h.url_for( controller='admin', action='library_item_info_template', id=available_template_assoc.library_item_info_template.id )}">${available_template_assoc.library_item_info_template.name}</a>: ${available_template_assoc.library_item_info_template.description}
+                    <div style="clear: both"></div>
+                </div>
+            %endfor
         </div>
-        <p/>
-    %endif
+    </div>
+    <p/>
 </%def>

@@ -2,6 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 <%namespace file="/library/common.mako" import="render_available_templates" />
+<%namespace file="/library/common.mako" import="render_existing_library_item_info" />
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -44,8 +45,22 @@
         </div>
     </div>
     <p/>
+%else:
+    <div class="toolForm">
+        <div class="toolFormTitle">View information about ${library.name}</div>
+        <div class="toolFormBody">
+            <div class="form-row">
+                <b>Name:</b> ${library.name}
+                <div style="clear: both"></div>
+                <b>Info:</b> ${library.description}
+                <div style="clear: both"></div>
+            </div>
+        </div>
+        <div class="toolForm">
+            ${render_existing_library_item_info( library )}
+        </div>
+    </div>
 %endif
-
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
     <%
         roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
