@@ -8,7 +8,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create a new folder</div>
     <div class="toolFormBody">
-        <form name="folder" action="${h.url_for( controller='admin', action='folder' )}" method="post" >
+        <form name="folder" action="${h.url_for( controller='admin', action='folder', id=folder.id, library_id=library_id )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
@@ -26,12 +26,6 @@
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="hidden" name="new" value="submitted" size="40"/>
-                </div>
-                <div style="clear: both"></div>
-            </div>
-            <div class="form-row">
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="id" value="${folder.id}" size="40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>

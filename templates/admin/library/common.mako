@@ -1,5 +1,5 @@
 ## Render the dataset `data`
-<%def name="render_dataset( data, selected, deleted )">
+<%def name="render_dataset( data, selected, library )">
     <%
         ## The received data must always be a LibraryDataset object, but the object id passed to methods from the drop down menu
         ## should be the underlying ldda id to prevent id collision, which could happen when displaying children, which are always
@@ -19,21 +19,21 @@
                             <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
                         %endif
                         <span class="historyItemTitle"><b>${ldda.name}</b></span>
-                        %if not deleted:
+                        %if not library.deleted:
                             <%
                                 library_item_ids = {}
                                 library_item_ids[ 'ldda' ] = ldda.id
                             %>
                             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                             <div popupmenu="dataset-${ldda.id}-popup">
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda.id )}">Edit this dataset's information</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda.id, library_id=library.id )}">Edit this dataset's information</a>
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library_item_info_template', library_dataset_id=data.id, new_element_count=5, **library_item_ids )}">Create a new information template for this dataset</a>
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset', id=data.id )}">Manage this dataset's versions</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset', id=data.id, library_id=library.id )}">Manage this dataset's versions</a>
                                 %if data.has_data:
-                                    <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=ldda.id )}">Download this dataset</a>
+                                    <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
                                 %endif
                                 ##TODO: need to revamp the way we remove datasets from disk.
-                                ##<a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', delete=True, id=ldda.id )}">Remove this dataset from the library</a>
+                                ##<a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', delete=True, id=ldda.id, library_id=library.id )}">Remove this dataset from the library</a>
                             </div>
                         %endif
                     </td>
@@ -68,7 +68,7 @@
                 <div>
                     There are ${len( data.visible_children )} secondary datasets.
                     %for idx, child in enumerate( data.visible_children ):
-                        ${ render_dataset( child, selected, deleted ) }
+                        ${ render_dataset( child, selected, library.deleted ) }
                     %endfor
                 </div>
             %endif

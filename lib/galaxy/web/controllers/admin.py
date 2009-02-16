@@ -789,19 +789,42 @@ class Admin( BaseController ):
     # Galaxy Library Stuff
     @web.expose
     @web.require_admin
-    def library_browser( self, trans, **kwd ):
+    def browse_libraries( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        created_ldda_ids = params.get( 'created_ldda_ids', '' )
-        return trans.fill_template( '/admin/library/browser.mako', 
+        return trans.fill_template( '/admin/library/browse_libraries.mako', 
                                     libraries=trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                                                      .order_by( trans.app.model.Library.name ).all(),
-                                    created_ldda_ids=created_ldda_ids,
                                     deleted=False,
                                     msg=msg,
                                     messagetype=messagetype )
-    libraries = library_browser
+    @web.expose
+    @web.require_admin
+    def browse_library( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        id = params.get( 'id', None )
+        if not id:
+            msg = "You must specify a library id."
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_libraries',
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
+        library = library=trans.app.model.Library.get( id )
+        if not library:
+            msg = "Invalid library id ( %s )."
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_libraries',
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
+        created_ldda_ids = params.get( 'created_ldda_ids', '' )
+        return trans.fill_template( '/admin/library/browse_library.mako', 
+                                    library=trans.app.model.Library.get( id ),
+                                    created_ldda_ids=created_ldda_ids,
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     @web.require_admin
     def library( self, trans, id=None, **kwd ):
@@ -819,13 +842,14 @@ class Admin( BaseController ):
         else:
             msg = 'Invalid action attempted on library'
             return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='library_browser',
+                                                              action='browse_library',
+                                                              id=id,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if not id and not action == 'new':
             msg = "You must specify a library to %s." % action
             return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='library_browser',
+                                                              action='browse_libraries',
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if not action == 'new':
@@ -839,7 +863,10 @@ class Admin( BaseController ):
                 library.root_folder = root_folder
                 library.flush()
                 msg = 'The new library named %s has been created' % library.name
-                return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='browse_libraries',
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='done' ) )
             return trans.fill_template( '/admin/library/new_library.mako', msg=msg, messagetype=messagetype )
         elif action == 'manage':
             if params.get( 'rename_library_button', False ):
@@ -884,7 +911,7 @@ class Admin( BaseController ):
             library.deleted = True
             library.flush()
             msg = "Library '%s' and all of its contents have been marked deleted" % library.name
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
+            return trans.response.send_redirect( web.url_for( action='browse_libraries', msg=util.sanitize_text( msg ), messagetype='done' ) )
         elif action == 'update_roles':
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
@@ -909,7 +936,7 @@ class Admin( BaseController ):
         libraries=trans.app.model.Library.filter( and_( trans.app.model.Library.table.c.deleted==True,
                                                         trans.app.model.Library.table.c.purged==False ) ) \
                                          .order_by( trans.app.model.Library.table.c.name ).all()
-        return trans.fill_template( '/admin/library/browser.mako', 
+        return trans.fill_template( '/admin/library/browse_libraries.mako', 
                                     libraries=libraries,
                                     deleted=True,
                                     msg=msg,
@@ -931,7 +958,7 @@ class Admin( BaseController ):
         library.deleted = False
         library.flush()
         msg = "Library '%s' and all of its contents have been marked not deleted" % library.name
-        return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        return trans.response.send_redirect( web.url_for( action='browse_libraries', msg=util.sanitize_text( msg ), messagetype='done' ) )
     @web.expose
     @web.require_admin
     def purge_library( self, trans, **kwd ):
@@ -958,10 +985,13 @@ class Admin( BaseController ):
         library.purged = True
         library.flush()
         msg = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
-        return trans.response.send_redirect( web.url_for( action='deleted_libraries', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='deleted_libraries',
+                                                          msg=util.sanitize_text( msg ),
+                                                          messagetype='done' ) )
     @web.expose
     @web.require_admin
-    def folder( self, trans, id, **kwd ):
+    def folder( self, trans, id, library_id, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -975,11 +1005,19 @@ class Admin( BaseController ):
             action = 'update_roles'
         else:
             msg = "Invalid action attempted on folder."
-            return trans.response.send_redirect( web.url_for( controller='admin', action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
         folder = trans.app.model.LibraryFolder.get( id )
         if not folder:
             msg = "Invalid folder specified, id: %s" % str( id )
-            return trans.response.send_redirect( web.url_for( controller='admin', action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
         if action == 'new':
             if params.new == 'submitted':
                 new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
@@ -994,10 +1032,15 @@ class Admin( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action='folder',
                                                                   id=id,
+                                                                  library_id=library_id,
                                                                   manage=True,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
-            return trans.fill_template( '/admin/library/new_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
+            return trans.fill_template( '/admin/library/new_folder.mako',
+                                        library_id=library_id,
+                                        folder=folder,
+                                        msg=msg,
+                                        messagetype=messagetype )
         elif action == 'manage':
             if params.get( 'rename_folder_button', False ):
                 old_name = folder.name
@@ -1005,7 +1048,11 @@ class Admin( BaseController ):
                 new_description = util.restore_text( params.description )
                 if not new_name:
                     msg = 'Enter a valid name'
-                    return trans.fill_template( '/admin/library/manage_folder.mako', folder=folder, msg=msg, messagetype='error' )
+                    return trans.fill_template( '/admin/library/manage_folder.mako',
+                                                folder=folder,
+                                                library_id=library_id,
+                                                msg=msg,
+                                                messagetype='error' )
                 else:
                     folder.name = new_name
                     folder.description = new_description
@@ -1014,10 +1061,15 @@ class Admin( BaseController ):
                     return trans.response.send_redirect( web.url_for( controller='admin',
                                                                       action='folder',
                                                                       id=id,
+                                                                      library_id=library_id,
                                                                       manage=True,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
-            return trans.fill_template( '/admin/library/manage_folder.mako', folder=folder, msg=msg, messagetype=messagetype )
+            return trans.fill_template( '/admin/library/manage_folder.mako',
+                                        folder=folder,
+                                        library_id=library_id,
+                                        msg=msg,
+                                        messagetype=messagetype )
         elif action == 'delete':
             # TODO: need to revamp the way we delete folders and contained LibraryDatasets
             def delete_folder( folder ):
@@ -1031,7 +1083,10 @@ class Admin( BaseController ):
                 folder.flush()
             delete_folder( folder )
             msg = "Folder '%s' and all of its contents have been marked deleted" % folder.name
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
+            return trans.response.send_redirect( web.url_for( action='browse_library',
+                                                              id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='done' ) )
         elif action =='update_roles':
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
@@ -1044,12 +1099,13 @@ class Admin( BaseController ):
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='folder',
                                                               id=id,
+                                                              library_id=library_id,
                                                               manage=True,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='done' ) )
     @web.expose
     @web.require_admin
-    def library_dataset( self, trans, id, name=None, info=None, **kwd ):
+    def library_dataset( self, trans, id, name=None, info=None, library_id=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -1057,7 +1113,8 @@ class Admin( BaseController ):
         if not library_dataset:
             msg = "Invalid library dataset specified, id: %s" %str( id )
             return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='library_browser',
+                                                              action='browse_library',
+                                                              id=library_id,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if params.get( 'edit_attributes_button', False ):
@@ -1080,11 +1137,13 @@ class Admin( BaseController ):
             msg = 'Permissions and roles have been updated for library dataset %s' % library_dataset.name
         return trans.fill_template( "/admin/library/manage_library_dataset.mako", 
                                     library_dataset=library_dataset,
+                                    library_id=library_id,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def library_dataset_dataset_association( self, trans, id=None, name="Unnamed", info='no info', extension=None, folder_id=None, **kwd ):
+    def library_dataset_dataset_association( self, trans, id=None, name="Unnamed", info='no info',
+                                             extension=None, folder_id=None, library_id=None, **kwd ):        
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )        
@@ -1112,14 +1171,16 @@ class Admin( BaseController ):
                 msg = "%i new datasets added to the library ( each is selected below ).  " % total_added
                 msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='library_browser',
+                                                           action='browse_library',
+                                                           id=library_id,
                                                            created_ldda_ids=created_ldda_ids, 
                                                            msg=util.sanitize_text( msg ), 
                                                            messagetype='done' ) )
             else:
                 msg = "Upload failed"
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='library_browser',
+                                                           action='browse_library',
+                                                           id=library_id,
                                                            created_ldda_ids=created_ldda_ids,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
@@ -1137,7 +1198,8 @@ class Admin( BaseController ):
             # Send the current history to enable importing datasets from history to library
             history = trans.get_history()
             history.refresh()
-            return trans.fill_template( '/admin/library/new_dataset.mako', 
+            return trans.fill_template( '/admin/library/new_dataset.mako',
+                                        library_id=library_id,
                                         folder_id=folder_id,
                                         file_formats=file_formats,
                                         dbkeys=dbkeys,
@@ -1159,7 +1221,8 @@ class Admin( BaseController ):
             if not ldda:
                 msg = "Invalid LibraryDatasetDatasetAssociation specified, id: %s" % str( id )
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='library_browser',
+                                                                  action='browse_library',
+                                                                  id=library_id,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='error' ) )
             if params.get( 'update_roles', False ):
@@ -1238,7 +1301,8 @@ class Admin( BaseController ):
                 ldda.flush()
                 msg = 'Dataset %s has been removed from this library' % ldda.name
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='library_browser',
+                                                           action='browse_library',
+                                                           id=library_id,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='done' ) )
             ldda.datatype.before_edit( ldda )
@@ -1254,7 +1318,8 @@ class Admin( BaseController ):
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
             return trans.fill_template( "/admin/library/manage_library_dataset_dataset_association.mako", 
-                                        ldda=ldda, 
+                                        ldda=ldda,
+                                        library_id=library_id,
                                         datatypes=ldatatypes,
                                         msg=msg,
                                         messagetype=messagetype )
@@ -1266,14 +1331,16 @@ class Admin( BaseController ):
                 if ldda is None:
                     msg = 'You specified an invalid LibraryDatasetDatasetAssociation id: %s' %str( id )
                     trans.response.send_redirect( web.url_for( controller='admin',
-                                                               action='library_browser',
+                                                               action='browse_library',
+                                                               id=library_id,
                                                                msg=util.sanitize_text( msg ),
                                                                messagetype='error' ) )
                 lddas.append( ldda )
             if len( lddas ) < 2:
                 msg = 'You must specify at least two datasets on which to modify permissions, ids you sent: %s' % str( ids )
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='library_browser',
+                                                           action='browse_library',
+                                                           id=library_id,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
             if 'update_roles' in kwd:
@@ -1288,6 +1355,7 @@ class Admin( BaseController ):
                 msg = 'Permissions and roles have been updated on %d datasets' % len( lddas )
                 return trans.fill_template( "/admin/library/manage_library_dataset_dataset_association.mako",
                                             ldda=lddas,
+                                            library_id=library_id,
                                             msg=msg,
                                             messagetype=messagetype )
             # Ensure that the permissions across all datasets are identical.  Otherwise, we can't update together.
@@ -1299,17 +1367,19 @@ class Admin( BaseController ):
             if len( tmp ) != 1:
                 msg = 'The datasets you selected do not have identical permissions, so they can not be updated together'
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='library_browser',
+                                                           action='browse_library',
+                                                           id=library_id,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
             else:
                 return trans.fill_template( "/admin/library/manage_library_dataset_dataset_association.mako",
                                             ldda=lddas,
+                                            library_id=library_id,
                                             msg=msg,
                                             messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def add_history_datasets_to_library( self, trans, ids="", folder_id=None, **kwd ):
+    def add_history_datasets_to_library( self, trans, ids="", library_id=None, folder_id=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -1317,13 +1387,21 @@ class Admin( BaseController ):
             folder = trans.app.model.LibraryFolder.get( int( folder_id ) )
         except:
             msg = "Invalid folder id: %s" % str( folder_id )
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
         # See if the current history is empty
         history = trans.get_history()
         history.refresh()
         if not history.active_datasets:
             msg = 'Your current history is empty'
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
         if params.get( 'add_dataset_from_history_button', False ):
             dataset_names = []
             ids = util.listify( ids )
@@ -1335,14 +1413,27 @@ class Admin( BaseController ):
                         dataset_names.append( data.name )
                     else:
                         msg = "The requested dataset id %s is invalid" % str( data_id )
-                        return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+                        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                          action='browse_library',
+                                                                          id=library_id,
+                                                                          msg=util.sanitize_text( msg ),
+                                                                          messagetype='error' ) )
                 if dataset_names:
                     msg = "Added the following datasets to the library folder: %s" % ( ", ".join( dataset_names ) )
-                    return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='done' ) )
+                    return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                      action='browse_library',
+                                                                      id=library_id,
+                                                                      msg=util.sanitize_text( msg ),
+                                                                      messagetype='done' ) )
             else:
                 msg = 'Select at least one dataset from the list'
                 messagetype = 'error'
-        return trans.fill_template( "/admin/library/new_dataset.mako", history=history, folder=folder, msg=msg, messagetype=messagetype )
+        return trans.fill_template( "/admin/library/new_dataset.mako",
+                                    history=history,
+                                    library_id=library_id,
+                                    folder=folder,
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     @web.require_admin
     def library_item_info_template( self, trans, id=None, new_element_count=0, library_id=None,
@@ -1359,7 +1450,8 @@ class Admin( BaseController ):
                 msg = "Invalid library info template specified, id: %s" % str( id )
                 # TODO: this should probably redirect to the dataset method...
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='library_browser',
+                                                                  action='browse_library',
+                                                                  id=library_id,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='error' ) )
         if params.get( 'liit_create_button', False ):
@@ -1450,13 +1542,17 @@ class Admin( BaseController ):
                                     messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def download_dataset_from_folder(self, trans, id, **kwd):
+    def download_dataset_from_folder(self, trans, id, library_id=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
         # id must refer to a LibraryDatasetDatasetAssociation object
         ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
         if not ldda.dataset:
             msg = 'Invalid LibraryDatasetDatasetAssociation id %s received for file downlaod' % str( id )
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
         mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
         trans.response.set_content_type( mime )
         fStat = os.stat( ldda.file_name )
@@ -1469,10 +1565,14 @@ class Admin( BaseController ):
             return open( ldda.file_name )
         except: 
             msg = 'This dataset contains no content'
-            return trans.response.send_redirect( web.url_for( action='library_browser', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
     @web.expose
     @web.require_admin
-    def datasets( self, trans, **kwd ):
+    def datasets( self, trans, library_id=None, **kwd ):
         # This method is used by the select list labeled "Perform action on selected datasets"
         # on the admin library browser.
         params = util.Params( kwd )
@@ -1482,7 +1582,8 @@ class Admin( BaseController ):
             if not params.ldda_ids:
                 msg = "At least one dataset must be selected for %s" % params.action
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='library_browser',
+                                                           action='browse_library',
+                                                           id=library_id,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
             ldda_ids = util.listify( params.ldda_ids )
@@ -1499,38 +1600,41 @@ class Admin( BaseController ):
                     ldda.flush()
                     msg = "The selected datasets have been removed from this library"
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='library_browser',
+                                                           action='browse_library',
+                                                           id=library_id,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='done' ) )
             else:
                 msg = "Action %s is not yet implemented" % str( params.action )
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='library_browser',
+                                                           action='browse_library',
+                                                           id=library_id,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
         else:
             trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='library_browser',
+                                                       action='browse_library',
+                                                           id=library_id,
                                                        msg=util.sanitize_text( msg ),
                                                        messagetype=messagetype ) )
-    @web.expose
-    @web.require_admin
-    def delete_dataset( self, trans, id=None, **kwd):
-        if id:
-            # id is a LibraryDatasetDatasetAssociation.id
-            ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
-            ldda.deleted = True
-            ldda.flush()
-            msg = "Dataset %s was deleted from library folder %s" % ( ldda.name, ldda.folder.name )
-            trans.response.send_redirect( web.url_for( action='folder', 
-                                                       id=str( ldda.folder.id ),
-                                                       msg=util.sanitize_text( msg ),
-                                                       messagetype='done' ) )
-        msg = "You did not specify a dataset to delete."
-        return trans.response.send_redirect( web.url_for( action='folder',
-                                                          id=str( ldda.folder.id ),
-                                                          msg=util.sanitize_text( msg ),
-                                                          messagetype='error' ) )
+    #@web.expose
+    #@web.require_admin
+    #def delete_dataset( self, trans, id=None, **kwd):
+    #    if id:
+    #        # id is a LibraryDatasetDatasetAssociation.id
+    #        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
+    #        ldda.deleted = True
+    #        ldda.flush()
+    #        msg = "Dataset %s was deleted from library folder %s" % ( ldda.name, ldda.folder.name )
+    #        trans.response.send_redirect( web.url_for( action='folder', 
+    #                                                   id=str( ldda.folder.id ),
+    #                                                   msg=util.sanitize_text( msg ),
+    #                                                   messagetype='done' ) )
+    #    msg = "You did not specify a dataset to delete."
+    #    return trans.response.send_redirect( web.url_for( action='folder',
+    #                                                      id=str( ldda.folder.id ),
+    #                                                      msg=util.sanitize_text( msg ),
+    #                                                      messagetype='error' ) )
 
     @web.expose
     @web.require_admin

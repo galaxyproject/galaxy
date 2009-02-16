@@ -10,15 +10,15 @@
 <div class="toolForm" id="new_dataset">
     <div class="toolFormTitle">Create a new library dataset</div>
     <div class="toolFormBody">
-        <form name="tool_form" action="${h.url_for( controller='admin', action='library_dataset_dataset_association' )}" enctype="multipart/form-data" method="post">
+        <form name="tool_form" action="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
             %if replace_dataset is not None:
-            <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
-            <div class="form-row">
-                You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
-                <div style="clear: both"></div>
-            </div>
+                <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
+                <div class="form-row">
+                    You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                    <div style="clear: both"></div>
+                </div>
             %else:
-            <input type="hidden" name="folder_id" value="${folder_id}"/>
+                <input type="hidden" name="folder_id" value="${folder_id}"/>
             %endif
             <div class="form-row">
                 <label>File:</label>
@@ -120,7 +120,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
         <div class="toolFormBody">
-            <form name="add_history_datasets_to_library" action="${h.url_for( controller='admin', action='add_history_datasets_to_library' )}" enctype="multipart/form-data" method="post">
+            <form name="add_history_datasets_to_library" action="${h.url_for( controller='admin', action='add_history_datasets_to_library', library_id=library_id )}" enctype="multipart/form-data" method="post">
                 %if replace_dataset:
                     <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                     <div class="form-row">

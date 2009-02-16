@@ -44,7 +44,7 @@
                     <a id="ldd_assoc-${ldd_assoc.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </div>
                 <div popupmenu="ldd_assoc-${ldd_assoc.id}-popup">
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset', id=ldd_assoc.library_dataset_id )}">Manage this dataset's versions</a>
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset', id=ldd_assoc.library_dataset_id, library_id=library_id )}">Manage this dataset's versions</a>
                 </div>
             </td>
             <td>
@@ -68,7 +68,7 @@
         <div class="toolForm">
             <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
             <div class="toolFormBody">
-                <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset_dataset_association' )}" method="post">
+                <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id )}" method="post">
                     <input type="hidden" name="id" value="${ldda.id}"/>
                     <div class="form-row">
                         <label>Name:</label>

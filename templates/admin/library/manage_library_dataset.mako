@@ -14,19 +14,18 @@
 <div class="toolForm">
     <div class="toolFormTitle">Set version of ${library_dataset.name}</div>
     <div class="toolFormBody">
-        <form name="library_dataset_version" action="${h.url_for( controller='admin', action='library_dataset' )}" method="post">
-            <input type="hidden" name="id" value="${library_dataset.id}"/>
+        <form name="library_dataset_version" action="${h.url_for( controller='admin', action='library_dataset', id=library_dataset.id, library_id=library_id )}" method="post">
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <div class="form-row">
-                        <input type="radio" name="set_lda_id" value="${library_dataset.library_dataset_dataset_association.id}" checked><a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=library_dataset.library_dataset_dataset_association.id )}">${library_dataset.name}</a> (current)
+                        <input type="radio" name="set_lda_id" value="${library_dataset.library_dataset_dataset_association.id}" checked><a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=library_dataset.library_dataset_dataset_association.id, library_id=library_id )}">${library_dataset.name}</a> (current)
                         <a id="dataset-${library_dataset.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="dataset-${library_dataset.id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', replace_id=library_dataset.id )}">Replace this dataset with a new version</a>
+                            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', replace_id=library_dataset.id, library_id=library_id )}">Replace this dataset with a new version</a>
                         </div>
                         %for expired_dataset in library_dataset.expired_datasets:
                             <br/>
-                            <input type="radio" name="set_lda_id" value="${expired_dataset.id}" ><a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=expired_dataset.id )}">${expired_dataset.name}</a>
+                            <input type="radio" name="set_lda_id" value="${expired_dataset.id}" ><a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=expired_dataset.id, library_id=library_id )}">${expired_dataset.name}</a>
                         %endfor
                     </div>
                 </div>

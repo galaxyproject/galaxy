@@ -1,5 +1,5 @@
 ## Render the dataset `data`
-<%def name="render_dataset( data, selected )">
+<%def name="render_dataset( data, selected, library )">
     <%
         ## The received data must always be a LibraryDataset object, but the object id passed to methods from the drop down menu
         ## should be the underlying ldda id to prevent id collision, which could happen when displaying children, which are always
@@ -29,7 +29,7 @@
                                 else:
                                     menu_label = "View this dataset's information"
                             %>
-                            <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=ldda.id )}">${menu_label}</a>
+                            <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=ldda.id, library_id=library.id )}">${menu_label}</a>
                             %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=data ):
                                 <%
                                     library_item_ids = {}
@@ -38,7 +38,7 @@
                                 <a class="action-button" href="${h.url_for( controller='library', action='library_item_info_template', library_dataset_id=data.id, new_element_count=5, **library_item_ids )}">Create a new information template for this dataset</a>
                             %endif
                             %if data.has_data:
-                                <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id )}">Download this dataset</a>
+                                <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
                             %endif
                         </div>
                     </td>
@@ -57,7 +57,7 @@
                     %for display_app in data.datatype.get_display_types():
                         <% display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                         %if len( display_links ) > 0:
-                            ${data.datatype.get_display_label(display_app)}
+                            ${data.datatype.get_display_label( display_app )}
                             %for data.name, display_link in display_links:
                                 <a target="_blank" href="${display_link}">${data.name}</a> 
                             %endfor
@@ -73,7 +73,7 @@
                 <div>
                     There are ${len( data.visible_children )} secondary datasets.
                     %for idx, child in enumerate( data.visible_children ):
-                        ${render_dataset( child, selected )}
+                        ${render_dataset( child, selected, library )}
                     %endfor
                 </div>
             %endif

@@ -21,8 +21,7 @@ library_dataset: ${library_dataset}
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset' )}" method="post">
-                <input type="hidden" name="id" value="${library_dataset.id}"/>
+            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset', id=library_dataset.id, library_id=library_id )}" method="post">
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -41,20 +40,20 @@ library_dataset: ${library_dataset}
                     <label>Set Dataset Version:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <div class="form-row">
-                        <input type="radio" name="set_lda_id" value="${library_dataset.library_dataset_dataset_association.id}" checked><a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=library_dataset.library_dataset_dataset_association.id )}">${library_dataset.name}</a> (current)
+                        <input type="radio" name="set_lda_id" value="${library_dataset.library_dataset_dataset_association.id}" checked><a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=library_dataset.library_dataset_dataset_association.id, library_id=library_id )}">${library_dataset.name}</a> (current)
                         %if refered_lda == library_dataset.library_dataset_dataset_association:
                             (your version)
                         %endif
                         %for expired_dataset in library_dataset.expired_datasets:
                         <br>
-                        <input type="radio" name="set_lda_id" value="${expired_dataset.id}" ><a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=expired_dataset.id )}">${expired_dataset.name}</a>
+                        <input type="radio" name="set_lda_id" value="${expired_dataset.id}" ><a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=expired_dataset.id, library_id=library_id )}">${expired_dataset.name}</a>
                         %if refered_lda == expired_dataset:
                             (your version)
                         %endif
                         %endfor
                         </div>
                         <div class="form-row">
-                            Click <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', replace_id=library_dataset.id )}">here</a> to replace this dataset with a new version.
+                            Click <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', replace_id=library_dataset.id, library_id=library_id )}">here</a> to replace this dataset with a new version.
                         </div>
                         <div style="clear: both"></div>
                         
@@ -78,13 +77,13 @@ library_dataset: ${library_dataset}
                 <div style="clear: both"></div>
                 <b>Dataset Versions:</b>
                 <div style="clear: both"></div>
-                <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=library_dataset.library_dataset_dataset_association.id )}">${library_dataset.name}</a> (current)
+                <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=library_dataset.library_dataset_dataset_association.id, library_id=library_id )}">${library_dataset.name}</a> (current)
                 %if refered_lda == library_dataset.library_dataset_dataset_association:
                     (your version)
                 %endif
                 %for expired_dataset in library_dataset.expired_datasets:
                     <br/>
-                    <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=expired_dataset.id )}">${expired_dataset.name}</a>
+                    <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=expired_dataset.id, library_id=library_id )}">${expired_dataset.name}</a>
                     %if refered_lda == expired_dataset:
                         (your version)
                     %endif
