@@ -124,7 +124,7 @@
     </div>
 </%def>
 
-<%def name="render_available_templates( library_item )">
+<%def name="render_available_templates( library_item, library_id )">
     <%
         library_item_type = None
         if isinstance( library_item, trans.app.model.Library ):
@@ -152,7 +152,7 @@
             %for available_template in library_item.get_library_item_info_templates( [] ):
                 ##if we don't provide an empty list, strange things happen on reloads.... (why? - some sort of mako caching?)
                 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library_item ):
-                    <form name="add_template_info" action="${h.url_for( controller='library', action='library_item_info', do_action='new_info' )}" method="post">
+                    <form name="add_template_info" action="${h.url_for( controller='library', action='library_item_info', do_action='new_info', library_id=library_id )}" method="post">
                         <input type="hidden" name="library_item_id" value="${library_item.id}"/>
                         <input type="hidden" name="library_item_type" value="${library_item_type}"/>
                         <input type="hidden" name="library_item_info_template_id" value="${available_template.id}"/>

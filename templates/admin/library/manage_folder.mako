@@ -2,6 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 <%namespace file="/admin/library/common.mako" import="render_available_templates" />
+<%namespace file="/admin/library/common.mako" import="render_existing_library_item_info" />
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -36,6 +37,8 @@
     roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
 %>
 
-${render_permission_form( folder, folder.name, h.url_for( action='folder' ), 'id', folder.id, roles )}
+${render_permission_form( folder, folder.name, h.url_for( controller='admin', action='folder', id=folder.id, library_id=library_id ), roles )}
+
+${render_existing_library_item_info( folder )}
 
 ${render_available_templates( folder )}

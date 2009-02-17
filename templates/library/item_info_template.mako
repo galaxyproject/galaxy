@@ -1,6 +1,5 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 
 <%def name="title()">Library Item Information Template</%def>
 
@@ -16,14 +15,14 @@
                 <input type="hidden" name="id" value="${liit.id}"/>
                 <input type="hidden" name="set_element_count" value="${new_element_count}"/>
                 <div class="form-row">
-                    <label>Name:</label>
+                    <label>Field name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="name" value="${liit.name}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                    <label>Description:</label>
+                    <label>Information text:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="description" value="${liit.description}" size="40"/>
                     </div>

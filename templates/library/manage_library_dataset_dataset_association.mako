@@ -60,7 +60,8 @@
 <p/>
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=ldda.dataset ):
-    ${render_permission_form( data_list[0], name_str, h.url_for( action='library_dataset_dataset_association' ), 'id', ",".join( [ str( d.id ) for d in data_list ] ), roles )}
+    <% ldda_ids = ",".join( [ str( d.id ) for d in data_list ] ) %>
+    ${render_permission_form( data_list[0], name_str, h.url_for( controller='library', action='library_dataset_dataset_association', id=ldda_ids, library_id=library_id ), roles )}
 %endif
 
 %if len( data_list ) == 1:
@@ -161,6 +162,6 @@
         </div>
     %endif
     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=ldda.library_dataset ):
-        ${render_available_templates( ldda.library_dataset )}
+        ${render_available_templates( ldda.library_dataset, library_id )}
     %endif
 %endif

@@ -8,13 +8,10 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-library_dataset: ${library_dataset}
-
 <%def name="title()">Edit Library Dataset Attributes</%def>
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library_dataset ):
-    <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
-    ${render_permission_form( library_dataset, library_dataset.name, h.url_for( action='library_dataset' ), 'id', library_dataset.id, trans.user.all_roles() )}
+    ${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='library', action='library_dataset', id=library_dataset.id, library_id=library_id ), trans.user.all_roles() )}
 %endif
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library_dataset ):
@@ -97,5 +94,5 @@ library_dataset: ${library_dataset}
     </div>
 %endif
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library_dataset ):
-    ${render_available_templates( library_dataset )}
+    ${render_available_templates( library_dataset, library_id )}
 %endif

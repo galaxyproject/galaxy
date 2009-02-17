@@ -30,7 +30,7 @@
 </%def>
 
 ## Any permission ( e.g., 'DATASET_ACCESS' ) included in the do_not_render param will not be rendered on the page.
-<%def name="render_permission_form( obj, obj_name, form_url, id_name, id, all_roles, do_not_render=[] )">
+<%def name="render_permission_form( obj, obj_name, form_url, all_roles, do_not_render=[] )">
     <%
         if isinstance( obj, trans.app.model.User ):
             current_actions = obj.default_permissions
@@ -90,7 +90,6 @@
         <div class="toolFormTitle">Manage permissions and role associations of ${obj_str}</div>
         <div class="toolFormBody">
             <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
-                <input type="hidden" name="${id_name}" value="${id}"/>
                 <div class="form-row"></div>
                 %for k, v in permitted_actions:
                     %if k not in do_not_render:

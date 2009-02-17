@@ -833,19 +833,13 @@ class Admin( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         if params.get( 'new', False ):
             action = 'new'
-        elif params.get( 'manage', False ):
-            action = 'manage'
         elif params.get( 'delete', False ):
             action = 'delete'
         elif params.get( 'update_roles', False ):
             action = 'update_roles'
         else:
-            msg = 'Invalid action attempted on library'
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='browse_library',
-                                                              id=id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
+            # 'manage' will be the default as it simply displays the page
+            action = 'manage'
         if not id and not action == 'new':
             msg = "You must specify a library to %s." % action
             return trans.response.send_redirect( web.url_for( controller='admin',

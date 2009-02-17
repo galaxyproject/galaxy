@@ -58,7 +58,8 @@
 </table>
 <p/>
 
-${render_permission_form( data_list[0], name_str, h.url_for( action='library_dataset_dataset_association' ), 'id', ",".join( [ str( d.id ) for d in data_list ] ), roles )}
+<% ldda_ids = ",".join( [ str( d.id ) for d in data_list ] ) %>
+${render_permission_form( data_list[0], name_str, h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda_ids, library_id=library_id ), roles )}
 
 %if len( data_list ) == 1:
     <div class="toolForm">

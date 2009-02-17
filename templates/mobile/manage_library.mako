@@ -65,9 +65,9 @@
     <%
         roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
     %>
-    ${render_permission_form( library, library.name, h.url_for( controller='library', action='library' ), 'id', library.id, roles )}
+    ${render_permission_form( library, library.name, h.url_for( controller='library', action='library', id=library.id ), roles )}
 %endif
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
-    ${render_available_templates( library )}
+    ${render_available_templates( library, library.id )}
 %endif

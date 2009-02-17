@@ -76,6 +76,44 @@
     </div>
 </%def>
 
+<%def name="render_existing_library_item_info( library_item )">
+    <%
+        library_item_type = None
+        library_item_info_associations = []
+        if isinstance( library_item, trans.app.model.Library ):
+            library_item_type = 'library'
+            library_item_desc = 'library'
+            library_item_info_associations = library_item.library_info_associations
+        elif isinstance( library_item, trans.app.model.LibraryFolder ):
+            library_item_type = 'folder'
+            library_item_desc = 'folder'
+            library_item_info_associations = library_item.library_folder_info_associations
+        elif isinstance( library_item, trans.app.model.LibraryDataset ):
+            library_item_type = 'library_dataset'
+            library_item_desc = 'library dataset'
+            library_item_info_associations = library_item.library_dataset_info_associations
+        elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
+            library_item_type = 'library_dataset_dataset_association'
+            library_item_desc = 'library dataset <-> dataset association'
+            library_item_info_associations = library_item.library_dataset_dataset_info_associations
+    %>
+    <div class="toolForm">
+        <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
+        <div class="toolFormBody">
+            %for available_info_assoc in library_item_info_associations:
+                %for template_info_element in available_info_assoc.library_item_info.library_item_info_template.elements:
+                    <div class="form-row">
+                        <b>${template_info_element.name}:</b>
+                        ${available_info_assoc.library_item_info.get_element_by_template_element( template_info_element ).contents}
+                        <div style="clear: both"></div>
+                    </div>
+                %endfor
+                <div style="clear: both"></div>
+            %endfor
+        </div>
+    </div>
+</%def>
+
 <%def name="render_available_templates( library_item )">
     <%
         library_item_ids = {}
@@ -100,6 +138,12 @@
     <div class="toolForm">
         <div class="toolFormTitle">Available templates that provide information about ${library_item_desc} ${library_item.name}</div>
         <div class="toolFormBody">
+            %for available_template_assoc in available_template_assocs:
+                <div class="form-row">
+                    <a href="${h.url_for( controller='admin', action='library_item_info_template', id=available_template_assoc.library_item_info_template.id )}">${available_template_assoc.library_item_info_template.name}</a>: ${available_template_assoc.library_item_info_template.description}
+                    <div style="clear: both"></div>
+                </div>
+            %endfor
             <div class="form-row">
                 <form name="library_item_template" action="${h.url_for( controller='admin', action='library_item_info_template', **library_item_ids )}" method="post">
                     ##<a class="action-button" href="${h.url_for( controller='admin', action='library_item_info_template', new_element_count=5, **library_item_ids )}"><span>Create a new template</span></a></li>
@@ -107,12 +151,6 @@
                     <input type="submit" class="primary-button" name="library_item_template_button" id="library_item_template_button" value="Go"/>
                 </form>
             </div>
-            %for available_template_assoc in available_template_assocs:
-                <div class="form-row">
-                    <a href="${h.url_for( controller='admin', action='library_item_info_template', id=available_template_assoc.library_item_info_template.id )}">${available_template_assoc.library_item_info_template.name}</a>: ${available_template_assoc.library_item_info_template.description}
-                    <div style="clear: both"></div>
-                </div>
-            %endfor
         </div>
     </div>
     <p/>

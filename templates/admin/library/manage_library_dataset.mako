@@ -41,7 +41,7 @@
 </div>
 <p/>
 
-${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='admin', action='library_dataset' ), 'id', library_dataset.id, roles )}
+${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='admin', action='library_dataset', id=library_dataset.id, library_id=library_id ), roles )}
 
 <div class="toolForm">
     <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>

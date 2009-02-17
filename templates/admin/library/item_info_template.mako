@@ -1,6 +1,5 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 
 <%def name="title()">Library Item Information Template</%def>
 
@@ -118,9 +117,9 @@
             <div class="toolFormBody">
                 %for element_count in range( new_element_count ):
                     <div class="form-row">
-                        <b>${1+element_count}) Name:</b>
+                        <b>${1+element_count}) Field name:</b>
                         <input type="text" name="new_element_name_${element_count}" value="" size="40"/>
-                        <b>Description:</b>
+                        <b>Information text:</b>
                         <input type="text" name="new_element_description_${element_count}" value="" size="40"/>
                     </div>
                     <div style="clear: both"></div>
@@ -130,7 +129,7 @@
         <div class="toolForm">
             <div class="toolFormBody">
                 <div class="form-row">
-                    <label>Add additional elements:</label>
+                    <label>Add additional template fields:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="new_element_count" value="0" size="3"/>
                     </div>

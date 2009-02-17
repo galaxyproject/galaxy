@@ -537,9 +537,7 @@ class Library( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        if params.get( 'manage', False ):
-            action = 'manage'
-        elif params.get( 'new', False ):
+        if params.get( 'new', False ):
             action = 'new'
         elif params.get( 'rename', False ):
             action = 'rename'
@@ -548,12 +546,8 @@ class Library( BaseController ):
         elif params.get( 'update_roles', False ):
             action = 'update_roles'
         else:
-            msg = "Invalid action attempted on folder."
-            return trans.response.send_redirect( web.url_for( controller='library',
-                                                              action='browse_library',
-                                                              id=library_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
+            # 'manage' will be the default action since it simply displays the form
+            action = 'manage'
         folder = trans.app.model.LibraryFolder.get( int( id ) )
         if not folder:
             msg = "Invalid folder specified, id: %s" %str( id )
@@ -663,21 +657,15 @@ class Library( BaseController ):
                                                               action='browse_libraries',
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
-        if params.get( 'manage', False ):
-            action = 'manage'
-        elif params.get( 'rename', False ):
+        if params.get( 'rename', False ):
             action = 'rename'
         elif params.get( 'delete', False ):
             action = 'delete'
         elif params.get( 'update_roles', False ):
             action = 'update_roles'
         else:
-            msg = 'Invalid action ( %s ) attempted on library' % str( params.get( action, None ) )
-            return trans.response.send_redirect( web.url_for( controller='library',
-                                                              action='browse_library',
-                                                              id=id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
+            # 'manage' is the default action since it simply displays the page
+            action = 'manage'
         if action == 'rename':
             if params.get( 'rename_library_button', False ):
                 old_name = library.name
@@ -821,7 +809,7 @@ class Library( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
-    def library_item_info( self, trans, do_action='display', id=None, library_item_id=None, library_item_type=None, **kwd ):
+    def library_item_info( self, trans, do_action='display', id=None, library_item_id=None, library_item_type=None, library_id=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -862,7 +850,7 @@ class Library( BaseController ):
                 if trans.app.security_agent.allow_action( trans.user,
                                                           trans.app.security_agent.permitted_actions.LIBRARY_ADD,
                                                           library_item=library_item ):
-                    if 'create_new_info_button' in kwd:
+                    if params.get( 'create_new_info_button', False ):
                         user = trans.get_user()
                         #create new info then send back to make more
                         library_item_info_template_id = params.get( 'library_item_info_template_id', None )
@@ -893,6 +881,12 @@ class Library( BaseController ):
                             raise 'Invalid class (%s) specified for library_item (%s)' % ( library_item.__class__, library_item.__class__.__name__ )
                         # TODO: make sure we don't need to set permissions on the association object.
                         msg = 'The information has been saved.  You can add more information if necessary.'
+                        return trans.response.send_redirect( web.url_for( controller='library',
+                                                                          action=library_item_type,
+                                                                          id=library_item.id,
+                                                                          library_id=library_id,
+                                                                          msg=util.sanitize_text( msg ),
+                                                                          messagetype='done' ) )
                     return trans.fill_template( "/library/new_info.mako", 
                                             library_item=library_item,
                                             library_item_type=library_item_type,

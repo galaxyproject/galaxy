@@ -56,18 +56,18 @@
                 <div style="clear: both"></div>
             </div>
         </div>
-        <div class="toolForm">
-            ${render_existing_library_item_info( library )}
-        </div>
     </div>
 %endif
+
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
     <%
         roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
     %>
-    ${render_permission_form( library, library.name, h.url_for( controller='library', action='library' ), 'id', library.id, roles )}
+    ${render_permission_form( library, library.name, h.url_for( controller='library', action='library', id=library.id ), roles )}
 %endif
 
+${render_existing_library_item_info( library )}
+
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
-    ${render_available_templates( library )}
+    ${render_available_templates( library, library.id )}
 %endif

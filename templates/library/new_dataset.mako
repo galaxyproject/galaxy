@@ -1,7 +1,5 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common.mako" import="render_available_templates" />
-
 
 <% import os %>
 

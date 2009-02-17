@@ -211,9 +211,10 @@ def name_sorted( l ):
                                         %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
                                             <a class="action-button" href="${h.url_for( controller='library', action='library_item_info_template', library_id=library.id, new_element_count=5, **library_item_ids )}">Create a new information template for this library</a>
                                         %endif
-                                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
-                                            <a class="action-button" href="${h.url_for( controller='library', action='library', manage=True, id=library.id )}">Manage this library's permissions</a>
-                                        %endif
+                                        ## TODO: we need to separate editing information from editing permissions to different pages.
+                                        ##%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
+                                        ##    <a class="action-button" href="${h.url_for( controller='library', action='library', manage=True, id=library.id )}">Manage this library's permissions</a>
+                                        ##%endif
                                     </div>
                                 </span>
                             </th>

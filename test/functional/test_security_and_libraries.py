@@ -582,11 +582,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( folder_one.name )
         self.check_page_for_string( '2.bed' )
         self.check_page_for_string( "hg17" )
-        # Check the permissions on the dataset - should be 'access'
+        # Check the permissions on the dataset - should be 'access', whcih only allows viewing the information
         self.home()
-        self.visit_url( '%s/root/edit?lid=%d' % ( self.url, ldda_two.id ) )
+        self.visit_url( '%s/library/library_dataset_dataset_association?library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_two.id ) ) )
+        self.check_page_for_string( 'Manage the following selected datasets' )
         self.check_page_for_string( '2.bed' )
-        self.check_page_for_string( 'Role members can import this dataset into their history for analysis' )
+        self.check_page_for_string( 'This is the latest version of this library dataset' )
+        self.check_page_for_string( 'View attributes of 2.bed' )
+        self.check_page_for_string( 'Other information about library dataset 2.bed' )
         self.home()
         # Test importing the restricted dataset into a history, can't use the 
         # ~/admin/libraries form as twill barfs on it so we'll simulate the form submission
@@ -665,11 +668,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( library_one.name )
         self.check_page_for_string( '3.bed' )
         self.check_page_for_string( "hg16" )
-        # Test selecting "View or edit this dataset's attributes and permissions"
+        # Test selecting "View this dataset's information"
         self.home()
-        self.visit_url( '%s/root/edit?lid=%d' % ( self.url, ldda_three.id ) )
+        self.visit_url( '%s/library/library_dataset_dataset_association?library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_three.id ) ) )
+        self.check_page_for_string( 'Manage the following selected datasets' )
         self.check_page_for_string( '3.bed' )
-        self.check_page_for_string( 'This dataset is accessible by everyone (it is public).' )
+        self.check_page_for_string( 'This is the latest version of this library dataset' )
+        self.check_page_for_string( 'View attributes of 3.bed' )
+        self.check_page_for_string( 'Other information about library dataset 3.bed' )
         # Test importing a library dataset into a history
         self.home()
         self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%d' % ( self.url, ldda_three.id ) )
@@ -723,12 +729,20 @@ class TestSecurityAndLibraries( TwillTestCase ):
             # Make sure the permissions have been correctly updated for the 3 datasets.  Permissions should 
             # be all of the above on any of the 3 datasets that are imported into a history
             for ldda in lddas:
-                # TODO: need to redo these tests based on new page features...
+                # Import each library dataset into our history
                 self.home()
                 self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%s&library_id=%s' % ( self.url, str( ldda.id ), str( library_one.id ) ) )
+                # Determine the new HistoryDatasetAssociation id created when the library dataset was imported into our history
+                last_hda_created = galaxy.model.HistoryDatasetAssociation.query() \
+                    .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
                 self.home()
-                self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( ldda.id ) ) )
-                self.check_page_for_string( 'You are currently viewing a dataset from a library' )
+                self.visit_url( '%s/root/edit?id=%s' % ( self.url, str( last_hda_created.id ) ) )
+                self.check_page_for_string( 'Edit Attributes' )
+                self.check_page_for_string( last_hda_created.name )
+                check_str = 'Manage permissions and role associations of %s' % last_hda_created.name
+                self.check_page_for_string( check_str )
+                self.check_page_for_string( 'Role members can manage the roles associated with this dataset' )
+                self.check_page_for_string( 'Role members can import this dataset into their history for analysis' )
         # admin_user is associated with role_one, so should have all permissions on imported datasets
         check_edit_page1( latest_3_lddas )
         self.logout()
@@ -765,13 +779,31 @@ class TestSecurityAndLibraries( TwillTestCase ):
             for ldda in lddas:
                 self.home()
                 self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%s' % ( self.url, str( ldda.id ) ) )
+                # Determine the new HistoryDatasetAssociation id created when the library dataset was imported into our history
+                last_hda_created = galaxy.model.HistoryDatasetAssociation.query() \
+                    .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
                 self.home()
-                self.visit_url( '%s/root/edit?lid=%s' % ( self.url, str( ldda.id ) ) )
-                self.check_page_for_string( 'View Attributes' )
+                self.visit_url( '%s/root/edit?id=%s' % ( self.url, str( last_hda_created.id ) ) )
+                self.check_page_for_string( 'Edit Attributes' )
+                self.check_page_for_string( last_hda_created.name )
+                self.check_page_for_string( 'View Permissions' )
+                self.check_page_for_string( last_hda_created.name )
                 try:
                     # This should no longer be possible
-                    self.check_page_for_string( 'Manage permissions and role associations of %s' % ldda.name )
-                    self.check_page_for_string( 'select name="DATASET_MANAGE_PERMISSIONS_in"' )
+                    check_str = 'Manage permissions and role associations of %s' % last_hda_created.name
+                    self.check_page_for_string( check_str )
+                    raise AssertionError( '%s incorrectly has DATASET_MANAGE_PERMISSIONS on datasets imported from a library' % admin_user.email )
+                except:
+                    pass # This is the behavior we want
+                try:
+                    # This should no longer be possible
+                    self.check_page_for_string( 'Role members can manage the roles associated with this dataset' )
+                    raise AssertionError( '%s incorrectly has DATASET_MANAGE_PERMISSIONS on datasets imported from a library' % admin_user.email )
+                except:
+                    pass # This is the behavior we want
+                try:
+                    # This should no longer be possible
+                    self.check_page_for_string( 'Role members can import this dataset into their history for analysis' )
                     raise AssertionError( '%s incorrectly has DATASET_MANAGE_PERMISSIONS on datasets imported from a library' % admin_user.email )
                 except:
                     pass # This is the behavior we want
