@@ -259,7 +259,7 @@ class RootController( BaseController ):
                 if target_type:
                     msg = data.datatype.convert_dataset(trans, data, target_type)
                     return trans.show_ok_message( msg, refresh_frames=['history'] )
-            elif params.update_roles:
+            elif params.update_roles_button:
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change permissions." )
                 if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data.dataset ):
@@ -458,7 +458,7 @@ class RootController( BaseController ):
     def history_set_default_permissions( self, trans, **kwd ):
         """Sets the user's default permissions for the current history"""
         if trans.user:
-            if 'update_roles' in kwd:
+            if 'update_roles_button' in kwd:
                 history = trans.get_history()
                 p = util.Params( kwd )
                 permissions = {}

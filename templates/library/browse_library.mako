@@ -144,13 +144,14 @@ def name_sorted( l ):
             %if add_folder_item:
                 <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=parent.id )}">Add datasets to this folder</a>
                 <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=parent.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
-                <a class="action-button" href="${h.url_for( controller='library', action='library_item_info_template', folder_id=parent.id, new_element_count=5, **library_item_ids )}">Create a new information template for this folder</a>
             %endif
             %if modify_folder:
-                <a class="action-button" href="${h.url_for( controller='library', action='folder', rename=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
+            %else:
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">View this folder's information</a>
             %endif
             %if manage_folder:
-                <a class="action-button" href="${h.url_for( controller='library', action='folder', manage=True, id=parent.id, library_id=library_id )}">Manage this folder's permissions</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', manage=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
             %endif
             %if add_folder_item or modify_folder or manage_folder:
                 </div>
@@ -204,17 +205,13 @@ def name_sorted( l ):
                                     <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                                     <div popupmenu="library-${library.id}-popup">
                                         %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
-                                            <a class="action-button" href="${h.url_for( controller='library', action='library', rename=True, id=library.id )}">Edit this library's information</a>
+                                            <a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">Edit this library's information</a>
                                         %else:
-                                            <a class="action-button" href="${h.url_for( controller='library', action='library', manage=True, id=library.id )}">View this library's information</a>
+                                            <a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">View this library's information</a>
                                         %endif
-                                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
-                                            <a class="action-button" href="${h.url_for( controller='library', action='library_item_info_template', library_id=library.id, new_element_count=5, **library_item_ids )}">Create a new information template for this library</a>
+                                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
+                                            <a class="action-button" href="${h.url_for( controller='library', action='library', permissions=True, id=library.id )}">Edit this library's permissions</a>
                                         %endif
-                                        ## TODO: we need to separate editing information from editing permissions to different pages.
-                                        ##%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
-                                        ##    <a class="action-button" href="${h.url_for( controller='library', action='library', manage=True, id=library.id )}">Manage this library's permissions</a>
-                                        ##%endif
                                     </div>
                                 </span>
                             </th>

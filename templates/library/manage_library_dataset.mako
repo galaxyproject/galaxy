@@ -11,7 +11,7 @@
 <%def name="title()">Edit Library Dataset Attributes</%def>
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library_dataset ):
-    ${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='library', action='library_dataset', id=library_dataset.id, library_id=library_id ), trans.user.all_roles() )}
+    ${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='library', action='library_dataset', id=library_dataset.id, library_id=library_id, permissions=True ), trans.user.all_roles() )}
 %endif
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library_dataset ):

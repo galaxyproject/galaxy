@@ -208,7 +208,7 @@ class User( BaseController ):
     def set_default_permissions( self, trans, **kwd ):
         """Sets the user's default permissions for the new histories"""
         if trans.user:
-            if 'update_roles' in kwd:
+            if 'update_roles_button' in kwd:
                 p = util.Params( kwd )
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():

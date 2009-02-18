@@ -394,7 +394,7 @@ class TwillTestCase( unittest.TestCase ):
         # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
         # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
         # /user/set_default_permissions method.
-        url = "user/set_default_permissions?update_roles=Save&id=None"
+        url = "user/set_default_permissions?update_roles_button=Save&id=None"
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, str( role_id ) )
@@ -411,7 +411,7 @@ class TwillTestCase( unittest.TestCase ):
         # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
         # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
         # /user/set_default_permissions method.
-        url = "root/history_set_default_permissions?update_roles=Save&id=None&dataset=True"
+        url = "root/history_set_default_permissions?update_roles_button=Save&id=None&dataset=True"
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, str( role_id ) )

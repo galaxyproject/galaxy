@@ -1,8 +1,14 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 <%namespace file="/admin/library/common.mako" import="render_available_templates" />
 <%namespace file="/admin/library/common.mako" import="render_existing_library_item_info" />
+
+<br/><br/>
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
+    </li>
+</ul>
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -11,7 +17,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Edit folder name and description</div>
     <div class="toolFormBody">
-        <form name="folder" action="${h.url_for( controller='admin', action='folder', manage=True, id=folder.id, library_id=library_id )}" method="post" >
+        <form name="folder" action="${h.url_for( controller='admin', action='folder', information=True, id=folder.id, library_id=library_id )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
@@ -31,14 +37,6 @@
     </div>
 </div>
 
-<p/>
-
-<%
-    roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
-%>
-
-${render_permission_form( folder, folder.name, h.url_for( controller='admin', action='folder', id=folder.id, library_id=library_id ), roles )}
-
 ${render_existing_library_item_info( folder )}
 
-${render_available_templates( folder )}
+${render_available_templates( folder, library_id )}

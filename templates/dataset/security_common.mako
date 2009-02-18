@@ -99,7 +99,7 @@
                     %endif
                 %endfor
                 <div class="form-row">
-                    <input type="submit" name="update_roles" value="Save"/>
+                    <input type="submit" name="update_roles_button" value="Save"/>
                 </div>
             </form>
         </div>

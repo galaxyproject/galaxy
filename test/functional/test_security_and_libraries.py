@@ -582,9 +582,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( folder_one.name )
         self.check_page_for_string( '2.bed' )
         self.check_page_for_string( "hg17" )
-        # Check the permissions on the dataset - should be 'access', whcih only allows viewing the information
+        # Check the permissions on the dataset - should be 'access', which only allows viewing the information
         self.home()
-        self.visit_url( '%s/library/library_dataset_dataset_association?library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_two.id ) ) )
+        self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_two.id ) ) )
         self.check_page_for_string( 'Manage the following selected datasets' )
         self.check_page_for_string( '2.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
@@ -670,7 +670,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( "hg16" )
         # Test selecting "View this dataset's information"
         self.home()
-        self.visit_url( '%s/library/library_dataset_dataset_association?library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_three.id ) ) )
+        self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_three.id ) ) )
         self.check_page_for_string( 'Manage the following selected datasets' )
         self.check_page_for_string( '3.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
@@ -717,7 +717,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         def build_url( permissions, role ):
             # We'll bypass the admin/datasets method and directly call the admin/dataset method, setting
             # access, manage permissions, and edit metadata permissions to role_one
-            url = '/admin/library_dataset_dataset_association?id=%s&library_id=%s&update_roles=Save' % ( ldda_ids, str( library_one.id ) )
+            url = '/admin/library_dataset_dataset_association?permissions=True&id=%s&library_id=%s&update_roles_button=Save' % ( ldda_ids, str( library_one.id ) )
             for p in permissions:
                 url += '&%s_in=%s' % ( p, str( role.id ) )
             return url

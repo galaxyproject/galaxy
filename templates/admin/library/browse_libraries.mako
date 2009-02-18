@@ -13,10 +13,10 @@
 <ul class="manage-table-actions">
     %if not deleted:
         <li>
-            <a class="action-button" href="${h.url_for( action='library', new=True )}"><span>Create a new library</span></a>
+            <a class="action-button" href="${h.url_for( controller='admin', action='library', new=True )}"><span>Create a new library</span></a>
         </li>
         <li>
-            <a class="action-button" href="${h.url_for( action='deleted_libraries' )}"><span>Manage deleted libraries</span></a>
+            <a class="action-button" href="${h.url_for( controller='admin', action='deleted_libraries' )}"><span>Manage deleted libraries</span></a>
         </li>
     %endif
 </ul>
