@@ -122,9 +122,6 @@ def name_sorted( l ):
             expander = "/static/images/silk/resultset_next.png"
             folder = "/static/images/silk/folder.png"
             subfolder = True
-        add_folder_item = trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent )
-        modify_folder = trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent )
-        manage_folder = trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent )
         created_ldda_id_list = util.listify( created_ldda_ids )
         if created_ldda_id_list:
            created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
@@ -137,25 +134,21 @@ def name_sorted( l ):
             %if parent.description:
                 <i>- ${parent.description}</i>
             %endif
-            %if add_folder_item or modify_folder or manage_folder:
-                <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                <div popupmenu="folder-${parent.id}-popup">
-            %endif
-            %if add_folder_item:
-                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=parent.id )}">Add datasets to this folder</a>
-                <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=parent.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
-            %endif
-            %if modify_folder:
-                <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
-            %else:
-                <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">View this folder's information</a>
-            %endif
-            %if manage_folder:
-                <a class="action-button" href="${h.url_for( controller='library', action='folder', manage=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
-            %endif
-            %if add_folder_item or modify_folder or manage_folder:
-                </div>
-            %endif
+            <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="folder-${parent.id}-popup">
+                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent ):
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=parent.id )}">Add datasets to this folder</a>
+                    <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=parent.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
+                %endif
+                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent ):
+                    <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
+                %else:
+                    <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">View this folder's information</a>
+                %endif
+                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent ):
+                    <a class="action-button" href="${h.url_for( controller='library', action='folder', permissions=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
+                %endif
+            </div>
         </div>
     </li>
     %if subfolder:
