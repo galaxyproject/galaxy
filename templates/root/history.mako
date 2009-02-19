@@ -248,13 +248,20 @@ div#footer {
 
 <%namespace file="history_common.mako" import="render_dataset" />
 
-%if ( show_deleted and not history.activatable_datasets ) or ( not show_deleted and not history.active_datasets ):
+<%
+    activatable_datasets = []
+    for hda in history.datasets:
+        if not hda.dataset.purged:
+            activatable_datasets.append( hda )
+%>
+
+%if ( show_deleted and not activatable_datasets ) or ( not show_deleted and not history.active_datasets ):
     <div class="infomessagesmall" id="emptyHistoryMessage">
 %else:    
     <%
     if show_deleted:
         #all datasets
-        datasets_to_show = history.activatable_datasets
+        datasets_to_show = activatable_datasets
     else:
         #active (not deleted)
         datasets_to_show = history.active_datasets
