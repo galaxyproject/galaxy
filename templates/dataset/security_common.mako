@@ -6,7 +6,7 @@
                 in_roles.append( a.role )
         out_roles = filter( lambda x: x not in in_roles, all_roles )
     %>
-    <p><label>${action.action}:</label> ${action.description}</p>
+    <p><b>${action.action}:</b> ${action.description}</p>
     <div style="width: 100%; white-space: nowrap;">
         <div style="float: left; width: 50%;">
             Roles associated:<br/>
@@ -30,7 +30,7 @@
 </%def>
 
 ## Any permission ( e.g., 'DATASET_ACCESS' ) included in the do_not_render param will not be rendered on the page.
-<%def name="render_permission_form( obj, obj_name, form_url, id_name, id, all_roles, do_not_render=[] )">
+<%def name="render_permission_form( obj, obj_name, form_url, all_roles, do_not_render=[] )">
     <%
         if isinstance( obj, trans.app.model.User ):
             current_actions = obj.default_permissions
@@ -66,32 +66,30 @@
             obj_str = 'unknown object %s' %obj_name
     %>
     <script type="text/javascript">
-        var q = jQuery.noConflict();
-        q( document ).ready( function () {
-            q( '.role_add_button' ).click( function() {
+        $( document ).ready( function () {
+            $( '.role_add_button' ).click( function() {
                 var action = this.id.substring( 0, this.id.lastIndexOf( '_add_button' ) )
                 var in_select = '#' + action + '_in_select';
                 var out_select = '#' + action + '_out_select';
-                return !q( out_select + ' option:selected' ).remove().appendTo( in_select );
+                return !$( out_select + ' option:selected' ).remove().appendTo( in_select );
             });
-            q( '.role_remove_button' ).click( function() {
+            $( '.role_remove_button' ).click( function() {
                 var action = this.id.substring( 0, this.id.lastIndexOf( '_remove_button' ) )
                 var in_select = '#' + action + '_in_select';
                 var out_select = '#' + action + '_out_select';
-                return !q( in_select + ' option:selected' ).remove().appendTo( out_select );
+                return !$( in_select + ' option:selected' ).remove().appendTo( out_select );
             });
-            q( 'form#edit_role_associations' ).submit( function() {
-                q( '.in_select option' ).each(function( i ) {
-                    q( this ).attr( "selected", "selected" );
+            $( 'form#edit_role_associations' ).submit( function() {
+                $( '.in_select option' ).each(function( i ) {
+                    $( this ).attr( "selected", "selected" );
                 });
             });
         });
     </script>
     <div class="toolForm">
-        <div class="toolFormTitle">Manage permissions and role associations for ${obj_str}</div>
+        <div class="toolFormTitle">Manage permissions and role associations of ${obj_str}</div>
         <div class="toolFormBody">
             <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
-                <input type="hidden" name="${id_name}" value="${id}"/>
                 <div class="form-row"></div>
                 %for k, v in permitted_actions:
                     %if k not in do_not_render:
@@ -101,7 +99,7 @@
                     %endif
                 %endfor
                 <div class="form-row">
-                    <input type="submit" name="update_roles" value="Save"/>
+                    <input type="submit" name="update_roles_button" value="Save"/>
                 </div>
             </form>
         </div>

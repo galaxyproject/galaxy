@@ -28,6 +28,11 @@
                     class="active-link"
                 %endif
             ><a target="_parent" href="${h.url_for( controller='workflow', action='index' )}">workflow</a></span>
+            | <span
+                %if active_view == "libraries":
+                    class="active-link"
+                %endif
+            ><a target="_parent" href="${h.url_for( controller='library', action='index' )}">libraries</a></span>
             %if admin_user == "true":
             | <span
                 %if active_view == "admin":

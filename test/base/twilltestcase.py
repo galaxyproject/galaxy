@@ -394,7 +394,7 @@ class TwillTestCase( unittest.TestCase ):
         # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
         # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
         # /user/set_default_permissions method.
-        url = "user/set_default_permissions?update_roles=Save&id=None"
+        url = "user/set_default_permissions?update_roles_button=Save&id=None"
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, str( role_id ) )
@@ -411,7 +411,7 @@ class TwillTestCase( unittest.TestCase ):
         # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
         # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
         # /user/set_default_permissions method.
-        url = "root/history_set_default_permissions?update_roles=Save&id=None&dataset=True"
+        url = "root/history_set_default_permissions?update_roles_button=Save&id=None&dataset=True"
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, str( role_id ) )
@@ -823,10 +823,10 @@ class TwillTestCase( unittest.TestCase ):
     def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described', root_folder='' ):
         """Rename a library"""
         self.home()
-        self.visit_url( "%s/admin/library?rename=True&id=%s" % ( self.url, library_id ) )
+        self.visit_url( "%s/admin/library?manage=True&id=%s" % ( self.url, library_id ) )
         self.check_page_for_string( 'Change library name and description' )
         # Since twill barfs on the form submisson, we ar forced to simulate it
-        url = "%s/admin/library?id=%s&rename=submitted&description=%s&name=%s" % \
+        url = "%s/admin/library?manage=True&id=%s&rename_library_button=Save&description=%s&name=%s" % \
         ( self.url, library_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
         if root_folder:
             url += "&root_folder=on"
@@ -835,33 +835,33 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_folder( self, folder_id, name='Folder One', description='NThis is Folder One' ):
+    def add_folder( self, library_id, folder_id, name='Folder One', description='NThis is Folder One' ):
         """Create a new folder"""
         self.home()
-        self.visit_url( "%s/admin/folder?id=%s&new=True" % ( self.url, folder_id ) )
+        self.visit_url( "%s/admin/folder?library_id=%s&id=%s&new=True" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Create a new folder' )
         tc.fv( "1", "name", name ) # form field 1 is the field named name...
         tc.fv( "1", "description", description ) # form field 2 is the field named description...
         tc.submit( "new_folder_button" )
         self.home()
-    def rename_folder( self, folder_id, old_name, name='Folder One Renamed', description='This is Folder One Re-described' ):
+    def rename_folder( self, library_id, folder_id, old_name, name='Folder One Renamed', description='This is Folder One Re-described' ):
         """Rename a Folder"""
         self.home()
-        self.visit_url( "%s/admin/folder?rename=True&id=%s" % ( self.url, folder_id ) )
+        self.visit_url( "%s/admin/folder?library_id=%s&manage=True&id=%s" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Edit folder name and description' )
         # Since twill barfs on the form submisson, we ar forced to simulate it
-        url = "%s/admin/folder?id=%s&rename=submitted&description=%s&name=%s" % \
-        ( self.url, folder_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
+        url = "%s/admin/folder?library_id=%s&manage=True&id=%s&rename_folder_button=Save&description=%s&name=%s" % \
+        ( self.url, library_id, folder_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
         self.home()
         self.visit_url( url )
         check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_dataset( self, filename, folder_id, extension='auto', dbkey='hg18', roles=[] ):
+    def add_dataset( self, filename, library_id, folder_id, extension='auto', dbkey='hg18', roles=[] ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
-        self.visit_url( "%s/admin/dataset?folder_id=%s&new=True" % ( self.url, folder_id ) )
+        self.visit_url( "%s/admin/library_dataset_dataset_association?library_id=%s&folder_id=%s&new=True" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Create a new library dataset' )
         tc.fv( "1", "folder_id", folder_id ) # form field 1 is the field named folder_id...
         tc.formfile( "1", "file_data", filename ) # form field 2 is the field named file_data...
@@ -872,24 +872,21 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "new_dataset_button" )
         self.check_page_for_string( '1 new datasets added to the library ( each is selected below )' )
         self.home()
-    def add_dataset_to_folder_from_history( self, folder_id ):
+    def add_history_datasets_to_library( self, library_id, folder_id ):
         """Copy a dataset from the current history to a library folder"""
         # Create a new history
         self.new_history()
         self.upload_file( "1.bed" )
         self.home()
-        self.visit_url( "%s/admin/add_dataset_to_folder_from_history?folder_id=%s" % ( self.url, folder_id ) )
-        self.check_page_for_string( 'Active datasets in your current history' )
-        tc.fv( "1", "folder_id", folder_id )
-        tc.fv( "1", "ids", "1" )
-        tc.submit( "add_dataset_from_history_button" )
+        self.visit_url( "%s/admin/add_history_datasets_to_library?library_id=%s&folder_id=%s&ids=1&add_dataset_from_history_button=Add+selected+datasets" % \
+                        ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Added the following datasets to the library folder: 1.bed' )
         self.home()
-    def add_datasets_from_library_dir( self, folder_id, extension='auto', dbkey='hg18', roles_tuple=[] ):
+    def add_datasets_from_library_dir( self, library_id, folder_id, extension='auto', dbkey='hg18', roles_tuple=[] ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
-        self.visit_url( "%s/admin/dataset?folder_id=%s" % ( self.url, folder_id ) )
+        self.visit_url( "%s/admin/library_dataset_dataset_association?library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Create a new library dataset' )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "extension", extension )

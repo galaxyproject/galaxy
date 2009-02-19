@@ -623,21 +623,20 @@ class HistoryDatasetAssociation( DatasetInstance ):
         des.flush()
         return des
         
-    def to_library_dataset_folder_association( self, parent_id = None, target_folder = None ):
-
+    def to_library_dataset_dataset_association( self, parent_id = None, target_folder = None ):
         des = LibraryDatasetDatasetAssociation( name=self.name, 
-                                         info=self.info, 
-                                         blurb=self.blurb, 
-                                         peek=self.peek, 
-                                         extension=self.extension, 
-                                         dbkey=self.dbkey, 
-                                         dataset = self.dataset, 
-                                         visible=self.visible, 
-                                         deleted=self.deleted, 
-                                         parent_id=parent_id,
-                                         copied_from_history_dataset_association = self,
-                                         #folder = target_folder
-                                          )
+                                                info=self.info, 
+                                                blurb=self.blurb, 
+                                                peek=self.peek, 
+                                                extension=self.extension, 
+                                                dbkey=self.dbkey, 
+                                                dataset = self.dataset, 
+                                                visible=self.visible, 
+                                                deleted=self.deleted, 
+                                                parent_id=parent_id,
+                                                copied_from_history_dataset_association = self,
+                                                #folder = target_folder
+                                              )
         des.flush()
         des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         if target_folder:
@@ -645,7 +644,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
             target_folder.add_dataset( new_data )
             new_data.flush()
         for child in self.children:
-            child_copy = child.to_library_dataset_folder_association( parent_id = des.id )
+            child_copy = child.to_library_dataset_dataset_association( parent_id = des.id )
         if not self.datatype.copy_safe_peek:
             des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
@@ -725,8 +724,8 @@ class Library( object ):
         self.root_folder = root_folder
 
     def get_library_item_info_templates( self, template_list = [] ):
-        if self.library_item_info_template_associations:
-            template_list.extend( [ library_item_info_template_association.library_item_info_template for library_item_info_template_association in self.library_item_info_template_associations if library_item_info_template_association.library_item_info_template not in template_list ] )
+        if self.library_info_template_associations:
+            template_list.extend( [ lita.library_item_info_template for lita in self.library_info_template_associations if lita.library_item_info_template not in template_list ] )
         return template_list
 
 class LibraryFolder( object ):
@@ -749,8 +748,8 @@ class LibraryFolder( object ):
         self.item_count += 1
 
     def get_library_item_info_templates( self, template_list = [] ):
-        if self.library_item_info_template_associations:
-            template_list.extend( [ library_item_info_template_association.library_item_info_template for library_item_info_template_association in self.library_item_info_template_associations if library_item_info_template_association.library_item_info_template not in template_list ] )
+        if self.library_folder_info_template_associations:
+            template_list.extend( [ lfita.library_item_info_template for lfita in self.library_folder_info_template_associations if lfita.library_item_info_template not in template_list ] )
         if self.parent:
             self.parent.get_library_item_info_templates( template_list )
         elif self.library_root:
@@ -789,25 +788,21 @@ class LibraryDataset( object ):
         self.flush()
     
     def get_info( self ):
-        #Use info from ldfa if versioned info is not set
-        if self._info:
-            return self._info
+        # Use info from ldfa
         return self.library_dataset_dataset_association.info
     def set_info( self, info ):
         self._info = info
     info = property( get_info, set_info )
     
     def get_name( self ):
-        #Use info from ldfa if versioned info is not set
-        if self._name:
-            return self._name
+        # Use info from ldda
         return self.library_dataset_dataset_association.name
     def set_name( self, name ):
         self._name = name
     name = property( get_name, set_name )
     
     def display_name( self ):
-        #use name from ldfa is versioned info is not set
+        # Use name from ldda is versioned info is not set
         if self._name:
             return self.datatype.display_name( self )
         self.library_dataset_dataset_association.display_name()
@@ -816,23 +811,19 @@ class LibraryDataset( object ):
         return getattr( self.library_dataset_dataset_association, name ) #Any nonexistant attributes will be pulled from the ldda
     
     def get_library_item_info_templates( self, template_list = [] ):
-        if self.library_item_info_template_associations:
-            template_list.extend( [ library_item_info_template_association.library_item_info_template for library_item_info_template_association in self.library_item_info_template_associations if library_item_info_template_association.library_item_info_template not in template_list ] )
+        if self.library_dataset_info_template_associations:
+            template_list.extend( [ ldita.library_item_info_template for ldita in self.library_dataset_info_template_associations if ldita.library_item_info_template not in template_list ] )
         self.folder.get_library_item_info_templates( template_list )
         return template_list
     
 class LibraryDatasetDatasetAssociation( DatasetInstance ):
     def __init__( self, 
-                  #folder = None, 
-                  #order_id = None, 
                   copied_from_history_dataset_association = None, 
                   copied_from_library_dataset_dataset_association = None, 
                   library_dataset = None,
                   **kwd ):
         DatasetInstance.__init__( self, **kwd )
         self.library_dataset = library_dataset
-        #self.folder = folder
-        #self.order_id = order_id
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
     def to_history_dataset_association( self, parent_id = None, target_history = None ):
@@ -886,8 +877,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return
     def get_library_item_info_templates( self, template_list = [] ):
-        if self.library_item_info_template_associations:
-            template_list.extend( [ library_item_info_template_association.library_item_info_template for library_item_info_template_association in self.library_item_info_template_associations if library_item_info_template_association.library_item_info_template not in template_list ] )
+        if self.library_dataset_dataset_info_template_associations:
+            template_list.extend( [ lddita.library_item_info_template for lddita in self.library_dataset_dataset_info_template_associations if lddita.library_item_info_template not in template_list ] )
         self.library_dataset.get_library_item_info_templates( template_list )
         return template_list
 

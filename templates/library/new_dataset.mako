@@ -1,7 +1,5 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common.mako" import="render_available_templates" />
-
 
 <% import os %>
 
@@ -17,15 +15,15 @@
 <div class="toolForm" id="new_dataset">
     <div class="toolFormTitle">Create a new library dataset</div>
     <div class="toolFormBody">
-        <form name="tool_form" action="${h.url_for( controller='library', action='dataset' )}" enctype="multipart/form-data" method="post">
-            %if replace_dataset is not None:
-            <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
-            <div class="form-row">
-                You are currently selecting a new file to replace '<a href="${h.url_for( controller='library', action='library_dataset', id=replace_dataset.id )}">${replace_dataset.name}</a>'.
-                <div style="clear: both"></div>
-            </div>
+        <form name="tool_form" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
+            %if replace_dataset:
+                <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
+                <div class="form-row">
+                    You are currently selecting a new file to replace '<a href="${h.url_for( controller='library', action='library_dataset', id=replace_dataset.id )}">${replace_dataset.name}</a>'.
+                    <div style="clear: both"></div>
+                </div>
             %else:
-            <input type="hidden" name="folder_id" value="${folder.id}"/>
+                <input type="hidden" name="folder_id" value="${folder_id}"/>
             %endif
             <div class="form-row">
                 <label>File:</label>
@@ -124,27 +122,27 @@
     </div>
 </div>
 <p/>
-%if history:
-<div class="toolForm">
-    <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
-    <div class="toolFormBody">
-        <form name="add_dataset_from_history" action="${h.url_for( controller='library', action='dataset' )}" enctype="multipart/form-data" method="post">
-            %if replace_dataset is not None:
-            <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
-            <div class="form-row">
-                You are currently selecting a new file to replace '<a href="${h.url_for( controller='library', action='dataset', id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
-                <div style="clear: both"></div>
-            </div>
-            %else:
-            <input type="hidden" name="folder_id" value="${folder.id}"/>
-            %endif
-            %for dataset in history.active_datasets:
-                <div class="form-row">
-                    <input name="hids" value="${dataset.id}" type="checkbox"/>${dataset.hid}: ${dataset.name}
-                </div>
-            %endfor
-            <input type="submit" name="add_dataset_from_history_button" value="Add selected datasets"/>
-        </form>
+%if history and history.active_datasets:
+    <div class="toolForm">
+        <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
+        <div class="toolFormBody">
+            <form name="add_dataset_from_history" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
+                %if replace_dataset:
+                    <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
+                    <div class="form-row">
+                        You are currently selecting a new file to replace '<a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=replace_dataset.library_dataset_dataset_association.id, library_id=library_id )}">${replace_dataset.name}</a>'.
+                        <div style="clear: both"></div>
+                    </div>
+                %else:
+                    <input type="hidden" name="folder_id" value="${folder_id}"/>
+                %endif
+                %for dataset in history.active_datasets:
+                    <div class="form-row">
+                        <input name="hids" value="${dataset.id}" type="checkbox"/>${dataset.hid}: ${dataset.name}
+                    </div>
+                %endfor
+                <input type="submit" name="add_dataset_from_history_button" value="Add selected datasets"/>
+            </form>
+        </div>
     </div>
-</div>
 %endif

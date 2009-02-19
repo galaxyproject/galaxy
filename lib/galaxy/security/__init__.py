@@ -98,7 +98,7 @@ class GalaxyRBACAgent( RBACAgent ):
             user_role_ids = sorted( [ r.id for r in user.all_roles() ] )
             perms = self.get_dataset_permissions( dataset )
             if action in perms.keys():
-        		# The filter() returns a list of the dataset's role ids of which the user is not a member,
+                # The filter() returns a list of the dataset's role ids of which the user is not a member,
                 # so an empty list means the user has all of the required roles.
                 if not filter( lambda x: x not in user_role_ids, [ r.id for r in perms[ action ] ] ):
                     return True # user has all of the roles required to perform the action
@@ -446,9 +446,9 @@ class GalaxyRBACAgent( RBACAgent ):
         raise 'No valid method of associating provided components: %s' % kwd
     def check_folder_contents( self, user, entry ):
         """
-    	Return true if there are any datasets under 'folder' that the
-    	user has access permission on.  We do this a lot and it's a
-    	pretty inefficient method, optimizations are welcomed.
+        Return true if there are any datasets under 'folder' that the
+        user has access permission on.  We do this a lot and it's a
+        pretty inefficient method, optimizations are welcomed.
         """
         if isinstance( entry, self.model.Library ):
             return self.check_folder_contents( user, entry.root_folder )

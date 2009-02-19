@@ -202,43 +202,30 @@ class RootController( BaseController ):
             yield "No data with id=%d" % id
 
     @web.expose
-    def edit(self, trans, id=None, hid=None, lid=None, **kwd):
+    def edit(self, trans, id=None, hid=None, **kwd):
         """Returns data directly into the browser. Sets the mime-type according to the extension"""
         if hid is not None:
             history = trans.get_history()
             # TODO: hid handling
             data = history.datasets[ int( hid ) - 1 ]
-        elif lid is not None:
-            data = self.app.model.LibraryDatasetDatasetAssociation.get( lid )
         elif id is not None: 
             data = self.app.model.HistoryDatasetAssociation.get( id )
         else:
-            trans.log_event( "Problem loading dataset id %s with history id %s and library id %s." % ( str( id ), str( hid ), str( lid ) ) )
+            trans.log_event( "Problem loading dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
             return trans.show_error_message( "Problem loading dataset." )
         if data is None:
-            trans.log_event( "Problem retrieving dataset id %s with history id %s and library id %s." % ( str( id ), str( hid ), str( lid ) ) )
+            trans.log_event( "Problem retrieving dataset id %s with history id." % ( str( id ), str( hid ) ) )
             return trans.show_error_message( "Problem retrieving dataset." )
         if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
         if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=data ):
             params = util.Params( kwd, safe=False )
-            
-            if lid is None or trans.app.security_agent.allow_action( trans.user,
-                                                                     trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
-                                                                     library_item=data ):
-                edit_allowed = True
-            else:
-                edit_allowed = False
             if params.change:
                 # The user clicked the Save button on the 'Change data type' form
-                if not edit_allowed:
-                    return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 trans.app.datatypes_registry.change_datatype( data, params.datatype )
                 trans.app.model.flush()
             elif params.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
-                if not edit_allowed:
-                    return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 data.name  = params.name
                 data.info  = params.info
                 
@@ -258,8 +245,6 @@ class RootController( BaseController ):
                 return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
             elif params.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
-                if not edit_allowed:
-                    return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 for name, spec in data.metadata.spec.items():
                     # We need to be careful about the attributes we are resetting
                     if name not in [ 'name', 'info', 'dbkey' ]:
@@ -270,16 +255,11 @@ class RootController( BaseController ):
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
             elif params.convert_data:
-                if lid is not None:
-                    return trans.show_error_message( "Data in the library cannot be converted.  Please import it to a history and covert it." )
-                # The user clicked the Convert button on the 'Convert to new format' form
-                if not edit_allowed:
-                    return trans.show_error_message( "You are not authorized to change this dataset's metadata." )
                 target_type = kwd.get("target_type", None)
                 if target_type:
                     msg = data.datatype.convert_dataset(trans, data, target_type)
                     return trans.show_ok_message( msg, refresh_frames=['history'] )
-            elif params.update_roles:
+            elif params.update_roles_button:
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change permissions." )
                 if trans.app.security_agent.allow_action( trans.user, data.dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data.dataset ):
@@ -304,13 +284,13 @@ class RootController( BaseController ):
                 # sets it properly in the metadata
                 data.metadata.dbkey = data.dbkey
             # let's not overwrite the imported datatypes module with the variable datatypes?
-            ### the built-in 'id' is overwritten in lots of places as well
+            # the built-in 'id' is overwritten in lots of places as well
             ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
             ldatatypes.sort()
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
-            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, datatypes=ldatatypes, err=None, edit_allowed = edit_allowed )
+            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, datatypes=ldatatypes )
         else:
-            return trans.show_error_message( "You do not have permission to edit this dataset's (%s) attributes." % id )
+            return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( id ) )
 
     def __delete_dataset( self, trans, id ):
         data = self.app.model.HistoryDatasetAssociation.get( id )
@@ -478,7 +458,7 @@ class RootController( BaseController ):
     def history_set_default_permissions( self, trans, **kwd ):
         """Sets the user's default permissions for the current history"""
         if trans.user:
-            if 'update_roles' in kwd:
+            if 'update_roles_button' in kwd:
                 history = trans.get_history()
                 p = util.Params( kwd )
                 permissions = {}

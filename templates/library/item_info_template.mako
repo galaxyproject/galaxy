@@ -4,7 +4,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
     </li>
 </ul>
 
@@ -13,21 +13,21 @@
 %endif
 
 %if liit:
-    <form name="library_item_info_template_edit" action="${h.url_for( controller='admin', action='library_item_info_template' )}" method="post" >
+    <form name="library_item_info_template_edit" action="${h.url_for( controller='library', action='library_item_info_template' )}" method="post" >
         <div class="toolForm">
             <div class="toolFormTitle">Edit Library Item Info Template</div>
             <div class="toolFormBody">
                 <input type="hidden" name="id" value="${liit.id}"/>
                 <input type="hidden" name="set_element_count" value="${new_element_count}"/>
                 <div class="form-row">
-                    <label>Name:</label>
+                    <label>Field name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="name" value="${liit.name}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                    <label>Description:</label>
+                    <label>Information text:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="description" value="${liit.description}" size="40"/>
                     </div>
@@ -87,7 +87,7 @@
     </form>
     <p/>
 %else:
-    <form name="library_item_info_template_new" action="${h.url_for( controller='admin', action='library_item_info_template' )}" method="post" >
+    <form name="library_item_info_template_new" action="${h.url_for( controller='library', action='library_item_info_template' )}" method="post" >
         <div class="toolForm">
             <div class="toolFormTitle">Create information template for ${library_item_desc} ${library_item_name}</div>
             <div class="toolFormBody">
@@ -122,9 +122,9 @@
             <div class="toolFormBody">
                 %for element_count in range( new_element_count ):
                     <div class="form-row">
-                        <b>${1+element_count}) Field name:</b>
+                        <b>${1+element_count}) Name:</b>
                         <input type="text" name="new_element_name_${element_count}" value="" size="40"/>
-                        <b>Information text:</b>
+                        <b>Description:</b>
                         <input type="text" name="new_element_description_${element_count}" value="" size="40"/>
                     </div>
                     <div style="clear: both"></div>
@@ -134,7 +134,7 @@
         <div class="toolForm">
             <div class="toolFormBody">
                 <div class="form-row">
-                    <label>Add additional template fields:</label>
+                    <label>Add additional elements:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="new_element_count" value="0" size="3"/>
                     </div>
