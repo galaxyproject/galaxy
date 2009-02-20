@@ -1,0 +1,75 @@
+<tool id="cshl_fasta_collapser" name="Collapse">
+	<description>sequences</description>
+	<command>fasta_collapser.pl $input $output</command>
+
+	<inputs>
+		<param format="fasta" name="input" type="data" label="Library to collapse" />
+	</inputs>
+
+	<tests>
+		<test>
+			<param name="input" value="fasta_collapser1.fasta" />
+			<output name="output" file="fasta_collapser1.out" />
+		</test>
+	</tests>
+
+	<outputs>
+		<data format="fasta" name="output" metadata_source="input" />
+	</outputs>
+  <help>
+
+**What it does**
+
+This tool collapses identical sequences in a FASTA file into a single sequence.
+
+--------
+
+**Example**
+
+Example Input File (Sequence "ATAT" appears multiple times):: 
+
+    >CSHL_2_FC0042AGLLOO_1_1_605_414
+    TGCG
+    >CSHL_2_FC0042AGLLOO_1_1_537_759
+    ATAT
+    >CSHL_2_FC0042AGLLOO_1_1_774_520
+    TGGC
+    >CSHL_2_FC0042AGLLOO_1_1_742_502
+    ATAT
+    >CSHL_2_FC0042AGLLOO_1_1_781_514
+    TGAG
+    >CSHL_2_FC0042AGLLOO_1_1_757_487
+    TTCA
+    >CSHL_2_FC0042AGLLOO_1_1_903_769
+    ATAT
+    >CSHL_2_FC0042AGLLOO_1_1_724_499
+    ATAT
+
+Example Output file::
+
+    >1-1
+    TGCG
+    >2-4
+    ATAT
+    >3-1
+    TGGC
+    >4-1
+    TGAG
+    >5-1
+    TTCA
+    
+.. class:: infomark
+
+Original Sequence Names / Lane descriptions (e.g. "CSHL_2_FC0042AGLLOO_1_1_742_502") are discarded. 
+
+The output seqeunce name is composed of two numbers: the first is the sequence's number, the second is the multiplicity value.
+
+The following output::
+
+    >2-4
+    ATAT
+
+means that the sequence "ATAT" is the second sequence in the file, and it appeared 4 times in the input FASTA file.
+
+</help>
+</tool>
