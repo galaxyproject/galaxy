@@ -28,7 +28,7 @@
                             <div popupmenu="dataset-${ldda.id}-popup">
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda.id, library_id=library.id, information=True )}">Edit this dataset's information</a>
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda.id, library_id=library.id, permissions=True )}">Edit this dataset's permissions</a>
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset', id=data.id, library_id=library.id )}">Manage this dataset's versions</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset', id=data.id, library_id=library.id, versions=True )}">Manage this dataset's versions</a>
                                 %if data.has_data:
                                     <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
                                 %endif
@@ -78,7 +78,8 @@
 
 <%def name="render_existing_library_item_info( library_item )">
     <%
-        library_item_type = None
+        library_item_type = 'unknown type'
+        library_item_desc = ''
         library_item_info_associations = []
         if isinstance( library_item, trans.app.model.Library ):
             library_item_type = 'library'

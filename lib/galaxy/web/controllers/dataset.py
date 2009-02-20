@@ -287,6 +287,10 @@ def add_file( trans, file_obj, name, extension, dbkey, roles, info='no info', sp
         library_dataset = trans.app.model.LibraryDataset( name=name, info=info, extension=data_type, dbkey=dbkey )
         library_dataset.flush()
         if permission_source:
+            # permission_source is a LibraryFolder or a LibraryDataset
+            # TODO: we need to ensure we copy permissions on all 3 levels:
+            # LibraryDatasetDatasetAssociation, LibraryDataset, and Dataset
+            # This is currently not being done and must be fixed ASAP!!
             trans.app.security_agent.copy_library_permissions( permission_source, library_dataset, user=trans.get_user() )
     ldda = trans.app.model.LibraryDatasetDatasetAssociation( name=name, 
                                                              info=info, 

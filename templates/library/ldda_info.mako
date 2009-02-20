@@ -18,7 +18,13 @@
     </select>
 </%def>
 
-<br/><br/>
+%if ldda == ldda.library_dataset.library_dataset_dataset_association:
+    <b><i>This is the latest version of this library dataset</i></b>
+%else:
+    <font color="red"><b><i>This is an expired version of this library dataset</i></b></font>
+%endif
+<p/>
+
 <ul class="manage-table-actions">
     <li>
         <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
@@ -29,30 +35,6 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-<div class="toolFormTitle">Manage the following selected datasets</div>
-
-<p/>
-<table cellspacing="0" cellpadding="5" border="0" width="100%" class="libraryTitle">
-    <tr>
-        <td>
-            <div class="rowTitle">
-                <span class="historyItemTitle"><b>${ldda.name}</b></span>
-                <a id="ldda-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            </div>
-            <div popupmenu="ldda-${ldda.id}-popup">
-                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset', id=ldda.library_dataset_id, library_id=library_id )}">Manage this dataset's versions</a>
-            </div>
-        </td>
-        <td>
-            %if ldda == ldda.library_dataset.library_dataset_dataset_association:
-                <i>This is the latest version of this library dataset</i>
-            %else:
-                <font color="red"><i>This is an expired version of this library dataset</i></font>
-            %endif
-        </td>
-    </tr>
-</table>
-<p/>
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
@@ -145,11 +127,10 @@
             </div>
         </div>
     </div>
-    <div class="toolForm">
-        ${render_existing_library_item_info( ldda.library_dataset )}
-    </div>
 %endif
 
+${render_existing_library_item_info( ldda.library_dataset )}
+        
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=ldda.library_dataset ):
     ${render_available_templates( ldda.library_dataset, library_id )}
 %endif

@@ -28,6 +28,9 @@
                             %endif
                             %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=ldda.dataset ):
                                 <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=ldda.id, library_id=library.id, permissions=True )}">Edit this dataset's permissions</a>
+                            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
+                                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset', id=data.id, library_id=library.id, versions=True )}">Manage this dataset's versions</a>
+                            %endif
                             %endif
                             %if data.has_data:
                                 <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>

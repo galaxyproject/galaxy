@@ -20,7 +20,7 @@
             </tr>
         </thead>
         <tbody>
-            %for i, library in enumerate( libraries ):    
+            %for library in libraries:    
                 <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
                     <td><a href="${h.url_for( controller='library', action='browse_library', id=library.id )}">${library.name}</a></td>
                     <td><i>${library.description}</i></td>

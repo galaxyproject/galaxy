@@ -585,7 +585,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Check the permissions on the dataset - should be 'access', which only allows viewing the information
         self.home()
         self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_two.id ) ) )
-        self.check_page_for_string( 'Manage the following selected datasets' )
         self.check_page_for_string( '2.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 2.bed' )
@@ -671,7 +670,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Test selecting "View this dataset's information"
         self.home()
         self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_three.id ) ) )
-        self.check_page_for_string( 'Manage the following selected datasets' )
         self.check_page_for_string( '3.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 3.bed' )
@@ -739,7 +737,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 self.visit_url( '%s/root/edit?id=%s' % ( self.url, str( last_hda_created.id ) ) )
                 self.check_page_for_string( 'Edit Attributes' )
                 self.check_page_for_string( last_hda_created.name )
-                check_str = 'Manage permissions and role associations of %s' % last_hda_created.name
+                check_str = 'Manage dataset permissions and role associations of %s' % last_hda_created.name
                 self.check_page_for_string( check_str )
                 self.check_page_for_string( 'Role members can manage the roles associated with this dataset' )
                 self.check_page_for_string( 'Role members can import this dataset into their history for analysis' )
@@ -790,7 +788,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 self.check_page_for_string( last_hda_created.name )
                 try:
                     # This should no longer be possible
-                    check_str = 'Manage permissions and role associations of %s' % last_hda_created.name
+                    check_str = 'Manage dataset permissions and role associations of %s' % last_hda_created.name
                     self.check_page_for_string( check_str )
                     raise AssertionError( '%s incorrectly has DATASET_MANAGE_PERMISSIONS on datasets imported from a library' % admin_user.email )
                 except:
