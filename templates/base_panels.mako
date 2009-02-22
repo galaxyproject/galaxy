@@ -51,25 +51,141 @@
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
     <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.hoverIntent.js')}"></script>
     <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.ui.js')}"></script>
     <script type="text/javascript" src="${h.url_for('/static/scripts/galaxy.panels.js')}"></script>
     <script type="text/javascript">
-        ensure_dd_helper();
-        %if self.has_left_panel:
+        
+	ensure_dd_helper();
+        
+	%if self.has_left_panel:
             var lp = make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
             force_left_panel = lp.force_panel;
         %endif
-        %if self.has_right_panel:
+        
+	%if self.has_right_panel:
             var rp = make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
             handle_minwidth_hint = rp.handle_minwidth_hint;
             force_right_panel = rp.force_panel;
         %endif
+	
+	$(function() {
+	    $("span.tab").each( function() {
+		var submenu = $(this).children( "div.submenu" );
+		if ( submenu.length > 0 ) {
+		    if ( $.browser.msie ) {
+			## Vile IE iframe hack -- even IE7 needs this
+			submenu.prepend( "<iframe style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; filter:Alpha(Opacity='0');\"></iframe>" );
+		    }
+		    $(this).hoverIntent( function() { submenu.show(); }, function() { submenu.hide(); } );
+		    submenu.click( function() { submenu.hide(); } );
+		}
+	    });
+	});
+	
+	function user_changed( user_email, is_admin ) {
+	    if ( user_email ) {
+		$(".loggedin-only").show();
+		$(".loggedout-only").hide();
+		$("#user-email").text( user_email )
+		if ( is_admin ) {
+		    $(".admin-only").show();
+		}
+	    } else {
+		$(".loggedin-only").hide();
+		$(".loggedout-only").show();
+		$(".admin-only").hide();
+	    }
+	}
+	
     </script>
 </%def>
 
 ## Masthead
 <%def name="masthead()">
-    <iframe name="galaxy_masthead" src="${h.url_for( controller='root', action='masthead', active_view=self.active_view )}" width="38" height="100%" frameborder="0" scroll="no" style="margin: 0; border: 0 none; width: 100%; height: 38px; overflow: hidden;"> </iframe>
+
+    <div class="title" style="float: left;">
+	    <a target="_blank" href="${app.config.wiki_url}">
+		<img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
+	    </a>   
+	    Galaxy
+	    %if app.config.brand:
+		<span class='brand'>/${app.config.brand}</span>
+	    %endif
+    </div>
+    
+    <div style="position: absolute; left: 50%;">
+    <div class="tab-group" style="position: relative; left: -50%;">
+	
+	<%def name="tab( id, display, href, target='_parent', visible=True, extra_class='' )">
+	    <%
+		cls = "tab"
+		if extra_class:
+		    cls += " " + extra_class
+		if self.active_view == id:
+		    cls += " active"
+		style = ""
+		if not visible:
+		    style = "display: none;"
+	    %>
+	    <span class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></span>
+	</%def>
+    
+	${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
+
+	${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
+
+	${tab( "admin", "Admin", h.url_for( controller='admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
+	
+	<span class="tab">
+	    <a>Help</a>
+	    <div class="submenu">
+		<ul>		    
+		    <li><a href="${app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )}">Email comments, bug reports, or suggestions</a></li>
+		    <li><a target="_blank" href="${app.config.get( "wiki_url", "http://g2.trac.bx.psu.edu/" )}">Galaxy Wiki</a></li>             
+		    <li><a target="_blank" href="${app.config.get( "screencasts_url", "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )}">Video tutorials (screencasts)</a></li>
+		</ul>
+	    </div>
+	</span>
+    
+	<span class="tab">
+	    <a>Account</a>
+	    <%
+		if trans.user:
+		    user_email = trans.user.email
+		    style1 = "display: none;"
+		    style2 = "";
+		else:
+		    user_email = ""
+		    style1 = ""
+		    style2 = "display: none;"
+	    %>
+	    <div class="submenu">
+		<ul class="loggedout-only" style="${style1}">
+		    <li><a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">Login</a></li>
+		    %if app.config.allow_user_creation:
+			<li><a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">Create new account</a></li>
+		    %endif
+		</ul>
+		<ul class="loggedin-only" style="${style2}">
+		    <li>Logged in as <span id="user-email">${user_email}</span></li>
+		    <li><a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">Manage Account</a></li>
+		    <%
+			if app.config.require_login:
+			    logout_target = ""
+			    logout_url = h.url_for( controller='root', action='index', m_c='user', m_a='logout' )
+			else:
+			    logout_target = "galaxy_main"
+			    logout_url = h.url_for( controller='user', action='logout' )
+		    %>
+		    <li><a target="${logout_target}" href="${logout_url}">Logout</a></li>
+		</ul>
+	    </div>
+	</span>
+	
+    </div>
+    </div>
+    
 </%def>
 
 ## Messagebox

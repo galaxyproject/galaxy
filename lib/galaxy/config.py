@@ -110,7 +110,17 @@ class Configuration( object ):
         for path in self.tool_config, self.datatypes_config:
             if not os.path.isfile(path):
                 raise ConfigurationError("File not found: %s" % path )
-
+                
+    def is_admin_user( self,user ):
+        """
+        Determine if the provided user is listed in `admin_users`.
+        
+        NOTE: This is temporary, admin users will likely be specified in the
+              database in the future.
+        """
+        admin_users = self.get( "admin_users", "" ).split( "," )
+        return ( user is not None and user.email in admin_users )
+            
 def get_database_engine_options( kwargs ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using

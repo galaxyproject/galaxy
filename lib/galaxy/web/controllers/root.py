@@ -492,24 +492,24 @@ class RootController( BaseController ):
         except:
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" ) 
 
-    @web.expose
-    def masthead( self, trans, active_view=None ):
-        brand = trans.app.config.get( "brand", "" )
-        if brand:
-            brand ="<span class='brand'>/%s</span>" % brand
-        wiki_url = trans.app.config.get( "wiki_url", "http://g2.trac.bx.psu.edu/" )
-        bugs_email = trans.app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )
-        blog_url = trans.app.config.get( "blog_url", "http://g2.trac.bx.psu.edu/blog"   )
-        screencasts_url = trans.app.config.get( "screencasts_url", "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )
-        admin_user = "false"
-        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
-        user = trans.get_user()
-        if user:
-            user_email = trans.get_user().email
-            if user_email in admin_users:
-                admin_user = "true"
-        return trans.fill_template( "/root/masthead.mako", brand=brand, wiki_url=wiki_url, 
-          blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url, admin_user=admin_user, active_view=active_view )
+    # @web.expose
+    # def masthead( self, trans, active_view=None ):
+    #     brand = trans.app.config.get( "brand", "" )
+    #     if brand:
+    #         brand ="<span class='brand'>/%s</span>" % brand
+    #     wiki_url = trans.app.config.get( "wiki_url", "http://g2.trac.bx.psu.edu/" )
+    #     bugs_email = trans.app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )
+    #     blog_url = trans.app.config.get( "blog_url", "http://g2.trac.bx.psu.edu/blog"   )
+    #     screencasts_url = trans.app.config.get( "screencasts_url", "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )
+    #     admin_user = "false"
+    #     admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+    #     user = trans.get_user()
+    #     if user:
+    #         user_email = trans.get_user().email
+    #         if user_email in admin_users:
+    #             admin_user = "true"
+    #     return trans.fill_template( "/root/masthead.mako", brand=brand, wiki_url=wiki_url, 
+    #       blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url, admin_user=admin_user, active_view=active_view )
 
     @web.expose
     def dataset_errors( self, trans, id=None, **kwd ):
