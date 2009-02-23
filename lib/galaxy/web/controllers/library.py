@@ -14,8 +14,14 @@ log = logging.getLogger( __name__ )
 
 class Library( BaseController ):
     @web.expose
-    def index( self, trans ):
-        return trans.fill_template( "/library/index.mako" )
+    def index( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        return trans.fill_template( "/library/index.mako",
+                                    default_action=params.get( 'default_action', None ),
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def browse_libraries( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -24,6 +30,7 @@ class Library( BaseController ):
         return trans.fill_template( '/library/browse_libraries.mako', 
                                     libraries=trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                                                      .order_by( trans.app.model.Library.name ).all(),
+                                    default_action=params.get( 'default_action', None ),
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -36,6 +43,7 @@ class Library( BaseController ):
             msg = "You must specify a library id."
             return trans.response.send_redirect( web.url_for( controller='library',
                                                               action='browse_libraries',
+                                                              default_action=params.get( 'default_action', None ),
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         library = library=trans.app.model.Library.get( id )
@@ -43,6 +51,7 @@ class Library( BaseController ):
             msg = "Invalid library id ( %s )."
             return trans.response.send_redirect( web.url_for( controller='library',
                                                               action='browse_libraries',
+                                                              default_action=params.get( 'default_action', None ),
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         created_ldda_ids = params.get( 'created_ldda_ids', '' )
