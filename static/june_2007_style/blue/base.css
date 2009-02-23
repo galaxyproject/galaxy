@@ -546,6 +546,15 @@ div.permissionContainer {
 }
 
 
+.grid-header {
+    padding: 1em;
+}
+
+.grid-header .title {
+    color: #023858;
+    font-weight: bold;
+}
+
 .grid {
     padding-top: 1em;
     border-collapse: collapse;
