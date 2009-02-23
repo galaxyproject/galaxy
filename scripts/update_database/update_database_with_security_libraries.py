@@ -187,15 +187,8 @@ def main():
         # Add the new default permissions for the user
         dup = app.model.DefaultUserPermissions( user, default_user_action, private_role )
         dup.flush()
-        # Set DefaultHistoryPermissions on all of the user's active histories and associated datasets
-        # TODO: fix mapping for history.activatable_datasets so it doesn't throw an exception on the
-        # following query when eagerloading activatable_datasets.  Fix all of the queries below that 
-        # call history.active_datasets to be history.activatable_datasets when this works.
-        histories = app.model.History.filter( and_( app.model.History.table.c.user_id==user.id,
-                                                    app.model.History.table.c.purged==False ) ) \
-                                     .options( eagerload( 'active_datasets' ) ).all()
         print "Setting DefaultHistoryPermissions for %d un-purged histories associated with %s" % ( len( histories ), user.email )
-        for history in histories:
+        for history in user.active_histories:
             # Delete all of the current default permissions for the history
             for dhp in history.default_permissions:
                 dhp.delete()
@@ -203,9 +196,9 @@ def main():
             # Add the new default permissions for the history
             dhp = app.model.DefaultHistoryPermissions( history, default_user_action, private_role )
             dhp.flush()
-            print "Setting DatasetPermissionss for %d un-purged datasets in history %d" % ( len( history.active_datasets ), history.id )
+            print "Setting DatasetPermissionss for %d un-purged datasets in history %d" % ( len( history.activatable_datasets ), history.id )
             # Set the permissions on the current history's datasets that are not purged
-            for hda in history.active_datasets:
+            for hda in history.activatable_datasets:
                 dataset = hda.dataset
                 if dataset.library_associations:
                     # Don't change permissions on a dataset associated with a library

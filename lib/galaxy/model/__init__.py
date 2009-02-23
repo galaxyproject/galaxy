@@ -162,7 +162,6 @@ class History( object ):
         self.user = user
         self.datasets = []
         self.galaxy_sessions = []
-        
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures 
         # better integrity
@@ -174,16 +173,14 @@ class History( object ):
                 if dataset.hid > last_hid:
                     last_hid = dataset.hid
             return last_hid + 1
-
     def add_galaxy_session( self, galaxy_session, association=None ):
         if association is None:
             self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
         else:
             self.galaxy_sessions.append( association )
-
     def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
         if isinstance( dataset, Dataset ):
-            dataset = HistoryDatasetAssociation( dataset = dataset )
+            dataset = HistoryDatasetAssociation( dataset = dataset, copied_from = dataset )
             dataset.flush()
         elif not isinstance( dataset, HistoryDatasetAssociation ):
             raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history ( you tried to add %s )." % str( dataset )
@@ -198,22 +195,28 @@ class History( object ):
         else:
             if set_hid:
                 dataset.hid = self._next_hid()
+        dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
         self.datasets.append( dataset )
-
-    def copy(self):
-        des = History()
+    def copy( self, target_user = None ):
+        if not target_user:
+            target_user = self.user
+        des = History( user = target_user )
         des.flush()
         des.name = self.name
-        des.user_id = self.user_id
         for data in self.datasets:
-            new_data = data.copy( copy_children = True )
-            des.add_dataset( new_data )
+            new_data = data.copy( copy_children = True, target_history = des )
+            des.add_dataset( new_data, set_hid = False )
             new_data.flush()
         des.hid_counter = self.hid_counter
         des.flush()
         return des
+    @property
+    def activatable_datasets( self ):
+        for hda in self.datasets:
+            if not hda.dataset.purged:
+                yield hda
 
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
@@ -655,66 +658,6 @@ class HistoryDatasetAssociation( DatasetInstance ):
         for assoc in self.implicitly_converted_datasets:
             if not metadata_safe or not assoc.metadata_safe:
                 assoc.clear( purge = purge )
-
-class History( object ):
-    def __init__( self, id=None, name=None, user=None ):
-        self.id = id
-        self.name = name or "Unnamed history"
-        self.deleted = False
-        self.purged = False
-        self.genome_build = None
-        # Relationships
-        self.user = user
-        self.datasets = []
-        self.galaxy_sessions = []
-    def _next_hid( self ):
-        # TODO: override this with something in the database that ensures 
-        # better integrity
-        if len( self.datasets ) == 0:
-            return 1
-        else:
-            last_hid = 0
-            for dataset in self.datasets:
-                if dataset.hid > last_hid:
-                    last_hid = dataset.hid
-            return last_hid + 1
-    def add_galaxy_session( self, galaxy_session, association=None ):
-        if association is None:
-            self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
-        else:
-            self.galaxy_sessions.append( association )
-    def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
-        if isinstance( dataset, Dataset ):
-            dataset = HistoryDatasetAssociation( dataset = dataset, copied_from = dataset )
-            dataset.flush()
-        elif not isinstance( dataset, HistoryDatasetAssociation ):
-            raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history."
-        if parent_id:
-            for data in self.datasets:
-                if data.id == parent_id:
-                    dataset.hid = data.hid
-                    break
-            else:
-                if set_hid: dataset.hid = self._next_hid()
-        else:
-            if set_hid: dataset.hid = self._next_hid()
-        dataset.history = self
-        if genome_build not in [None, '?']:
-            self.genome_build = genome_build
-        self.datasets.append( dataset )
-    def copy( self, target_user = None ):
-        if not target_user:
-            target_user = self.user
-        des = History( user = target_user )
-        des.flush()
-        des.name = self.name
-        for data in self.datasets:
-            new_data = data.copy( copy_children = True, target_history = des )
-            des.add_dataset( new_data, set_hid = False )
-            new_data.flush()
-        des.hid_counter = self.hid_counter
-        des.flush()
-        return des
 
 class Library( object ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )

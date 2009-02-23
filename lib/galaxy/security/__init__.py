@@ -219,13 +219,6 @@ class GalaxyRBACAgent( RBACAgent ):
                 dup.flush()
         if history:
             for history in user.active_histories:
-                """
-                TODO: instead of user.active_histories, a faster approach would be the following, but we need the 
-                history.activatable_datasets mapper corrected so that eagerload can be used.
-                histories = app.model.History.filter( and_( app.model.History.table.c.user_id==user.id,
-                                                            app.model.History.table.c.purged==False ) ) \
-                                             .options( eagerload( 'activatable_datasets' ) ).all()
-                """
                 self.history_set_default_permissions( history, permissions=permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission )
     def user_get_default_permissions( self, user ):
         permissions = {}
