@@ -149,7 +149,7 @@
 	</span>
     
 	<span class="tab">
-	    <a>Account</a>
+	    <a>User</a>
 	    <%
 		if trans.user:
 		    user_email = trans.user.email
@@ -164,12 +164,12 @@
 		<ul class="loggedout-only" style="${style1}">
 		    <li><a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">Login</a></li>
 		    %if app.config.allow_user_creation:
-			<li><a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">Create new account</a></li>
+			<li><a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">Register</a></li>
 		    %endif
 		</ul>
 		<ul class="loggedin-only" style="${style2}">
 		    <li>Logged in as <span id="user-email">${user_email}</span></li>
-		    <li><a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">Manage Account</a></li>
+		    <li><a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">Preferences</a></li>
 		    <%
 			if app.config.require_login:
 			    logout_target = ""
