@@ -117,7 +117,7 @@
                 >
                     
                 ## Item selection column
-                <td style="width: 1.5em;"><input class="grid-row-select-checkbox" type="checkbox" name="id" value=${item.id}></input></td>
+                <td style="width: 1.5em;"><input type="checkbox" name="id" value=${item.id} class="grid-row-select-checkbox"></input></td>
                 
                 ## Data columns
                 %for column in grid.columns:
