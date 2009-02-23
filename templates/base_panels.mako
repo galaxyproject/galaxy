@@ -135,6 +135,8 @@
 
 	${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
 
+    ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
+
 	${tab( "admin", "Admin", h.url_for( controller='admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
 	
 	<span class="tab">

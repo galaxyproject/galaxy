@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <tool name="Access Libraries" id="library_access1">
     <description>stored locally</description>
-    <inputs action="/library/browse" method="get">
+    <inputs action="/library/index" method="get">
         <param name="default_action" type="hidden" value="add" />
     </inputs>
     <uihints minwidth="800"/>
