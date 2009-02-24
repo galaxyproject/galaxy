@@ -409,8 +409,8 @@
     
     canvas { position: absolute; z-index: 10; } 
     canvas.dragging { position: absolute; z-index: 1000; }
-    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 0; left: -16px; z-index: 1500; }
-    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 0; right: -16px; z-index: 1500; }
+    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; left: -6px; z-index: 1500; }
+    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; right: -6px; z-index: 1500; }
     .drag-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_drag.png')}); position: absolute; z-index: 1500; }
     .input-terminal-active { background: url(${h.url_for('/static/style/workflow_circle_green.png')}); }
     ## .input-terminal-hover { background: yellow; border: solid black 1px; }
@@ -450,8 +450,6 @@
     }
     div.form-row {
       position: relative;
-      margin-top: 0.5em;
-      margin-bottom: 0.5em;
     }
     
     div.tool-node-error div.toolFormTitle {
@@ -472,8 +470,8 @@
     .form-row {
         
     }
-    .form-row-body {
-    
+    div.toolFormInCanvas div.toolFormBody {
+        padding: 0;
     }
     .form-row-clear {
         clear: both;
@@ -483,6 +481,7 @@
         height: 0;
         border: none;
         border-bottom: dotted black 1px;
+        margin: 0 5px;
     }
     
     .callout {
