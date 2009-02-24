@@ -32,6 +32,7 @@
 <%def name="stylesheets()">
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
     <style>
+        ## Not generic to all grids -- move to base?
         .count-box {
             width: 1.1em;
             float: left;
@@ -57,7 +58,8 @@
 
 
 <div class="grid-header">
-    <span class="title">${grid.title}:</span>
+    <h2>${grid.title}</h2>
+    <span class="title">Filter:</span>
     %for i, filter in enumerate( grid.standard_filters ):
         %if i > 0:    
             <span>|</span>

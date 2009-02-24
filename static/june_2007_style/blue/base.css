@@ -586,11 +586,15 @@ div.permissionContainer {
 
 
 .grid-header {
-    padding: 1em;
+    padding-bottom: 1em;
+}
+
+.grid-header h2 {
+    margin: 0;
+    margin-bottom: 0.5em;
 }
 
 .grid-header .title {
-    color: #023858;
     font-weight: bold;
 }
 

@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
-<%def name="title()">Your saved histories</%def>
+<%def name="title()">History options</%def>
     
-<h1>History Options</h1>
+<h2>History options</h2>
 
 %if not user:
 <div class="infomessage">
