@@ -3,6 +3,13 @@
 
 <% import os %>
 
+<br/><br/>
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
+    </li>
+</ul>
+
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
@@ -16,14 +23,13 @@
     <div class="toolFormTitle">Create a new library dataset</div>
     <div class="toolFormBody">
         <form name="tool_form" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
+            <input type="hidden" name="folder_id" value="${folder_id}"/>
             %if replace_dataset:
                 <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                 <div class="form-row">
                     You are currently selecting a new file to replace '<a href="${h.url_for( controller='library', action='library_dataset', id=replace_dataset.id )}">${replace_dataset.name}</a>'.
                     <div style="clear: both"></div>
                 </div>
-            %else:
-                <input type="hidden" name="folder_id" value="${folder_id}"/>
             %endif
             <div class="form-row">
                 <label>File:</label>
@@ -126,19 +132,18 @@
     <div class="toolForm">
         <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
         <div class="toolFormBody">
-            <form name="add_dataset_from_history" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
+            <form name="add_dataset_from_history" action="${h.url_for( controller='library', action='add_history_datasets_to_library', library_id=library_id )}" enctype="multipart/form-data" method="post">
+                <input type="hidden" name="folder_id" value="${folder_id}"/>
                 %if replace_dataset:
                     <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                     <div class="form-row">
-                        You are currently selecting a new file to replace '<a href="${h.url_for( controller='library', action='library_dataset_dataset_association', id=replace_dataset.library_dataset_dataset_association.id, library_id=library_id )}">${replace_dataset.name}</a>'.
+                        You are currently selecting a new file to replace '<a href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
                         <div style="clear: both"></div>
                     </div>
-                %else:
-                    <input type="hidden" name="folder_id" value="${folder_id}"/>
                 %endif
-                %for dataset in history.active_datasets:
+                %for hda in history.active_datasets:
                     <div class="form-row">
-                        <input name="hids" value="${dataset.id}" type="checkbox"/>${dataset.hid}: ${dataset.name}
+                        <input name="hda_ids" value="${hda.id}" type="checkbox"/>${hda.hid}: ${hda.name}
                     </div>
                 %endfor
                 <input type="submit" name="add_dataset_from_history_button" value="Add selected datasets"/>

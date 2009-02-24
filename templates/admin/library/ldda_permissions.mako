@@ -59,4 +59,4 @@
 %endif
 
 <% ldda_ids = ",".join( [ str( d.id ) for d in lddas ] ) %>
-${render_permission_form( lddas[0], name_str, h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda_ids, library_id=library_id, permissions=True ), roles )}
+${render_permission_form( lddas[0], name_str, h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=lddas[0].library_dataset.folder.id, id=ldda_ids, permissions=True ), roles )}

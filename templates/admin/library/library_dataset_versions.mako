@@ -28,17 +28,17 @@
                         <input type="radio" name="set_lda_id" value="${library_dataset.library_dataset_dataset_association.id}" checked>${library_dataset.name} (current)
                         <a id="dataset-${library_dataset.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="dataset-${library_dataset.id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=library_dataset.library_dataset_dataset_association.id, library_id=library_id, information=True )}">Edit this dataset's information</a>
-                            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=library_dataset.library_dataset_dataset_association.id, library_id=library_id, permissions=True )}">Edit this dataset's permissions</a>
-                            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', replace_id=library_dataset.id, library_id=library_id )}">Replace this dataset with a new version</a>
+                            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=library_dataset.folder.id, id=library_dataset.library_dataset_dataset_association.id, information=True )}">Edit this dataset's information</a>
+                            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=library_dataset.folder.id, id=library_dataset.library_dataset_dataset_association.id, permissions=True )}">Edit this dataset's permissions</a>
+                            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=library_dataset.folder.id, replace_id=library_dataset.id )}">Replace this dataset with a new version</a>
                         </div>
                         %for ldda in library_dataset.expired_datasets:
                             <br/>
                             <input type="radio" name="set_lda_id" value="${ldda.id}" >${ldda.name}
                             <a id="ldda-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                             <div popupmenu="ldda-${ldda.id}-popup">
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda.id, library_id=library_id, information=True )}">Edit this dataset's information</a>
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda.id, library_id=library_id, permissions=True )}">Edit this dataset's permissions</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=library_dataset.folder.id, id=ldda.id, information=True )}">Edit this dataset's information</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=library_dataset.folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
                             </div>
                         %endfor
                     </div>

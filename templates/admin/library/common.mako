@@ -26,14 +26,14 @@
                             %>
                             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                             <div popupmenu="dataset-${ldda.id}-popup">
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda.id, library_id=library.id, information=True )}">Edit this dataset's information</a>
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', id=ldda.id, library_id=library.id, permissions=True )}">Edit this dataset's permissions</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=data.folder.id, id=ldda.id, information=True )}">Edit this dataset's information</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=data.folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset', id=data.id, library_id=library.id, versions=True )}">Manage this dataset's versions</a>
                                 %if data.has_data:
                                     <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
                                 %endif
                                 ##TODO: need to revamp the way we remove datasets from disk.
-                                ##<a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', delete=True, id=ldda.id, library_id=library.id )}">Remove this dataset from the library</a>
+                                ##<a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=data.folder.id, id=ldda.id, delete=True )}">Remove this dataset from the library</a>
                             </div>
                         %endif
                     </td>
@@ -120,7 +120,6 @@
     <%
         library_item_ids = {}
         if isinstance( library_item, trans.app.model.Library ):
-            library_item_ids[ 'library_id' ] = library_item.id
             library_item_type = 'library'
             library_item_desc = 'library'
         elif isinstance( library_item, trans.app.model.LibraryFolder ):
@@ -135,6 +134,8 @@
             library_item_ids[ 'ldda_id' ] = library_item.id
             library_item_type = 'library_dataset_dataset_association'
             library_item_desc = 'library dataset <-> dataset association'
+        # Always pass a library_id
+        library_item_ids[ 'library_id' ] = library_id
     %>
     <p/>
     <div class="toolForm">
@@ -150,7 +151,7 @@
                     </div>
                 </div>
                 <div class="form-row">
-                    <form name="add_template_info" action="${h.url_for( controller='admin', action='library_item_info', do_action='new_info', library_id=library_id )}" method="post">
+                    <form name="add_template_info" action="${h.url_for( controller='admin', action='library_item_info', library_id=library_id, do_action='new_info' )}" method="post">
                         <input type="hidden" name="library_item_id" value="${library_item.id}"/>
                         <input type="hidden" name="library_item_type" value="${library_item_type}"/>
                         <input type="hidden" name="library_item_info_template_id" value="${available_template.id}"/>

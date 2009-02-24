@@ -625,34 +625,32 @@ class HistoryDatasetAssociation( DatasetInstance ):
             des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         des.flush()
         return des
-        
-    def to_library_dataset_dataset_association( self, parent_id = None, target_folder = None ):
-        des = LibraryDatasetDatasetAssociation( name=self.name, 
-                                                info=self.info, 
-                                                blurb=self.blurb, 
-                                                peek=self.peek, 
-                                                extension=self.extension, 
-                                                dbkey=self.dbkey, 
-                                                dataset = self.dataset, 
-                                                visible=self.visible, 
-                                                deleted=self.deleted, 
-                                                parent_id=parent_id,
-                                                copied_from_history_dataset_association = self,
-                                                #folder = target_folder
-                                              )
-        des.flush()
-        des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
-        if target_folder:
-            new_data = LibraryDataset( library_dataset_dataset_association = des )
-            target_folder.add_dataset( new_data )
-            new_data.flush()
+    def to_library_dataset_dataset_association( self, target_folder, parent_id=None ):
+        ldda = LibraryDatasetDatasetAssociation( name=self.name, 
+                                                 info=self.info, 
+                                                 blurb=self.blurb, 
+                                                 peek=self.peek, 
+                                                 extension=self.extension, 
+                                                 dbkey=self.dbkey, 
+                                                 dataset=self.dataset, 
+                                                 visible=self.visible, 
+                                                 deleted=self.deleted, 
+                                                 parent_id=parent_id,
+                                                 copied_from_history_dataset_association=self )
+        ldda.flush()
+        # Must set metadata after flushed, as MetadataFiles require dataset.id
+        ldda.metadata = self.metadata
+        # Create e new LibraryDataset, associating it with ldda
+        library_dataset = LibraryDataset( library_dataset_dataset_association=ldda )
+        target_folder.add_dataset( library_dataset, genome_build=ldda.dbkey )
+        library_dataset.flush()
+        ldda.library_dataset_id = library_dataset.id
         for child in self.children:
-            child_copy = child.to_library_dataset_dataset_association( parent_id = des.id )
+            child_copy = child.to_library_dataset_dataset_association( target_folder=target_folder, parent_id=ldda.id )
         if not self.datatype.copy_safe_peek:
-            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        des.flush()
-        return des
-        
+            ldda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        ldda.flush()
+        return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         #metadata_safe = True means to only clear when assoc.metadata_safe == False
         for assoc in self.implicitly_converted_datasets:
@@ -769,32 +767,29 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         self.library_dataset = library_dataset
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
-    def to_history_dataset_association( self, parent_id = None, target_history = None ):
-        if target_history:
-            hid = target_history._next_hid()
-        else:
-            hid = None
-        des = HistoryDatasetAssociation( name=self.name, 
+    def to_history_dataset_association( self, target_history, parent_id=None ):
+        hid = target_history._next_hid()
+        hda = HistoryDatasetAssociation( name=self.name, 
                                          info=self.info, 
                                          blurb=self.blurb, 
                                          peek=self.peek, 
                                          extension=self.extension, 
                                          dbkey=self.dbkey, 
-                                         dataset = self.dataset, 
+                                         dataset=self.dataset, 
                                          visible=self.visible, 
                                          deleted=self.deleted, 
                                          parent_id=parent_id, 
-                                         copied_from_library_dataset_dataset_association = self,
-                                         history = target_history,
-                                         hid = hid )
-        des.flush()
-        des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
+                                         copied_from_library_dataset_dataset_association=self,
+                                         history=target_history,
+                                         hid=hid )
+        hda.flush()
+        hda.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         for child in self.children:
-            child_copy = child.to_history_dataset_association( parent_id = des.id )
+            child_copy = child.to_history_dataset_association( target_history=target_history, parent_id=hda.id )
         if not self.datatype.copy_safe_peek:
-            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        des.flush()
-        return des
+            hda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        hda.flush()
+        return hda
     def copy( self, copy_children = False, parent_id = None, target_folder = None ):
         des = LibraryDatasetDatasetAssociation( name=self.name, 
                                                info=self.info, 

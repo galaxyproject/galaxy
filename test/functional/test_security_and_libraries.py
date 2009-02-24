@@ -487,7 +487,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_080_add_dataset_with_private_role_restriction_to_folder( self ):
         """Testing adding a dataset with a private role restriction to a folder"""
         # Add a dataset restricted by regular_user1 private role
-        self.add_dataset( '1.bed', str( library_one.id ), str( folder_one.id ), extension='bed', dbkey='hg18', roles=[ str( regular_user1_private_role.id ) ] )
+        self.add_dataset( '1.bed', str( library_one.id ), str( folder_one.id ), file_format='bed', dbkey='hg18', roles=[ str( regular_user1_private_role.id ) ] )
         global ldda_three
         ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -558,7 +558,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Add a dataset restricted by role_two, which is currently associated as follows:
         # groups: group_two
         # users: test@bx.psu.edu, test1@bx.psu.edu via group_two
-        self.add_dataset( '2.bed', str( library_one.id ), str( folder_one.id ), extension='bed', dbkey='hg17', roles=[ str( role_two.id ) ] )
+        self.add_dataset( '2.bed', str( library_one.id ), str( folder_one.id ), file_format='bed', dbkey='hg17', roles=[ str( role_two.id ) ] )
         global ldda_two
         ldda_two = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -584,7 +584,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( "hg17" )
         # Check the permissions on the dataset - should be 'access', which only allows viewing the information
         self.home()
-        self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_two.id ) ) )
+        self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&folder_id=%s&id=%s' % ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_two.id ) ) )
         self.check_page_for_string( '2.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 2.bed' )
@@ -633,7 +633,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing adding a public dataset to a library root folder"""
         self.login( email='test@bx.psu.edu' )
         folder = library_one.root_folder
-        self.add_dataset( '3.bed', str( library_one.id ), str( folder.id ), extension='bed', dbkey='hg16', roles=[] )
+        self.add_dataset( '3.bed', str( library_one.id ), str( folder.id ), file_format='bed', dbkey='hg16', roles=[] )
         global ldda_three
         ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -669,21 +669,24 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( "hg16" )
         # Test selecting "View this dataset's information"
         self.home()
-        self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&id=%s' % ( self.url, str( library_one.id ), str( ldda_three.id ) ) )
+        self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&folder_id=%s&id=%s' % ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_three.id ) ) )
         self.check_page_for_string( '3.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 3.bed' )
         self.check_page_for_string( 'Other information about library dataset 3.bed' )
         # Test importing a library dataset into a history
         self.home()
-        self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%d' % ( self.url, ldda_three.id ) )
+        self.visit_url( '%s/library/datasets?library_id=%s&do_action=add&ldda_ids=%d' % ( self.url, str( library_one.id ), ldda_three.id ) )
         self.check_page_for_string( '1 dataset(s) have been imported into your history' )
         self.logout()
     def test_110_copy_dataset_from_history_to_root_folder( self ):
         """Testing copying a dataset from the current history to a library root folder"""
-        self.login( email='test@bx.psu.edu' )
         folder = library_one.root_folder
-        self.add_history_datasets_to_library( str( library_one.id ), str( folder.id ) )
+        self.login( email='test@bx.psu.edu' )
+        self.new_history()
+        self.upload_file( "1.bed" )
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query().order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        self.add_history_datasets_to_library( str( library_one.id ), str( folder.id ), str( latest_hda.id ) )
         # Test for DatasetPermissionss, the default setting is "manage permissions"
         last_dataset_created = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
         dps = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==last_dataset_created.id ).all()
@@ -715,7 +718,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         def build_url( permissions, role ):
             # We'll bypass the admin/datasets method and directly call the admin/dataset method, setting
             # access, manage permissions, and edit metadata permissions to role_one
-            url = '/admin/library_dataset_dataset_association?permissions=True&id=%s&library_id=%s&update_roles_button=Save' % ( ldda_ids, str( library_one.id ) )
+            url = '/admin/library_dataset_dataset_association?permissions=True&id=%s&library_id=%s&folder_id=%s&update_roles_button=Save' % ( ldda_ids, str( library_one.id ), str( folder_one.id ) )
             for p in permissions:
                 url += '&%s_in=%s' % ( p, str( role.id ) )
             return url
@@ -776,7 +779,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             # be all of the above on any of the 3 datasets that are imported into a history
             for ldda in lddas:
                 self.home()
-                self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%s' % ( self.url, str( ldda.id ) ) )
+                self.visit_url( '%s/library/datasets?library_id=%s&do_action=add&ldda_ids=%s' % ( self.url, str( library_one.id ), str( ldda.id ) ) )
                 # Determine the new HistoryDatasetAssociation id created when the library dataset was imported into our history
                 last_hda_created = galaxy.model.HistoryDatasetAssociation.query() \
                     .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()

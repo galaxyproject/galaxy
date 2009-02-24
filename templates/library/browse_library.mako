@@ -224,9 +224,9 @@ def name_sorted( l ):
     %if can_access:
         <select name="do_action" id="action_on_datasets_select">
             %if default_action == 'add':
-                <option value="add" selected>Add selected datasets to history</option>
+                <option value="add" selected>Import selected datasets into your current history</option>
             %else:
-                <option value="add">Add selected datasets to history</option>
+                <option value="add">Import selected datasets into your current history</option>
             %endif
             %if default_action == 'manage_permissions':
                 <option value="manage_permissions" selected>Edit selected datasets' permissions</option>

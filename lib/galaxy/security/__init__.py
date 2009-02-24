@@ -344,8 +344,9 @@ class GalaxyRBACAgent( RBACAgent ):
                 self.associate_components( user=user, role=sharing_role )
         self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
     def set_all_library_permissions( self, library_item, permissions={} ):
+        log.debug("##In set_all_library_permissions, library_item: %s" % str( library_item))
+        log.debug("##In set_all_library_permissions, permissions: %s" % str( permissions))
         # Set new permissions on library_item, eliminating all current permissions
-        # TODO: Make sure the following should still be library_item.actions
         for role_assoc in library_item.actions:
             role_assoc.delete()
             role_assoc.flush()

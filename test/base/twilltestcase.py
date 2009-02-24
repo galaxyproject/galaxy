@@ -857,39 +857,36 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_dataset( self, filename, library_id, folder_id, extension='auto', dbkey='hg18', roles=[] ):
+    def add_dataset( self, filename, library_id, folder_id, file_format='auto', dbkey='hg18', roles=[] ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
-        self.visit_url( "%s/admin/library_dataset_dataset_association?library_id=%s&folder_id=%s&new=True" % ( self.url, library_id, folder_id ) )
+        self.visit_url( "%s/admin/library_dataset_dataset_association?library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Create a new library dataset' )
-        tc.fv( "1", "folder_id", folder_id ) # form field 1 is the field named folder_id...
-        tc.formfile( "1", "file_data", filename ) # form field 2 is the field named file_data...
-        tc.fv( "1", "extension", extension )
+        tc.fv( "1", "folder_id", folder_id )
+        tc.formfile( "1", "file_data", filename )
+        tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
         for role_id in roles:
             tc.fv( "1", "roles", role_id ) # form field 7 is the select list named out_groups, note the buttons...
         tc.submit( "new_dataset_button" )
         self.check_page_for_string( '1 new datasets added to the library ( each is selected below )' )
         self.home()
-    def add_history_datasets_to_library( self, library_id, folder_id ):
+    def add_history_datasets_to_library( self, library_id, folder_id, hda_id ):
         """Copy a dataset from the current history to a library folder"""
-        # Create a new history
-        self.new_history()
-        self.upload_file( "1.bed" )
         self.home()
-        self.visit_url( "%s/admin/add_history_datasets_to_library?library_id=%s&folder_id=%s&ids=1&add_dataset_from_history_button=Add+selected+datasets" % \
-                        ( self.url, library_id, folder_id ) )
+        self.visit_url( "%s/admin/add_history_datasets_to_library?library_id=%s&folder_id=%s&hda_ids=%s&add_history_datasets_to_library_button=Add+selected+datasets" % \
+                        ( self.url, library_id, folder_id, hda_id ) )
         self.check_page_for_string( 'Added the following datasets to the library folder: 1.bed' )
         self.home()
-    def add_datasets_from_library_dir( self, library_id, folder_id, extension='auto', dbkey='hg18', roles_tuple=[] ):
+    def add_datasets_from_library_dir( self, library_id, folder_id, file_format='auto', dbkey='hg18', roles_tuple=[] ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
         self.visit_url( "%s/admin/library_dataset_dataset_association?library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Create a new library dataset' )
         tc.fv( "1", "folder_id", folder_id )
-        tc.fv( "1", "extension", extension )
+        tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
         library_dir = "%s" % self.file_dir
         tc.fv( "1", "server_dir", "library" )

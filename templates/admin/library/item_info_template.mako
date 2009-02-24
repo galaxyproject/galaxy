@@ -13,7 +13,7 @@
 %endif
 
 %if liit:
-    <form name="library_item_info_template_edit" action="${h.url_for( controller='admin', action='library_item_info_template' )}" method="post" >
+    <form name="library_item_info_template_edit" action="${h.url_for( controller='admin', action='library_item_info_template', library_id=library_id )}" method="post" >
         <div class="toolForm">
             <div class="toolFormTitle">Edit Library Item Info Template</div>
             <div class="toolFormBody">
@@ -91,9 +91,8 @@
         <div class="toolForm">
             <div class="toolFormTitle">Create information template for ${library_item_desc} ${library_item_name}</div>
             <div class="toolFormBody">
-                %if library_id:
-                    <input type="hidden" name="library_id" value="${library_id}"/>
-                %elif library_dataset_id:
+                <input type="hidden" name="library_id" value="${library_id}"/>
+                %if library_dataset_id:
                     <input type="hidden" name="library_dataset_id" value="${library_dataset_id}"/>
                 %elif folder_id:
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
