@@ -65,22 +65,20 @@ div.toolParamHelp a
 
 div.toolFormBody
 { 
-  background: #FFFFFF;
-  background-image: url(form_body_bg.png);
-  background-repeat: repeat-x;
-  background-position: top;
-  padding: 5px;
-  padding-left: 10px;
-  padding-right: 10px;
+    background: #FFFFFF;
+    background-image: url(form_body_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    padding: 5px 0;
 }
 
 div.toolFormBody div.toolFormTitle
 {
     background: transparent;
-	border: none;
-	font-weight: bold;
-	border-bottom: solid #d8b365 1px;
-	margin-bottom: 5px;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid #d8b365 1px;
+    margin-bottom: 5px;
 }
 
 div.toolFormDisabled div.toolFormTitle {
@@ -98,8 +96,8 @@ div.toolHelp
 
 div.toolHelpBody
 { 
-	width: 100%;
-	overflow: auto;
+    width: 100%;
+    overflow: auto;
 }
 
 div.titleRow {
@@ -111,9 +109,30 @@ div.titleRow {
 
 /* Forms */
 
+div.form
+{
+    border: solid #d8b365 1px;
+}
+
+div.form-title
+{ 
+    font-weight: bold;
+    padding: 5px 10px;
+    background: #d2c099;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid #d8b365 1px;
+}
+
+div.form-body
+{ 
+    padding: 5px 0;
+}
+
 div.form-row 
 {
-    margin-bottom: 1em;
+    padding: 5px 10px;
 }
 
 div.form-title-row
@@ -130,7 +149,6 @@ div.repeat-group-item
 div.form-row-error
 {
     background: #FFCCCC;
-    padding: 5px;
 }
 
 div.form-row label
@@ -140,14 +158,35 @@ div.form-row label
     margin-bottom: .2em;
 }
 
+div.form-row-input
+{
+    float: left;
+    width: 300px;
+}
+
+div.form-row-input > input
+{
+    max-width: 300px;
+}
+
+div.form-row-error-message
+{
+    width: 300px;
+    float: left;
+    color: red;
+    font-weight: bold;
+    padding: 3px 0 0 1em;
+}
+
 select, input, textarea
 {
     font: inherit;
     font-size: 115%;
 }
 
-select, textarea, input[type="text"], input[type="file"]
+select, textarea, input[type="text"], input[type="file"], input[type="password"]
 {
+    -webkit-box-sizing: border-box;
     max-width: 300px;
 }
 
