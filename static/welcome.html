@@ -13,6 +13,7 @@
          <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/"/>
          <script src="http://www.apple.com/library/quicktime/scripts/ac_quicktime.js" language="JavaScript" type="text/javascript"></script>
          <script src="http://www.apple.com/library/quicktime/scripts/qtp_library.js" language="JavaScript" type="text/javascript"></script>
+	 <script src="scripts/jquery.js" language="JavaScript" type="text/javascript"></script>
          <link href="http://www.apple.com/library/quicktime/stylesheets/qtp_library.css" rel="StyleSheet" type="text/css" />
          <link rel="stylesheet" href="style/base.css" type="text/css" />
     </head>
@@ -39,21 +40,41 @@
                     <td valign="middle" align="center">
                     
                     <br>
-                    <script type="text/javascript"><!--
-    	                   QT_WritePoster_XHTML('click to play', 'http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/quickie2_Grouping-poster.jpg',
-    	                                       	'http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/quickie2_Grouping.mov',
-                                        		'640', '480', '',
-                                         		'controller', 'true',
-                                        		'autoplay', 'true',
-                                        		'bgcolor', '#CCCCFF',
-                                        		'scale', 'aspect');
-                                                //-->
-    
-                    </script>
+		  
+		    <div style="background: black; width: 100%; height: 300px; text-align: center;">
+			<div style="margin: auto;">
+			<div style="padding: 50px 0; color: white; font-size: 300%;">Galaxy quickie</div>
+			<div><span class="playButton" onclick="showmovie()">click to play</span></div>
+			<div style="padding: 50px 0; font-size: 200%; color: orange;">Grouping</div>
+			</div>
+		    </div>
+
+		    <script type="text/javascript">
+			function showmovie() {
+			      if ( parent.show_modal ) {
+				    console.log( $( "#movie" ).html() );
+				    parent.show_modal( "Galaxy quickie", $( "#movie" ).html(), { "close" : parent.hide_modal }, {} );
+			      }
+			}
+		    </script>
+
+		    <div style="display: none;">
+			<div id="movie">
+			<div style="width: 640px; height: 480px;">
+                        <object width="640" height="480" classid="clsid:02BF25D5-8C17-4B23-BC80-D3488ABDDC6B" codebase="http://www.apple.com/qtactivex/qtplugin.cab">
+                          	<param name="src" value="http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/quickie2_Grouping.mov" />
+                          	<param name="target" value="myself" />
+                          	<param name="controller" value="true" />
+                          	<param name="autoplay" value="true" />
+                          	<param name="scale" value="aspect" />
+                        </object>
+			</div>
+			</div>
+		    </div>
+
                     <noscript>
                         <object width="640" height="480" classid="clsid:02BF25D5-8C17-4B23-BC80-D3488ABDDC6B" codebase="http://www.apple.com/qtactivex/qtplugin.cab">
-                          	<param name="src" value="http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/quickie2_Grouping.jpg" />
-                          	<param name="href" value="http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/quickie2_Grouping.mov" />
+                          	<param name="src" value="http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/quickie2_Grouping.mov" />
                           	<param name="target" value="myself" />
                           	<param name="controller" value="false" />
                           	<param name="autoplay" value="false" />

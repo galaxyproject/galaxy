@@ -5,6 +5,7 @@
     self.has_left_panel=True
     self.has_right_panel=True
     self.message_box_visible=False
+    self.overlay_visible=False
     self.message_box_class=""
     self.active_view=None
 %>
@@ -190,6 +191,38 @@
     
 </%def>
 
+<%def name="overlay( title='', content='' )">
+    <%def name="title()"></%def>
+    <%def name="content()"></%def>
+
+    <div id="overlay"
+    %if not self.overlay_visible:
+	style="display: none;"
+    %endif
+    >
+	## Need a table here for centering in IE6
+	<table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"
+	%if not self.overlay_visible:
+	    style="display: none;"
+	%endif
+	><tr><td>
+	<div class="dialog-box-wrapper">
+	    <div class="dialog-box">
+		<div class="unified-panel-header">
+		    <div class="unified-panel-header-inner"><span class='title'>${title}</span></div>
+		</div>
+		<div class="body" style="max-height: 600px; overflow: auto;">${content}</div>
+		<div>
+		    <div class="buttons" style="display: none; float: right;"></div>
+		    <div class="extra_buttons" style="display: none; padding: 5px;"></div>
+		    <div style="clear: both;"></div>
+		</div>
+	    </div>
+	</div>
+	</td></tr></table>
+    </div>
+</%def>
+
 ## Messagebox
 <%def name="message_box_content()">
 </%def>
@@ -217,6 +250,7 @@
                 ${self.message_box_content()}
             %endif
         </div>
+	${self.overlay()}
         %if self.has_left_panel:
             <div id="left">
                 ${self.left_panel()}

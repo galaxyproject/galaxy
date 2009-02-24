@@ -5,6 +5,7 @@
     self.active_view="workflow"
     self.message_box_visible=True
     self.message_box_class="warning"
+    self.overlay_visible=True
 %>
 </%def>
 
@@ -536,24 +537,10 @@
     <div class="toolSectionPad"></div>
 </%def>
 
-<div id="overlay">
-    ## Need a table here for centering in IE6
-    <table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"><tr><td>
-    <div class="dialog-box-wrapper">
-        <div class="dialog-box">
-            <div class="unified-panel-header">
-                <div class="unified-panel-header-inner"><span class='title'>Loading workflow editor...</span></div>
-            </div>
-            <div class="body" style="max-height: 500px; overflow: auto;"><img src="${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}" /></div>
-            <div>
-                <div class="buttons" style="display: none; float: right;"></div>
-                <div class="extra_buttons" style="display: none; padding: 5px;"></div>
-                <div style="clear: both;"></div>
-            </div>
-        </div>
-    </div>
-    </td></tr></table>
-</div>
+<%def name="overlay()">
+    ${parent.overlay( "Loading workflow editor...",
+                      "<img src='" + h.url_for('/static/images/yui/rel_interstitial_loading.gif') + "'/>" )}
+</%def>
 
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
