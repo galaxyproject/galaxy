@@ -254,6 +254,10 @@ class Data( object ):
         """This function is called on the dataset after metadata is edited."""
         dataset.clear_associated_files( metadata_safe = True )
 
+    @property
+    def has_resolution(self):
+        return False
+
 class Text( Data ):
 
     def write_from_stream(self, dataset, stream):

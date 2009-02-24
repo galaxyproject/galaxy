@@ -117,7 +117,6 @@
             </div>
         %endif
         ## Allow other body level elements
-        ${next.body()}
     </body>
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
