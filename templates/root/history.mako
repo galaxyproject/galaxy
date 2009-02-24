@@ -24,7 +24,7 @@
 <script type="text/javascript" src="${h.url_for('/static/scripts/cookie_set.js')}"></script>
 
 <script type="text/javascript">
-    var q = jQuery.noConflict();
+    var q = $;
     q( document ).ready( function() {
         initShowHide();
         setupHistoryItem( q("div.historyItemWrapper") );
@@ -41,6 +41,36 @@
             state.removeAll().save();
 	    return false;
         }));
+	$("#history-rename").click( function() {
+	    var old_name = $("#history-name").text()
+	    var t = $("<input type='text' value='" + old_name + "'></input>" );
+	    t.blur( function() {
+		$(this).remove();
+		$("#history-name").show();
+	    });
+	    t.keyup( function( e ) {
+		if ( e.keyCode == 27 ) {
+		    // Escape key
+			$(this).trigger( "blur" );
+		} else if ( e.keyCode == 13 ) {
+		    // Enter key
+		    new_value = this.value;
+		    $(this).trigger( "blur" );
+		    q.ajax({
+			url: "${h.url_for( controller='history', action='rename_async', id=history.id )}",
+			data: { "_": true, new_name: new_value },
+			error: function() { alert( "Rename failed" ) },
+			success: function() {
+			    $("#history-name").text( new_value );
+			}
+		    });
+		}
+	    });
+	    $("#history-name").hide();
+	    $("#history-name-area").append( t );
+	    t.focus();
+	    return false;
+	})
     })
     // Functionized so AJAX'd datasets can call them
     // Get shown/hidden state from cookie
@@ -202,41 +232,20 @@
 </script>
 <![endif]>
 
-<style type="text/css">
-#footer {
-    ## Netscape 4, IE 4.x-5.0/Win and other lesser browsers will use this
-    position: absolute; left: 0px; bottom: 0px;
-}
-body > div#footer {
-    ## used by Opera 5+, Netscape6+/Mozilla, Konqueror, Safari, OmniWeb 4.5+, iCab, ICEbrowser
-    position: fixed;
-}
-</style>
-
-<!--[if gte IE 5.5]>
-<![if lt IE 7]>
-<style type="text/css">
-div#footer {
-    /* IE5.5+/Win - this is more specific than the IE 5.0 version */
-    width:100%;
-    right: auto; bottom: auto;
-    left: expression( ( -5 - footer.offsetWidth + ( document.documentElement.clientWidth ? document.documentElement.clientWidth : document.body.clientWidth ) + ( ignoreMe2 = document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft ) ) + 'px' );
-    top: expression( ( - footer.offsetHeight + ( document.documentElement.clientHeight ? document.documentElement.clientHeight : document.body.clientHeight ) + ( ignoreMe = document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop ) ) + 'px' );
-}
-</style>
-<![endif]>
-<![endif]-->
-
 </head>
 
 <body class="historyPage">
-
-
+    
 <div id="top-links" class="historyLinks">
     <a href="${h.url_for('history', show_deleted=show_deleted)}">refresh</a> 
     %if show_deleted:
     | <a href="${h.url_for('history', show_deleted=False)}">hide deleted</a> 
     %endif
+</div>
+    
+<div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold;">
+    <div style="float: right"><a id="history-rename" target="galaxy_main" href="${h.url_for( controller='history', action='rename' )}"><img src="${h.url_for('/static/images/pencil_icon.png')}"></a></div>
+    <div id="history-name">${history.name}</div>
 </div>
 
 %if history.deleted:

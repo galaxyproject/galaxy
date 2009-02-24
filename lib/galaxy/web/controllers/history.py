@@ -195,6 +195,20 @@ class HistoryController( BaseController ):
             return self.rename( trans, **kwargs )
         return self._list_grid( trans, *args, **kwargs )
     
+    @web.expose
+    def rename_async( self, trans, id=None, new_name=None ):
+        history = model.History.get( id )
+        # Check that the history exists, and is either owned by the current
+        # user (if logged in) or the current history
+        assert history is not None
+        if history.user is None:
+            assert history == trans.history
+        else:
+            assert history.user == trans.user
+        # Rename
+        history.name = new_name
+        trans.sa_session.flush()
+    
     ## These have been moved from 'root' but not cleaned up
     
     @web.expose
