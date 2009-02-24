@@ -52,7 +52,7 @@ class HistoryListGrid( Grid ):
         return trans.history
     
     def apply_default_filter( self, trans, query ):
-        query.filter_by( user=trans.user, purged=False )
+        return query.filter_by( user=trans.user, purged=False )
             
     def handle_operation( self, trans, operation, history_ids ):
         # Display no message by default

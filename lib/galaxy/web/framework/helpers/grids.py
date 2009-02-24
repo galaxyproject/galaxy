@@ -30,6 +30,7 @@ class Grid( object ):
             status, message = self.handle_operation( trans, operation, ids )
         # Build initial query
         query = self.build_initial_query( session )
+        query = self.apply_default_filter( trans, query )
         # Maintain sort state in generated urls
         extra_url_args = {}
         # Process filtering arguments
