@@ -588,7 +588,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( '2.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 2.bed' )
-        self.check_page_for_string( 'Other information about library dataset 2.bed' )
+        self.check_page_for_string( 'Other information about library dataset <-> dataset association 2.bed' )
         self.home()
         # Test importing the restricted dataset into a history, can't use the 
         # ~/admin/libraries form as twill barfs on it so we'll simulate the form submission
@@ -673,7 +673,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( '3.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 3.bed' )
-        self.check_page_for_string( 'Other information about library dataset 3.bed' )
+        self.check_page_for_string( 'Other information about library dataset <-> dataset association 3.bed' )
         # Test importing a library dataset into a history
         self.home()
         self.visit_url( '%s/library/datasets?library_id=%s&do_action=add&ldda_ids=%d' % ( self.url, str( library_one.id ), ldda_three.id ) )

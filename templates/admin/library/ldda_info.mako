@@ -106,6 +106,6 @@
     </div>
 </div>
 
-${render_existing_library_item_info( ldda.library_dataset )}
+${render_existing_library_item_info( ldda )}
 
-${render_available_templates( ldda.library_dataset, library_id )}
+${render_available_templates( ldda, library_id )}

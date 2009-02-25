@@ -146,7 +146,7 @@
                         <input name="hda_ids" value="${hda.id}" type="checkbox"/>${hda.hid}: ${hda.name}
                     </div>
                 %endfor
-                <input type="submit" name="add_dataset_from_history_button" value="Add selected datasets"/>
+                <input type="submit" name="add_history_datasets_to_library_button" value="Add selected datasets"/>
             </form>
         </div>
     </div>

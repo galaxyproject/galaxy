@@ -129,8 +129,8 @@
     </div>
 %endif
 
-${render_existing_library_item_info( ldda.library_dataset )}
+${render_existing_library_item_info( ldda )}
         
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=ldda.library_dataset ):
-    ${render_available_templates( ldda.library_dataset, library_id )}
+    ${render_available_templates( ldda, library_id )}
 %endif

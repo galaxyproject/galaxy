@@ -3,7 +3,7 @@
 <%namespace file="/library/common.mako" import="render_available_templates" />
 <%namespace file="/library/common.mako" import="render_existing_library_item_info" />
 
-%if library_dataset == library_dataset.library_dataset_dataset_association:
+%if library_dataset == library_dataset.library_dataset_dataset_association.library_dataset:
     <b><i>This is the latest version of this library dataset</i></b>
 %else:
     <font color="red"><b><i>This is an expired version of this library dataset</i></b></font>
