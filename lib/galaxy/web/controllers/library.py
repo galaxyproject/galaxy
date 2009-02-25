@@ -785,7 +785,7 @@ class Library( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if params.get( 'add_history_datasets_to_library_button', False ):
-            hda_ids = util.listify( params.get( 'hda_ids', [] ) )
+            hda_ids = util.listify( hda_ids )
             if hda_ids:
                 dataset_names = []
                 created_ldda_ids = ''
@@ -819,6 +819,8 @@ class Library( BaseController ):
                     return trans.response.send_redirect( web.url_for( controller='library',
                                                                       action='browse_library',
                                                                       id=library_id,
+                                                                      created_ldda_ids=created_ldda_ids.lstrip( ',' ),
+                                                                      default_action='manage_permissions',
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
         else:
