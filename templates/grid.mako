@@ -35,22 +35,10 @@
         ## Not generic to all grids -- move to base?
         .count-box {
             width: 1.1em;
-            float: left;
+            max-width: 5em;
             padding: 5px;
-            margin-right: 5px;
             border-width: 1px;
             border-style: solid;
-            text-align: center;
-        }
-        .count-box-dummy {
-            width: 1.1em;
-            float: left;
-            padding: 5px;
-            margin-right: 5px;
-            border-width: 1px;
-            border-style: solid;
-            border-color: transparent;
-            background: transparent;
             text-align: center;
         }
     </style>
@@ -92,7 +80,11 @@
                                 else:
                                     href = url( sort=column.key )
                         %>
-                        <th>
+                        <th \
+                        %if column.ncells > 1:
+                            colspan="${column.ncells}"
+                        %endif
+                        >
                             %if href:
                                 <a href="${href}">${column.label}</a>
                             %else:
@@ -124,16 +116,34 @@
                 ## Data columns
                 %for column in grid.columns:
                     %if column.visible:
-                        <td>
-                        %if column.link and column.link( item ):                    
-                            <a href="${url( **column.link( item ) )}">${column.get_value( trans, grid, item )}</a>
-                        %else:
-                            ${column.get_value( trans, grid, item )}
-                        %endif
-                        %if column.attach_popup:
-                            <a id="grid-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                        %endif
-                        </td>
+                        <%
+                            # Link
+                            if column.link and column.link( item ):
+                                href = url( **column.link( item ) )
+                            else:
+                                href = None
+                            # Value (coerced to list so we can loop)
+                            value = column.get_value( trans, grid, item )
+                            if column.ncells == 1:
+                                value = [ value ]
+                        %>
+                            
+                        %for cellnum, v in enumerate( value ):
+                            <%
+                                # Attach popup menu?
+                                if column.attach_popup and cellnum == 0:
+                                    extra = '<a id="grid-%d-popup" class="popup-arrow" style="display: none;">&#9660;</a>' % i
+                                else:
+                                    extra = ""
+                            %>
+                        
+                            %if href:                    
+                                <td><a href="${href}">${v}</a>&nbsp;${extra}</td>
+                            %else:
+                                <td >${v}${extra}</td>
+                            %endif    
+                            </td>
+                        %endfor
                     %endif
                 %endfor
                 
@@ -159,7 +169,7 @@
         <tfoot>
             <tr>
                 <td></td>
-                <td colspan="6">
+                <td colspan="100">
                     For <span class="grid-selected-count"></span> selected histories:
                     %for operation in grid.operations:
                         %if operation.allow_multiple:

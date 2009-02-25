@@ -27,7 +27,7 @@ class HistoryListGrid( Grid ):
         GridColumn( "Name", key="name",
                     link=( lambda item: iff( item.deleted, None, dict( operation="switch", id=item.id ) ) ),
                     attach_popup=True ),
-        GridColumn( "Datasets (by state)", method='_build_datasets_by_state' ),
+        GridColumn( "Datasets (by state)", method='_build_datasets_by_state', ncells=4 ),
         GridColumn( "Status", method='_build_status' ),
         GridColumn( "Age", key="create_time", format=time_ago ),
         GridColumn( "Last update", key="update_time", format=time_ago ),
@@ -94,8 +94,8 @@ class HistoryListGrid( Grid ):
             if total:
                 rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, total ) )
             else:
-                rval.append( '<div class="count-box-dummy"></div>' )
-        return "\n".join( rval )
+                rval.append( '' )
+        return rval
         
     def _build_status( self, trans, history ):
         if history.deleted:

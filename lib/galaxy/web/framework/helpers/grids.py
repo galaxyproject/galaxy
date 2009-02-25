@@ -112,7 +112,7 @@ class Grid( object ):
         return query
     
 class GridColumn( object ):
-    def __init__( self, label, key=None, method=None, format=None, link=None, attach_popup=False, visible=True ):
+    def __init__( self, label, key=None, method=None, format=None, link=None, attach_popup=False, visible=True, ncells=1 ):
         self.label = label
         self.key = key
         self.method = method
@@ -120,6 +120,7 @@ class GridColumn( object ):
         self.link = link
         self.attach_popup = attach_popup
         self.visible = visible
+        self.ncells = ncells
         # Currently can only sort of columns that have a database
         # representation, not purely derived.
         if self.key:
