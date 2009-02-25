@@ -34,8 +34,7 @@
     <style>
         ## Not generic to all grids -- move to base?
         .count-box {
-            width: 1.1em;
-            max-width: 5em;
+            min-width: 1.1em;
             padding: 5px;
             border-width: 1px;
             border-style: solid;
