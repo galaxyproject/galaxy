@@ -267,7 +267,7 @@ function user_changed( user_email, is_admin ) {
     if ( user_email ) {
         $(".loggedin-only").show();
         $(".loggedout-only").hide();
-        $("#user-email").text( user_email )
+        $("#user-email").text( user_email );
         if ( is_admin ) {
             $(".admin-only").show();
         }
