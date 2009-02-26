@@ -131,7 +131,12 @@ def main():
         i.create()
     except Exception, e:
         print_warning( "Adding index failed: %s" % ( e ) )
-    
+    try:
+        i = sqlalchemy.Index( 'ix_job_state', app.model.Job.table.c.state )
+        i.create()
+    except Exception, e:
+        print_warning( "Adding index failed: %s" % ( e ) )
+
     
     # Shutdown the app
     app.shutdown()
@@ -165,8 +170,8 @@ def main():
     # For each user:
     # 1. make sure they have a private role
     # 2. set DefaultUserPermissions
-    # 3. set DefaultHisstoryPermissions on existing histories 
-    # 4. set DatasetPermissionss on each history's activatable_datasets
+    # 3. set DefaultHistoryPermissions on existing histories 
+    # 4. set DatasetPermissions on each history's activatable_datasets
     default_user_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
     
     for user in app.model.User.query().all():
@@ -175,7 +180,7 @@ def main():
         print "Setting up user %s." % user.email
         private_role = security_agent.get_private_user_role( user )
         if not private_role:
-            security_agent.create_private_user_role( user )
+            private_role = security_agent.create_private_user_role( user )
             print "Created private role for %s" % user.email
         else:
             print_warning( "%s already has a private role, re-setting defaults anyway" % user.email )
@@ -187,7 +192,7 @@ def main():
         # Add the new default permissions for the user
         dup = app.model.DefaultUserPermissions( user, default_user_action, private_role )
         dup.flush()
-        print "Setting DefaultHistoryPermissions for %d un-purged histories associated with %s" % ( len( histories ), user.email )
+        print "Setting DefaultHistoryPermissions for %d un-purged histories associated with %s" % ( len( user.histories ), user.email )
         for history in user.active_histories:
             # Delete all of the current default permissions for the history
             for dhp in history.default_permissions:
@@ -196,9 +201,10 @@ def main():
             # Add the new default permissions for the history
             dhp = app.model.DefaultHistoryPermissions( history, default_user_action, private_role )
             dhp.flush()
-            print "Setting DatasetPermissionss for %d un-purged datasets in history %d" % ( len( history.activatable_datasets ), history.id )
+            activatable_datasets = history.activatable_datasets #store this list, so we don't generate it more than once
+            print "Setting DatasetPermissions for %d un-purged datasets in history %d" % ( len( activatable_datasets ), history.id )
             # Set the permissions on the current history's datasets that are not purged
-            for hda in history.activatable_datasets:
+            for hda in activatable_datasets:
                 dataset = hda.dataset
                 if dataset.library_associations:
                     # Don't change permissions on a dataset associated with a library

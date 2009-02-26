@@ -214,9 +214,7 @@ class History( object ):
         return des
     @property
     def activatable_datasets( self ):
-        for hda in self.datasets:
-            if not hda.dataset.purged:
-                yield hda
+        return [ hda for hda in self.datasets if not hda.dataset.purged ] #this needs to be a list
 
 # class Query( object ):
 #     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
