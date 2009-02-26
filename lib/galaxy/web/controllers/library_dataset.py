@@ -102,7 +102,7 @@ class UploadLibraryDataset( BaseController ):
         else:
             # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
             # LibraryDataset, and the current user's DefaultUserPermissions will be applied to the associated Dataset.
-            library_dataset = trans.app.model.LibraryDataset( name=name, info=info, extension=data_type, dbkey=dbkey )
+            library_dataset = trans.app.model.LibraryDataset( folder=folder, name=name, info=info )
             library_dataset.flush()
             trans.app.security_agent.copy_library_permissions( folder, library_dataset )
         ldda = trans.app.model.LibraryDatasetDatasetAssociation( name=name, 

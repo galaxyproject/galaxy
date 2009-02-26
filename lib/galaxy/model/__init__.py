@@ -641,7 +641,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         # Must set metadata after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
         # Create e new LibraryDataset, associating it with ldda
-        library_dataset = LibraryDataset( library_dataset_dataset_association=ldda )
+        library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info, library_dataset_dataset_association=ldda )
         target_folder.add_dataset( library_dataset, genome_build=ldda.dbkey )
         library_dataset.flush()
         ldda.library_dataset_id = library_dataset.id
@@ -703,55 +703,34 @@ class LibraryFolder( object ):
         return list( self.active_folders ) + list( self.active_datasets )
 
 class LibraryDataset( object ):
-    #This class acts as a proxy to the currently selected LDDA
-    def __init__( self, 
-                  folder = None, 
-                  order_id = None, 
-                  name = None,
-                  info = None,
-                  library_dataset_dataset_association = None,
-                  create_dataset=False,
-                  **kwd
-                  ):
+    # This class acts as a proxy to the currently selected LDDA
+    def __init__( self, folder=None, order_id=None, name=None, info=None, library_dataset_dataset_association=None, **kwd ):
         self.folder = folder
         self.order_id = order_id
         self.name = name
         self.info = info
-        if create_dataset and not library_dataset_dataset_association:
-            #self.flush() #we need to flush self, so that the ldda will have a ld id to point to
-            library_dataset_dataset_association = LibraryDatasetDatasetAssociation( name=name, info=info, create_dataset=create_dataset, **kwd )
         self.library_dataset_dataset_association = library_dataset_dataset_association
-    
     def set_library_dataset_dataset_association( self, dataset ):
         self.library_dataset_dataset_association = dataset
         dataset.library_dataset = self
         dataset.flush()
         self.flush()
-    
     def get_info( self ):
-        # Use info from ldfa
         return self.library_dataset_dataset_association.info
     def set_info( self, info ):
         self._info = info
     info = property( get_info, set_info )
-    
     def get_name( self ):
-        # Use info from ldda
         return self.library_dataset_dataset_association.name
     def set_name( self, name ):
         self._name = name
     name = property( get_name, set_name )
-    
     def display_name( self ):
-        # Use name from ldda is versioned info is not set
-        if self._name:
-            return self.datatype.display_name( self )
         self.library_dataset_dataset_association.display_name()
-    
     def __getattr__( self, name ):
-        return getattr( self.library_dataset_dataset_association, name ) #Any nonexistant attributes will be pulled from the ldda
-    
-    def get_library_item_info_templates( self, template_list = [] ):
+        # Any missing attributes will be retrieved from the ldda
+        return getattr( self.library_dataset_dataset_association, name )
+    def get_library_item_info_templates( self, template_list=[] ):
         if self.library_dataset_info_template_associations:
             template_list.extend( [ ldita.library_item_info_template for ldita in self.library_dataset_info_template_associations if ldita.library_item_info_template not in template_list ] )
         self.folder.get_library_item_info_templates( template_list )
@@ -759,9 +738,9 @@ class LibraryDataset( object ):
     
 class LibraryDatasetDatasetAssociation( DatasetInstance ):
     def __init__( self, 
-                  copied_from_history_dataset_association = None, 
-                  copied_from_library_dataset_dataset_association = None, 
-                  library_dataset = None,
+                  copied_from_history_dataset_association=None, 
+                  copied_from_library_dataset_dataset_association=None, 
+                  library_dataset=None,
                   **kwd ):
         DatasetInstance.__init__( self, **kwd )
         self.library_dataset = library_dataset

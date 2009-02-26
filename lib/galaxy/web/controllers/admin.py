@@ -1470,7 +1470,7 @@ class Admin( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         try:
-            replace_dataset = trans.app.model.LibraryDataset.get( params.get( 'replace_id', None ) )
+            replace_dataset = trans.app.model.LibraryDataset.get( int( params.get( 'replace_id', None ) ) )
         except:
             replace_dataset = None
         # See if the current history is empty
