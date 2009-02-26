@@ -487,7 +487,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_080_add_dataset_with_private_role_restriction_to_folder( self ):
         """Testing adding a dataset with a private role restriction to a folder"""
         # Add a dataset restricted by regular_user1 private role
-        self.add_dataset( '1.bed', str( library_one.id ), str( folder_one.id ), file_format='bed', dbkey='hg18', roles=[ str( regular_user1_private_role.id ) ] )
+        self.add_library_dataset( '1.bed', str( library_one.id ), str( folder_one.id ), folder_one.name, file_format='bed', dbkey='hg18', roles=[ str( regular_user1_private_role.id ) ] )
         global ldda_three
         ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -558,7 +558,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Add a dataset restricted by role_two, which is currently associated as follows:
         # groups: group_two
         # users: test@bx.psu.edu, test1@bx.psu.edu via group_two
-        self.add_dataset( '2.bed', str( library_one.id ), str( folder_one.id ), file_format='bed', dbkey='hg17', roles=[ str( role_two.id ) ] )
+        self.add_library_dataset( '2.bed', str( library_one.id ), str( folder_one.id ), folder_one.name, file_format='bed', dbkey='hg17', roles=[ str( role_two.id ) ] )
         global ldda_two
         ldda_two = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -633,7 +633,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing adding a public dataset to a library root folder"""
         self.login( email='test@bx.psu.edu' )
         folder = library_one.root_folder
-        self.add_dataset( '3.bed', str( library_one.id ), str( folder.id ), file_format='bed', dbkey='hg16', roles=[] )
+        self.add_library_dataset( '3.bed', str( library_one.id ), str( folder.id ), folder.name, file_format='bed', dbkey='hg16', roles=[] )
         global ldda_three
         ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -686,7 +686,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.new_history()
         self.upload_file( "1.bed" )
         latest_hda = galaxy.model.HistoryDatasetAssociation.query().order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
-        self.add_history_datasets_to_library( str( library_one.id ), str( folder.id ), str( latest_hda.id ) )
+        self.add_history_datasets_to_library( str( library_one.id ), str( folder.id ), folder.name, str( latest_hda.id ) )
         # Test for DatasetPermissionss, the default setting is "manage permissions"
         last_dataset_created = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
         dps = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==last_dataset_created.id ).all()
@@ -701,7 +701,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_115_add_datasets_from_library_dir( self ):
         """Testing adding 3 datasets from a library directory to a folder"""
         roles_tuple = [ ( str( role_one.id ), role_one.name ) ] 
-        self.add_datasets_from_library_dir( str( library_one.id ), str( folder_one.id ), roles_tuple=roles_tuple )
+        self.add_datasets_from_library_dir( str( library_one.id ), str( folder_one.id ), folder_one.name, roles_tuple=roles_tuple )
     def test_120_change_permissions_on_datasets_imported_from_library( self ):
         """Testing changing the permissions on library datasets imported into a history"""
         # It would be nice if twill functioned such that the above test resulted in a

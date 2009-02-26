@@ -1009,8 +1009,6 @@ class Admin( BaseController ):
                                                               messagetype='error' ) )
         if action == 'new':
             if params.new == 'submitted':
-                # Create the new folder, then return manage_folder template for new folder.
-                # New folders default to having the same permissions as their parent folder
                 new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
                                                             description=util.restore_text( params.description ) )
                 # We are associating the last used genome build with folders, so we will always
@@ -1019,13 +1017,12 @@ class Admin( BaseController ):
                 new_folder.genome_build = util.dbnames.default_value
                 folder.add_folder( new_folder )
                 new_folder.flush()
+                # New folders default to having the same permissions as their parent folder
                 trans.app.security_agent.copy_library_permissions( folder, new_folder, user=trans.get_user() )
                 msg = "New folder named '%s' has been added to the library" % new_folder.name
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='folder',
-                                                                  id=id,
-                                                                  library_id=library_id,
-                                                                  information=True,
+                                                                  action='browse_library',
+                                                                  id=library_id,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
             return trans.fill_template( '/admin/library/new_folder.mako',
@@ -1206,8 +1203,11 @@ class Admin( BaseController ):
                                                                                              **kwd )
             if created_ldda_ids:
                 total_added = len( created_ldda_ids.split( ',' ) )
-                msg = "%i new datasets added to the library ( each is selected below ).  " % total_added
-                msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
+                if replace_dataset:
+                    msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset.name, folder.name )
+                else:
+                    msg = "Added %d datasets to the library folder '%s' ( each is selected ).  " % ( total_added, folder.name )
+                    msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                 messagetype='done'
             else:
                 msg = "Upload failed"
@@ -1493,12 +1493,19 @@ class Admin( BaseController ):
                     if hda:
                         ldda = hda.to_library_dataset_dataset_association( target_folder=folder )
                         created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( ldda.id ) )
-                        dataset_names.append( hda.name )
+                        dataset_names.append( ldda.name )
                         if replace_dataset:
                             # If we are replacing versions and we receive a list, we add all the datasets
                             # and set the last one in the list as current
                             replace_dataset.set_library_dataset_dataset_association( ldda )
-
+                            # Copy the LDDA and LibrarDataset level permissions from replace_dataset to the new LDDA and LibraryDataset
+                            trans.app.security_agent.copy_library_permissions( replace_dataset.library_dataset_dataset_association, ldda )
+                            trans.app.security_agent.copy_library_permissions( replace_dataset.library_dataset, ldda.library_dataset )
+                        else:
+                            # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
+                            # LDDA and LibraryDataset.
+                            trans.app.security_agent.copy_library_permissions( folder, ldda )
+                            trans.app.security_agent.copy_library_permissions( folder, ldda.library_dataset )
                     else:
                         msg = "The requested HistoryDatasetAssociation id %s is invalid" % str( hda_id )
                         return trans.response.send_redirect( web.url_for( controller='admin',
@@ -1507,14 +1514,18 @@ class Admin( BaseController ):
                                                                           msg=util.sanitize_text( msg ),
                                                                           messagetype='error' ) )
                 if created_ldda_ids:
+                    created_ldda_ids = created_ldda_ids.lstrip( ',' )
+                    ldda_id_list = created_ldda_ids.split( ',' )
+                    total_added = len( ldda_id_list )
                     if replace_dataset:
-                        msg = "Added the following datasets to the versioned library dataset '%s': %s" % ( replace_dataset.name, ", ".join( dataset_names ) )
+                        msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset.name, folder.name )
                     else:
-                        msg = "Added the following datasets to the library folder: %s" % ( ", ".join( dataset_names ) )
+                        msg = "Added %d datasets to the library folder '%s' ( each is selected ).  " % ( total_added, folder.name )
+                        msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                     return trans.response.send_redirect( web.url_for( controller='admin',
                                                                       action='browse_library',
                                                                       id=library_id,
-                                                                      created_ldda_ids = created_ldda_ids.lstrip( ',' ),
+                                                                      created_ldda_ids=created_ldda_ids,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
             else:

@@ -857,7 +857,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_dataset( self, filename, library_id, folder_id, file_format='auto', dbkey='hg18', roles=[] ):
+    def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles=[] ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
@@ -870,16 +870,18 @@ class TwillTestCase( unittest.TestCase ):
         for role_id in roles:
             tc.fv( "1", "roles", role_id ) # form field 7 is the select list named out_groups, note the buttons...
         tc.submit( "new_dataset_button" )
-        self.check_page_for_string( '1 new datasets added to the library ( each is selected below )' )
+        check_str = "Added 1 datasets to the library folder '%s' ( each is selected )." % folder_name
+        self.check_page_for_string( check_str )
         self.home()
-    def add_history_datasets_to_library( self, library_id, folder_id, hda_id ):
+    def add_history_datasets_to_library( self, library_id, folder_id, folder_name, hda_id ):
         """Copy a dataset from the current history to a library folder"""
         self.home()
         self.visit_url( "%s/admin/add_history_datasets_to_library?library_id=%s&folder_id=%s&hda_ids=%s&add_history_datasets_to_library_button=Add+selected+datasets" % \
                         ( self.url, library_id, folder_id, hda_id ) )
-        self.check_page_for_string( 'Added the following datasets to the library folder: 1.bed' )
+        check_str = "Added 1 datasets to the library folder '%s' ( each is selected )." % folder_name
+        self.check_page_for_string( check_str )
         self.home()
-    def add_datasets_from_library_dir( self, library_id, folder_id, file_format='auto', dbkey='hg18', roles_tuple=[] ):
+    def add_datasets_from_library_dir( self, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles_tuple=[] ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
@@ -893,7 +895,8 @@ class TwillTestCase( unittest.TestCase ):
         for role_tuple in roles_tuple:
             tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role name
         tc.submit( "new_dataset_button" )
-        self.check_page_for_string( '3 new datasets added to the library' )
+        check_str = "Added 3 datasets to the library folder '%s' ( each is selected )" % folder_name
+        self.check_page_for_string( check_str )
         self.home()
     def mark_library_deleted( self, library_id, library_name ):
         """Mark a library as deleted"""

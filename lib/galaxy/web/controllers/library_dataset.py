@@ -120,7 +120,7 @@ class UploadLibraryDataset( BaseController ):
         else:
             # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
             trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, trans.app.security_agent.user_get_default_permissions( trans.get_user() ) )
-            folder.add_dataset( library_dataset, genome_build=dbkey )
+            folder.add_library_dataset( library_dataset, genome_build=dbkey )
         library_dataset.library_dataset_dataset_association_id = ldda.id
         library_dataset.flush()
         # If roles were selected upon upload, restrict access to the Dataset to those roles
@@ -141,7 +141,7 @@ class UploadLibraryDataset( BaseController ):
         ldda.set_size()
         if ldda.missing_meta():
             ldda.datatype.set_meta( ldda )
-        trans.app.model.flush()
+        ldda.flush()
         return ldda
     @web.expose
     def upload_dataset( self, trans, controller, library_id, folder_id, replace_dataset=None, **kwd ):
