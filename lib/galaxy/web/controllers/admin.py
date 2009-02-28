@@ -889,17 +889,25 @@ class Admin( BaseController ):
         elif action == 'delete':
             # TODO: need to revamp the way we delete libraries, folders and contained LibraryDatasets.
             def delete_folder( library_folder ):
-                for folder in library_folder.active_folders:
+                library_folder.refresh()
+                for folder in library_folder.folders:
                     delete_folder( folder )
-                for ldda in library_folder.active_datasets:
-                    # We don't set ldda.dataset.deleted to True here because the cleanup_dataset script
-                    # will eventually remove it from disk.  The purge_library method below sets the dataset
-                    # to deleted.  This allows for the library to be undeleted ( before it is purged ), 
-                    # restoring all of its contents.
-                    ldda.deleted = True
-                    ldda.flush()
+                for library_dataset in library_folder.datasets:
+                    library_dataset.refresh()
+                    ldda = library_dataset.library_dataset_dataset_association
+                    if ldda:
+                        ldda.refresh()
+                        # We don't set ldda.dataset.deleted to True here because the cleanup_dataset script
+                        # will eventually remove it from disk.  The purge_library method below sets the dataset
+                        # to deleted.  This allows for the library to be undeleted ( before it is purged ), 
+                        # restoring all of its contents.
+                        ldda.deleted = True
+                        ldda.flush()
+                    library_dataset.deleted = True
+                    library_dataset.flush()
                 library_folder.deleted = True
                 library_folder.flush()
+            library.refresh()
             delete_folder( library.root_folder )
             library.deleted = True
             library.flush()
@@ -943,10 +951,18 @@ class Admin( BaseController ):
         library = trans.app.model.Library.get( int( params.id ) )
         def undelete_folder( library_folder ):
             for folder in library_folder.folders:
+                folder.refresh()
                 undelete_folder( folder )
-            for ldda in library_folder.datasets:
-                ldda.deleted = False
-                ldda.flush()
+            library_folder.refresh()
+            for library_dataset in library_folder.datasets:
+                library_dataset.refresh()
+                ldda = library_dataset.library_dataset_dataset_association
+                if ldda:
+                    ldda.refresh()
+                    ldda.deleted = False
+                    ldda.flush()
+                library_dataset.deleted = False
+                library_dataset.flush()
             library_folder.deleted = False
             library_folder.flush()
         undelete_folder( library.root_folder )
@@ -962,18 +978,25 @@ class Admin( BaseController ):
         def purge_folder( library_folder ):
             for lf in library_folder.folders:
                 purge_folder( lf )
-            for ldda in library_folder.datasets:
-                ldda.refresh()
-                dataset = ldda.dataset
-                dataset.refresh()
-                # If the dataset is not associated with any additional undeleted folders, then we can delete it.
-                # We don't set dataset.purged to True here because the cleanup_datasets script will do that for
-                # us, as well as removing the file from disk.
-                if not dataset.deleted and len( dataset.active_library_associations ) <= 1: # This is our current ldda
+            library_folder.refresh()
+            for library_dataset in library_folder.datasets:
+                library_dataset.refresh()
+                ldda = library_dataset.library_dataset_dataset_association
+                if ldda:
+                    ldda.refresh()
+                    dataset = ldda.dataset
+                    dataset.refresh()
+                    # If the dataset is not associated with any additional undeleted folders, then we can delete it.
+                    # We don't set dataset.purged to True here because the cleanup_datasets script will do that for
+                    # us, as well as removing the file from disk.
+                    #if not dataset.deleted and len( dataset.active_library_associations ) <= 1: # This is our current ldda
                     dataset.deleted = True
                     dataset.flush()
-                ldda.deleted = True
-                ldda.flush()
+                    ldda.deleted = True
+                    ldda.flush()
+                library_dataset.deleted = True
+                library_dataset.flush()
+            library_folder.deleted = True
             library_folder.purged = True
             library_folder.flush()
         purge_folder( library.root_folder )

@@ -39,7 +39,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, information=True )}" method="post">
+            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, information=True )}" method="post">
                 <input type="hidden" name="id" value="${ldda.id}"/>
                 <div class="form-row">
                     <label>Name:</label>
@@ -70,7 +70,7 @@
                     <input type="submit" name="save" value="Save"/>
                 </div>
             </form>
-            <form name="auto_detect" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, information=True )}" method="post">
+            <form name="auto_detect" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, information=True )}" method="post">
                 <input type="hidden" name="id" value="${ldda.id}"/>
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="submit" name="detect" value="Auto-detect"/>
@@ -85,7 +85,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Change data type</div>
         <div class="toolFormBody">
-            <form name="change_datatype" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, information=True )}" method="post">
+            <form name="change_datatype" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, information=True )}" method="post">
                 <input type="hidden" name="id" value="${ldda.id}"/>
                 <div class="form-row">
                     <label>New Type:</label>

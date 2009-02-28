@@ -216,15 +216,6 @@ class History( object ):
     def activatable_datasets( self ):
         return [ hda for hda in self.datasets if not hda.dataset.purged ] #this needs to be a list
 
-# class Query( object ):
-#     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
-#         self.name = name or "Unnamed query"
-#         self.state = state
-#         self.tool_parameters = tool_parameters
-#         # Relationships
-#         self.history = history
-#         self.datasets = []
-
 class UserRoleAssociation( object ):
     def __init__( self, user, role ):
         self.user = user
@@ -342,7 +333,6 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
-        
     def get_file_name( self ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
@@ -365,15 +355,12 @@ class Dataset( object ):
             filename = self.external_filename
         # Make filename absolute
         return os.path.abspath( filename )
-            
     def set_file_name ( self, filename ):
         if not filename:
             self.external_filename = None
         else:
             self.external_filename = filename
-        
     file_name = property( get_file_name, set_file_name )
-    
     @property
     def extra_files_path( self ):
         if self._extra_files_path: 
@@ -385,7 +372,6 @@ class Dataset( object ):
                 path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
         # Make path absolute
         return os.path.abspath( path )
-    
     def get_size( self ):
         """Returns the size of the data on disk"""
         if self.file_size:
@@ -407,7 +393,6 @@ class Dataset( object ):
         return self.get_size() > 0
     def mark_deleted( self, include_children=True ):
         self.deleted = True
-
     # FIXME: sqlalchemy will replace this
     def _delete(self):
         """Remove the file that corresponds to this data"""
@@ -475,7 +460,6 @@ class DatasetInstance( object ):
     def get_dbkey( self ):
         dbkey = self.metadata.dbkey
         if not isinstance(dbkey, list): dbkey = [dbkey]
-        #if dbkey in [["?"], [None], []]: dbkey = [self.old_dbkey]
         if dbkey in [[None], []]: return "?"
         return dbkey[0]
     def set_dbkey( self, value ):
@@ -484,10 +468,6 @@ class DatasetInstance( object ):
                 self.metadata.dbkey = [value]
             else: 
                 self.metadata.dbkey = value
-        #if isinstance(value, list): 
-        #    self.old_dbkey = value[0]
-        #else:
-        #    self.old_dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
@@ -568,7 +548,6 @@ class DatasetInstance( object ):
         if self.purged:
             return False
         return True
-    
     @property
     def source_library_dataset( self ):
         def get_source( dataset ):
@@ -663,7 +642,6 @@ class Library( object ):
         self.name = name or "Unnamed library"
         self.description = description
         self.root_folder = root_folder
-
     def get_library_item_info_templates( self, template_list = [] ):
         if self.library_info_template_associations:
             template_list.extend( [ lita.library_item_info_template for lita in self.library_info_template_associations if lita.library_item_info_template not in template_list ] )
@@ -713,20 +691,27 @@ class LibraryDataset( object ):
         ldda.flush()
         self.flush()
     def get_info( self ):
-        return self.library_dataset_dataset_association.info
+        if self.library_dataset_dataset_association:
+            return self.library_dataset_dataset_association.info
+        elif self._info:
+            return self._info
+        else:
+            return 'no info'
     def set_info( self, info ):
         self._info = info
     info = property( get_info, set_info )
     def get_name( self ):
-        return self.library_dataset_dataset_association.name
+        if self.library_dataset_dataset_association:
+            return self.library_dataset_dataset_association.name
+        elif self._name:
+            return self._name
+        else:
+            return 'Unnamed dataset'
     def set_name( self, name ):
         self._name = name
     name = property( get_name, set_name )
     def display_name( self ):
         self.library_dataset_dataset_association.display_name()
-    def __getattr__( self, name ):
-        # Any missing attributes will be retrieved from the ldda
-        return getattr( self.library_dataset_dataset_association, name )
     def get_library_item_info_templates( self, template_list=[] ):
         if self.library_dataset_info_template_associations:
             template_list.extend( [ ldita.library_item_info_template for ldita in self.library_dataset_info_template_associations if ldita.library_item_info_template not in template_list ] )

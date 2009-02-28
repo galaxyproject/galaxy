@@ -228,10 +228,8 @@ LibraryDataset.table = Table( "library_dataset", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), key="_name" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
     Column( "info", TrimmedString( 255 ),  key="_info" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
-    Column( "deleted", Boolean, index=True, default=False ),
-    )
+    Column( "deleted", Boolean, index=True, default=False ) )
 
-#this should be renamed, no longer an association between dataset and folder
 LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ),

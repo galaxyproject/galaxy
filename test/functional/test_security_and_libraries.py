@@ -862,16 +862,23 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The library_folder named "%s" has not been marked as deleted ( library.id: %s ).' % \
                                           ( folder.name, str( library_one.id ) ) )
                 check_folder( folder )
-            # Make sure all of the library_dataset_dataset_associations are deleted
-            for ldda in library_folder.datasets:
-                ldda.refresh()
-                if not ldda.deleted:
-                    raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as deleted ( library.id: %s ).' % \
-                                          ( str( ldda.id ), ldda.name, str( library_one.id ) ) )
-                # Make sure none of the datasets have been deleted since that should occur only when the library is purged
-                ldda.dataset.refresh()
-                if ldda.dataset.deleted:
-                    raise AssertionError( 'The dataset with id "%s" has been marked as deleted when it should not have been.' % ldda.dataset.id )
+            # Make sure all of the LibraryDatasets and associated objects are deleted
+            library_folder.refresh()
+            for library_dataset in library_folder.datasets:
+                library_dataset.refresh()
+                ldda = library_dataset.library_dataset_dataset_association
+                if ldda:
+                    ldda.refresh()
+                    if not ldda.deleted:
+                        raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as deleted ( library.id: %s ).' % \
+                                              ( str( ldda.id ), ldda.name, str( library_one.id ) ) )
+                    # Make sure none of the datasets have been deleted since that should occur only when the library is purged
+                    ldda.dataset.refresh()
+                    if ldda.dataset.deleted:
+                        raise AssertionError( 'The dataset with id "%s" has been marked as deleted when it should not have been.' % ldda.dataset.id )
+                if not library_dataset.deleted:
+                    raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted ( library.id: %s ).' % \
+                                          ( str( library_dataset.id ), library_dataset.name, str( library_one.id ) ) )
         check_folder( library_one.root_folder )
     def test_150_undelete_library( self ):
         """Testing marking a library as not deleted"""
@@ -888,15 +895,22 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The library_folder id %s named "%s" has not been marked as undeleted ( library.id: %s ).' % \
                                           ( str( folder.id ), folder.name, str( library_one.id ) ) )
                 check_folder( folder )
-            # Make sure all of the library_dataset_dataset_associations are undeleted
-            for ldda in library_folder.datasets:
-                ldda.refresh()
-                if ldda.deleted:
-                    raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as undeleted ( library.id: %s ).' % \
-                                          ( str( ldda.id ), ldda.name, str( library_one.id ) ) )
-                # Make sure all of the datasets have been undeleted
-                if ldda.dataset.deleted:
-                    raise AssertionError( 'The dataset with id "%s" has not been marked as undeleted.' % ldda.dataset.id )
+            # Make sure all of the LibraryDatasets and associated objects are undeleted
+            library_folder.refresh()
+            for library_dataset in library_folder.datasets:
+                library_dataset.refresh()
+                ldda = library_dataset.library_dataset_dataset_association
+                if ldda:
+                    ldda.refresh()
+                    if ldda.deleted:
+                        raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as undeleted ( library.id: %s ).' % \
+                                              ( str( ldda.id ), ldda.name, str( library_one.id ) ) )
+                    # Make sure all of the datasets have been undeleted
+                    if ldda.dataset.deleted:
+                        raise AssertionError( 'The dataset with id "%s" has not been marked as undeleted.' % ldda.dataset.id )
+                if library_dataset.deleted:
+                    raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as undeleted ( library.id: %s ).' % \
+                                          ( str( library_dataset.id ), library_dataset.name, str( library_one.id ) ) )
         check_folder( library_one.root_folder )
         # Mark library as deleted again so we can test purging it
         self.mark_library_deleted( str( library_one.id ), library_one.name )
@@ -1019,18 +1033,25 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 if not folder.purged:
                     raise AssertionError( 'The library_folder id %s named "%s" has not been marked purged.' % ( str( folder.id ), folder.name ) )
                 check_folder( folder )
-            # Make sure all of the library_dataset_dataset_associations are deleted ( no purged column )
-            for ldda in library_folder.datasets:
-                ldda.refresh()
-                if not ldda.deleted:
-                    raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as deleted.' % \
-                                          ( str( ldda.id ), ldda.name ) )
-                # Make sure all of the datasets have been deleted
-                dataset = ldda.dataset
-                dataset.refresh()
-                if not dataset.deleted:
-                    raise AssertionError( 'The dataset with id "%s" has not been marked as deleted when it should have been.' % \
-                                          str( ldda.dataset.id ) )
+            # Make sure all of the LibraryDatasets and associated objects are deleted
+            library_folder.refresh()
+            for library_dataset in library_folder.datasets:
+                library_dataset.refresh
+                ldda = library_dataset.library_dataset_dataset_association
+                if ldda:
+                    ldda.refresh()
+                    if not ldda.deleted:
+                        raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as deleted.' % \
+                                              ( str( ldda.id ), ldda.name ) )
+                    # Make sure all of the datasets have been deleted
+                    dataset = ldda.dataset
+                    dataset.refresh()
+                    if not dataset.deleted:
+                        raise AssertionError( 'The dataset with id "%s" has not been marked as deleted when it should have been.' % \
+                                              str( ldda.dataset.id ) )
+                if not library_dataset.deleted:
+                    raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted.' % \
+                                          ( str( library_dataset.id ), library_dataset.name ) )
         check_folder( library_one.root_folder )
     def test_185_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""

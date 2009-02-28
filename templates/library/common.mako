@@ -7,7 +7,7 @@
         ## this library_dataset, so we display the attributes from the ldda.
         ldda = data.library_dataset_dataset_association
     %>
-    <div class="historyItemWrapper historyItem historyItem-${data.state}" id="libraryItem-${ldda.id}">
+    <div class="historyItemWrapper historyItem historyItem-${ldda.state}" id="libraryItem-${ldda.id}">
         ## Header row for library items (name, state, action buttons)
         <div style="overflow: hidden;" class="historyItemTitleBar">     
             <table cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -32,7 +32,7 @@
                                 <a class="action-button" href="${h.url_for( controller='library', action='library_dataset', id=data.id, library_id=library.id, versions=True )}">Manage this dataset's versions</a>
                             %endif
                             %endif
-                            %if data.has_data:
+                            %if ldda.has_data:
                                 <a class="action-button" href="${h.url_for( controller='library', action='datasets', library_id=library.id, ldda_ids=str( ldda.id ), do_action='add' )}">Import this dataset into your current history</a>
                                 <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
                             %endif
@@ -49,13 +49,13 @@
         <div id="info${ldda.id}" class="historyItemBody">
             <div>${ldda.blurb}</div>
             <div> 
-                %if data.has_data:
-                    %for display_app in data.datatype.get_display_types():
-                        <% display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
+                %if ldda.has_data:
+                    %for display_app in ldda.datatype.get_display_types():
+                        <% display_links = ldda.datatype.get_display_links( ldda, display_app, app, request.base ) %>
                         %if len( display_links ) > 0:
-                            ${data.datatype.get_display_label( display_app )}
-                            %for data.name, display_link in display_links:
-                                <a target="_blank" href="${display_link}">${data.name}</a> 
+                            ${ldda.datatype.get_display_label( display_app )}
+                            %for ldda.name, display_link in display_links:
+                                <a target="_blank" href="${display_link}">${ldda.name}</a> 
                             %endfor
                         %endif
                     %endfor
@@ -65,10 +65,10 @@
                 <div><pre id="peek${ldda.id}" class="peek">${ldda.display_peek()}</pre></div>
             %endif
             ## Recurse for child datasets
-            %if len( data.visible_children ) > 0:
+            %if len( ldda.visible_children ) > 0:
                 <div>
-                    There are ${len( data.visible_children )} secondary datasets.
-                    %for idx, child in enumerate( data.visible_children ):
+                    There are ${len( ldda.visible_children )} secondary datasets.
+                    %for idx, child in enumerate( ldda.visible_children ):
                         ${render_dataset( child, selected, library )}
                     %endfor
                 </div>

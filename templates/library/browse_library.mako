@@ -163,7 +163,7 @@ def name_sorted( l ):
         <%
             selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
         %>
-        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=library_dataset.dataset ):
+        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=library_dataset.library_dataset_dataset_association.dataset ):
             <li class="datasetRow" style="padding-left: ${pad + 20}px;">${render_dataset( library_dataset, selected, library )}</li>
         %endif
     %endfor
