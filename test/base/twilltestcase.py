@@ -861,8 +861,8 @@ class TwillTestCase( unittest.TestCase ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
-        self.visit_url( "%s/admin/library_dataset_dataset_association?library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
-        self.check_page_for_string( 'Create a new library dataset' )
+        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
+        self.check_page_for_string( 'Upload files' )
         tc.fv( "1", "folder_id", folder_id )
         tc.formfile( "1", "file_data", filename )
         tc.fv( "1", "file_format", file_format )
@@ -885,8 +885,8 @@ class TwillTestCase( unittest.TestCase ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
-        self.visit_url( "%s/admin/library_dataset_dataset_association?library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
-        self.check_page_for_string( 'Create a new library dataset' )
+        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
+        self.check_page_for_string( 'Upload a directory of files' )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )

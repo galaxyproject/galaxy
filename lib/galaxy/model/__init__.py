@@ -422,7 +422,7 @@ class DatasetInstance( object ):
         self.visible = visible
         # Relationships
         if not dataset and create_dataset:
-            dataset = Dataset()
+            dataset = Dataset( state=Dataset.states.NEW )
             dataset.flush()
         self.dataset = dataset
         self.parent_id = parent_id
@@ -579,7 +579,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
     def copy( self, copy_children = False, parent_id = None, target_history = None ):
-        des = HistoryDatasetAssociation( hid=self.hid, 
+        hda = HistoryDatasetAssociation( hid=self.hid, 
                                          name=self.name, 
                                          info=self.info, 
                                          blurb=self.blurb, 
@@ -592,22 +592,22 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                          parent_id=parent_id, 
                                          copied_from_history_dataset_association=self,
                                          history = target_history )
-        des.flush()
-        des.set_size()
-        des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
+        hda.flush()
+        hda.set_size()
+        hda.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         if copy_children:
             for child in self.children:
-                child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
+                child_copy = child.copy( copy_children = copy_children, parent_id = hda.id )
         if not self.datatype.copy_safe_peek:
-            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        des.flush()
-        return des
+            hda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        hda.flush()
+        return hda
     def to_library_dataset_dataset_association( self, target_folder, parent_id=None ):
         # Create e new LibraryDataset
         library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
         library_dataset.flush()
         ldda = LibraryDatasetDatasetAssociation( name=self.name, 
-                                                 info=self.info, 
+                                                 info=self.info,
                                                  blurb=self.blurb, 
                                                  peek=self.peek, 
                                                  extension=self.extension, 
@@ -727,7 +727,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
     def to_history_dataset_association( self, target_history, parent_id=None ):
         hid = target_history._next_hid()
         hda = HistoryDatasetAssociation( name=self.name, 
-                                         info=self.info, 
+                                         info=self.info,
                                          blurb=self.blurb, 
                                          peek=self.peek, 
                                          extension=self.extension, 

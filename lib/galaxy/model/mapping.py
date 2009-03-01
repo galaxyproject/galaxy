@@ -58,13 +58,6 @@ History.table = Table( "history", metadata,
     Column( "purged", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ) )
 
-# model.Query.table = Table( "query", engine,
-#             Column( "id", Integer, primary_key=True),
-#             Column( "history_id", Integer, ForeignKey( "history.id" ) ),
-#             Column( "name", String( 255 ) ),
-#             Column( "state", String( 64 ) ),
-#             Column( "tool_parameters", Pickle() ) )
-
 HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),

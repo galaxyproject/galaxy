@@ -15,6 +15,7 @@ class UploadLibraryDataset( BaseController ):
     def add_file( self, trans, folder_id, file_obj, name, file_format, dbkey, roles, info='no info', space_to_tab=False, replace_dataset=None ):
         folder = trans.app.model.LibraryFolder.get( folder_id )
         data_type = None
+        line_count = 0
         temp_name = sniff.stream_to_file( file_obj )
         # See if we have an empty file
         if not os.path.getsize( temp_name ) > 0:
@@ -76,7 +77,7 @@ class UploadLibraryDataset( BaseController ):
                 raise BadFileException( "you attempted to upload an inappropriate file." )
         if data_type != 'binary' and data_type != 'zip':
             if space_to_tab:
-                self.line_count = sniff.convert_newlines_sep2tabs( temp_name )
+                line_count = sniff.convert_newlines_sep2tabs( temp_name )
             elif os.stat( temp_name ).st_size < 262144000: # 250MB
                 line_count = sniff.convert_newlines( temp_name )
             else:
@@ -129,9 +130,9 @@ class UploadLibraryDataset( BaseController ):
                 dp = trans.app.model.DatasetPermissions( RBACAgent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role )
                 dp.flush()
         shutil.move( temp_name, ldda.dataset.file_name )
-        ldda.dataset.state = ldda.dataset.states.OK
+        ldda.state = ldda.states.OK
         ldda.init_meta()
-        if line_count is not None:
+        if line_count:
             try:
                 ldda.set_peek( line_count=line_count )
             except:

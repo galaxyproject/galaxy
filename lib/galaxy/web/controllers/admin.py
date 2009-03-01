@@ -1242,6 +1242,7 @@ class Admin( BaseController ):
                                                        msg=util.sanitize_text( msg ),
                                                        messagetype=messagetype ) )
         elif not id or replace_dataset:
+            upload_option = params.get( 'upload_option', 'upload_file' )
             # No dataset(s) specified, so display the upload form.  Send list of data formats to the form
             # so the "extension" select list can be populated dynamically
             file_formats = trans.app.datatypes_registry.upload_file_formats
@@ -1256,6 +1257,7 @@ class Admin( BaseController ):
             history = trans.get_history()
             history.refresh()
             return trans.fill_template( '/admin/library/new_dataset.mako',
+                                        upload_option=upload_option,
                                         library_id=library_id,
                                         folder_id=folder_id,
                                         file_formats=file_formats,
@@ -1554,7 +1556,8 @@ class Admin( BaseController ):
             else:
                 msg = 'Select at least one dataset from the list of active datasets in your current history'
                 messagetype = 'error'
-                last_used_build = folder.genome_build,
+                last_used_build = folder.genome_build
+                upload_option = params.get( 'upload_option', 'upload_file' )
                 # Send list of data formats to the form so the "extension" select list can be populated dynamically
                 file_formats = trans.app.datatypes_registry.upload_file_formats
                 # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
@@ -1565,6 +1568,7 @@ class Admin( BaseController ):
                 # Send list of roles to the form so the dataset can be associated with 1 or more of them.
                 roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.c.name ).all()
                 return trans.fill_template( "/admin/library/new_dataset.mako",
+                                            upload_option=upload_option,
                                             library_id=library_id,
                                             folder_id=folder_id,
                                             file_formats=file_formats,
@@ -1576,7 +1580,8 @@ class Admin( BaseController ):
                                             messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def library_item_info_template( self, trans, library_id, id=None, new_element_count=0, folder_id=None, ldda_id=None, library_dataset_id=None, **kwd ):
+    def library_item_info_template( self, trans, library_id, id=None, new_element_count=0,
+                                    folder_id=None, ldda_id=None, library_dataset_id=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -1704,7 +1709,8 @@ class Admin( BaseController ):
                                     messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def library_item_info( self, trans, library_id, do_action, id=None, library_item_id=None, library_item_type=None, **kwd ):
+    def library_item_info( self, trans, library_id, do_action, id=None,
+                           library_item_id=None, library_item_type=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -1716,7 +1722,7 @@ class Admin( BaseController ):
             item_info = None
         if library_item_type == 'library':
             library_item = trans.app.model.Library.get( library_item_id )
-            response_action = 'browse'
+            response_action = 'browse_library'
         elif library_item_type == 'library_dataset':
             library_item = trans.app.model.LibraryDataset.get( library_item_id )
         elif library_item_type == 'folder':
