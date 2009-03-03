@@ -243,7 +243,7 @@ div.unified-panel-body {
     left:0; 
     width:100%; 
     height:32px;
-    background: url(masthead_bg.png); 
+    background: #2C3143; 
     color:#fff;
     border-bottom: solid #444 1px;
     z-index: 15000;
