@@ -402,6 +402,17 @@ JobToOutputDatasetAssociation.table = Table( "job_to_output_dataset", metadata,
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
     
+JobExternalOutputMetadata.table = Table( "job_external_output_metadata", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
+    Column( "filename_in", String( 255 ) ),
+    Column( "filename_out", String( 255 ) ),
+    Column( "filename_results_code", String( 255 ) ),
+    Column( "filename_kwds", String( 255 ) ),
+    Column( "job_runner_external_pid", String( 255 ) ) )
+    
 Event.table = Table( "event", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -780,12 +791,18 @@ assign_mapper( context, JobToOutputDatasetAssociation, JobToOutputDatasetAssocia
 
 assign_mapper( context, JobParameter, JobParameter.table )
 
+assign_mapper( context, JobExternalOutputMetadata, JobExternalOutputMetadata.table,
+    properties=dict( job = relation( Job ), 
+                     history_dataset_association = relation( HistoryDatasetAssociation, lazy = False ),
+                     library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, lazy = False ) ) )
+
 assign_mapper( context, Job, Job.table, 
     properties=dict( galaxy_session=relation( GalaxySession ),
                      history=relation( History ),
                      parameters=relation( JobParameter, lazy=False ),
                      input_datasets=relation( JobToInputDatasetAssociation, lazy=False ),
-                     output_datasets=relation( JobToOutputDatasetAssociation, lazy=False ) ) )
+                     output_datasets=relation( JobToOutputDatasetAssociation, lazy=False ),
+                     external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ) ) )
 
 assign_mapper( context, Event, Event.table,
     properties=dict( history=relation( History ),

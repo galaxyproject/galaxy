@@ -254,8 +254,7 @@ class Maf( Alignment ):
                 tmp_file.write( "%s\t%s\n" % ( spec, "\t".join( chroms ) ) )
             
             if not chrom_file:
-                chrom_file = galaxy.model.MetadataFile( dataset = dataset, name = "species_chromosomes" )
-                chrom_file.flush()
+                chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file( dataset = dataset )
             tmp_file.seek( 0 )
             open( chrom_file.file_name, 'wb' ).write( tmp_file.read() )
             dataset.metadata.species_chromosomes = chrom_file
@@ -263,8 +262,7 @@ class Maf( Alignment ):
         
         index_file = dataset.metadata.maf_index
         if not index_file:
-            index_file = galaxy.model.MetadataFile( dataset = dataset, name="maf_index" )
-            index_file.flush()
+            index_file = dataset.metadata.spec['maf_index'].param.new_file( dataset = dataset )
         indexes.write( open( index_file.file_name, 'w' ) )
         dataset.metadata.maf_index = index_file
     

@@ -250,7 +250,7 @@ class RootController( BaseController ):
                     if name not in [ 'name', 'info', 'dbkey' ]:
                         if spec.get( 'default' ):
                             setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                data.datatype.set_meta( data )
+                data.set_meta()
                 data.datatype.after_edit( data )
                 trans.app.model.flush()
                 return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )

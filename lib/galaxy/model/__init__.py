@@ -141,6 +141,21 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
+class JobExternalOutputMetadata( object ):
+    def __init__( self, job = None, dataset = None ):
+        self.job = job
+        if isinstance( dataset, galaxy.model.HistoryDatasetAssociation ):
+            self.history_dataset_association = dataset
+        elif isinstance( dataset, galaxy.model.LibraryDatasetDatasetAssociation ):
+            self.library_dataset_dataset_association = dataset
+    @property
+    def dataset( self ):
+        if self.history_dataset_association:
+            return self.history_dataset_association
+        elif self.library_dataset_dataset_association:
+            return self.library_dataset_dataset_association
+        return None
+
 class Group( object ):
     def __init__( self, name = None ):
         self.name = name
