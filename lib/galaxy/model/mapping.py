@@ -320,7 +320,7 @@ LibraryItemInfoElement.table = Table( "library_item_info_element", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "contents", TEXT ),
+    Column( "contents", JSONType() ),
     Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
     Column( "library_item_info_template_element_id", Integer, ForeignKey( "library_item_info_template_element.id" ), index=True ) )
 
