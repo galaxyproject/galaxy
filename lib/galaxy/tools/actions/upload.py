@@ -83,11 +83,13 @@ class UploadToolAction( object ):
                 else:
                     INFO = "uploaded url"
                 url_paste = url_paste.replace( '\r', '' ).split( '\n' )
+                name_set_from_line = False #if we are setting the name from the line, it needs to be the line that creates that dataset
                 for line in url_paste:
                     line = line.rstrip( '\r\n' )
                     if line:
-                        if not NAME:
+                        if not NAME or name_set_from_line:
                             NAME = line
+                            name_set_from_line = True
                         try:
                             temp_name = sniff.stream_to_file( urllib.urlopen( line ), prefix='url_paste' )
                         except Exception, e:
