@@ -18,6 +18,7 @@ import tempfile
 from bisect import bisect
 
 def divide( intervals, out_path ):
+    manifest = {}
     current_file = None
     lastchrom = ""
     for line in intervals:
@@ -25,6 +26,7 @@ def divide( intervals, out_path ):
             chrom = line.chrom
         except AttributeError, e:
             continue
+        manifest[chrom] = max(manifest.get(chrom,0),line.end)
         if not lastchrom == chrom:
             if current_file:
                 current_file.flush()
@@ -34,6 +36,7 @@ def divide( intervals, out_path ):
         lastchrom = chrom
     current_file.flush()
     current_file.close()
+    return manifest
 
 if __name__ == "__main__":
     options, args = doc_optparse.parse( __doc__ )
@@ -56,5 +59,9 @@ if __name__ == "__main__":
                                      end_col=end_col_1,
                                      strand_col=strand_col_1,
                                      fix_strand=True )
-    divide( interval, out_path )
+    manifest = divide( interval, out_path )
+    manifest_file = open( os.path.join( out_path, "manifest.tab" ),"w" )
+    for key, value in manifest.items():
+        print >> manifest_file, "%s\t%s" % (key, value)
+    manifest_file.close()
     temp_file.close()

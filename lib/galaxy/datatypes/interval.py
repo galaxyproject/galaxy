@@ -298,10 +298,10 @@ class Interval( Tabular ):
             record_start = int(fields[dataset.metadata.startCol-1])
             record_end = int(fields[dataset.metadata.endCol-1])
             if record_start < end and record_end > start:
-                window.append( fields )  #Yes I did want to use a generator here, but it doesn't work downstream
+                window.append( (record_start, record_end) )  #Yes I did want to use a generator here, but it doesn't work downstream
         return window
 
-    def get_track_resolution( self, dataset, data, start, end):
+    def get_track_resolution( self, dataset, start, end):
         return None
     
 class Bed( Interval ):

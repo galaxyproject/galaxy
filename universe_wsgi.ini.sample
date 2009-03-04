@@ -40,6 +40,9 @@ tool_data_path = tool-data
 datatype_converters_config_file = datatype_converters_conf.xml
 datatype_converters_path = %(here)s/lib/galaxy/datatypes/converters
 
+# Datatype indexers
+datatype_indexers_path = %(here)s/lib/galaxy/datatypes/indexers
+
 # Session support (beaker)
 use_beaker_session = True
 session_type = file

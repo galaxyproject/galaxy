@@ -18,8 +18,23 @@ class TrackStoreManager( object ):
         return TrackStore( path=s.substitute(TemplateSubber(dataset)) )
 
 class TrackStore( object ):
+    MANIFEST_NAME = "manifest.tab"
+
     def __init__(self, path=""):
         self.path = path
+
+    def get_manifest( self ):
+        if not self.exists: raise self.DoesNotExist("TrackStore at %s does not exist." % self.path)
+        manifest_path = os.path.join( self.path, self.MANIFEST_NAME )
+        if os.path.exists( manifest_path ):
+            manifest = {}
+            for line in open( manifest_path ):
+                line = line.rstrip("\n\r")
+                fields = line.split("\t")
+                manifest[fields[0]] = fields[1:]
+            return manifest
+        else:
+            raise self.DoesNotExist( "Manifest for TrackStore object could not be found." )
 
     def get(self, chrom="chr1", resolution=None, **kwargs):
         if not self.exists: raise self.DoesNotExist("TrackStore at %s does not exist." % self.path)
