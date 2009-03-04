@@ -855,9 +855,10 @@ class Admin( BaseController ):
                 root_folder.flush()
                 library.root_folder = root_folder
                 library.flush()
-                msg = 'The new library named %s has been created' % library.name
+                msg = "The new library named '%s' has been created" % library.name
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='browse_libraries',
+                                                                  action='browse_library',
+                                                                  id=library.id,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
             return trans.fill_template( '/admin/library/new_library.mako', msg=msg, messagetype=messagetype )
@@ -868,13 +869,13 @@ class Admin( BaseController ):
                 new_description = util.restore_text( params.description )
                 if not new_name:
                     msg = 'Enter a valid name'
-                    return trans.fill_template( '/admin/library/library_info.mako', library=library, msg=msg, messagetype='error' )
+                    return trans.fill_template( '/admin/library/library_info.mako',
+                                                library=library,
+                                                restrict=params.get( 'restrict', False ),
+                                                render_templates=params.get( 'render_templates', False ),
+                                                msg=msg,
+                                                messagetype='error' )
                 else:
-                    if params.get( 'root_folder', False ):
-                        root_folder = library.root_folder
-                        root_folder.name = new_name
-                        root_folder.flush()
-                        root_folder.refresh()
                     library.name = new_name
                     library.description = new_description
                     library.flush()
@@ -885,7 +886,12 @@ class Admin( BaseController ):
                                                                       information=True,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
-            return trans.fill_template( '/admin/library/library_info.mako', library=library, msg=msg, messagetype=messagetype )
+            return trans.fill_template( '/admin/library/library_info.mako',
+                                        library=library,
+                                        restrict=params.get( 'restrict', False ),
+                                        render_templates=params.get( 'render_templates', False ),
+                                        msg=msg,
+                                        messagetype=messagetype )
         elif action == 'delete':
             # TODO: need to revamp the way we delete libraries, folders and contained LibraryDatasets.
             def delete_folder( library_folder ):
@@ -1022,7 +1028,7 @@ class Admin( BaseController ):
         else:
             # 'information' will be the default
             action = 'information'
-        folder = trans.app.model.LibraryFolder.get( id )
+        folder = trans.app.model.LibraryFolder.get( int( id ) )
         if not folder:
             msg = "Invalid folder specified, id: %s" % str( id )
             return trans.response.send_redirect( web.url_for( controller='admin',
@@ -1063,6 +1069,8 @@ class Admin( BaseController ):
                     return trans.fill_template( '/admin/library/folder_info.mako',
                                                 folder=folder,
                                                 library_id=library_id,
+                                                restrict=params.get( 'restrict', True ),
+                                                render_templates=params.get( 'render_templates', False ),
                                                 msg=msg,
                                                 messagetype='error' )
                 else:
@@ -1080,6 +1088,8 @@ class Admin( BaseController ):
             return trans.fill_template( '/admin/library/folder_info.mako',
                                         folder=folder,
                                         library_id=library_id,
+                                        restrict=params.get( 'restrict', True ),
+                                        render_templates=params.get( 'render_templates', False ),
                                         msg=msg,
                                         messagetype=messagetype )
         elif action == 'delete':
@@ -1159,6 +1169,8 @@ class Admin( BaseController ):
             return trans.fill_template( '/admin/library/library_dataset_info.mako',
                                         library_dataset=library_dataset,
                                         library_id=library_id,
+                                        restrict=params.get( 'restrict', True ),
+                                        render_templates=params.get( 'render_templates', False ),
                                         msg=msg,
                                         messagetype=messagetype )
         elif action == 'versions':
@@ -1326,6 +1338,8 @@ class Admin( BaseController ):
                                                 ldda=ldda,
                                                 library_id=library_id,
                                                 datatypes=ldatatypes,
+                                                restrict=params.get( 'restrict', True ),
+                                                render_templates=params.get( 'render_templates', False ),
                                                 msg=msg,
                                                 messagetype=messagetype )
                 elif params.get( 'save', False ):
@@ -1358,6 +1372,8 @@ class Admin( BaseController ):
                                                 ldda=ldda,
                                                 library_id=library_id,
                                                 datatypes=ldatatypes,
+                                                restrict=params.get( 'restrict', True ),
+                                                render_templates=params.get( 'render_templates', False ),
                                                 msg=msg,
                                                 messagetype=messagetype )
                 elif params.get( 'detect', False ):
@@ -1375,6 +1391,8 @@ class Admin( BaseController ):
                                                 ldda=ldda,
                                                 library_id=library_id,
                                                 datatypes=ldatatypes,
+                                                restrict=params.get( 'restrict', True ),
+                                                render_templates=params.get( 'render_templates', False ),
                                                 msg=msg,
                                                 messagetype=messagetype )
                 elif params.get( 'delete', False ):
@@ -1387,6 +1405,8 @@ class Admin( BaseController ):
                                                 ldda=ldda,
                                                 library_id=library_id,
                                                 datatypes=ldatatypes,
+                                                restrict=params.get( 'restrict', True ),
+                                                render_templates=params.get( 'render_templates', False ),
                                                 msg=msg,
                                                 messagetype=messagetype )
                 ldda.datatype.before_edit( ldda )
@@ -1401,6 +1421,8 @@ class Admin( BaseController ):
                                             ldda=ldda,
                                             library_id=library_id,
                                             datatypes=ldatatypes,
+                                            restrict=params.get( 'restrict', True ),
+                                            render_templates=params.get( 'render_templates', False ),
                                             msg=msg,
                                             messagetype=messagetype )
         elif ids:
@@ -1580,141 +1602,179 @@ class Admin( BaseController ):
                                             messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def library_item_info_template( self, trans, library_id, id=None, new_element_count=0,
-                                    folder_id=None, ldda_id=None, library_dataset_id=None, **kwd ):
+    def info_template( self, trans, library_id, id=None, num_fields=0, folder_id=None, ldda_id=None, library_dataset_id=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        new_element_count = int( new_element_count )
-        if folder_id:
-            obj_id = folder_id
-            response_action = 'folder'
-        elif ldda_id:
-            obj_id = ldda_id
-            response_action = 'library_dataset_dataset_association'
-        elif library_dataset_id:
-            obj_id = library_dataset_id
-            response_action = 'library_dataset'
+        if not num_fields:
+            num_fields = 0
         else:
-            obj_id = library_id
+            num_fields = int( num_fields )
+        if params.get( 'new_template', False ):
+            action = 'new_template'
+        else:
+            action = 'edit_template'
+        if folder_id:
+            library_item = trans.app.model.LibraryFolder.get( int( folder_id ) )
+            library_item_desc = 'folder'
+            response_action = 'folder'
+            response_id = folder_id
+        elif ldda_id:
+            library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( int( ldda_id ) )
+            library_item_desc = 'library dataset <-> dataset association'
+            response_action = 'library_dataset_dataset_association'
+            response_id = ldda_id
+        elif library_dataset_id:
+            library_item = trans.app.model.LibraryDataset.get( int( library_dataset_id ) )
+            library_item_desc = 'library dataset'
+            response_action = 'library_dataset_dataset_association'
+            response_id = library_item.library_dataset_dataset_association.id
+        else:
+            library_item = trans.app.model.Library.get( int( library_id ) )
+            library_item_desc = 'library'
             response_action = 'browse_library'
-        liit = None
-        if id:
+            response_id = library_id
+        if action == 'new_template':
+            if params.get( 'create_info_template_button', False ):
+                return trans.fill_template( '/admin/library/new_info_template.mako',
+                                            library_item_name=library_item.name,
+                                            library_item_desc=library_item_desc,
+                                            num_fields=num_fields,
+                                            library_id=library_id,
+                                            folder_id=folder_id,
+                                            ldda_id=ldda_id,
+                                            library_dataset_id=library_dataset_id,
+                                            msg=msg,
+                                            messagetype=messagetype )
+            elif params.get( 'new_info_template_button', False ):
+                # Make sure at least 1 template field is filled in
+                # TODO: Eventually we'll enhance templates to allow for required and optional fields.
+                proceed = False
+                for i in range( int( params.get( 'set_num_fields', 0 ) ) ):
+                    elem_name = params.get( 'new_element_name_%i' % i, None )
+                    elem_description = params.get( 'new_element_description_%i' % i, None )
+                    if elem_name or elem_description:
+                        proceed = True
+                        break
+                if not proceed:
+                    msg = "At least 1 of the fields must be completed."
+                    return trans.fill_template( '/admin/library/new_info_template.mako',
+                                                library_item_name=library_item.name,
+                                                library_item_desc=library_item_desc,
+                                                num_fields=num_fields,
+                                                library_id=library_id,
+                                                folder_id=folder_id,
+                                                ldda_id=ldda_id,
+                                                library_dataset_id=library_dataset_id,
+                                                msg=msg,
+                                                messagetype=messagetype )
+                # Create template then display edit screen
+                liit = trans.app.model.LibraryItemInfoTemplate()
+                liit.name = util.restore_text( params.get( 'name', '' ) )
+                liit.description = util.restore_text( params.get( 'description', '' ) )
+                liit.flush()
+                # Create template association
+                if folder_id:
+                    liit_assoc = trans.app.model.LibraryFolderInfoTemplateAssociation()
+                    liit_assoc.folder = trans.app.model.LibraryFolder.get( folder_id )
+                elif ldda_id:
+                    liit_assoc = trans.app.model.LibraryDatasetDatasetInfoTemplateAssociation()
+                    ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+                    liit_assoc.library_dataset_dataset_association = ldda
+                    # This response_action method requires a folder_id
+                    folder_id = ldda.library_dataset.folder.id
+                elif library_dataset_id:
+                    liit_assoc = trans.app.model.LibraryDatasetInfoTemplateAssociation()
+                    library_dataset = trans.app.model.LibraryDataset.get( library_dataset_id )
+                    liit_assoc.library_dataset = library_dataset
+                    # This response_action method requires a folder_id
+                    folder_id = library_dataset.folder.id
+                else:
+                    # We'll always be sent a library_id
+                    liit_assoc = trans.app.model.LibraryInfoTemplateAssociation()
+                    liit_assoc.library = trans.app.model.Library.get( library_id )
+                liit_assoc.library_item_info_template = liit
+                liit_assoc.flush()
+                # Create and add elements
+                for i in range( int( params.get( 'set_num_fields', 0 ) ) ):
+                    elem_name = params.get( 'new_element_name_%i' % i, None )
+                    elem_description = params.get( 'new_element_description_%i' % i, None )
+                    if elem_description and not elem_name:
+                        # If we have a description but no name, the description will be both
+                        # ( a name cannot be empty, but a description can )
+                        elem_name = elem_description
+                    if elem_name:
+                        # Skip any elements that have a missing name
+                        liit.add_element( name=elem_name, description=elem_description )
+                msg = "The new information template has been created."
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action=response_action,
+                                                                  id=response_id,
+                                                                  library_id=library_id,
+                                                                  folder_id=folder_id,
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='done' ) )
+            return trans.fill_template( '/admin/library/create_info_template.mako',
+                                        library_item=library_item,
+                                        library_id=library_id,
+                                        msg=msg,
+                                        messagetype=messagetype )
+        elif action == 'edit_template':
             try:
-                liit = trans.app.model.LibraryItemInfoTemplate.get( id )
+                liit = trans.app.model.LibraryItemInfoTemplate.get( int( id ) )
             except:
                 msg = "Invalid library info template specified, id: %s" % str( id )
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action=response_action,
-                                                                  id=obj_id,
+                                                                  id=response_id,
                                                                   library_id=library_id,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='error' ) )
-        if params.get( 'liit_create_button', False ):
-            # Create template then display edit screen
-            liit = trans.app.model.LibraryItemInfoTemplate()
-            liit.name = util.restore_text( params.get( 'name', '' ) )
-            liit.description = util.restore_text( params.get( 'description', '' ) )
-            liit.flush()
-            # Create template association
-            if folder_id:
-                liit_assoc = trans.app.model.LibraryFolderInfoTemplateAssociation()
-                liit_assoc.folder = trans.app.model.LibraryFolder.get( folder_id )
-            elif ldda_id:
-                liit_assoc = trans.app.model.LibraryDatasetDatasetInfoTemplateAssociation()
-                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
-                liit_assoc.library_dataset_dataset_association = ldda
-                # This response_action method requires a folder_id
-                folder_id = ldda.library_dataset.folder.id
-            elif library_dataset_id:
-                liit_assoc = trans.app.model.LibraryDatasetInfoTemplateAssociation()
-                liit_assoc.library_dataset = trans.app.model.LibraryDataset.get( library_dataset_id )
-            else:
-                # We'll always be sent a library_id
-                liit_assoc = trans.app.model.LibraryInfoTemplateAssociation()
-                liit_assoc.library = trans.app.model.Library.get( library_id )
-            liit_assoc.library_item_info_template = liit
-            liit_assoc.flush()
-            # Create and add elements
-            for i in range( int( params.get( 'set_element_count', 0 ) ) ):
-                elem_name = params.get( 'new_element_name_%i' % i, None )
-                elem_description = params.get( 'new_element_description_%i' % i, None )
-                if elem_description and not elem_name:
-                    # If we have a description but no name, the description will be both
-                    # ( a name cannot be empty, but a description can )
-                    elem_name = elem_description
-                if elem_name:
-                    # Skip any elements that have a missing name
-                    liit.add_element( name=elem_name, description=elem_description )
-            msg = "The new information template has been created."
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action=response_action,
-                                                              id=obj_id,
-                                                              library_id=library_id,
-                                                              folder_id=folder_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='done' ) )
-        elif params.get( 'liit_edit_button', False ):
-            # Save changes to existing attributes, only set name if nonempty/nonNone is passed, but always set description
-            name = params.get( 'name', None )
-            if name:
-                liit.name = name
-            liit.description = params.get( 'description', '' )
-            liit.flush()
-            # Save changes to exisiting elements
-            for elem_id in params.get( 'element_ids', [] ):
-                liit_element = trans.app.model.LibraryItemInfoTemplateElement.get( elem_id )
-                name = params.get( 'element_name_%s' % elem_id, None )
+            if params.get( 'edit_info_template_button', False ):
+                # Save changes to existing attributes, only set name if nonempty/nonNone is passed, but always set description
+                name = params.get( 'name', None )
                 if name:
-                    liit_element.name = name
-                liit_element.description = params.get( 'element_description_%s' % elem_id, None )
-                liit_element.flush()
-            # Add new elements
-            for i in range( int( params.get( 'set_element_count', 0 ) ) ):
-                elem_name = params.get( 'new_element_name_%i' % i, None )
-                elem_description = params.get( 'new_element_description_%i' % i, None )
-                # Skip any elements that have a missing name and description
-                if not elem_name:
-                     # If we have a description but no name, the description will be both
-                     # ( a name cannot be empty, but a description can )
-                    elem_name = elem_description
-                if elem_name:
-                    liit.add_element( name=elem_name, description=elem_description )
-            liit.refresh()
-            msg = 'Information template %s has been updated' % liit.name
-        if folder_id:
-            library_item_name = trans.app.model.LibraryFolder.get( folder_id ).name
-            library_item_desc = 'folder'
-        elif library_dataset_id:
-            ld = trans.app.model.LibraryDataset.get( library_dataset_id )
-            library_item_name = ld.name
-            library_item_desc = 'library dataset'
-        elif ldda_id:
-            library_item_name = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ).name
-            library_item_desc = 'library dataset <-> dataset association'
-        else:
-            # We'll always be sent a library_id
-            library_item_name = trans.app.model.Library.get( library_id ).name
-            library_item_desc = 'library'
-        return trans.fill_template( "/admin/library/item_info_template.mako",
-                                    liit=liit,
-                                    new_element_count=new_element_count,
-                                    library_id=library_id,
-                                    library_dataset_id=library_dataset_id,
-                                    ldda_id=ldda_id,
-                                    folder_id=folder_id,
-                                    library_item_name=library_item_name,
-                                    library_item_desc=library_item_desc,
-                                    msg=msg,
-                                    messagetype=messagetype )
+                    liit.name = name
+                liit.description = params.get( 'description', '' )
+                liit.flush()
+                # Save changes to exisiting elements
+                for elem_id in params.get( 'element_ids', [] ):
+                    liit_element = trans.app.model.LibraryItemInfoTemplateElement.get( elem_id )
+                    name = params.get( 'element_name_%s' % elem_id, None )
+                    if name:
+                        liit_element.name = name
+                    liit_element.description = params.get( 'element_description_%s' % elem_id, None )
+                    liit_element.flush()
+                # Add new elements
+                for i in range( int( params.get( 'set_num_fields', 0 ) ) ):
+                    elem_name = params.get( 'new_element_name_%i' % i, None )
+                    elem_description = params.get( 'new_element_description_%i' % i, None )
+                    # Skip any elements that have a missing name and description
+                    if not elem_name:
+                         # If we have a description but no name, the description will be both
+                         # ( a name cannot be empty, but a description can )
+                        elem_name = elem_description
+                    if elem_name:
+                        liit.add_element( name=elem_name, description=elem_description )
+                liit.refresh()
+                msg = 'Information template %s has been updated' % liit.name
+            return trans.fill_template( "/admin/library/edit_info_template.mako",
+                                        liit=liit,
+                                        num_fields=num_fields,
+                                        library_id=library_id,
+                                        library_dataset_id=library_dataset_id,
+                                        ldda_id=ldda_id,
+                                        folder_id=folder_id,
+                                        library_item_name=library_item.name,
+                                        library_item_desc=library_item_desc,
+                                        msg=msg,
+                                        messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def library_item_info( self, trans, library_id, do_action, id=None,
-                           library_item_id=None, library_item_type=None, **kwd ):
+    def library_item_info( self, trans, library_id, id=None, library_item_id=None, library_item_type=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        response_action = library_item_type
         folder_id = None
         if id:
             item_info = trans.app.model.LibraryItemInfo.get( id )
@@ -1722,7 +1782,6 @@ class Admin( BaseController ):
             item_info = None
         if library_item_type == 'library':
             library_item = trans.app.model.Library.get( library_item_id )
-            response_action = 'browse_library'
         elif library_item_type == 'library_dataset':
             library_item = trans.app.model.LibraryDataset.get( library_item_id )
         elif library_item_type == 'folder':
@@ -1734,21 +1793,36 @@ class Admin( BaseController ):
         else:
             library_item_type == None
             library_item = None
-        if not item_info and not library_item_type:
-            msg = "Unable to perform requested action ( %s )." % do_action
+        if not library_item:
+            msg = "Invalid library item type ( %s ) specified, id ( %s )" % ( str( library_item_type ), str( library_item_id ) )
             return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action=response_action,
-                                                              id=library_item_id,
-                                                              library_id=library_id,
-                                                              folder_id=folder_id,
+                                                              action='browse_library',
+                                                              id=library_id,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
-        if do_action == 'new_info':
+        if params.get( 'new_info', False ):
             if library_item:
                 if params.get( 'create_new_info_button', False ):
-                    user = trans.get_user()
                     library_item_info_template_id = params.get( 'library_item_info_template_id', None )
                     library_item_info_template = trans.app.model.LibraryItemInfoTemplate.get( int( library_item_info_template_id ) )
+                    # Make sure at least 1 template field is filled in
+                    # TODO: Eventually we'll enhance templates to allow for required and optional fields.
+                    proceed = False
+                    for template_element in library_item_info_template.elements:
+                        if params.get( "info_element_%s_%s" % ( library_item_info_template.id, template_element.id ), None ):
+                            proceed = True
+                            break
+                    if not proceed:
+                        msg = "At least 1 of the fields must be completed."
+                        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                          action=library_item_type,
+                                                                          id=library_item.id,
+                                                                          library_id=library_id,
+                                                                          folder_id=folder_id,
+                                                                          information=True,
+                                                                          msg=util.sanitize_text( msg ),
+                                                                          messagetype='error' ) )
+                    user = trans.get_user()
                     library_item_info = trans.app.model.LibraryItemInfo()
                     library_item_info.library_item_info_template = library_item_info_template
                     library_item_info.user = user
@@ -1767,18 +1841,19 @@ class Admin( BaseController ):
                             break
                     if info_association_class:
                         library_item_info_association = info_association_class()
-                        library_item_info_association.set_library_item( library_item )
+                        library_item_info_association.set_library_item( library_item, trans.user )
                         library_item_info_association.library_item_info = library_item_info
                         library_item_info_association.user = user
                         library_item_info_association.flush()
                     else:
                         raise 'Invalid class (%s) specified for library_item (%s)' % ( library_item.__class__, library_item.__class__.__name__ )
-                    msg = 'The information has been saved, you can add more information if necessary.'
+                    msg = 'The information has been saved'
                     return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                      action=response_action,
+                                                                      action=library_item_type,
                                                                       id=library_item.id,
                                                                       library_id=library_id,
                                                                       folder_id=folder_id,
+                                                                      information=True,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
                 return trans.fill_template( "/admin/library/new_info.mako",

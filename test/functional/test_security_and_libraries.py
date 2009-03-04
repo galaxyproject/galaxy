@@ -446,14 +446,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Rename the library
         rename = "Library One's been Renamed"
         redescription = "This is Library One's Re-described"
-        self.rename_library( str( library_one.id ), library_one.name, name=rename, description=redescription, root_folder='on' )
+        self.rename_library( str( library_one.id ), library_one.name, name=rename, description=redescription )
         self.home()
         self.visit_page( 'admin/browse_libraries' )
         self.check_page_for_string( rename )
         self.check_page_for_string( redescription )
         # Reset the library back to the original name and description
         library_one.refresh()
-        self.rename_library( str( library_one.id ), library_one.name, name=name, description=description, root_folder='on' )
+        self.rename_library( str( library_one.id ), library_one.name, name=name, description=description )
         library_one.refresh()
         # Rename the root folder
         folder = library_one.root_folder
@@ -588,7 +588,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( '2.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 2.bed' )
-        self.check_page_for_string( 'Other information about library dataset <-> dataset association 2.bed' )
         self.home()
         # Test importing the restricted dataset into a history, can't use the 
         # ~/admin/libraries form as twill barfs on it so we'll simulate the form submission
@@ -673,7 +672,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( '3.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 3.bed' )
-        self.check_page_for_string( 'Other information about library dataset <-> dataset association 3.bed' )
         # Test importing a library dataset into a history
         self.home()
         self.visit_url( '%s/library/datasets?library_id=%s&do_action=add&ldda_ids=%d' % ( self.url, str( library_one.id ), ldda_three.id ) )

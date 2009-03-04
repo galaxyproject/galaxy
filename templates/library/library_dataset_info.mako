@@ -20,6 +20,12 @@
     ${render_msg( msg, messagetype )}
 %endif
 
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library_dataset ):
+    %if render_templates not in [ 'False', False ]:
+        ${render_available_templates( library_dataset, library_id, restrict=restrict )}
+    %endif
+%endif
+
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>
@@ -62,8 +68,4 @@
     </div>
 %endif
 
-${render_existing_library_item_info( library_dataset )}
-        
-%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library_dataset ):
-    ${render_available_templates( library_dataset, library_id )}
-%endif
+${render_existing_library_item_info( library_dataset, library_id )}

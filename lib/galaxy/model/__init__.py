@@ -657,7 +657,7 @@ class Library( object ):
         self.name = name or "Unnamed library"
         self.description = description
         self.root_folder = root_folder
-    def get_library_item_info_templates( self, template_list = [] ):
+    def get_library_item_info_templates( self, template_list=[], restrict=False ):
         if self.library_info_template_associations:
             template_list.extend( [ lita.library_item_info_template for lita in self.library_info_template_associations if lita.library_item_info_template not in template_list ] )
         return template_list
@@ -679,12 +679,13 @@ class LibraryFolder( object ):
         folder.parent_id = self.id
         folder.order_id = self.item_count
         self.item_count += 1
-    def get_library_item_info_templates( self, template_list = [] ):
+    def get_library_item_info_templates( self, template_list=[], restrict=False ):
+        # If restrict is True, we'll return only those templates directly associated with this Folder
         if self.library_folder_info_template_associations:
             template_list.extend( [ lfita.library_item_info_template for lfita in self.library_folder_info_template_associations if lfita.library_item_info_template not in template_list ] )
-        if self.parent:
+        if restrict not in [ 'True', True ] and self.parent:
             self.parent.get_library_item_info_templates( template_list )
-        elif self.library_root:
+        elif restrict not in [ 'True', True, 'folder' ] and self.library_root:
             for library_root in self.library_root:
                 library_root.get_library_item_info_templates( template_list )
         return template_list
@@ -727,10 +728,12 @@ class LibraryDataset( object ):
     name = property( get_name, set_name )
     def display_name( self ):
         self.library_dataset_dataset_association.display_name()
-    def get_library_item_info_templates( self, template_list=[] ):
+    def get_library_item_info_templates( self, template_list=[], restrict=False ):
+        # If restrict is True, we'll return only those templates directly associated with this LibraryDataset
         if self.library_dataset_info_template_associations:
             template_list.extend( [ ldita.library_item_info_template for ldita in self.library_dataset_info_template_associations if ldita.library_item_info_template not in template_list ] )
-        self.folder.get_library_item_info_templates( template_list )
+        if restrict not in [ 'True', True ]:
+            self.folder.get_library_item_info_templates( template_list, restrict )
         return template_list
     
 class LibraryDatasetDatasetAssociation( DatasetInstance ):
@@ -776,20 +779,23 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
         ldda.flush()
-        ldda.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
+         # Need to set after flushed, as MetadataFiles require dataset.id
+        ldda.metadata = self.metadata
         if copy_children:
             for child in self.children:
                 child_copy = child.copy( copy_children = copy_children, parent_id = ldda.id )
         if not self.datatype.copy_safe_peek:
-            ldda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            ldda.set_peek()
         ldda.flush()
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return
-    def get_library_item_info_templates( self, template_list = [] ):
+    def get_library_item_info_templates( self, template_list=[], restrict=False ):
+        # If restrict is True, we'll return only those templates directly associated with this LibraryDatasetDatasetAssociation
         if self.library_dataset_dataset_info_template_associations:
             template_list.extend( [ lddita.library_item_info_template for lddita in self.library_dataset_dataset_info_template_associations if lddita.library_item_info_template not in template_list ] )
-        self.library_dataset.get_library_item_info_templates( template_list )
+        self.library_dataset.get_library_item_info_templates( template_list, restrict )
         return template_list
 
 class LibraryInfoTemplateAssociation( object ):
@@ -823,30 +829,34 @@ class LibraryItemInfoTemplateElement( object ):
     pass
 
 class LibraryInfoAssociation( object ):
-    def set_library_item( self, library_item ):
+    def set_library_item( self, library_item, user ):
         if isinstance( library_item, Library ):
             self.library = library_item
+            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryFolderInfoAssociation( object ):
-    def set_library_item( self, library_item ):
+    def set_library_item( self, library_item, user ):
         if isinstance( library_item, LibraryFolder ):
             self.folder = library_item
+            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryDatasetInfoAssociation( object ):
-    def set_library_item( self, library_item ):
+    def set_library_item( self, library_item, user ):
         if isinstance( library_item, LibraryDataset ):
             self.library_dataset = library_item
+            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryDatasetDatasetInfoAssociation( object ):
-    def set_library_item( self, library_item ):
+    def set_library_item( self, library_item, user ):
         if isinstance( library_item, LibraryDatasetDatasetAssociation ):
             self.library_dataset_dataset_association = library_item
+            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 

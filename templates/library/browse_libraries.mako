@@ -10,7 +10,7 @@
 %endif
 
 %if not libraries:
-    No libraries contain datasets that you are allowed to access
+    You are not authorized to access any libraries
 %else:
     <table class="grid">
         <thead>

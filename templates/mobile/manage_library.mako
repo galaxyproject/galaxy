@@ -28,13 +28,6 @@
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                    <label>Also change the root folder's name:</label>
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="checkbox" name="root_folder"/>
-                    </div>
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="hidden" name="id" value="${library.id}"/>
                     </div>
@@ -57,7 +50,7 @@
             </div>
         </div>
         <div class="toolForm">
-            ${render_existing_library_item_info( library )}
+            ${render_existing_library_item_info( library, library.id )}
         </div>
     </div>
 %endif
@@ -69,5 +62,5 @@
 %endif
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
-    ${render_available_templates( library, library.id )}
+    ${render_available_templates( library, library.id, restrict=restrict )}
 %endif

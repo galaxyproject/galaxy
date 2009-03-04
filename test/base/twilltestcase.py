@@ -820,7 +820,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "2", description ) # form field 1 is the field named name...
         tc.submit( "create_library_button" )
         self.home()
-    def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described', root_folder='' ):
+    def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described' ):
         """Rename a library"""
         self.home()
         self.visit_url( "%s/admin/library?manage=True&id=%s" % ( self.url, library_id ) )
@@ -828,8 +828,6 @@ class TwillTestCase( unittest.TestCase ):
         # Since twill barfs on the form submisson, we ar forced to simulate it
         url = "%s/admin/library?manage=True&id=%s&rename_library_button=Save&description=%s&name=%s" % \
         ( self.url, library_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
-        if root_folder:
-            url += "&root_folder=on"
         self.home()
         self.visit_url( url )
         check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )

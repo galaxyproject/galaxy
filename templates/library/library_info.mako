@@ -3,6 +3,17 @@
 <%namespace file="/library/common.mako" import="render_available_templates" />
 <%namespace file="/library/common.mako" import="render_existing_library_item_info" />
 
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
+    <% available_templates = library.get_library_item_info_templates( template_list=[], restrict=False ) %>
+    %if available_templates:
+        <b>Add information to this library using available templates</b>
+        <a id="library-${library.id}--popup" class="popup-arrow" style="display: none;">&#9660;</a>
+        <div popupmenu="library-${library.id}--popup">
+            <a class="action-button" href="${h.url_for( controller='library', action='library', id=library.id, information=True, restrict=False, render_templates=True )}">Show templates</a>
+            <a class="action-button" href="${h.url_for( controller='library', action='library', id=library.id, information=True, restrict=False, render_templates=False )}">Hide templates</a>
+        </div>
+    %endif
+%endif
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
@@ -12,6 +23,10 @@
 
 %if msg:
     ${render_msg( msg, messagetype )}
+%endif
+
+%if render_templates not in [ 'False', False ]:
+    ${render_available_templates( library, library.id, restrict=False )}
 %endif
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
@@ -30,13 +45,6 @@
                     <label>Description:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="description" value="${library.description}" size="40"/>
-                    </div>
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
-                    <label>Also change the root folder's name:</label>
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="checkbox" name="root_folder"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
@@ -66,6 +74,4 @@
 %endif
 
 <% library.refresh() %>
-${render_existing_library_item_info( library )}
-
-${render_available_templates( library, library.id )}
+${render_existing_library_item_info( library, library.id )}

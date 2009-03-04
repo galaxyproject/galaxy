@@ -20,6 +20,10 @@
     ${render_msg( msg, messagetype )}
 %endif
 
+%if render_templates not in [ 'False', False ]:
+    ${render_available_templates( library_dataset, library_id, restrict=restrict )}
+%endif
+
 <div class="toolForm">
     <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>
     <div class="toolFormBody">
@@ -46,6 +50,4 @@
     </div>
 </div>
 
-${render_existing_library_item_info( library_dataset )}
-
-${render_available_templates( library_dataset, library_id )}
+${render_existing_library_item_info( library_dataset, library_id )}

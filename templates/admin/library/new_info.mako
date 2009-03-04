@@ -14,4 +14,4 @@
     #history = trans.get_history()
 %>
 
-${render_available_templates( library_item, library_id )}
+${render_available_templates( library_item, library_id, restrict=restrict )}
