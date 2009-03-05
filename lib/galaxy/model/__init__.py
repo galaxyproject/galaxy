@@ -141,6 +141,21 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
+class JobExternalOutputMetadata( object ):
+    def __init__( self, job = None, dataset = None ):
+        self.job = job
+        if isinstance( dataset, galaxy.model.HistoryDatasetAssociation ):
+            self.history_dataset_association = dataset
+        elif isinstance( dataset, galaxy.model.LibraryDatasetDatasetAssociation ):
+            self.library_dataset_dataset_association = dataset
+    @property
+    def dataset( self ):
+        if self.history_dataset_association:
+            return self.history_dataset_association
+        elif self.library_dataset_dataset_association:
+            return self.library_dataset_dataset_association
+        return None
+
 class Group( object ):
     def __init__( self, name = None ):
         self.name = name
@@ -162,7 +177,6 @@ class History( object ):
         self.user = user
         self.datasets = []
         self.galaxy_sessions = []
-        
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures 
         # better integrity
@@ -174,16 +188,14 @@ class History( object ):
                 if dataset.hid > last_hid:
                     last_hid = dataset.hid
             return last_hid + 1
-
     def add_galaxy_session( self, galaxy_session, association=None ):
         if association is None:
             self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
         else:
             self.galaxy_sessions.append( association )
-
     def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
         if isinstance( dataset, Dataset ):
-            dataset = HistoryDatasetAssociation( dataset = dataset )
+            dataset = HistoryDatasetAssociation( dataset = dataset, copied_from = dataset )
             dataset.flush()
         elif not isinstance( dataset, HistoryDatasetAssociation ):
             raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history ( you tried to add %s )." % str( dataset )
@@ -198,31 +210,26 @@ class History( object ):
         else:
             if set_hid:
                 dataset.hid = self._next_hid()
+        dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
         self.datasets.append( dataset )
-
-    def copy(self):
-        des = History()
+    def copy( self, target_user = None ):
+        if not target_user:
+            target_user = self.user
+        des = History( user = target_user )
         des.flush()
         des.name = self.name
-        des.user_id = self.user_id
         for data in self.datasets:
-            new_data = data.copy( copy_children = True )
-            des.add_dataset( new_data )
+            new_data = data.copy( copy_children = True, target_history = des )
+            des.add_dataset( new_data, set_hid = False )
             new_data.flush()
         des.hid_counter = self.hid_counter
         des.flush()
         return des
-
-# class Query( object ):
-#     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
-#         self.name = name or "Unnamed query"
-#         self.state = state
-#         self.tool_parameters = tool_parameters
-#         # Relationships
-#         self.history = history
-#         self.datasets = []
+    @property
+    def activatable_datasets( self ):
+        return [ hda for hda in self.datasets if not hda.dataset.purged ] #this needs to be a list
 
 class UserRoleAssociation( object ):
     def __init__( self, user, role ):
@@ -341,7 +348,6 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
-        
     def get_file_name( self ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
@@ -364,15 +370,12 @@ class Dataset( object ):
             filename = self.external_filename
         # Make filename absolute
         return os.path.abspath( filename )
-            
     def set_file_name ( self, filename ):
         if not filename:
             self.external_filename = None
         else:
             self.external_filename = filename
-        
     file_name = property( get_file_name, set_file_name )
-    
     @property
     def extra_files_path( self ):
         if self._extra_files_path: 
@@ -384,7 +387,6 @@ class Dataset( object ):
                 path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
         # Make path absolute
         return os.path.abspath( path )
-    
     def get_size( self ):
         """Returns the size of the data on disk"""
         if self.file_size:
@@ -406,7 +408,6 @@ class Dataset( object ):
         return self.get_size() > 0
     def mark_deleted( self, include_children=True ):
         self.deleted = True
-
     # FIXME: sqlalchemy will replace this
     def _delete(self):
         """Remove the file that corresponds to this data"""
@@ -436,7 +437,7 @@ class DatasetInstance( object ):
         self.visible = visible
         # Relationships
         if not dataset and create_dataset:
-            dataset = Dataset()
+            dataset = Dataset( state=Dataset.states.NEW )
             dataset.flush()
         self.dataset = dataset
         self.parent_id = parent_id
@@ -474,7 +475,6 @@ class DatasetInstance( object ):
     def get_dbkey( self ):
         dbkey = self.metadata.dbkey
         if not isinstance(dbkey, list): dbkey = [dbkey]
-        #if dbkey in [["?"], [None], []]: dbkey = [self.old_dbkey]
         if dbkey in [[None], []]: return "?"
         return dbkey[0]
     def set_dbkey( self, value ):
@@ -483,10 +483,6 @@ class DatasetInstance( object ):
                 self.metadata.dbkey = [value]
             else: 
                 self.metadata.dbkey = value
-        #if isinstance(value, list): 
-        #    self.old_dbkey = value[0]
-        #else:
-        #    self.old_dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
@@ -567,7 +563,6 @@ class DatasetInstance( object ):
         if self.purged:
             return False
         return True
-    
     @property
     def source_library_dataset( self ):
         def get_source( dataset ):
@@ -599,7 +594,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
     def copy( self, copy_children = False, parent_id = None, target_history = None ):
-        des = HistoryDatasetAssociation( hid=self.hid, 
+        hda = HistoryDatasetAssociation( hid=self.hid, 
                                          name=self.name, 
                                          info=self.info, 
                                          blurb=self.blurb, 
@@ -612,109 +607,49 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                          parent_id=parent_id, 
                                          copied_from_history_dataset_association=self,
                                          history = target_history )
-        des.flush()
-        des.set_size()
-        des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
+        hda.flush()
+        hda.set_size()
+        hda.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         if copy_children:
             for child in self.children:
-                child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
+                child_copy = child.copy( copy_children = copy_children, parent_id = hda.id )
         if not self.datatype.copy_safe_peek:
-            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        des.flush()
-        return des
-        
-    def to_library_dataset_dataset_association( self, parent_id = None, target_folder = None ):
-        des = LibraryDatasetDatasetAssociation( name=self.name, 
-                                                info=self.info, 
-                                                blurb=self.blurb, 
-                                                peek=self.peek, 
-                                                extension=self.extension, 
-                                                dbkey=self.dbkey, 
-                                                dataset = self.dataset, 
-                                                visible=self.visible, 
-                                                deleted=self.deleted, 
-                                                parent_id=parent_id,
-                                                copied_from_history_dataset_association = self,
-                                                #folder = target_folder
-                                              )
-        des.flush()
-        des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
-        if target_folder:
-            new_data = LibraryDataset( library_dataset_dataset_association = des )
-            target_folder.add_dataset( new_data )
-            new_data.flush()
+            hda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        hda.flush()
+        return hda
+    def to_library_dataset_dataset_association( self, target_folder, parent_id=None ):
+        # Create e new LibraryDataset
+        library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
+        library_dataset.flush()
+        ldda = LibraryDatasetDatasetAssociation( name=self.name, 
+                                                 info=self.info,
+                                                 blurb=self.blurb, 
+                                                 peek=self.peek, 
+                                                 extension=self.extension, 
+                                                 dbkey=self.dbkey, 
+                                                 dataset=self.dataset, 
+                                                 library_dataset=library_dataset,
+                                                 visible=self.visible, 
+                                                 deleted=self.deleted, 
+                                                 parent_id=parent_id,
+                                                 copied_from_history_dataset_association=self )
+        ldda.flush()
+        # Must set metadata after flushed, as MetadataFiles require dataset.id
+        ldda.metadata = self.metadata
+        library_dataset.library_dataset_dataset_association_id = ldda.id
+        library_dataset.flush()
+        target_folder.add_library_dataset( library_dataset, genome_build=ldda.dbkey )
         for child in self.children:
-            child_copy = child.to_library_dataset_dataset_association( parent_id = des.id )
+            child_copy = child.to_library_dataset_dataset_association( target_folder=target_folder, parent_id=ldda.id )
         if not self.datatype.copy_safe_peek:
-            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        des.flush()
-        return des
-        
+            ldda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        ldda.flush()
+        return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         #metadata_safe = True means to only clear when assoc.metadata_safe == False
         for assoc in self.implicitly_converted_datasets:
             if not metadata_safe or not assoc.metadata_safe:
                 assoc.clear( purge = purge )
-
-class History( object ):
-    def __init__( self, id=None, name=None, user=None ):
-        self.id = id
-        self.name = name or "Unnamed history"
-        self.deleted = False
-        self.purged = False
-        self.genome_build = None
-        # Relationships
-        self.user = user
-        self.datasets = []
-        self.galaxy_sessions = []
-    def _next_hid( self ):
-        # TODO: override this with something in the database that ensures 
-        # better integrity
-        if len( self.datasets ) == 0:
-            return 1
-        else:
-            last_hid = 0
-            for dataset in self.datasets:
-                if dataset.hid > last_hid:
-                    last_hid = dataset.hid
-            return last_hid + 1
-    def add_galaxy_session( self, galaxy_session, association=None ):
-        if association is None:
-            self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
-        else:
-            self.galaxy_sessions.append( association )
-    def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
-        if isinstance( dataset, Dataset ):
-            dataset = HistoryDatasetAssociation( dataset = dataset, copied_from = dataset )
-            dataset.flush()
-        elif not isinstance( dataset, HistoryDatasetAssociation ):
-            raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history."
-        if parent_id:
-            for data in self.datasets:
-                if data.id == parent_id:
-                    dataset.hid = data.hid
-                    break
-            else:
-                if set_hid: dataset.hid = self._next_hid()
-        else:
-            if set_hid: dataset.hid = self._next_hid()
-        dataset.history = self
-        if genome_build not in [None, '?']:
-            self.genome_build = genome_build
-        self.datasets.append( dataset )
-    def copy( self, target_user = None ):
-        if not target_user:
-            target_user = self.user
-        des = History( user = target_user )
-        des.flush()
-        des.name = self.name
-        for data in self.datasets:
-            new_data = data.copy( copy_children = True, target_history = des )
-            des.add_dataset( new_data, set_hid = False )
-            new_data.flush()
-        des.hid_counter = self.hid_counter
-        des.flush()
-        return des
 
 class Library( object ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
@@ -722,23 +657,21 @@ class Library( object ):
         self.name = name or "Unnamed library"
         self.description = description
         self.root_folder = root_folder
-
-    def get_library_item_info_templates( self, template_list = [] ):
+    def get_library_item_info_templates( self, template_list=[], restrict=False ):
         if self.library_info_template_associations:
             template_list.extend( [ lita.library_item_info_template for lita in self.library_info_template_associations if lita.library_item_info_template not in template_list ] )
         return template_list
 
 class LibraryFolder( object ):
-    def __init__( self, name = None, description = None, item_count = 0, order_id = None ):
+    def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
         self.item_count = item_count
         self.order_id = order_id
         self.genome_build = None
-    def add_dataset( self, dataset, genome_build=None ):
-        #this should create a LibraryDataset if ldda is passed
-        dataset.folder_id = self.id
-        dataset.order_id = self.item_count
+    def add_library_dataset( self, library_dataset, genome_build=None ):
+        library_dataset.folder_id = self.id
+        library_dataset.order_id = self.item_count
         self.item_count += 1
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
@@ -746,140 +679,123 @@ class LibraryFolder( object ):
         folder.parent_id = self.id
         folder.order_id = self.item_count
         self.item_count += 1
-
-    def get_library_item_info_templates( self, template_list = [] ):
+    def get_library_item_info_templates( self, template_list=[], restrict=False ):
+        # If restrict is True, we'll return only those templates directly associated with this Folder
         if self.library_folder_info_template_associations:
             template_list.extend( [ lfita.library_item_info_template for lfita in self.library_folder_info_template_associations if lfita.library_item_info_template not in template_list ] )
-        if self.parent:
+        if restrict not in [ 'True', True ] and self.parent:
             self.parent.get_library_item_info_templates( template_list )
-        elif self.library_root:
+        elif restrict not in [ 'True', True, 'folder' ] and self.library_root:
             for library_root in self.library_root:
                 library_root.get_library_item_info_templates( template_list )
         return template_list
-
     @property
     def active_components( self ):
         return list( self.active_folders ) + list( self.active_datasets )
 
 class LibraryDataset( object ):
-    #This class acts as a proxy to the currently selected LDDA
-    def __init__( self, 
-                  folder = None, 
-                  order_id = None, 
-                  name = None,
-                  info = None,
-                  library_dataset_dataset_association = None,
-                  create_dataset=False,
-                  **kwd
-                  ):
+    # This class acts as a proxy to the currently selected LDDA
+    def __init__( self, folder=None, order_id=None, name=None, info=None, library_dataset_dataset_association=None, **kwd ):
         self.folder = folder
         self.order_id = order_id
         self.name = name
         self.info = info
-        if create_dataset and not library_dataset_dataset_association:
-            #self.flush() #we need to flush self, so that the ldda will have a ld id to point to
-            library_dataset_dataset_association = LibraryDatasetDatasetAssociation( name=name, info=info, create_dataset=create_dataset, **kwd )
         self.library_dataset_dataset_association = library_dataset_dataset_association
-    
-    def set_library_dataset_dataset_association( self, dataset ):
-        self.library_dataset_dataset_association = dataset
-        dataset.library_dataset = self
-        dataset.flush()
+    def set_library_dataset_dataset_association( self, ldda ):
+        self.library_dataset_dataset_association = ldda
+        ldda.library_dataset = self
+        ldda.flush()
         self.flush()
-    
     def get_info( self ):
-        # Use info from ldfa
-        return self.library_dataset_dataset_association.info
+        if self.library_dataset_dataset_association:
+            return self.library_dataset_dataset_association.info
+        elif self._info:
+            return self._info
+        else:
+            return 'no info'
     def set_info( self, info ):
         self._info = info
     info = property( get_info, set_info )
-    
     def get_name( self ):
-        # Use info from ldda
-        return self.library_dataset_dataset_association.name
+        if self.library_dataset_dataset_association:
+            return self.library_dataset_dataset_association.name
+        elif self._name:
+            return self._name
+        else:
+            return 'Unnamed dataset'
     def set_name( self, name ):
         self._name = name
     name = property( get_name, set_name )
-    
     def display_name( self ):
-        # Use name from ldda is versioned info is not set
-        if self._name:
-            return self.datatype.display_name( self )
         self.library_dataset_dataset_association.display_name()
-    
-    def __getattr__( self, name ):
-        return getattr( self.library_dataset_dataset_association, name ) #Any nonexistant attributes will be pulled from the ldda
-    
-    def get_library_item_info_templates( self, template_list = [] ):
+    def get_library_item_info_templates( self, template_list=[], restrict=False ):
+        # If restrict is True, we'll return only those templates directly associated with this LibraryDataset
         if self.library_dataset_info_template_associations:
             template_list.extend( [ ldita.library_item_info_template for ldita in self.library_dataset_info_template_associations if ldita.library_item_info_template not in template_list ] )
-        self.folder.get_library_item_info_templates( template_list )
+        if restrict not in [ 'True', True ]:
+            self.folder.get_library_item_info_templates( template_list, restrict )
         return template_list
     
 class LibraryDatasetDatasetAssociation( DatasetInstance ):
-    def __init__( self, 
-                  copied_from_history_dataset_association = None, 
-                  copied_from_library_dataset_dataset_association = None, 
-                  library_dataset = None,
-                  **kwd ):
+    def __init__( self, copied_from_history_dataset_association=None, copied_from_library_dataset_dataset_association=None, library_dataset=None, **kwd ):
         DatasetInstance.__init__( self, **kwd )
-        self.library_dataset = library_dataset
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
-    def to_history_dataset_association( self, parent_id = None, target_history = None ):
-        if target_history:
-            hid = target_history._next_hid()
-        else:
-            hid = None
-        des = HistoryDatasetAssociation( name=self.name, 
-                                         info=self.info, 
+        self.library_dataset = library_dataset
+    def to_history_dataset_association( self, target_history, parent_id=None ):
+        hid = target_history._next_hid()
+        hda = HistoryDatasetAssociation( name=self.name, 
+                                         info=self.info,
                                          blurb=self.blurb, 
                                          peek=self.peek, 
                                          extension=self.extension, 
                                          dbkey=self.dbkey, 
-                                         dataset = self.dataset, 
+                                         dataset=self.dataset, 
                                          visible=self.visible, 
                                          deleted=self.deleted, 
                                          parent_id=parent_id, 
-                                         copied_from_library_dataset_dataset_association = self,
-                                         history = target_history,
-                                         hid = hid )
-        des.flush()
-        des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
+                                         copied_from_library_dataset_dataset_association=self,
+                                         history=target_history,
+                                         hid=hid )
+        hda.flush()
+        hda.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         for child in self.children:
-            child_copy = child.to_history_dataset_association( parent_id = des.id )
+            child_copy = child.to_history_dataset_association( target_history=target_history, parent_id=hda.id )
         if not self.datatype.copy_safe_peek:
-            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        des.flush()
-        return des
+            hda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        hda.flush()
+        return hda
     def copy( self, copy_children = False, parent_id = None, target_folder = None ):
-        des = LibraryDatasetDatasetAssociation( name=self.name, 
-                                               info=self.info, 
-                                               blurb=self.blurb, 
-                                               peek=self.peek, 
-                                               extension=self.extension, 
-                                               dbkey=self.dbkey, 
-                                               dataset = self.dataset, 
-                                               visible=self.visible, 
-                                               deleted=self.deleted, 
-                                               parent_id=parent_id, 
-                                               copied_from_library_dataset_dataset_association = self,
-                                               folder = target_folder )
-        des.flush()
-        des.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
+        ldda = LibraryDatasetDatasetAssociation( name=self.name, 
+                                                 info=self.info, 
+                                                 blurb=self.blurb, 
+                                                 peek=self.peek, 
+                                                 extension=self.extension, 
+                                                 dbkey=self.dbkey, 
+                                                 dataset=self.dataset, 
+                                                 visible=self.visible, 
+                                                 deleted=self.deleted, 
+                                                 parent_id=parent_id, 
+                                                 copied_from_library_dataset_dataset_association=self,
+                                                 folder=target_folder )
+        ldda.flush()
+         # Need to set after flushed, as MetadataFiles require dataset.id
+        ldda.metadata = self.metadata
         if copy_children:
             for child in self.children:
-                child_copy = child.copy( copy_children = copy_children, parent_id = des.id )
+                child_copy = child.copy( copy_children = copy_children, parent_id = ldda.id )
         if not self.datatype.copy_safe_peek:
-            des.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        des.flush()
-        return des
+             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            ldda.set_peek()
+        ldda.flush()
+        return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return
-    def get_library_item_info_templates( self, template_list = [] ):
+    def get_library_item_info_templates( self, template_list=[], restrict=False ):
+        # If restrict is True, we'll return only those templates directly associated with this LibraryDatasetDatasetAssociation
         if self.library_dataset_dataset_info_template_associations:
             template_list.extend( [ lddita.library_item_info_template for lddita in self.library_dataset_dataset_info_template_associations if lddita.library_item_info_template not in template_list ] )
-        self.library_dataset.get_library_item_info_templates( template_list )
+        self.library_dataset.get_library_item_info_templates( template_list, restrict )
         return template_list
 
 class LibraryInfoTemplateAssociation( object ):
@@ -909,45 +825,38 @@ class LibraryItemInfoTemplate( object ):
             new_elem.flush()
             return new_elem
     
-    """class InfoField( object ):
-        def __init__( self, name, description, type ):
-            self.name = name
-            self.description = description
-            self.type = type
-    class StringInfoField( InfoField ):
-        def __init__( self, name, description, type = 'string' ):
-            InfoField.__init__( self, name, description, type )
-    def __init__( self, name='unnamed', contents=None ):
-        self.contents = contents
-    """
 class LibraryItemInfoTemplateElement( object ):
     pass
 
 class LibraryInfoAssociation( object ):
-    def set_library_item( self, library_item ):
+    def set_library_item( self, library_item, user ):
         if isinstance( library_item, Library ):
             self.library = library_item
+            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryFolderInfoAssociation( object ):
-    def set_library_item( self, library_item ):
+    def set_library_item( self, library_item, user ):
         if isinstance( library_item, LibraryFolder ):
             self.folder = library_item
+            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryDatasetInfoAssociation( object ):
-    def set_library_item( self, library_item ):
+    def set_library_item( self, library_item, user ):
         if isinstance( library_item, LibraryDataset ):
             self.library_dataset = library_item
+            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryDatasetDatasetInfoAssociation( object ):
-    def set_library_item( self, library_item ):
+    def set_library_item( self, library_item, user ):
         if isinstance( library_item, LibraryDatasetDatasetAssociation ):
             self.library_dataset_dataset_association = library_item
+            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
@@ -960,16 +869,6 @@ class LibraryItemInfo( object ):
 
 class LibraryItemInfoElement( object ):
     pass
-
-# class Query( object ):
-#     def __init__( self, name=None, state=None, tool_parameters=None, history=None ):
-#         self.name = name or "Unnamed query"
-#         self.state = state
-#         self.tool_parameters = tool_parameters
-#         # Relationships
-#         self.history = history
-#         self.datasets = []
-
             
 class ValidationError( object ):
     def __init__( self, message=None, err_type=None, attributes=None ):

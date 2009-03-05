@@ -65,22 +65,20 @@ div.toolParamHelp a
 
 div.toolFormBody
 { 
-  background: $form_body_bg_bottom;
-  background-image: url(form_body_bg.png);
-  background-repeat: repeat-x;
-  background-position: top;
-  padding: 5px;
-  padding-left: 10px;
-  padding-right: 10px;
+    background: $form_body_bg_bottom;
+    background-image: url(form_body_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    padding: 5px 0;
 }
 
 div.toolFormBody div.toolFormTitle
 {
     background: transparent;
-	border: none;
-	font-weight: bold;
-	border-bottom: solid $form_border 1px;
-	margin-bottom: 5px;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid $form_border 1px;
+    margin-bottom: 5px;
 }
 
 div.toolFormDisabled div.toolFormTitle {
@@ -98,8 +96,8 @@ div.toolHelp
 
 div.toolHelpBody
 { 
-	width: 100%;
-	overflow: auto;
+    width: 100%;
+    overflow: auto;
 }
 
 div.titleRow {
@@ -111,9 +109,30 @@ div.titleRow {
 
 /* Forms */
 
+div.form
+{
+    border: solid $form_border 1px;
+}
+
+div.form-title
+{ 
+    font-weight: bold;
+    padding: 5px 10px;
+    background: $form_title_bg_bottom;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid $form_border 1px;
+}
+
+div.form-body
+{ 
+    padding: 5px 0;
+}
+
 div.form-row 
 {
-    margin-bottom: 1em;
+    padding: 5px 10px;
 }
 
 div.form-title-row
@@ -130,7 +149,6 @@ div.repeat-group-item
 div.form-row-error
 {
     background: $error_message_bg;
-    padding: 5px;
 }
 
 div.form-row label
@@ -140,14 +158,35 @@ div.form-row label
     margin-bottom: .2em;
 }
 
+div.form-row-input
+{
+    float: left;
+    width: 300px;
+}
+
+div.form-row-input > input
+{
+    max-width: 300px;
+}
+
+div.form-row-error-message
+{
+    width: 300px;
+    float: left;
+    color: red;
+    font-weight: bold;
+    padding: 3px 0 0 1em;
+}
+
 select, input, textarea
 {
     font: inherit;
     font-size: 115%;
 }
 
-select, textarea, input[type="text"], input[type="file"]
+select, textarea, input[type="text"], input[type="file"], input[type="password"]
 {
+    -webkit-box-sizing: border-box;
     max-width: 300px;
 }
 
@@ -467,13 +506,26 @@ ul.manage-table-actions li {
     background: $history_running_bg;
 }
 
+.state-fg-queued {
+    color: #888888;
+}
+.state-fg-ok {
+    color: #66AA66;
+}
+.state-fg-running {
+    color: #AAAA66;
+}
+.state-fg-error {
+    color: #AA6666;
+}
+
 ## Button styles
 
 .action-button {
     background: #eeeeee;
     color: #333;
     text-decoration: none;
-    font-size: 90%;
+    font-size: 95%;
     font-weight: bold;
     display: inline-block;
     cursor: pointer;
@@ -508,13 +560,11 @@ div.popupmenu {
     display: none;
     background: #eeeeee;
     color: #333;
-    font-size: 90%;
     font-weight: bold;
     position: absolute;
     z-index: 20000;
     border: solid #aaaaaa 1px;
-    padding-top: 3px;
-    padding-bottom: 3px;
+    padding: 3px 0;
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
@@ -524,9 +574,7 @@ div.popupmenu {
 }
 
 div.popupmenu-item {
-    padding: 3px;
-    padding-left: 1em;
-    padding-right: 1em;
+    padding: 3px 1em;
     cursor: pointer;
 }
 
@@ -551,6 +599,19 @@ div.permissionContainer {
 
 ## Data grid style
 
+.grid-header {
+    padding-bottom: 1em;
+}
+
+.grid-header h2 {
+    margin: 0;
+    margin-bottom: 0.5em;
+}
+
+.grid-header .title {
+    font-weight: bold;
+}
+
 .grid {
     padding-top: 1em;
     border-collapse: collapse;
@@ -560,6 +621,9 @@ div.permissionContainer {
     border-top: solid #DDDDDD 1px;
     border-bottom: solid #DDDDDD 1px;
     padding: 0.5em 1em;
+}
+.grid tbody td:empty {
+    padding: 0;
 }
 .grid thead th {
     background: $table_header_bg;

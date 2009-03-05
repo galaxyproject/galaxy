@@ -219,13 +219,6 @@ class GalaxyRBACAgent( RBACAgent ):
                 dup.flush()
         if history:
             for history in user.active_histories:
-                """
-                TODO: instead of user.active_histories, a faster approach would be the following, but we need the 
-                history.activatable_datasets mapper corrected so that eagerload can be used.
-                histories = app.model.History.filter( and_( app.model.History.table.c.user_id==user.id,
-                                                            app.model.History.table.c.purged==False ) ) \
-                                             .options( eagerload( 'activatable_datasets' ) ).all()
-                """
                 self.history_set_default_permissions( history, permissions=permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission )
     def user_get_default_permissions( self, user ):
         permissions = {}
@@ -352,7 +345,6 @@ class GalaxyRBACAgent( RBACAgent ):
         self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
     def set_all_library_permissions( self, library_item, permissions={} ):
         # Set new permissions on library_item, eliminating all current permissions
-        # TODO: Make sure the following should still be library_item.actions
         for role_assoc in library_item.actions:
             role_assoc.delete()
             role_assoc.flush()
@@ -364,6 +356,19 @@ class GalaxyRBACAgent( RBACAgent ):
                         action = action.action
                     for role_assoc in [ permission_class( action, library_item, role ) for role in roles ]:
                         role_assoc.flush()
+    def get_library_dataset_permissions( self, library_dataset ):
+        # Permissions will always be the same for LibraryDatasets and associated
+        # LibraryDatasetDatasetAssociations
+        if isinstance( library_dataset, self.model.LibraryDatasetDatasetAssociation ):
+            library_dataset = library_dataset.library_dataset
+        permissions = {}
+        for library_dataset_permission in library_dataset.actions:
+            action = self.get_action( library_dataset_permission.action )
+            if action in permissions:
+                permissions[ action ].append( library_dataset_permission.role )
+            else:
+                permissions[ action ] = [ library_dataset_permission.role ]
+        return permissions
     def copy_library_permissions( self, source_library_item, target_library_item, user=None ):
         # Copy all permissions from source
         permissions = {}
@@ -452,16 +457,16 @@ class GalaxyRBACAgent( RBACAgent ):
         """
         if isinstance( entry, self.model.Library ):
             return self.check_folder_contents( user, entry.root_folder )
-        elif isinstance( entry, self.model.LibraryDatasetDatasetAssociation ):
-            return self.allow_action( user, self.permitted_actions.DATASET_ACCESS, dataset=entry )
         elif isinstance( entry, self.model.LibraryFolder ):
-            for dataset in entry.active_datasets:
-                if self.allow_action( user, self.permitted_actions.DATASET_ACCESS, dataset=dataset ):
+            for library_dataset in entry.active_datasets:
+                if self.allow_action( user, self.permitted_actions.DATASET_ACCESS, dataset=library_dataset.library_dataset_dataset_association.dataset ):
                     return True
             for folder in entry.active_folders:
                 if self.check_folder_contents( user, folder ):
                     return True
             return False
+        elif isinstance( entry, self.model.LibraryDatasetDatasetAssociation ):
+            return self.allow_action( user, self.permitted_actions.DATASET_ACCESS, dataset=entry.dataset )
         else:
             raise 'Passed an illegal object to check_folder_contents: %s' % type( entry )
 

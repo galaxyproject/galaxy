@@ -31,7 +31,7 @@ class TestHistory( TwillTestCase ):
     def test_15_history_view( self ):
         """Testing viewing previously stored histories"""
         self.view_stored_histories()
-        self.check_page_for_string( 'Stored Histories' )
+        self.check_page_for_string( 'Stored histories' )
         self.check_page_for_string( '<input type="checkbox" name="id" value=' )
         self.check_page_for_string( 'operation=rename&id' )
         self.check_page_for_string( 'operation=switch&id' )

@@ -1,0 +1,38 @@
+<tool id="cshl_fasta_clipping_histogram" name="Length Distribution">
+	<description>chart</description>
+	<command>fasta_clipping_histogram.pl $input $outfile</command>
+	
+	<inputs>
+		<param format="fasta" name="input" type="data" label="Library to analyze" />
+	</inputs>
+
+	<outputs>
+		<data format="png" name="outfile" metadata_source="input" />
+	</outputs>
+<help>
+
+**What it does**
+
+This tool creates a histogram image of sequence lengths distribution in a given fasta data set file.
+
+**TIP:** Use this tool after clipping your library (with **FASTX Clipper tool**), to visualize the clipping results.
+
+-----
+
+**Output Examples**
+
+
+In the following library, most sequences are 24-mers to 27-mers. 
+This could indicate an abundance of endo-siRNAs (depending of course of what you've tried to sequence in the first place).
+
+.. image:: ../static/fastx_icons/fasta_clipping_histogram_1.png
+
+
+In the following library, most sequences are 19,22 or 23-mers. 
+This could indicate an abundance of miRNAs (depending of course of what you've tried to sequence in the first place).
+
+.. image:: ../static/fastx_icons/fasta_clipping_histogram_2.png
+
+</help>
+</tool>
+<!-- FASTA-Clipping-Histogram is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

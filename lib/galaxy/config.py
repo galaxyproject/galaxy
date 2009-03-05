@@ -39,6 +39,7 @@ class Configuration( object ):
         self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
+        self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
@@ -112,7 +113,17 @@ class Configuration( object ):
         for path in self.tool_config, self.datatypes_config:
             if not os.path.isfile(path):
                 raise ConfigurationError("File not found: %s" % path )
-
+                
+    def is_admin_user( self,user ):
+        """
+        Determine if the provided user is listed in `admin_users`.
+        
+        NOTE: This is temporary, admin users will likely be specified in the
+              database in the future.
+        """
+        admin_users = self.get( "admin_users", "" ).split( "," )
+        return ( user is not None and user.email in admin_users )
+            
 def get_database_engine_options( kwargs ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using

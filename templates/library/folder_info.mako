@@ -3,6 +3,24 @@
 <%namespace file="/library/common.mako" import="render_available_templates" />
 <%namespace file="/library/common.mako" import="render_existing_library_item_info" />
 
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
+    <%
+        available_templates = folder.get_library_item_info_templates( template_list=[], restrict=False )
+        if available_templates:
+            available_folder_templates = folder.get_library_item_info_templates( template_list=[], restrict=True )
+    %>
+    %if available_templates:
+        <b>Add information to this folder using available templates</b>
+        <a id="folder-${folder.id}--popup" class="popup-arrow" style="display: none;">&#9660;</a>
+        <div popupmenu="folder-${folder.id}--popup">
+            %if available_folder_templates:
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', library_id=library_id, id=folder.id, information=True, restrict=True, render_templates=True )}">Display this folder's templates</a>
+            %endif
+            <a class="action-button" href="${h.url_for( controller='library', action='folder', library_id=library_id, id=folder.id, information=True, restrict=False, render_templates=True )}">Display all available templates</a>
+            <a class="action-button" href="${h.url_for( controller='library', action='folder', library_id=library_id, id=folder.id, information=True, restrict=True, render_templates=False )}">Hide templates</a>
+        </div>
+    %endif
+%endif
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
@@ -15,9 +33,15 @@
 %endif
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
-    <div class="toolForm">
-        <div class="toolFormTitle">Edit folder name and description</div>
-        <div class="toolFormBody">
+    %if render_templates not in [ 'False', False ]:
+        ${render_available_templates( folder, library_id, restrict=restrict )}
+    %endif
+%endif
+
+<div class="toolForm">
+    <div class="toolFormTitle">Edit folder name and description</div>
+    <div class="toolFormBody">
+        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
             <form name="folder" action="${h.url_for( controller='library', action='folder', rename=True, id=folder.id, library_id=library_id )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>
@@ -35,13 +59,19 @@
                 </div>
                 <input type="submit" name="rename_folder_button" value="Save"/>
             </form>
+        %else:
+            <div class="form-row">
+                <b>Name:</b>&nbsp;${folder.name}
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <b>Description:</b>&nbsp;${folder.description}
+                <div style="clear: both"></div>
+            </div>
+        %endif
         </div>
     </div>
     <p/>
-%endif
 
-${render_existing_library_item_info( folder )}
-
-%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
-    ${render_available_templates( folder, library_id )}
-%endif
+<% folder.refresh() %>
+${render_existing_library_item_info( folder, library_id )}

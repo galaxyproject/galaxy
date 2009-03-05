@@ -1,0 +1,82 @@
+<tool id="cshl_fastq_qual_conv" name="Quality format converter">
+	<description>(ASCII-Numeric)</description>
+	<command>zcat -f $input | fastq_quality_converter $QUAL_FORMAT -o $output</command>
+	<inputs>
+		<param format="fastqsolexa" name="input" type="data" label="Library to convert" />
+
+		<param name="QUAL_FORMAT" type="select" label="Desired output format">
+			<option value="-a">ASCII (letters) quality scores</option>
+			<option value="-n">Numeric quality scores</option>
+		</param>
+	</inputs>
+
+	<tests>
+		<test>
+			<!-- ASCII to NUMERIC -->
+			<param name="input" value="fastq_qual_conv1.fastq" />
+			<param name="QUAL_FORMAT" value="Numeric quality scores" />
+			<output name="output" file="fastq_qual_conv1.out" />
+		</test>
+		<test>
+			<!-- ASCII to ASCII (basically, a no-op, but it should still produce a valid output -->
+			<param name="input" value="fastq_qual_conv1.fastq" />
+			<param name="QUAL_FORMAT" value="ASCII (letters) quality scores" />
+			<output name="output" file="fastq_qual_conv1a.out" />
+		</test>
+		<test>
+			<!-- NUMERIC to ASCII -->
+			<param name="input" value="fastq_qual_conv2.fastq" />
+			<param name="QUAL_FORMAT" value="ASCII (letters) quality scores" />
+			<output name="output" file="fastq_qual_conv2.out" />
+		</test>
+		<test>
+			<!-- NUMERIC to NUMERIC (basically, a no-op, but it should still produce a valid output -->
+			<param name="input" value="fastq_qual_conv2.fastq" />
+			<param name="QUAL_FORMAT" value="Numeric quality scores" />
+			<output name="output" file="fastq_qual_conv2n.out" />
+		</test>
+	</tests>
+
+	<outputs>
+		<data format="fastqsolexa" name="output" metadata_source="input" />
+	</outputs>
+<help>
+
+**What it does**
+
+Converts a solexa FASTQ file to/from numeric or ASCII quality format.
+
+.. class:: warningmark 
+
+Re-scaling is **not** performed. (e.g. conversion from Phred scale to Solexa scale).
+
+
+-----
+
+FASTQ with Numeric quality scores::
+
+    @CSHL__2_FC042AGWWWXX:8:1:120:202
+    ACGATAGATCGGAAGAGCTAGTATGCCGTTTTCTGC
+    +CSHL__2_FC042AGWWWXX:8:1:120:202
+    40 40 40 40 20 40 40 40 40 6 40 40 28 40 40 25 40 20 40 -1 30 40 14 27 40 8 1 3 7 -1 11 10 -1 21 10 8
+    @CSHL__2_FC042AGWWWXX:8:1:103:1185
+    ATCACGATAGATCGGCAGAGCTCGTTTACCGTCTTC
+    +CSHL__2_FC042AGWWWXX:8:1:103:1185
+    40 40 40 40 40 35 33 31 40 40 40 32 30 22 40 -0 9 22 17 14 8 36 15 34 22 12 23 3 10 -0 8 2 4 25 30 2
+
+
+FASTQ with ASCII quality scores::
+
+    @CSHL__2_FC042AGWWWXX:8:1:120:202
+    ACGATAGATCGGAAGAGCTAGTATGCCGTTTTCTGC
+    +CSHL__2_FC042AGWWWXX:8:1:120:202
+    hhhhThhhhFhh\hhYhTh?^hN[hHACG?KJ?UJH
+    @CSHL__2_FC042AGWWWXX:8:1:103:1185
+    ATCACGATAGATCGGCAGAGCTCGTTTACCGTCTTC
+    +CSHL__2_FC042AGWWWXX:8:1:103:1185
+    hhhhhca_hhh`^Vh@IVQNHdObVLWCJ@HBDY^B
+
+
+</help>
+</tool>
+<!-- FASTQ-Quality-Converter is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

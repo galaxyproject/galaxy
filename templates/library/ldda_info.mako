@@ -4,7 +4,51 @@
 <%namespace file="/library/common.mako" import="render_existing_library_item_info" />
 <% from galaxy import util %>
 
-<%def name="title()">Edit Dataset Attributes</%def>
+%if ldda == ldda.library_dataset.library_dataset_dataset_association:
+    <b><i>This is the latest version of this library dataset</i></b>
+%else:
+    <font color="red"><b><i>This is an expired version of this library dataset</i></b></font>
+%endif
+<p/>
+
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=ldda.library_dataset ):
+    <%
+        available_templates = ldda.get_library_item_info_templates( template_list=[], restrict=False )
+        if available_templates:
+            available_folder_templates = ldda.get_library_item_info_templates( template_list=[], restrict='folder' )
+            available_dataset_templates = ldda.get_library_item_info_templates( template_list=[], restrict=True )
+    %>
+    %if available_templates:
+        <b>Add information to this library dataset using available templates</b>
+        <a id="ldda-${ldda.id}--popup" class="popup-arrow" style="display: none;">&#9660;</a>
+        <div popupmenu="ldda-${ldda.id}--popup">
+            %if available_dataset_templates:
+                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True, restrict=True, render_templates=True )}">Display this dataset's templates</a>
+            %endif
+            %if available_folder_templates:
+                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True, restrict='folder', render_templates=True )}">Display templates for this dataset and it's folder</a>
+            %endif
+            <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True, restrict=False, render_templates=True )}">Display all available templates</a>
+            <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True, restrict=True, render_templates=False )}">Hide templates</a>
+        </div>
+    %endif
+%endif
+
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
+    </li>
+</ul>
+
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
+
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=ldda.library_dataset ):
+    %if render_templates not in [ 'False', False ]:
+        ${render_available_templates( ldda, library_id, restrict=restrict )}
+    %endif
+%endif
 
 <%def name="datatype( ldda, datatypes )">
     <select name="datatype">
@@ -18,46 +62,11 @@
     </select>
 </%def>
 
-<br/><br/>
-<ul class="manage-table-actions">
-    <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
-    </li>
-</ul>
-
-%if msg:
-    ${render_msg( msg, messagetype )}
-%endif
-
-<div class="toolFormTitle">Manage the following selected datasets</div>
-
-<p/>
-<table cellspacing="0" cellpadding="5" border="0" width="100%" class="libraryTitle">
-    <tr>
-        <td>
-            <div class="rowTitle">
-                <span class="historyItemTitle"><b>${ldda.name}</b></span>
-                <a id="ldda-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            </div>
-            <div popupmenu="ldda-${ldda.id}-popup">
-                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset', id=ldda.library_dataset_id, library_id=library_id )}">Manage this dataset's versions</a>
-            </div>
-        </td>
-        <td>
-            %if ldda == ldda.library_dataset.library_dataset_dataset_association:
-                <i>This is the latest version of this library dataset</i>
-            %else:
-                <font color="red"><i>This is an expired version of this library dataset</i></font>
-            %endif
-        </td>
-    </tr>
-</table>
-<p/>
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, information=True )}" method="post">
+            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, information=True )}" method="post">
                 <input type="hidden" name="id" value="${ldda.id}"/>
                 <div class="form-row">
                     <label>Name:</label>
@@ -88,7 +97,7 @@
                     <input type="submit" name="save" value="Save"/>
                 </div>
             </form>
-            <form name="auto_detect" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, information=True )}" method="post">
+            <form name="auto_detect" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, information=True )}" method="post">
                 <input type="hidden" name="id" value="${ldda.id}"/>
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="submit" name="detect" value="Auto-detect"/>
@@ -103,7 +112,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Change data type</div>
         <div class="toolFormBody">
-            <form name="change_datatype" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, information=True )}" method="post">
+            <form name="change_datatype" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, information=True )}" method="post">
                 <input type="hidden" name="id" value="${ldda.id}"/>
                 <div class="form-row">
                     <label>New Type:</label>
@@ -145,11 +154,7 @@
             </div>
         </div>
     </div>
-    <div class="toolForm">
-        ${render_existing_library_item_info( ldda.library_dataset )}
-    </div>
 %endif
 
-%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=ldda.library_dataset ):
-    ${render_available_templates( ldda.library_dataset, library_id )}
-%endif
+<% ldda.refresh() %>
+${render_existing_library_item_info( ldda, library_id )}

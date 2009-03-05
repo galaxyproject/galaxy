@@ -99,6 +99,21 @@ class LocalJobRunner( object ):
                 job_wrapper.fail( "failure running job", exception=True )
                 log.exception("failure running job %d" % job_wrapper.job_id)
                 return
+        
+        #run the metadata setting script here
+        #this is terminatable when output dataset/job is deleted
+        #so that long running set_meta()s can be cancelled without having to reboot the server
+        if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and self.app.config.set_metadata_externally:
+            external_metadata_script = job_wrapper.setup_external_metadata( kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+            log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
+            external_metadata_proc = subprocess.Popen( args = external_metadata_script, 
+                                         shell = True, 
+                                         env = env,
+                                         preexec_fn = os.setpgrp )
+            job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid )
+            external_metadata_proc.wait()
+            log.debug( 'execution of external set_meta finished for job %d' % job_wrapper.job_id )
+        
         # Finish the job                
         try:
             job_wrapper.finish( stdout, stderr )
@@ -131,12 +146,17 @@ class LocalJobRunner( object ):
             return False
 
     def stop_job( self, job ):
-        if job.job_runner_external_id is None:
+        #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        if job.external_output_metadata:
+            pid = job.external_output_metadata[0].job_runner_external_pid #every JobExternalOutputMetadata has a pid set, we just need to take from one of them
+        else:
+            pid = job.job_runner_external_id
+        if pid in [ None, '' ]:
             log.warning( "stop_job(): %s: no PID in database for job, unable to stop" % job.id )
             return
-        pid = int( job.job_runner_external_id )
+        pid = int( pid )
         if not self.check_pid( pid ):
-            log.warning( "stop_job(): %s: PID %d was already dead or can't be signaled" %job.id )
+            log.warning( "stop_job(): %s: PID %d was already dead or can't be signaled" % ( job.id, pid ) )
             return
         for sig in [ 15, 9 ]:
             try:

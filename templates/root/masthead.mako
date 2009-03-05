@@ -11,7 +11,7 @@
 
 <body class="mastheadPage" scroll="no">
 <div id="tab-bar-bottom"></div>
-<table width="100%" cellspacing="0" border="0">
+<table height="32" width="100%" cellspacing="0" border="0">
 <tr valign="middle"><td width="26px"><a target="_blank" href="${wiki_url}">
 <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}"></a></td>
 <td align="left" valign="middle"><div class="pageTitle">Galaxy${brand}</div></td>

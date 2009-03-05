@@ -23,27 +23,6 @@ body
     width: 100%;
     height: 100%;
 }
-#masthead 
-{
-    position:absolute; 
-    top:0; 
-    left:0; 
-    width:100%; 
-    height:32px;
-    background: url(masthead_bg.png); 
-    overflow: hidden; 
-    color:#fff;
-    font-weight: bold;
-    border-bottom: solid ${layout_masthead_border} 1px;
-}
-
-#masthead div.title
-{
-    margin: 3px;
-    margin-right: 10px;
-    font-size: 182%;
-    font-weight: bold;
-}
 
 #messagebox
 {
@@ -255,4 +234,102 @@ div.unified-panel-body {
 {
     background-image: url(info_small.png);
     background-color: $info_message_bg;
+}
+
+## ---- Masthead styles ----
+
+#masthead 
+{
+    position:absolute; 
+    top:0; 
+    left:0; 
+    width:100%; 
+    height:32px;
+    background: ${masthead_bg}; 
+    color:#fff;
+    border-bottom: solid ${layout_masthead_border} 1px;
+    z-index: 15000;
+    padding: 0;
+}
+
+#masthead a
+{
+    color: $masthead_link;
+}
+
+#masthead .title
+{
+    padding: 3px 10px;
+    font-size: 175%;
+    font-weight: bold;
+}
+
+#masthead a
+{
+    text-decoration: none;
+}
+
+#masthead a:hover
+{
+    text-decoration: underline;
+}
+
+div.tab-group
+{
+    margin: 0;
+    padding: 0 10px;
+    height: 100%;
+    white-space: nowrap;
+}
+
+div.tab-group span.tab
+{
+    position: relative;
+    display: block;
+    float: left;
+    margin: 0;
+    padding: 0 1em;
+    height: 32px;
+    line-height: 32px;
+    text-align: left;
+}
+
+div.tab-group > span.tab:hover > a
+{
+    color: gold !important;
+}
+
+div.tab-group > span.active
+{
+    background: rgb(1,1,1);
+}
+
+div.tab-group span.tab div.submenu {
+    display: none;
+    position: absolute;
+    z-index: 16000;
+    left: 0;
+    top: 32px;
+    padding: 1em;
+    margin: -1em;
+    padding-top: 0;
+    margin-top: 0;
+    background-color: rgba(0,0,0,0.5);
+    -moz-border-radius: 0 0 1em 1em;
+    -webkit-border-bottom-right-radius: 1em;
+    -webkit-border-bottom-left-radius: 1em;
+}
+
+div.tab-group span.tab div.submenu ul {
+    display: block;
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+    background: ${masthead_bg};
+}
+
+div.tab-group span.tab div.submenu ul li {
+    display: block;
+    padding: 0 1em;
+    white-space: nowrap;
 }

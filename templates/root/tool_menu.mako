@@ -16,9 +16,9 @@
             ## %if "[[" in tool.description and "]]" in tool.description:
             ##   ${tool.description.replace( '[[', '<a href="link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
             %if tool.name:
-                <a id="link-${tool.id}" href="${link}" target="galaxy_main" minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.name}</a> ${tool.description} 
+                <a id="link-${tool.id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.name}</a> ${tool.description} 
             %else:
-                <a id="link-${tool.id}" href="${link}" target="galaxy_main" minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
+                <a id="link-${tool.id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
             %endif
         </div>
     %endif
@@ -32,7 +32,7 @@
         <div class="toolTitleNoSection">
     %endif
         <% encoded_id = key.lstrip( 'workflow_' ) %>
-        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id, check_user=False )}" target="galaxy_main"}">${workflow.name}</a>
+        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id, check_user=False )}" target="_parent"}">${workflow.name}</a>
     </div>
 </%def>
 
@@ -114,28 +114,6 @@
                     %endif
                     <div class="toolSectionPad"></div>
                 %endfor
-
-                ## Link to workflow management. The location of this may change, but eventually
-                ## at least some workflows will appear here (the user should be able to
-                ## configure which of their stored workflows appear in the tools menu). 
-
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-                    <span>Workflow <i>(beta)</i></span>
-                </div>
-                <div id="XXinternalXXworkflow" class="toolSectionBody">
-                    <div class="toolTitle">
-                        <a href="${h.url_for( controller='workflow', action='index' )}" target="galaxy_main">Manage</a> workflows
-                    </div>
-                    %if t.user:
-                        %for m in t.user.stored_workflow_menu_entries:
-                            <div class="toolTitle">
-                                <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${m.stored_workflow.name}</a>
-                            </div>
-                        %endfor
-                    %endif
-                </div>
             </div>
         </div>
     </body>

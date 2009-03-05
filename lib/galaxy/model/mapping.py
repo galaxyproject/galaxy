@@ -58,13 +58,6 @@ History.table = Table( "history", metadata,
     Column( "purged", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ) )
 
-# model.Query.table = Table( "query", engine,
-#             Column( "id", Integer, primary_key=True),
-#             Column( "history_id", Integer, ForeignKey( "history.id" ) ),
-#             Column( "name", String( 255 ) ),
-#             Column( "state", String( 64 ) ),
-#             Column( "tool_parameters", Pickle() ) )
-
 HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
@@ -228,10 +221,8 @@ LibraryDataset.table = Table( "library_dataset", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), key="_name" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
     Column( "info", TrimmedString( 255 ),  key="_info" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
-    Column( "deleted", Boolean, index=True, default=False ),
-    )
+    Column( "deleted", Boolean, index=True, default=False ) )
 
-#this should be renamed, no longer an association between dataset and folder
 LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ),
@@ -329,7 +320,7 @@ LibraryItemInfoElement.table = Table( "library_item_info_element", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "contents", TEXT ),
+    Column( "contents", JSONType() ),
     Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
     Column( "library_item_info_template_element_id", Integer, ForeignKey( "library_item_info_template_element.id" ), index=True ) )
 
@@ -410,6 +401,17 @@ JobToOutputDatasetAssociation.table = Table( "job_to_output_dataset", metadata,
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
+    
+JobExternalOutputMetadata.table = Table( "job_external_output_metadata", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
+    Column( "filename_in", String( 255 ) ),
+    Column( "filename_out", String( 255 ) ),
+    Column( "filename_results_code", String( 255 ) ),
+    Column( "filename_kwds", String( 255 ) ),
+    Column( "job_runner_external_pid", String( 255 ) ) )
     
 Event.table = Table( "event", metadata, 
     Column( "id", Integer, primary_key=True ),
@@ -567,8 +569,7 @@ assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvert
 assign_mapper( context, History, History.table,
     properties=dict( galaxy_sessions=relation( GalaxySessionToHistoryAssociation ),
                      datasets=relation( HistoryDatasetAssociation, backref="history", order_by=asc(HistoryDatasetAssociation.table.c.hid) ),
-                     active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), lazy=False, viewonly=True ),
-                     activatable_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( Dataset.table.c.purged ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), lazy=True, viewonly=True )
+                     active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), lazy=False, viewonly=True )
                       ) )
 
 assign_mapper( context, User, User.table, 
@@ -790,12 +791,18 @@ assign_mapper( context, JobToOutputDatasetAssociation, JobToOutputDatasetAssocia
 
 assign_mapper( context, JobParameter, JobParameter.table )
 
+assign_mapper( context, JobExternalOutputMetadata, JobExternalOutputMetadata.table,
+    properties=dict( job = relation( Job ), 
+                     history_dataset_association = relation( HistoryDatasetAssociation, lazy = False ),
+                     library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, lazy = False ) ) )
+
 assign_mapper( context, Job, Job.table, 
     properties=dict( galaxy_session=relation( GalaxySession ),
                      history=relation( History ),
                      parameters=relation( JobParameter, lazy=False ),
                      input_datasets=relation( JobToInputDatasetAssociation, lazy=False ),
-                     output_datasets=relation( JobToOutputDatasetAssociation, lazy=False ) ) )
+                     output_datasets=relation( JobToOutputDatasetAssociation, lazy=False ),
+                     external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ) ) )
 
 assign_mapper( context, Event, Event.table,
     properties=dict( history=relation( History ),

@@ -1,9 +1,10 @@
 <%def name="render_select( current_actions, action_key, action, all_roles )">
     <%
-        in_roles = []
+        import sets
+        in_roles = sets.Set()
         for a in current_actions:
             if a.action == action.action:
-                in_roles.append( a.role )
+                in_roles.add( a.role )
         out_roles = filter( lambda x: x not in in_roles, all_roles )
     %>
     <p><b>${action.action}:</b> ${action.description}</p>
@@ -36,34 +37,42 @@
             current_actions = obj.default_permissions
             permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = 'user %s' % obj_name
+            obj_type = 'dataset'
         elif isinstance( obj, trans.app.model.History ):
             current_actions = obj.default_permissions
             permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = 'history %s' % obj_name
+            obj_type = 'dataset'
         elif isinstance( obj, trans.app.model.Dataset ):
             current_actions = obj.actions
             permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = obj_name
+            obj_type = 'dataset'
         elif isinstance( obj, trans.app.model.LibraryDatasetDatasetAssociation ):
             current_actions = obj.actions + obj.dataset.actions
-            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items() + trans.app.model.Library.permitted_actions.items()
             obj_str = obj_name
+            obj_type = 'dataset'
         elif isinstance( obj, trans.app.model.Library ):
             current_actions = obj.actions
             permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library %s' % obj_name
+            obj_type = 'library'
         elif isinstance( obj, trans.app.model.LibraryDataset ):
             current_actions = obj.actions
             permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library dataset %s' % obj_name
+            obj_type = 'library'
         elif isinstance( obj, trans.app.model.LibraryFolder ):
             current_actions = obj.actions
             permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library folder %s' % obj_name
+            obj_type = 'library'
         else:
             current_actions = []
             permitted_actions = {}.items()
             obj_str = 'unknown object %s' %obj_name
+            obj_type = ''
     %>
     <script type="text/javascript">
         $( document ).ready( function () {
@@ -87,7 +96,7 @@
         });
     </script>
     <div class="toolForm">
-        <div class="toolFormTitle">Manage permissions and role associations of ${obj_str}</div>
+        <div class="toolFormTitle">Manage ${obj_type} permissions and role associations of ${obj_str}</div>
         <div class="toolFormBody">
             <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
                 <div class="form-row"></div>

@@ -83,11 +83,13 @@ class UploadToolAction( object ):
                 else:
                     INFO = "uploaded url"
                 url_paste = url_paste.replace( '\r', '' ).split( '\n' )
+                name_set_from_line = False #if we are setting the name from the line, it needs to be the line that creates that dataset
                 for line in url_paste:
                     line = line.rstrip( '\r\n' )
                     if line:
-                        if not NAME:
+                        if not NAME or name_set_from_line:
                             NAME = line
+                            name_set_from_line = True
                         try:
                             temp_name = sniff.stream_to_file( urllib.urlopen( line ), prefix='url_paste' )
                         except Exception, e:
@@ -126,7 +128,8 @@ class UploadToolAction( object ):
             return self.upload_empty( trans, job, "Empty file error:", "you attempted to upload an empty file." )
         elif len( data_list ) < 1:
             return self.upload_empty( trans, job, "No data error:", "either you pasted no data, the url you specified is invalid, or you have not specified a file." )
-        hda = data_list[0]
+        #if we could make a 'real' job here, then metadata could be set before job.finish() is called
+        hda = data_list[0] #only our first hda is being added as input for the job, why?
         job.state = trans.app.model.Job.states.OK
         file_size_str = datatypes.data.nice_size( hda.dataset.file_size )
         job.info = "%s, size: %s" % ( hda.info, file_size_str )
@@ -229,7 +232,6 @@ class UploadToolAction( object ):
             else:
                 self.line_count = sniff.convert_newlines( temp_name )
             if file_type == 'auto':
-                log.debug("In upload, in if file_type == 'auto':")
                 ext = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
             else:
                 ext = file_type

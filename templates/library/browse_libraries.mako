@@ -10,7 +10,7 @@
 %endif
 
 %if not libraries:
-    No libraries contain datasets that you are allowed to access
+    You are not authorized to access any libraries
 %else:
     <table class="grid">
         <thead>
@@ -20,7 +20,7 @@
             </tr>
         </thead>
         <tbody>
-            %for i, library in enumerate( libraries ):    
+            %for library in libraries:    
                 <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
                     <td><a href="${h.url_for( controller='library', action='browse_library', id=library.id )}">${library.name}</a></td>
                     <td><i>${library.description}</i></td>

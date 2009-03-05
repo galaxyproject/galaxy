@@ -42,6 +42,8 @@ datatype_converters_path = %(here)s/lib/galaxy/datatypes/converters
 
 # Datatype indexers
 datatype_indexers_path = %(here)s/lib/galaxy/datatypes/indexers
+# Metadata
+set_metadata_externally = False
 
 # Session support (beaker)
 use_beaker_session = True

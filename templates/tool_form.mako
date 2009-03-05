@@ -96,10 +96,10 @@ function checkUncheckAll( name, check )
         field = param.get_html_field( trans, parent_state[ param.name ], other_values )
         field.refresh_on_change = param.refresh_on_change
         %>
-        <div style="float: left; width: 250px; margin-right: 10px;">${field.get_html( prefix )}</div>
+        <div class="form-row-input">${field.get_html( prefix )}</div>
         %if parent_errors.has_key( param.name ):
-        <div style="float: left; color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">
-            <div style="width: 300px;"><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${parent_errors[param.name]}</span></div>
+        <div class="form-row-error-message">
+            <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${parent_errors[param.name]}</span></div>
         </div>
         %endif
         

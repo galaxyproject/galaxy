@@ -731,12 +731,16 @@ class Wiggle( Tabular ):
             if line and not line.startswith( '#' ):
                 elems = line.split( '\t' )
                 try:
-                    int( elems[0] )
+                    float( elems[0] ) #"Wiggle track data values can be integer or real, positive or negative values"
                     break
                 except:
+                    do_break = False
                     for str in data.col1_startswith:
                         if elems[0].lower().startswith(str):
+                            do_break = True
                             break
+                    if do_break:
+                        break
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
 
     def sniff( self, filename ):
