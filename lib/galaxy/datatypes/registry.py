@@ -16,7 +16,9 @@ class Registry( object ):
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
         self.datatype_converters = odict()
+        self.datatype_indexers = odict()
         self.converters = []
+        self.indexers = []
         self.sniff_order = []
         self.upload_file_formats = []
         if root_dir and config:
@@ -27,8 +29,11 @@ class Registry( object ):
             self.log.debug( 'Loading datatypes from %s' % config )
             registration = root.find( 'registration' )
             self.datatype_converters_path = os.path.join( root_dir, registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' ) )
+            self.datatype_indexers_path = os.path.join( root_dir, registration.get( 'indexers_path', 'lib/galaxy/datatypes/indexers' ) )
             if not os.path.isdir( self.datatype_converters_path ):
                 raise ConfigurationError( "Directory does not exist: %s" % self.datatype_converters_path )
+            if not os.path.isdir( self.datatype_indexers_path ):
+                raise ConfigurationError( "Directory does not exist: %s" % self.datatype_indexers_path )                
             for elem in registration.findall( 'datatype' ):
                 try:
                     extension = elem.get( 'extension', None ) 
@@ -57,6 +62,11 @@ class Registry( object ):
                             target_datatype = converter.get( 'target_datatype', None )
                             if converter_config and target_datatype:
                                 self.converters.append( ( converter_config, extension, target_datatype ) )
+                        for indexer in elem.findall( 'indexer' ):
+                            # Build the list of datatype indexers for track building
+                            indexer_config = indexer.get( 'file', None )
+                            if indexer_config:
+                                self.indexers.append( (indexer_config, extension) )
                 except Exception, e:
                     self.log.warning( 'Error loading datatype "%s", problem: %s' % ( extension, str( e ) ) )
             # Load datatype sniffers from the config
@@ -221,6 +231,16 @@ class Registry( object ):
             self.datatype_converters[source_datatype][target_datatype] = converter
             self.log.debug( "Loaded converter: %s", converter.id )
 
+    def load_datatype_indexers( self, toolbox ):
+        """Adds indexers from self.indexers to the toolbox from app"""
+        for elem in self.indexers:
+            tool_config = elem[0]
+            datatype = elem[1]
+            indexer = toolbox.load_tool( os.path.join( self.datatype_indexers_path, tool_config ) )
+            toolbox.tools_by_id[indexer.id] = indexer
+            self.datatype_indexers[datatype] = indexer
+            self.log.debug( "Loaded indexer: %s", indexer.id )
+            
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
         converters = odict()
@@ -233,12 +253,27 @@ class Registry( object ):
         if ext in self.datatype_converters.keys():
             converters.update(self.datatype_converters[ext])
         return converters
+
+    def get_indexers_by_datatype( self, ext ):
+        """Returns indexers based on datatype"""
+        class_chain = list()
+        source_datatype = type(self.get_datatype_by_extension(ext))
+        for ext_spec in self.datatype_indexers.keys():
+            datatype = type(self.get_datatype_by_extension(ext_spec))
+            if issubclass( source_datatype, datatype ):
+                class_chain.append( ext_spec )
+        # Prioritize based on class chain
+        ext2type = lambda x: self.get_datatype_by_extension(x)
+        class_chain = sorted(class_chain, lambda x,y: issubclass(ext2type(x),ext2type(y)) and -1 or 1)
+        return [self.datatype_indexers[x] for x in class_chain]
+    
     def get_converter_by_target_type(self, source_ext, target_ext):
         """Returns a converter based on source and target datatypes"""
         converters = self.get_converters_by_datatype(source_ext)
         if target_ext in converters.keys():
             return converters[target_ext]
         return None
+
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe = True ):
         """Returns ( target_ext, exisiting converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):

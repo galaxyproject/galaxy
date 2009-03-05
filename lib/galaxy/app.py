@@ -1,6 +1,7 @@
 import sys, os, atexit
 
 from galaxy import config, jobs, util, tools, web
+from galaxy.tracks import store
 from galaxy.web import security
 import galaxy.model
 import galaxy.model.mapping
@@ -32,8 +33,10 @@ class UniverseApplication( object ):
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
-        #Load datatype converters
+        # Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
+        # Load datatype indexers
+        self.datatypes_registry.load_datatype_indexers( self.toolbox )
         #Load security policy
         self.security_agent = self.model.security_agent
         # Heartbeat and memdump for thread / heap profiling
@@ -60,6 +63,9 @@ class UniverseApplication( object ):
         # FIXME: These are exposed directly for backward compatibility
         self.job_queue = self.job_manager.job_queue
         self.job_stop_queue = self.job_manager.job_stop_queue
+        # Track Store
+        self.track_store = store.TrackStoreManager( self.config.track_store_path )
+        
     def shutdown( self ):
         self.job_manager.shutdown()
         if self.heartbeat:
