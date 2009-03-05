@@ -14,7 +14,7 @@ a generic histogram builder based on gnuplot backend
    yrange_max   - maximal value at the y_axis (integer) 
                   to set yrange to autoscaling assign 0 to yrange_min and yrange_max
    graph_file   - file to write histogram image to
-   pdf_size     - as X,Y pair in inches (e.g., 11,8 or 8,11 etc.)
+   img_size     - as X,Y pair in pixels (e.g., 800,600 or 600,800 etc.)
    
    
    This tool required gnuplot and gnuplot.py
@@ -48,7 +48,7 @@ def main(tmpFileName):
         ymin      = sys.argv[6]
         ymax      = sys.argv[7]
         img_file  = sys.argv[8]
-        pdf_size  = sys.argv[9]
+        img_size  = sys.argv[9]
     except:
         stop_err("Check arguments\n")
         
@@ -119,7 +119,7 @@ def main(tmpFileName):
             if xtic == 0:  g('unset xtics')
             g(title) 
             g(ylabel)
-            g_term = 'set terminal pdf size ' + pdf_size
+            g_term = 'set terminal png tiny size ' + img_size
             g(g_term)
             g_out = 'set output "' + img_file + '"'
             if ymin != ymax:

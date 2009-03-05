@@ -4,7 +4,7 @@ Galaxy web application framework
 
 import pkg_resources
 
-import os, sys, time, random, string
+import os, sys, time, socket, random, string
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 import base
@@ -31,6 +31,17 @@ import logging
 log = logging.getLogger( __name__ )
 
 url_for = base.routes.url_for
+
+UCSC_SERVERS = (
+    'hgw1.cse.ucsc.edu',
+    'hgw2.cse.ucsc.edu',
+    'hgw3.cse.ucsc.edu',
+    'hgw4.cse.ucsc.edu',
+    'hgw5.cse.ucsc.edu',
+    'hgw6.cse.ucsc.edu',
+    'hgw7.cse.ucsc.edu',
+    'hgw8.cse.ucsc.edu',
+)
 
 def expose( func ):
     """
@@ -60,6 +71,19 @@ def require_login( verb="perform this action" ):
         return decorator
     return argcatcher
     
+def require_admin( func ):
+    def decorator( self, trans, *args, **kwargs ):
+        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+        if not admin_users:
+            return trans.show_error_message( "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration." )
+        user = trans.get_user()
+        if not user:
+            return trans.show_error_message( "You must be logged in as an administrator to access this feature." )
+        if not user.email in admin_users:
+            return trans.show_error_message( "You must be an administrator to access this feature." )
+        return func( self, trans, *args, **kwargs )
+    return decorator
+
 NOT_SET = object()
 
 class MessageException( Exception ):
@@ -118,6 +142,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.workflow_building_mode = False
         # Always have a valid galaxy session
         self.__ensure_valid_session( session_cookie )
+        if self.app.config.require_login:
+            self.__ensure_logged_in_user( environ )
     @property
     def sa_session( self ):
         """
@@ -223,8 +249,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                     galaxy_session.user = self.__get_or_create_remote_user( remote_user_email )
                     galaxy_session_requires_flush = True
                 elif galaxy_session.user.email != remote_user_email:
-                    # Session exists but is not associated with the correct
-                    # remote user
+                    # Session exists but is not associated with the correct remote user
                     invalidate_existing_session = True
                     user_for_new_session = self.__get_or_create_remote_user( remote_user_email )
                     log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
@@ -260,6 +285,28 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             if prev_galaxy_session:
                 objects_to_flush.append( prev_galaxy_session )            
             sa_session.flush( objects_to_flush )
+    def __ensure_logged_in_user( self, environ ):
+        allowed_paths = (
+            url_for( controller='root', action='index' ),
+            url_for( controller='root', action='tool_menu' ),
+            url_for( controller='root', action='masthead' ),
+            url_for( controller='root', action='history' ),
+            url_for( controller='user', action='login' ),
+            url_for( controller='user', action='create' ),
+            url_for( controller='user', action='reset_password' ),
+            url_for( controller='library', action='browse' )
+        )
+        display_as = url_for( controller='root', action='display_as' )
+        if self.galaxy_session.user is None:
+            if self.app.config.ucsc_display_sites and self.request.path == display_as:
+                try:
+                    host = socket.gethostbyaddr( self.environ[ 'REMOTE_ADDR' ] )[0]
+                except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
+                    host = None
+                if host in UCSC_SERVERS:
+                    return
+            if self.request.path not in allowed_paths:
+                self.response.send_redirect( url_for( controller='root', action='index' ) )
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """
         Create a new GalaxySession for this request, possibly with a connection
@@ -287,7 +334,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Return the user in $HTTP_REMOTE_USER and create if necessary
         """
         # remote_user middleware ensures HTTP_REMOTE_USER exists
-        user = self.app.model.User.filter_by( email=remote_user_email ).first()
+        user = self.app.model.User.filter( self.app.model.User.table.c.email==remote_user_email ).first()
         if user is None:
             random.seed()
             user = self.app.model.User( email=remote_user_email )
@@ -295,6 +342,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             user.external = True
             user.flush()
             #self.log_event( "Automatically created account '%s'", user.email )
+        elif user.deleted:
+            return self.show_error_message( "Your account is no longer valid, contact your Galaxy administrator to activate your account." )
         return user
     def __update_session_cookie( self, name='galaxysession' ):
         """
@@ -307,20 +356,25 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Login a new user (possibly newly created)
            - create a new session
            - associate new session with user
-           - if old session had a history and it was not associated with a user, associate it with the new session.
+           - if old session had a history and it was not associated with a user, associate it with the new session, 
+             otherwise associate the current session's history with the user
         """
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
         self.galaxy_session = self.__create_new_session( prev_galaxy_session, user )
         if prev_galaxy_session.current_history:
             history = prev_galaxy_session.current_history
-            if history.user is None:
-                self.galaxy_session.add_history( history )
-                self.galaxy_session.current_history = history
-                history.user = user   
-            self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session, history ] )
+        elif self.galaxy_session.current_history:
+            history = self.galaxy_session.current_history
         else:
-            self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session ] )
+            history = self.history
+        if history not in self.galaxy_session.histories:
+            self.galaxy_session.add_history( history )
+        if history.user is None:
+            history.user = user
+        self.galaxy_session.current_history = history
+        self.app.security_agent.history_set_default_permissions( history, dataset=True, bypass_manage_permission=True )
+        self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session, history ] )
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name='galaxysession' )
     def handle_user_logout( self ):
@@ -376,6 +430,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             history.user = self.galaxy_session.user
         # Track genome_build with history
         history.genome_build = util.dbnames.default_value
+        # Set the user's default history permissions
+        self.app.security_agent.history_set_default_permissions( history )
         # Save
         self.sa_session.flush( [ self.galaxy_session, history ] )
         return history
@@ -388,7 +444,13 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.galaxy_session.user = user
         self.sa_session.flush( [ self.galaxy_session ] )
     user = property( get_user, set_user )
-                
+
+    def user_is_admin( self ):
+        admin_users = self.app.config.get( "admin_users", "" ).split( "," )
+        if self.user and admin_users and self.user.email in admin_users:
+            return True
+        return False
+
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox
@@ -434,12 +496,12 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Convenience method for displaying an warn message. See `show_message`.
         """
         return self.show_message( message, 'warning', refresh_frames )
-    def show_form( self, form ):
+    def show_form( self, form, header=None, template="form.mako" ):
         """
         Convenience method for displaying a simple page with a single HTML
         form.
         """    
-        return self.fill_template( "form.mako", form=form )
+        return self.fill_template( template, form=form, header=header )
     def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
@@ -476,8 +538,8 @@ class FormBuilder( object ):
         self.action = action
         self.submit_text = submit_text
         self.inputs = []
-    def add_input( self, type, name, label, value=None, error=None, help=None  ):
-        self.inputs.append( FormInput( type, label, name, value, error, help ) )
+    def add_input( self, type, name, label, value=None, error=None, help=None, use_label=True  ):
+        self.inputs.append( FormInput( type, label, name, value, error, help, use_label ) )
         return self
     def add_text( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'text', label, name, value, error, help )
@@ -488,13 +550,14 @@ class FormInput( object ):
     """
     Simple class describing a form input element
     """
-    def __init__( self, type, name, label, value=None, error=None, help=None ):
+    def __init__( self, type, name, label, value=None, error=None, help=None, use_label=True ):
         self.type = type
         self.name = name
         self.label = label
         self.value = value
         self.error = error
         self.help = help
+        self.use_label = use_label
     
 class FormData( object ):
     """
@@ -514,3 +577,4 @@ class Bunch( dict ):
         return self[key]
     def __setattr__( self, key, value ):
         self[key] = value
+

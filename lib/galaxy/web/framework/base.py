@@ -84,15 +84,19 @@ class WebApplication( object ):
         friendly objects, finds the appropriate method to handle the request
         and calls it.
         """
-        # Setup the transaction
-        trans = self.transaction_factory( environ )
         # Map url using routes
-        path_info = trans.request.path_info
+        path_info = environ.get( 'PATH_INFO', '' )
         map = self.mapper.match( path_info )
         if map == None:
             raise httpexceptions.HTTPNotFound( "No route for " + path_info )
-        # Save the complete mapper dict, we pop things off so they don't get passed down
-        raw_map = dict( map )
+        # Setup routes
+        rc = routes.request_config()
+        rc.mapper = self.mapper
+        rc.mapper_dict = map
+        rc.environ = environ
+        # Setup the transaction
+        trans = self.transaction_factory( environ )
+        rc.redirect = trans.response.send_redirect
         # Get the controller class
         controller_name = map.pop( 'controller', None )
         controller = self.controllers.get( controller_name, None )
@@ -111,12 +115,6 @@ class WebApplication( object ):
         # Is the method callable
         if not callable( method ):
             raise httpexceptions.HTTPNotFound( "Action not callable for " + path_info ) 
-        # Setup routes
-        rc = routes.request_config()
-        rc.mapper = self.mapper
-        rc.mapper_dict = raw_map
-        rc.environ = environ
-        rc.redirect = trans.response.send_redirect
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update( map )
@@ -277,7 +275,7 @@ class Response( object ):
         """
         Send an HTTP redirect response to (target `url`)
         """
-        raise httpexceptions.HTTPFound( url )
+        raise httpexceptions.HTTPFound( url, headers=self.wsgi_headeritems() )
     def wsgi_headeritems( self ):
         """
         Return headers in format appropriate for WSGI `start_response`

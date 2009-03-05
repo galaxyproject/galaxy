@@ -5,6 +5,7 @@ Image classes
 import data
 import logging
 import re
+import string
 from cgi import escape
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
@@ -102,15 +103,37 @@ class csFasta( Sequence ):
         Color-space sequence: 
             >2_15_85_F3
             T213021013012303002332212012112221222112212222
-        
-        TODO:
-            add sniff function
-        """
-        
-        return False
-        
 
-                
+        >>> fname = get_test_fname( 'sequence.fasta' )
+        >>> csFasta().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'sequence.csfasta' )
+        >>> csFasta().sniff( fname )
+        True
+        """
+        try:
+            fh = open( filename )
+            while True:
+                line = fh.readline()
+                if not line:
+                    break #EOF
+                line = line.strip()
+                if line and not line.startswith( '#' ): #first non-empty non-comment line
+                    if line.startswith( '>' ):
+                        line = fh.readline().strip()
+                        if line == '' or line.startswith( '>' ):
+                            break
+                        elif line[0] not in string.ascii_uppercase:
+                            return False
+                        elif len( line ) > 1 and not re.search( '^\d+$', line[1:] ):
+                            return False
+                        return True
+                    else:
+                        break #we found a non-empty line, but it's not a header
+        except:
+            pass
+        return False
+
 class FastqSolexa( Sequence ):
     """Class representing a FASTQ sequence ( the Solexa variant )"""
     file_ext = "fastqsolexa"
@@ -231,8 +254,7 @@ class Maf( Alignment ):
                 tmp_file.write( "%s\t%s\n" % ( spec, "\t".join( chroms ) ) )
             
             if not chrom_file:
-                chrom_file = galaxy.model.MetadataFile( dataset = dataset, name = "species_chromosomes" )
-                chrom_file.flush()
+                chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file( dataset = dataset )
             tmp_file.seek( 0 )
             open( chrom_file.file_name, 'wb' ).write( tmp_file.read() )
             dataset.metadata.species_chromosomes = chrom_file
@@ -240,8 +262,7 @@ class Maf( Alignment ):
         
         index_file = dataset.metadata.maf_index
         if not index_file:
-            index_file = galaxy.model.MetadataFile( dataset = dataset, name="maf_index" )
-            index_file.flush()
+            index_file = dataset.metadata.spec['maf_index'].param.new_file( dataset = dataset )
         indexes.write( open( index_file.file_name, 'w' ) )
         dataset.metadata.maf_index = index_file
     

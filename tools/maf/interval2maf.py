@@ -48,10 +48,7 @@ def __main__():
         print >>sys.stderr, "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
         sys.exit()
     
-    species = None
-    if options.species:
-        species = options.species.split( ',' )
-        if "None" in species: species = None
+    species = maf_utilities.parse_species_option( options.species )
     
     if options.chromCol: chromCol = int( options.chromCol ) - 1
     else: 

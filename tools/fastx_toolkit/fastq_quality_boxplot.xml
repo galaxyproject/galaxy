@@ -1,0 +1,47 @@
+<tool id="cshl_fastq_quality_boxplot" name="Quality Score">
+	<description>chart</description>
+	
+	<command>fastq_quality_boxplot_graph.sh -t '$input.name' -i $input -o $output</command>
+	
+	<inputs>
+		<param format="txt" name="input" type="data" label="Statistics report file (output of 'FASTQ Statistics' tool)" />
+	</inputs>
+
+	<outputs>
+		<data format="png" name="output" metadata_source="input" />
+	</outputs>
+<help>
+
+**What it does**
+
+Creates a boxplot graph for the quality scores in the library.
+
+.. class:: infomark
+
+**TIP:** Use the **FASTQ Statistics** tool to generate the report file needed for this tool.
+
+-----
+
+**Output Examples**
+
+* Black horizontal lines are medians
+* Rectangular red boxes show the Inter-quartile Range (IQR) (top value is Q3, bottom value is Q1)
+* Whiskers show outlier at max. 1.5*IQR
+
+
+An excellent quality library (median quality is 40 for almost all 36 cycles):
+
+.. image:: ../static/fastx_icons/fastq_quality_boxplot_1.png
+
+
+A relatively good quality library (median quality degrades towards later cycles):
+
+.. image:: ../static/fastx_icons/fastq_quality_boxplot_2.png
+
+A low quality library (median drops quickly):
+
+.. image:: ../static/fastx_icons/fastq_quality_boxplot_3.png
+
+</help>
+</tool>
+<!-- FASTQ-Quality-Boxplot is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

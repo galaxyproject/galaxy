@@ -1,13 +1,19 @@
-import sys, logging, copy, shutil, weakref
+import sys, logging, copy, shutil, weakref, cPickle, tempfile, os
 
-from galaxy.util import string_as_bool
+from galaxy.util import string_as_bool, relpath, stringify_dictionary_keys
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 import galaxy.model
 
+import pkg_resources
+pkg_resources.require("simplejson")
+import simplejson
+
 log = logging.getLogger( __name__ )
 
 STATEMENTS = "__galaxy_statements__" #this is the name of the property in a Datatype class where new metadata spec element Statements are stored
+
+DATABASE_CONNECTION_AVAILABLE = True #When False, certain metadata parameter types (see FileParameter) will behave differently
 
 class Statement( object ):
     """
@@ -28,7 +34,7 @@ class Statement( object ):
             statement.target( element, *args, **kwargs ) #statement.target is MetadataElementSpec, element is a Datatype class
 
 
-class MetadataCollection:
+class MetadataCollection( object ):
     """
     MetadataCollection is not a collection at all, but rather a proxy
     to the real metadata which is stored as a Dictionary. This class
@@ -90,6 +96,27 @@ class MetadataCollection:
             if key in self.spec:
                 rval[key] = self.spec[key].param.make_copy( value, target_context=self, source_context=to_copy )
         return rval
+    def from_JSON_dict( self, filename ):
+        dataset = self.parent
+        log.debug( 'loading metadata from file for: %s %s' % ( dataset.__class__.__name__, dataset.id ) )
+        JSONified_dict = simplejson.load( open( filename ) )
+        for name, spec in self.spec.items():
+            if name in JSONified_dict:
+                dataset._metadata[ name ] = spec.param.from_external_value( JSONified_dict[ name ], dataset )
+            elif name in dataset._metadata:
+                #if the metadata value is not found in our externally set metadata but it has a value in the 'old'
+                #metadata associated with our dataset, we'll delete it from our dataset's metadata dict
+                del dataset._metadata[ name ]
+    def to_JSON_dict( self, filename ):
+        #galaxy.model.customtypes.json_encoder.encode()
+        meta_dict = {}
+        dataset_meta_dict = self.parent._metadata
+        for name, spec in self.spec.items():
+            if name in dataset_meta_dict:
+                meta_dict[ name ] = spec.param.to_external_value( dataset_meta_dict[ name ] )
+        simplejson.dump( meta_dict, open( filename, 'wb+' ) )
+    def __getstate__( self ):
+        return None #cannot pickle a weakref item (self._parent), when data._metadata_collection is None, it will be recreated on demand
 
 class MetadataSpecCollection( odict ):
     """
@@ -165,6 +192,17 @@ class MetadataParameter( object ):
     def wrap( self, value ):
         """
         Turns a value into its usable form.
+        """
+        return value
+
+    def from_external_value( self, value, parent ):
+        """
+        Turns a value read from an external dict into its value to be pushed directly into the metadata dict.
+        """
+        return value
+    def to_external_value( self, value ):
+        """
+        Turns a value read from a metadata into its value to be pushed directly into the external dict.
         """
         return value
 
@@ -326,14 +364,19 @@ class FileParameter( MetadataParameter ):
         return "<div>No display available for Metadata Files</div>"
 
     def wrap( self, value ):
-        if isinstance( value, galaxy.model.MetadataFile ):
+        if isinstance( value, galaxy.model.MetadataFile ) or isinstance( value, MetadataTempFile ):
             return value
-        try:
-            return galaxy.model.MetadataFile.get( value )
-        except:
-            #value was not a valid id
-            return None
-
+        if DATABASE_CONNECTION_AVAILABLE:
+            try:
+                return galaxy.model.MetadataFile.get( value )
+            except:
+                #value was not a valid id
+                return None
+        elif value is not None:
+            mf = galaxy.model.MetadataFile()
+            mf.id = value #we assume this is a valid id, since we cannot check it
+            return mf
+        return None
     def make_copy( self, value, target_context = None, source_context = None ):
         value = self.wrap( value )
         if value:
@@ -342,9 +385,164 @@ class FileParameter( MetadataParameter ):
             shutil.copy( value.file_name, new_value.file_name )
             return self.unwrap( new_value )
         return None
-
+    
     @classmethod
     def marshal( cls, value ):
         if isinstance( value, galaxy.model.MetadataFile ):
             value = value.id
         return value
+    
+    def from_external_value( self, value, parent ):
+        """
+        Turns a value read from a external dict into its value to be pushed directly into the metadata dict.
+        """
+        if MetadataTempFile.is_JSONified_value( value ):
+            value = MetadataTempFile.from_JSON( value )
+        if isinstance( value, MetadataTempFile ):
+            mf = self.new_file( dataset = parent, **value.kwds )
+            shutil.move( value.file_name, mf.file_name )
+            value = mf.id
+        return value
+    def to_external_value( self, value ):
+        """
+        Turns a value read from a metadata into its value to be pushed directly into the external dict.
+        """
+        if isinstance( value, galaxy.model.MetadataFile ):
+            value = value.id
+        elif isinstance( value, MetadataTempFile ):
+            value = MetadataTempFile.to_JSON( value )
+        return value
+    
+    def new_file( self, dataset = None, **kwds ):
+        if DATABASE_CONNECTION_AVAILABLE:
+            mf = galaxy.model.MetadataFile( name = self.spec.name, dataset = dataset, **kwds )
+            mf.flush() #flush to assign id
+            return mf
+        else:
+            #we need to make a tmp file that is accessable to the head node, 
+            #we will be copying its contents into the MetadataFile objects filename after restoring from JSON
+            #we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
+            return MetadataTempFile( **kwds )
+
+#This class is used when a database file connection is not available
+class MetadataTempFile( object ):
+    tmp_dir = 'database/tmp' #this should be overwritten as necessary in calling scripts
+    def __init__( self, **kwds ):
+        self.kwds = kwds
+        self._filename = None
+    @property
+    def file_name( self ):
+        if self._filename is None:
+            #we need to create a tmp file, accessable across all nodes/heads, save the name, and return it
+            self._filename = relpath( tempfile.NamedTemporaryFile( dir = self.tmp_dir, prefix = "metadata_temp_file_" ).name )
+            open( self._filename, 'wb+' ) #create an empty file, so it can't be reused using tempfile
+        return self._filename
+    def to_JSON( self ):
+        return { 'object_type':self.__class__.__name__, 'filename':self.file_name, 'kwds':self.kwds }
+    @classmethod
+    def from_JSON( cls, json_dict ):
+        #need to ensure our keywords are not unicode
+        rval = cls( **stringify_dictionary_keys( json_dict['kwds'] ) )
+        rval._filename = json_dict['filename']
+        return rval
+    @classmethod
+    def is_JSONified_value( cls, value ):
+        return ( isinstance( value, dict ) and value.get( 'object_type', None ) == cls.__name__ )
+    @classmethod
+    def cleanup_from_JSON_dict_filename( cls, filename ):
+        try:
+            for key, value in simplejson.load( open( filename ) ).items():
+                if cls.is_JSONified_value( value ):
+                    value = cls.from_JSON( value )
+                if isinstance( value, cls ) and os.path.exists( value.file_name ):
+                    log.debug( 'Cleaning up abandoned MetadataTempFile file: %s' % value.file_name )
+                    os.unlink( value.file_name )
+        except Exception, e:
+            log.debug( 'Failed to cleanup MetadataTempFile temp files from %s: %s' % ( filename, e ) )
+
+#Class with methods allowing set_meta() to be called externally to the Galaxy head
+class JobExternalOutputMetadataWrapper( object ):
+    #this class allows access to external metadata filenames for all outputs associated with a job
+    #We will use JSON as the medium of exchange of information, except for the DatasetInstance object which will use pickle (in the future this could be JSONified as well)
+    def __init__( self, job ):
+        self.job_id = job.id
+    def get_output_filenames_by_dataset( self, dataset ):
+        if isinstance( dataset, galaxy.model.HistoryDatasetAssociation ):
+            return galaxy.model.JobExternalOutputMetadata.filter_by( job_id = self.job_id, history_dataset_association_id = dataset.id ).first() #there should only be one or None
+        elif isinstance( dataset, galaxy.model.LibraryDatasetDatasetAssociation ):
+            return galaxy.model.JobExternalOutputMetadata.filter_by( job_id = self.job_id, library_dataset_dataset_association_id = dataset.id ).first() #there should only be one or None
+        return None
+    def get_dataset_metadata_key( self, dataset ):
+        return "%s_%d" % ( dataset.__class__.__name__, dataset.id ) #set meta can be called on library items and history items, need to make different keys for them, since ids can overlap
+    def setup_external_metadata( self, datasets, exec_dir = None, tmp_dir = None, dataset_files_path = None, kwds = {} ):
+        #fill in metadata_files_dict and return the command with args required to set metadata
+        def __metadata_files_list_to_cmd_line( metadata_files ):
+            return "%s,%s,%s,%s" % ( metadata_files.filename_in, metadata_files.filename_kwds, metadata_files.filename_out, metadata_files.filename_results_code )
+        if not isinstance( datasets, list ):
+            datasets = [ datasets ]
+        if exec_dir is None:
+            exec_dir = os.path.abspath( os.getcwd() )
+        if tmp_dir is None:
+            tmp_dir = MetadataTempFile.tmp_dir
+        if dataset_files_path is None:
+            dataset_files_path = galaxy.model.Dataset.file_path
+        metadata_files_list = []
+        for dataset in datasets:
+            key = self.get_dataset_metadata_key( dataset )
+            #future note:
+            #wonkiness in job execution causes build command line to be called more than once
+            #when setting metadata externally, via 'auto-detect' button in edit attributes, etc., 
+            #we don't want to overwrite (losing the ability to cleanup) our existing dataset keys and files, 
+            #so we will only populate the dictionary once
+            metadata_files = self.get_output_filenames_by_dataset( dataset )
+            if not metadata_files:
+                metadata_files = galaxy.model.JobExternalOutputMetadata( dataset = dataset)
+                metadata_files.job_id = self.job_id
+                #we are using tempfile to create unique filenames, tempfile always returns an absolute path
+                #we will use pathnames relative to the galaxy root, to accommodate instances where the galaxy root
+                #is located differently, i.e. on a cluster node with a different filesystem structure
+                
+                #file to store existing dataset
+                metadata_files.filename_in = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_in_%s_" % key ).name )
+                cPickle.dump( dataset, open( metadata_files.filename_in, 'wb+' ) )
+                #file to store metadata results of set_meta()
+                metadata_files.filename_out = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_out_%s_" % key ).name )
+                open( metadata_files.filename_out, 'wb+' ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+                #file to store a 'return code' indicating the results of the set_meta() call
+                #results code is like (True/False - if setting metadata was successful/failed , exception or string of reason of success/failure )
+                metadata_files.filename_results_code = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_out_%s_" % key ).name )
+                simplejson.dump( ( False, 'External set_meta() not called' ), open( metadata_files.filename_results_code, 'wb+' ) ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+                #file to store kwds passed to set_meta()
+                metadata_files.filename_kwds = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_kwds_%s_" % key ).name )
+                simplejson.dump( kwds, open( metadata_files.filename_kwds, 'wb+' ), ensure_ascii=True )
+                metadata_files.flush()
+            metadata_files_list.append( metadata_files )
+        #return command required to build
+        return "%s %s %s %s" % ( os.path.join( exec_dir, 'set_metadata.sh' ), dataset_files_path, tmp_dir, " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
+    
+    def external_metadata_set_successfully( self, dataset ):
+        metadata_files = self.get_output_filenames_by_dataset( dataset )
+        if not metadata_files:
+            return False # this file doesn't exist
+        rval, rstring = simplejson.load( open( metadata_files.filename_results_code ) )
+        if not rval:
+            log.debug( 'setting metadata externally failed for %s %s: %s' % ( dataset.__class__.__name__, dataset.id, rstring ) )
+        return rval
+    
+    def cleanup_external_metadata( self ):
+        log.debug( 'Cleaning up external metadata files' )
+        for metadata_files in galaxy.model.Job.get( self.job_id ).external_output_metadata:
+            #we need to confirm that any MetadataTempFile files were removed, if not we need to remove them
+            #can occur if the job was stopped before completion, but a MetadataTempFile is used in the set_meta
+            MetadataTempFile.cleanup_from_JSON_dict_filename( metadata_files.filename_out )
+            dataset_key = self.get_dataset_metadata_key( metadata_files.dataset )
+            for key, fname in [ ( 'filename_in', metadata_files.filename_in ), ( 'filename_out', metadata_files.filename_out ), ( 'filename_results_code', metadata_files.filename_results_code ), ( 'filename_kwds', metadata_files.filename_kwds ) ]:
+                try:
+                    os.remove( fname )
+                except Exception, e:
+                    log.debug( 'Failed to cleanup external metadata file (%s) for %s: %s' % ( key, dataset_key, e ) )
+    def set_job_runner_external_pid( self, pid ):
+        for metadata_files in galaxy.model.Job.get( self.job_id ).external_output_metadata:
+            metadata_files.job_runner_external_pid = pid
+            metadata_files.flush()
+        

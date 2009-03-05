@@ -1,14 +1,9 @@
+import logging, os, mimetypes, smtplib
+
 from galaxy.web.base.controller import *
-
-import logging, os, sets, string, shutil
-import re, socket
-import mimetypes
-
-from galaxy import util, datatypes, jobs, web, util, model
-
+from galaxy import web, model
 from cgi import escape, FieldStorage
 
-import smtplib
 from email.MIMEText import MIMEText
 
 import pkg_resources; 
@@ -104,31 +99,30 @@ class DatasetInterface( BaseController ):
     @web.expose
     def display(self, trans, dataset_id=None, filename=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
-        if filename is None or filename.lower() == "index":
-            try:
-                data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
-                if data:
-                    mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-                    trans.response.set_content_type(mime)
-                    trans.log_event( "Display dataset id: %s" % str(dataset_id) )
-                    try:
-                        return open( data.file_name )
-                    except: 
-                        return "This item contains no content"
-            except:
-                pass
-            return "Invalid dataset specified"
-        else:
-            #display files from directory here
-            try:
-                file_path = os.path.join(trans.app.model.HistoryDatasetAssociation.get( dataset_id ).extra_files_path, filename)
-                mime, encoding = mimetypes.guess_type(file_path)
-                if mime is None:
-                    mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
+        data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+        if not data:
+            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
+        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
+            if filename is None or filename.lower() == "index":
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
-                return open(file_path)
-            except:
-                raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % (filename) )
+                trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
+                try:
+                    return open( data.file_name )
+                except:
+                    raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
+            else:
+                file_path = os.path.join( data.extra_files_path, filename )
+                mime, encoding = mimetypes.guess_type( file_path )
+                if mime is None:
+                    mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
+                trans.response.set_content_type( mime )
+                try:
+                    return open( file_path )
+                except:
+                    raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
+        else:
+            return trans.show_error_message( "You are not allowed to access this dataset" )
     
     def _undelete( self, trans, id ):
         history = trans.get_history()
@@ -156,7 +150,6 @@ class DatasetInterface( BaseController ):
         if self._undelete( trans, id ):
             return "OK"
         raise "Error undeleting"
-        
     
     @web.expose
     def copy_datasets( self, trans, source_dataset_ids = "", target_history_ids = "", new_history_name="", do_copy = False ):
@@ -165,7 +158,7 @@ class DatasetInterface( BaseController ):
         create_new_history = False
         if source_dataset_ids:
             if not isinstance( source_dataset_ids, list ):
-            	source_dataset_ids = source_dataset_ids.split( "," )
+                source_dataset_ids = source_dataset_ids.split( "," )
             source_dataset_ids = map( int, source_dataset_ids )
         else:
             source_dataset_ids = []
@@ -219,4 +212,11 @@ class DatasetInterface( BaseController ):
         if user:
            target_histories = user.histories 
         
-        return trans.fill_template( "/dataset/copy_view.mako", source_dataset_ids = source_dataset_ids, target_history_ids = target_history_ids, source_datasets = source_datasets, target_histories = target_histories, new_history_name = new_history_name, done_msg = done_msg, error_msg = error_msg )
+        return trans.fill_template( "/dataset/copy_view.mako",
+                                    source_dataset_ids = source_dataset_ids,
+                                    target_history_ids = target_history_ids,
+                                    source_datasets = source_datasets,
+                                    target_histories = target_histories,
+                                    new_history_name = new_history_name,
+                                    done_msg = done_msg,
+                                    error_msg = error_msg )

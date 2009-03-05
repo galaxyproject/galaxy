@@ -32,5 +32,34 @@ class QualityScore ( data.Text ):
         except:
             return "Quality score file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
-
-      
+    def sniff( self, filename ):
+        """
+        >>> fname = get_test_fname( 'sequence.fasta' )
+        >>> QualityScore().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'sequence.qual' )
+        >>> QualityScore().sniff( fname )
+        True
+        """
+        try:
+            fh = open( filename )
+            while True:
+                line = fh.readline()
+                if not line:
+                    break #EOF
+                line = line.strip()
+                if line and not line.startswith( '#' ): #first non-empty non-comment line
+                    if line.startswith( '>' ):
+                        line = fh.readline().strip()
+                        if line == '' or line.startswith( '>' ):
+                            break
+                        try:
+                            [ int( x ) for x in line.split() ]
+                        except:
+                            break
+                        return True
+                    else:
+                        break #we found a non-empty line, but it's not a header
+        except:
+            pass
+        return False

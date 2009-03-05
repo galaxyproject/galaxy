@@ -29,3 +29,6 @@ Root = BaseController
 """
 Deprecated: `BaseController` used to be available under the name `Root`
 """
+
+class ControllerUnavailable( Exception ):
+    pass

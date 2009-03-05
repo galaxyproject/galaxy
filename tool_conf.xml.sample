@@ -41,7 +41,8 @@
     <tool file="filters/fixedValueColumn.xml" />
     <tool file="stats/column_maker.xml" />
     <tool file="filters/catWrapper.xml" />
-    <tool file="filters/condense_characters.xml" />
+    <tool file="filters/cutWrapper.xml" />
+    <tool file="filters/mergeCols.xml" />
     <tool file="filters/convert_characters.xml" />
     <tool file="filters/CreateInterval.xml" />
     <tool file="filters/cutWrapper.xml" />
@@ -151,11 +152,12 @@
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
     <tool file="hyphy/hyphy_dnds_wrapper.xml" />
  </section>
- <section name="Taxonomy manipulation" id="tax_manipulation">
+ <section name="Metagenomic analyses" id="tax_manipulation">
     <tool file="taxonomy/gi2taxonomy.xml" />
     <tool file="taxonomy/t2t_report.xml" />
     <tool file="taxonomy/t2ps_wrapper.xml" />
     <tool file="taxonomy/find_diag_hits.xml" />
+    <tool file="taxonomy/lca.xml" />
     <tool file="taxonomy/poisson2test.xml" />
   </section>
   <section name="Solexa tools" id="solexa_tools">
@@ -286,6 +288,25 @@
     <tool file="fasta_tools/fasta_to_tabular.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
   </section>
+  <section name="FASTA/Q Information" id="cshl_library_information">
+    <tool file="fastx_toolkit/fastq_qual_stat.xml" />
+    <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
+    <tool file="fastx_toolkit/fastq_nucleotides_distribution.xml" />
+    <!-- <tool file="fastx_toolkit/fasta_clipping_histogram.xml" /> -->
+  </section>
+
+  <section name="FASTA/Q Preprocessing" id="cshl_fastx_manipulation">
+    <tool file="fastx_toolkit/fastq_to_fasta.xml" />
+    <tool file="fastx_toolkit/fastq_qual_conv.xml" />
+    <!-- <tool file="fastx_toolkit/fastx_clipper.xml" />  -->
+    <tool file="fastx_toolkit/fastx_trimmer.xml" />
+    <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
+    <tool file="fastx_toolkit/fastx_artifacts_filter.xml" />
+    <tool file="fastx_toolkit/fastq_quality_filter.xml" />
+    <!-- <tool file="fastx_toolkit/fasta_collapser.xml" /> -->
+    <!-- <tool file="fastx_toolkit/fastx_barcode_splitter.xml" />  -->
+  </section>
+  
   <section name="Short Read QC and Manipulation" id="short_read_analysis">
     <tool file="metag_tools/short_reads_figure_score.xml" />
     <tool file="metag_tools/short_reads_figure_high_quality_length.xml" />
@@ -301,5 +322,8 @@
    <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="metag_tools/blat_wrapper.xml" />
    <tool file="metag_tools/mapping_to_ucsc.xml" />
+   </section>
+  <section name="Tracks" id="tracks">
+   <tool file="visualization/genetrack.xml" />
    </section>
 </toolbox>

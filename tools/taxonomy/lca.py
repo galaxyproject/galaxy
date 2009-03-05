@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 #Guruprasad Ananda
 """
-This tool provides the SQL "group by" functionality.
+Least Common Ancestor tool.
 """
 import sys, string, re, commands, tempfile, random
-#from rpy import *
 
 def stop_err(msg):
     sys.stderr.write(msg)
@@ -14,10 +13,36 @@ def main():
     try:
         inputfile = sys.argv[1]
         outfile = sys.argv[2]
+        rank_bound = int( sys.argv[3] )
+        """
+        Mapping of ranks:
+        root        :2, 
+        superkingdom:3, 
+        kingdom     :4, 
+        subkingdom  :5, 
+        superphylum :6, 
+        phylum      :7, 
+        subphylum   :8, 
+        superclass  :9, 
+        class       :10, 
+        subclass    :11, 
+        superorder  :12, 
+        order       :13, 
+        suborder    :14, 
+        superfamily :15,
+        family      :16,
+        subfamily   :17,
+        tribe       :18,
+        subtribe    :19,
+        genus       :20,
+        subgenus    :21,
+        species     :22,
+        subspecies  :23,
+        """
     except:
         stop_err("Syntax error: Use correct syntax: program infile outfile")
+    
     group_col = 0
-
     tmpfile = tempfile.NamedTemporaryFile()
 
     try:
@@ -42,10 +67,6 @@ def main():
     prev_vals = []
     remaining_vals = []
     skipped_lines = 0
-    first_invalid_line = 0
-    invalid_line = ''
-    invalid_value = ''
-    invalid_column = 0
     fout = open(outfile, "w")
     cols = range(1,25)
     block_valid = False
@@ -78,9 +99,10 @@ def main():
                         out_list[0] = str(prev_item)
                         out_list[1] = str(prev_vals[0][0])
                         out_list[2] = str(prev_vals[1][0])
-                        out_list[24] = str(prev_vals[23][0])
-                        #print >> fout, prev_vals
-                        #sys.exit()
+                        try:
+                            out_list[24] = str(prev_vals[23][0])
+                        except:
+                            pass
                         for k, col in enumerate(cols):
                             if col >= 3 and col < 24:
                                 if len(set(prev_vals[k])) == 1:
@@ -90,8 +112,14 @@ def main():
                         while k < 23:
                             out_list[k+1] = 'n' 
                             k += 1
-                            
-                        print >>fout, '\t'.join(out_list)
+                        
+                        if rank_bound == 0:     
+                            print >>fout, '\t'.join(out_list).strip()
+                            #print 'n'*( 24 - rank_bound )
+                        else:
+                            #print '\t'.join(out_list[rank_bound:24])
+                            if ''.join(out_list[rank_bound:24]) != 'n'*( 24 - rank_bound ):
+                                print >>fout, '\t'.join(out_list).strip()
                         
                         block_valid = True
                         prev_item = item   
@@ -110,21 +138,21 @@ def main():
                         val_list.append(fields[col].strip())
                         prev_vals.append(val_list)
             
-            except Exception, exc:
+            except:
                 skipped_lines += 1
-                if not first_invalid_line:
-                    first_invalid_line = ii+1
         else:
             skipped_lines += 1
-            if not first_invalid_line:
-                first_invalid_line = ii+1
-     
+            
     # Handle the last grouped value
     out_list = ['']*25
     out_list[0] = str(prev_item)
     out_list[1] = str(prev_vals[0][0])
     out_list[2] = str(prev_vals[1][0])
-    out_list[24] = str(prev_vals[23][0])
+    try:
+        out_list[24] = str(prev_vals[23][0])
+    except:
+        pass
+
     for k, col in enumerate(cols):
         if col >= 3 and col < 24:
             if len(set(prev_vals[k])) == 1:
@@ -134,12 +162,17 @@ def main():
     while k < 23:
         out_list[k+1] = 'n' 
         k += 1
-        
-    print >>fout, '\t'.join(out_list)
     
+    if rank_bound == 0:     
+        print >>fout, '\t'.join(out_list).strip()
+    else:
+        #print ''.join(out_list[rank_bound:24])
+        #print 'n'*( 24 - rank_bound )
+        if ''.join(out_list[rank_bound:24]) != 'n'*( 24 - rank_bound ):
+            print >>fout, '\t'.join(out_list).strip()
+        
     if skipped_lines > 0:
-        msg= "Skipped %d invalid lines starting with line %d.  Value '%s' in column %d is not numeric." % ( skipped_lines, first_invalid_line, invalid_value, invalid_column )
-        print msg
+        print "Skipped %d invalid lines." % ( skipped_lines )
     
 if __name__ == "__main__":
     main()

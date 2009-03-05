@@ -27,6 +27,7 @@ class Configuration( object ):
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )                        
+        self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
@@ -36,19 +37,23 @@ class Configuration( object ):
         self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
+        self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
+        self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
+        self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
+        self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
-        self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "5" ) )
+        self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_scheduler_policy = kwargs.get("job_scheduler_policy", "FIFO")
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
-        self.admin_pass = kwargs.get('admin_pass',"galaxy")
+        self.admin_users = kwargs.get( "admin_users", "" )
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
@@ -59,10 +64,10 @@ class Configuration( object ):
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "" )
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "" )
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "" )
-        self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', False ) )
-        self.use_memdump = string_as_bool( kwargs.get( 'use_memdump', False ) )
-        self.log_memory_usage = string_as_bool( kwargs.get( 'log_memory_usage', False ) )
-        self.log_events = string_as_bool( kwargs.get( 'log_events', False ) )
+        self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
+        self.use_memdump = string_as_bool( kwargs.get( 'use_memdump', 'False' ) )
+        self.log_memory_usage = string_as_bool( kwargs.get( 'log_memory_usage', 'False' ) )
+        self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,flybase,elegans" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
@@ -70,6 +75,9 @@ class Configuration( object ):
         self.bugs_email = kwargs.get( 'bugs_email', None )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
+        self.library_import_dir = kwargs.get( 'library_import_dir', None )
+        if self.library_import_dir is not None and not os.path.exists( self.library_import_dir ):
+            raise ConfigurationError( "library_import_dir specified in config (%s) does not exist" % self.library_import_dir )
         # Configuration options for taking advantage of nginx features
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
         self.nginx_upload_location = kwargs.get( 'nginx_upload_store', False )
@@ -103,7 +111,17 @@ class Configuration( object ):
         for path in self.tool_config, self.datatypes_config:
             if not os.path.isfile(path):
                 raise ConfigurationError("File not found: %s" % path )
-
+                
+    def is_admin_user( self,user ):
+        """
+        Determine if the provided user is listed in `admin_users`.
+        
+        NOTE: This is temporary, admin users will likely be specified in the
+              database in the future.
+        """
+        admin_users = self.get( "admin_users", "" ).split( "," )
+        return ( user is not None and user.email in admin_users )
+            
 def get_database_engine_options( kwargs ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using

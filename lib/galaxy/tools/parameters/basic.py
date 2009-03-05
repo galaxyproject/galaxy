@@ -3,17 +3,14 @@ Basic tool parameters.
 """
 
 import logging, string, sys, os, os.path
-
 from elementtree.ElementTree import XML, Element
-
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
 from galaxy.util.bunch import Bunch
-
 import validation, dynamic_options
-
 # For BaseURLToolParameter
 from galaxy.web import url_for
+import galaxy.model
 
 log = logging.getLogger(__name__)
 
@@ -444,10 +441,12 @@ class SelectToolParameter( ToolParameter ):
     >>> print p.name
     blah
     >>> print p.get_html()
+    <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
     <div><input type="checkbox" name="blah" value="x">I am X</div>
     <div class="odd_row"><input type="checkbox" name="blah" value="y" checked>I am Y</div>
     <div><input type="checkbox" name="blah" value="z" checked>I am Z</div>
     >>> print p.get_html( value=["x","y"])
+    <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
     <div><input type="checkbox" name="blah" value="x" checked>I am X</div>
     <div class="odd_row"><input type="checkbox" name="blah" value="y" checked>I am Y</div>
     <div><input type="checkbox" name="blah" value="z">I am Z</div>
@@ -528,7 +527,13 @@ class SelectToolParameter( ToolParameter ):
         if self.is_dynamic and ( trans and trans.workflow_building_mode ) \
            and ( self.options is None or self.options.has_dataset_dependencies ):
             if self.multiple:
-                value = value.split( "\n" )
+                #While it is generally allowed that a select value can be '', 
+                #we do not allow this to be the case in a dynamically generated multiple select list being set in workflow building mode
+                #we instead treat '' as 'No option Selected' (None)
+                if value == '':
+                    value = None
+                else:
+                    value = value.split( "\n" )
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, other_values )
         if isinstance( value, list ):
@@ -566,7 +571,7 @@ class SelectToolParameter( ToolParameter ):
         return value
     def get_initial_value( self, trans, context ):
         # More working around dynamic options for workflow
-        if self.is_dynamic and trans.workflow_building_mode \
+        if self.is_dynamic and ( trans is None or trans.workflow_building_mode )\
            and ( self.options is None or self.options.has_dataset_dependencies ):
             # Really the best we can do?
             return UnvalidatedValue( None )
@@ -1005,30 +1010,16 @@ class DrillDownSelectToolParameter( ToolParameter ):
 
 
 class DataToolParameter( ToolParameter ):
+    # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
+    # components.  Add as many additional tests as necessary.
     """
     Parameter that takes on one (or many) or a specific set of values.
 
     TODO: There should be an alternate display that allows single selects to be 
           displayed as radio buttons and multiple selects as a set of checkboxes
 
-    >>> # Mock up a history (not connected to database)
-    >>> from galaxy.model import History, HistoryDatasetAssociation
-    >>> from galaxy.util.bunch import Bunch
-    >>> hist = History()
-    >>> hist.flush()
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=3, extension='fasta', create_dataset=True ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=4, extension='png', create_dataset=True ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=5, extension='interval', create_dataset=True ) )
-    >>> p = DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
-    >>> print p.name
-    blah
-    >>> print p.get_html( trans=Bunch( history=hist ) )
-    <select name="blah">
-    <option value="2">2: Unnamed dataset</option>
-    <option value="5" selected>5: Unnamed dataset</option>
-    </select>
+    TODO: The following must be fixed to test correctly for the new security_check tag in the DataToolParameter ( the last test below is broken )
+    Nate's next passs at the dataset security stuff will dramatically alter this anyway.
     """
 
     def __init__( self, tool, elem ):
@@ -1075,28 +1066,38 @@ class DataToolParameter( ToolParameter ):
                 value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change )
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
-        def dataset_collector( datasets, parent_hid ):
-            for i, data in enumerate( datasets ):
+        def dataset_collector( hdas, parent_hid ):
+            for i, hda in enumerate( hdas ):
                 if parent_hid is not None:
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
-                    hid = str( data.hid )
-                if not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED] and data.visible:
-                    if self.options and data.get_dbkey() != filter_value:
+                    hid = str( hda.hid )
+                if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
+                    hda.visible and \
+                    trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
+                    # If we are sending data to an external application, then we need to make sure there are no roles
+                    # associated with the dataset that restrict it's access from "public".  We determine this by sending
+                    # None as the user to the allow_action method.
+                    if self.tool and self.tool.tool_type == 'data_destination':
+                        if not trans.app.security_agent.allow_action( None, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
+                            continue
+                    if self.options and hda.get_dbkey() != filter_value:
                         continue
-                    if isinstance( data.datatype, self.formats):
-                        selected = ( value and ( data in value ) )
-                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+                    if isinstance( hda.datatype, self.formats):
+                        selected = ( value and ( hda in value ) )
+                        field.add_option( "%s: %s" % ( hid, hda.name[:30] ), hda.id, selected )
                     else:
-                        target_ext, converted_dataset = data.find_conversion_destination( self.formats, converter_safe = self.converter_safe( other_values, trans ) )
+                        target_ext, converted_dataset = hda.find_conversion_destination( self.formats, converter_safe = self.converter_safe( other_values, trans ) )
                         if target_ext:
                             if converted_dataset:
-                                data = converted_dataset
-                            selected = ( value and ( data in value ) )
-                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
+                                hda = converted_dataset
+                            if not trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=hda.dataset ):
+                                continue
+                            selected = ( value and ( hda in value ) )
+                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda.name[:30] ), hda.id, selected )
                 # Also collect children via association object
-                dataset_collector( data.children, hid )
-        dataset_collector( history.datasets, None )
+                dataset_collector( hda.children, hid )
+        dataset_collector( history.active_datasets, None )
         some_data = bool( field.options )
         if some_data:
             if value is None or len( field.options ) == 1:
