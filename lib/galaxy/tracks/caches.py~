@@ -1,0 +1,29 @@
+import os
+from galaxy import config
+
+
+class BaseCache( object ):
+    """
+    Base/Abstract Cache for dataset indices.
+    """
+    pass
+
+class FileCache( BaseCache ):
+    def __init__(self, path=""):
+        self.path = path
+
+    def get(self, key, default=None):
+        cache_path = self._get_key_path( key )
+        if os.path.exists( cache_path ):
+            return open( cache_path, "rb" )
+        else:
+            return default
+
+    def set(self, key, value):
+        cache_path = self._get_key_path( key )
+        file = open( cache_path, "wb" )
+        file.write( value )
+        file.close()
+
+    def _get_key_path( self, key ):
+        return os.path.join( self.path, key )
