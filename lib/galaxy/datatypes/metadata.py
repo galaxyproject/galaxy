@@ -438,7 +438,7 @@ class MetadataTempFile( object ):
             open( self._filename, 'wb+' ) #create an empty file, so it can't be reused using tempfile
         return self._filename
     def to_JSON( self ):
-        return { 'object_type':self.__class__.__name__, 'filename':self.file_name, 'kwds':self.kwds }
+        return { '__class__':self.__class__.__name__, 'filename':self.file_name, 'kwds':self.kwds }
     @classmethod
     def from_JSON( cls, json_dict ):
         #need to ensure our keywords are not unicode
@@ -447,7 +447,7 @@ class MetadataTempFile( object ):
         return rval
     @classmethod
     def is_JSONified_value( cls, value ):
-        return ( isinstance( value, dict ) and value.get( 'object_type', None ) == cls.__name__ )
+        return ( isinstance( value, dict ) and value.get( '__class__', None ) == cls.__name__ )
     @classmethod
     def cleanup_from_JSON_dict_filename( cls, filename ):
         try:
