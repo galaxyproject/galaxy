@@ -411,6 +411,15 @@ def relpath( path, start = None ):
         return curdir
     return join( *rel_list )
 
+def stringify_dictionary_keys( in_dict ):
+    #returns a new dictionary
+    #changes unicode keys into strings, only works on top level (does not recurse)
+    #unicode keys are not valid for expansion into keyword arguments on method calls
+    out_dict = {}
+    for key, value in in_dict.iteritems():
+        out_dict[ str( key ) ] = value
+    return out_dict
+
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) ) #this list is used in edit attributes and the upload tool
 ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) ) #this list is used in history.tmpl

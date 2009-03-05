@@ -307,7 +307,7 @@ class JobWrapper( object ):
         self.working_directory = \
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         self.output_paths = None
-        self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job ) #wrapper holding the info required to restore and clean up from pickled files used for setting metadata externally
+        self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job ) #wrapper holding the info required to restore and clean up from files used for setting metadata externally
         
     def get_param_dict( self ):
         """
@@ -486,7 +486,7 @@ class JobWrapper( object ):
                         #since if it is edited, the metadata changed on the running output will no longer match
                         #the metadata that was stored to disk for use via the external process, 
                         #and the changes made by the user will be lost, without warning or notice
-                        dataset.metadata.from_pickled_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset ).filename_out )
+                        dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset ).filename_out )
                     dataset.set_peek()
                 else:
                     dataset.blurb = "empty"

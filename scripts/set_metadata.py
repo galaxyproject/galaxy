@@ -15,9 +15,12 @@ sys.path = new_path
 
 from galaxy import eggs
 import pkg_resources
+pkg_resources.require("simplejson")
+import simplejson
 import galaxy.model.mapping #need to load this before we unpickle, in order to setup properties assigned by the mappers
 galaxy.model.Job() #this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 galaxy.datatypes.metadata.DATABASE_CONNECTION_AVAILABLE = False #Let metadata know that there is no database connection, and to just assume object ids are valid
+from galaxy.util import stringify_dictionary_keys
 
 def __main__():
     file_path = sys.argv.pop( 1 )
@@ -27,12 +30,12 @@ def __main__():
     for pickled_filenames in sys.argv[1:]:
         pickled_filename_in, pickled_filename_kwds, pickled_filename_out, pickled_filename_results_code = pickled_filenames.split( ',' )
         try:
-            data = cPickle.load( open( pickled_filename_in ) )#unpickle DatasetInstance
-            kwds = cPickle.load( open( pickled_filename_kwds ) )#unpickle kwds
+            data = cPickle.load( open( pickled_filename_in ) ) #load DatasetInstance
+            kwds = stringify_dictionary_keys( simplejson.load( open( pickled_filename_kwds ) ) )#load kwds; need to ensure our keywords are not unicode
             data.datatype.set_meta( data, **kwds )
-            data.metadata.to_pickled_dict( pickled_filename_out ) # write out results of set_meta
-            cPickle.dump( ( True, 'Metadata has been set successfully' ), open( pickled_filename_results_code, 'wb+' ) ) #setting metadata has suceeded
+            data.metadata.to_JSON_dict( pickled_filename_out ) # write out results of set_meta
+            simplejson.dump( ( True, 'Metadata has been set successfully' ), open( pickled_filename_results_code, 'wb+' ) ) #setting metadata has suceeded
         except Exception, e:
-            cPickle.dump( ( False, e ), open( pickled_filename_results_code, 'wb+' ) ) #setting metadata has failed somehow
+            simplejson.dump( ( False, str( e ) ), open( pickled_filename_results_code, 'wb+' ) ) #setting metadata has failed somehow
 
 __main__()
