@@ -25,7 +25,7 @@ def main():
     first_invalid_line = 0
     invalid_value = ''
     invalid_column = 0
-
+    i = 0
     for i, line in enumerate( file( in_fname ) ):
         valid = True
         line = line.rstrip( '\r\n' )
@@ -67,7 +67,7 @@ def main():
         except Exception, exc:
             stop_err( "%s" %str( exc ) )
     else:
-        stop_err( "All values in both columns %s and %s are non-numeric." % ( sys.argv[3], sys.argv[4] ) )
+        stop_err( "All values in both columns %s and %s are non-numeric or empty." % ( sys.argv[3], sys.argv[4] ) )
 
     print "Scatter plot on columns %s, %s. " % ( sys.argv[3], sys.argv[4] )
     if skipped_lines > 0:
