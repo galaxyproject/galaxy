@@ -29,7 +29,6 @@
     <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
-      <indexer file="interval.xml" />
     </datatype>
     <datatype extension="jpg" type="galaxy.datatypes.images:Image" mimetype="image/jpeg"/>
     <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>

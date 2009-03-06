@@ -3,18 +3,7 @@ Utility functions used systemwide.
 
 """
 import logging
-import threading, random, string, re, binascii, pickle, time, datetime, math, re, os
-
-# Older py compatibility
-try:
-    set()
-except:
-    from sets import Set as set
-
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import new as md5
+import threading, sets, random, string, md5, re, binascii, pickle, time, datetime, math, re, os, sys
 
 import pkg_resources
 
@@ -68,11 +57,11 @@ def unique_id(KEY_SIZE=128):
     Genenerates a unique ids
     
     >>> ids = [ unique_id() for i in range(1000) ]
-    >>> len(set(ids))
+    >>> len(sets.Set(ids))
     1000
     """
     id  = str( random.getrandbits( KEY_SIZE ) )
-    return md5(id).hexdigest()
+    return md5.new(id).hexdigest()
 
 def parse_xml(fname):
     """Returns an parsed xml tree"""
@@ -85,7 +74,7 @@ def xml_to_string(elem):
     return text
 
 # characters that are valid
-valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
+valid_chars  = sets.Set(string.letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
 mapped_chars = { '>' :'__gt__', 
