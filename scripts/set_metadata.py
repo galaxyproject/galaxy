@@ -27,15 +27,17 @@ def __main__():
     tmp_dir = sys.argv.pop( 1 )
     galaxy.model.Dataset.file_path = file_path
     galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tmp_dir
-    for pickled_filenames in sys.argv[1:]:
-        pickled_filename_in, pickled_filename_kwds, pickled_filename_out, pickled_filename_results_code = pickled_filenames.split( ',' )
+    for filenames in sys.argv[1:]:
+        filename_in, filename_kwds, filename_out, filename_results_code, dataset_filename_override = filenames.split( ',' )
         try:
-            data = cPickle.load( open( pickled_filename_in ) ) #load DatasetInstance
-            kwds = stringify_dictionary_keys( simplejson.load( open( pickled_filename_kwds ) ) )#load kwds; need to ensure our keywords are not unicode
-            data.datatype.set_meta( data, **kwds )
-            data.metadata.to_JSON_dict( pickled_filename_out ) # write out results of set_meta
-            simplejson.dump( ( True, 'Metadata has been set successfully' ), open( pickled_filename_results_code, 'wb+' ) ) #setting metadata has suceeded
+            dataset = cPickle.load( open( filename_in ) ) #load DatasetInstance
+            if dataset_filename_override:
+                dataset.dataset.external_filename = dataset_filename_override
+            kwds = stringify_dictionary_keys( simplejson.load( open( filename_kwds ) ) )#load kwds; need to ensure our keywords are not unicode
+            dataset.datatype.set_meta( dataset, **kwds )
+            dataset.metadata.to_JSON_dict( filename_out ) # write out results of set_meta
+            simplejson.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) ) #setting metadata has suceeded
         except Exception, e:
-            simplejson.dump( ( False, str( e ) ), open( pickled_filename_results_code, 'wb+' ) ) #setting metadata has failed somehow
+            simplejson.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) ) #setting metadata has failed somehow
 
 __main__()

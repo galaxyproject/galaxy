@@ -474,10 +474,16 @@ class JobExternalOutputMetadataWrapper( object ):
         return None
     def get_dataset_metadata_key( self, dataset ):
         return "%s_%d" % ( dataset.__class__.__name__, dataset.id ) #set meta can be called on library items and history items, need to make different keys for them, since ids can overlap
-    def setup_external_metadata( self, datasets, exec_dir = None, tmp_dir = None, dataset_files_path = None, kwds = {} ):
+    def setup_external_metadata( self, datasets, exec_dir = None, tmp_dir = None, dataset_files_path = None, output_fnames = None, kwds = {} ):
         #fill in metadata_files_dict and return the command with args required to set metadata
         def __metadata_files_list_to_cmd_line( metadata_files ):
-            return "%s,%s,%s,%s" % ( metadata_files.filename_in, metadata_files.filename_kwds, metadata_files.filename_out, metadata_files.filename_results_code )
+            def __get_filename_override():
+                if output_fnames:
+                    for dataset_path in output_fnames:
+                        if dataset_path.false_path and dataset_path.real_path == metadata_files.dataset.file_name:
+                            return dataset_path.false_path
+                return ""
+            return "%s,%s,%s,%s,%s" % ( metadata_files.filename_in, metadata_files.filename_kwds, metadata_files.filename_out, metadata_files.filename_results_code, __get_filename_override() )
         if not isinstance( datasets, list ):
             datasets = [ datasets ]
         if exec_dir is None:
