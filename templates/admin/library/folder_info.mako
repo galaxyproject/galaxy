@@ -3,22 +3,6 @@
 <%namespace file="/admin/library/common.mako" import="render_available_templates" />
 <%namespace file="/admin/library/common.mako" import="render_existing_library_item_info" />
 
-<% 
-    available_templates = folder.get_library_item_info_templates( template_list=[], restrict=False )
-    if available_templates:
-        available_folder_templates = folder.get_library_item_info_templates( template_list=[], restrict=True )
-%>
-%if available_templates:
-    <b>Add information to this folder using available templates</b>
-    <a id="folder-${folder.id}--popup" class="popup-arrow" style="display: none;">&#9660;</a>
-    <div popupmenu="folder-${folder.id}--popup">
-        %if available_folder_templates:
-            <a class="action-button" href="${h.url_for( controller='admin', action='folder', library_id=library_id, id=folder.id, information=True, restrict=True, render_templates=True )}">Display this folder's templates</a>
-        %endif
-        <a class="action-button" href="${h.url_for( controller='admin', action='folder', library_id=library_id, id=folder.id, information=True, restrict=False, render_templates=True )}">Display all available templates</a>
-        <a class="action-button" href="${h.url_for( controller='admin', action='folder', library_id=library_id, id=folder.id, information=True, restrict=True, render_templates=False )}">Hide templates</a>
-    </div>
-%endif
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
@@ -28,10 +12,6 @@
 
 %if msg:
     ${render_msg( msg, messagetype )}
-%endif
-
-%if render_templates not in [ 'False', False ]:
-    ${render_available_templates( folder, library_id, restrict=restrict )}
 %endif
 
 <div class="toolForm">
@@ -58,4 +38,10 @@
 </div>
 
 <% folder.refresh() %>
-${render_existing_library_item_info( folder, library_id )}
+%if folder.library_folder_info_associations:
+    ${render_existing_library_item_info( folder, library_id )}
+%elif folder.library_folder_info_template_associations:
+    ${render_available_templates( folder, library_id, restrict=True )}
+%else:
+    ${render_available_templates( folder, library_id, restrict=False )}
+%endif

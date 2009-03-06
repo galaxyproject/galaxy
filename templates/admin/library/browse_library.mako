@@ -105,7 +105,12 @@ def name_sorted( l ):
                 <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=parent.id )}">Add datasets to this folder</a>
                 <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=parent.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
                 <a class="action-button" href="${h.url_for( controller='admin', action='folder', information=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
-                <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, folder_id=parent.id, new_template=True )}">Add an information template to this folder</a>
+                %if parent.library_folder_info_template_associations:
+                    <% template = parent.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
+                    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
+                %else:
+                    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, folder_id=parent.id, new_template=True )}">Add an information template to this folder</a>
+                %endif
                 <a class="action-button" href="${h.url_for( controller='admin', action='folder', permissions=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
                 ## TODO: need to revamp the way folders and contained LibraryDatasets are deleted
                 ##%if subfolder:
@@ -172,7 +177,12 @@ def name_sorted( l ):
                             %>
                             <div popupmenu="library-${library.id}-popup">
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, information=True )}">Edit this library's information</a>
-                                <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
+                                %if library.library_info_template_associations:
+                                    <% template = library.get_library_item_info_templates( template_list=[], restrict=False )[0] %>
+                                    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this library's information template</a>
+                                %else:
+                                    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
+                                %endif
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, permissions=True )}">Edit this library's permissions</a>
                                 ## TODO: need to revamp the way libraries, folders, and contained LibraryDatasets are deleted
                                 ##<a class="action-button" confirm="Current state will not be saved, so undeleting the library will restore all of its contents.  Click OK to delete the library named '${library.name}'?" href="${h.url_for( controller='admin', action='library', delete=True, id=library.id )}">Delete this library and its contents</a>

@@ -20,10 +20,6 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if render_templates not in [ 'False', False ]:
-    ${render_available_templates( library_dataset, library_id, restrict=restrict )}
-%endif
-
 <div class="toolForm">
     <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>
     <div class="toolFormBody">
@@ -50,4 +46,11 @@
     </div>
 </div>
 
-${render_existing_library_item_info( library_dataset, library_id )}
+<% library_dataset.refresh() %>
+%if library_dataset.library_dataset_info_associations:
+    ${render_existing_library_item_info( library_dataset, library_id )}
+%elif library_dataset.folder.library_folder_info_template_associations:
+    ${render_available_templates( library_dataset, library_id, restrict='folder' )}
+%else:
+    ${render_available_templates( library_dataset, library_id, restrict=False )}
+%endif

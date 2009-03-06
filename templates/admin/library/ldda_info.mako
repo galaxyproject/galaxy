@@ -11,27 +11,6 @@
 %endif
 <p/>
 
-<%
-    available_templates = ldda.get_library_item_info_templates( template_list=[], restrict=False )
-    if available_templates:
-        available_folder_templates = ldda.get_library_item_info_templates( template_list=[], restrict='folder' )
-        available_dataset_templates = ldda.get_library_item_info_templates( template_list=[], restrict=True )
-%>
-%if available_templates:
-    <b>Add information to this library dataset using available templates</b>
-    <a id="ldda-${ldda.id}--popup" class="popup-arrow" style="display: none;">&#9660;</a>
-    <div popupmenu="ldda-${ldda.id}--popup">
-        %if available_dataset_templates:
-            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True, restrict=True, render_templates=True )}">Display this dataset's templates</a>
-        %endif
-        %if available_folder_templates:
-            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True, restrict='folder', render_templates=True )}">Display templates for this dataset and it's folder</a>
-        %endif
-        <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True, restrict=False, render_templates=True )}">Display all available templates</a>
-        <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True, restrict=True, render_templates=False )}">Hide templates</a>
-    </div>
-%endif
-
 <ul class="manage-table-actions">
     <li>
         <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
@@ -40,10 +19,6 @@
 
 %if msg:
     ${render_msg( msg, messagetype )}
-%endif
-
-%if render_templates not in [ 'False', False ]:
-    ${render_available_templates( ldda, library_id, restrict=restrict )}
 %endif
 
 <%def name="datatype( ldda, datatypes )">
@@ -130,4 +105,12 @@
 </div>
 
 <% ldda.refresh() %>
-${render_existing_library_item_info( ldda, library_id )}
+%if ldda.library_dataset_dataset_info_associations:
+    ${render_existing_library_item_info( ldda, library_id )}
+%elif ldda.library_dataset_dataset_info_template_associations:
+    ${render_available_templates( ldda, library_id, restrict=True )}
+%elif ldda.library_dataset.folder.library_folder_info_template_associations:
+    ${render_available_templates( ldda, library_id, restrict='folder' )}
+%else:
+    ${render_available_templates( ldda, library_id, restrict=False )}
+%endif

@@ -48,7 +48,7 @@ $().ready(function() {
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Create Role</div>
+    <div class="toolFormTitle">Create Group</div>
     <div class="toolFormBody">
         <form name="associate_group_role_user" id="associate_group_role_user" action="${h.url_for( action='create_group' )}" method="post" >
             <div class="form-row">

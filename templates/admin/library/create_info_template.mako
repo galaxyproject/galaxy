@@ -24,11 +24,11 @@
     elif isinstance( library_item, trans.app.model.LibraryDataset ):
         library_item_ids[ 'library_dataset_id' ] = library_item.id
         library_item_type = 'library_dataset'
-        library_item_desc = 'library dataset'
+        library_item_desc = 'dataset'
     elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
         library_item_ids[ 'ldda_id' ] = library_item.id
         library_item_type = 'library_dataset_dataset_association'
-        library_item_desc = 'library dataset <-> dataset association'
+        library_item_desc = 'library dataset'
     # Always pass a library_id
     library_item_ids[ 'library_id' ] = library_id
 %>

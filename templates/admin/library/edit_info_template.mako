@@ -13,7 +13,12 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Edit template '${liit.name}'</div>
+    <div class="toolFormTitle">Edit template '${liit.name}'
+        <a id="liit-${liit.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+        <div popupmenu="liit-${liit.id}-popup">
+            <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, id=liit.id, permissions=True )}">Edit this template's permissions</a>
+        </div>
+    </div>
     <form name="edit_info_template" action="${h.url_for( controller='admin', action='info_template', library_id=library_id, edit_template=True )}" method="post" >
         <div class="toolFormBody">
             <input type="hidden" name="id" value="${liit.id}"/>

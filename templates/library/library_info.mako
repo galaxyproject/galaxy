@@ -3,17 +3,6 @@
 <%namespace file="/library/common.mako" import="render_available_templates" />
 <%namespace file="/library/common.mako" import="render_existing_library_item_info" />
 
-%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
-    <% available_templates = library.get_library_item_info_templates( template_list=[], restrict=False ) %>
-    %if available_templates:
-        <b>Add information to this library using available templates</b>
-        <a id="library-${library.id}--popup" class="popup-arrow" style="display: none;">&#9660;</a>
-        <div popupmenu="library-${library.id}--popup">
-            <a class="action-button" href="${h.url_for( controller='library', action='library', id=library.id, information=True, restrict=False, render_templates=True )}">Show templates</a>
-            <a class="action-button" href="${h.url_for( controller='library', action='library', id=library.id, information=True, restrict=False, render_templates=False )}">Hide templates</a>
-        </div>
-    %endif
-%endif
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
@@ -23,10 +12,6 @@
 
 %if msg:
     ${render_msg( msg, messagetype )}
-%endif
-
-%if render_templates not in [ 'False', False ]:
-    ${render_available_templates( library, library.id, restrict=False )}
 %endif
 
 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
@@ -66,7 +51,7 @@
             <div class="form-row">
                 <b>Name:</b> ${library.name}
                 <div style="clear: both"></div>
-                <b>Info:</b> ${library.description}
+                <b>Description:</b> ${library.description}
                 <div style="clear: both"></div>
             </div>
         </div>
@@ -74,4 +59,8 @@
 %endif
 
 <% library.refresh() %>
-${render_existing_library_item_info( library, library.id )}
+%if library.library_info_associations:
+    ${render_existing_library_item_info( library, library.id )}
+%else:
+    ${render_available_templates( library, library.id, restrict=False )}
+%endif

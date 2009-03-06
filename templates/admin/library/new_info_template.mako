@@ -44,9 +44,9 @@
         <div class="toolFormBody">
             %for element_count in range( num_fields ):
                 <div class="form-row">
-                    <b>${1+element_count}) Field label:</b>
+                    <label>${1+element_count}) Field label:</label>
                     <input type="text" name="new_element_name_${element_count}" value="" size="40"/>
-                    <b>Field help text (optional):</b>
+                    <label>Field help text (optional):</label>
                     <input type="text" name="new_element_description_${element_count}" value="" size="40"/>
                 </div>
                 <div style="clear: both"></div>

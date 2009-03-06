@@ -13,9 +13,14 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Edit template '${liit.name}'</div>
-    ## TODO: Need to add the ability to check permissions on templates ( i.e., templates need to be defined as library_items )
-    ## Until this is done, the following condition will always fail.
+    <div class="toolFormTitle">Edit template '${liit.name}'
+        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=liit ):
+            <a id="liit-${liit.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="liit-${liit.id}-popup">
+                <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, id=liit.id, permissions=True )}">Edit this template's permissions</a>
+            </div>
+        %endif
+    </div>
     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=liit ):
         <form name="edit_info_template" action="${h.url_for( controller='library', action='info_template', library_id=library_id, edit_template=True )}" method="post" >
             <div class="toolFormBody">

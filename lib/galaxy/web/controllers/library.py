@@ -73,6 +73,13 @@ class Library( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        # TODO: eventually we'll want the ability for users to create libraries
+        if params.get( 'delete', False ):
+            action = 'delete'
+        elif params.get( 'permissions', False ):
+            action = 'permissions'
+        else:
+            action = 'information'
         if not id:
             msg = "You must specify a library."
             return trans.response.send_redirect( web.url_for( controller='library',
@@ -86,13 +93,6 @@ class Library( BaseController ):
                                                               action='browse_libraries',
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
-        if params.get( 'delete', False ):
-            action = 'delete'
-        elif params.get( 'permissions', False ):
-            action = 'permissions'
-        else:
-            # 'information' is the default
-            action = 'information'
         if action == 'information':
             if params.get( 'rename_library_button', False ):
                 old_name = library.name
@@ -139,7 +139,10 @@ class Library( BaseController ):
                                                                   permissions=True,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
-            return trans.fill_template( '/library/manage_library_permissions.mako', library=library, msg=msg, messagetype=messagetype )
+            return trans.fill_template( '/library/library_permissions.mako',
+                                        library=library,
+                                        msg=msg,
+                                        messagetype=messagetype )
     @web.expose
     def datasets( self, trans, library_id, ldda_ids='', **kwd ):
         # This method is used by the select list labeled "Perform action on selected datasets"
@@ -1040,21 +1043,28 @@ class Library( BaseController ):
             num_fields = int( num_fields )
         if params.get( 'new_template', False ):
             action = 'new_template'
+        elif params.get( 'permissions', False ):
+            action = 'permissions'
         else:
             action = 'edit_template'
-        if folder_id:
+        if id:
+            library_item = trans.app.model.LibraryItemInfoTemplate.get( int( id ) )
+            library_item_desc = 'information template'
+            response_action = 'info_template'
+            response_id = id
+        elif folder_id:
             library_item = trans.app.model.LibraryFolder.get( int( folder_id ) )
             library_item_desc = 'folder'
             response_action = 'folder'
             response_id = folder_id
         elif ldda_id:
             library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( int( ldda_id ) )
-            library_item_desc = 'library dataset <-> dataset association'
+            library_item_desc = 'library dataset'
             response_action = 'library_dataset_dataset_association'
             response_id = ldda_id
         elif library_dataset_id:
             library_item = trans.app.model.LibraryDataset.get( int( library_dataset_id ) )
-            library_item_desc = 'library dataset'
+            library_item_desc = 'dataset'
             response_action = 'library_dataset_dataset_association'
             response_id = library_item.library_dataset_dataset_association.id
         else:
@@ -1098,11 +1108,13 @@ class Library( BaseController ):
                                                 library_dataset_id=library_dataset_id,
                                                 msg=msg,
                                                 messagetype=messagetype )
-                # Create template then display edit screen
+                # Create template
                 liit = trans.app.model.LibraryItemInfoTemplate()
                 liit.name = util.restore_text( params.get( 'name', '' ) )
                 liit.description = util.restore_text( params.get( 'description', '' ) )
                 liit.flush()
+                # Inherit the template's permissions from the library_item
+                trans.app.security_agent.copy_library_permissions( liit, library_item )
                 # Create template association
                 if folder_id:
                     liit_assoc = trans.app.model.LibraryFolderInfoTemplateAssociation()
@@ -1150,23 +1162,13 @@ class Library( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype )
         elif action == 'edit_template':
-            try:
-                liit = trans.app.model.LibraryItemInfoTemplate.get( int( id ) )
-            except:
-                msg = "Invalid library info template specified, id: %s" % str( id )
-                return trans.response.send_redirect( web.url_for( controller='library',
-                                                                  action=response_action,
-                                                                  id=response_id,
-                                                                  library_id=library_id,
-                                                                  msg=util.sanitize_text( msg ),
-                                                                  messagetype='error' ) )
             if params.get( 'edit_info_template_button', False ):
                 # Save changes to existing attributes, only set name if nonempty/nonNone is passed, but always set description
                 name = params.get( 'name', None )
                 if name:
-                    liit.name = name
-                liit.description = params.get( 'description', '' )
-                liit.flush()
+                    library_item.name = name
+                library_item.description = params.get( 'description', '' )
+                library_item.flush()
                 # Save changes to exisiting elements
                 for elem_id in params.get( 'element_ids', [] ):
                     liit_element = trans.app.model.LibraryItemInfoTemplateElement.get( elem_id )
@@ -1185,11 +1187,11 @@ class Library( BaseController ):
                          # ( a name cannot be empty, but a description can )
                         elem_name = elem_description
                     if elem_name:
-                        liit.add_element( name=elem_name, description=elem_description )
-                liit.refresh()
-                msg = 'Information template %s has been updated' % liit.name
+                        library_item.add_element( name=elem_name, description=elem_description )
+                library_item.refresh()
+                msg = 'Information template %s has been updated' % library_item.name
             return trans.fill_template( "/library/edit_info_template.mako",
-                                        liit=liit,
+                                        liit=library_item,
                                         num_fields=num_fields,
                                         library_id=library_id,
                                         library_dataset_id=library_dataset_id,
@@ -1199,16 +1201,34 @@ class Library( BaseController ):
                                         library_item_desc=library_item_desc,
                                         msg=msg,
                                         messagetype=messagetype )
+        elif action == 'permissions':
+            if params.get( 'update_roles_button', False ):
+                # The user clicked the Save button on the 'Associate With Roles' form
+                permissions = {}
+                for k, v in trans.app.model.Library.permitted_actions.items():
+                    in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                trans.app.security_agent.set_all_library_permissions( library_item, permissions )
+                library_item.refresh()
+                msg = "Permissions updated for information template '%s'" % library_item.name
+                return trans.response.send_redirect( web.url_for( controller='library',
+                                                                  action='info_template',
+                                                                  library_id=library_id,
+                                                                  id=id,
+                                                                  permissions=True,
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='done' ) )
+            return trans.fill_template( '/library/info_template_permissions.mako',
+                                        liit=library_item,
+                                        library_id=library_id,
+                                        msg=msg,
+                                        messagetype=messagetype )
     @web.expose
     def library_item_info( self, trans, library_id, id=None, library_item_id=None, library_item_type=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         folder_id = None
-        if id:
-            item_info = trans.app.model.LibraryItemInfo.get( id )
-        else:
-            item_info = None
         if library_item_type == 'library':
             library_item = trans.app.model.Library.get( library_item_id )
         elif library_item_type == 'library_dataset':
@@ -1219,6 +1239,8 @@ class Library( BaseController ):
             library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( library_item_id )
             # This response_action method requires a folder_id
             folder_id = library_item.library_dataset.folder.id
+        elif library_item_type == 'library_item_info_elememt':
+            library_item = trans.app.model.LibraryItemInfoElement.get( int( id ) )
         else:
             library_item_type == None
             library_item = None
@@ -1291,4 +1313,40 @@ class Library( BaseController ):
                                             library_item_type=library_item_type,
                                             msg=msg,
                                             messagetype=messagetype )
-            # TODO: add more functionality -> user's should be able to edit/delete, etc, and create/delete and edit templates
+        elif params.get( 'edit_info', False ):
+            if params.get( 'edit_info_button', False ):
+                new_contents = util.restore_text( params.get( ( 'info_element_%s' % id ), '' ) )
+                library_item.contents = new_contents
+                library_item.flush()
+                msg = 'The information has been updated.'
+                return trans.response.send_redirect( web.url_for( controller='library',
+                                                                  action=library_item_type,
+                                                                  id=library_item.id,
+                                                                  library_id=library_id,
+                                                                  folder_id=folder_id,
+                                                                  information=True,
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='done' ) )
+        elif params.get( 'permissions', False ):
+            if params.get( 'update_roles_button', False ):
+                permissions = {}
+                for k, v in trans.app.model.Library.permitted_actions.items():
+                    in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                trans.app.security_agent.set_all_library_permissions( library_item.library_item_info, permissions )
+                library_item.library_item_info.refresh()
+                library_item.refresh()
+                msg = "Permissions updated for field '%s'" % library_item.name
+                return trans.response.send_redirect( web.url_for( controller='library',
+                                                                  action='library_item_info',
+                                                                  library_id=library_id,
+                                                                  id=id,
+                                                                  library_item_type=library_item_type,
+                                                                  permissions=True,
+                                                                  msg=util.sanitize_text( msg ),
+                                                                  messagetype='done' ) )
+            return trans.fill_template( '/library/info_permissions.mako',
+                                        library_item_info_element=library_item_info_element,
+                                        library_id=library_id,
+                                        msg=msg,
+                                        messagetype=messagetype )
