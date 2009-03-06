@@ -287,22 +287,6 @@ class Interval( Tabular ):
             return True
         except:
             return False
-
-    def get_track_window(self, dataset, data, start, end):
-        """
-        Assumes the incoming track data is sorted already.
-        """
-        window = list()
-        for record in data:
-            fields = record.rstrip("\n\r").split("\t")
-            record_start = int(fields[dataset.metadata.startCol-1])
-            record_end = int(fields[dataset.metadata.endCol-1])
-            if record_start < end and record_end > start:
-                window.append( (record_start, record_end) )  #Yes I did want to use a generator here, but it doesn't work downstream
-        return window
-
-    def get_track_resolution( self, dataset, start, end):
-        return None
     
 class Bed( Interval ):
     """Tab delimited data in BED format"""
