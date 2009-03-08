@@ -79,7 +79,12 @@ function make_left_panel( panel_el, center_el, border_el ) {
             }
         }
     ).find( "div" ).show();;
-    
+    var force_panel = function( op ) {
+        if ( ( hidden && op == 'show' ) || ( ! hidden && op == 'hide' ) ) { 
+            toggle();
+        }
+    }
+    return { force_panel: force_panel };
 };
 
 function make_right_panel( panel_el, center_el, border_el ) {
@@ -173,7 +178,12 @@ function make_right_panel( panel_el, center_el, border_el ) {
             }
         }
     ).find( "div" ).show();
-    return { handle_minwidth_hint: handle_minwidth_hint };
+    var force_panel = function( op ) {
+        if ( ( hidden && op == 'show' ) || ( ! hidden && op == 'hide' ) ) { 
+            toggle();
+        }
+    }
+    return { handle_minwidth_hint: handle_minwidth_hint, force_panel: force_panel };
 };
 
 // Modal dialog boxes
@@ -235,3 +245,35 @@ function make_popupmenu( button_element, options ) {
     };
     $( button_element ).click( click );
 };
+
+// Tab management
+
+	
+$(function() {
+    $("span.tab").each( function() {
+        var submenu = $(this).children( "div.submenu" );
+        if ( submenu.length > 0 ) {
+            if ( $.browser.msie ) {
+                // Vile IE iframe hack -- even IE7 needs this
+                submenu.prepend( "<iframe style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; filter:Alpha(Opacity='0');\"></iframe>" );
+            }
+            $(this).hoverIntent( function() { submenu.show(); }, function() { submenu.hide(); } );
+            submenu.click( function() { submenu.hide(); } );
+        }
+    });
+});
+
+function user_changed( user_email, is_admin ) {
+    if ( user_email ) {
+        $(".loggedin-only").show();
+        $(".loggedout-only").hide();
+        $("#user-email").text( user_email );
+        if ( is_admin ) {
+            $(".admin-only").show();
+        }
+    } else {
+        $(".loggedin-only").hide();
+        $(".loggedout-only").show();
+        $(".admin-only").hide();
+    }
+}

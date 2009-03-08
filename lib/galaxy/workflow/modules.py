@@ -208,8 +208,8 @@ class ToolModule( object ):
                     values = input_values[ input.name ]
                     current = values["__current_case__"]
                     label_prefix = label_prefix
-                    name_prefix = name_prefix + "|" + input.name
-                    visitor( input.cases[current].inputs, values, name_prefix, label_prefix )
+                    new_name_prefix = name_prefix + input.name + "|"
+                    visitor( input.cases[current].inputs, values, new_name_prefix, label_prefix )
                 else:
                     if isinstance( input, DataToolParameter ):
                         data_inputs.append( dict( name=name_prefix+input.name, label=label_prefix+input.label, extensions=input.extensions ) )

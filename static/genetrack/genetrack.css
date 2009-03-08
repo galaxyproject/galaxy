@@ -1,0 +1,78 @@
+
+body {
+	font-family: "Trebuchet MS", Arial, tahoma, sans-serif;
+	font-size: 14px;
+	line-height: 1.6em;
+	margin: 0; 
+	padding: 0;
+	border-top: 9px solid #CCD9FF;	
+}
+
+/* Error message style */
+.error{
+	background: #FFFF66;
+}
+
+/* Error message style */
+.message{
+	background: #33FF66;
+}
+
+/* Odd data row in the table */
+.selected {
+	background-color: #FFFFCC;
+}
+
+.nav_button{
+   background-color:#EEEEEE;
+   border:1px solid;
+   color: #000000;
+}
+
+.nav_button:hover{
+   background-color:#000000;
+   border:1px solid;
+   color: #FFFFFF;
+}
+
+.grey {
+	background-color: #EFEFEF;
+}
+
+.odd {
+	background-color: #ECECEC;
+}
+
+.even {
+	background-color: #FFFFFF;
+}
+
+/* Text table style */
+.data_table {
+	border: 1px solid #CCCCCC;
+	background-color: white;
+}
+
+/* Footer is added to every page */
+#footer {
+	background: #EFEFEF; 
+	text-align:center; 
+	padding:.2em; 
+	border-top: 1px solid #CCD9FF; 
+	border-bottom: 1px solid #CCD9FF; 
+	clear: both;
+}
+
+#footer p {
+	font-size:.94em; line-height:2em; color:#cccccc; margin: 0;
+	}
+
+#tag {
+	font-size:.80em; margin: 4px; padding: 2px;
+	}
+
+
+#footer img {
+	vertical-align: middle; margin-left: 3px; padding-bottom: 2px;
+}
+

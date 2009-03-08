@@ -16,6 +16,7 @@ img
     border: 0;
 }
 
+
 a:link, a:visited, a:active
 {
     color: #303030;
@@ -64,22 +65,20 @@ div.toolParamHelp a
 
 div.toolFormBody
 { 
-  background: #FFFFFF;
-  background-image: url(form_body_bg.png);
-  background-repeat: repeat-x;
-  background-position: top;
-  padding: 5px;
-  padding-left: 10px;
-  padding-right: 10px;
+    background: #FFFFFF;
+    background-image: url(form_body_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    padding: 5px 0;
 }
 
 div.toolFormBody div.toolFormTitle
 {
     background: transparent;
-	border: none;
-	font-weight: bold;
-	border-bottom: solid #d8b365 1px;
-	margin-bottom: 5px;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid #d8b365 1px;
+    margin-bottom: 5px;
 }
 
 div.toolFormDisabled div.toolFormTitle {
@@ -97,8 +96,8 @@ div.toolHelp
 
 div.toolHelpBody
 { 
-	width: 100%;
-	overflow: auto;
+    width: 100%;
+    overflow: auto;
 }
 
 div.titleRow {
@@ -110,9 +109,30 @@ div.titleRow {
 
 /* Forms */
 
+div.form
+{
+    border: solid #d8b365 1px;
+}
+
+div.form-title
+{ 
+    font-weight: bold;
+    padding: 5px 10px;
+    background: #d2c099;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid #d8b365 1px;
+}
+
+div.form-body
+{ 
+    padding: 5px 0;
+}
+
 div.form-row 
 {
-    margin-bottom: 1em;
+    padding: 5px 10px;
 }
 
 div.form-title-row
@@ -129,7 +149,6 @@ div.repeat-group-item
 div.form-row-error
 {
     background: #FFCCCC;
-    padding: 5px;
 }
 
 div.form-row label
@@ -139,19 +158,41 @@ div.form-row label
     margin-bottom: .2em;
 }
 
+div.form-row-input
+{
+    float: left;
+    width: 300px;
+}
+
+div.form-row-input > input
+{
+    max-width: 300px;
+}
+
+div.form-row-error-message
+{
+    width: 300px;
+    float: left;
+    color: red;
+    font-weight: bold;
+    padding: 3px 0 0 1em;
+}
+
 select, input, textarea
 {
+    font: inherit;
     font-size: 115%;
 }
 
-select, textarea, input[type="text"], input[type="file"]
+select, textarea, input[type="text"], input[type="file"], input[type="password"]
 {
+    -webkit-box-sizing: border-box;
     max-width: 300px;
 }
 
 /* Messages */
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed
+.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed , .screencastBox, .yellowbox, .redbox, .bluebox, .greenbox
 {
     padding: 10px;
     padding-left: 52px;
@@ -199,6 +240,85 @@ select, textarea, input[type="text"], input[type="file"]
     background-color: #FFCCCC;
     background-image: none;
 }
+
+.screencastBox 
+{   
+    padding-left: 10px;
+    border-color: #AAAA66;
+    background-color: #FFFFCC;
+    background-image: none;
+}
+
+.redbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #FF6666;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+    
+}
+
+.yellowbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #FFCC00;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+}
+
+.bluebox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #6666FF;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    color: #FFFFFF;
+    min-height: 32px;
+}
+
+.greenbox
+{
+    border: none;
+    padding: 10px;
+    border-color: #000000;
+    background-color: #00CC00;
+    background-image: none;
+    border-right-width: 1px;
+    border-right-style: dotted;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    margin-top: 5px;
+    min-height: 32px;
+}
+
+.redbox li, .yellowbox li, .bluebox li, .greenbox li {
+   list-style: disc;	
+   text-transform: none;
+   list-style-position: inside;
+   list-style-image: none;
+   margin: 3px;
+}
+
 
 .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall 
 {
@@ -282,6 +402,11 @@ table.colored tr
   background: white;
 }
 
+table.colored tr.odd_row
+{ 
+  background: #DADFEF;
+}
+
 div.debug
 {
     margin: 10px;
@@ -293,7 +418,7 @@ div.debug
 
 div.odd_row
 {
-    background: #FFFF99;
+    background: #DADFEF;
 }
     
 #footer {
@@ -348,11 +473,56 @@ ul.toolParameterExpandableCollapsable
   list-style: none;
 }
 
+ul.manage-table-actions {
+    float: right;
+    margin-top: -2.5em;
+}
+ul.manage-table-actions li {
+    display: block;
+    float: left;
+    margin-left: 0.5em;
+}
+
+
+.state-color-queued {
+    border-color: #888888;
+    background: #EEEEEE;
+}
+
+.state-color-ok {
+    border-color: #66AA66;
+    background: #CCFFCC;
+}
+
+.state-color-error {
+    border-color: #AA6666;
+    background: #FFCCCC;
+}
+
+.state-color-running {
+    border-color: #AAAA66;
+    background: #FFFFCC;
+}
+
+.state-fg-queued {
+    color: #888888;
+}
+.state-fg-ok {
+    color: #66AA66;
+}
+.state-fg-running {
+    color: #AAAA66;
+}
+.state-fg-error {
+    color: #AA6666;
+}
+
+
 .action-button {
     background: #eeeeee;
     color: #333;
     text-decoration: none;
-    font-size: 90%;
+    font-size: 95%;
     font-weight: bold;
     display: inline-block;
     cursor: pointer;
@@ -363,6 +533,9 @@ ul.toolParameterExpandableCollapsable
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 .action-button > * {
@@ -371,33 +544,33 @@ ul.toolParameterExpandableCollapsable
 
 .action-button:hover {
     color: black;
-    background: #aaaaaa;
+    background: #dddddd;
 }
 .action-button:active {
     color: white;
     background: #aaaaaa;
 }
 
+
 div.popupmenu {
     display: none;
     background: #eeeeee;
     color: #333;
-    font-size: 90%;
     font-weight: bold;
     position: absolute;
     z-index: 20000;
     border: solid #aaaaaa 1px;
-    padding-top: 3px;
-    padding-bottom: 3px;
+    padding: 3px 0;
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
 }
 
 div.popupmenu-item {
-    padding: 3px;
-    padding-left: 1em;
-    padding-right: 1em;
+    padding: 3px 1em;
     cursor: pointer;
 }
 
@@ -414,4 +587,55 @@ div.popupmenu-item:hover {
 
 .popup-arrow:hover {
     color: black;
+}
+
+div.permissionContainer {
+    padding-left: 20px;
+}
+
+
+.grid-header {
+    padding-bottom: 1em;
+}
+
+.grid-header h2 {
+    margin: 0;
+    margin-bottom: 0.5em;
+}
+
+.grid-header .title {
+    font-weight: bold;
+}
+
+.grid {
+    padding-top: 1em;
+    border-collapse: collapse;
+    width: 100%;
+}
+.grid tbody td {
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid tbody td:empty {
+    padding: 0;
+}
+.grid thead th {
+    background: #ebd9b2;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-top: solid #d8b365 1px;
+    border-bottom: solid #d8b365 1px;
+    padding: 0.5em 1em;
+    text-align: left;
+}
+.grid tfoot td {
+    background-color: #F8F8F8;
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 0.5em 1em;
+}
+.grid .current {
+    background-color: #EEEEFF;
 }

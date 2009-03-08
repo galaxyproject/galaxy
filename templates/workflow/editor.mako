@@ -1,6 +1,19 @@
 <%inherit file="/base_panels.mako"/>
 
-<%def name="title()">Galaxy Workflow Editor</%def>
+<%def name="init()">
+<%
+    self.active_view="workflow"
+    self.message_box_visible=True
+    self.message_box_class="warning"
+    self.overlay_visible=True
+%>
+</%def>
+
+<%def name="message_box_content()">
+    Workflow support is currently in <b><i>beta</i></b> testing.
+    Workflows may not work with all tools, may fail unexpectedly, and may
+    not be compatible with future updates to <b>Galaxy</b>.
+</%def>
 
 <%def name="late_javascripts()">
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.panels.js')}"> </script>
@@ -229,7 +242,7 @@
     }
     
     var close_editor = function() {
-        <% next_url = h.url_for( controller='root', m_c='workflow' ) %>
+        <% next_url = h.url_for( controller='workflow', action='index' ) %>
         if ( workflow && workflow.has_changes ) {
             do_close = function() {
                 window.onbeforeunload = undefined;
@@ -301,10 +314,11 @@
 
 <%def name="stylesheets()">
 
-    ${parent.stylesheets()}
-    
-    ## Also include "base.css" for styling tool menu and forms (details)
+    ## Include "base.css" for styling tool menu and forms (details)
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
+
+    ## But make sure styles for the layout take precedence
+    ${parent.stylesheets()}    
 
     <style type="text/css">
     body { margin: 0; padding: 0; overflow: hidden; }
@@ -396,8 +410,8 @@
     
     canvas { position: absolute; z-index: 10; } 
     canvas.dragging { position: absolute; z-index: 1000; }
-    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 0; left: -16px; z-index: 1500; }
-    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 0; right: -16px; z-index: 1500; }
+    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; left: -6px; z-index: 1500; }
+    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; right: -6px; z-index: 1500; }
     .drag-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_drag.png')}); position: absolute; z-index: 1500; }
     .input-terminal-active { background: url(${h.url_for('/static/style/workflow_circle_green.png')}); }
     ## .input-terminal-hover { background: yellow; border: solid black 1px; }
@@ -437,8 +451,6 @@
     }
     div.form-row {
       position: relative;
-      margin-top: 0.5em;
-      margin-bottom: 0.5em;
     }
     
     div.tool-node-error div.toolFormTitle {
@@ -459,8 +471,8 @@
     .form-row {
         
     }
-    .form-row-body {
-    
+    div.toolFormInCanvas div.toolFormBody {
+        padding: 0;
     }
     .form-row-clear {
         clear: both;
@@ -470,6 +482,7 @@
         height: 0;
         border: none;
         border-bottom: dotted black 1px;
+        margin: 0 5px;
     }
     
     .callout {
@@ -524,28 +537,9 @@
     <div class="toolSectionPad"></div>
 </%def>
 
-<div id="overlay">
-    ## Need a table here for centering in IE6
-    <table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"><tr><td>
-    <div class="dialog-box-wrapper">
-        <div class="dialog-box">
-            <div class="unified-panel-header">
-                <div class="unified-panel-header-inner"><span class='title'>Loading workflow editor...</span></div>
-            </div>
-            <div class="body" style="max-height: 500px; overflow: auto;"><img src="${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}" /></div>
-            <div>
-                <div class="buttons" style="display: none; float: right;"></div>
-                <div class="extra_buttons" style="display: none; padding: 5px;"></div>
-                <div style="clear: both;"></div>
-            </div>
-        </div>
-    </div>
-    </td></tr></table>
-</div>
-
-<%def name="masthead()">
-    <div style="float: right; color: black; padding: 3px;"><div class="warningmessagesmall" style="display: inline-block; min-height: 15px;">Workflow support is currently in <b><i>beta</i></b></div></div>
-    <div class="title"><b>Galaxy workflow editor</b></div>
+<%def name="overlay()">
+    ${parent.overlay( "Loading workflow editor...",
+                      "<img src='" + h.url_for('/static/images/yui/rel_interstitial_loading.gif') + "'/>" )}
 </%def>
 
 <%def name="left_panel()">

@@ -4,6 +4,7 @@ from galaxy import util, model
 from galaxy.model import mapping
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
+from galaxy.datatypes import metadata
 
 import pkg_resources
 pkg_resources.require( "PasteDeploy" )
@@ -306,6 +307,7 @@ class JobWrapper( object ):
         self.working_directory = \
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         self.output_paths = None
+        self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job ) #wrapper holding the info required to restore and clean up from files used for setting metadata externally
         
     def get_param_dict( self ):
         """
@@ -462,6 +464,7 @@ class JobWrapper( object ):
                     self.fail( "Job %s's output dataset(s) could not be read" % job.id )
                     return
         for dataset_assoc in job.output_datasets:
+            #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
             for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
@@ -470,13 +473,25 @@ class JobWrapper( object ):
                 if stderr:
                     dataset.blurb = "error"
                 elif dataset.has_data():
-                    # Only set metadata values if they are missing...
-                    dataset.set_meta( overwrite = False )
+                    #if a dataset was copied, it won't appear in our dictionary:
+                    #either use the metadata from originating output dataset, or call set_meta on the copies
+                    #it would be quicker to just copy the metadata from the originating output dataset, 
+                    #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
+                    if not self.external_output_metadata.external_metadata_set_successfully( dataset ):
+                        # Only set metadata values if they are missing...
+                        dataset.set_meta( overwrite = False )
+                    else:
+                        #load metadata from file
+                        #we need to no longer allow metadata to be edited while the job is still running,
+                        #since if it is edited, the metadata changed on the running output will no longer match
+                        #the metadata that was stored to disk for use via the external process, 
+                        #and the changes made by the user will be lost, without warning or notice
+                        dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset ).filename_out )
                     dataset.set_peek()
                 else:
                     dataset.blurb = "empty"
                 dataset.flush()
-            if stderr: 
+            if stderr:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
             else:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
@@ -517,10 +532,12 @@ class JobWrapper( object ):
     def cleanup( self ):
         # remove temporary files
         try:
-            for fname in self.extra_filenames: 
+            for fname in self.extra_filenames:
                 os.remove( fname )
             if self.working_directory is not None:
                 shutil.rmtree( self.working_directory )
+            if self.app.config.set_metadata_externally:
+                self.external_output_metadata.cleanup_external_metadata()
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
         
@@ -573,7 +590,15 @@ class JobWrapper( object ):
         for outfile in [ str( o ) for o in output_paths ]:
             sizes.append( ( outfile, os.stat( outfile ).st_size ) )
         return sizes
-        
+    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, **kwds ):
+        if tmp_dir is None:
+            #this dir should should relative to the exec_dir
+            tmp_dir = self.app.config.new_file_path
+        if dataset_files_path is None:
+            dataset_files_path = self.app.model.Dataset.file_path
+        job = model.Job.get( self.job_id )
+        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ], exec_dir = exec_dir, tmp_dir = tmp_dir, dataset_files_path = dataset_files_path, **kwds )
+
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app

@@ -1,0 +1,71 @@
+.libraryRow {
+    background-color: #d2c099;
+}
+
+.datasetHighlighted {
+    background-color: #C1C9E5;
+}
+
+div.historyItemBody {
+    padding: 4px 4px 2px 4px;
+}
+
+li.folderRow,
+li.datasetRow
+{
+    border-top: solid 1px #ddd;
+}
+
+li.folderRow:hover,
+li.datasetRow:hover
+{
+    background-color: #C1C9E5;
+}
+
+img.expanderIcon {
+    padding-right: 4px;
+}
+
+input.datasetCheckbox,
+li, ul
+{
+    padding: 0;
+    margin: 0;
+}
+
+.rowTitle
+{
+    padding: 2px;
+}
+
+ul {
+    list-style: none;
+}
+
+.libraryTitle th {
+    text-align: left;
+}
+
+pre.peek
+{
+    background: white;
+    color: black;
+    width: 100%;
+    overflow: auto;
+}
+
+pre.peek th
+{
+    color: white;
+    background: #023858;
+}
+
+a.expandLink {
+    text-decoration: none;
+}
+
+span.expandLink {
+    width: 100%;
+    height: 100%;
+    display: block;
+}

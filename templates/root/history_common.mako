@@ -6,7 +6,11 @@
 	else:
 	    data_state = data.state
     %>
-    <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
+    %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
+        <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">
+    %else:
+        <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
+    %endif
         
     %if data.deleted:
         <div class="warningmessagesmall">
@@ -27,7 +31,7 @@
 	    </div>			
 	    <div style="float: right;">
 	    <a href="${h.url_for( controller='dataset', dataset_id=data.id, action='display', filename='index')}" target="galaxy_main"><img src="${h.url_for('/static/images/eye_icon.png')}" rollover="${h.url_for('/static/images/eye_icon_dark.png')}" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>
-	    <a href="${h.url_for( action='edit', id=data.id )}" target="galaxy_main"><img src="${h.url_for('/static/images/pencil_icon.png')}" rollover="${h.url_for('/static/images/pencil_icon_dark.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>
+	    <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"><img src="${h.url_for('/static/images/pencil_icon.png')}" rollover="${h.url_for('/static/images/pencil_icon_dark.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>
 	    <a href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" class="historyItemDelete" id="historyItemDeleter-${data.id}"><img src="${h.url_for('/static/images/delete_icon.png')}" rollover="${h.url_for('/static/images/delete_icon_dark.png')}" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
 	    </div>
 	    <span class="historyItemTitle"><b>${hid}: ${data.display_name()}</b></span>
@@ -36,7 +40,9 @@
         ## Body for history items, extra info and actions, data "peek"
         
         <div id="info${data.id}" class="historyItemBody">
-            %if data_state == "queued":
+            %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
+                <div>You do not have permission to view this dataset.</div>
+            %elif data_state == "queued":
                 <div>Job is waiting to run</div>
             %elif data_state == "running":
                 <div>Job is currently running</div>
@@ -57,7 +63,7 @@
                     format: <span class="${data.ext}">${data.ext}</span>, 
                     database:
                     %if data.dbkey == '?':
-                        <a href="${h.url_for( action='edit', id=data.id )}" target="galaxy_main">${data.dbkey}</a>
+                        <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">${data.dbkey}</a>
                     %else:
                         <span class="${data.dbkey}">${data.dbkey}</span>
                     %endif

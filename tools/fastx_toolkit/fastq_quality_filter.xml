@@ -1,0 +1,73 @@
+<tool id="cshl_fastq_quality_filter" name="Quality Filter">
+	<description></description>
+
+	<command>zcat -f '$input' | fastq_quality_filter -q $quality -p $percent -v -o $output</command>
+
+	<inputs>
+		<param format="fastqsolexa" name="input" type="data" label="Library to filter" />
+
+		<param name="quality" size="4" type="integer" value="20">
+			<label>Quality cut-off value</label>
+		</param>
+
+		<param name="percent" size="4" type="integer" value="90">
+			<label>Percent of bases in sequence that must have quality equal to / higher than cut-off value</label>
+		</param>
+	</inputs>
+
+	<tests>
+		<test>
+			<!-- Test1:  100% of bases with quality 33 or higher (pretty steep requirement...) -->
+			<param name="input" value="fastq_qual_filter1.fastq" />
+			<param name="quality" value="33"/>
+			<param name="percent" value="100"/>
+			<output name="output" file="fastq_qual_filter1a.out" />
+		</test>
+		<test>
+			<!-- Test2:  80% of bases with quality 20 or higher -->
+			<param name="input" value="fastq_qual_filter1.fastq" />
+			<param name="quality" value="20"/>
+			<param name="percent" value="80"/>
+			<output name="output" file="fastq_qual_filter1b.out" />
+		</test>
+	</tests>
+
+	<outputs>
+		<data format="input" name="output" metadata_source="input" />
+	</outputs>
+
+	<help>
+**What it does**
+
+This tool filters reads based on quality scores.
+
+.. class:: infomark
+
+Using **percent = 100** requires all cycles of all reads to be at least the quality cut-off value.
+
+.. class:: infomark
+
+Using **percent = 50** requires the median quality of the cycles (in each read) to be at least the quality cut-off value.
+
+--------
+
+Quality score distribution (of all cycles) is calculated for each read. If it is lower than the quality cut-off value - the read is discarded.
+
+
+**Example**::
+
+    @CSHL_4_FC042AGOOII:1:2:214:584
+    GACAATAAAC
+    +CSHL_4_FC042AGOOII:1:2:214:584
+    30 30 30 30 30 30 30 30 20 10
+
+Using **percent = 50** and **cut-off = 30** - This read will not be discarded (the median quality is higher than 30).
+
+Using **percent = 90** and **cut-off = 30** - This read will be discarded (90% of the cycles do no have quality equal to / higher than 30).
+
+Using **percent = 100** and **cut-off = 20** - This read will be discarded (not all cycles have quality equal to / higher than 20).
+
+	    
+	</help>
+</tool>
+<!-- FASTQ-Quality-Filter is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

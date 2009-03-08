@@ -10,7 +10,7 @@ from os import path
 # Scripts that should not be packed -- just copied
 do_not_pack = set( [ "ie_pngfix.js", "aflax.js" ] )
 
-cmd = "java -jar ../../scripts/yuicompressor.jar --type js -v %(fname)s -o packed/%(fname)s"
+cmd = "java -jar ../../scripts/yuicompressor.jar --type js %(fname)s -o packed/%(fname)s"
 
 # If specific scripts specified on command line, just pack them, otherwise pack
 # all.

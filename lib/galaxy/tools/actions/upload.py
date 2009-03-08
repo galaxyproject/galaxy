@@ -72,10 +72,24 @@ class UploadToolAction( object ):
                 return self.upload_empty( trans, job, "Error:", str( e ) )
         if url_paste not in [ None, "" ]:
             if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
+                # If we were sent a DATA_URL from an external application in a post, NAME and INFO
+                # values should be in the request
+                if 'NAME' in incoming and incoming[ 'NAME' ] not in [ "None", None ]:
+                    NAME = incoming[ 'NAME' ]
+                else:
+                    NAME = ''
+                if 'INFO' in incoming and incoming[ 'INFO' ] not in [ "None", None ]:
+                    INFO = incoming[ 'INFO' ]
+                else:
+                    INFO = "uploaded url"
                 url_paste = url_paste.replace( '\r', '' ).split( '\n' )
+                name_set_from_line = False #if we are setting the name from the line, it needs to be the line that creates that dataset
                 for line in url_paste:
                     line = line.rstrip( '\r\n' )
                     if line:
+                        if not NAME or name_set_from_line:
+                            NAME = line
+                            name_set_from_line = True
                         try:
                             temp_name = sniff.stream_to_file( urllib.urlopen( line ), prefix='url_paste' )
                         except Exception, e:
@@ -83,7 +97,7 @@ class UploadToolAction( object ):
                             self.remove_tempfile( temp_name )
                             return self.upload_empty( trans, job, "Error:", str( e ) )
                         try:
-                            data_list.append( self.add_file( trans, temp_name, line, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
+                            data_list.append( self.add_file( trans, temp_name, NAME, file_type, dbkey, info="uploaded url", space_to_tab=space_to_tab ) )
                         except Exception, e:
                             log.exception( 'exception in add_file using url_paste temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
                             self.remove_tempfile( temp_name )
@@ -114,7 +128,8 @@ class UploadToolAction( object ):
             return self.upload_empty( trans, job, "Empty file error:", "you attempted to upload an empty file." )
         elif len( data_list ) < 1:
             return self.upload_empty( trans, job, "No data error:", "either you pasted no data, the url you specified is invalid, or you have not specified a file." )
-        hda = data_list[0]
+        #if we could make a 'real' job here, then metadata could be set before job.finish() is called
+        hda = data_list[0] #only our first hda is being added as input for the job, why?
         job.state = trans.app.model.Job.states.OK
         file_size_str = datatypes.data.nice_size( hda.dataset.file_size )
         job.info = "%s, size: %s" % ( hda.info, file_size_str )
@@ -124,9 +139,10 @@ class UploadToolAction( object ):
         trans.log_event( 'job id %d ended ok, file size: %s' % ( job.id, file_size_str ), tool_id=tool.id )
         return dict( output=hda )
 
-    def upload_empty( self, trans, job, err_code, err_msg ):
-        data = trans.app.model.HistoryDatasetAssociation( create_dataset = True )
-        data.name = err_code 
+    def upload_empty(self, trans, job, err_code, err_msg):
+        data = trans.app.model.HistoryDatasetAssociation( create_dataset=True )
+        trans.app.security_agent.set_all_dataset_permissions( data.dataset, trans.app.security_agent.history_get_default_permissions( trans.history ) )
+        data.name = err_code
         data.extension = "txt"
         data.dbkey = "?"
         data.info = err_msg
@@ -151,12 +167,12 @@ class UploadToolAction( object ):
         if not os.path.getsize( temp_name ) > 0:
             raise BadFileException( "you attempted to upload an empty file." )
         
-        # See if we have a gzipped file, which, if it passes our restrictions, we'll decompress on the fly.
+        # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress on the fly.
         is_gzipped, is_valid = self.check_gzip( temp_name )
         if is_gzipped and not is_valid:
             raise BadFileException( "you attempted to upload an inappropriate file." )
         elif is_gzipped and is_valid:
-            #We need to decompress the temp_name file
+            # We need to uncompress the temp_name file
             CHUNK_SIZE = 2**20 # 1Mb   
             fd, uncompressed = tempfile.mkstemp()   
             gzipped_file = gzip.GzipFile( temp_name )
@@ -216,7 +232,6 @@ class UploadToolAction( object ):
             else:
                 self.line_count = sniff.convert_newlines( temp_name )
             if file_type == 'auto':
-                log.debug("In upload, in if file_type == 'auto':")
                 ext = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
             else:
                 ext = file_type
@@ -226,6 +241,7 @@ class UploadToolAction( object ):
             info = 'uploaded %s file' %data_type
 
         data = trans.app.model.HistoryDatasetAssociation( history = trans.history, extension = ext, create_dataset = True )
+        trans.app.security_agent.set_all_dataset_permissions( data.dataset, trans.app.security_agent.history_get_default_permissions( trans.history ) )
         data.name = file_name
         data.dbkey = dbkey
         data.info = info
