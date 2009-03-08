@@ -163,7 +163,7 @@ sub get_sequences_within_block{
 sub get_indels_within_block{
 	my (@sequences) = @_;	
 	my $line1 = my $line2 = my $line3 = "";
-        my @line1 = my @line2 = my @line3 = ();
+    my @line1 = my @line2 = my @line3 = ();
 	my $score = 0;
         my $start1 = my $align_length1 = my $end1 = my $seq_length1 = 0;
         my $start2 = my $align_length2 = my $end2 = my $seq_length2 = 0;
@@ -182,7 +182,7 @@ sub get_indels_within_block{
 	my @array_return = ();	
 	my $test1 = 0;
 	my $line1_stat = my $line2_stat = my $line3_stat = "";
-
+    
 	# process 3-way blocks only
 	if (scalar(@sequences) == 3){
 		$line1 = $sequences[0]; 
@@ -194,143 +194,128 @@ sub get_indels_within_block{
 		# check order of sequences and assign uniformly seq1= human, seq2 = chimp, seq3 = macaque
 		if ($line1 =~ m/$outgroup/){
 			$line1_stat = "out";
-			$line2_stat = "in";
-			$line3_stat = "in";}
+			$line2=~ s/^\s*//;
+            $line2 =~ s/\s+/\t/g;
+            @line2 = split(/\t/, $line2);
+			if (($ingroup1 eq "") || ($line2[1] =~ m/$ingroup1/)){
+			 $line2_stat = "in1";
+			 $line3_stat = "in2";
+			 }
+			 else{
+             $line3_stat = "in1";
+             $line2_stat = "in2";              }
+			}
 		elsif ($line2 =~ m/$outgroup/){
 			$line2_stat = "out";
-			$line1_stat = "in";
-			$line3_stat = "in";}
+			$line1=~ s/^\s*//;
+            $line1 =~ s/\s+/\t/g;
+            @line1 = split(/\t/, $line1);
+            if (($ingroup1 eq "") || ($line1[1] =~ m/$ingroup1/)){
+             $line1_stat = "in1";
+             $line3_stat = "in2";
+             }
+             else{
+             $line3_stat = "in1";
+             $line1_stat = "in2";              }
+            }
 		elsif ($line3 =~ m/$outgroup/){
 			$line3_stat = "out";
-			$line1_stat = "in";
-			$line2_stat = "in";}
+			$line1=~ s/^\s*//;
+            $line1 =~ s/\s+/\t/g;
+            @line1 = split(/\t/, $line1);
+            if (($ingroup1 eq "") || ($line1[1] =~ m/$ingroup1/)){
+             $line1_stat = "in1";
+             $line2_stat = "in2";
+             }
+             else{
+             $line2_stat = "in1";
+             $line1_stat = "in2";              }
+			}
 
 		#print "# l1 = $line1_stat\n";
 		#print "# l2 = $line2_stat\n";
 		#print "# l3 = $line3_stat\n";
-
-		if ($line1_stat eq "in"){	
-			$line1=~ s/^\s*//;
-			$line1 =~ s/\s+/\t/g;
-			@line1 = split(/\t/, $line1);
-			$end1 =($line1[2]+$line1[3]-1);
-			$seq1 = $line1[1].":".$line1[3];
-			$ingroup1 = (split(/\./, $seq1))[0];
-			$start1 = $line1[2];
-			$align_length1 = $line1[3];
-			$orient1 = $line1[4];
-			$seq_length1 = $line1[5];
-			$sequence1 = $line1[6];
-			$test1 = length($sequence1);
-			my $total_length1 = $test1+$start1;
-			my @array1 = ($start1,$end1,$orient1,$seq_length1);
-			($start1_plus, $end1_plus) =  convert_coords(@array1);
-		}
-		elsif ($line1_stat eq "out"){
-			$line1=~ s/^\s*//;
-			$line1 =~ s/\s+/\t/g;
-			@line1 = split(/\t/, $line1);
-			$end3 =($line1[2]+$line1[3]-1);
-			$seq3 = $line1[1].":".$line1[3];
-			$start3 = $line1[2];
-			$align_length3 = $line1[3];
-			$orient3 = $line1[4];
-			$seq_length3 = $line1[5];
-			$sequence3 = $line1[6];
-			my $test3 = length($sequence3);
-			my $total_length3 = $test3+$start3;
-			my @array3 = ($start3,$end3,$orient3,$seq_length3);
-			($start3_plus, $end3_plus) = convert_coords(@array3);
-		}		
-			
-		if (($line1_stat eq "in") && ($line2_stat eq "in")){
-            $line2=~ s/^\s*//;
-            $line2 =~ s/\s+/\t/g;
-            @line2 = split(/\t/, $line2);
-			$end2 =($line2[2]+$line2[3]-1);				
-            $seq2 = $line2[1].":".$line2[3];
-			$ingroup2 = (split(/\./, $seq2))[0];
-			$start2 = $line2[2];
-			$align_length2 = $line2[3];
-	       	$orient2 = $line2[4];
-	        $seq_length2 = $line2[5];
-			$sequence2 = $line2[6];
-            my $test2 = length($sequence2);
-            my $total_length2 = $test2+$start2;
-			my @array2 = ($start2,$end2,$orient2,$seq_length2);
-			($start2_plus, $end2_plus) = convert_coords(@array2);
-		}
-		elsif (($line1_stat eq "in") && ($line2_stat eq "out")){
-			$line2=~ s/^\s*//;
-			$line2 =~ s/\s+/\t/g;
-			@line2 = split(/\t/, $line2);
-			$end3 =($line2[2]+$line2[3]-1);
-			$seq3 = $line2[1].":".$line2[3];
-			$start3 = $line2[2];
-			$align_length3 = $line2[3];
-			$orient3 = $line2[4];
-			$seq_length3 = $line2[5];
-			$sequence3 = $line2[6];
-			my $test3 = length($sequence3);
-			my $total_length3 = $test3+$start3;
-			my @array3 = ($start3,$end3,$orient3,$seq_length3);
-			($start3_plus, $end3_plus) = convert_coords(@array3);
-		}
-		elsif ($line1_stat eq "out"){
-			$line2=~ s/^\s*//;
-			$line2 =~ s/\s+/\t/g;
-			@line2 = split(/\t/, $line2);
-			$end1 =($line2[2]+$line2[3]-1);
-			$seq1 = $line2[1].":".$line2[3];
-			$ingroup1 = (split(/\./, $seq1))[0];
-			$start1 = $line2[2];
-			$align_length1 = $line2[3];
-			$orient1 = $line2[4];
-			$seq_length1 = $line2[5];
-			$sequence1 = $line2[6];
-			$test1 = length($sequence1);
-			my $total_length1 = $test1+$start1;
-			my @array1 = ($start1,$end1,$orient1,$seq_length1);
-			($start1_plus, $end1_plus) =  convert_coords(@array1);
-		}
+		my $linei1 = my $linei2 = my $lineo = "";
+		my @linei1 = my @linei2 = my @lineo = ();
 		
-		if ((($line1_stat eq "in") or ($line2_stat eq "in")) && ($line3_stat eq "in")){
-			$line3=~ s/^\s*//;
-			$line3 =~ s/\s+/\t/g;
-			@line3 = split(/\t/, $line3);
-			$end2 =($line3[2]+$line3[3]-1);
-			$seq2 = $line3[1].":".$line3[3];
-			$ingroup2 = (split(/\./, $seq2))[0];
-			$start2 = $line3[2];
-			$align_length2 = $line3[3];
-			$orient2 = $line3[4];
-			$seq_length2 = $line3[5];
-			$sequence2 = $line3[6];
-			my $test2 = length($sequence2);
-			my $total_length2 = $test2+$start2;
-			my @array2 = ($start2,$end2,$orient2,$seq_length2);
-			($start2_plus, $end2_plus) = convert_coords(@array2);
-		}
-		elsif ($line3_stat eq "out"){	
-        	$line3=~ s/^\s*//;
-        	$line3 =~ s/\s+/\t/g;
-        	@line3 = split(/\t/, $line3);
-        	$end3 =($line3[2]+$line3[3]-1);
-        	$seq3 = $line3[1].":".$line3[3];
-        	$start3 = $line3[2];
-        	$align_length3 = $line3[3];
-        	$orient3 = $line3[4];
-        	$seq_length3 = $line3[5];
-        	$sequence3 = $line3[6];
-        	my $test3 = length($sequence3);
-        	my $total_length3 = $test3+$start3;
-			my @array3 = ($start3,$end3,$orient3,$seq_length3);
-			($start3_plus, $end3_plus) = convert_coords(@array3);
-		}
-		
-		
-		
-		#print "# l1 = $ingroup1\n";
+        if ($line1_stat eq "out"){
+            $lineo = $line1;
+        }
+        elsif ($line1_stat eq "in1"){
+            $linei1 = $line1;
+        }
+        else{
+            $linei2 = $line1;
+        }
+        
+        if ($line2_stat eq "out"){
+            $lineo = $line2;
+        }
+        elsif ($line2_stat eq "in1"){
+            $linei1 = $line2;
+        }
+        else{
+            $linei2 = $line2;
+        }
+        
+        if ($line3_stat eq "out"){
+            $lineo = $line3;
+        }
+        elsif ($line3_stat eq "in1"){
+            $linei1 = $line3;
+        }
+        else{
+            $linei2 = $line3;
+        }
+        
+        $linei1=~ s/^\s*//;
+        $linei1 =~ s/\s+/\t/g;
+        @linei1 = split(/\t/, $linei1);
+        $end1 =($linei1[2]+$linei1[3]-1);
+        $seq1 = $linei1[1].":".$linei1[3];
+        $ingroup1 = (split(/\./, $seq1))[0];
+        $start1 = $linei1[2];
+        $align_length1 = $linei1[3];
+        $orient1 = $linei1[4];
+        $seq_length1 = $linei1[5];
+        $sequence1 = $linei1[6];
+        $test1 = length($sequence1);
+        my $total_length1 = $test1+$start1;
+        my @array1 = ($start1,$end1,$orient1,$seq_length1);
+        ($start1_plus, $end1_plus) =  convert_coords(@array1);
+           
+        $linei2=~ s/^\s*//;
+        $linei2 =~ s/\s+/\t/g;
+        @linei2 = split(/\t/, $linei2);
+        $end2 =($linei2[2]+$linei2[3]-1);               
+        $seq2 = $linei2[1].":".$linei2[3];
+        $ingroup2 = (split(/\./, $seq2))[0];
+        $start2 = $linei2[2];
+        $align_length2 = $linei2[3];
+        $orient2 = $linei2[4];
+        $seq_length2 = $linei2[5];
+        $sequence2 = $linei2[6];
+        my $test2 = length($sequence2);
+        my $total_length2 = $test2+$start2;
+        my @array2 = ($start2,$end2,$orient2,$seq_length2);
+        ($start2_plus, $end2_plus) = convert_coords(@array2); 
+            
+        $lineo=~ s/^\s*//;
+        $lineo =~ s/\s+/\t/g;
+        @lineo = split(/\t/, $lineo);
+        $end3 =($lineo[2]+$lineo[3]-1);
+        $seq3 = $lineo[1].":".$lineo[3];
+        $start3 = $lineo[2];
+        $align_length3 = $lineo[3];
+        $orient3 = $lineo[4];
+        $seq_length3 = $lineo[5];
+        $sequence3 = $lineo[6];
+        my $test3 = length($sequence3);
+        my $total_length3 = $test3+$start3;
+        my @array3 = ($start3,$end3,$orient3,$seq_length3);
+        ($start3_plus, $end3_plus) = convert_coords(@array3);
+        
+        #print "# l1 = $ingroup1\n";
 		#print "# l2 = $ingroup2\n";
 		#print "# l3 = $outgroup\n";
 	
@@ -592,7 +577,7 @@ for ($counter2 = 0; $counter2 < @seq3_delete_startOnly; $counter2++){
 }
 
 for ($counter3 = 0; $counter3 < @seq2_insert_startOnly; $counter3++){
-	$final_line3 =  join("\t",($seq2_insert_startOnly[$counter3],$seq2_insert_lengths[$counter3]));
+    $final_line3 =  join("\t",($seq2_insert_startOnly[$counter3],$seq2_insert_lengths[$counter3]));
 	push(@final3,$final_line3);
 }
 
