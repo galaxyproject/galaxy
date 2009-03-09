@@ -487,7 +487,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_080_add_dataset_with_private_role_restriction_to_folder( self ):
         """Testing adding a dataset with a private role restriction to a folder"""
         # Add a dataset restricted by regular_user1 private role
-        self.add_library_dataset( '1.bed', str( library_one.id ), str( folder_one.id ), folder_one.name, file_format='bed', dbkey='hg18', roles=[ str( regular_user1_private_role.id ) ] )
+        message ='This+is+a+test'
+        self.add_library_dataset( '1.bed',
+                                  str( library_one.id ),
+                                  str( folder_one.id ),
+                                  folder_one.name,
+                                  file_format='bed',
+                                  dbkey='hg18',
+                                  roles=[ str( regular_user1_private_role.id ) ],
+                                  message=message )
         global ldda_three
         ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -558,7 +566,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Add a dataset restricted by role_two, which is currently associated as follows:
         # groups: group_two
         # users: test@bx.psu.edu, test1@bx.psu.edu via group_two
-        self.add_library_dataset( '2.bed', str( library_one.id ), str( folder_one.id ), folder_one.name, file_format='bed', dbkey='hg17', roles=[ str( role_two.id ) ] )
+        message ='This+is+a+test'
+        self.add_library_dataset( '2.bed',
+                                  str( library_one.id ),
+                                  str( folder_one.id ),
+                                  folder_one.name,
+                                  file_format='bed',
+                                  dbkey='hg17',
+                                  roles=[ str( role_two.id ) ],
+                                  message=message )
         global ldda_two
         ldda_two = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -632,7 +648,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing adding a public dataset to a library root folder"""
         self.login( email='test@bx.psu.edu' )
         folder = library_one.root_folder
-        self.add_library_dataset( '3.bed', str( library_one.id ), str( folder.id ), folder.name, file_format='bed', dbkey='hg16', roles=[] )
+        message ='This+is+a+test'
+        self.add_library_dataset( '3.bed',
+                                  str( library_one.id ),
+                                  str( folder.id ),
+                                  folder.name,
+                                  file_format='bed',
+                                  dbkey='hg16',
+                                  roles=[],
+                                  message=message )
         global ldda_three
         ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()

@@ -855,11 +855,11 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles=[] ):
+    def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles=[], message='' ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
-        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
+        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % ( self.url, library_id, folder_id, message ) )
         self.check_page_for_string( 'Upload files' )
         tc.fv( "1", "folder_id", folder_id )
         tc.formfile( "1", "file_data", filename )

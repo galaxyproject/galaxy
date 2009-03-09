@@ -240,7 +240,9 @@ LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_associa
     Column( "parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
-    Column( "visible", Boolean ) )
+    Column( "visible", Boolean ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "message", TrimmedString( 255 ) ) )
 
 Library.table = Table( "library", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -711,6 +713,7 @@ assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetA
         dataset=relation( Dataset ),
         library_dataset = relation( LibraryDataset,
         primaryjoin=( LibraryDatasetDatasetAssociation.table.c.library_dataset_id == LibraryDataset.table.c.id ) ),
+        user=relation( User.mapper ),
         copied_to_library_dataset_dataset_associations=relation( 
             LibraryDatasetDatasetAssociation, 
             primaryjoin=( LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
@@ -761,26 +764,31 @@ assign_mapper( context, LibraryItemInfoElement, LibraryItemInfoElement.table,
     
 assign_mapper( context, LibraryItemInfo, LibraryItemInfo.table,
     properties=dict( library_item_info_template=relation( LibraryItemInfoTemplate, backref="library_item_infos" ),
+    user=relation( User.mapper )
     ) )
 
 assign_mapper( context, LibraryInfoAssociation, LibraryInfoAssociation.table,
     properties=dict( library=relation( Library, backref="library_info_associations" ),
                      library_item_info = relation( LibraryItemInfo, backref="library_info_associations" ),
+                     user=relation( User.mapper )
                      ) )
 
 assign_mapper( context, LibraryFolderInfoAssociation, LibraryFolderInfoAssociation.table,
     properties=dict( folder=relation( LibraryFolder, backref="library_folder_info_associations" ),
                      library_item_info = relation( LibraryItemInfo, backref="library_folder_info_associations" ),
+                     user=relation( User.mapper )
                      ) )
 
 assign_mapper( context, LibraryDatasetInfoAssociation, LibraryDatasetInfoAssociation.table,
     properties=dict( library_dataset=relation( LibraryDataset, backref="library_dataset_info_associations" ),
                      library_item_info = relation( LibraryItemInfo, backref="library_dataset_info_associations" ),
+                     user=relation( User.mapper )
                      ) )
 
 assign_mapper( context, LibraryDatasetDatasetInfoAssociation, LibraryDatasetDatasetInfoAssociation.table,
     properties=dict( library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, backref="library_dataset_dataset_info_associations" ),
                      library_item_info = relation( LibraryItemInfo, backref="library_dataset_dataset_info_associations" ),
+                     user=relation( User.mapper )
                      ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,

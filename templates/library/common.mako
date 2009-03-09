@@ -153,7 +153,7 @@
     %endif
 </%def>
 
-<%def name="render_available_templates( library_item, library_id, restrict=False )">
+<%def name="render_available_templates( library_item, library_id, restrict=False, upload=False )">
     <%
         available_templates = library_item.get_library_item_info_templates( template_list=[], restrict=restrict )
         if available_templates:
@@ -184,25 +184,30 @@
                 <div class="toolForm">
                     <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
                     <div class="toolFormBody">
-                        <form name="add_template_info" action="${h.url_for( controller='library', action='library_item_info', library_id=library_id, new_info=True )}" method="post">
-                            <input type="hidden" name="library_item_id" value="${library_item.id}"/>
-                            <input type="hidden" name="library_item_type" value="${library_item_type}"/>
-                            <input type="hidden" name="library_item_info_template_id" value="${available_template.id}"/>
-                            <p/>
-                            %for info_elem in available_template.elements:
-                                <div class="form-row">
-                                    <label>${info_elem.name}</label>
-                                    <input type="text" name="info_element_${available_template.id}_${info_elem.id}" value="" size="40"/>
-                                    <div class="toolParamHelp" style="clear: both;">
-                                        ${info_elem.description}
-                                    </div>
-                                    <div style="clear: both"></div>
+                        %if upload in [ False, 'False' ]:
+                            # Only render a form if we're not within the upload form
+                            <form name="add_template_info" action="${h.url_for( controller='library', action='library_item_info', library_id=library_id, new_info=True )}" method="post">
+                        %endif
+                        <input type="hidden" name="library_item_id" value="${library_item.id}"/>
+                        <input type="hidden" name="library_item_type" value="${library_item_type}"/>
+                        <input type="hidden" name="library_item_info_template_id" value="${available_template.id}"/>
+                        <p/>
+                        %for info_elem in available_template.elements:
+                            <div class="form-row">
+                                <label>${info_elem.name}</label>
+                                <input type="text" name="info_element_${available_template.id}_${info_elem.id}" value="" size="40"/>
+                                <div class="toolParamHelp" style="clear: both;">
+                                    ${info_elem.description}
                                 </div>
-                            %endfor
+                                <div style="clear: both"></div>
+                            </div>
+                        %endfor
+                        %if upload in [ False, 'False' ]:
                             <div class="form-row">
                                 <input type="submit" name="create_new_info_button" value="Save"/>
                             </div>
-                        </form>
+                            </form>
+                        %endif
                     </div>
                 </div>
             %endif

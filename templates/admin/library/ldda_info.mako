@@ -53,6 +53,16 @@
                 </div>
                 <div style="clear: both"></div>
             </div> 
+            <div class="form-row">
+                <label>Message:</label>
+                <div style="float: left; width: 250px; margin-right: 10px;">
+                    <textarea name="message" rows="3" cols="35">${ldda.message}</textarea>
+                </div>
+                <div class="toolParamHelp" style="clear: both;">
+                    This information will be displayed in the library browser
+                </div>
+                <div style="clear: both"></div>
+            </div>
             %for name, spec in ldda.metadata.spec.items():
                 %if spec.visible:
                     <div class="form-row">

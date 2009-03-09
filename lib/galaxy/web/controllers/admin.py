@@ -927,6 +927,8 @@ class Admin( BaseController ):
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 trans.app.security_agent.set_all_library_permissions( library, permissions )
                 library.refresh()
+                # Copy the permissions to the root folder
+                trans.app.security_agent.copy_library_permissions( library, library.root_folder, user=trans.get_user() )
                 msg = "Permissions updated for library '%s'" % library.name
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action='library',
@@ -1349,12 +1351,14 @@ class Admin( BaseController ):
                     old_name = ldda.name
                     new_name = util.restore_text( params.get( 'name', '' ) )
                     new_info = util.restore_text( params.get( 'info', '' ) )
+                    new_message = util.restore_text( params.get( 'message', '' ) )
                     if not new_name:
                         msg = 'Enter a valid name'
                         messagetype = 'error'
                     else:
                         ldda.name = new_name
                         ldda.info = new_info
+                        ldda.message = new_message
                         # The following for loop will save all metadata_spec items
                         for name, spec in ldda.datatype.metadata_spec.items():
                             if spec.get("readonly"):
@@ -1808,12 +1812,7 @@ class Admin( BaseController ):
             library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( library_item_id )
             # This response_action method requires a folder_id
             folder_id = library_item.library_dataset.folder.id
-        elif library_item_type == 'library_item_info_elememt':
-            library_item = trans.app.model.LibraryItemInfoElement.get( int( id ) )
         else:
-            library_item_type == None
-            library_item = None
-        if not library_item:
             msg = "Invalid library item type ( %s ) specified, id ( %s )" % ( str( library_item_type ), str( library_item_id ) )
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='browse_library',
@@ -1843,9 +1842,8 @@ class Admin( BaseController ):
                                                                           msg=util.sanitize_text( msg ),
                                                                           messagetype='error' ) )
                     user = trans.get_user()
-                    library_item_info = trans.app.model.LibraryItemInfo()
+                    library_item_info = trans.app.model.LibraryItemInfo( user=user )
                     library_item_info.library_item_info_template = library_item_info_template
-                    library_item_info.user = user
                     library_item_info.flush()
                     trans.app.security_agent.copy_library_permissions( library_item_info_template, library_item_info )
                     for template_element in library_item_info_template.elements:
@@ -1860,10 +1858,9 @@ class Admin( BaseController ):
                         if isinstance( library_item, item_class ):
                             break
                     if info_association_class:
-                        library_item_info_association = info_association_class()
-                        library_item_info_association.set_library_item( library_item, trans.user )
+                        library_item_info_association = info_association_class( user=user )
+                        library_item_info_association.set_library_item( library_item )
                         library_item_info_association.library_item_info = library_item_info
-                        library_item_info_association.user = user
                         library_item_info_association.flush()
                     else:
                         raise 'Invalid class (%s) specified for library_item (%s)' % ( library_item.__class__, library_item.__class__.__name__ )
@@ -1884,9 +1881,12 @@ class Admin( BaseController ):
                                             messagetype=messagetype )
         elif params.get( 'edit_info', False ):
             if params.get( 'edit_info_button', False ):
-                new_contents = util.restore_text( params.get( ( 'info_element_%s' % id ), '' ) )
-                library_item.contents = new_contents
-                library_item.flush()
+                ids = util.listify( id )
+                for id in ids:
+                    library_item_info_element = trans.app.model.LibraryItemInfoElement.get( int( id ) )
+                    new_contents = util.restore_text( params.get( ( 'info_element_%s' % id ), '' ) )
+                    library_item_info_element.contents = new_contents
+                    library_item_info_element.flush()
                 msg = 'The information has been updated.'
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action=library_item_type,

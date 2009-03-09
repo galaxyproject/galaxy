@@ -632,7 +632,8 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                                  visible=self.visible, 
                                                  deleted=self.deleted, 
                                                  parent_id=parent_id,
-                                                 copied_from_history_dataset_association=self )
+                                                 copied_from_history_dataset_association=self,
+                                                 user=self.history.user )
         ldda.flush()
         # Must set metadata after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
@@ -737,11 +738,17 @@ class LibraryDataset( object ):
         return template_list
     
 class LibraryDatasetDatasetAssociation( DatasetInstance ):
-    def __init__( self, copied_from_history_dataset_association=None, copied_from_library_dataset_dataset_association=None, library_dataset=None, **kwd ):
+    def __init__( self,
+                  copied_from_history_dataset_association=None,
+                  copied_from_library_dataset_dataset_association=None,
+                  library_dataset=None,
+                  user=None,
+                  **kwd ):
         DatasetInstance.__init__( self, **kwd )
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
         self.library_dataset = library_dataset
+        self.user = user
     def to_history_dataset_association( self, target_history, parent_id=None ):
         hid = target_history._next_hid()
         hda = HistoryDatasetAssociation( name=self.name, 
@@ -829,38 +836,44 @@ class LibraryItemInfoTemplateElement( object ):
     pass
 
 class LibraryInfoAssociation( object ):
-    def set_library_item( self, library_item, user ):
+    def __init__( self, user=None ):
+        self.user = user
+    def set_library_item( self, library_item ):
         if isinstance( library_item, Library ):
             self.library = library_item
-            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryFolderInfoAssociation( object ):
-    def set_library_item( self, library_item, user ):
+    def __init__( self, user=None ):
+        self.user = user
+    def set_library_item( self, library_item ):
         if isinstance( library_item, LibraryFolder ):
             self.folder = library_item
-            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryDatasetInfoAssociation( object ):
-    def set_library_item( self, library_item, user ):
+    def __init__( self, user=None ):
+        self.user = user
+    def set_library_item( self, library_item ):
         if isinstance( library_item, LibraryDataset ):
             self.library_dataset = library_item
-            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryDatasetDatasetInfoAssociation( object ):
-    def set_library_item( self, library_item, user ):
+    def __init__( self, user=None ):
+        self.user = user
+    def set_library_item( self, library_item ):
         if isinstance( library_item, LibraryDatasetDatasetAssociation ):
             self.library_dataset_dataset_association = library_item
-            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryItemInfo( object ):
+    def __init__( self, user=None ):
+        self.user = user
     def get_element_by_template_element( self, template_element ):
         for element in self.elements:
             if element.library_item_info_template_element == template_element:

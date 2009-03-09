@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/admin/library/common.mako" import="render_available_templates" />
 
 <% import os %>
 
@@ -123,6 +124,16 @@
                         <div style="clear: both"></div>
                     </div>
                     <div class="form-row">
+                        <label>Message:</label>
+                        <div style="float: left; width: 250px; margin-right: 10px;">
+                            <textarea name="message" rows="3" cols="35"></textarea>
+                        </div>
+                        <div class="toolParamHelp" style="clear: both;">
+                            This information will be displayed in the library browser
+                        </div>
+                        <div style="clear: both"></div>
+                    </div>
+                    <div class="form-row">
                         <div style="float: left; width: 250px; margin-right: 10px;">
                             <label>Restrict dataset access to specific roles:</label>
                             <select name="roles" multiple="true" size="5">
@@ -136,6 +147,12 @@
                         </div>
                     </div>
                     <div style="clear: both"></div>
+                    <% folder = trans.app.model.LibraryFolder.get( folder_id ) %>
+                    %if folder.library_folder_info_template_associations:
+                        ${render_available_templates( folder, library_id, restrict=True, upload=True )}
+                    %else:
+                        ${render_available_templates( folder, library_id, restrict=False, upload=True )}
+                    %endif
                     <div class="form-row">
                         <input type="submit" class="primary-button" name="new_dataset_button" value="Add Dataset(s)"/>
                     </div>
