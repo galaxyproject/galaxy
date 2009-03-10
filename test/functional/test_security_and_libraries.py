@@ -455,19 +455,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         library_one.refresh()
         self.rename_library( str( library_one.id ), library_one.name, name=name, description=description )
         library_one.refresh()
-        # Rename the root folder
-        folder = library_one.root_folder
-        rename = "Library One's Root Folder"
-        redescription = "This is Library One's root folder"
-        self.rename_folder( str( library_one.id ), str( folder.id ), folder.name, name=rename, description=redescription )
-        self.home()
-        self.visit_page( 'admin/browse_library?id=%s' % str( library_one.id) )
-        self.check_page_for_string( rename )
-        self.check_page_for_string( redescription )
-        # Reset the root folder back to the original name and description
-        folder.refresh()
-        self.rename_folder( str( library_one.id ), str( folder.id ), folder.name, name=name, description=description )
-        folder.refresh()
     def test_075_add_new_folder_to_root_folder( self ):
         """Testing adding a folder to a library root folder"""
         self.login( email = 'test@bx.psu.edu' )
@@ -495,7 +482,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   file_format='bed',
                                   dbkey='hg18',
                                   roles=[ str( regular_user1_private_role.id ) ],
-                                  message=message )
+                                  message=message,
+                                  root=False )
         global ldda_three
         ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -574,7 +562,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   file_format='bed',
                                   dbkey='hg17',
                                   roles=[ str( role_two.id ) ],
-                                  message=message )
+                                  message=message,
+                                  root=False )
         global ldda_two
         ldda_two = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -656,7 +645,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   file_format='bed',
                                   dbkey='hg16',
                                   roles=[],
-                                  message=message )
+                                  message=message,
+                                  root=True )
         global ldda_three
         ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -708,7 +698,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.new_history()
         self.upload_file( "1.bed" )
         latest_hda = galaxy.model.HistoryDatasetAssociation.query().order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
-        self.add_history_datasets_to_library( str( library_one.id ), str( folder.id ), folder.name, str( latest_hda.id ) )
+        self.add_history_datasets_to_library( str( library_one.id ), str( folder.id ), folder.name, str( latest_hda.id ), root=True )
         # Test for DatasetPermissionss, the default setting is "manage permissions"
         last_dataset_created = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
         dps = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==last_dataset_created.id ).all()
@@ -723,7 +713,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_115_add_datasets_from_library_dir( self ):
         """Testing adding 3 datasets from a library directory to a folder"""
         roles_tuple = [ ( str( role_one.id ), role_one.name ) ] 
-        self.add_datasets_from_library_dir( str( library_one.id ), str( folder_one.id ), folder_one.name, roles_tuple=roles_tuple )
+        self.add_datasets_from_library_dir( str( library_one.id ), str( folder_one.id ), folder_one.name, roles_tuple=roles_tuple, root=False )
     def test_120_change_permissions_on_datasets_imported_from_library( self ):
         """Testing changing the permissions on library datasets imported into a history"""
         # It would be nice if twill functioned such that the above test resulted in a

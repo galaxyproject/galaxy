@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/admin/library/common.mako" import="render_available_templates" />
+<%namespace file="/library/common.mako" import="render_available_templates" />
 
 <% import os %>
 
@@ -42,6 +42,7 @@
             <div class="toolFormBody">
                 <form name="tool_form" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
+                    <input type="hidden" name="upload_option" value="${upload_option}"/>
                     %if replace_dataset:
                         <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                         <div class="form-row">
@@ -154,7 +155,7 @@
                         ${render_available_templates( folder, library_id, restrict=False, upload=True )}
                     %endif
                     <div class="form-row">
-                        <input type="submit" class="primary-button" name="new_dataset_button" value="Add Dataset(s)"/>
+                        <input type="submit" class="primary-button" name="new_dataset_button" value="Upload to library"/>
                     </div>
                 </form>
             </div>
@@ -167,6 +168,7 @@
             %if history and history.active_datasets:
                 <form name="add_history_datasets_to_library" action="${h.url_for( controller='library', action='add_history_datasets_to_library', library_id=library_id )}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
+                    <input type="hidden" name="upload_option" value="${upload_option}"/>
                     %if replace_dataset:
                         <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                         <div class="form-row">
@@ -179,7 +181,7 @@
                             <input name="hda_ids" value="${hda.id}" type="checkbox"/>${hda.hid}: ${hda.name}
                         </div>
                     %endfor
-                    <input type="submit" name="add_history_datasets_to_library_button" value="Add selected datasets"/>
+                    <input type="submit" name="add_history_datasets_to_library_button" value="Import to library"/>
                 </form>
             %else:
                 <p/>

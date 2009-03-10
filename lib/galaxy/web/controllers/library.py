@@ -110,6 +110,10 @@ class Library( BaseController ):
                     library.name = new_name
                     library.description = new_description
                     library.flush()
+                    # Rename the root_folder
+                    library.root_folder.name = new_name
+                    library.root_folder.description = new_description
+                    library.root_folder.flush()
                     msg = "Library '%s' has been renamed to '%s'" % ( old_name, new_name )
                     return trans.response.send_redirect( web.url_for( controller='library',
                                                                       action='library',
@@ -727,10 +731,11 @@ class Library( BaseController ):
                                                                           trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                                           library_item=replace_dataset ) ):
             if params.get( 'new_dataset_button', False ):
+                upload_option = params.get( 'upload_option', 'upload_file' )
                 created_ldda_ids = trans.webapp.controllers[ 'library_dataset' ].upload_dataset( trans,
                                                                                                  controller='library', 
                                                                                                  library_id=library_id,
-                                                                                                 folder_id=folder_id, 
+                                                                                                 folder_id=folder_id,
                                                                                                  replace_dataset=replace_dataset, 
                                                                                                  **kwd )
                 if created_ldda_ids:
@@ -739,7 +744,11 @@ class Library( BaseController ):
                     if replace_dataset:
                         msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset.name, folder.name )
                     else:
-                        msg = "Added %d datasets to the library folder '%s' ( each is selected ).  " % ( total_added, folder.name )
+                        if not folder.parent:
+                            # Libraries have the same name as their root_folder
+                            msg = "Added %d datasets to the library '%s' ( each is selected ).  " % ( total_added, folder.name )
+                        else:
+                            msg = "Added %d datasets to the folder '%s' ( each is selected ).  " % ( total_added, folder.name )
                     # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                     # to check one of them to see if the current user can manage permissions on them.
                     check_ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id_list[0] )
@@ -866,7 +875,11 @@ class Library( BaseController ):
                     if replace_dataset:
                         msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset.name, folder.name )
                     else:
-                        msg = "Added %d datasets to the library folder '%s' ( each is selected ).  " % ( total_added, folder.name )
+                        if not folder.parent:
+                            # Libraries have the same name as their root_folder
+                            msg = "Added %d datasets to the library '%s' ( each is selected ).  " % ( total_added, folder.name )
+                        else:
+                            msg = "Added %d datasets to the folder '%s' ( each is selected ).  " % ( total_added, folder.name )
                     # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                     # to check one of them to see if the current user can manage permissions on them.
                     check_ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id_list[0] )
@@ -887,31 +900,31 @@ class Library( BaseController ):
                                                                       default_action=default_action,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
-        else:
-            msg = 'Select at least one dataset from the list of active datasets in your current history'
-            messagetype = 'error'
-            last_used_build = folder.genome_build
-            upload_option = params.get( 'upload_option', 'upload_file' )
-            # Send list of data formats to the form so the "extension" select list can be populated dynamically
-            file_formats = trans.app.datatypes_registry.upload_file_formats
-            # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
-            def get_dbkey_options( last_used_build ):
-                for dbkey, build_name in util.dbnames:
-                    yield build_name, dbkey, ( dbkey==last_used_build )
-            dbkeys = get_dbkey_options( last_used_build )
-            # Send list of roles to the form so the dataset can be associated with 1 or more of them.
-            roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.c.name ).all()
-            return trans.fill_template( "/library/new_dataset.mako",
-                                        upload_option=upload_option,
-                                        library_id=library_id,
-                                        folder_id=folder_id,
-                                        file_formats=file_formats,
-                                        dbkeys=dbkeys,
-                                        last_used_build=last_used_build,
-                                        roles=roles,
-                                        history=history,
-                                        msg=msg,
-                                        messagetype=messagetype )
+            else:
+                msg = 'Select at least one dataset from the list of active datasets in your current history'
+                messagetype = 'error'
+                last_used_build = folder.genome_build
+                upload_option = params.get( 'upload_option', 'import_from_history' )
+                # Send list of data formats to the form so the "extension" select list can be populated dynamically
+                file_formats = trans.app.datatypes_registry.upload_file_formats
+                # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
+                def get_dbkey_options( last_used_build ):
+                    for dbkey, build_name in util.dbnames:
+                        yield build_name, dbkey, ( dbkey==last_used_build )
+                dbkeys = get_dbkey_options( last_used_build )
+                # Send list of roles to the form so the dataset can be associated with 1 or more of them.
+                roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.c.name ).all()
+                return trans.fill_template( "/library/new_dataset.mako",
+                                            upload_option=upload_option,
+                                            library_id=library_id,
+                                            folder_id=folder_id,
+                                            file_formats=file_formats,
+                                            dbkeys=dbkeys,
+                                            last_used_build=last_used_build,
+                                            roles=roles,
+                                            history=history,
+                                            msg=msg,
+                                            messagetype=messagetype )
     @web.expose
     def folder( self, trans, id, library_id, **kwd ):
         params = util.Params( kwd )

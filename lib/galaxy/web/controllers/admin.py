@@ -878,6 +878,10 @@ class Admin( BaseController ):
                     library.name = new_name
                     library.description = new_description
                     library.flush()
+                    # Rename the root_folder
+                    library.root_folder.name = new_name
+                    library.root_folder.description = new_description
+                    library.root_folder.flush()
                     msg = "Library '%s' has been renamed to '%s'" % ( old_name, new_name )
                     return trans.response.send_redirect( web.url_for( controller='admin',
                                                                       action='library',
@@ -1223,7 +1227,7 @@ class Admin( BaseController ):
             folder = trans.app.model.LibraryFolder.get( folder_id )
         else:
             folder = None
-        if folder and not last_used_build:
+        if folder and last_used_build in [ 'None', None, '?' ]:
             last_used_build = folder.genome_build
         try:
             replace_dataset = trans.app.model.LibraryDataset.get( params.get( 'replace_id', None ) )
@@ -1234,6 +1238,7 @@ class Admin( BaseController ):
         ldatatypes = [ x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys() ]
         ldatatypes.sort()
         if params.get( 'new_dataset_button', False ):
+            upload_option = params.get( 'upload_option', 'upload_file' )
             created_ldda_ids = trans.webapp.controllers[ 'library_dataset' ].upload_dataset( trans,
                                                                                              controller='admin',
                                                                                              library_id=library_id,
@@ -1245,7 +1250,11 @@ class Admin( BaseController ):
                 if replace_dataset:
                     msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset.name, folder.name )
                 else:
-                    msg = "Added %d datasets to the library folder '%s' ( each is selected ).  " % ( total_added, folder.name )
+                    if not folder.parent:
+                        # Libraries have the same name as their root_folder
+                        msg = "Added %d datasets to the library '%s' ( each is selected ).  " % ( total_added, folder.name )
+                    else:
+                        msg = "Added %d datasets to the folder '%s' ( each is selected ).  " % ( total_added, folder.name )
                     msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                 messagetype='done'
             else:
@@ -1573,7 +1582,11 @@ class Admin( BaseController ):
                     if replace_dataset:
                         msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset.name, folder.name )
                     else:
-                        msg = "Added %d datasets to the library folder '%s' ( each is selected ).  " % ( total_added, folder.name )
+                        if not folder.parent:
+                            # Libraries have the same name as their root_folder
+                            msg = "Added %d datasets to the library '%s' ( each is selected ).  " % ( total_added, folder.name )
+                        else:
+                            msg = "Added %d datasets to the folder '%s' ( each is selected ).  " % ( total_added, folder.name )
                         msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                     return trans.response.send_redirect( web.url_for( controller='admin',
                                                                       action='browse_library',
@@ -1585,7 +1598,7 @@ class Admin( BaseController ):
                 msg = 'Select at least one dataset from the list of active datasets in your current history'
                 messagetype = 'error'
                 last_used_build = folder.genome_build
-                upload_option = params.get( 'upload_option', 'upload_file' )
+                upload_option = params.get( 'upload_option', 'import_from_history' )
                 # Send list of data formats to the form so the "extension" select list can be populated dynamically
                 file_formats = trans.app.datatypes_registry.upload_file_formats
                 # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically

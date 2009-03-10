@@ -125,6 +125,7 @@ class UploadLibraryDataset( BaseController ):
             # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
             trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, trans.app.security_agent.user_get_default_permissions( trans.get_user() ) )
             folder.add_library_dataset( library_dataset, genome_build=dbkey )
+            folder.flush()
         library_dataset.library_dataset_dataset_association_id = ldda.id
         library_dataset.flush()
         # Handle any templates included in the upload form
@@ -176,12 +177,13 @@ class UploadLibraryDataset( BaseController ):
         file_format = params.get( 'file_format', 'auto' )
         data_file = params.get( 'file_data', '' )
         url_paste = params.get( 'url_paste', '' )
-        server_dir = params.get( 'server_dir', 'None' )
+        server_dir = params.get( 'server_dir', None )
         if replace_dataset is not None:
             replace_id = replace_dataset.id
         else:
             replace_id = None
         message = params.get( 'message', '' )
+        upload_option = params.get( 'upload_option', 'upload_file' )
         # Handle any templates included in the upload form by building a dictionary of info elements to send to add_file
         template_elements = {}
         library_item_info_template = None
@@ -197,18 +199,26 @@ class UploadLibraryDataset( BaseController ):
                         value = params.get( key, None )
                         if value:
                             template_elements[ key ] = value
-        if data_file == '' and url_paste == '' and server_dir in [ 'None', '' ]:
-            if trans.app.config.library_import_dir is not None:
-                msg = 'Select a file, enter a URL or Text, or select a server directory.'
-            else:
-                msg = 'Select a file, enter a URL or enter Text.'
+        err_redirect = False
+        if upload_option == 'upload_file' and data_file == '' and url_paste == '':
+                msg = 'Select a file, enter a URL or enter text'
+                err_redirect = True
+        elif upload_option == 'upload_directory':
+            if server_dir in [ None, 'None', '' ]:
+                err_redirect = True
+                if trans.app.config.library_import_dir:
+                    msg = 'Select a server directory'
+                else:
+                    msg = '"library_import_dir" is not defined in the Galaxy configuration file'
+        if err_redirect:
             trans.response.send_redirect( web.url_for( controller=controller,
                                                        action='library_dataset_dataset_association',
                                                        library_id=library_id,
                                                        folder_id=folder_id,
-                                                       replace_id=replace_id, 
+                                                       replace_id=replace_id,
+                                                       upload_option=upload_option,
                                                        msg=util.sanitize_text( msg ),
-                                                       messagetype='done' ) )
+                                                       messagetype='error' ) )
         space_to_tab = params.get( 'space_to_tab', False )
         if space_to_tab and space_to_tab not in [ "None", None ]:
             space_to_tab = True
@@ -298,7 +308,7 @@ class UploadLibraryDataset( BaseController ):
             try:
                 files = os.listdir( full_dir )
             except:
-                log.debug( "Unable to get file list for %s" % full_dir )
+                log.debug( "Unable to get file list for configured library_import_dir %s" % full_dir )
             for file in files:
                 full_file = os.path.join( full_dir, file )
                 if not os.path.isfile( full_file ):
