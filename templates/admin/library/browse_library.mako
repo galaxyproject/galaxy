@@ -74,7 +74,11 @@ def name_sorted( l ):
 
 <%def name="render_folder( parent, parent_pad, deleted, created_ldda_ids, library_id )">
     <%
-        pad = parent_pad + 20
+        root_folder = not parent.parent
+        if root_folder:
+            pad = parent_pad
+        else:
+            pad = parent_pad + 20
         if parent_pad == 0:
             expander = "/static/images/silk/resultset_bottom.png"
             folder = "/static/images/silk/folder_page.png"
@@ -83,7 +87,6 @@ def name_sorted( l ):
             expander = "/static/images/silk/resultset_next.png"
             folder = "/static/images/silk/folder.png"
             subfolder = True
-        root_folder = not parent.parent
         created_ldda_id_list = util.listify( created_ldda_ids )
         if created_ldda_id_list:
            created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
@@ -208,9 +211,9 @@ def name_sorted( l ):
                         ##    </div>
                         %endif
                     </th>
-                    <th width="100">Format</th>
-                    <th width="50">Db</th>
-                    <th width="200">Info</th>
+                    <th width="300">Information</th>
+                    <th width="150">Uploaded By</th>
+                    <th width="60">Date</th>
                 </table>
             </div>
         </li>

@@ -125,7 +125,7 @@
                             <textarea name="message" rows="3" cols="35"></textarea>
                         </div>
                         <div class="toolParamHelp" style="clear: both;">
-                            This information will be displayed in the library browser
+                            This information will be displayed in the "Information" column for this dataset in the library browser
                         </div>
                         <div style="clear: both"></div>
                     </div>

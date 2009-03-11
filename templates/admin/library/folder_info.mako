@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/library/common.mako" import="render_available_templates" />
-<%namespace file="/admin/library/common.mako" import="render_existing_library_item_info" />
+<%namespace file="/admin/library/common.mako" import="render_library_item_info_for_edit" />
 
 <br/><br/>
 <ul class="manage-table-actions">
@@ -39,7 +39,7 @@
 
 <% folder.refresh() %>
 %if folder.library_folder_info_associations:
-    ${render_existing_library_item_info( folder, library_id )}
+    ${render_library_item_info_for_edit( folder, library_id )}
 %elif folder.library_folder_info_template_associations:
     ${render_available_templates( folder, library_id, restrict=True )}
 %else:

@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/library/common.mako" import="render_available_templates" />
-<%namespace file="/admin/library/common.mako" import="render_existing_library_item_info" />
+<%namespace file="/admin/library/common.mako" import="render_library_item_info_for_edit" />
 
 %if library_dataset == library_dataset.library_dataset_dataset_association.library_dataset:
     <b><i>This is the latest version of this library dataset</i></b>
@@ -48,7 +48,7 @@
 
 <% library_dataset.refresh() %>
 %if library_dataset.library_dataset_info_associations:
-    ${render_existing_library_item_info( library_dataset, library_id )}
+    ${render_library_item_info_for_edit( library_dataset, library_id )}
 %elif library_dataset.folder.library_folder_info_template_associations:
     ${render_available_templates( library_dataset, library_id, restrict='folder' )}
 %else:

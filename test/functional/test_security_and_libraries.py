@@ -491,7 +491,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.visit_url( '%s/admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "1.bed" )
-        self.check_page_for_string( "hg18" )
+        self.check_page_for_string( admin_user.email )
     def test_085_accessing_dataset_with_private_role_restriction( self ):
         """Testing accessing a dataset with a private role restriction"""
         # admin_user should not be able to see 1.bed from the analysis view's access librarys
@@ -571,14 +571,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.visit_url( '%s/admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "2.bed" )
-        self.check_page_for_string( "hg17" )
+        self.check_page_for_string( admin_user.email )
     def test_095_accessing_datasets_with_role_restriction( self ):
         """Testing accessing a dataset with a role restriction"""
         # admin_user should be able to see 2.bed since she is associated with role_two
         self.home()
         self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "2.bed" )
-        self.check_page_for_string( "hg17" )
+        self.check_page_for_string( admin_user.email )
         self.logout()
         # regular_user1 should be able to see 2.bed since she is associated with group_two
         self.login( email = 'test1@bx.psu.edu' )
@@ -586,10 +586,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( folder_one.name )
         self.check_page_for_string( '2.bed' )
-        self.check_page_for_string( "hg17" )
+        self.check_page_for_string( admin_user.email )
         # Check the permissions on the dataset - should be 'access', which only allows viewing the information
         self.home()
-        self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&folder_id=%s&id=%s' % ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_two.id ) ) )
+        self.visit_url( '%s/library/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s' % ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_two.id ) ) )
         self.check_page_for_string( '2.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 2.bed' )
@@ -653,7 +653,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         assert ldda_three is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_three from the database'
         self.visit_page( 'admin/browse_library?id=%s' % ( str( library_one.id ) ) )
         self.check_page_for_string( "3.bed" )
-        self.check_page_for_string( "hg16" )
+        self.check_page_for_string( admin_user.email )
         self.logout()
     def test_105_access_public_library_dataset( self ):
         """Testing accessing a public library dataset"""
@@ -663,7 +663,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( library_one.name )
         self.check_page_for_string( '3.bed' )
-        self.check_page_for_string( "hg16" )
+        self.check_page_for_string( admin_user.email )
         self.logout()
         # regular_user2 should not be able to see 3.bed
         self.login( email = 'test2@bx.psu.edu' )
@@ -671,7 +671,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( library_one.name )
         self.check_page_for_string( '3.bed' )
-        self.check_page_for_string( "hg16" )
+        self.check_page_for_string( admin_user.email )
         self.logout()
         # regular_user3 should not be able to see 3.bed
         self.login( email = 'test3@bx.psu.edu' )
@@ -679,10 +679,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( library_one.name )
         self.check_page_for_string( '3.bed' )
-        self.check_page_for_string( "hg16" )
+        self.check_page_for_string( admin_user.email )
         # Test selecting "View this dataset's information"
         self.home()
-        self.visit_url( '%s/library/library_dataset_dataset_association?information=True&library_id=%s&folder_id=%s&id=%s' % ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_three.id ) ) )
+        self.visit_url( '%s/library/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s' % ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_three.id ) ) )
         self.check_page_for_string( '3.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         self.check_page_for_string( 'View attributes of 3.bed' )

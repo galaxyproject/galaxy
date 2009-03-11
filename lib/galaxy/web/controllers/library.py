@@ -118,7 +118,7 @@ class Library( BaseController ):
                     return trans.response.send_redirect( web.url_for( controller='library',
                                                                       action='library',
                                                                       id=id,
-                                                                      information=True,
+                                                                      edit_info=True,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
             return trans.fill_template( '/library/library_info.mako',
@@ -327,10 +327,7 @@ class Library( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         if params.get( 'permissions', False ):
             action = 'permissions'
-        elif params.get( 'versions', False ):
-            action = 'versions'
         else:
-            # 'information' will be the default
             action = 'information'
         library_dataset = trans.app.model.LibraryDataset.get( id )
         if not library_dataset:
@@ -366,24 +363,6 @@ class Library( BaseController ):
                                         library_id=library_id,
                                         restrict=params.get( 'restrict', True ),
                                         render_templates=params.get( 'render_templates', False ),
-                                        msg=msg,
-                                        messagetype=messagetype )
-        elif action == 'versions':
-            if params.get( 'change_version_button', False ):
-                if trans.app.security_agent.allow_action( trans.user,
-                                                          trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
-                                                          library_item=library_dataset ):
-                    target_lda = trans.app.model.LibraryDatasetDatasetAssociation.get( kwd.get( 'set_lda_id' ) )
-                    library_dataset.library_dataset_dataset_association = target_lda
-                    trans.app.model.flush()
-                    msg = 'The current version of this library dataset has been updated to be %s' % target_lda.name
-                    messagetype = 'done'
-                else:
-                    msg = "You are not authorized to change the versions of this dataset"
-                    messagetype = "error"
-            return trans.fill_template( '/library/library_dataset_versions.mako',
-                                        library_dataset=library_dataset,
-                                        library_id=library_id,
                                         msg=msg,
                                         messagetype=messagetype )
         elif action == 'permissions':
@@ -443,9 +422,10 @@ class Library( BaseController ):
         if id:
             if params.get( 'permissions', False ):
                 action = 'permissions'
+            elif params.get( 'edit_info', False ):
+                action = 'edit_info'
             else:
-                # 'information' will be the default
-                action = 'information'  
+                action = 'info'
             if id.count( ',' ):
                 ids = id.split( ',' )
                 id = None
@@ -500,7 +480,13 @@ class Library( BaseController ):
                                             library_id=library_id,
                                             msg=msg,
                                             messagetype=messagetype )
-            elif action == 'information':
+            elif action == 'info':
+                return trans.fill_template( '/library/ldda_info.mako',
+                                            ldda=ldda,
+                                            library_id=library_id,
+                                            msg=msg,
+                                            messagetype=messagetype )
+            elif action == 'edit_info':
                 if params.get( 'change', False ):
                     # The user clicked the Save button on the 'Change data type' form
                     if trans.app.security_agent.allow_action( trans.user,
@@ -513,7 +499,7 @@ class Library( BaseController ):
                     else:
                         msg = "You are not authorized to change the data type of dataset '%s'" % ldda.name
                         messagetype = 'error'
-                    return trans.fill_template( "/library/ldda_info.mako", 
+                    return trans.fill_template( "/library/ldda_edit_info.mako", 
                                                 ldda=ldda,
                                                 library_id=library_id,
                                                 datatypes=ldatatypes,
@@ -555,7 +541,7 @@ class Library( BaseController ):
                     else:
                         msg = "you are not authorized to edit the attributes of dataset '%s'" % ldda.name
                         messagetype = 'error'
-                    return trans.fill_template( "/library/ldda_info.mako", 
+                    return trans.fill_template( "/library/ldda_edit_info.mako", 
                                                 ldda=ldda,
                                                 library_id=library_id,
                                                 datatypes=ldatatypes,
@@ -581,7 +567,7 @@ class Library( BaseController ):
                     else:
                         msg = "you are not authorized to edit the attributes of dataset '%s'" % ldda.name
                         messagetype = 'error'
-                    return trans.fill_template( "/library/ldda_info.mako", 
+                    return trans.fill_template( "/library/ldda_edit_info.mako", 
                                                 ldda=ldda,
                                                 library_id=library_id,
                                                 datatypes=ldatatypes,
@@ -602,7 +588,7 @@ class Library( BaseController ):
                     else:
                         msg = "you are not authorized to delete dataset '%s'" % ldda.name
                         messagetype = 'error'
-                    return trans.fill_template( "/library/ldda_info.mako", 
+                    return trans.fill_template( "/library/ldda_edit_info.mako", 
                                                 ldda=ldda,
                                                 library_id=library_id,
                                                 datatypes=ldatatypes,
@@ -621,7 +607,7 @@ class Library( BaseController ):
                         # case it resorts to the old dbkey.  Setting the dbkey
                         # sets it properly in the metadata
                         ldda.metadata.dbkey = ldda.dbkey
-                return trans.fill_template( "/library/ldda_info.mako", 
+                return trans.fill_template( "/library/ldda_edit_info.mako", 
                                             ldda=ldda,
                                             library_id=library_id,
                                             datatypes=ldatatypes,
@@ -1282,7 +1268,7 @@ class Library( BaseController ):
                                                                           id=library_item.id,
                                                                           library_id=library_id,
                                                                           folder_id=folder_id,
-                                                                          information=True,
+                                                                          edit_info=True,
                                                                           msg=util.sanitize_text( msg ),
                                                                           messagetype='error' ) )
                     user = trans.get_user()
@@ -1314,7 +1300,7 @@ class Library( BaseController ):
                                                                       id=library_item.id,
                                                                       library_id=library_id,
                                                                       folder_id=folder_id,
-                                                                      information=True,
+                                                                      edit_info=True,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
                 return trans.fill_template( "/library/new_info.mako",
@@ -1337,7 +1323,7 @@ class Library( BaseController ):
                                                                   id=library_item.id,
                                                                   library_id=library_id,
                                                                   folder_id=folder_id,
-                                                                  information=True,
+                                                                  edit_info=True,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
         elif params.get( 'permissions', False ):
