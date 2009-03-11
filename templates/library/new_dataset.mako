@@ -7,9 +7,9 @@
 <b>Create new library datasets</b>
 <a id="upload-librarydataset--popup" class="popup-arrow" style="display: none;">&#9660;</a>
 <div popupmenu="upload-librarydataset--popup">
-    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, upload_option='upload_file' )}">Upload files</a>
-    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, upload_option='upload_directory' )}">Upload directory of files</a>
-    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, upload_option='import_from_history' )}">Import datasets from your current history</a>
+    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_file' )}">Upload files</a>
+    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_directory' )}">Upload directory of files</a>
+    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='import_from_history' )}">Import datasets from your current history</a>
 </div>
 <br/><br/>
 <ul class="manage-table-actions">

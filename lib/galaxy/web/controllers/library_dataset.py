@@ -99,7 +99,6 @@ class UploadLibraryDataset( BaseController ):
             data_type = file_format
         if replace_dataset:
             # The replace_dataset param ( when not None ) refers to a LibraryDataset that is being replaced with a new version.
-            # In this case, all of the permissions on the expired LibraryDataset will be applied to the new version.
             library_dataset = replace_dataset
         else:
             # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 

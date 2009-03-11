@@ -1209,15 +1209,15 @@ class Admin( BaseController ):
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
-        if folder_id:
-            folder = trans.app.model.LibraryFolder.get( folder_id )
-        else:
-            folder = None
+        folder = trans.app.model.LibraryFolder.get( folder_id )
         if folder and last_used_build in [ 'None', None, '?' ]:
             last_used_build = folder.genome_build
-        try:
+        replace_id = params.get( 'replace_id', None )
+        if replace_id:
             replace_dataset = trans.app.model.LibraryDataset.get( params.get( 'replace_id', None ) )
-        except:
+            if not last_used_build:
+                last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
+        else:
             replace_dataset = None
         # Let's not overwrite the imported datatypes module with the variable datatypes?
         # The built-in 'id' is overwritten in lots of places as well
@@ -1271,6 +1271,7 @@ class Admin( BaseController ):
                                         upload_option=upload_option,
                                         library_id=library_id,
                                         folder_id=folder_id,
+                                        replace_id=replace_id,
                                         file_formats=file_formats,
                                         dbkeys=dbkeys,
                                         last_used_build=last_used_build,
@@ -1524,9 +1525,10 @@ class Admin( BaseController ):
                                                               id=library_id,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
-        try:
-            replace_dataset = trans.app.model.LibraryDataset.get( int( params.get( 'replace_id', None ) ) )
-        except:
+        replace_id = params.get( 'replace_id', None )
+        if replace_id:
+            replace_dataset = trans.app.model.LibraryDataset.get( replace_id )
+        else:
             replace_dataset = None
         # See if the current history is empty
         history = trans.get_history()
@@ -1546,21 +1548,16 @@ class Admin( BaseController ):
                 for hda_id in hda_ids:
                     hda = trans.app.model.HistoryDatasetAssociation.get( hda_id )
                     if hda:
-                        ldda = hda.to_library_dataset_dataset_association( target_folder=folder )
+                        ldda = hda.to_library_dataset_dataset_association( target_folder=folder, replace_dataset=replace_dataset )
                         created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( ldda.id ) )
                         dataset_names.append( ldda.name )
-                        if replace_dataset:
-                            # If we are replacing versions and we receive a list, we add all the datasets
-                            # and set the last one in the list as current
-                            replace_dataset.set_library_dataset_dataset_association( ldda )
-                            # Copy the LDDA and LibrarDataset level permissions from replace_dataset to the new LDDA and LibraryDataset
-                            trans.app.security_agent.copy_library_permissions( replace_dataset.library_dataset_dataset_association, ldda )
-                            trans.app.security_agent.copy_library_permissions( replace_dataset.library_dataset, ldda.library_dataset )
-                        else:
+                        if not replace_dataset:
                             # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
                             # LDDA and LibraryDataset.
                             trans.app.security_agent.copy_library_permissions( folder, ldda )
                             trans.app.security_agent.copy_library_permissions( folder, ldda.library_dataset )
+                        # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
+                        trans.app.security_agent.copy_library_permissions( ldda.library_dataset, ldda )
                     else:
                         msg = "The requested HistoryDatasetAssociation id %s is invalid" % str( hda_id )
                         return trans.response.send_redirect( web.url_for( controller='admin',
@@ -1605,6 +1602,7 @@ class Admin( BaseController ):
                                             upload_option=upload_option,
                                             library_id=library_id,
                                             folder_id=folder_id,
+                                            replace_id=replace_id,
                                             file_formats=file_formats,
                                             dbkeys=dbkeys,
                                             last_used_build=last_used_build,
