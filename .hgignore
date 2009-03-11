@@ -1,23 +1,29 @@
+# use glob syntax.
 syntax: glob
 
-# Downloaded and locally built eggs
-eggs
-scripts/scramble/build
-scripts/scramble/lib
-scripts/scramble/archives
-
-# Database stuff
-database/beaker_sessions
-database/compiled_templates
-database/files
-database/*.sqlite
-
-# Python bytecode
-*.pyc
-
-# Config files
-universe_wsgi.ini
-reports_wsgi.ini
+.hgignore
+.project
+.pydevproject
+database
 datatypes_conf.xml
+eggs
+*.pyc
+*~
+ignore_this
+reports_wsgi.ini
+run25.sh
+run_functional_tests.html
+run_unit_tests.html
+scripts/scramble/archives/
+scripts/scramble/build/
+scripts/scramble/lib/ez_setup.py
+scripts/scramble/lib/setuptools-0.6c9-py2.5.egg
+scripts/scramble/lib/setuptools-0.6c9-py2.6.egg
+static/.DS_Store
+static/images/.DS_Store
+static/scripts/.DS_Store
+static/scripts/packed/.DS_Store
+static/tracks/.DS_Store
+tool-data/*.loc
 tool_conf.xml
-
+universe_wsgi.ini

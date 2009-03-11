@@ -8,6 +8,7 @@
     self.overlay_visible=False
     self.message_box_class=""
     self.active_view=None
+    self.body_class=""
 %>
     
 <%def name="init()">
@@ -103,6 +104,8 @@
 	    <span class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></span>
 	</%def>
     
+	${tab( "tracks", "View Data", h.url_for( controller='tracks', action='dbkeys' ), target="galaxy_main")}
+
 	${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
 
 	${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
@@ -209,7 +212,7 @@
 	   ${self.stylesheets()}
     </head>
     
-    <body scroll="no">
+    <body scroll="no" class="${self.body_class}">
         ## Background displays first
         <div id="background"></div>
         ## Layer iframes over backgrounds
@@ -240,7 +243,6 @@
             </div>
         %endif
         ## Allow other body level elements
-        ${next.body()}
     </body>
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout

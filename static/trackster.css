@@ -1,0 +1,106 @@
+body {
+    margin: 4em 0;
+    padding: 0;
+    font-family: verdana;
+    font-size: 75%;
+    overflow-y: scroll;
+}
+
+#content {
+    width: 100%;
+}
+
+#center { 
+  overflow: auto;
+}
+
+#nav {
+    padding: 1em;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: rgb( 64, 64, 64 );
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+#nav > div
+{
+    margin: 0 0;
+}
+
+#nav-controls a {
+    color: white;
+    padding: 0.1em 0.4em;
+    margin: 0 0.1em;
+    text-decoration: none;
+    background: black;
+    -webkit-border-radius: 1em;
+    -moz-border-radius: 1em;
+}
+
+#overview {
+    width: 100%;
+    padding: 1em 0;
+    background: rgb( 64, 64, 64 );
+    color: white;
+    font-weight: bold;
+}
+
+#overview-viewport {
+    position: relative;
+    height: 10px;
+    border-top: solid gray 1px;
+    border-bottom: solid gray 1px;
+}
+#overview-box {
+    position: absolute;
+    height: 10px;
+    background: white;
+}
+
+#viewport {
+    min-height: 100%;
+}
+
+#viewport-canvas {
+    width: 100%;
+    height: 100px;
+}
+
+.track {
+    border-top: solid gray 1px;
+    border-bottom: solid gray 1px;
+    margin: 5px 0;
+}
+
+.track-header {
+    text-align: center;
+    padding: 0.1 0 0.3em 0;
+}
+
+.track-content {
+    overflow: hidden;
+}
+
+.loading {
+    background: #DDDDDD;
+}
+
+.label-track .label {
+    border-left: solid grey 1px;
+    padding-left: 2px;
+}
+
+.feature-track .feature {
+    background: brown;
+}
+
+.feature-track .feature .forward { 
+
+}
+
+.feature-track .feature .reverse { 
+
+}
