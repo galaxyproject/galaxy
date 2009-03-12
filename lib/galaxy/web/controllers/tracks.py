@@ -151,7 +151,7 @@ class WebRoot( BaseController ):
                 job.add_input_dataset( "input_dataset", dataset )
                 job.add_parameter( "input_dataset", to_json_string( dataset.id ) )
                 # This is odd
-                job.add_output_dataset( "input_dataset", dataset )
+                # job.add_output_dataset( "input_dataset", dataset )
                 # create store path, this is rather unclear?
                 track_store.set()
                 job.add_parameter( "store_path", to_json_string( track_store.path ) )    
@@ -161,6 +161,12 @@ class WebRoot( BaseController ):
             else:
                 return messages.NO_DATA
         else:
+            # Data for that chromosome or resolution does not exist?
+            # HACK: we're "pending" because the store exists without a manifest
+            try:
+                track_store.get_manifest()
+            except track_store.DoesNotExist:
+                return messages.PENDING
             if chrom and low and high:
                 low = math.floor(float(low))
                 high = math.ceil(float(high))
@@ -168,7 +174,6 @@ class WebRoot( BaseController ):
                 try:
                     data = track_store.get( chrom, resolution )
                 except track_store.DoesNotExist:
-                    # Data for that chromosome or resolution does not exist
                     return messages.NO_DATA
                 window = dataset.datatype.get_track_window( dataset, data, low, high )
                 glob = {"data":window, "type":dataset.datatype.get_track_type()};

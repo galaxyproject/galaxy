@@ -34,8 +34,9 @@ def divide( intervals, out_path ):
             current_file = open( os.path.join( out_path, "%s" % chrom), "a" )
         print >> current_file, "\t".join(line)
         lastchrom = chrom
-    current_file.flush()
-    current_file.close()
+    if current_file:
+        current_file.flush()
+        current_file.close()
     return manifest
 
 if __name__ == "__main__":
