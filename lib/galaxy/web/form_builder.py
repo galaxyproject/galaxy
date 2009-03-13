@@ -78,11 +78,17 @@ class FileField(BaseField):
     
     >>> print FileField( "foo" ).get_html()
     <input type="file" name="foo">
+    >>> print FileField( "foo", True ).get_html()
+    <input type="file" name="foo" galaxy-ajax-upload="true">
     """
-    def __init__( self, name ):
+    def __init__( self, name, ajax=False ):
         self.name = name
+        self.ajax = ajax
     def get_html( self, prefix="" ):
-        return '<input type="file" name="%s%s">' % ( prefix, self.name )
+        if self.ajax:
+            return '<input type="file" name="%s%s" galaxy-ajax-upload="true">' % ( prefix, self.name )
+        else:
+            return '<input type="file" name="%s%s">' % ( prefix, self.name )
 
 class HiddenField(BaseField):
     """

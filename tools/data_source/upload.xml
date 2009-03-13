@@ -6,7 +6,8 @@
   </description>
   <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
   <inputs>
-    <param name="file_data" type="file" size="30" label="File"/> 
+    <param name="async_datasets" type="hidden" value="None"/>
+    <param name="file_data" type="file" size="30" label="File" ajax-upload="true"/> 
     <param name="url_paste" type="text" area="true" size="5x35" label="URL/Text" help="Here you may specify a list of URLs (one per line) or paste the contents of a file."/> 
     <param name="space_to_tab" type="select" display="checkboxes" multiple="True" label="Convert spaces to tabs" help="Use this option if you are entering intervals by hand."> 
       <option value="Yes">Yes</option>

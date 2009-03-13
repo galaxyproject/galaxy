@@ -163,7 +163,7 @@
     var updater = function ( tracked_datasets ) {
         // Check if there are any items left to track
         var empty = true;
-        for ( item in tracked_datasets ) {
+        for ( i in tracked_datasets ) {
             empty = false;
             break;
         }

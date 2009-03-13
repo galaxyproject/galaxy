@@ -57,3 +57,59 @@ class ToolRunner( BaseController ):
             return trans.show_error_message( "Required URL for redirection missing" )
         trans.log_event( "Redirecting to: %s" % redirect_url )
         return trans.fill_template( 'root/redirect.mako', redirect_url=redirect_url )
+
+    
+    @web.json
+    def upload_async_create( self, trans, tool_id=None, **kwd ):
+        """
+        Precreate datasets for asynchronous uploading.
+        """
+        def create_dataset( name, history ):
+            data = trans.app.model.HistoryDatasetAssociation( create_dataset = True )
+            data.name = name
+            data.state = data.states.UPLOAD
+            data.history = history
+            data.flush()
+            history.add_dataset( data )
+            return data
+        tool = self.get_toolbox().tools_by_id.get( tool_id, None )
+        if not tool:
+            return False # bad tool_id
+        params = util.Params( kwd, sanitize=tool.options.sanitize, tool=tool )
+        datasets = []
+        if params.file_data not in [ None, "" ]:
+            name = params.file_data
+            if name.count('/'):
+                name = name.rsplit('/',1)[1]
+            if name.count('\\'):
+                name = name.rsplit('\\',1)[1]
+            datasets.append( create_dataset( name, trans.history ) )
+        if params.url_paste not in [ None, "" ]:
+            url_paste = params.url_paste.replace( '\r', '' ).split( '\n' )
+            url = False
+            for line in url_paste:
+                line = line.rstrip( '\r\n' ).strip()
+                if not line:
+                    continue
+                elif line.lower().startswith( 'http://' ) or line.lower().startswith( 'ftp://' ):
+                    url = True
+                    datasets.append( create_dataset( line, trans.history ) )
+                else:
+                    if url:
+                        continue # non-url when we've already processed some urls
+                    else:
+                        # pasted data
+                        datasets.append( create_dataset( 'Pasted Entry', trans.history ) )
+                        break
+        if datasets:
+            trans.model.flush()
+        return [ d.id for d in datasets ]
+
+    @web.expose
+    def upload_async_message( self, trans, **kwd ):
+        # might be more appropriate in a different controller
+        msg = """<p>Your upload has been queued.  History entries that are still uploading will be blue, and turn green upon completion.</p>
+        <p><b>Please do not use your browser\'s "stop" or "reload" buttons until the upload is complete, or it may be interrupted.</b></p>
+        <p>You may safely continue to use Galaxy while the upload is in progress.  Using "stop" and "reload" on pages other than Galaxy is also safe.</p>
+        """
+        return trans.show_message( msg, refresh_frames='history' )

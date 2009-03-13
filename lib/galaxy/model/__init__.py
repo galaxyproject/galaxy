@@ -330,6 +330,7 @@ class DefaultHistoryPermissions( object ):
 
 class Dataset( object ):
     states = Bunch( NEW = 'new',
+                    UPLOAD = 'upload',
                     QUEUED = 'queued',
                     RUNNING = 'running',
                     OK = 'ok',
