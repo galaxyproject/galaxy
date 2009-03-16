@@ -1,3 +1,4 @@
+phix	phiX174	phix=5386
 16079	Mycobacterium sp. JLS	NC_009077=6048425
 symbTher_IAM14863	Symbiobacterium thermophilum IAM 14863	chr=3566135
 16070	Yersinia pseudotuberculosis IP 31758	NC_009708=4723306,NC_009705=153140,NC_009704=58679
