@@ -1,11 +1,6 @@
-var hidden_width = 7;
-var border_tweak = 9;
-
-var jq = jQuery;
-
 function ensure_dd_helper() {
     // Insert div that covers everything when dragging the borders
-    if ( jq( "#DD-helper" ).length == 0 ) {
+    if ( $( "#DD-helper" ).length == 0 ) {
         $( "<div id='DD-helper'/>" ).css( {
             background: 'white', opacity: 0, zIndex: 9000,
             position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' 
@@ -17,68 +12,59 @@ function make_left_panel( panel_el, center_el, border_el ) {
     var hidden = false;
     var saved_size = null;
     // Functions for managing panel
-    resize = function( x ) {
+    var resize = function( x ) {
         var oldx = x;
         if ( x < 0 ) x = 0;
-        jq( panel_el ).css( "width", x );
-        jq( border_el ).css( "left", oldx );
-        jq( center_el ).css( "left", x+7 );
+        $( panel_el ).css( "width", x );
+        $( border_el ).css( "left", oldx );
+        $( center_el ).css( "left", x+7 );
+        // ie7-recalc.js
         if ( document.recalc ) { document.recalc() };
     };
-    toggle = function() {
+    var toggle = function() {
         if ( hidden ) {
-            jq( border_el ).removeClass( "hover" );
-            jq( border_el).animate( {left: saved_size }, "fast" );
-            jq( panel_el ).css( "left", - saved_size ).show().animate( { "left": 0 }, "fast", function () {
+            $( border_el ).removeClass( "hover" );
+            $( border_el).animate( {left: saved_size }, "fast" );
+            $( panel_el ).css( "left", - saved_size ).show().animate( { "left": 0 }, "fast", function () {
                 resize( saved_size );
-                jq( border_el ).removeClass( "hidden" );
+                $( border_el ).removeClass( "hidden" );
             });
             hidden = false;
         } else {
-            saved_size = jq( border_el ).position().left;
+            saved_size = $( border_el ).position().left;
             // Move center
-            jq( center_el ).css( "left", hidden_width );
+            $( center_el ).css( "left", $(border_el).innerWidth() );
             if ( document.recalc ) { document.recalc() };
-            jq( border_el).removeClass( "hover" );
-            jq( panel_el ).animate( { left: - saved_size }, "fast" );
-            jq( border_el ).animate( {left: -1 }, "fast", function() {
-                jq( this ).addClass( "hidden" );
+            $( border_el).removeClass( "hover" );
+            $( panel_el ).animate( { left: - saved_size }, "fast" );
+            $( border_el ).animate( { left: -1 }, "fast", function() {
+                $( this ).addClass( "hidden" );
             });
             hidden = true;
         }
     };
     // Connect to elements
-    jq( border_el ).hover( 
-        function() { jq( this ).addClass( "hover" ) },
-        function() { jq( this ).removeClass( "hover" ) }
-    ).draggable( {
-            start: function( _, ui ) { 
-              jq( '#DD-helper' ).show();
-            },
-            stop: function( _, ui ) { 
-              jq( '#DD-helper' ).hide();
-              return false;
-            },
-            drag: function( _, ui ) {
-                x = ui.position.left;
-                // Limit range
-                x = Math.min( 400, Math.max( 100, x ) );
-                // Resize
-                if ( hidden ) {
-                    jq( panel_el ).css( "left", 0 );
-                    jq( border_el ).removeClass( "hidden" );
-                    hidden = false;
-                }
-                resize( x );
-                // Constrain helper position
-                ui.position.left = x;
-                ui.position.top = $(this).data("draggable").originalPosition.top;
-            },
-            click: function() {
-                toggle();
-            }
+    $( border_el ).hover( 
+        function() { $( this ).addClass( "hover" ) },
+        function() { $( this ).removeClass( "hover" ) }
+    ).bind( "dragstart", function( e ) {
+        $( '#DD-helper' ).show();
+    }).bind( "dragend", function( e ) {
+        $( '#DD-helper' ).hide();
+    }).bind( "drag", function( e ) {
+        x = e.offsetX;
+        // Limit range
+        x = Math.min( 400, Math.max( 100, x ) );
+        // Resize
+        if ( hidden ) {
+            $( panel_el ).css( "left", 0 );
+            $( border_el ).removeClass( "hidden" );
+            hidden = false;
         }
-    ).find( "div" ).show();;
+        resize( x );
+    }).bind( "dragclickonly", function( e ) {
+        toggle();
+    }).find( "div" ).show();
     var force_panel = function( op ) {
         if ( ( hidden && op == 'show' ) || ( ! hidden && op == 'hide' ) ) { 
             toggle();
@@ -92,39 +78,40 @@ function make_right_panel( panel_el, center_el, border_el ) {
     var hidden_by_tool = false;
     var saved_size = null;    
     var resize = function( x ) {
-        jq( panel_el ).css( "width", x );
-        jq( center_el ).css( "right", x+9 );
-        jq( border_el ).css( "right", x ).css( "left", "" )
+        $( panel_el ).css( "width", x );
+        $( center_el ).css( "right", x+9 );
+        $( border_el ).css( "right", x ).css( "left", "" )
+        // ie7-recalc.js
         if ( document.recalc ) { document.recalc() };
     };
     var toggle = function() {
         if ( hidden ) {
-            jq( border_el).removeClass( "hover" );
-            jq( border_el ).animate( {right: saved_size }, "fast" );
-            jq( panel_el ).css( "right", - saved_size ).show().animate( { "right": 0 }, "fast", function () {
+            $( border_el).removeClass( "hover" );
+            $( border_el ).animate( { right: saved_size }, "fast" );
+            $( panel_el ).css( "right", - saved_size ).show().animate( { "right": 0 }, "fast", function () {
                 resize( saved_size );
-                jq( border_el ).removeClass( "hidden" )
+                $( border_el ).removeClass( "hidden" )
             });
             hidden = false;
         }
         else
         {
-            saved_size = jq(document).width() - jq( border_el ).position().left - border_tweak;
+            saved_size = $(document).width() - $( border_el ).position().left - $(border_el).outerWidth();
             // Move center
-            jq( center_el ).css( "right", hidden_width + 1 );
+            $( center_el ).css( "right", $(border_el).innerWidth() + 1 );
             if ( document.recalc ) { document.recalc() };
             // Hide border
-            jq( border_el ).removeClass( "hover" );
-            jq( panel_el ).animate( { right: - saved_size }, "fast" );
-            jq(  border_el ).animate( { right: -1 }, "fast", function() {
-                jq( this ).addClass( "hidden" )
+            $( border_el ).removeClass( "hover" );
+            $( panel_el ).animate( { right: - saved_size }, "fast" );
+            $(  border_el ).animate( { right: -1 }, "fast", function() {
+                $( this ).addClass( "hidden" )
             });
             hidden = true;
         }
         hidden_by_tool = false;
     };
     var handle_minwidth_hint = function( x ) {
-        var space = jq( center_el ).width() - ( hidden ? saved_size : 0 );
+        var space = $( center_el ).width() - ( hidden ? saved_size : 0 );
         if ( space < x )
         {
             if ( ! hidden ) {
@@ -138,46 +125,29 @@ function make_right_panel( panel_el, center_el, border_el ) {
             }
         }
     };
-    jq( border_el ).hover( 
-        function() { jq( this ).addClass( "hover" ) },
-        function() { jq( this ).removeClass( "hover" ) }
-    ).draggable( {
-            start: function( _, ui ) {
-                jq( '#DD-helper' ).show();
-            },
-            stop: function( _, ui ) {  
-                x = ui.position.left;
-                w = jq(window).width();
-                // Limit range
-                x = Math.min( w - 100, x );
-                x = Math.max( w - 400, x );
-                // Final resize
-                resize( w - x - border_tweak );
-                jq( '#DD-helper' ).hide();
-                return false;
-            },
-            click: function() {
-                toggle();
-            },
-            drag: function( _, ui ) {
-                x = ui.position.left;
-                w = jq(window).width(); 
-                // Limit range
-                x = Math.min( w - 100, x );
-                x = Math.max( w - 400, x );
-                // Resize
-                if ( hidden ) {
-                    jq( panel_el ).css( "right", 0 );
-                    jq( border_el ).removeClass( "hidden" );
-                    hidden = false;
-                }
-                resize( w - x - border_tweak );
-                // Constrain helper position
-                ui.position.left = x;
-                ui.position.top = $(this).data("draggable").originalPosition.top;
-            }
+    $( border_el ).hover( 
+        function() { $( this ).addClass( "hover" ) },
+        function() { $( this ).removeClass( "hover" ) }
+    ).bind( "dragstart", function( e ) {
+        $( '#DD-helper' ).show();
+    }).bind( "dragend", function( e ) {  
+        $( '#DD-helper' ).hide();
+    }).bind( "drag", function( e ) {
+        x = e.offsetX;
+        w = $(window).width(); 
+        // Limit range
+        x = Math.min( w - 100, x );
+        x = Math.max( w - 400, x );
+        // Resize
+        if ( hidden ) {
+            $( panel_el ).css( "right", 0 );
+            $( border_el ).removeClass( "hidden" );
+            hidden = false;
         }
-    ).find( "div" ).show();
+        resize( w - x - $(this).outerWidth() );
+    }).bind( "dragclickonly", function( e ) {
+        toggle();
+    }).find( "div" ).show();
     var force_panel = function( op ) {
         if ( ( hidden && op == 'show' ) || ( ! hidden && op == 'hide' ) ) { 
             toggle();
@@ -257,7 +227,7 @@ $(function() {
                 // Vile IE iframe hack -- even IE7 needs this
                 submenu.prepend( "<iframe style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; filter:Alpha(Opacity='0');\"></iframe>" );
             }
-            $(this).hoverIntent( function() { submenu.show(); }, function() { submenu.hide(); } );
+            $(this).hover( function() { submenu.show(); }, function() { submenu.hide(); } );
             submenu.click( function() { submenu.hide(); } );
         }
     });

@@ -93,10 +93,12 @@ function handler ( event ){
 		// mouseup, stop dragging
 		case 'mouseup': 
 			$event.remove( document, "mousemove mouseup", handler ); // remove page events
-			if ( drag.dragging ){
+			if ( drag.dragging ) {
 				if ( $special.drop ) $special.drop.handler( event ); // "drop"
 				hijack( event, "dragend", elem ); // trigger "dragend"	
-				}
+			} else {
+				hijack( event, "dragclickonly", elem );
+			}
 			selectable( elem, true ); // enable text selection
 			drag.dragging = drag.proxy = data.elem = null; // deactivate element
 			break;

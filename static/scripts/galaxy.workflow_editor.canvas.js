@@ -61,6 +61,9 @@ function Connector( handle1, handle2 ) {
     this.dragging = false;
     this.inner_color = "#FFFFFF";
     this.outer_color = "#D8B365"
+    if ( handle1 && handle2 ) {
+        this.connect( handle1, handle2 );
+    }
 }
 $.extend( Connector.prototype, {
     connect: function ( t1, t2 ) {
@@ -149,95 +152,75 @@ $.extend( Node.prototype, {
             var terminal = this.terminal = new InputTerminal( this, types );
             terminal.node = node;
             terminal.name = name;
-            $(this).droppable( {
-                tolerance: 'intersect',
-                accept: function( draggable ) {
-                    draggable = draggable.get( 0 );
-                    return ( draggable.terminal ) && ( terminal.can_accept( draggable.terminal ) );
-                },
-                activeClass: 'input-terminal-active',
-                // hoverClass: 'input-terminal-active',
-                over: function( e, ui ) {
-                    ui.helper.get(0).terminal.connectors[0].inner_color = "#BBFFBB";
-                },
-                out: function( e, ui ) {
-                    ui.helper.get(0).terminal.connectors[0].inner_color = "#FFFFFF";
-                },
-                drop: function( e, ui ) {
-                    var instance = $(this).data("droppable");
-                    var source = ui.draggable.get(0).terminal;
-                    var target = instance.element.get(0).terminal;
-                    var c = new Connector();
-                    c.connect( source, target );
-                    c.redraw();
+            $(this).bind( "dropstart", function( e ) {
+                e.dragProxy.terminal.connectors[0].inner_color = "#BBFFBB";
+            }).bind( "dropend", function ( e ) {
+                e.dragProxy.terminal.connectors[0].inner_color = "#FFFFFF";
+            }).bind( "drop", function( e ) {
+                new Connector( e.dragTarget.terminal, e.dropTarget.terminal ).redraw();
+            }).bind( "hover", function() {
+                // If connected, create a popup to allow disconnection
+                if ( terminal.connectors.length > 0 ) {
+                    // Create callout
+                    var t = $("<div class='callout'></div>")
+                        .css( { display: 'none' } )
+                        .appendTo( "body" )
+                        .append(
+                            $("<div class='buttons'></div>").append(
+                                $("<img src='../images/delete_icon.png' />").click( function() {
+                                    $.each( terminal.connectors, function( _, x ) { x.destroy() } );
+                                    t.remove();
+                                })))
+                        .bind( "mouseleave", function() {
+                            $(this).remove();
+                        });
+                    // Position it and show
+                    t.css( {
+                            top: $(this).offset().top - 2,
+                            left: $(this).offset().left - t.width(),
+                            'padding-right': $(this).width() }
+                        ).show();
                 }
             });
-            $(this).hoverIntent(
-                function() {
-                    // If connected, create a popup to allow disconnection
-                    if ( terminal.connectors.length > 0 ) {
-                        // Create callout
-                        var t = $("<div class='callout'></div>")
-                            .css( { display: 'none' } )
-                            .appendTo( "body" )
-                            .append(
-                                $("<div class='buttons'></div>").append(
-                                    $("<img src='../images/delete_icon.png' />").click( function() {
-                                        $.each( terminal.connectors, function( _, x ) { x.destroy() } );
-                                        t.remove();
-                                    })))
-                            .bind( "mouseleave", function() {
-                                $(this).remove();
-                            });
-                        // Position it and show
-                        t.css( {
-                                top: $(this).offset().top - 2,
-                                left: $(this).offset().left - t.width(),
-                                'padding-right': $(this).width() }
-                            ).show();
-                    }
-                },
-                function() {}
-            );
             node.input_terminals[name] = terminal;
         })
     },
     enable_output_terminal : function( elements, name, type ) {
         node = this;
         $(elements).each( function() {
-           var terminal = this.terminal = new OutputTerminal( this, type ); 
-		   terminal.node = node;
-		   terminal.name = name;
-           $(this).draggable( { 
-               scrollPanel: true,
-               panel: $("#canvas-container"),
-               // containment: 'document',
-               // appendTo: "body",
-               // cursorAt: { top: 5, left: 5 },
-               helper: function () { 
-                   var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' ).appendTo( "#canvas-container" ).get(0);
-                   h.terminal = new OutputTerminal( h );
-                   // // Already a connector? Destroy... no wait, don't
-                   // if ( this.terminal.connector ) {
-                   //     this.terminal.connector.destroy();
-                   // }
-                   var c = new Connector();
-                   this.drag_temp_connector = c;
-                   c.dragging = true;
-                   c.connect( this.terminal, h.terminal );
-                   return h;
-               },
-               drag: function ( e, options ) {
-                    h = options.helper.get(0);
-                    h.terminal.redraw();
-               },
-               stop: function( e, options ) {
-                   this.drag_temp_connector.destroy();
-                   // options.helper.remove();
-               }
-           });
-           node.output_terminals[name] = terminal;
-       });
+            var terminal_element = this;
+                terminal = this.terminal = new OutputTerminal( this, type ); 
+		terminal.node = node;
+		terminal.name = name;
+            $(this).bind( "dragstart", function( e ) { 
+                    var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' ).appendTo( "#canvas-container" ).get(0);
+                    h.terminal = new OutputTerminal( h );
+                    var c = new Connector();
+                    c.dragging = true;
+                    c.connect( this.terminal, h.terminal );
+                    $.dropManage({
+                        filter: function( e ) {
+                            return this.terminal.can_accept( terminal );
+                        }
+                    }).addClass( "input-terminal-active" );
+                    return h;
+            }).bind( "drag", function ( e ) {
+                var onmove = function() {
+                    var po = $(e.dragProxy).offsetParent().offset(),
+                        x = e.offsetX - po.left,
+                        y = e.offsetY - po.top;
+                    $(e.dragProxy).css( { left: x, top: y } );
+                    e.dragProxy.terminal.redraw();
+                }
+                onmove();
+                $("#canvas-container").get(0).scroll_panel.test( e, onmove );
+            }).bind( "dragend", function ( e ) {
+                e.dragProxy.terminal.connectors[0].destroy();
+                $(e.dragProxy).remove();
+                $.dropManage().removeClass( "input-terminal-active" );
+            });
+            node.output_terminals[name] = terminal;
+        });
     },
     redraw : function () {
         $.each( this.input_terminals, function( _, t ) { t.redraw() } );
@@ -246,14 +229,12 @@ $.extend( Node.prototype, {
     destroy : function () {
         $.each( this.input_terminals, function( k, t ) {
             t.destroy();
-            $(t.element).droppable('destroy');
         });
         $.each( this.output_terminals, function( k, t ) {
             t.destroy();
-            $(t.element).draggable('destroy');
         });
         workflow.remove_node( this );
-        $(this.element).draggable('destroy').remove();
+        $(this.element).remove();
     },
     make_active : function () {
         $(this.element).addClass( "toolForm-active" );
@@ -472,8 +453,7 @@ function prebuild_node( type, title_text, tool_id ) {
     }
     var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" )
     f.append( title );
-    f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );
-    
+    f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );    
     var b = $("<div class='toolFormBody'></div>")
     var tmp = "<div><img height='16' align='middle' src='../images/loading_small_white_bg.gif'/> loading tool info...</div>";
     b.append( tmp );
@@ -497,35 +477,22 @@ function prebuild_node( type, title_text, tool_id ) {
     buttons.prependTo( title );
     width += ( buttons.width() + 10 );
     f.css( "width", width );
-    // Make draggable
-    $(f).draggable( {
-        cursor: 'move',
-        // handle: title,
-        scrollPanel: true,
-        panel: $("#canvas-container"),
-        scrollSensitivity: 10,
-        scrollSpeed: 20,
-        // containment: $("#shim"),
-        // grow: true,
-        click: function( e, ui ) {
-            // Make active
-            workflow.activate_node( node );
-        },
-        start: function( e, ui ) {
-            workflow.activate_node( node );
-        },
-        drag: function( e, ui ) { 
-            $(this).find( ".terminal" ).each( function() {
-                this.terminal.redraw();
-            })
-        },
-        stop: function( e, ui  ) {
-            // Redraw
-            $(this).find( ".terminal" ).each( function() {
-                this.terminal.redraw();
-            });
-            workflow.node_changed( this );
-        }
+    $(f).bind( "dragstart", function() {
+        workflow.activate_node( node );
+    }).bind( "dragend", function() {
+        workflow.node_changed( this );
+    }).bind( "dragclickonly", function() {
+       workflow.activate_node( node ); 
+    }).bind( "drag", function( e ) {
+        // Move
+        var po = $(this).offsetParent().offset(),
+            x = e.offsetX - po.left,
+            y = e.offsetY - po.top;
+        $(this).css( { left: x, top: y } );
+        // Redraw
+        $(this).find( ".terminal" ).each( function() {
+            this.terminal.redraw();
+        });
     });
     return node;
 }
@@ -544,3 +511,149 @@ function populate_datatype_info( data ) {
     ext_to_type = data.ext_to_class_name;
     type_to_type = data.class_to_classes;
 };
+
+function ScrollPanel( panel ) {
+    this.panel = panel;
+}
+$.extend( ScrollPanel.prototype, {
+    test: function( e, onmove ) {
+        clearTimeout( this.timeout );
+        var x = e.pageX,
+            y = e.pageY;
+            // Panel size and position
+            panel = $(this.panel),
+            panel_pos = panel.position(),
+            panel_w = panel.width(),
+            panel_h = panel.height()
+            // Viewport size and offset
+            viewport = panel.parent();
+            viewport_w = viewport.width(),
+            viewport_h = viewport.height(),
+            viewport_offset = viewport.offset(),
+            // Edges of viewport (in page coordinates)
+            min_x = viewport_offset.left,
+            min_y = viewport_offset.top,
+            max_x = min_x + viewport.width(),
+            max_y = min_y + viewport.height(),
+            // Legal panel range
+            p_min_x = - ( panel_w - viewport_w ),
+            p_min_y = - ( panel_h - viewport_h ),
+            p_max_x = 0,
+            p_max_y = 0,
+            // Did the panel move?
+            moved = false,
+            // Constants
+            close_dist = 5,
+            nudge = 23;
+        if ( x - close_dist < min_x ) {
+            if ( panel_pos.left < p_max_x ) {
+                var t = Math.min( nudge, p_max_x - panel_pos.left );
+                panel.css( "left", panel_pos.left + t );
+                moved = true;
+            }
+        } else if ( x + close_dist > max_x ) {
+            if ( panel_pos.left > p_min_x ) {
+                var t = Math.min( nudge, panel_pos.left  - p_min_x );
+                panel.css( "left", panel_pos.left - t );
+                moved = true;
+            }
+        } else if ( y - close_dist < min_y ) {
+            if ( panel_pos.top < p_max_y ) {
+                var t = Math.min( nudge, p_max_y - panel_pos.top );
+                panel.css( "top", panel_pos.top + t );
+                moved = true;
+            }
+        } else if ( y + close_dist > max_y ) {
+            if ( panel_pos.top > p_min_y ) {
+                var t = Math.min( nudge, panel_pos.top  - p_min_x );
+                panel.css( "top", ( panel_pos.top - t ) + "px" );
+                moved = true;
+            }
+        }
+        if ( moved ) {
+            // Keep moving even if mouse doesn't move
+            onmove();
+            var panel = this;
+            this.timeout = setTimeout( function() { panel.test( e, onmove ); }, 50 );
+        }
+    },
+    drag: function( e, ui ) {
+        clearTimeout( this.timeout );
+        var element = e.dragProxy,
+            panel = this.panel,
+            panel_pos = panel.position(),
+            panel_w = panel.width(),
+            panel_h = panel.height()
+            viewport = panel.parent();
+            viewport_w = viewport.width(),
+            viewport_h = viewport.height(),
+            element_w = element.width(),
+            element_h = element.height(),
+            moved = false,
+            close_dist = 5,
+            nudge = 23,
+            // Legal panel range
+            p_min_x = - ( panel_w - viewport_w ),
+            p_min_y = - ( panel_h - viewport_h ),
+            p_max_x = 0,
+            p_max_y = 0,
+            // Visible
+            min_vis_x = - panel_pos.left,
+            max_vis_x = min_vis_x + viewport_w,
+            min_vis_y = - panel_pos.top,
+            max_vis_y = min_vis_y + viewport_h,
+            // Mouse
+            mouse_x = ui.position.left + instance.offset.click.left;
+            mouse_y = ui.position.top + instance.offset.click.top;
+        // Move it
+        if ( ( panel_pos.left < p_max_x ) && ( mouse_x - close_dist < min_vis_x ) ) {
+            var t = Math.min( nudge, p_max_x - panel_pos.left );
+            panel.css( "left", panel_pos.left + t );
+            moved = true;
+            instance.offset.parent.left += t;
+            ui.position.left -= t
+        }
+        if ( ( ! moved ) && ( panel_pos.left > p_min_x ) && ( mouse_x + close_dist > max_vis_x ) ) {
+            var t = Math.min( nudge, panel_pos.left  - p_min_x );
+            panel.css( "left", panel_pos.left - t );
+            moved = true;
+            instance.offset.parent.left -= t;
+            ui.position.left += t;      
+        }
+        if ( ( ! moved ) && ( panel_pos.top < p_max_y ) && ( mouse_y - close_dist < min_vis_y ) ) {
+            var t = Math.min( nudge, p_max_y - panel_pos.top );
+            panel.css( "top", panel_pos.top + t );
+            // Firefox sometimes moves by less, so we need to check. Yuck.
+            var amount_moved = panel.position().top - panel_pos.top;
+            instance.offset.parent.top += amount_moved;
+            ui.position.top -= amount_moved;
+            moved = true;
+        }
+        if ( ( ! moved ) && ( panel_pos.top > p_min_y ) && ( mouse_y + close_dist > max_vis_y ) ) {
+            var t = Math.min( nudge, panel_pos.top  - p_min_x );
+            panel.css( "top", ( panel_pos.top - t ) + "px" );
+            // Firefox sometimes moves by less, so we need to check. Yuck.
+            var amount_moved = panel_pos.top - panel.position().top;   
+            instance.offset.parent.top -= amount_moved;
+            ui.position.top += amount_moved;
+            moved = true;
+        }
+        // Still contain in panel
+        ui.position.left = Math.max( ui.position.left, 0 );
+        ui.position.top = Math.max( ui.position.top, 0 );
+        ui.position.left = Math.min( ui.position.left, panel_w - element_w );
+        ui.position.top = Math.min( ui.position.top, panel_h - element_h );
+        // Update offsets
+        if ( moved ) {
+            $.ui.ddmanager.prepareOffsets( instance, e );
+        }
+        // Keep moving even if mouse doesn't move
+        if ( moved ) {
+            this.timeout = setTimeout( function() { instance.mouseMove( e ) }, 50 );
+        }
+    },
+    stop: function( e, ui ) {
+        var instance = $(this).data("draggable");
+        clearTimeout( instance.timeout );
+    }
+});

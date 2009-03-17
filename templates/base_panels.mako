@@ -53,8 +53,7 @@
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
     <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.hoverIntent.js')}"></script>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.ui.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.event.drag.js')}"></script>
     <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.form.js')}"></script>
     <script type="text/javascript" src="${h.url_for('/static/scripts/galaxy.panels.js')}"></script>
     <script type="text/javascript">
