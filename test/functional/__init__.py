@@ -25,6 +25,7 @@ log = logging.getLogger( __name__ )
 
 default_galaxy_test_host = "localhost"
 default_galaxy_test_port = "9999"
+default_galaxy_locales = 'en'
 galaxy_test_file_dir = "test-data"
 server = None
 app = None
@@ -35,6 +36,8 @@ def setup():
     
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', default_galaxy_test_port )
+    if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
+        os.environ['HTTP_ACCEPT_LANGUAGE'] = default_galaxy_locales
     
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ   
     

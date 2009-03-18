@@ -1,16 +1,17 @@
+<% _=n_ %>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
 <html>
 
 <head>
-<title>Galaxy History</title>
+<title>${_('Galaxy History')}</title>
 
 ## This is now only necessary for tests
 %if bool( [ data for data in history.active_datasets if data.state in ['running', 'queued', '', None ] ] ):
 <!-- running: do not change this comment, used by TwillTestCase.wait -->
 %endif
 
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
 <meta http-equiv="Pragma" content="no-cache">
 <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
 <link href="${h.url_for('/static/style/history.css')}" rel="stylesheet" type="text/css" />
@@ -29,7 +30,7 @@
         initShowHide();
         setupHistoryItem( q("div.historyItemWrapper") );
         // Collapse all
-        q("#top-links").append( "|&nbsp;" ).append( q("<a href='#'>collapse all</a>").click( function() {
+        q("#top-links").append( "|&nbsp;" ).append( q("<a href='#'>${_('collapse all')}</a>").click( function() {
             q( "div.historyItemBody:visible" ).each( function() {
                 if ( q.browser.mozilla )
                 {
@@ -39,16 +40,16 @@
             })
             var state = new CookieSet( "galaxy.history.expand_state" );
             state.removeAll().save();
-	    return false;
+        return false;
         }));
     })
-    // Functionized so AJAX'd datasets can call them
+    //' Functionized so AJAX'd datasets can call them
     // Get shown/hidden state from cookie
     function initShowHide() {
         q( "div.historyItemBody" ).hide();
         // Load saved state and show as neccesary
         var state = new CookieSet( "galaxy.history.expand_state" );
-	for ( id in state.store ) { q( "#" + id ).children( "div.historyItemBody" ).show(); }
+    for ( id in state.store ) { q( "#" + id ).children( "div.historyItemBody" ).show(); }
         // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
         if ( q.browser.mozilla ) {
             q( "div.historyItemBody" ).each( function() {
@@ -80,51 +81,51 @@
                     state.add( id ); state.save();
                     delete state;
                 }
-		return false;
+        return false;
             });
             // Delete link
             q(this).find( "a.historyItemDelete" ).each( function() {
-		var data_id = this.id.split( "-" )[1];
-		q(this).click( function() {
-		    q( '#progress-' + data_id ).show();
-		    q.ajax({
-			url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
-			error: function() { alert( "Delete failed" ) },
-			success: function() {
-			%if show_deleted:
-				var to_update = {};
-				to_update[data_id] = "none";
-				updater( to_update );
-			%else:
-			    q( "#historyItem-" + data_id ).fadeOut( "fast", function() {
-				q( "div#historyItemContainer-" + data_id ).remove();
-				if ( q( "div.historyItemContainer" ).length < 1 ) {
-				   	q ( "div#emptyHistoryMessage" ).show();
-				}
-			    });
-			%endif
-			}
-		    });
-		    return false;
-		});
-	    });
+        var data_id = this.id.split( "-" )[1];
+        q(this).click( function() {
+            q( '#progress-' + data_id ).show();
+            q.ajax({
+            url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
+            error: function() { alert( "Delete failed" ) },
+            success: function() {
+            %if show_deleted:
+                var to_update = {};
+                to_update[data_id] = "none";
+                updater( to_update );
+            %else:
+                q( "#historyItem-" + data_id ).fadeOut( "fast", function() {
+                q( "div#historyItemContainer-" + data_id ).remove();
+                if ( q( "div.historyItemContainer" ).length < 1 ) {
+                    q ( "div#emptyHistoryMessage" ).show();
+                }
+                });
+            %endif
+            }
+            });
+            return false;
+        });
+        });
             // Undelete link
             q(this).find( "a.historyItemUndelete" ).each( function() {
-		var data_id = this.id.split( "-" )[1];
-		q(this).click( function() {
-		    q( '#progress-' + data_id ).show();
-		    q.ajax({
-			url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
-			error: function() { alert( "Undelete failed" ) },
-			success: function() {
-			    var to_update = {};
-			    to_update[data_id] = "none";
-			    updater( to_update );
-			}
-		    });
-		    return false;
-		});
-		});
+        var data_id = this.id.split( "-" )[1];
+        q(this).click( function() {
+            q( '#progress-' + data_id ).show();
+            q.ajax({
+            url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
+            error: function() { alert( "Undelete failed" ) },
+            success: function() {
+                var to_update = {};
+                to_update[data_id] = "none";
+                updater( to_update );
+            }
+            });
+            return false;
+        });
+        });
         });
     };
     // Looks for changes in dataset state using an async request. Keeps
@@ -233,15 +234,15 @@ div#footer {
 
 
 <div id="top-links" class="historyLinks">
-    <a href="${h.url_for('history', show_deleted=show_deleted)}">refresh</a> 
+    <a href="${h.url_for('history', show_deleted=show_deleted)}">${_('refresh')}</a> 
     %if show_deleted:
-    | <a href="${h.url_for('history', show_deleted=False)}">hide deleted</a> 
+    | <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a> 
     %endif
 </div>
 
 %if history.deleted:
     <div class="warningmessagesmall">
-        You are currently viewing a deleted history!
+        ${_('You are currently viewing a deleted history!')}
     </div>
     <p></p>
 %endif
@@ -285,7 +286,7 @@ div#footer {
     </script>
     <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
 %endif
-        Your history is empty. Click 'Get Data' on the left pane to start
+        ${_("Your history is empty. Click 'Get Data' on the left pane to start")}
     </div>
 
 </body>

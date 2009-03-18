@@ -2,7 +2,7 @@
 
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>Tools</div>
+      <div class='unified-panel-header-inner'>${n_('Tools')}</div>
     </div>
     <div class="unified-panel-body" style="overflow: hidden;">
         <iframe name="galaxy_tools" src="${h.url_for( 'tool_menu' )}" frameborder="0" style="position: absolute; margin: 0; border: 0 none; height: 100%; width: 100%;"> </iframe>
@@ -29,9 +29,9 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a class='panel-header-button' href="${h.url_for( action='history_options' )}" target="galaxy_main"><span>Options</span></a>
+                <a class='panel-header-button' href="${h.url_for( action='history_options' )}" target="galaxy_main"><span>${_('Options')}</span></a>
             </div>
-            <div class="panel-header-text">History</div>
+            <div class="panel-header-text">${_('History')}</div>
         </div>
     </div>
     <div class="unified-panel-body" style="overflow: hidden;">

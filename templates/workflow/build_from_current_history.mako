@@ -1,3 +1,4 @@
+<% _ = t.gettext %>
 <!-- -->
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
@@ -49,7 +50,7 @@ th {
         </table>
         %if disabled:
             <hr>
-            <div><input type="checkbox" name="dataset_ids" value="${data.hid}" checked="true" />Treat as input dataset</div>
+            <div><input type="checkbox" name="dataset_ids" value="${data.hid}" checked="true" />${_('Treat as input dataset')}</div>
         %endif
     </div>
 </%def>
@@ -67,17 +68,17 @@ into a workflow will be shown in gray.</p>
 
 <form method="post" action="${h.url_for()}">
 <div class='form-row'>
-    <label>Workflow name</label>
+    <label>${_('Workflow name')}</label>
     <input name="workflow_name" type="text" value="Workflow constructed from history '${history.name}'" size="60"/>
 </div>
-<p><input type="submit" value="Create Workflow" /></p>
+<p><input type="submit" value="${_('Create Workflow')}" /></p>
 
 <table border="0" cellspacing="0">
     
     <tr>
-        <th style="width: 47.5%">Tool</th>
+        <th style="width: 47.5%">${_('Tool')}</th>
         <th style="width: 5%"></th>
-        <th style="width: 47.5%">History items created</th>
+        <th style="width: 47.5%">${_('History items created')}</th>
     </tr>
 
 %for job, datasets in jobs.iteritems():

@@ -1,0 +1,66 @@
+#: tools/**.xml
+msgid "Get Data"
+msgstr ""
+
+msgid "Get ENCODE Data"
+msgstr ""
+
+msgid "ENCODE Tools"
+msgstr ""
+
+msgid "Lift-Over"
+msgstr ""
+
+msgid "Text Manipulation"
+msgstr ""
+
+msgid "Filter and Sort"
+msgstr ""
+
+msgid "Join, Subtract and Group"
+msgstr ""
+
+msgid "Convert Formats"
+msgstr ""
+
+msgid "Extract Features"
+msgstr ""
+
+msgid "Fetch Sequences"
+msgstr ""
+
+msgid "Fetch Alignments"
+msgstr ""
+
+msgid "Get Genomic Scores"
+msgstr ""
+
+msgid "Operate on Genomic Intervals"
+msgstr ""
+
+msgid "Statistics"
+msgstr ""
+
+msgid "Graph/Display Data"
+msgstr ""
+
+msgid "Regional Variation"
+msgstr ""
+
+msgid "Evolution: HyPhy"
+msgstr ""
+
+msgid "Taxonomy manipulation"
+msgstr ""
+
+msgid "Solexa tools"
+msgstr ""
+
+msgid "FASTA manipulation"
+msgstr ""
+
+msgid "Short Read QC and Manipulation"
+msgstr ""
+
+msgid "Short Read Mapping"
+msgstr ""

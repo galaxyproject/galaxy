@@ -1,10 +1,11 @@
+<% _=n_ %>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
 <html>
 
 <head>
 <title>Galaxy</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
 <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
 <link href="${h.url_for('/static/style/masthead.css')}" rel="stylesheet" type="text/css" />
 </head>
@@ -16,10 +17,10 @@
 <td align="left" valign="middle"><div class="pageTitle">Galaxy${brand}</div></td>
 <td align="right" valign="middle">
 
-    Info: <a href="${bugs_email}">report bugs</a>
-    | <a target="_blank" href="${wiki_url}">wiki</a>                  
-    | <a target="_blank" href="${screencasts_url}">screencasts</a>
-    | <a target="_blank" href="${blog_url}">blog</a>
+    ${_('Info: ')}<a href="${bugs_email}">${_('report bugs')}</a>
+    | <a target="_blank" href="${wiki_url}">${_('wiki')}</a>                  
+    | <a target="_blank" href="${screencasts_url}">${_('screencasts')}</a>
+    | <a target="_blank" href="${blog_url}">${_('blog')}</a>
     <!-- | <a target="mainframe" href="/static/index_frame_tools.html">tools</a>
     | <a target="mainframe" href="/static/index_frame_history.html">history</a> -->
     &nbsp;&nbsp;&nbsp;
@@ -27,11 +28,11 @@
         Logged in as ${t.user.email}
     %else:
         %if t.user:
-            Logged in as ${t.user.email}: <a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">manage</a>
-            | <a target="galaxy_main" href="${h.url_for( controller='user', action='logout' )}">logout</a>
+            ${_('Logged in as %s: ') % t.user.email}<a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">${_('manage')}</a>
+            | <a target="galaxy_main" href="${h.url_for( controller='user', action='logout' )}">${_('logout')}</a>
         %else:
-            Account: <a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">create</a>
-            | <a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">login</a>
+            ${_('Account: ')}<a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">${_('create')}</a>
+            | <a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">${_('login')}</a>
         %endif
     %endif
     &nbsp;

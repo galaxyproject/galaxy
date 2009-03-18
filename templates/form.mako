@@ -1,3 +1,4 @@
+<% _=n_ %>
 <%inherit file="/base.mako"/>
 <%def name="title()">${form.title}</%def>
 
@@ -22,7 +23,7 @@ $(function(){
             %>
             <div class="${cls}">
               <label>
-                  ${input.label}:
+                  ${_(input.label)}:
               </label>
               <div style="float: left; width: 250px; margin-right: 10px;">
                   <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">

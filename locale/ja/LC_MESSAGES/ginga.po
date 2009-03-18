@@ -1,0 +1,518 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ginga 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-09-15 13:58+0900\n"
+"PO-Revision-Date: 2008-09-21 19:13+0900\n"
+"Last-Translator: Mitsuteru Nakao <mn@kazusa.or.jp>\n"
+"Language-Team: Japanese\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#:
+msgid "iso-8859-1"
+msgstr "utf-8"
+
+#:
+msgid "lang=\"en\""
+msgstr "lang=\"ja\""
+
+
+#: templates/base_panels.mako:5
+msgid "Galaxy"
+msgstr "Galaxy"
+
+#: templates/history/options.mako:24
+msgid "Are you sure you want to delete the current history?"
+msgstr "現在のヒストリーを消すことに同意しますか？"
+
+#: templates/root/history.mako:38
+msgid "collapse all"
+msgstr "すべてをおりたたむ"
+
+#: templates/root/index.mako:5
+msgid "Tools"
+msgstr "ツール"
+ 
+
+
+#: tools/**.xml
+msgid "Get Data"
+msgstr "データ取得"
+
+msgid "Get ENCODE Data"
+msgstr "ENCODEデータ取得"
+
+msgid "ENCODE Tools"
+msgstr "ENCODEツール"
+
+msgid "Lift-Over"
+msgstr ""
+
+msgid "Text Manipulation"
+msgstr "テキスト操作"
+
+msgid "Filter and Sort"
+msgstr "フィルターとソート"
+
+msgid "Join, Subtract and Group"
+msgstr "結合、差分、集合演算"
+
+msgid "Convert Formats"
+msgstr "フォーマット変換"
+
+msgid "Extract Features"
+msgstr "Features抽出"
+
+msgid "Fetch Sequences"
+msgstr "配列の取得"
+
+msgid "Fetch Alignments"
+msgstr "アラインメントの取得"
+
+msgid "Get Genomic Scores"
+msgstr "ゲノムスコア取得"
+
+msgid "Operate on Genomic Intervals"
+msgstr "ゲノム間隔での操作"
+
+msgid "Statistics"
+msgstr "統計量"
+
+msgid "Graph/Display Data"
+msgstr "グラフ／データ表示"
+
+msgid "Regional Variation"
+msgstr "領域的多型"
+
+msgid "Evolution: HyPhy"
+msgstr "進化: HyPhy"
+
+msgid "Taxonomy manipulation"
+msgstr "系統学的操作"
+
+msgid "Solexa tools"
+msgstr "Solexaツールス"
+
+msgid "FASTA manipulation"
+msgstr "FASTA操作"
+
+msgid "Short Read QC and Manipulation"
+msgstr "Short Read QCと操作"
+
+msgid "Short Read Mapping"
+msgstr "Short Readマッピング"
+
+
+
+
+
+#: templates/admin_main.mako:3 templates/admin_main.mako:8
+msgid "Galaxy Administration"
+msgstr "Galaxy 管理"
+
+#: templates/admin_main.mako:17
+msgid "Admin password: "
+msgstr "管理者パスワード: "
+
+#: templates/admin_main.mako:19
+msgid "Reload tool: "
+msgstr ""
+
+#: templates/admin_main.mako:35
+msgid "Reload"
+msgstr "再読込する"
+
+#: templates/dataset/edit_attributes.mako:2
+msgid "History Item Attributes"
+msgstr "ヒストリーアイテム変数"
+
+#: templates/dataset/edit_attributes.mako:19
+msgid "Edit Attributes"
+msgstr "変数を編集する"
+
+#: templates/dataset/edit_attributes.mako:64
+msgid ""
+"This will inspect the dataset and attempt to correct the above column values "
+"if they are not accurate."
+msgstr "これはデータセットを調査して上記のカラムの値を修正することを試みます。"
+
+#: templates/dataset/edit_attributes.mako:68
+msgid ""
+"Required metadata values are missing. Some of these values may not be "
+"editable by the user. Selecting \"Auto-detect\" will attempt to fix these "
+"values."
+msgstr "必要なメタデータの値が不明です。それらのいくつかの値はユーザによって編集可能にはなっていません。「自動判定」を選択するとそれらの値をただしくできるかもしれません。"
+
+#: templates/dataset/edit_attributes.mako:78
+msgid "Convert to new format"
+msgstr "新しいフォーマットに変換する"
+
+#: templates/dataset/edit_attributes.mako:84
+msgid "Convert to"
+msgstr "変換する"
+
+#: templates/dataset/edit_attributes.mako:95
+msgid ""
+"This will create a new dataset with the contents of this dataset converted "
+"to a new format."
+msgstr "新しいフォーマットに変換したデータセットを新規作成します。"
+
+#: templates/dataset/edit_attributes.mako:111
+msgid "Change data type"
+msgstr "データタイプを変更する"
+
+#: templates/dataset/edit_attributes.mako:117
+msgid "New Type"
+msgstr "新しいタイプ"
+
+#: templates/dataset/edit_attributes.mako:124
+msgid ""
+"This will change the datatype of the existing dataset but <i>not</i> modify "
+"its contents. Use this if Galaxy has incorrectly guessed the type of your "
+"dataset."
+msgstr "これは既存のデータセットのデータタイプを変更します。しかしデータセットの中身は変更しません。データセットのタイプの誤判定があったときに使用します。"
+
+#: templates/dataset/edit_attributes.mako:137
+msgid "Copy History Item"
+msgstr "ヒストリーアイテムをコピーする"
+
+#: templates/history/list.mako:3
+msgid "Your saved histories"
+msgstr "保存したヒストリー"
+
+#: templates/history/list.mako:19
+msgid "Stored Histories"
+msgstr "格納してあるヒストリー"
+
+#: templates/history/list.mako:21 templates/root/history.mako:239
+msgid "hide deleted"
+msgstr "削除したヒストリーを隠す"
+
+#: templates/history/list.mako:23
+msgid "show deleted"
+msgstr "削除したヒストリーを表示する"
+
+#: templates/history/list.mako:27
+msgid "Name"
+msgstr "名前"
+
+#: templates/history/list.mako:27
+msgid "Size"
+msgstr "サイズ"
+
+#: templates/history/list.mako:27
+msgid "Last modified"
+msgstr "最終更新日"
+
+#: templates/history/list.mako:27
+msgid "Actions"
+msgstr "操作"
+
+#: templates/history/list.mako:45
+msgid "rename"
+msgstr "名称変更する"
+
+#: templates/history/list.mako:46
+msgid "switch to"
+msgstr "変更する"
+
+#: templates/history/list.mako:47
+msgid "delete"
+msgstr "削除する"
+
+#: templates/history/list.mako:49
+msgid "undelete"
+msgstr "削除から戻す"
+
+#: templates/history/list.mako:55
+msgid "Action"
+msgstr "操作"
+
+#: templates/history/list.mako:56 templates/history/options.mako:21
+msgid "Share"
+msgstr "共有"
+
+#: templates/history/list.mako:56 templates/history/options.mako:15
+msgid "Rename"
+msgstr "名称変更する"
+
+#: templates/history/list.mako:56 templates/history/options.mako:24
+msgid "Delete"
+msgstr "削除する"
+
+#: templates/history/list.mako:58
+msgid "Undelete"
+msgstr "削除から戻す"
+
+#: templates/history/list.mako:65
+msgid "You have no stored histories"
+msgstr "保管してあるヒストリーはありません"
+
+#: templates/history/options.mako:5
+msgid "History Options"
+msgstr "ヒストリーオプション"
+
+#: templates/history/options.mako:9
+msgid "You must be "
+msgstr "あなたは"
+
+#: templates/history/options.mako:9
+msgid "logged in"
+msgstr "ログイン"
+
+#: templates/history/options.mako:9
+msgid " to store or switch histories."
+msgstr "しないとヒストリーの保管や変更ができません。"
+
+#: templates/history/options.mako:15
+#, python-format
+msgid " current history (stored as \"%s\")"
+msgstr " 現在のヒストリー（\"%s\" として保管されています）"
+
+#: templates/history/options.mako:16
+msgid "List"
+msgstr "リストする"
+
+#: templates/history/options.mako:16
+msgid " previously stored histories"
+msgstr " 以前に保管したヒストリー"
+
+#: templates/history/options.mako:18
+msgid "Create"
+msgstr "作成する"
+
+#: templates/history/options.mako:18
+msgid " a new empty history"
+msgstr " 新規ヒストリー"
+
+#: templates/history/options.mako:20
+msgid "Construct workflow"
+msgstr "ワークフローを構築する"
+
+#: templates/history/options.mako:20
+msgid " from the current history"
+msgstr " 現在のヒストリーから"
+
+#: templates/history/options.mako:21 templates/history/options.mako:24
+msgid " current history"
+msgstr " 現在のヒストリー"
+
+#: templates/history/options.mako:23
+msgid "Show deleted"
+msgstr "削除したヒストリーを表示する"
+
+#: templates/history/options.mako:23
+msgid " datasets in history"
+msgstr " ヒストリーのデータセット"
+
+#: templates/history/rename.mako:3 templates/history/rename.mako:6
+msgid "Rename History"
+msgstr "ヒストリーの名称変更をする"
+
+
+msgid "Rename Histories"
+msgstr "名称変更する"
+
+msgid "Perform Action"
+msgstr "操作を実行する"
+
+msgid "Submit"
+msgstr "登録する"
+
+
+
+#: templates/history/rename.mako:10
+msgid "Current Name"
+msgstr "現在の名称"
+
+#: templates/history/rename.mako:10
+msgid "New Name"
+msgstr "新しい名称"
+
+#: templates/history/share.mako:3
+msgid "Share histories"
+msgstr "ヒストリーを共有する"
+
+#: templates/history/share.mako:6
+msgid "Share Histories"
+msgstr "ヒストリーを共有する"
+
+#: templates/history/share.mako:9
+msgid "History Name:"
+msgstr "ヒストリー名"
+
+#: templates/history/share.mako:9
+msgid "Number of Datasets:"
+msgstr "データセット数"
+
+#: templates/history/share.mako:9
+msgid "Share Link"
+msgstr "共有リンク"
+
+#: templates/history/share.mako:15
+msgid "This history contains no data."
+msgstr "このヒストリーにはデータがありません。"
+
+#: templates/history/share.mako:21
+msgid "copy link to share"
+msgstr "共有リンクをコピーする"
+
+#: templates/history/share.mako:24
+msgid "Email of User to share with:"
+msgstr "共有したいユーザのEメール:"
+#msgstr "つぎのヒストリーを共有するユーザのEメールアドレス:"
+
+#: templates/root/history.mako:7
+msgid "Galaxy History"
+msgstr "Galaxy ヒストリー"
+
+#: templates/root/history.mako:237
+msgid "refresh"
+msgstr "リフレッシュ"
+
+#: templates/root/history.mako:245
+msgid "You are currently viewing a deleted history!"
+msgstr "消去したヒストリーをみています。"
+
+#: templates/root/history.mako:289
+msgid "Your history is empty. Click 'Get Data' on the left pane to start"
+msgstr "ヒストリーは空です。解析をはじめるには、左パネルの 'データ取得' をクリック"
+
+#: templates/root/history_common.mako:41
+msgid "Job is waiting to run"
+msgstr "ジョブは実行待ちです"
+
+#: templates/root/history_common.mako:43
+msgid "Job is currently running"
+msgstr "ジョブは実行中です"
+
+#: templates/root/history_common.mako:46
+msgid "An error occurred running this job: "
+msgstr "このジョブの実行中に発生したエラー: "
+
+#: templates/root/history_common.mako:47
+msgid "report this error"
+msgstr "このエラーを報告する"
+
+#: templates/root/history_common.mako:54
+msgid "No data: "
+msgstr "データ無し: "
+
+#: templates/root/history_common.mako:58
+msgid "format: "
+msgstr "フォーマット: "
+
+#: templates/root/history_common.mako:59
+msgid "database: "
+msgstr "データベース: "
+
+#: templates/root/history_common.mako:66 templates/root/masthead.mako:20
+msgid "Info: "
+msgstr "情報: "
+
+#: templates/root/history_common.mako:85
+#, python-format
+msgid "Error: unknown dataset state \"%s\"."
+msgstr "エラー: 不明なデータ状態 \"%s\"。"
+
+#: templates/root/index.mako:32
+msgid "Options"
+msgstr "オプション"
+
+#: templates/root/index.mako:34
+msgid "History"
+msgstr "ヒストリー"
+
+#: templates/root/masthead.mako:20
+msgid "report bugs"
+msgstr "バグを報告する"
+
+#: templates/root/masthead.mako:21
+msgid "wiki"
+msgstr "wiki"
+
+#: templates/root/masthead.mako:22
+msgid "screencasts"
+msgstr "スクリーンキャスト"
+
+#: templates/root/masthead.mako:23
+msgid "blog"
+msgstr "ブログ"
+
+#: templates/root/masthead.mako:31
+#, python-format
+msgid "Logged in as %s: "
+msgstr "%s としてログイン中: "
+
+#: templates/root/masthead.mako:31
+msgid "manage"
+msgstr "管理"
+
+#: templates/root/masthead.mako:32
+msgid "logout"
+msgstr "ログアウト"
+
+#: templates/root/masthead.mako:34
+msgid "Account: "
+msgstr "アカウント: "
+
+#: templates/root/masthead.mako:34
+msgid "create"
+msgstr "作成"
+
+#: templates/root/masthead.mako:35
+msgid "login"
+msgstr "ログイン"
+
+#: templates/root/tool_menu.mako:52
+msgid "Galaxy Tools"
+msgstr "Galaxy ツール群"
+
+#: templates/root/tool_menu.mako:129
+msgid "Workflow"
+msgstr "ワークフロー"
+
+#: templates/root/tool_menu.mako:134
+msgid "Manage"
+msgstr "管理"
+
+#: templates/root/tool_menu.mako:134
+msgid "workflows"
+msgstr "ワークフロー"
+
+#: templates/user/index.mako:2 templates/user/index.mako:4
+msgid "Account settings"
+msgstr "アカウント設定"
+
+#: templates/user/index.mako:7
+#, python-format
+msgid "You are currently logged in as %s."
+msgstr "%s としてログイン中。"
+
+#: templates/user/index.mako:9
+msgid "Change your password"
+msgstr "パスワード変更"
+
+#: templates/user/index.mako:10
+msgid "Update your email address"
+msgstr "メールアドレス変更"
+
+#: templates/user/index.mako:11
+msgid "Logout"
+msgstr "ログアウト"
+
+#: templates/user/index.mako:16
+msgid "Login"
+msgstr "ログイン"
+
+#: templates/user/index.mako:17
+msgid "Create new account"
+msgstr "新規アカウントを作成する"

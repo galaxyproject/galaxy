@@ -1,0 +1,299 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2009 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2009.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-09-21 18:33+0900\n"
+"PO-Revision-Date: 2009-03-17 03:55-0400\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 0.9.4\n"
+
+#: templates/history/options.mako:17
+msgid " a new empty history"
+msgstr ""
+
+#: templates/history/options.mako:22 templates/history/options.mako:24
+msgid " current history"
+msgstr ""
+
+#: templates/history/options.mako:14
+#, python-format
+msgid " current history (stored as \"%s\")"
+msgstr ""
+
+#: templates/history/options.mako:20
+msgid " from the current history"
+msgstr ""
+
+#: templates/history/options.mako:15
+msgid " previously stored histories"
+msgstr ""
+
+#: templates/history/options.mako:8
+msgid " to store or switch histories."
+msgstr ""
+
+#: templates/user/index.mako:9 templates/user/index.mako:11
+msgid "Account settings"
+msgstr ""
+
+#: templates/root/masthead.mako:39
+msgid "Account: "
+msgstr ""
+
+#: templates/admin_main.mako:16
+msgid "Admin password: "
+msgstr ""
+
+#: templates/root/history_common.mako:41
+msgid "An error occurred running this job: "
+msgstr ""
+
+#: templates/history/options.mako:24
+msgid "Are you sure you want to delete the current history?"
+msgstr ""
+
+#: templates/user/index.mako:16
+msgid "Change your password"
+msgstr ""
+
+#: templates/history/options.mako:20
+msgid "Construct workflow"
+msgstr ""
+
+#: templates/history/options.mako:17
+msgid "Create"
+msgstr ""
+
+#: templates/user/index.mako:24
+msgid "Create new account"
+msgstr ""
+
+#: templates/history/rename.mako:9
+msgid "Current Name"
+msgstr ""
+
+#: templates/history/options.mako:24
+msgid "Delete"
+msgstr ""
+
+#: templates/history/share.mako:23
+msgid "Email of User to share with:"
+msgstr ""
+
+#: templates/root/history_common.mako:76
+#, python-format
+msgid "Error: unknown dataset state \"%s\"."
+msgstr ""
+
+#: templates/admin_main.mako:2 templates/admin_main.mako:7
+msgid "Galaxy Administration"
+msgstr ""
+
+#: templates/root/history.mako:12
+msgid "Galaxy History"
+msgstr ""
+
+#: templates/root/tool_menu.mako:11
+msgid "Galaxy Tools"
+msgstr ""
+
+#: templates/root/index.mako:34
+msgid "History"
+msgstr ""
+
+#: templates/history/share.mako:8
+msgid "History Name:"
+msgstr ""
+
+#: templates/history/options.mako:4
+msgid "History Options"
+msgstr ""
+
+#: templates/root/history_common.mako:57 templates/root/masthead.mako:25
+msgid "Info: "
+msgstr ""
+
+#: templates/root/history_common.mako:38
+msgid "Job is currently running"
+msgstr ""
+
+#: templates/root/history_common.mako:36
+msgid "Job is waiting to run"
+msgstr ""
+
+#: templates/history/options.mako:15
+msgid "List"
+msgstr ""
+
+#: templates/root/masthead.mako:36
+#, python-format
+msgid "Logged in as %s: "
+msgstr ""
+
+#: templates/user/index.mako:23
+msgid "Login"
+msgstr ""
+
+#: templates/user/index.mako:18
+msgid "Logout"
+msgstr ""
+
+#: templates/root/tool_menu.mako:100
+msgid "Manage"
+msgstr ""
+
+#: templates/history/rename.mako:9
+msgid "New Name"
+msgstr ""
+
+#: templates/root/history_common.mako:45
+msgid "No data: "
+msgstr ""
+
+#: templates/history/share.mako:8
+msgid "Number of Datasets:"
+msgstr ""
+
+#: templates/root/index.mako:32
+msgid "Options"
+msgstr ""
+
+#: templates/admin_main.mako:27
+msgid "Reload"
+msgstr ""
+
+#: templates/admin_main.mako:18
+msgid "Reload tool: "
+msgstr ""
+
+#: templates/history/options.mako:14
+msgid "Rename"
+msgstr ""
+
+#: templates/history/rename.mako:2 templates/history/rename.mako:5
+msgid "Rename History"
+msgstr ""
+
+#: templates/history/options.mako:22
+msgid "Share"
+msgstr ""
+
+#: templates/history/share.mako:5
+msgid "Share Histories"
+msgstr ""
+
+#: templates/history/share.mako:8
+msgid "Share Link"
+msgstr ""
+
+#: templates/history/share.mako:2
+msgid "Share histories"
+msgstr ""
+
+#: templates/history/share.mako:14
+msgid "This history contains no data."
+msgstr ""
+
+#: templates/root/index.mako:5
+msgid "Tools"
+msgstr ""
+
+#: templates/user/index.mako:17
+msgid "Update your email address"
+msgstr ""
+
+#: templates/root/tool_menu.mako:95
+msgid "Workflow"
+msgstr ""
+
+#: templates/user/index.mako:14
+#, python-format
+msgid "You are currently logged in as %s."
+msgstr ""
+
+#: templates/user/index.mako:21
+msgid "You are currently not logged in."
+msgstr ""
+
+#: templates/root/history.mako:223
+msgid "You are currently viewing a deleted history!"
+msgstr ""
+
+#: templates/history/options.mako:8
+msgid "You must be "
+msgstr ""
+
+#: templates/root/history.mako:252
+msgid "Your history is empty. Click 'Get Data' on the left pane to start"
+msgstr ""
+
+#: templates/root/masthead.mako:28
+msgid "blog"
+msgstr ""
+
+#: templates/history/share.mako:20
+msgid "copy link to share"
+msgstr ""
+
+#: templates/root/masthead.mako:39
+msgid "create"
+msgstr ""
+
+#: templates/root/history_common.mako:50
+msgid "database: "
+msgstr ""
+
+#: templates/root/history_common.mako:49
+msgid "format: "
+msgstr ""
+
+#: templates/history/options.mako:8
+msgid "logged in"
+msgstr ""
+
+#: templates/root/masthead.mako:40
+msgid "login"
+msgstr ""
+
+#: templates/root/masthead.mako:37
+msgid "logout"
+msgstr ""
+
+#: templates/root/masthead.mako:36
+msgid "manage"
+msgstr ""
+
+#: templates/root/history.mako:218
+msgid "refresh"
+msgstr ""
+
+#: templates/root/masthead.mako:25
+msgid "report bugs"
+msgstr ""
+
+#: templates/root/history_common.mako:42
+msgid "report this error"
+msgstr ""
+
+#: templates/root/masthead.mako:27
+msgid "screencasts"
+msgstr ""
+
+#: templates/root/masthead.mako:26
+msgid "wiki"
+msgstr ""
+
+#: templates/root/tool_menu.mako:100
+msgid "workflows"
+msgstr ""
+

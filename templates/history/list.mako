@@ -1,5 +1,6 @@
+<% _=n_ %>
 <%inherit file="/base.mako"/>
-<%def name="title()">Your saved histories</%def>
+<%def name="title()">${_('Your saved histories')}</%def>
 
 %if error_msg:
 <p>
@@ -15,15 +16,15 @@
 %endif
 
 %if user.histories:
-  <h1 style="margin-bottom:0px;">Stored Histories</h1>
+  <h1 style="margin-bottom:0px;">${_('Stored Histories')}</h1>
   %if show_deleted:
-  <div><a href="${h.url_for( action='history_available', id=','.join( ids ), show_deleted=False )}">hide deleted</a></div>
+  <div><a href="${h.url_for( action='history_available', id=','.join( ids ), show_deleted=False )}">${_('hide deleted')}</a></div>
   %else:
-  <div><a href="${h.url_for( action='history_available', id=','.join( ids ), show_deleted=True )}">show deleted</a></div>
+  <div><a href="${h.url_for( action='history_available', id=','.join( ids ), show_deleted=True )}">${_('show deleted')}</a></div>
   %endif
   <form name="history_actions" action="${h.url_for( action='history_available')}" method="post" >
       <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-          <tr class="header" align="center"><td>Name</td><td>Size</td><td>Last modified</td><td>Actions</td></tr>
+          <tr class="header" align="center"><td>${_('Name')}</td><td>${_('Size')}</td><td>${_('Last modified')}</td><td>${_('Actions')}</td></tr>
       %for history in user.histories:
         %if ( show_deleted and not history.purged ) or not( history.deleted ):
           <tr>
@@ -41,25 +42,25 @@
           <td>${str(history.update_time)[:19]}</td>
           <td>
           %if not history.deleted:
-            <a href="${h.url_for( action='history_rename', id=history.id )}">rename</a><br />
-            <a href="${h.url_for( action='history_switch', id=history.id )}">switch to</a><br />
-            <a href="${h.url_for( action='history_delete', id=history.id )}" confirm="Are you sure you want to delete this history?">delete</a><br />
+            <a href="${h.url_for( action='history_rename', id=history.id )}">${_('rename')}</a><br />
+            <a href="${h.url_for( action='history_switch', id=history.id )}">${_('switch to')}</a><br />
+            <a href="${h.url_for( action='history_delete', id=history.id )}" confirm="Are you sure you want to delete this history?">${_('delete')}</a><br />
           %else:
-            <a href="${h.url_for( action='history_undelete', id=history.id )}">undelete</a><br />
+            <a href="${h.url_for( action='history_undelete', id=history.id )}">${_('undelete')}</a><br />
           %endif
           </td>
           </tr>
         %endif
       %endfor
-   <tr><th colspan="100%">Action</th></tr>
-   <tr><td colspan="100%" align="center"><input type="radio" name="do_operation" value="share" checked>Share <input type="radio" name="do_operation" value="rename">Rename <input type="radio" name="do_operation" value="delete">Delete 
+   <tr><th colspan="100%">${_('Action')}</th></tr>
+   <tr><td colspan="100%" align="center"><input type="radio" name="do_operation" value="share" checked>${_('Share')} <input type="radio" name="do_operation" value="rename">${_('Rename')} <input type="radio" name="do_operation" value="delete">${_('Delete')} 
    %if show_deleted:
-   <input type="radio" name="do_operation" value="undelete">Undelete 
+   <input type="radio" name="do_operation" value="undelete">${_('Undelete')} 
    %endif
    </td></tr>
-   <tr><td colspan="100%" align="center"><input type="submit" name="submit" value="Perform Action"></td></tr>
+   <tr><td colspan="100%" align="center"><input type="submit" name="submit" value="${_('Perform Action')}"></td></tr>
       </table>
   </form>
 %else:
-  You have no stored histories
+  ${_('You have no stored histories')}
 %endif

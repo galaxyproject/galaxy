@@ -1,3 +1,4 @@
+<% _=n_ %>
 <%inherit file="/base.mako"/>
 
 <%def name="javascripts()">
@@ -29,4 +30,4 @@ if ( parent.handle_minwidth_hint )
 </script>
 </%def>
 
-<div class="${message_type}message">${message}</div>
+<div class="${message_type}message">${_(message)}</div>

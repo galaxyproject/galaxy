@@ -39,33 +39,34 @@
 </%def>
 
 ## Document
-<html lang="en">
+<html>
     <head>
-	<title>${self.title()}</title>
-	${self.javascripts()}
-	${self.stylesheets()}
+    <title>${self.title()}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
+    ${self.javascripts()}
+    ${self.stylesheets()}
     </head>
     
     <body scroll="no">
-	## Background displays first
-	<div id="background"></div>
-	## Layer iframes over backgrounds
-	<div id="masthead">
-	    ${self.masthead()}
-	</div>
-	<div id="left">
-	    ${self.left_panel()}
-	</div>
-	<div id="left-border"><div id="left-border-inner" style="display: none;"></div></div>
-	<div id="center">
-	    ${self.center_panel()}
-	</div>
-	<div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
-	<div id="right">
-	    ${self.right_panel()}
-	</div>
+    ## Background displays first
+    <div id="background"></div>
+    ## Layer iframes over backgrounds
+    <div id="masthead">
+        ${self.masthead()}
+    </div>
+    <div id="left">
+        ${self.left_panel()}
+    </div>
+    <div id="left-border"><div id="left-border-inner" style="display: none;"></div></div>
+    <div id="center">
+        ${self.center_panel()}
+    </div>
+    <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
+    <div id="right">
+        ${self.right_panel()}
+    </div>
         ## Allow other body level elements
-	${next.body()}
+    ${next.body()}
     </body>
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout

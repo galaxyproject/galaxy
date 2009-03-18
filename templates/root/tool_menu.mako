@@ -16,7 +16,7 @@
             ## %if "[[" in tool.description and "]]" in tool.description:
             ##   ${tool.description.replace( '[[', '<a href="link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
             %if tool.name:
-                <a id="link-${tool.id}" href="${link}" target="galaxy_main" minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.name}</a> ${tool.description} 
+                <a id="link-${tool.id}" href="${link}" target="galaxy_main" minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${_(tool.name)}</a> ${tool.description} 
             %else:
                 <a id="link-${tool.id}" href="${link}" target="galaxy_main" minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
             %endif
@@ -32,7 +32,7 @@
         <div class="toolTitleNoSection">
     %endif
         <% encoded_id = key.lstrip( 'workflow_' ) %>
-        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id, check_user=False )}" target="galaxy_main"}">${workflow.name}</a>
+        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id, check_user=False )}" target="galaxy_main">${workflow.name}</a>
     </div>
 </%def>
 
@@ -48,8 +48,8 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>Galaxy Tools</title>
-        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+        <title>${_('Galaxy Tools')}</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
         <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
         <link href="${h.url_for('/static/style/tool_menu.css')}" rel="stylesheet" type="text/css" />
 
@@ -125,17 +125,17 @@
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-                    <span>Workflow <i>(beta)</i></span>
+                    <span>${_('Workflow')} <i>(beta)</i></span>
                 </div>
                 <div id="XXinternalXXworkflow" class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle">
-                            <a href="${h.url_for( controller='workflow', action='index' )}" target="galaxy_main">Manage</a> workflows
+                            <a href="${h.url_for( controller='workflow', action='index' )}" target="galaxy_main">${_('Manage')}</a> ${_('workflows')}
                         </div>
                         %if t.user:
                             %for m in t.user.stored_workflow_menu_entries:
                                 <div class="toolTitle">
-                                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${m.stored_workflow.name}</a>
+                                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${_(m.stored_workflow.name)}</a>
                                 </div>
                             %endfor
                         %endif
