@@ -1,11 +1,12 @@
+<% _=n_ %>
 <%inherit file="/base.mako"/>
 <%def name="title()">History options</%def>
     
-<h2>History options</h2>
+<h2>${_('History Options')}</h2>
 
 %if not user:
 <div class="infomessage">
-    <div>You must be <a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">logged in</a> to store or switch histories.</div>
+    <div>${_('You must be ')}<a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">${_('logged in')}</a>${_(' to store or switch histories.')}</div>
 </div>
 %endif
 
@@ -23,5 +24,3 @@
     <li><a href="${h.url_for( controller='root', action='history', show_deleted=True)}" target="galaxy_history">Show deleted</a> datasets in history</li>
     <li><a href="${h.url_for( controller='history', action='list', operation="delete", id=history.id )}" confirm="Are you sure you want to delete the current history?">Delete</a> current history</div>
 </ul>
-
-

@@ -1,6 +1,6 @@
 <% _=n_ %>
 <%inherit file="/base.mako"/>
-<%def name="title()">Your saved histories</%def>
+<%def name="title()">${_('Your saved histories')}</%def>
 
 %if message:
     <p>
@@ -68,9 +68,9 @@
 <ul class="manage-table-actions">
     <li>
         %if show_deleted:
-            <a href="${h.url_for( show_deleted=False )}" class="action-button">Hide deleted</a></div>
+            <a href="${h.url_for( show_deleted=False )}" class="action-button">${_('Hide deleted')}</a></div>
         %else:
-            <a href="${h.url_for( show_deleted=True )}" class="action-button">Show deleted</a></div>
+            <a href="${h.url_for( show_deleted=True )}" class="action-button">${_('Show deleted')}</a></div>
         %endif
     </li>
 </ul>
@@ -161,11 +161,11 @@
                             <div popupmenu="h-${i}-popup">
                                 
                                 %if not history.deleted:
-                                    <a class="action-button" href="${h.url_for( operation='rename', id=history.id, show_deleted=show_deleted )}">rename</a> <br />
-                                    <a class="action-button" href="${h.url_for( operation='switch', id=history.id, show_deleted=show_deleted )}">switch to</a> <br />
-                                    <a class="action-button" href="${h.url_for( operation='delete', id=history.id , show_deleted=show_deleted)}" confirm="Are you sure you want to delete this history?">delete</a> <br />
+                                    <a class="action-button" href="${h.url_for( operation='rename', id=history.id, show_deleted=show_deleted )}">${_('rename')}</a> <br />
+                                    <a class="action-button" href="${h.url_for( operation='switch', id=history.id, show_deleted=show_deleted )}">${_('switch to')}</a> <br />
+                                    <a class="action-button" href="${h.url_for( operation='delete', id=history.id , show_deleted=show_deleted)}" confirm="Are you sure you want to delete this history?">${_('delete')}</a> <br />
                                 %else:
-                                    <a class="action-button" href="${h.url_for( operation='undelete', id=history.id, show_deleted=show_deleted )}">undelete</a><br />
+                                    <a class="action-button" href="${h.url_for( operation='undelete', id=history.id, show_deleted=show_deleted )}">${_('undelete')}</a><br />
                                 %endif
               
                             </div>
@@ -178,7 +178,6 @@
             %endfor
         
         </tbody>
-    
         <tfoot>
             <tr>
                 <td></td>
@@ -188,16 +187,10 @@
                     <input type="submit" name="operation" value="Rename" class="action-button">
                     <input type="submit" name="operation" value="Delete" class="action-button">
                     %if show_deleted:
-                    <input type="submit" name="operation" value="Undelete" class="action-button">   
+                    <input type="submit" name="operation" value="${_('Undelete')}" class="action-button">   
                     %endif
                 </td>
             </tr>
         </tfoot>
-        
     </table>
-
   </form>
-
-
-
-

@@ -16,7 +16,7 @@
             ## %if "[[" in tool.description and "]]" in tool.description:
             ##   ${tool.description.replace( '[[', '<a href="link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
             %if tool.name:
-                <a id="link-${tool.id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.name}</a> ${tool.description} 
+                <a id="link-${tool.id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${_(tool.name)}</a> ${tool.description} 
             %else:
                 <a id="link-${tool.id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
             %endif
@@ -32,7 +32,7 @@
         <div class="toolTitleNoSection">
     %endif
         <% encoded_id = key.lstrip( 'workflow_' ) %>
-        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id, check_user=False )}" target="_parent"}">${workflow.name}</a>
+        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id, check_user=False )}" target="_parent"}">${_(workflow.name)}</a>
     </div>
 </%def>
 
@@ -47,7 +47,7 @@
 <html>
     <head>
         <title>Galaxy Tools</title>
-        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+        <meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
         <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
         <link href="${h.url_for('/static/style/tool_menu.css')}" rel="stylesheet" type="text/css" />
 
@@ -118,5 +118,3 @@
         </div>
     </body>
 </html>
-
-

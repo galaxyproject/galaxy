@@ -1,3 +1,4 @@
+<% _=n_ %>
 <%inherit file="/base.mako"/>
 
 <%def name="javascripts()">
@@ -44,11 +45,11 @@
     </script>
 </%def>
 
-<div class="${message_type}message">${message}</div>
+<div class="${message_type}message">${_(message)}</div>
 
 ## Render a message
 <%def name="render_msg( msg, messagetype='done' )">
-    <div class="${messagetype}message">${msg}</div>
+    <div class="${messagetype}message">${_(msg)}</div>
     <br/>
 </%def>
 
