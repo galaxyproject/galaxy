@@ -51,3 +51,4 @@
     <div class="${messagetype}message">${msg}</div>
     <br/>
 </%def>
+

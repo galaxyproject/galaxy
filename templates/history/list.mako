@@ -1,3 +1,4 @@
+<% _=n_ %>
 <%inherit file="/base.mako"/>
 <%def name="title()">Your saved histories</%def>
 
@@ -62,7 +63,7 @@
 </%def>
 
 
-<h2>Stored Histories</h2>
+<h2>${_('Stored Histories')}</h2>
 
 <ul class="manage-table-actions">
     <li>
@@ -196,6 +197,7 @@
     </table>
 
   </form>
+
 
 
 

@@ -24,6 +24,9 @@ pkg_resources.require( "Mako" )
 import mako.template
 import mako.lookup
 
+pkg_resources.require( "Babel" )
+from babel.support import Translations
+
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
             
@@ -134,6 +137,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.__history = NOT_SET
         self.__galaxy_session = NOT_SET
         base.DefaultWebTransaction.__init__( self, environ )
+        self.setup_i18n()
         self.sa_session.clear()
         self.debug = asbool( self.app.config.get( 'debug', False ) )
         # Flag indicating whether we are in workflow building mode (means
@@ -144,6 +148,16 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.__ensure_valid_session( session_cookie )
         if self.app.config.require_login:
             self.__ensure_logged_in_user( environ )
+    def setup_i18n( self ):
+        if 'HTTP_ACCEPT_LANGUAGE' in self.environ:
+            # locales looks something like: ['en', 'en-us;q=0.7', 'ja;q=0.3']
+            locales = self.environ['HTTP_ACCEPT_LANGUAGE'].split( ',' )
+            locales = [ l.split( ';' )[0] for l in locales ]
+        else:
+            # Default to English
+            locales = 'en'
+        t = Translations.load( dirname='locale', locales=locales, domain='ginga' )
+        self.template_context.update ( dict( _=t.gettext, n_=t.gettext, N_=t.ngettext ) )
     @property
     def sa_session( self ):
         """

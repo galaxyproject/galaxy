@@ -25,6 +25,8 @@
 		</div>
 		%if data_state == 'running':
 		    <div><img src="${h.url_for('/static/style/data_running.gif')}" border="0" align="middle"></div>
+                %elif data_state == 'upload':
+		    <div><img src="${h.url_for('/static/style/data_upload.gif')}" border="0" align="middle"></div>
 		%elif data_state != 'ok':
 		    <div><img src="${h.url_for( "/static/style/data_%s.png" % data_state )}" border="0" align="middle"></div>
 		%endif
@@ -42,6 +44,8 @@
         <div id="info${data.id}" class="historyItemBody">
             %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
                 <div>You do not have permission to view this dataset.</div>
+            %elif data_state == "upload":
+                <div>Dataset is uploading</div>
             %elif data_state == "queued":
                 <div>Job is waiting to run</div>
             %elif data_state == "running":
@@ -115,3 +119,4 @@
     </div>
 
 </%def>
+

@@ -199,14 +199,13 @@
 </%def>
 
 ## Document
-<html lang="en">
-
+<html>
     ${self.init()}    
-    
     <head>
-	   <title>${self.title()}</title>
-	   ${self.javascripts()}
-	   ${self.stylesheets()}
+    <title>${self.title()}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
+    ${self.javascripts()}
+    ${self.stylesheets()}
     </head>
     
     <body scroll="no">

@@ -24,3 +24,4 @@
     <li><a href="${h.url_for( controller='history', action='list', operation="delete", id=history.id )}" confirm="Are you sure you want to delete the current history?">Delete</a> current history</div>
 </ul>
 
+
