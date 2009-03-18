@@ -25,7 +25,7 @@
             <data_type_translation>
                 <format galaxy_format="tabular" remote_format="primaryTable" />
                 <format galaxy_format="tabular" remote_format="selectedFields" />
-                <format galaxy_format="wig" remote_format="wigdata" />
+                <format galaxy_format="wig" remote_format="wigData" />
                 <format galaxy_format="interval" remote_format="tab" />
                 <format galaxy_format="html" remote_format="hyperlinks" />
                 <format galaxy_format="fasta" remote_format="sequence" />

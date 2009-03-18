@@ -1,0 +1,10 @@
+96c96
+< 			if ( drag.dragging ){
+---
+> 			if ( drag.dragging ) {
+99c99,101
+< 				}
+---
+> 			} else {
+> 				hijack( event, "dragclickonly", elem );
+> 			}

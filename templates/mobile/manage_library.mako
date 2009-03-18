@@ -2,7 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 <%namespace file="/library/common.mako" import="render_available_templates" />
-<%namespace file="/library/common.mako" import="render_existing_library_item_info" />
+<%namespace file="/library/common.mako" import="render_library_item_info_for_edit" />
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -50,7 +50,7 @@
             </div>
         </div>
         <div class="toolForm">
-            ${render_existing_library_item_info( library, library.id )}
+            ${render_library_item_info_for_edit( library, library.id )}
         </div>
     </div>
 %endif

@@ -16,6 +16,7 @@ from bx.intervals.io import *
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
+import math
 
 log = logging.getLogger(__name__)
 
@@ -287,6 +288,26 @@ class Interval( Tabular ):
             return True
         except:
             return False
+
+    def get_track_window(self, dataset, data, start, end):
+        """
+        Assumes the incoming track data is sorted already.
+        """
+        window = list()
+        for record in data:
+            fields = record.rstrip("\n\r").split("\t")
+            record_chrom = fields[dataset.metadata.chromCol-1]
+            record_start = int(fields[dataset.metadata.startCol-1])
+            record_end = int(fields[dataset.metadata.endCol-1])
+            if record_start < end and record_end > start:
+                window.append( (record_chrom, record_start, record_end) )  #Yes I did want to use a generator here, but it doesn't work downstream
+        return window
+
+    def get_track_resolution( self, dataset, start, end):
+        return None
+
+    def get_track_type( self ):
+        return "FeatureTrack"
     
 class Bed( Interval ):
     """Tab delimited data in BED format"""
@@ -757,6 +778,43 @@ class Wiggle( Tabular ):
             return False
         except:
             return False
+
+    def get_track_window(self, dataset, data, start, end):
+        """
+        Assumes we have a numpy file.
+        """
+        # Maybe if we import here people will still be able to use Galaxy when numpy kills it
+        pkg_resources.require("numpy>=1.2.1")
+        #from numpy.lib import format
+        import numpy
+
+        range = end - start
+        # Determine appropriate resolution to plot ~1000 points
+        resolution = ( 10 ** math.ceil( math.log10( range / 1000 ) ) )
+        # Restrict to valid range
+        resolution = min( resolution, 10000 )
+        resolution = max( resolution, 1 )
+        # Memory map the array (don't load all the data)
+        data = numpy.load( data )
+        # Grab just what we need
+        t_start = math.floor( start / resolution )
+        t_end = math.ceil( end / resolution )
+        x = numpy.arange( t_start, t_end ) * resolution
+        y = data[ t_start : t_end ]
+    
+        return zip(x.tolist(), y.tolist())
+
+    def get_track_resolution( self, dataset, start, end):
+        range = end - start
+        # Determine appropriate resolution to plot ~1000 points
+        resolution = math.ceil( 10 ** math.ceil( math.log10( range / 1000 ) ) )
+        # Restrict to valid range
+        resolution = min( resolution, 10000 )
+        resolution = max( resolution, 1 )
+        return resolution
+
+    def get_track_type( self ):
+        return "LineTrack"
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""

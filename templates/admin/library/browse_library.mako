@@ -74,7 +74,11 @@ def name_sorted( l ):
 
 <%def name="render_folder( parent, parent_pad, deleted, created_ldda_ids, library_id )">
     <%
-        pad = parent_pad + 20
+        root_folder = not parent.parent
+        if root_folder:
+            pad = parent_pad
+        else:
+            pad = parent_pad + 20
         if parent_pad == 0:
             expander = "/static/images/silk/resultset_bottom.png"
             folder = "/static/images/silk/folder_page.png"
@@ -87,63 +91,65 @@ def name_sorted( l ):
         if created_ldda_id_list:
            created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
     %>
-    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
-        <div class="rowTitle">
-            <img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
-            ${parent.name}
-            %if parent.description:
-                <i>- ${parent.description}</i>
-            %endif
-            <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-        </div>
-        %if not deleted:
-            <%
-                library_item_ids = {}
-                library_item_ids[ 'folder' ] = parent.id
-            %>
-            <div popupmenu="folder-${parent.id}-popup">
-                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=parent.id )}">Add datasets to this folder</a>
-                <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=parent.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
-                <a class="action-button" href="${h.url_for( controller='admin', action='folder', information=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
-                %if parent.library_folder_info_template_associations:
-                    <% template = parent.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
-                    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
-                %else:
-                    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, folder_id=parent.id, new_template=True )}">Add an information template to this folder</a>
+    %if not root_folder:
+        <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
+            <div class="rowTitle">
+                <img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
+                ${parent.name}
+                %if parent.description:
+                    <i>- ${parent.description}</i>
                 %endif
-                <a class="action-button" href="${h.url_for( controller='admin', action='folder', permissions=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
-                ## TODO: need to revamp the way folders and contained LibraryDatasets are deleted
-                ##%if subfolder:
-                ##    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( action='folder', delete=True, id=parent.id, library_id=library_id )}">Remove this folder and its contents from the library</a>
-                ##%endif
+                <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             </div>
-        %endif
-    </li>
+            %if not deleted:
+                <%
+                    library_item_ids = {}
+                    library_item_ids[ 'folder' ] = parent.id
+                %>
+                <div popupmenu="folder-${parent.id}-popup">
+                    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=parent.id )}">Add datasets to this folder</a>
+                    <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=parent.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
+                    <a class="action-button" href="${h.url_for( controller='admin', action='folder', information=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
+                    %if parent.library_folder_info_template_associations:
+                        <% template = parent.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
+                        <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
+                    %else:
+                        <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, folder_id=parent.id, new_template=True )}">Add an information template to this folder</a>
+                    %endif
+                    <a class="action-button" href="${h.url_for( controller='admin', action='folder', permissions=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
+                    ## TODO: need to revamp the way folders and contained LibraryDatasets are deleted
+                    ##%if subfolder:
+                    ##    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( action='folder', delete=True, id=parent.id, library_id=library_id )}">Remove this folder and its contents from the library</a>
+                    ##%endif
+                </div>
+            %endif
+        </li>
+    %endif
     %if subfolder:
         <ul id="subFolder">
     %else:
         <ul>
     %endif
-    %if library.deleted:
-        <%
-            parent_folders = parent.folders
-            parent_datasets = parent.datasets
-        %>
-    %else:
-        <%
-            parent_folders = parent.active_folders
-            parent_datasets = parent.active_datasets
-        %>
-    %endif
-    %for folder in name_sorted( parent_folders ):
-        ${render_folder( folder, pad, library.deleted, created_ldda_ids, library.id )}
-    %endfor    
-    %for library_dataset in name_sorted( parent_datasets ):
-        <%
-            selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
-        %>
-        <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( library_dataset, selected, library )}</li>
-    %endfor
+        %if library.deleted:
+            <%
+                parent_folders = parent.folders
+                parent_datasets = parent.datasets
+            %>
+        %else:
+            <%
+                parent_folders = parent.active_folders
+                parent_datasets = parent.active_datasets
+            %>
+        %endif
+        %for folder in name_sorted( parent_folders ):
+            ${render_folder( folder, pad, library.deleted, created_ldda_ids, library.id )}
+        %endfor    
+        %for library_dataset in name_sorted( parent_datasets ):
+            <%
+                selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
+            %>
+            <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( library_dataset, selected, library )}</li>
+        %endfor
     </ul>
 </%def>
 
@@ -153,6 +159,17 @@ def name_sorted( l ):
     %endif
     Library '${library.name}'
 </h2>
+
+<ul class="manage-table-actions">
+    %if not deleted:
+        <li>
+            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this library</span></a>
+        </li>
+        <li>
+            <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=library.root_folder.id, library_id=library.id )}">Add a folder to this library</a>
+        </li>
+    %endif
+</ul>
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -194,9 +211,9 @@ def name_sorted( l ):
                         ##    </div>
                         %endif
                     </th>
-                    <th width="100">Format</th>
-                    <th width="50">Db</th>
-                    <th width="200">Info</th>
+                    <th width="300">Information</th>
+                    <th width="150">Uploaded By</th>
+                    <th width="60">Date</th>
                 </table>
             </div>
         </li>

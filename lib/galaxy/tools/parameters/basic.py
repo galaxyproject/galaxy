@@ -283,6 +283,9 @@ class FileToolParameter( ToolParameter ):
     blah
     >>> print p.get_html()
     <input type="file" name="blah">
+    >>> p = FileToolParameter( None, XML( '<param name="blah" type="file" ajax-upload="true"/>' ) )
+    >>> print p.get_html()
+    <input type="file" name="blah" galaxy-ajax-upload="true">
     """
     def __init__( self, tool, elem ):
         """
@@ -290,8 +293,9 @@ class FileToolParameter( ToolParameter ):
         """
         ToolParameter.__init__( self, tool, elem )
         self.name = elem.get( 'name' )
+        self.ajax = str_bool( elem.get( 'ajax-upload' ) )
     def get_html_field( self, trans=None, value=None, other_values={}  ):
-        return form_builder.FileField( self.name )
+        return form_builder.FileField( self.name, self.ajax )
     def from_html( self, value, trans=None, other_values={} ):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)

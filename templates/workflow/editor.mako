@@ -33,9 +33,9 @@
     <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"> </script>
     <![endif]-->
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.ui.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.ui.scrollPanel.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.hoverIntent.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.drag.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.drop.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.hover.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.json.js')}"> </script>
 
@@ -107,19 +107,20 @@
         }
         
         // Drag/scroll canvas
-        $("#canvas-container").draggable({
-            drag: function( _, ui ) {
-                x = ui.position.left;
-                y = ui.position.top;
-                // Limit range
-                x = Math.min( x, 0 );
-                y = Math.min( y, 0 );
-                x = Math.max( x, - ( $(this).width() - $(this).parent().width() ) )
-                y = Math.max( y, - ( $(this).width() - $(this).parent().width() ) )
-                // Constrain position
-                ui.position.left = x;
-                ui.position.top = y;
-            }
+        $("#canvas-container").each( function() {
+            this.scroll_panel = new ScrollPanel( this );
+        }).bind( "drag", function( e ) {
+            var p = $(this).parent(),
+                po = p.offset(),
+                x = e.offsetX - po.left,
+                y = e.offsetY - po.top;
+            // Limit range
+            x = Math.min( x, 0 );
+            y = Math.min( y, 0 );
+            x = Math.max( x, - ( $(this).width() - p.width() ) )
+            y = Math.max( y, - ( $(this).height() - p.height() ) )
+            // Constrain position
+            $(this).css( { left: x, top: y } );
         });
         
         // Tool menu
@@ -607,7 +608,7 @@
 
     <div class="unified-panel-body">
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden;">
-            <div id="canvas-container" style="height: 5000px; width: 5000px; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;"></div>
+            <div id="canvas-container" style="position: absolute; height: 5000px; width: 5000px; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;"></div>
             ## <div id="canvas-map" style="height: 100px; width: 100px; border: solid red 1px; background: white; position: absolute; right: 0; bottom: 0;">
             ##     <canvas width="100" height="100" style="width: 100%; height: 100%" id="canvas-map-canvas"></canvas>
             ## </div>

@@ -330,6 +330,7 @@ class DefaultHistoryPermissions( object ):
 
 class Dataset( object ):
     states = Bunch( NEW = 'new',
+                    UPLOAD = 'upload',
                     QUEUED = 'queued',
                     RUNNING = 'running',
                     OK = 'ok',
@@ -609,18 +610,25 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                          history = target_history )
         hda.flush()
         hda.set_size()
-        hda.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
+        # Need to set after flushed, as MetadataFiles require dataset.id
+        hda.metadata = self.metadata
         if copy_children:
             for child in self.children:
                 child_copy = child.copy( copy_children = copy_children, parent_id = hda.id )
         if not self.datatype.copy_safe_peek:
-            hda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            hda.set_peek()
         hda.flush()
         return hda
-    def to_library_dataset_dataset_association( self, target_folder, parent_id=None ):
-        # Create e new LibraryDataset
-        library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
-        library_dataset.flush()
+    def to_library_dataset_dataset_association( self, target_folder, replace_dataset=None, parent_id=None ):
+        if replace_dataset:
+            # The replace_dataset param ( when not None ) refers to a LibraryDataset that is being replaced with a new version.
+            library_dataset = replace_dataset
+        else:
+            # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
+            # LibraryDataset, and the current user's DefaultUserPermissions will be applied to the associated Dataset.
+            library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
+            library_dataset.flush()
         ldda = LibraryDatasetDatasetAssociation( name=self.name, 
                                                  info=self.info,
                                                  blurb=self.blurb, 
@@ -632,21 +640,26 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                                  visible=self.visible, 
                                                  deleted=self.deleted, 
                                                  parent_id=parent_id,
-                                                 copied_from_history_dataset_association=self )
+                                                 copied_from_history_dataset_association=self,
+                                                 user=self.history.user )
         ldda.flush()
-        # Must set metadata after flushed, as MetadataFiles require dataset.id
+        # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
+        # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         ldda.metadata = self.metadata
+        if not replace_dataset:
+            target_folder.add_library_dataset( library_dataset, genome_build=ldda.dbkey )
+            target_folder.flush()
         library_dataset.library_dataset_dataset_association_id = ldda.id
         library_dataset.flush()
-        target_folder.add_library_dataset( library_dataset, genome_build=ldda.dbkey )
         for child in self.children:
-            child_copy = child.to_library_dataset_dataset_association( target_folder=target_folder, parent_id=ldda.id )
+            child_copy = child.to_library_dataset_dataset_association( target_folder=target_folder, replace_dataset=replace_dataset, parent_id=ldda.id )
         if not self.datatype.copy_safe_peek:
-            ldda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            ldda.set_peek()
         ldda.flush()
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
-        #metadata_safe = True means to only clear when assoc.metadata_safe == False
+        # metadata_safe = True means to only clear when assoc.metadata_safe == False
         for assoc in self.implicitly_converted_datasets:
             if not metadata_safe or not assoc.metadata_safe:
                 assoc.clear( purge = purge )
@@ -737,11 +750,17 @@ class LibraryDataset( object ):
         return template_list
     
 class LibraryDatasetDatasetAssociation( DatasetInstance ):
-    def __init__( self, copied_from_history_dataset_association=None, copied_from_library_dataset_dataset_association=None, library_dataset=None, **kwd ):
+    def __init__( self,
+                  copied_from_history_dataset_association=None,
+                  copied_from_library_dataset_dataset_association=None,
+                  library_dataset=None,
+                  user=None,
+                  **kwd ):
         DatasetInstance.__init__( self, **kwd )
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
         self.library_dataset = library_dataset
+        self.user = user
     def to_history_dataset_association( self, target_history, parent_id=None ):
         hid = target_history._next_hid()
         hda = HistoryDatasetAssociation( name=self.name, 
@@ -829,38 +848,44 @@ class LibraryItemInfoTemplateElement( object ):
     pass
 
 class LibraryInfoAssociation( object ):
-    def set_library_item( self, library_item, user ):
+    def __init__( self, user=None ):
+        self.user = user
+    def set_library_item( self, library_item ):
         if isinstance( library_item, Library ):
             self.library = library_item
-            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryFolderInfoAssociation( object ):
-    def set_library_item( self, library_item, user ):
+    def __init__( self, user=None ):
+        self.user = user
+    def set_library_item( self, library_item ):
         if isinstance( library_item, LibraryFolder ):
             self.folder = library_item
-            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryDatasetInfoAssociation( object ):
-    def set_library_item( self, library_item, user ):
+    def __init__( self, user=None ):
+        self.user = user
+    def set_library_item( self, library_item ):
         if isinstance( library_item, LibraryDataset ):
             self.library_dataset = library_item
-            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryDatasetDatasetInfoAssociation( object ):
-    def set_library_item( self, library_item, user ):
+    def __init__( self, user=None ):
+        self.user = user
+    def set_library_item( self, library_item ):
         if isinstance( library_item, LibraryDatasetDatasetAssociation ):
             self.library_dataset_dataset_association = library_item
-            self.user = user
         else:
             raise "Invalid Library specified: %s" % library_item.__class__.__name__
 
 class LibraryItemInfo( object ):
+    def __init__( self, user=None ):
+        self.user = user
     def get_element_by_template_element( self, template_element ):
         for element in self.elements:
             if element.library_item_info_template_element == template_element:

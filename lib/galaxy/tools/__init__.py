@@ -24,6 +24,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.model import directory_hash_id
 from galaxy.util.none_like import NoneDataset
 from galaxy.datatypes import sniff
+from cgi import FieldStorage
 
 log = logging.getLogger( __name__ )
 
@@ -786,7 +787,7 @@ class Tool:
             params = state.inputs
         # Did the user actually click next / execute or is this just
         # a refresh?
-        if 'runtool_btn' in incoming or 'URL' in incoming:
+        if 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming:
             # If there were errors, we stay on the same page and display 
             # error messages
             if errors:
@@ -803,9 +804,41 @@ class Tool:
                 self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
                 return 'tool_form.mako', dict( errors=errors, tool_state=state )
         else:
-            # Just a refresh, render the form with updated state and errors.
-            return 'tool_form.mako', dict( errors=errors, tool_state=state )
+            if filter( lambda x: isinstance( x, FieldStorage ) and x.file, state.inputs.values() ):
+                # If inputs contain a file it won't persist.  Most likely this
+                # is an interrupted upload.  We should probably find a more
+                # standard method of determining an incomplete POST.
+                return self.handle_interrupted( trans, state.inputs )
+            else:
+                # Just a refresh, render the form with updated state and errors.
+                return 'tool_form.mako', dict( errors=errors, tool_state=state )
       
+    def handle_interrupted( self, trans, inputs ):
+        """
+        Upon handling inputs, if it appears that we have received an incomplete
+        form, do some cleanup or anything else deemed necessary.  Currently
+        this is only likely during file uploads, but this method could be
+        generalized and a method standardized for handling other tools.
+        """
+        # If the async upload tool has uploading datasets, we need to error them.
+        if 'async_datasets' in inputs and inputs['async_datasets'] not in [ 'None', '', None ]:
+            for id in inputs['async_datasets'].split(','):
+                try:
+                    data = trans.model.HistoryDatasetAssociation.get( int( id ) )
+                except:
+                    log.exception( 'Unable to load precreated dataset (%s) sent in upload form' % id )
+                    continue
+                if trans.user is None and trans.galaxy_session.current_history != data.history:
+                    log.error( 'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)' % ( data.id, trans.galaxy_session.id ) ) 
+                elif data.history.user != trans.user:
+                    log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)' % ( data.id, trans.user.id ) )
+                else:
+                    data.state = data.states.ERROR
+                    data.info = 'Upload of this dataset was interrupted.  Please try uploading again or'
+                    data.flush()
+        # It's unlikely the user will ever see this.
+        return 'message.mako', dict( message_type='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
+
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
                       update_only=False, old_errors={}, changed_dependencies={} ):
         """

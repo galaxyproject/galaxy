@@ -8,7 +8,9 @@
       <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
     </datatype>
     <datatype extension="binseq.zip" type="galaxy.datatypes.images:Binseq" mimetype="application/zip" display_in_upload="true"/>
-    <datatype extension="coverage" type="galaxy.datatypes.coverage:LastzCoverage" display_in_upload="true"/>
+    <datatype extension="coverage" type="galaxy.datatypes.coverage:LastzCoverage" display_in_upload="true">
+      <indexer file="coverage.xml" />
+    </datatype>
     <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
     <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream"/>
@@ -29,6 +31,7 @@
     <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
+      <indexer file="interval.xml" />
     </datatype>
     <datatype extension="jpg" type="galaxy.datatypes.images:Image" mimetype="image/jpeg"/>
     <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
@@ -46,7 +49,9 @@
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
     <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" display_in_upload="true"/>
     <datatype extension="txtseq.zip" type="galaxy.datatypes.images:Txtseq" mimetype="application/zip" display_in_upload="true"/>
-    <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true"/>
+    <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
+      <indexer file="wiggle.xml" />
+    </datatype>
     <!-- EMBOSS TOOLS -->
     <datatype extension="acedb" type="galaxy.datatypes.data:Text"/>
     <datatype extension="asn1" type="galaxy.datatypes.data:Text"/>

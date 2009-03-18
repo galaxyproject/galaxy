@@ -8,6 +8,7 @@
     self.overlay_visible=False
     self.message_box_class=""
     self.active_view=None
+    self.body_class=""
 %>
     
 <%def name="init()">
@@ -52,8 +53,8 @@
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
     <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.hoverIntent.js')}"></script>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.ui.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.event.drag.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.form.js')}"></script>
     <script type="text/javascript" src="${h.url_for('/static/scripts/galaxy.panels.js')}"></script>
     <script type="text/javascript">
         
@@ -71,6 +72,47 @@
         %endif
 	
     </script>
+    ## Handle AJAX (actually hidden iframe) upload tool
+    <![if !IE]>
+    <script type="text/javascript">
+        jQuery( function() {
+            $("iframe#galaxy_main").load( function() {
+                ##$(this.contentDocument).find("input[galaxy-ajax-upload]").each( function() {
+                ##$("iframe")[0].contentDocument.body.innerHTML = "HELLO"
+                ##$(this.contentWindow.document).find("input[galaxy-ajax-upload]").each( function() {
+                $(this).contents().find("input[galaxy-ajax-upload]").each( function() {
+                    var error_set = false;
+                    $(this).parents("form").submit( function() {
+                        // Make a synchronous request to create the datasets first
+                        var async_datasets;
+                        $.ajax( {
+                            async:      false,
+                            type:       "POST",
+                            url:        "${h.url_for(controller='tool_runner', action='upload_async_create')}",
+                            data:       $(this).formSerialize(),
+                            dataType:   "json",
+                            success:    function( d, s ) { async_datasets = d.join() }
+                        } );
+                        if (async_datasets == '') {
+                            if (! error_set) {
+                                $("iframe#galaxy_main").contents().find("body").prepend( '<div class="errormessage">No data was entered in the upload form.  You may choose to upload a file, paste some data directly in the data box, or enter URL(s) to fetch from.</div><p/>' );
+                                error_set = true;
+                            }
+                            return false;
+                        } else {
+                            $(this).find("input[name=async_datasets]").val( async_datasets );
+                            $(this).append("<input type='hidden' name='ajax_upload' value='true'>");
+                        }
+                        // iframe submit is required for nginx (otherwise the encoding is wrong)
+                        $(this).ajaxSubmit( { iframe: true } );
+                        $("iframe#galaxy_main").attr("src","${h.url_for(controller='tool_runner', action='upload_async_message')}");
+                        return false;
+                    });
+                });
+            });
+        });
+    </script>
+    <![endif]>
 </%def>
 
 ## Masthead
@@ -103,6 +145,8 @@
 	    <span class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></span>
 	</%def>
     
+	${tab( "tracks", "View Data", h.url_for( controller='tracks', action='dbkeys' ), target="galaxy_main")}
+
 	${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
 
 	${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
@@ -208,7 +252,7 @@
     ${self.stylesheets()}
     </head>
     
-    <body scroll="no">
+    <body scroll="no" class="${self.body_class}">
         ## Background displays first
         <div id="background"></div>
         ## Layer iframes over backgrounds
@@ -239,7 +283,6 @@
             </div>
         %endif
         ## Allow other body level elements
-        ${next.body()}
     </body>
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout

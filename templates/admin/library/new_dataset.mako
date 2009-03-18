@@ -1,14 +1,15 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/admin/library/common.mako" import="render_available_templates" />
 
 <% import os %>
 
 <b>Create new library datasets</b>
 <a id="upload-librarydataset--popup" class="popup-arrow" style="display: none;">&#9660;</a>
 <div popupmenu="upload-librarydataset--popup">
-    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, upload_option='upload_file' )}">Upload files</a>
-    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, upload_option='upload_directory' )}">Upload directory of files</a>
-    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, upload_option='import_from_history' )}">Import datasets from your current history</a>
+    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_file' )}">Upload files</a>
+    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_directory' )}">Upload directory of files</a>
+    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='import_from_history' )}">Import datasets from your current history</a>
 </div>
 <br/><br/>
 <ul class="manage-table-actions">
@@ -36,6 +37,7 @@
             <div class="toolFormBody">
                 <form name="tool_form" action="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
+                    <input type="hidden" name="upload_option" value="${upload_option}"/>
                     %if replace_dataset:
                         <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                         <div class="form-row">
@@ -118,6 +120,16 @@
                         <div style="clear: both"></div>
                     </div>
                     <div class="form-row">
+                        <label>Message:</label>
+                        <div style="float: left; width: 250px; margin-right: 10px;">
+                            <textarea name="message" rows="3" cols="35"></textarea>
+                        </div>
+                        <div class="toolParamHelp" style="clear: both;">
+                            This information will be displayed in the "Information" column for this dataset in the library browser
+                        </div>
+                        <div style="clear: both"></div>
+                    </div>
+                    <div class="form-row">
                         <div style="float: left; width: 250px; margin-right: 10px;">
                             <label>Restrict dataset access to specific roles:</label>
                             <select name="roles" multiple="true" size="5">
@@ -131,8 +143,14 @@
                         </div>
                     </div>
                     <div style="clear: both"></div>
+                    <% folder = trans.app.model.LibraryFolder.get( folder_id ) %>
+                    %if folder.library_folder_info_template_associations:
+                        ${render_available_templates( folder, library_id, restrict=True, upload=True )}
+                    %else:
+                        ${render_available_templates( folder, library_id, restrict=False, upload=True )}
+                    %endif
                     <div class="form-row">
-                        <input type="submit" class="primary-button" name="new_dataset_button" value="Add Dataset(s) to Folder"/>
+                        <input type="submit" class="primary-button" name="new_dataset_button" value="Upload to library"/>
                     </div>
                 </form>
             </div>
@@ -145,6 +163,7 @@
             %if history and history.active_datasets:
                 <form name="add_history_datasets_to_library" action="${h.url_for( controller='admin', action='add_history_datasets_to_library', library_id=library_id )}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
+                    <input type="hidden" name="upload_option" value="${upload_option}"/>
                     %if replace_dataset:
                         <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                         <div class="form-row">
@@ -157,7 +176,7 @@
                             <input name="hda_ids" value="${hda.id}" type="checkbox"/>${hda.hid}: ${hda.name}
                         </div>
                     %endfor
-                    <input type="submit" name="add_history_datasets_to_library_button" value="Add selected datasets"/>
+                    <input type="submit" name="add_history_datasets_to_library_button" value="Import to library"/>
                 </form>
             %else:
                 <p/>

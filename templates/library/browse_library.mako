@@ -113,7 +113,11 @@ def name_sorted( l ):
             return False
         if not show_folder:
             return ""
-        pad = parent_pad + 20
+        root_folder = not parent.parent
+        if root_folder:
+            pad = parent_pad
+        else:
+            pad = parent_pad + 20
         if parent_pad == 0:
             expander = "/static/images/silk/resultset_bottom.png"
             folder = "/static/images/silk/folder_page.png"
@@ -126,61 +130,76 @@ def name_sorted( l ):
         if created_ldda_id_list:
            created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
     %>
-    <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
-        <input type="checkbox" class="folderCheckbox" style="float: left;"/>
-        <div class="rowTitle">
-            <span class="expandLink"><img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
-            ${parent.name}
-            %if parent.description:
-                <i>- ${parent.description}</i>
-            %endif
-            <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            <div popupmenu="folder-${parent.id}-popup">
-                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent ):
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=parent.id )}">Add datasets to this folder</a>
-                    <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=parent.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
+    %if not root_folder:
+        <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
+            <input type="checkbox" class="folderCheckbox" style="float: left;"/>
+            <div class="rowTitle">
+                <span class="expandLink"><img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
+                ${parent.name}
+                %if parent.description:
+                    <i>- ${parent.description}</i>
                 %endif
-                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent ):
-                    <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
-                %else:
-                    <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">View this folder's information</a>
-                %endif
-                %if parent.library_folder_info_template_associations:
-                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent ):
-                        <% template = parent.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
-                        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
-                    %endif
-                %else:
+                <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                <div popupmenu="folder-${parent.id}-popup">
                     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent ):
-                        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, folder_id=parent.id, new_template=True )}">Add an information template to this folder</a>
+                        <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=parent.id )}">Add datasets to this folder</a>
+                        <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=parent.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
                     %endif
-                %endif
-                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent ):
-                    <a class="action-button" href="${h.url_for( controller='library', action='folder', permissions=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
-                %endif
+                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent ):
+                        <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
+                    %else:
+                        <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">View this folder's information</a>
+                    %endif
+                    %if parent.library_folder_info_template_associations:
+                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent ):
+                            <% template = parent.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
+                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
+                        %endif
+                    %else:
+                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent ):
+                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, folder_id=parent.id, new_template=True )}">Add an information template to this folder</a>
+                        %endif
+                    %endif
+                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent ):
+                        <a class="action-button" href="${h.url_for( controller='library', action='folder', permissions=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
+                    %endif
+                </div>
             </div>
-        </div>
-    </li>
+        </li>
+    %endif
     %if subfolder:
         <ul id="subFolder" style="display: none;">
     %else:
         <ul>
     %endif
-    %for folder in name_sorted( parent.active_folders ):
-        ${render_folder( folder, pad, created_ldda_ids, library_id )}
-    %endfor
-    %for library_dataset in name_sorted( parent.active_datasets ):
-        <%
-            selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
-        %>
-        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=library_dataset.library_dataset_dataset_association.dataset ):
-            <li class="datasetRow" style="padding-left: ${pad + 20}px;">${render_dataset( library_dataset, selected, library )}</li>
-        %endif
-    %endfor
+        %for folder in name_sorted( parent.active_folders ):
+            ${render_folder( folder, pad, created_ldda_ids, library_id )}
+        %endfor
+        %for library_dataset in name_sorted( parent.active_datasets ):
+            <%
+                selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
+            %>
+            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=library_dataset.library_dataset_dataset_association.dataset ):
+                <li class="datasetRow" style="padding-left: ${pad + 20}px;">${render_dataset( library_dataset, selected, library )}</li>
+            %endif
+        %endfor
     </ul>
 </%def>
 
-<h2>Libraries</h2>
+<h2>Library '${library.name}'</h2>
+
+%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
+    <ul class="manage-table-actions">
+        %if not deleted:
+            <li>
+                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this library</span></a>
+            </li>
+            <li>
+                <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=library.root_folder.id, library_id=library.id )}">Add a folder to this library</a>
+            </li>
+        %endif
+    </ul>
+%endif
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -226,9 +245,9 @@ def name_sorted( l ):
                                 </div>
                             </span>
                         </th>
-                        <th width="100">Format</th>
-                        <th width="50">Db</th>
-                        <th width="200">Info</th>
+                    <th width="500">Information</th>
+                    <th width="150">Uploaded By</th>
+                    <th width="60">Date</th>
                     </tr>
                 </table>
             </div>
