@@ -137,13 +137,13 @@ div.form-row
 
 div.form-title-row
 {
-    margin-bottom: 0.5em;
+    padding: 5px 10px;
 }
 
 div.repeat-group-item
 {
     border-left: solid #d8b365 5px;
-    padding-left: 10px;
+    margin-left: 10px;
 }
 
 div.form-row-error
