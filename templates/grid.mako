@@ -39,6 +39,7 @@
             border-width: 1px;
             border-style: solid;
             text-align: center;
+            display: inline-block;
         }
     </style>
 </%def>
