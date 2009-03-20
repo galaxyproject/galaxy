@@ -21,7 +21,8 @@ def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
         chunk = stream.read(1048576)
         if not chunk:
             break
-        os.write(fd, chunk)
+        # TODO: does this work on binary files?
+        os.write( fd, chunk.encode( "utf-8" ) )
     os.close(fd)
     return temp_name
 

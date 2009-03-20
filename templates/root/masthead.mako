@@ -5,7 +5,7 @@
 
 <head>
 <title>Galaxy</title>
-<meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
 <link href="${h.url_for('/static/style/masthead.css')}" rel="stylesheet" type="text/css" />
 </head>

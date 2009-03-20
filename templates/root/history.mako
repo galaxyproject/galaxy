@@ -11,7 +11,7 @@
 <!-- running: do not change this comment, used by TwillTestCase.wait -->
 %endif
 
-<meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta http-equiv="Pragma" content="no-cache">
 <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
 <link href="${h.url_for('/static/style/history.css')}" rel="stylesheet" type="text/css" />

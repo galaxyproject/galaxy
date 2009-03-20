@@ -87,7 +87,8 @@ class WebApplication( base.WebApplication ):
         self.mako_template_lookup = mako.lookup.TemplateLookup(
             directories = [ galaxy_app.config.template_path ] ,
             module_directory = galaxy_app.config.template_cache,
-            collection_size = 500 )
+            collection_size = 500,
+            output_encoding = 'utf-8' )
         # Security helper
         self.security = galaxy_app.security
     def handle_controller_exception( self, e, trans, **kwargs ):
@@ -131,7 +132,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             # Default to English
             locales = 'en'
         t = Translations.load( dirname='locale', locales=locales, domain='ginga' )
-        self.template_context.update ( dict( _=t.gettext, n_=t.gettext, N_=t.ngettext ) )
+        self.template_context.update ( dict( _=t.ugettext, n_=t.ugettext, N_=t.ungettext ) )
     @property
     def sa_session( self ):
         """
@@ -465,10 +466,12 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             return self.fill_template_mako( filename, **kwargs )
         else:
             template = Template( file=os.path.join(self.app.config.template_path, filename), 
-                                searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app)] )
+                                 searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app)],
+                                 output_encoding='utf-8' )
             return str( template )
     def fill_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
+        template.output_encoding = 'utf-8' 
         data = dict( caller=self, t=self, trans=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
@@ -477,7 +480,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         Fill in a template, putting any keyword arguments on the context.
         """
-        template = Template( source=template_string, searchList=[context or kwargs, dict(caller=self)] )
+        template = Template( source=template_string,
+                             searchList=[context or kwargs, dict(caller=self)],
+                             output_encoding='utf-8' )
         return str(template)
         
 class FormBuilder( object ):

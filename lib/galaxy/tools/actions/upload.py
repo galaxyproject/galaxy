@@ -105,7 +105,7 @@ class UploadToolAction( object ):
                     try:
                         data_list.append( self.add_file( trans, temp_name, 'Pasted Entry', file_type, dbkey, info="pasted entry", space_to_tab=space_to_tab ) )
                     except Exception, e:
-                        log.excception( 'exception in add_file using StringIO.StringIO( url_paste ) temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
+                        log.exception( 'exception in add_file using StringIO.StringIO( url_paste ) temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
                         self.remove_tempfile( temp_name )
                         return self.upload_empty( trans, job, "Error:", str( e ) )
                 else:
@@ -146,12 +146,11 @@ class UploadToolAction( object ):
 
     def add_file( self, trans, temp_name, file_name, file_type, dbkey, info=None, space_to_tab=False ):
         data_type = None
-        
         # See if we have an empty file
         if not os.path.getsize( temp_name ) > 0:
             raise BadFileException( "you attempted to upload an empty file." )
-        
-        # See if we have a gzipped file, which, if it passes our restrictions, we'll decompress on the fly.
+        # See if we have a gzipped file, which, if it passes our restrictions,
+        # we'll decompress on the fly.
         is_gzipped, is_valid = self.check_gzip( temp_name )
         if is_gzipped and not is_valid:
             raise BadFileException( "you attempted to upload an inappropriate file." )
@@ -176,7 +175,7 @@ class UploadToolAction( object ):
             shutil.move( uncompressed, temp_name )
             file_name = file_name.rstrip( '.gz' )
             data_type = 'gzip'
-
+        ext = ''
         if not data_type:
             # See if we have a zip archive
             is_zipped, is_valid, test_ext = self.check_zip( temp_name )
@@ -193,30 +192,28 @@ class UploadToolAction( object ):
                     raise BadFileException( "you must manually set the 'File Format' to either 'Binseq.zip' or 'Txtseq.zip' when uploading zip files." )
                 data_type = 'zip'
                 ext = file_type
-
         if not data_type:
             if self.check_binary( temp_name ):
-                ext = file_name.split( "." )[1].strip().lower()
-                if not( ext == 'ab1' or ext == 'scf' ):
-                    raise BadFileException( "you attempted to upload an inappropriate file." )
-                if ext == 'ab1' and file_type != 'ab1':
-                    raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
-                elif ext == 'scf' and file_type != 'scf':
-                    raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
+                parts = file_name.split( "." )
+                if len( parts ) > 1:
+                    ext = parts[1].strip().lower()
+                    if not( ext == 'ab1' or ext == 'scf' ):
+                        raise BadFileException( "you attempted to upload an inappropriate file." )
+                    if ext == 'ab1' and file_type != 'ab1':
+                        raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
+                    elif ext == 'scf' and file_type != 'scf':
+                        raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
                 data_type = 'binary'
-        
         if not data_type:
             # We must have a text file
             if self.check_html( temp_name ):
                 raise BadFileException( "you attempted to upload an inappropriate file." )
-
         if data_type != 'binary' and data_type != 'zip':
             if space_to_tab:
                 self.line_count = sniff.convert_newlines_sep2tabs( temp_name )
             else:
                 self.line_count = sniff.convert_newlines( temp_name )
             if file_type == 'auto':
-                log.debug("In upload, in if file_type == 'auto':")
                 ext = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
             else:
                 ext = file_type
@@ -312,7 +309,6 @@ class UploadToolAction( object ):
         if chunk is None:
             temp.close()
         return False
-
     def check_binary( self, temp_name, chunk=None ):
         if chunk is None:
             temp = open( temp_name, "U" )
