@@ -115,7 +115,7 @@ use_new_layout = true
 
 # Comma separated list of UCSC / gbrowse browsers to use for viewing
 ucsc_display_sites = main,test,archaea
-gbrowse_display_sites = elegans,flybase
+gbrowse_display_sites = c_elegans,c_briggsae,c_remanei,c_brenneri,c_japonica,p_pristionchus,b_malayi
 
 # Serving static files (needed if running standalone)
 static_enabled = True
