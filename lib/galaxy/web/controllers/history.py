@@ -72,7 +72,8 @@ class HistoryListGrid( Grid ):
         operation = operation.lower()
         if operation == "switch":
             status, message = self._list_switch( trans, histories )
-            refresh_history = True
+            # Current history changed, refresh history frame
+            trans.template_context['refresh_frames'] = ['history']
         elif operation == "share":
             ## Caught above for now
             pass

@@ -3,10 +3,10 @@
 <html>
 
 <head>
-<title>a ${self.title()}</title>
-<meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
-${self.stylesheets()}
-${self.javascripts()}
+    <title>${self.title()}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
+    ${self.stylesheets()}
+    ${self.javascripts()}
 </head>
 
     <body>

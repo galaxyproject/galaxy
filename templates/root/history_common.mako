@@ -1,3 +1,4 @@
+<% _=n_ %>
 ## Render the dataset `data` as history item, using `hid` as the displayed id
 <%def name="render_dataset( data, hid, show_deleted_on_refresh = False )">
     <%
@@ -47,9 +48,9 @@
             %elif data_state == "upload":
                 <div>Dataset is uploading</div>
             %elif data_state == "queued":
-                <div>Job is waiting to run</div>
+                <div>${_('Job is waiting to run')}</div>
             %elif data_state == "running":
-                <div>Job is currently running</div>
+                <div>${_('Job is currently running')}</div>
             %elif data_state == "error":
                 <div>
                     An error occurred running this job: <i>${data.display_info().strip()}</i>, 
@@ -60,19 +61,19 @@
                     The job creating this dataset was cancelled before completion.
                 </div>
             %elif data_state == "empty":
-                <div>No data: <i>${data.display_info()}</i></div>
+                <div>${_('No data: ')}<i>${_(data.display_info())}</i></div>
             %elif data_state == "ok":
                 <div>
                     ${data.blurb},
                     format: <span class="${data.ext}">${data.ext}</span>, 
                     database:
                     %if data.dbkey == '?':
-                        <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">${data.dbkey}</a>
+                        <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">${_(data.dbkey)}</a>
                     %else:
-                        <span class="${data.dbkey}">${data.dbkey}</span>
+                        <span class="${data.dbkey}">${_(data.dbkey)}</span>
                     %endif
                 </div>
-                <div class="info">Info: ${data.display_info()} </div>
+                <div class="info">${_('Info: ')}${_(data.display_info())}</div>
                 <div> 
                     %if data.has_data:
                         <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
@@ -81,17 +82,17 @@
                             %if len( display_links ) > 0:
                                 | ${data.datatype.get_display_label(display_app)}
 				%for display_name, display_link in display_links:
-				    <a target="_blank" href="${display_link}">${display_name}</a> 
+				    <a target="_blank" href="${display_link}">${_(display_name)}</a> 
 				%endfor
                             %endif
                         %endfor
                     %endif
                 </div>
                 %if data.peek != "no peek":
-                    <div><pre id="peek${data.id}" class="peek">${data.display_peek()}</pre></div>
+                    <div><pre id="peek${data.id}" class="peek">${_(data.display_peek())}</pre></div>
                 %endif
 	    %else:
-		<div>Error: unknown dataset state "${data_state}".</div>
+		<div>${_('Error: unknown dataset state "%s".') % data_state}</div>
             %endif
                
             ## Recurse for child datasets
@@ -119,4 +120,3 @@
     </div>
 
 </%def>
-
