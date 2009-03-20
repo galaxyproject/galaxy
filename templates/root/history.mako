@@ -31,7 +31,7 @@
         // Collapse all
         $("#top-links").append( "|&nbsp;" ).append( $("<a href='#'>${_('collapse all')}</a>").click( function() {
             $( "div.historyItemBody:visible" ).each( function() {
-                if ( q.browser.mozilla )
+                if ( $.browser.mozilla )
                 {
                     $(this).find( "pre.peek" ).css( "overflow", "hidden" );
                 }
@@ -56,7 +56,7 @@
 		    // Enter key
 		    new_value = this.value;
 		    $(this).trigger( "blur" );
-		    q.ajax({
+		    $.ajax({
 			url: "${h.url_for( controller='history', action='rename_async', id=history.id )}",
 			data: { "_": true, new_name: new_value },
 			error: function() { alert( "Rename failed" ) },
@@ -80,7 +80,7 @@
         var state = new CookieSet( "galaxy.history.expand_state" );
     for ( id in state.store ) { $( "#" + id ).children( "div.historyItemBody" ).show(); }
         // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
-        if ( q.browser.mozilla ) {
+        if ( $.browser.mozilla ) {
             $( "div.historyItemBody" ).each( function() {
                 if ( ! $(this).is( ":visible" ) ) $(this).find( "pre.peek" ).css( "overflow", "hidden" );
             })
@@ -95,7 +95,7 @@
             var peek = body.find( "pre.peek" )
             $(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
                 if ( body.is(":visible") ) {
-                    if ( q.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
+                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
                     body.slideUp( "fast" );
                     ## other instances of this could be editing the cookie, refetch
                     var state = new CookieSet( "galaxy.history.expand_state" );
@@ -104,7 +104,7 @@
                 } 
                 else {
                     body.slideDown( "fast", function() { 
-                        if ( q.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
+                        if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
                     });
                     var state = new CookieSet( "galaxy.history.expand_state" );
                     state.add( id ); state.save();
@@ -117,7 +117,7 @@
         var data_id = this.id.split( "-" )[1];
         $(this).click( function() {
             $( '#progress-' + data_id ).show();
-            q.ajax({
+            $.ajax({
             url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
             error: function() { alert( "Delete failed" ) },
             success: function() {
@@ -143,7 +143,7 @@
         var data_id = this.id.split( "-" )[1];
         $(this).click( function() {
             $( '#progress-' + data_id ).show();
-            q.ajax({
+            $.ajax({
             url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
             error: function() { alert( "Undelete failed" ) },
             success: function() {
@@ -178,18 +178,18 @@
         // Build request data
         var ids = []
         var states = []
-        q.each( tracked_datasets, function ( id, state ) {
+        $.each( tracked_datasets, function ( id, state ) {
             ids.push( id );
             states.push( state );
         });
         // Make ajax call
-        q.ajax( {
+        $.ajax( {
             type: "POST",
             url: "${h.url_for( controller='root', action='history_item_updates' )}",
             dataType: "json",
             data: { ids: ids.join( "," ), states: states.join( "," ) },
             success : function ( data ) {
-                q.each( data, function( id, val ) {
+                $.each( data, function( id, val ) {
                     // Replace HTML
                     var container = $("#historyItemContainer-" + id);
                     container.html( val.html );
