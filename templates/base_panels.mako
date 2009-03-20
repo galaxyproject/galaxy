@@ -247,7 +247,7 @@
     ${self.init()}    
     <head>
     <title>${self.title()}</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=${_('iso-8859-1')}" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     ${self.javascripts()}
     ${self.stylesheets()}
     </head>

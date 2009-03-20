@@ -2,7 +2,7 @@
 <tool name="Wormbase" id="wormbase_test" tool_type="data_source" URL_method="post">
 	<description>test server</description>
 	<command interpreter="python">data_source.py $output</command>
-	<inputs action="http://dev.wormbase.org/db/seq/gbrowse/c_elegans/" check_values="false" method="get" target="_top"> 
+	<inputs action="http://dev.wormbase.org/db/seq/gbrowse/c_elegans/" check_values="false" target="_top"> 
 		<display>go to Wormbase test server $GALAXY_URL</display>
 		<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=wormbase_test" />
 	</inputs>

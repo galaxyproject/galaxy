@@ -119,9 +119,9 @@ def sanitize_text(text):
 
 def sanitize_param(value):
     """Clean incoming parameters (strings or lists)"""
-    if type(value) == type('x'):
+    if isinstance( value, basestring ):
         return sanitize_text(value)
-    elif type(value) == type([]):
+    elif isinstance( value, list ):
         return map(sanitize_text, value)
     else:
         raise Exception, 'Unknown parameter type'

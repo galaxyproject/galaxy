@@ -14,8 +14,10 @@ import pkg_resources;
 pkg_resources.require( "Paste" )
 pkg_resources.require( "Routes" )
 pkg_resources.require( "flup" )
+pkg_resources.require( "WebOb" )
 
 import routes
+import webob
 
 # We will use some very basic HTTP/wsgi utilities from the paste library
 from paste.request import parse_headers, get_cookies, parse_formvars
@@ -210,7 +212,7 @@ class DefaultWebTransaction( object ):
         else:
             return None
     
-class Request( object ):
+class Request( webob.Request ):
     """
     Encapsulates an HTTP request. 
     """
@@ -218,26 +220,24 @@ class Request( object ):
         """
         Create a new request wrapping the WSGI environment `environ`
         """
-        self.environ = environ
+        ## self.environ = environ
+        webob.Request.__init__( self, environ, charset='utf-8', decode_param_names=False )
     # Properties that are computed and cached on first use
     @lazy_property
     def remote_host( self ):
         try:
-            return socket.gethostbyname( self.environ['REMOTE_ADDR'] )
+            return socket.gethostbyname( self.remote_addr )
         except socket.error:
-            return self.environ['REMOTE_ADDR']
-    @lazy_property
-    def headers( self ):
-        return dict( parse_headers( self.environ ) )
+            return self.remote_addr
     @lazy_property
     def cookies( self ):
         return get_cookies( self.environ )
     @lazy_property
     def base( self ):
-        return ( self.scheme + "://" + self.environ['HTTP_HOST'] )
-    @lazy_property
-    def params( self ):
-        return parse_formvars( self.environ )
+        return ( self.scheme + "://" + self.host )
+    ## @lazy_property
+    ## def params( self ):
+    ##     return parse_formvars( self.environ )
     @lazy_property
     def path( self ):
         return self.environ['SCRIPT_NAME'] + self.environ['PATH_INFO']
@@ -245,15 +245,15 @@ class Request( object ):
     def browser_url( self ):
         return self.base + self.path        
     # Descriptors that map properties to the associated environment
-    scheme = WSGIEnvironmentProperty( 'wsgi.url_scheme' )
-    remote_addr = WSGIEnvironmentProperty( 'REMOTE_ADDR' )
+    ## scheme = WSGIEnvironmentProperty( 'wsgi.url_scheme' )
+    ## remote_addr = WSGIEnvironmentProperty( 'REMOTE_ADDR' )
     remote_port = WSGIEnvironmentProperty( 'REMOTE_PORT' )
-    method = WSGIEnvironmentProperty( 'REQUEST_METHOD' )
-    script_name = WSGIEnvironmentProperty( 'SCRIPT_NAME' )
+    ## method = WSGIEnvironmentProperty( 'REQUEST_METHOD' )
+    ## script_name = WSGIEnvironmentProperty( 'SCRIPT_NAME' )
     protocol = WSGIEnvironmentProperty( 'SERVER_PROTOCOL' )
-    query_string = WSGIEnvironmentProperty( 'QUERY_STRING' )
-    path_info = WSGIEnvironmentProperty( 'PATH_INFO' )
-    
+    ## query_string = WSGIEnvironmentProperty( 'QUERY_STRING' )
+    ## path_info = WSGIEnvironmentProperty( 'PATH_INFO' )
+
 class Response( object ):
     """
     Describes an HTTP response. Currently very simple since the actual body
@@ -296,7 +296,7 @@ class Response( object ):
             return "%d %s" % ( exception.code, exception.title )
         else:
             return self.status
-        
+
 # ---- Utilities ------------------------------------------------------------
 
 CHUNK_SIZE = 2**16

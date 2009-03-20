@@ -7,7 +7,6 @@ top level directly.
 
 import os, sys
 
-sys.setdefaultencoding( 'utf_8' )
 assert sys.version_info[:2] >= ( 2, 4 )
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
