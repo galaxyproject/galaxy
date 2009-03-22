@@ -1,7 +1,7 @@
 from elementtree.ElementTree import Element
 
 from galaxy import web
-from galaxy.tools.parameters import DataToolParameter, check_param
+from galaxy.tools.parameters import DataToolParameter, RuntimeValue, check_param
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.grouping import Repeat, Conditional
 from galaxy.util.bunch import Bunch
@@ -221,15 +221,34 @@ class ToolModule( object ):
             data_outputs.append( dict( name=name, extension=format ) )
         return data_outputs
     def get_config_form( self ):
-        def as_html( param, value, trans, prefix ):
-            if type( param ) is DataToolParameter:
-                return "Data input '" + param.name + "' (" + ( " or ".join( param.extensions ) ) + ")"
-            else:
-                return param.get_html_field( trans, value ).get_html( prefix )
         return self.trans.fill_template( "workflow/editor_tool_form.mako", 
-            tool=self.tool, as_html=as_html, values=self.state.inputs, errors=( self.errors or {} ) )
+            tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
     def update_state( self, incoming ):
-        errors = self.tool.update_state( self.trans, self.tool.inputs, self.state.inputs, incoming )
+        
+        print "STATE BEFORE UPDATE"
+        print self.state.inputs
+        
+        # Build a callback that handles setting an input to be required at
+        # runtime. We still process all other parameters the user might have
+        # set.
+        make_runtime_key = incoming.get( 'make_runtime', None )
+        make_buildtime_key = incoming.get( 'make_buildtime', None )
+        
+        def item_callback( trans, key, input, value, error, old_value, context ):
+            if key == make_buildtime_key:
+                return input.get_initial_value( trans, context ), None
+            elif isinstance( old_value, RuntimeValue ):
+                return old_value, None
+            elif key == make_runtime_key:
+                return RuntimeValue(), None
+            else:
+                return value, error
+            
+        # Update state using incoming values
+        errors = self.tool.update_state( self.trans, self.tool.inputs, self.state.inputs, incoming, item_callback=item_callback )
+
+        print "STATE UPDATED"
+        print self.state.inputs
         self.errors = errors or None
     
     

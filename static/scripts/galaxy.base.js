@@ -65,9 +65,14 @@ function make_popupmenu( button_element, options ) {
     var click = function( e ) {
         var o = $(button_element).offset();
         $("#popup-helper").mousedown( clean ).show();
-        $( menu_element ).click( clean ).css( { top: -1000 } ).show().css( {
+        // Show off screen to get size right
+        $( menu_element ).click( clean ).css( { left: 0, top: -1000 } ).show();
+        console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
+        var x = Math.min( e.pageX - 2, $(document).scrollLeft() + $(window).width() - $(menu_element).width() - 5 );
+            
+        $( menu_element ).css( {
             top: e.pageY - 2,
-            left: e.pageX - 2 // + $(button_element).width() - $(menu_element).width()
+            left: x
         } );
         return false;
     };

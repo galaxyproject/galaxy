@@ -21,6 +21,7 @@
         ensure_dd_helper();
         make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
         make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
+        ensure_popup_helper();
         ## handle_minwidth_hint = rp.handle_minwidth_hint;
     </script>
 </%def>
@@ -39,6 +40,7 @@
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.json.js')}"> </script>
 
+    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.base.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.workflow_editor.canvas.js')}"> </script>
     
     <!--[if lt IE 7]>
@@ -212,14 +214,7 @@
     };
 
     function show_form_for_tool( text, node ) {
-        // $("#overlay, #modalwrapper" ).show();
-        //$("#modal iframe").attr( 'src', "${h.url_for( action='tool_form' )}?tool_id=" + tool_id ).load( function () {
-        //    $("#modalloadwrapper").hide();
-        //});
-        // $("#right-content").load( "${h.url_for( action='tool_form' )}", { tool_id: tool_id }, function () {
-        //     
-        // });
-        $("#right-content").html( text );
+        $("#right-content").html( text );    
         $("#right-content").find( "form" ).ajaxForm( {
             type: 'POST',
             dataType: 'json',
@@ -238,6 +233,20 @@
             form = this;
             $(this).find( "select[refresh_on_change='true']").change( function() {
                 $(form).submit();
+            });
+            $(this).find( ".popupmenu" ).each( function() {
+                var b = $('<a class="popup-arrow">&#9660;</a>')
+                var options = {}
+                $(this).find( "button" ).each( function() {
+                    var name = $(this).attr( 'name' )
+                    var value = $(this).attr( 'value' );
+                    options[ $(this).text() ] = function() {
+                        $(form).append( "<input type='hidden' name='"+name+"' value='"+value+"' />" ).submit();
+                    }
+                });
+                b.insertAfter( this );
+                $(this).remove();
+                make_popupmenu( b, options );
             });
         });
     }

@@ -841,7 +841,8 @@ class Tool:
         return 'message.mako', dict( message_type='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
 
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
-                      update_only=False, old_errors={}, changed_dependencies={} ):
+                      update_only=False, old_errors={}, changed_dependencies={},
+                      item_callback=None ):
         """
         Update the tool state in `state` using the user input in `incoming`. 
         This is designed to be called recursively: `inputs` contains the
@@ -895,7 +896,8 @@ class Tool:
                                                     context=context,
                                                     update_only=update_only,
                                                     old_errors=rep_old_errors,
-                                                    changed_dependencies=changed_dependencies )
+                                                    changed_dependencies=changed_dependencies,
+                                                    item_callback=item_callback )
                     if rep_errors:
                         any_group_errors = True
                         group_errors.append( rep_errors )
@@ -952,7 +954,8 @@ class Tool:
                                                       context=context,
                                                       update_only=update_only,
                                                       old_errors=group_old_errors,
-                                                      changed_dependencies=changed_dependencies )
+                                                      changed_dependencies=changed_dependencies,
+                                                      item_callback=item_callback )
                 if test_param_error:
                     group_errors[ input.test_param.name ] = test_param_error
                 if group_errors:
@@ -1003,6 +1006,10 @@ class Tool:
                     if not incoming_value_generated:
                         incoming_value = get_incoming_value( incoming, key, None )
                     value, error = check_param( trans, input, incoming_value, context )
+                    # If a callback was provided, allow it to process the value
+                    if item_callback:
+                        old_value = state.get( input.name, None )
+                        value, error = item_callback( trans, key, input, value, error, old_value, context )
                     if input.dependent_params and state[ input.name ] != value:
                         # We need to keep track of changed dependency parametrs ( parameters
                         # that have dependent parameters whose options are dynamically generated )

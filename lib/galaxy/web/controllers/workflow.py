@@ -515,7 +515,7 @@ class WorkflowController( BaseController ):
                     errors[step.id] = state.inputs["__errors__"] = step_errors
                 # Connections by input name
                 step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )    
-            if not errors:
+            if 'run_workflow' in kwargs and not errors:
                 # Run each step, connecting outputs to inputs
                 outputs = odict()
                 for step in workflow.steps:
@@ -554,14 +554,13 @@ class WorkflowController( BaseController ):
         else:
             for step in workflow.steps:
                 if step.type == 'tool' or step.type is None:
-                    # Build a new tool state for the step
+                    # Restore the tool state for the step
                     tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
                     state = DefaultToolState()
                     state.inputs = tool.params_from_strings( step.tool_inputs, trans.app )
                     # Store state with the step
                     step.state = state
-                    # This should never actually happen since we don't allow
-                    # running workflows with errors (yet?)
+                    # Error dict
                     if step.tool_errors:
                         errors[step.id] = step.tool_errors
                 else:
@@ -575,7 +574,8 @@ class WorkflowController( BaseController ):
                     "workflow/run.mako", 
                     steps=workflow.steps,
                     workflow=stored,
-                    errors=errors )
+                    errors=errors,
+                    incoming=kwargs )
     
     @web.expose
     def configure_menu( self, trans, workflow_ids=None ):

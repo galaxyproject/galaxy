@@ -94,12 +94,18 @@ class ToolParameter( object ):
         return value
         
     def value_to_basic( self, value, app ):
+        if isinstance( value, RuntimeValue ):
+            return { "__class__": "RuntimeValue" }
         return self.to_string( value, app )
         
     def value_from_basic( self, value, app, ignore_errors=False ):
         # HACK: Some things don't deal with unicode well, psycopg problem?
         if type( value ) == unicode:
             value = str( value )
+        # Handle Runtime values (valid for any parameter?)
+        if isinstance( value, dict ) and '__class__' in value and value['__class__'] == "RuntimeValue":
+            return RuntimeValue()
+        # Delegate to the 'to_python' method
         if ignore_errors:
             try:
                 return self.to_python( value, app )
@@ -567,12 +573,11 @@ class SelectToolParameter( ToolParameter ):
     def value_to_basic( self, value, app ):
         if isinstance( value, UnvalidatedValue ):
             return { "__class__": "UnvalidatedValue", "value": value.value }
-        return value
+        return super( SelectToolParameter, self ).value_to_basic( value, app )
     def value_from_basic( self, value, app, ignore_errors=False ):
-        if isinstance( value, dict ):
-            assert value["__class__"] == "UnvalidatedValue"
+        if isinstance( value, dict ) and value["__class__"] == "UnvalidatedValue":
             return UnvalidatedValue( value["value"] )
-        return value
+        return super( SelectToolParameter, self ).value_from_basic( value, app )
     def get_initial_value( self, trans, context ):
         # More working around dynamic options for workflow
         if self.is_dynamic and ( trans is None or trans.workflow_building_mode )\
@@ -953,15 +958,6 @@ class DrillDownSelectToolParameter( ToolParameter ):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
         return self.separator.join( rval )
     
-    def value_to_basic( self, value, app ):
-        if isinstance( value, UnvalidatedValue ):
-            return { "__class__": "UnvalidatedValue", "value": value.value }
-        return value
-    def value_from_basic( self, value, app, ignore_errors=False ):
-        if isinstance( value, dict ):
-            assert value["__class__"] == "UnvalidatedValue"
-            return UnvalidatedValue( value["value"] )
-        return value
     def get_initial_value( self, trans, context ):
         def recurse_options( initial_values, options ):
             for option in options:
@@ -1174,25 +1170,17 @@ class DataToolParameter( ToolParameter ):
         else:
             return trans.app.model.HistoryDatasetAssociation.get( value )
 
-    def value_to_basic( self, value, app ):
+    def to_string( self, value, app ):
         if value is None or isinstance( value, str ):
             return value
         return value.id
 
-    def value_from_basic( self, value, app, ignore_errors=False ):
-        """
-        Both of these values indicate that no dataset is selected.  However, 'None' 
-        indicates that the dataset is optional, while '' indicates that it is not.
-        """
+    def to_python( self, value, app ):
+        # Both of these values indicate that no dataset is selected.  However, 'None' 
+        # indicates that the dataset is optional, while '' indicates that it is not.
         if value is None or value == '' or value == 'None':
             return value
-        try:
-            return app.model.HistoryDatasetAssociation.get( int( value ) )
-        except:
-            if ignore_errors:
-                return value
-            else:
-                raise
+        return app.model.HistoryDatasetAssociation.get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):
         if value is None: return "None"
@@ -1294,6 +1282,14 @@ class UnvalidatedValue( object ):
     """
     def __init__( self, value ):
         self.value = value
+        
+class RuntimeValue( object ):
+    """
+    Wrapper to note a value that is not yet set, but will be required at
+    runtime.
+    """
+    pass
+    
 
 def str_bool(in_str):
     """

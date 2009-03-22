@@ -1,3 +1,5 @@
+<% from galaxy.tools.parameters import DataToolParameter, RuntimeValue %>
+
 <%def name="do_inputs( inputs, values, errors, prefix )">
   %for input_index, input in enumerate( inputs.itervalues() ):
     %if input.type == "repeat":
@@ -25,7 +27,7 @@
       <% current_case = group_values['__current_case__'] %>
       <% group_prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
-      ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, group_prefix )}
+      ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, group_prefix, allow_runtime=False )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, group_prefix )}
     %else:
       %if input.name in values:
@@ -38,21 +40,51 @@
   %endfor  
 </%def>
 
-<%def name="row_for_param( param, value, error_dict, prefix )">
+<%def name="row_for_param( param, value, error_dict, prefix, allow_runtime=True )">
     %if error_dict.has_key( param.name ):
         <% cls = "form-row form-row-error" %>
     %else:
         <% cls = "form-row" %>
     %endif
     <div class="${cls}">
-        <label>${param.get_label()}</label>
-        <div>
-            ${as_html( param, value, t, prefix )}
-        </div>
-        %if error_dict.has_key( param.name ):
-        <div style="color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">
-            <div style="width: 300px;"><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${error_dict[param.name]}</span></div>
-        </div>
+        ## Data parameters are very special since their value / runtime state
+        ## comes from connectors
+        %if type( param ) is DataToolParameter:
+            <label>
+                ${param.get_label()}
+            </label>
+            <div>
+                Data input '${param.name}' (${" or ".join( param.extensions )})
+            </div>
+        %else:
+            %if isinstance( value, RuntimeValue ):    
+                <label>
+                    ${param.get_label()}
+                    <span class="popupmenu">
+                        <button type="submit" name="make_buildtime" value="${prefix}${param.name}">Set in advance</button>
+                    </span>
+                </label>
+                <div>
+                    <i>To be set at runtime</i>
+                </div>
+            %else:
+                <label>
+                    ${param.get_label()}
+                    %if allow_runtime:
+                        <span class="popupmenu">
+                            <button type="submit" name="make_runtime" value="${prefix}${param.name}">Set at runtime</button>
+                        </span>
+                    %endif
+                </label>
+                <div>
+                    ${param.get_html_field( trans, value ).get_html( prefix )}          
+                </div>
+            %endif
+            %if error_dict.has_key( param.name ):
+            <div style="color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">
+                <div style="width: 300px;"><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${error_dict[param.name]}</span></div>
+            </div>
+            %endif
         %endif
         <div style="clear: both"></div>       
     </div>
