@@ -528,8 +528,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             return self.fill_template_mako( filename, **kwargs )
         else:
             template = Template( file=os.path.join(self.app.config.template_path, filename), 
-                                 searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app)],
-                                 output_encoding='utf-8' )
+                                 searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app)] )
             return str( template )
     def fill_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
