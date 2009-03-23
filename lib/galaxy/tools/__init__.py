@@ -981,7 +981,7 @@ class Tool:
                     # "dependent" parameter's value has not been reset ( dynamically generated based 
                     # on the new value of its dependency ) prior to reaching this point, so we need 
                     # to regenerate it before it is validated in check_param().
-                    incoming_value_generated = False
+                    value_generated = False
                     if not( 'runtool_btn' in incoming or 'URL' in incoming ):
                         # Form must have been refreshed, probably due to a refresh_on_change
                         try:
@@ -995,25 +995,27 @@ class Tool:
                                         changed_params = {}
                                         changed_params[dependency_name] = dependency_value
                                         changed_params[input.name] = input
-                                        incoming_value = input.get_initial_value( trans, changed_params )
-                                        incoming_value_generated = True
+                                        value = input.get_initial_value( trans, changed_params )
+                                        error = None
+                                        value_generated = True
                                         # Delete the dependency_param from chagned_dependencies since its
                                         # dependent param has been generated based its new value.
-                                        del changed_dependencies[dependency_name]
+                                        ## Actually, don't do this. What if there is more than one dependent?
+                                        ## del changed_dependencies[dependency_name]
                                         break
                         except:
                             pass
-                    if not incoming_value_generated:
+                    if not value_generated:
                         incoming_value = get_incoming_value( incoming, key, None )
-                    value, error = check_param( trans, input, incoming_value, context )
-                    # If a callback was provided, allow it to process the value
-                    if item_callback:
-                        old_value = state.get( input.name, None )
-                        value, error = item_callback( trans, key, input, value, error, old_value, context )
+                        value, error = check_param( trans, input, incoming_value, context )
                     if input.dependent_params and state[ input.name ] != value:
                         # We need to keep track of changed dependency parametrs ( parameters
                         # that have dependent parameters whose options are dynamically generated )
                         changed_dependencies[ input.name ] = value
+                    # If a callback was provided, allow it to process the value
+                    if item_callback:
+                        old_value = state.get( input.name, None )
+                        value, error = item_callback( trans, key, input, value, error, old_value, context )
                     if error:
                         errors[ input.name ] = error
                     state[ input.name ] = value

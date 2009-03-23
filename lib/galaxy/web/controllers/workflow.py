@@ -490,18 +490,23 @@ class WorkflowController( BaseController ):
             # If kwargs were provided, the states for each step should have
             # been POSTed
             for step in workflow.steps:
+                # Connections by input name
+                step.input_connections_by_name = \
+                    dict( ( conn.input_name, conn ) for conn in step.input_connections ) 
                 # Extract just the arguments for this step by prefix
                 p = "%s|" % step.id
                 l = len(p)
                 step_args = dict( ( k[l:], v ) for ( k, v ) in kwargs.iteritems() if k.startswith( p ) )
                 step_errors = None
                 if step.type == 'tool' or step.type is None:
+                    module = module_factory.from_workflow_step( trans, step )
+                    # Any connected input needs to have value DummyDataset (these
+                    # are not persisted so we need to do it every time)
+                    module.add_dummy_datasets( connections=step.input_connections )    
                     # Get the tool
-                    tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
+                    tool = module.tool
                     # Get the state
-                    state = DefaultToolState()
-                    state.decode( step_args.pop("tool_state"), tool, trans.app )
-                    step.state = state
+                    step.state = state = module.state
                     # Get old errors
                     old_errors = state.inputs.pop( "__errors__", {} )
                     # Update the state
@@ -512,38 +517,22 @@ class WorkflowController( BaseController ):
                     state = step.state = module.decode_runtime_state( trans, step_args.pop( "tool_state" ) )
                     step_errors = module.update_runtime_state( trans, state, step_args )
                 if step_errors:
-                    errors[step.id] = state.inputs["__errors__"] = step_errors
-                # Connections by input name
-                step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )    
+                    errors[step.id] = state.inputs["__errors__"] = step_errors   
             if 'run_workflow' in kwargs and not errors:
                 # Run each step, connecting outputs to inputs
                 outputs = odict()
-                for step in workflow.steps:
+                for i, step in enumerate( workflow.steps ):
                     if step.type == 'tool' or step.type is None:
                         tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
                         input_values = step.state.inputs
                         # Connect up
-                        # TODO: Generalize out visitor
-                        def visitor( inputs, input_values, prefix ):
-                            for input in inputs.itervalues():
-                                if isinstance( input, Repeat ):  
-                                    for i, d in enumerate( input_values[ input.name ] ):
-                                        index = d['__index__']
-                                        new_prefix = prefix + "%s_%d|" % ( input.name, index )
-                                        visitor( input.inputs, d, new_prefix)
-                                elif isinstance( input, Conditional ):
-                                    values = input_values[ input.name ]
-                                    current = values["__current_case__"]
-                                    new_prefix = prefix + input.name + "|"
-                                    visitor( input.cases[current].inputs, values, new_prefix )
-                                else:
-                                    if isinstance( input, DataToolParameter ):
-                                        prefixed_name = prefix + input.name
-                                        if prefixed_name in step.input_connections_by_name:
-                                            conn = step.input_connections_by_name[ prefixed_name ]
-                                            input_values[ input.name ] = outputs[ conn.output_step.id ][ conn.output_name ]
-                        visitor( tool.inputs, input_values, "" )
-                        # Execute it                  
+                        def callback( input, value, prefixed_name, prefixed_label ):
+                            if isinstance( input, DataToolParameter ):
+                                if prefixed_name in step.input_connections_by_name:
+                                    conn = step.input_connections_by_name[ prefixed_name ]
+                                    input_values[ input.name ] = outputs[ conn.output_step.id ][ conn.output_name ]
+                        visit_input_values( tool.inputs, step.state.inputs, callback )
+                        # Execute it
                         outputs[ step.id ] = tool.execute( trans, step.state.inputs )
                     else:
                         outputs[ step.id ] = step.module.execute( trans, step.state )
@@ -555,11 +544,13 @@ class WorkflowController( BaseController ):
             for step in workflow.steps:
                 if step.type == 'tool' or step.type is None:
                     # Restore the tool state for the step
-                    tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
-                    state = DefaultToolState()
-                    state.inputs = tool.params_from_strings( step.tool_inputs, trans.app )
+                    module = module_factory.from_workflow_step( trans, step )
+                    # Any connected input needs to have value DummyDataset (these
+                    # are not persisted so we need to do it every time)
+                    module.add_dummy_datasets( connections=step.input_connections )                  
                     # Store state with the step
-                    step.state = state
+                    step.module = module
+                    step.state = module.state
                     # Error dict
                     if step.tool_errors:
                         errors[step.id] = step.tool_errors

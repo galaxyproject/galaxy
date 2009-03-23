@@ -3,7 +3,42 @@ Classes encapsulating Galaxy tool parameters.
 """
 
 from basic import *
+from grouping import *
 from galaxy.util.json import *
+
+def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="" ):
+    """
+    Given a tools parameter definition (`inputs`) and a specific set of
+    parameter `values`, call `callback` for each non-grouping parameter,
+    passing the parameter object, value, a constructed unique name,
+    and a display label.
+    
+    If the callback returns a value, it will be replace the old value.
+    
+    FIXME: There is redundancy between this and the visit_inputs methods of
+           Repeat and Group. This tracks labels and those do not. It would
+           be nice to unify all the places that recursively visit inputs.
+    """    
+    for input in inputs.itervalues():
+        if isinstance( input, Repeat ):  
+            for i, d in enumerate( input_values[ input.name ] ):
+                index = d['__index__']
+                new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
+                new_label_prefix = label_prefix + "%s %d > " % ( input.title, i + 1 )
+                visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix )
+        elif isinstance( input, Conditional ):
+            values = input_values[ input.name ]
+            current = values["__current_case__"]
+            label_prefix = label_prefix
+            new_name_prefix = name_prefix + input.name + "|"
+            visit_input_values( input.cases[current].inputs, values, callback, new_name_prefix, label_prefix )
+        else:
+            new_value = callback( input,
+                                  input_values[input.name],
+                                  prefixed_name = name_prefix + input.name,
+                                  prefixed_label = label_prefix + input.label )
+            if new_value:
+                input_values[input.name] = new_value
 
 def check_param( trans, param, incoming_value, param_values ):
     """

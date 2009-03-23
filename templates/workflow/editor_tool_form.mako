@@ -1,6 +1,10 @@
-<% from galaxy.tools.parameters import DataToolParameter, RuntimeValue %>
+<%
+from galaxy.tools.parameters import DataToolParameter, RuntimeValue
+from galaxy.util.expressions import ExpressionContext
+%>
 
-<%def name="do_inputs( inputs, values, errors, prefix )">
+<%def name="do_inputs( inputs, values, errors, prefix, ctx=None )">
+  <% ctx = ExpressionContext( values, ctx ) %>
   %for input_index, input in enumerate( inputs.itervalues() ):
     %if input.type == "repeat":
       <div class="repeat-group">
@@ -16,7 +20,7 @@
             %>
             <div class="repeat-group-item">
             <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
-            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(index) + "|" )}
+            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(index) + "|", ctx )}
             <div class="form-row"><input type="submit" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
             </div>
           %endfor
@@ -27,20 +31,20 @@
       <% current_case = group_values['__current_case__'] %>
       <% group_prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
-      ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, group_prefix, allow_runtime=False )}
-      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, group_prefix )}
+      ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, group_prefix, ctx, allow_runtime=False )}
+      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, group_prefix, ctx )}
     %else:
       %if input.name in values:
-        ${row_for_param( input, values[ input.name ], errors, prefix )}
+        ${row_for_param( input, values[ input.name ], errors, prefix, ctx )}
       %else:
         <% errors[ input.name ] = 'Value not stored, displaying default' %>
-        ${row_for_param( input, input.get_initial_value( trans, values ), errors, prefix )}
+        ${row_for_param( input, input.get_initial_value( trans, values ), errors, prefix, ctx )}
       %endif
     %endif
   %endfor  
 </%def>
 
-<%def name="row_for_param( param, value, error_dict, prefix, allow_runtime=True )">
+<%def name="row_for_param( param, value, error_dict, prefix, ctx, allow_runtime=True )">
     %if error_dict.has_key( param.name ):
         <% cls = "form-row form-row-error" %>
     %else:
@@ -77,7 +81,7 @@
                     %endif
                 </label>
                 <div>
-                    ${param.get_html_field( trans, value ).get_html( prefix )}          
+                    ${param.get_html_field( trans, value, ctx ).get_html( prefix )}          
                 </div>
             %endif
             %if error_dict.has_key( param.name ):
