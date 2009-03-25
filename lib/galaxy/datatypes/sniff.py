@@ -1,8 +1,9 @@
 """
 File format detector
 """
-import logging, sys, os, csv, tempfile, shutil, re
+import logging, sys, os, csv, tempfile, shutil, re, zipfile
 import registry
+from galaxy import util
 
 log = logging.getLogger(__name__)
         
@@ -13,18 +14,43 @@ def get_test_fname(fname):
     return full_path
 
 def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
-    """
-    Writes a stream to a temporary file, returns the temporary file's name
-    """
+    """Writes a stream to a temporary file, returns the temporary file's name"""
     fd, temp_name = tempfile.mkstemp( suffix=suffix, prefix=prefix, dir=dir, text=text )
+    CHUNK_SIZE = 1048576
+    data_checked = False
+    is_compressed = False
+    is_binary = False
+    is_multi_byte = False
     while 1:
-        chunk = stream.read(1048576)
+        chunk = stream.read( CHUNK_SIZE )
         if not chunk:
             break
-        # TODO: does this work on binary files?
-        os.write( fd, chunk.encode( "utf-8" ) )
-    os.close(fd)
-    return temp_name
+        if not data_checked:
+            # See if we're uploading a compressed file
+            if zipfile.is_zipfile( temp_name ):
+                is_compressed = True
+            else:
+                magic_check = chunk[:2]
+                if magic_check == util.gzip_magic:
+                    is_compressed = True
+            if not is_compressed:
+                # See if we have a multi-byte character file
+                chars = chunk[:100]
+                is_multi_byte = util.is_multi_byte( chars )
+                if not is_multi_byte:
+                    for char in chars:
+                        if ord( char ) > 128:
+                            is_binary = True
+                            break
+            data_checked = True
+        if not is_compressed and not is_binary:
+            os.write( fd, chunk.encode( "utf-8" ) )
+        else:
+            # Compressed files must be encoded after they are uncompressed in the upload utility,
+            # while binary files should not be encoded at all.
+            os.write( fd, chunk )
+    os.close( fd )
+    return temp_name, is_multi_byte
 
 def convert_newlines( fname ):
     """
@@ -94,7 +120,7 @@ def convert_newlines_sep2tabs( fname, patt="\\s+" ):
     # Return number of lines in file.
     return i + 1
 
-def get_headers(fname, sep, count=60):
+def get_headers( fname, sep, count=60, is_multi_byte=False ):
     """
     Returns a list with the first 'count' lines split by 'sep'
     
@@ -105,12 +131,16 @@ def get_headers(fname, sep, count=60):
     headers = []
     for idx, line in enumerate(file(fname)):
         line = line.rstrip('\n\r')
+        if is_multi_byte:
+            # TODO: fix this - sep is never found in line
+            line = unicode( line, 'utf-8' )
+            sep = sep.encode( 'utf-8' )
         headers.append( line.split(sep) )
         if idx == count:
             break
     return headers
     
-def is_column_based(fname, sep='\t', skip=0):
+def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     """
     Checks whether the file is column based with respect to a separator 
     (defaults to tab separator).
@@ -138,9 +168,8 @@ def is_column_based(fname, sep='\t', skip=0):
     >>> is_column_based(fname)
     True
     """
-    headers = get_headers(fname, sep)
+    headers = get_headers( fname, sep, is_multi_byte=is_multi_byte )
     count = 0
-    
     if not headers:
         return False
     for hdr in headers[skip:]:
@@ -156,7 +185,7 @@ def is_column_based(fname, sep='\t', skip=0):
                 return False
     return True
 
-def guess_ext( fname, sniff_order=None ):
+def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     """
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
@@ -220,20 +249,28 @@ def guess_ext( fname, sniff_order=None ):
                 return datatype.file_ext
         except:
             pass
-
     headers = get_headers( fname, None )
-    is_binary = True
-    for hdr in headers:
-        for char in hdr:
-            try:
-                if not ord(char) > 128:
-                    is_binary = False
-            except:
-                is_binary = False
+    is_binary = False
+    if is_multi_byte:
+        is_binary = False
+    else:
+        for hdr in headers:
+            for char in hdr:
+                if len( char ) > 1:
+                    for c in char:
+                        if ord( c ) > 128:
+                            is_binary = True
+                            break
+                elif ord( char ) > 128:
+                    is_binary = True
+                    break
+                if is_binary:
+                    break
+            if is_binary:
                 break
     if is_binary:
         return 'data'        #default binary data type file extension
-    if is_column_based( fname, '\t', 1):
+    if is_column_based( fname, '\t', 1, is_multi_byte=is_multi_byte ):
         return 'tabular'    #default tabular data type file extension
     return 'txt'            #default text data type file extension
 

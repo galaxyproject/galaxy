@@ -14,10 +14,33 @@ from galaxy.util.docutils_ext.htmlfrag import Writer as HTMLFragWriter
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree
 
+pkg_resources.require( "wchartype" )
+import wchartype
+
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
 
 gzip_magic = '\037\213'
+
+def is_multi_byte( chars ):
+    for char in chars:
+        try:
+            char = unicode( char )
+        except Exception, e:
+            # Probably binary
+            log.exception( e )
+            return False
+        if wchartype.is_asian( char ) or \
+            wchartype.is_full_width( char ) or \
+            wchartype.is_kanji( char ) or \
+            wchartype.is_hiragana( char ) or \
+            wchartype.is_katakana( char ) or \
+            wchartype.is_half_katakana( char ) or \
+            wchartype.is_hangul( char ) or \
+            wchartype.is_full_digit( char ) or \
+            wchartype.is_full_letter( char ):
+            return True
+    return False
 
 def synchronized(func):
     """This wrapper will serialize access to 'func' to a single thread. Use it as a decorator."""
