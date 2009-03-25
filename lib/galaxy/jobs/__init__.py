@@ -257,7 +257,7 @@ class JobQueue( object ):
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
             elif idata.state == idata.states.ERROR:
-                job_wrapper.fail( "input data %d (file: %s) is in an error state" % ( idata.hid, idata.file_name ) )
+                job_wrapper.fail( "input data %d is in error state" % ( idata.hid ) )
                 return JOB_INPUT_ERROR
             elif idata.state != idata.states.OK:
                 # need to requeue
@@ -384,10 +384,17 @@ class JobWrapper( object ):
         job.refresh()
         # if the job was deleted, don't fail it
         if not job.state == model.Job.states.DELETED:
-            # If the failure is due to a Galaxy framework exception, save the traceback
-            # Do this first in case we generate a traceback below
+            # Check if the failure is due to an exception
             if exception:
+                # Save the traceback immediately in case we generate another
+                # below
                 job.traceback = traceback.format_exc()
+                # Get the exception and let the tool attempt to generate
+                # a better message
+                etype, evalue, tb =  sys.exc_info()
+                m = self.tool.handle_job_failure_exception( evalue )
+                if m:
+                    message = m
             if self.app.config.outputs_to_working_directory:
                 for dataset_path in self.get_output_fnames():
                     try:

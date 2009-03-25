@@ -18,6 +18,7 @@ from galaxy import util, jobs, model
 from elementtree import ElementTree
 from parameters import *
 from parameters.grouping import *
+from parameters.validation import LateValidationError
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
@@ -840,7 +841,8 @@ class Tool:
         return 'message.mako', dict( message_type='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
 
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
-                      update_only=False, old_errors={}, changed_dependencies={} ):
+                      update_only=False, old_errors={}, changed_dependencies={},
+                      item_callback=None ):
         """
         Update the tool state in `state` using the user input in `incoming`. 
         This is designed to be called recursively: `inputs` contains the
@@ -894,7 +896,8 @@ class Tool:
                                                     context=context,
                                                     update_only=update_only,
                                                     old_errors=rep_old_errors,
-                                                    changed_dependencies=changed_dependencies )
+                                                    changed_dependencies=changed_dependencies,
+                                                    item_callback=item_callback )
                     if rep_errors:
                         any_group_errors = True
                         group_errors.append( rep_errors )
@@ -951,7 +954,8 @@ class Tool:
                                                       context=context,
                                                       update_only=update_only,
                                                       old_errors=group_old_errors,
-                                                      changed_dependencies=changed_dependencies )
+                                                      changed_dependencies=changed_dependencies,
+                                                      item_callback=item_callback )
                 if test_param_error:
                     group_errors[ input.test_param.name ] = test_param_error
                 if group_errors:
@@ -977,7 +981,7 @@ class Tool:
                     # "dependent" parameter's value has not been reset ( dynamically generated based 
                     # on the new value of its dependency ) prior to reaching this point, so we need 
                     # to regenerate it before it is validated in check_param().
-                    incoming_value_generated = False
+                    value_generated = False
                     if not( 'runtool_btn' in incoming or 'URL' in incoming ):
                         # Form must have been refreshed, probably due to a refresh_on_change
                         try:
@@ -991,21 +995,27 @@ class Tool:
                                         changed_params = {}
                                         changed_params[dependency_name] = dependency_value
                                         changed_params[input.name] = input
-                                        incoming_value = input.get_initial_value( trans, changed_params )
-                                        incoming_value_generated = True
+                                        value = input.get_initial_value( trans, changed_params )
+                                        error = None
+                                        value_generated = True
                                         # Delete the dependency_param from chagned_dependencies since its
                                         # dependent param has been generated based its new value.
-                                        del changed_dependencies[dependency_name]
+                                        ## Actually, don't do this. What if there is more than one dependent?
+                                        ## del changed_dependencies[dependency_name]
                                         break
                         except:
                             pass
-                    if not incoming_value_generated:
+                    if not value_generated:
                         incoming_value = get_incoming_value( incoming, key, None )
-                    value, error = check_param( trans, input, incoming_value, context )
+                        value, error = check_param( trans, input, incoming_value, context )
                     if input.dependent_params and state[ input.name ] != value:
                         # We need to keep track of changed dependency parametrs ( parameters
                         # that have dependent parameters whose options are dynamically generated )
                         changed_dependencies[ input.name ] = value
+                    # If a callback was provided, allow it to process the value
+                    if item_callback:
+                        old_value = state.get( input.name, None )
+                        value, error = item_callback( trans, key, input, value, error, old_value, context )
                     if error:
                         errors[ input.name ] = error
                     state[ input.name ] = value
@@ -1053,30 +1063,59 @@ class Tool:
             return
         self.handle_unvalidated_param_values_helper( self.inputs, input_values, app )
 
-    def handle_unvalidated_param_values_helper( self, inputs, input_values, app, context=None ):
+    def handle_unvalidated_param_values_helper( self, inputs, input_values, app, context=None, prefix="" ):
         """
         Recursive helper for `handle_unvalidated_param_values`
         """
         context = ExpressionContext( input_values, context )
         for input in inputs.itervalues():
             if isinstance( input, Repeat ):  
-                for d in input_values[ input.name ]:
-                    self.handle_unvalidated_param_values_helper( input.inputs, d, app, context )
+                for i, d in enumerate( input_values[ input.name ] ):
+                    rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
+                    self.handle_unvalidated_param_values_helper( input.inputs, d, app, context, rep_prefix )
             elif isinstance( input, Conditional ):
                 values = input_values[ input.name ]
                 current = values["__current_case__"]
-                self.handle_unvalidated_param_values_helper( input.cases[current].inputs, values, app, context )
+                # NOTE: The test param doesn't need to be checked since
+                #       there would be no way to tell what case to use at
+                #       workflow build time. However I'm not sure if we are
+                #       actually preventing such a case explicately.
+                self.handle_unvalidated_param_values_helper( input.cases[current].inputs, values, app, context, prefix )
             else:
                 # Regular tool parameter
                 value = input_values[ input.name ]
                 if isinstance( value, UnvalidatedValue ):
-                    if value.value is None: #if value.value is None, it could not have been submited via html form and therefore .from_html can't be guaranteed to work
-                        value = None
-                    else:
-                        value = input.from_html( value.value, None, context )
-                    # Then do any further validation on the value
-                    input.validate( value, None )
+                    try:
+                        # Convert from html representation
+                        if value.value is None:
+                            # If value.value is None, it could not have been
+                            # submited via html form and therefore .from_html
+                            # can't be guaranteed to work
+                            value = None
+                        else:
+                            value = input.from_html( value.value, None, context )
+                        # Do any further validation on the value
+                        input.validate( value, None )
+                    except Exception, e:
+                        # Wrap an re-raise any generated error so we can
+                        # generate a more informative message
+                        v = input.value_to_display_text( value, self.app )
+                        message = "Failed runtime validation of %s%s (%s)" \
+                            % ( prefix, input.label, e )
+                        raise LateValidationError( message )
                     input_values[ input.name ] = value
+    
+    def handle_job_failure_exception( self, e ):
+        """
+        Called by job.fail when an exception is generated to allow generation
+        of a better error message (returning None yields the default behavior)
+        """
+        message = None
+        # If the exception was generated by late validation, use its error
+        # message (contains the parameter name and value)
+        if isinstance( e, LateValidationError ):
+            message = e.message
+        return message
     
     def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths ):
         """

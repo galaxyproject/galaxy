@@ -194,30 +194,7 @@ function show_modal( title, body, buttons, extra_buttons ) {
     }
 };
     
-// Popup -- is this up to date?
-
-function make_popupmenu( button_element, options ) {
-    var menu_element = $( "<div class='popupmenu'><div class='popupmenu-top'><div class='popupmenu-top-inner'/></div></div>" ).appendTo( "body" );
-    $.each( options, function( k, v ) {
-        $( "<div class='popupmenu-item' />" ).html( k ).click( v ).appendTo( menu_element );
-    });
-    var clean = function() {
-        $(menu_element).unbind().hide();
-        $("#popup-helper").unbind().hide();
-    };
-    var click = function() {
-        var o = $(button_element).offset();
-        $("#popup-helper").mousedown( clean ).show();
-        $( menu_element ).click( clean ).css( { top: -1000 } ).show().css( {
-            top: o.top + $(button_element).height() + 9,
-            left: o.left + $(button_element).width() - $(menu_element).width()
-        } );
-    };
-    $( button_element ).click( click );
-};
-
 // Tab management
-
 	
 $(function() {
     $("span.tab").each( function() {
