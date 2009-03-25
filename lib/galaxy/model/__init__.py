@@ -511,6 +511,8 @@ class DatasetInstance( object ):
         return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
     def set_peek( self ):
         return self.datatype.set_peek( self )
+    def set_multi_byte_peek( self ):
+        return self.datatype.set_multi_byte_peek( self )
     def init_meta( self, copy_from=None ):
         return self.datatype.init_meta( self, copy_from=copy_from )
     def set_meta( self, **kwd ):

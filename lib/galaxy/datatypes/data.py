@@ -112,7 +112,7 @@ class Data( object ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
-    def display_peek(self, dataset):
+    def display_peek(self, dataset ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
@@ -124,7 +124,7 @@ class Data( object ):
                 line = line.strip()
                 if not line:
                     continue
-                out.append( '<tr><td>%s</td></tr>' % escape( line ) )
+                out.append( '<tr><td>%s</td></tr>' % escape( unicode( line, 'utf-8' ) ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception, exc:
@@ -193,7 +193,6 @@ class Data( object ):
         except:
             log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible' % (self.supported_display_apps[type]['file_function'], self.__class__.__name__, type) )
         return "This display type (%s) is not implemented for this datatype (%s)." % ( type, dataset.ext)
-        
     def get_display_links(self, dataset, type, app, base_url, **kwd):
         """
         Returns a list of tuples of (name, link) for a particular display type
@@ -207,21 +206,17 @@ class Data( object ):
             except:
                 log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' % (self.supported_display_apps[type]['links_function'], self.__class__.__name__, type) )
         return []
-
     def get_converter_types(self, original_dataset, datatypes_registry):
         """Returns available converters by type for this dataset"""
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
-    
     def find_conversion_destination( self, dataset, accepted_formats, datatypes_registry, **kwd ):
         """Returns ( target_ext, exisiting converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions( dataset, accepted_formats, **kwd )
-    
     def convert_dataset(self, trans, original_dataset, target_type, return_output = False, visible = True ):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type( original_dataset.ext, target_type )
         if converter is None:
             raise "A converter does not exist for %s to %s." % ( original_dataset.ext, target_type )
-        
         #Generate parameter dictionary
         params = {}
         #determine input parameter name and add to params
@@ -231,25 +226,19 @@ class Data( object ):
                 input_name = key
                 break
         params[input_name] = original_dataset
-        
         #Run converter, job is dispatched through Queue
         converted_dataset = converter.execute( trans, incoming = params, set_output_hid = visible )
-        
         if len(params) > 0:
             trans.log_event( "Converter params: %s" % (str(params)), tool_id=converter.id )
-        
         if not visible:
             for name, value in converted_dataset.iteritems():
                 value.visible = False
-        
         if return_output:
             return converted_dataset
         return "The file conversion of %s on data %s has been added to the Queue." % (converter.name, original_dataset.hid)
-
     def before_edit( self, dataset ):
         """This function is called on the dataset before metadata is edited."""
         pass
-
     def after_edit( self, dataset ):
         """This function is called on the dataset after metadata is edited."""
         dataset.clear_associated_files( metadata_safe = True )
@@ -259,7 +248,6 @@ class Data( object ):
         return False
 
 class Text( Data ):
-
     def write_from_stream(self, dataset, stream):
         """Writes data from a stream"""
         # write it twice for now 
@@ -277,30 +265,36 @@ class Text( Data ):
             line = line.strip() + '\n'
             fp.write(line)
         fp.close()
-
     def set_raw_data(self, dataset, data):
         """Saves the data on the disc"""
         fd, temp_name = tempfile.mkstemp()
         os.write(fd, data)
         os.close(fd)
-
         # rewrite the file with unix newlines
         fp = open(dataset.file_name, 'wt')
         for line in file(temp_name, "U"):
             line = line.strip() + '\n'
             fp.write(line)
         fp.close()
-
         os.remove( temp_name )
-    
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'text/plain'
-   
     def set_peek( self, dataset, line_count=None ):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
             dataset.peek = get_file_peek( dataset.file_name )
+            if line_count is None:
+                dataset.blurb = "%s lines" % util.commaify( str( get_line_count( dataset.file_name ) ) )
+            else:
+                dataset.blurb = "%s lines" % util.commaify( str( line_count ) )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+    def set_multi_byte_peek( self, dataset, line_count=None ):
+        if not dataset.dataset.purged:
+            # The file must exist on disk for the get_file_peek() method
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=True )
             if line_count is None:
                 dataset.blurb = "%s lines" % util.commaify( str( get_line_count( dataset.file_name ) ) )
             else:
@@ -352,7 +346,7 @@ def nice_size(size):
             return out
     return '??? bytes'
 
-def get_file_peek( file_name, WIDTH=256, LINE_COUNT=5 ):
+def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
     
@@ -362,12 +356,12 @@ def get_file_peek( file_name, WIDTH=256, LINE_COUNT=5 ):
     """
     lines = []
     count = 0
-    file_type = ''
+    file_type = None
     data_checked = False
     for line in file( file_name ):
-        line = line[ :WIDTH ]
-        if not data_checked and line:
-            data_checked = True
+        line = line[:WIDTH]
+        if line and not is_multi_byte and not data_checked:
+            # See if we have a compressed or binary file
             if line[0:2] == util.gzip_magic:
                 file_type = 'gzipped'
                 break
@@ -376,14 +370,17 @@ def get_file_peek( file_name, WIDTH=256, LINE_COUNT=5 ):
                     if ord( char ) > 128:
                         file_type = 'binary'
                         break
+            data_checked = True
+        if file_type in [ 'gzipped', 'binary' ]:
+            break
         lines.append( line )
         if count == LINE_COUNT: 
             break
         count += 1
-    if file_type: 
-        text = "%s file" %file_type 
+    if file_type in [ 'gzipped', 'binary' ]: 
+        text = "%s file" % file_type 
     else: 
-        text  = '\n'.join( lines )
+        text  =  unicode( '\n'.join( lines ), 'utf-8' )
     return text
 
 def get_line_count(file_name):
