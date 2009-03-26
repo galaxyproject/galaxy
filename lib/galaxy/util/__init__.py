@@ -308,7 +308,7 @@ def listify( item ):
         return []
     elif isinstance( item, list ):
         return item
-    elif isinstance( item, str ) and item.count( ',' ):
+    elif isinstance( item, basestring ) and item.count( ',' ):
         return item.split( ',' )
     else:
         return [ item ]

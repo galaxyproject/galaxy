@@ -17,80 +17,85 @@ class UploadLibraryDataset( BaseController ):
         folder = trans.app.model.LibraryFolder.get( folder_id )
         data_type = None
         line_count = 0
-        temp_name = sniff.stream_to_file( file_obj )
+        temp_name, is_multi_byte = sniff.stream_to_file( file_obj )
         # See if we have an empty file
         if not os.path.getsize( temp_name ) > 0:
             raise BadFileException( "you attempted to upload an empty file." )
-        # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress on the fly.
-        is_gzipped, is_valid = self.check_gzip( temp_name )
-        if is_gzipped and not is_valid:
-            raise BadFileException( "you attempted to upload an inappropriate file." )
-        elif is_gzipped and is_valid:
-            # We need to uncompress the temp_name file
-            CHUNK_SIZE = 2**20 # 1Mb   
-            fd, uncompressed = tempfile.mkstemp()   
-            gzipped_file = gzip.GzipFile( temp_name )
-            while 1:
-                try:
-                    chunk = gzipped_file.read( CHUNK_SIZE )
-                except IOError:
-                    os.close( fd )
-                    os.remove( uncompressed )
-                    raise BadFileException( 'problem uncompressing gzipped data.' )
-                if not chunk:
-                    break
-                os.write( fd, chunk )
-            os.close( fd )
-            gzipped_file.close()
-            # Replace the gzipped file with the decompressed file
-            shutil.move( uncompressed, temp_name )
-            name = name.rstrip( '.gz' )
-            data_type = 'gzip'
-        if not data_type:
-            # See if we have a zip archive
-            is_zipped, is_valid, test_ext = self.check_zip( temp_name )
-            if is_zipped and not is_valid:
-                raise BadFileException( "you attempted to upload an inappropriate file." )
-            elif is_zipped and is_valid:
-                # Currently, we force specific tools to handle this case.  We also require the user
-                # to manually set the incoming file_format
-                if ( test_ext == 'ab1' or test_ext == 'scf' ) and file_format != 'binseq.zip':
-                    raise BadFileException( "Invalid 'File Format' for archive consisting of binary files - use 'Binseq.zip'." )
-                elif test_ext == 'txt' and file_format != 'txtseq.zip':
-                    raise BadFileException( "Invalid 'File Format' for archive consisting of text files - use 'Txtseq.zip'." )
-                if not ( file_format == 'binseq.zip' or file_format == 'txtseq.zip' ):
-                    raise BadFileException( "you must manually set the 'File Format' to either 'Binseq.zip' or 'Txtseq.zip' when uploading zip files." )
-                data_type = 'zip'
-                ext = file_format
-        if not data_type:
-            if self.check_binary( temp_name ):
-                ext = file_name.split( "." )[1].strip().lower()
-                if not( ext == 'ab1' or ext == 'scf' ):
+        if is_multi_byte:
+            ext = sniff.guess_ext( temp_name, is_multi_byte=True )
+        else:
+            if not data_type:
+                # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress on the fly.
+                is_gzipped, is_valid = self.check_gzip( temp_name )
+                if is_gzipped and not is_valid:
                     raise BadFileException( "you attempted to upload an inappropriate file." )
-                if ext == 'ab1' and file_format != 'ab1':
-                    raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
-                elif ext == 'scf' and file_format != 'scf':
-                    raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
-                data_type = 'binary'
-        if not data_type:
-            # We must have a text file
-            if self.check_html( temp_name ):
-                raise BadFileException( "you attempted to upload an inappropriate file." )
-        if data_type != 'binary' and data_type != 'zip':
-            if space_to_tab:
-                line_count = sniff.convert_newlines_sep2tabs( temp_name )
-            elif os.stat( temp_name ).st_size < 262144000: # 250MB
-                line_count = sniff.convert_newlines( temp_name )
-            else:
-                if sniff.check_newlines( temp_name ):
+                elif is_gzipped and is_valid:
+                    # We need to uncompress the temp_name file
+                    CHUNK_SIZE = 2**20 # 1Mb   
+                    fd, uncompressed = tempfile.mkstemp()   
+                    gzipped_file = gzip.GzipFile( temp_name )
+                    while 1:
+                        try:
+                            chunk = gzipped_file.read( CHUNK_SIZE )
+                        except IOError:
+                            os.close( fd )
+                            os.remove( uncompressed )
+                            raise BadFileException( 'problem uncompressing gzipped data.' )
+                        if not chunk:
+                            break
+                        os.write( fd, chunk )
+                    os.close( fd )
+                    gzipped_file.close()
+                    # Replace the gzipped file with the decompressed file
+                    shutil.move( uncompressed, temp_name )
+                    name = name.rstrip( '.gz' )
+                    data_type = 'gzip'
+            ext = ''
+            if not data_type:
+                # See if we have a zip archive
+                is_zipped, is_valid, test_ext = self.check_zip( temp_name )
+                if is_zipped and not is_valid:
+                    raise BadFileException( "you attempted to upload an inappropriate file." )
+                elif is_zipped and is_valid:
+                    # Currently, we force specific tools to handle this case.  We also require the user
+                    # to manually set the incoming file_format
+                    if ( test_ext == 'ab1' or test_ext == 'scf' ) and file_format != 'binseq.zip':
+                        raise BadFileException( "Invalid 'File Format' for archive consisting of binary files - use 'Binseq.zip'." )
+                    elif test_ext == 'txt' and file_format != 'txtseq.zip':
+                        raise BadFileException( "Invalid 'File Format' for archive consisting of text files - use 'Txtseq.zip'." )
+                    if not ( file_format == 'binseq.zip' or file_format == 'txtseq.zip' ):
+                        raise BadFileException( "you must manually set the 'File Format' to either 'Binseq.zip' or 'Txtseq.zip' when uploading zip files." )
+                    data_type = 'zip'
+                    ext = file_format
+            if not data_type:
+                if self.check_binary( temp_name ):
+                    ext = file_name.split( "." )[1].strip().lower()
+                    if not( ext == 'ab1' or ext == 'scf' ):
+                        raise BadFileException( "you attempted to upload an inappropriate file." )
+                    if ext == 'ab1' and file_format != 'ab1':
+                        raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
+                    elif ext == 'scf' and file_format != 'scf':
+                        raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
+                    data_type = 'binary'
+            if not data_type:
+                # We must have a text file
+                if self.check_html( temp_name ):
+                    raise BadFileException( "you attempted to upload an inappropriate file." )
+            if data_type != 'binary' and data_type != 'zip':
+                if space_to_tab:
+                    line_count = sniff.convert_newlines_sep2tabs( temp_name )
+                elif os.stat( temp_name ).st_size < 262144000: # 250MB
                     line_count = sniff.convert_newlines( temp_name )
                 else:
-                    line_count = None
-            if file_format == 'auto':
-                ext = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
-            else:
-                ext = file_format
-            data_type = ext
+                    if sniff.check_newlines( temp_name ):
+                        line_count = sniff.convert_newlines( temp_name )
+                    else:
+                        line_count = None
+                if file_format == 'auto':
+                    ext = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
+                else:
+                    ext = file_format
+                data_type = ext
         if info is None:
             info = 'uploaded %s file' % data_type
         if file_format == 'auto':
@@ -155,11 +160,20 @@ class UploadLibraryDataset( BaseController ):
         ldda.init_meta()
         if line_count:
             try:
-                ldda.set_peek( line_count=line_count )
+                if is_multi_byte:
+                    ldda.set_multi_byte_peek( line_count=line_count )
+                else:
+                    ldda.set_peek( line_count=line_count )
             except:
-                ldda.set_peek()
+                if is_multi_byte:
+                    ldda.set_multi_byte_peek()
+                else:
+                    ldda.set_peek()
         else:
-            ldda.set_peek()
+            if is_multi_byte:
+                ldda.set_multi_byte_peek()
+            else:
+                ldda.set_peek()
         ldda.set_size()
         if ldda.missing_meta():
             ldda.datatype.set_meta( ldda )
@@ -396,6 +410,8 @@ class UploadLibraryDataset( BaseController ):
             lineno += 1
             line = line.strip()
             if line:
+                if util.is_multi_byte( line ):
+                    return False
                 for char in line:
                     if ord( char ) > 128:
                         if chunk is None:
