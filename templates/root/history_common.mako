@@ -51,7 +51,7 @@
                     The job creating this dataset was cancelled before completion.
                 </div>
             %elif data_state == "empty":
-                <div>${_('No data: ')}<i>${_(data.display_info())}</i></div>
+                <div>${_('No data: ')}<i>${data.display_info()}</i></div>
             %elif data_state == "ok":
                 <div>
                     ${data.blurb},
@@ -63,7 +63,7 @@
                         <span class="${data.dbkey}">${_(data.dbkey)}</span>
                     %endif
                 </div>
-                <div class="info">${_('Info: ')}${_(data.display_info())} </div>
+                <div class="info">${_('Info: ')}${data.display_info()}</div>
                 <div> 
                     %if data.has_data:
                         <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
