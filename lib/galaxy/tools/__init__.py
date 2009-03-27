@@ -841,7 +841,7 @@ class Tool:
         return 'message.mako', dict( message_type='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
 
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
-                      update_only=False, old_errors={}, changed_dependencies={},
+                      update_only=False, old_errors={}, changed_dependencies=None,
                       item_callback=None ):
         """
         Update the tool state in `state` using the user input in `incoming`. 
@@ -861,6 +861,9 @@ class Tool:
         errors = dict()     
         # Push this level onto the context stack
         context = ExpressionContext( state, context )
+        # Initialize dict for changed dependencies (since we write to it)
+        if changed_dependencies is None:
+            changed_dependencies = {}
         # Iterate inputs and update (recursively)
         for input in inputs.itervalues():
             key = prefix + input.name
@@ -974,6 +977,7 @@ class Tool:
                     if input.name in old_errors:
                         errors[ input.name ] = old_errors[ input.name ]
                 else:
+                    # FIXME: This is complicated and buggy.
                     # SelectToolParameters and DataToolParameters whose options are dynamically
                     # generated based on the current value of a dependency parameter require special
                     # handling.  When the dependency parameter's value is changed, the form is
@@ -982,6 +986,7 @@ class Tool:
                     # on the new value of its dependency ) prior to reaching this point, so we need 
                     # to regenerate it before it is validated in check_param().
                     value_generated = False
+                    value = None
                     if not( 'runtool_btn' in incoming or 'URL' in incoming ):
                         # Form must have been refreshed, probably due to a refresh_on_change
                         try:
@@ -1008,14 +1013,13 @@ class Tool:
                     if not value_generated:
                         incoming_value = get_incoming_value( incoming, key, None )
                         value, error = check_param( trans, input, incoming_value, context )
+                    # Should we note a changed dependency?
                     if input.dependent_params and state[ input.name ] != value:
-                        # We need to keep track of changed dependency parametrs ( parameters
-                        # that have dependent parameters whose options are dynamically generated )
-                        changed_dependencies[ input.name ] = value
+                        changed_dependencies[ input.name ] = value  
                     # If a callback was provided, allow it to process the value
                     if item_callback:
                         old_value = state.get( input.name, None )
-                        value, error = item_callback( trans, key, input, value, error, old_value, context )
+                        value, error = item_callback( trans, key, input, value, error, old_value, context )                                          
                     if error:
                         errors[ input.name ] = error
                     state[ input.name ] = value
