@@ -171,7 +171,7 @@
     
     // Add a new step to the workflow by tool id
     function add_node_for_tool( id, title ) {
-        node = prebuild_node( 'tool', title, id );
+        var node = prebuild_node( 'tool', title, id );
         workflow.add_node( node );
         workflow.activate_node( node );
         $.ajax( {
