@@ -67,7 +67,7 @@ function make_popupmenu( button_element, options ) {
         $("#popup-helper").mousedown( clean ).show();
         // Show off screen to get size right
         $( menu_element ).click( clean ).css( { left: 0, top: -1000 } ).show();
-        console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
+        // console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
         var x = Math.min( e.pageX - 2, $(document).scrollLeft() + $(window).width() - $(menu_element).width() - 5 );
             
         $( menu_element ).css( {

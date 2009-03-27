@@ -33,9 +33,9 @@ class TestHistory( TwillTestCase ):
         self.view_stored_histories()
         self.check_page_for_string( 'Stored histories' )
         self.check_page_for_string( '<input type="checkbox" name="id" value=' )
-        self.check_page_for_string( 'operation=rename&id' )
-        self.check_page_for_string( 'operation=switch&id' )
-        self.check_page_for_string( 'operation=delete&id' )
+        self.check_page_for_string( 'operation=Rename&id' )
+        self.check_page_for_string( 'operation=Switch&id' )
+        self.check_page_for_string( 'operation=Delete&id' )
     def test_20_delete_history_item( self ):
         """Testing deleting history item"""
         self.upload_file('1.bed', dbkey='hg15')
