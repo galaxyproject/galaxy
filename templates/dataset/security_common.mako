@@ -7,7 +7,13 @@
                 in_roles.add( a.role )
         out_roles = filter( lambda x: x not in in_roles, all_roles )
     %>
-    <p><b>${action.action}:</b> ${action.description}</p>
+    <p>
+        <b>${action.action}:</b> ${action.description}
+        %if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
+            <br/>
+            NOTE: Users must have every role associated with this dataset in order to access the dataset</font>
+        %endif
+    </p>
     <div style="width: 100%; white-space: nowrap;">
         <div style="float: left; width: 50%;">
             Roles associated:<br/>
