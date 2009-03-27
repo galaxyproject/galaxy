@@ -24,7 +24,7 @@ log = logging.getLogger( __name__ )
 #       server (for running the tests against a running instance)
 
 default_galaxy_test_host = "localhost"
-default_galaxy_test_port = "9999"
+default_galaxy_test_port = "9879"
 default_galaxy_locales = 'en'
 galaxy_test_file_dir = "test-data"
 server = None
