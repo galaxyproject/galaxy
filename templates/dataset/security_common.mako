@@ -11,7 +11,7 @@
         <b>${action.action}:</b> ${action.description}
         %if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
             <br/>
-            NOTE: Users must have every role associated with this dataset in order to access the dataset</font>
+            NOTE: Users must have every role associated with this dataset in order to access it
         %endif
     </p>
     <div style="width: 100%; white-space: nowrap;">
