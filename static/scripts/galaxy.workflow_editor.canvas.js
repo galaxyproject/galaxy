@@ -346,6 +346,7 @@ function Workflow() {
 $.extend( Workflow.prototype, {
     add_node : function( node ) {
         node.id = this.id_counter;
+        node.element.attr( 'id', 'wf-node-step-' + node.id );
         this.id_counter++;
         this.nodes[ node.id ] = node;
         this.has_changes = true;

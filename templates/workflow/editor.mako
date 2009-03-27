@@ -235,7 +235,8 @@
                 $(form).submit();
             });
             $(this).find( ".popupmenu" ).each( function() {
-                var b = $('<a class="popup-arrow">&#9660;</a>')
+                var id = $(this).parents( "div.form-row" ).attr( 'id' );
+                var b = $('<a class="popup-arrow" id="popup-arrow-for-' + id + '>&#9660;</a>')
                 var options = {}
                 $(this).find( "button" ).each( function() {
                     var name = $(this).attr( 'name' )

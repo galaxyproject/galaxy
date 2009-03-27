@@ -50,7 +50,7 @@ from galaxy.util.expressions import ExpressionContext
     %else:
         <% cls = "form-row" %>
     %endif
-    <div class="${cls}">
+    <div class="${cls}" id="row-${prefix}${param.name}">
         ## Data parameters are very special since their value / runtime state
         ## comes from connectors
         %if type( param ) is DataToolParameter:
