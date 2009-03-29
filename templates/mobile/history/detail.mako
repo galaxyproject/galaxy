@@ -7,27 +7,36 @@
             
         %for data in history.active_datasets:
           %if data.visible:
-              <%
-                  hid = data.hid
-                  if data.state in ['no state','',None]:
-                      data_state = "queued"
-                  else:
-                      data_state = data.state
-                      
-                  if data_state == 'ok':
-                    state_class = "dummy"
-                  else:
-                    state_class = data_state
-              %>
-            <li class="historyItemContainer state-color-${state_class}" id="historyItemContainer-${data.id}">
+
+	    <%
+	    if data.state in ['no state','',None]:
+	        data_state = "queued"
+	    else:
+	        data_state = data.state
+	    %>
+
+            <li id="historyItemContainer-${data.id}">
                
+	       	<div style="float: left; padding-right: 8px;">
+		<div style='display: none;' id="progress-${data.id}">
+		    <img src="${h.url_for('/static/style/data_running.gif')}" border="0">
+		</div>
+		%if data_state == 'running':
+		    <div><img src="${h.url_for('/static/style/data_running.gif')}" border="0"></div>
+                %elif data_state == 'upload':
+		    <div><img src="${h.url_for('/static/style/data_upload.gif')}" border="0"></div>
+		%else:
+		    <div><img src="${h.url_for( "/static/style/data_%s.png" % data_state )}" border="0"></div>
+		%endif
+	    </div>	
+	       
                <a href="${h.url_for( action="dataset_detail", id=data.id )}">
               
-        <div>${hid}: ${data.display_name()}</div>
+        <div>${data.hid}: ${data.display_name()}</div>
         
         <div class="secondary">
         ## Body for history items, extra info and actions, data "peek"
-        
+        	
             %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
                 <div>You do not have permission to view this dataset.</div>
             %elif data_state == "queued":
