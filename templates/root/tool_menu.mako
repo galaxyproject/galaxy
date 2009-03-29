@@ -74,7 +74,7 @@
                        return false;
                    });
                 });
-                q( "a[@minsizehint]" ).click( function() {
+                q( "a[minsizehint]" ).click( function() {
                     if ( parent.handle_minwidth_hint ) {
                         parent.handle_minwidth_hint( q(this).attr( "minsizehint" ) );
                     }

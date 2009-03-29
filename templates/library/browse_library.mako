@@ -19,23 +19,23 @@ def name_sorted( l ):
         // Check/uncheck boxes in subfolders.
         $("input.folderCheckbox").click( function() {
             if ( $(this).is(":checked") ) {
-                //$(this).parent().children().find("input[@type=checkbox]").each( function() { this.checked = true; });
-                $(this).parent().next("ul").find("input[@type=checkbox]").each( function() { this.checked = true; });
+                //$(this).parent().children().find("input[type=checkbox]").each( function() { this.checked = true; });
+                $(this).parent().next("ul").find("input[type=checkbox]").each( function() { this.checked = true; });
             } else {
-                //$(this).parent().children().find("input[@type=checkbox]").each( function() { this.checked = false; });
-                $(this).parent().next("ul").find("input[@type=checkbox]").each( function() { this.checked = false; });
+                //$(this).parent().children().find("input[type=checkbox]").each( function() { this.checked = false; });
+                $(this).parent().next("ul").find("input[type=checkbox]").each( function() { this.checked = false; });
             }
         });
         // If you uncheck a lower level checkbox, uncheck the boxes above it
         // (since deselecting a child means the parent is not fully selected any
         // more).
-        $("input[@type=checkbox]").click( function() {
+        $("input[type=checkbox]").click( function() {
             if ( ! $(this).is(":checked") ) {
                 //var folder_rows = $(this).parents("ul").next("li.folderRow");
                 //var folder_rows = $(this).parents("ul").children("li.folderRow");
                 var folder_rows = $(this).parents("ul").prev("li.folderRow");
-                //$(folder_rows).children("input[@type=checkbox]").not(this).each( function() {
-                $(folder_rows).find("input[@type=checkbox]").each( function() {
+                //$(folder_rows).children("input[type=checkbox]").not(this).each( function() {
+                $(folder_rows).find("input[type=checkbox]").each( function() {
                     this.checked = false;
                 });
             }
@@ -91,7 +91,7 @@ def name_sorted( l ):
     $( document ).ready( function() {
         // Add rollover effect to any image with a 'rollover' attribute
         preload_images = {}
-        $( "img[@rollover]" ).each( function() {
+        $( "img[rollover]" ).each( function() {
             var r = $(this).attr('rollover');
             var s = $(this).attr('src');
             preload_images[r] = true;

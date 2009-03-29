@@ -54,6 +54,7 @@
     ## the panels, but do not change layout
     <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
     <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.event.drag.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.event.hover.js')}"></script>
     <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.form.js')}"></script>
     <script type="text/javascript" src="${h.url_for('/static/scripts/galaxy.panels.js')}"></script>
     <script type="text/javascript">
@@ -145,13 +146,13 @@
 	    <span class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></span>
 	</%def>
     
-	${tab( "tracks", "View Data", h.url_for( controller='tracks', action='dbkeys' ), target="galaxy_main")}
+	## ${tab( "tracks", "View Data", h.url_for( controller='tracks', action='dbkeys' ), target="galaxy_main")}
 
 	${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
 
 	${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
 
-    ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
+        ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
 
 	${tab( "admin", "Admin", h.url_for( controller='admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
 	

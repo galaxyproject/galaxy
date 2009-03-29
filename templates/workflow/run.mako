@@ -4,7 +4,7 @@
     ${parent.javascripts()}
     <script type="text/javascript">        
         $( function() {
-            $( "select[@refresh_on_change='true']").change( function() {
+            $( "select[refresh_on_change='true']").change( function() {
                 $( "#tool_form" ).submit();
             });
         });

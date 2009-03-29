@@ -16,10 +16,10 @@ $.fn.makeAbsolute = function(rebase) {
 
 jQuery(document).ready( function() {
     // Links with confirmation
-    jQuery( "a[@confirm]" ).click( function() {
+    jQuery( "a[confirm]" ).click( function() {
         return confirm( jQuery(this).attr( "confirm"  ) )
     });
-    jQuery( "div[@popupmenu]" ).each( function() {
+    jQuery( "div[popupmenu]" ).each( function() {
         var options = {};
         $(this).find( "a" ).each( function() {
             var confirmtext = $(this).attr( "confirm" ),

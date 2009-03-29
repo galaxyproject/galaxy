@@ -78,7 +78,11 @@
         $( "div.historyItemBody" ).hide();
         // Load saved state and show as neccesary
         var state = new CookieSet( "galaxy.history.expand_state" );
-    for ( id in state.store ) { $( "#" + id ).children( "div.historyItemBody" ).show(); }
+	for ( id in state.store ) {
+	    if ( id ) {
+		$( "#" + id ).children( "div.historyItemBody" ).show();
+	    }
+	}
         // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
         if ( $.browser.mozilla ) {
             $( "div.historyItemBody" ).each( function() {
@@ -127,9 +131,9 @@
                 updater( to_update );
             %else:
                 $( "#historyItem-" + data_id ).fadeOut( "fast", function() {
-                $( "div#historyItemContainer-" + data_id ).remove();
+                $( "#historyItemContainer-" + data_id ).remove();
                 if ( $( "div.historyItemContainer" ).length < 1 ) {
-                    q ( "div#emptyHistoryMessage" ).show();
+                    $( "#emptyHistoryMessage" ).show();
                 }
                 });
             %endif
@@ -218,7 +222,7 @@
     $( document ).ready( function() {
         // Add rollover effect to any image with a 'rollover' attribute
         preload_images = {}
-        $( "img[@rollover]" ).each( function() {
+        $( "img[rollover]" ).each( function() {
             var r = $(this).attr('rollover');
             var s = $(this).attr('src');
             preload_images[r] = true;
@@ -264,10 +268,10 @@
 %else:    
     <%
     if show_deleted:
-        #all datasets
+        ## All datasets
         datasets_to_show = activatable_datasets
     else:
-        #active (not deleted)
+        ## Active (not deleted)
         datasets_to_show = history.active_datasets
     %>
     ## Render requested datasets, ordered from newest to oldest

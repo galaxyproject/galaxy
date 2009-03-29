@@ -14,7 +14,7 @@ from galaxy.util.expressions import ExpressionContext
 <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.js')}"> </script>
 <script type="text/javascript">
 $( function() {
-    $( "select[@refresh_on_change='true']").change( function() {
+    $( "select[refresh_on_change='true']").change( function() {
         $( "#tool_form" ).submit();
     });
 });
@@ -27,11 +27,11 @@ function checkUncheckAll( name, check )
 {
     if ( check == 0 )
     {
-        $("input[@name=" + name + "][type='checkbox']").attr('checked', false);
+        $("input[name=" + name + "][type='checkbox']").attr('checked', false);
     }
     else
     {
-        $("input[@name=" + name + "][type='checkbox']").attr('checked', true );
+        $("input[name=" + name + "][type='checkbox']").attr('checked', true );
     }
 }
 

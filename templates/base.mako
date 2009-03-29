@@ -3,7 +3,7 @@
 <html>
 
 <head>
-<title>a ${self.title()}</title>
+<title>${self.title()}</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 ${self.stylesheets()}
 ${self.javascripts()}
