@@ -12,9 +12,9 @@
 <tr><td rowspan="1" colspan="3">Create Workflow With Grouping And Runtime Parameters</td></tr>
 </thead><tbody>
 <tr>
-    <td>setSpeed</td>
-    <td>100</td>
-    <td></td>
+	<td>setSpeed</td>
+	<td>100</td>
+	<td></td>
 </tr>
 <tr>
 	<td>clickAndWait</td>
@@ -52,6 +52,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>waitForNotVisible</td>
+	<td>overlay</td>
+	<td></td>
+</tr>
+<tr>
 	<td>click</td>
 	<td>//div[@id='title_group']/a/span</td>
 	<td></td>
@@ -59,6 +64,11 @@
 <tr>
 	<td>click</td>
 	<td>link-Grouping1</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForElementPresent</td>
+	<td>wf-node-step-1</td>
 	<td></td>
 </tr>
 <tr>
@@ -132,7 +142,7 @@
 	<td></td>
 </tr>
 <tr>
-	<td>verifyText</td>
+	<td>waitForText</td>
 	<td>//div[@id='right-content']/div/div[2]/form/div[2]/div[1]/i</td>
 	<td>To be set at runtime</td>
 </tr>
@@ -157,6 +167,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>waitForText</td>
+	<td>//div[@id='right-content']/div/div[2]/form/div[3]/div[2]/div[1]/b</td>
+	<td>Operation 1</td>
+</tr>
+<tr>
 	<td>type</td>
 	<td>operations_0|opcol</td>
 	<td>3</td>
@@ -165,6 +180,11 @@
 	<td>click</td>
 	<td>operations_add</td>
 	<td></td>
+</tr>
+<tr>
+	<td>waitForText</td>
+	<td>//div[@id='right-content']/div/div[2]/form/div[3]/div[3]/div[1]/b</td>
+	<td>Operation 2</td>
 </tr>
 <tr>
 	<td>type</td>
@@ -240,6 +260,11 @@
 	<td>click</td>
 	<td>close-button</td>
 	<td></td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//div[@id='right-content']/div/div[2]/form/div[3]/div[2]/div[1]/b</td>
+	<td>Operation 1</td>
 </tr>
 
 </tbody></table>
