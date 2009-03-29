@@ -377,7 +377,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
         self.galaxy_session = self.__create_new_session( prev_galaxy_session, user )
-        if prev_galaxy_session.current_history:
+        # If the session already had a history, we associate it with the new
+        # session, but only if it does not belong to a different user.
+        if prev_galaxy_session.current_history and \
+            ( prev_galaxy_session.current_history.user == user or prev_galaxy_session.user is None ):
             history = prev_galaxy_session.current_history
         elif self.galaxy_session.current_history:
             history = self.galaxy_session.current_history
