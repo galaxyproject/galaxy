@@ -1,56 +1,64 @@
-/* iui.css (c) 2007-8 by iUI Project Members, see LICENSE.txt for license */
 body {
     margin: 0;
     font-family: Helvetica;
-    background: #FFFFFF;
-    color: #000000;
     overflow-x: hidden;
     -webkit-user-select: none;
+	-webkit-touch-callout: none;
     -webkit-text-size-adjust: none;
+    background-color: #000;
 }
 
-body > *:not(.toolbar) {
+*, a {
+	/*-webkit-tap-highlight-color: rbga(23,126,191,.5) !important;*/
+	-webkit-tap-highlight-color:rgba(0, 0, 0, 0);
+}
+
+.edgetoedge a, .panel a {
+	/*-webkit-tap-highlight-color: rbga(23,126,191,.5) !important;*/
+	-webkit-tap-highlight-color:rgba(23, 126, 191, .4);
+}
+
+body > * {
     display: none;
     position: absolute;
     margin: 0;
     padding: 0;
     left: 0;
-    top: 45px;
     width: 100%;
-    min-height: 372px;
+    min-height: 480px;
+    -webkit-transform: translate(0px,0px);
+    background-color: #fff;
 }
 
-body[orient="landscape"] > *:not(.toolbar) {
-    min-height: 268px;
+body[orient="landscape"] > * {
+    min-height: 320px;
 }
 
-body > *[selected="true"] {
+body > *[selected="true"], body > *[selected="selected"] {
     display: block;
 }
 
-a[selected], a:active {
-    background-color: #194fdb !important;
-    background-image: url(listArrowSel.png), url(selection.png) !important;
-    background-repeat: no-repeat, repeat-x;
-    background-position: right center, left top;
-    color: #FFFFFF !important;
+.edgetoedge a[selected=true], .edgetoedge a:active, .panel a[selected=true], .panel a:active {
+    background-color: rgb(170,170,238) !important;
 }
 
 a[selected="progress"] {
-    background-image: url(loading.gif), url(selection.png) !important;
+   background-color: rgb(170,170,238) !important;
+   background-image: url(img/loading.gif) !important;
+   background-repeat: no-repeat !important;
+   background-position: right center !important;
 }
 
-/************************************************************************************************/
-
-body > .toolbar {
-    box-sizing: border-box;
-    -moz-box-sizing: border-box;
+/* @group Toolbar */
+.toolbar {
     -webkit-box-sizing: border-box;
-    border-bottom: 1px solid #2d3642;
-    border-top: 1px solid #6d84a2;
     padding: 10px;
-    height: 45px;
-    background: url(toolbar.png) #6d84a2 repeat-x;
+    /* height: 60px; */
+    /* padding-top: 28px; */
+    /* background: #000 url(img/toolbar.gif) bottom left repeat-x; */
+    height: 42px;
+    background: rgb(44,49,67);
+    position: relative;
 }
 
 .toolbar > h1 {
@@ -62,22 +70,24 @@ body > .toolbar {
     font-size: 20px;
     width: 150px;
     font-weight: bold;
-    text-shadow: rgba(0, 0, 0, 0.4) 0px -1px 0;
+    /*text-shadow: rgba(0, 0, 0, .75) -1px -1px 0;*/
     text-align: center;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: #FFFFFF;
+    color: #f6f6f6;
 }
 
-body[orient="landscape"] > .toolbar > h1 {
+body[orient="landscape"] .toolbar > h1 {
     margin-left: -125px;
     width: 250px;
 }
 
+/* @end */
+
 .button {
     position: absolute;
     overflow: hidden;
-    top: 8px;
+    bottom: 5px;
     right: 6px;
     margin: 0;
     border-width: 0 5px;
@@ -94,11 +104,16 @@ body[orient="landscape"] > .toolbar > h1 {
     text-decoration: none;
     white-space: nowrap;
     background: none;
-    -webkit-border-image: url(toolButton.png) 0 5 0 5;
+    -webkit-border-image: url(img/button.png) 0 5 0 5;
+}
+
+.button:active {
+	    -webkit-border-image: url(img/button_clicked.png) 0 5 0 5;
+
 }
 
 .blueButton {
-    -webkit-border-image: url(blueButton.png) 0 5 0 5;
+    -webkit-border-image: url(img/blueButton.png) 0 5 0 5;
     border-width: 0 5px;
 }
 
@@ -107,14 +122,17 @@ body[orient="landscape"] > .toolbar > h1 {
     right: auto;
 }
 
-#backButton {
-    display: none;
+.toolbar .back {
     left: 6px;
     right: auto;
     padding: 0;
     max-width: 55px;
-    border-width: 0 8px 0 14px;
-    -webkit-border-image: url(backButton.png) 0 8 0 14;
+    border-width: 0 8px 0 15px;
+    -webkit-border-image: url(img/back_button.png) 0 8 0 15;
+}
+
+.toolbar .back:active {
+    -webkit-border-image: url(img/back_button_clicked.png) !important;
 }
 
 .whiteButton,
@@ -130,18 +148,25 @@ body[orient="landscape"] > .toolbar > h1 {
 }
 
 .whiteButton {
-    -webkit-border-image: url(whiteButton.png) 0 12 0 12;
+    -webkit-border-image: url(img/whiteButton.png) 0 12 0 12;
     text-shadow: rgba(255, 255, 255, 0.7) 0 1px 0;
 }
 
 .grayButton {
-    -webkit-border-image: url(grayButton.png) 0 12 0 12;
+    -webkit-border-image: url(img/grayButton.png) 0 12 0 12;
     color: #FFFFFF;
 }
 
-/************************************************************************************************/
 
-body > ul > li {
+/* @group Edge to edge */
+
+.edgetoedge { 
+	margin: 0;
+	padding: 0;
+	background-color: #fff;
+}
+
+.edgetoedge > li {
     position: relative;
     margin: 0;
     border-bottom: 1px solid #E0E0E0;
@@ -149,35 +174,45 @@ body > ul > li {
     font-size: 20px;
     font-weight: bold;
     list-style: none;
+    /* background: url(../img/bg_row.gif) 0 2px repeat-x; */
+    color: #999;
 }
 
-body > ul > li.group {
+.edgetoedge > li.group {
     position: relative;
     top: -1px;
     margin-bottom: -2px;
     border-top: 1px solid #7d7d7d;
     border-bottom: 1px solid #999999;
     padding: 1px 10px;
-    background: url(listGroup.png) repeat-x;
+    background: url(img/listGroup.png) repeat-x;
     font-size: 17px;
     font-weight: bold;
     text-shadow: rgba(0, 0, 0, 0.4) 0 1px 0;
     color: #FFFFFF;
 }
 
-body > ul > li.group:first-child {
+.edgetoedge > li.group:first-child, .inset > li.group:first-child {
     top: 0;
     border-top: none;
 }
 
-body > ul > li > a {
+.edgetoedge a, .inset a {
     display: block;
     margin: -8px 0 -8px -10px;
     padding: 8px 32px 8px 10px;
     text-decoration: none;
-    color: inherit;
-    background: url(listArrow.png) no-repeat right center;
+    color: #000;
+    /*
+    background-image:  url(img/bg_row.gif), url(img/chevron.png);
+    background-repeat: repeat-x, no-repeat;
+    background-position: 0 1px, right center;
+    */
+    background-image: url(img/chevron.png);
+    background-repeat: no-repeat;
+    background-position: right center;
 }
+/* @end */
 
 a[target="_replace"] {
     box-sizing: border-box;
@@ -189,8 +224,6 @@ a[target="_replace"] {
     background-color: #FFFFFF;
     background-image: none;
 }
-
-/************************************************************************************************/
     
 body > .dialog {
     top: 0;
@@ -210,7 +243,7 @@ body > .dialog {
     border: none;
     border-top: 1px solid #6d84a2;
     padding: 10px 6px;
-    background: url(toolbar.png) #7388a5 repeat-x;
+    background: url(img/toolbar.png) #7388a5 repeat-x;
 }
 
 .dialog > fieldset > h1 {
@@ -230,7 +263,7 @@ body > .dialog {
     color: #999999;
 }
 
-input:not(input[type|=radio]):not(input[type|=checkbox]) {
+input {
     box-sizing: border-box;
     -webkit-box-sizing: border-box;
     width: 100%;
@@ -240,25 +273,26 @@ input:not(input[type|=radio]):not(input[type|=checkbox]) {
     font-weight: normal;
 }
 
-/************************************************************************************************/
 
-body > .panel {
+.panel {
     box-sizing: border-box;
-    -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
-    padding: 10px;
-    background: #c8c8c8 url(pinstripes.png);
+    background: #c8c8c8 url(img/pinstripes.png);
+    overflow: auto;
 }
 
-.panel > fieldset {
+.pad {
+	padding: 15px;
+}
+
+.panel fieldset {
     position: relative;
     margin: 0 0 20px 0;
     padding: 0;
     background: #FFFFFF;
     -webkit-border-radius: 10px;
-    -moz-border-radius: 10px;
     border: 1px solid #999999;
-    text-align: right;
+    /* text-align: right; */
     font-size: 16px;
 }
 
@@ -267,27 +301,46 @@ body > .panel {
     min-height: 42px;
     border-bottom: 1px solid #999999;
     -webkit-border-radius: 0;
-    text-align: right;
+    /* text-align: right; */
 }
 
-fieldset > .row:last-child {
+fieldset .row:last-child {
     border-bottom: none !important;
 }
 
-.row > input:not(input[type|=radio]):not(input[type|=checkbox]) {
+.row > input {
     box-sizing: border-box;
-    -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
     margin: 0;
     border: none;
     padding: 12px 10px 0 110px;
-    height: 42px;
+    min-height: 42px;
     background: none;
 }
-.row > input[type|=radio], .row > input[type|=checkbox] {
-  margin: 7px 7px 0 0;
-  height: 25px;
-  width: 25px;
+
+.row > span {
+    display: block;
+    text-align: left;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    margin: 0;
+    border: none;
+    padding: 12px 10px 10px 110px;
+    min-height: 42px;
+    background: none;
+}
+
+.row > a {
+    display: block;
+    height: 42px;
+    text-decoration: none;
+    padding: 0 0 0 14px;
+    line-height: 42px;
+    font-weight: bold;
+    color: #000;
+    background-image: url(img/chevron.png);
+    background-repeat: no-repeat;
+    background-position: right center;
 }
 
 .row > label {
@@ -295,20 +348,6 @@ fieldset > .row:last-child {
     margin: 0 0 0 14px;
     line-height: 42px;
     font-weight: bold;
-}
-
-.row > .error {
-    height: 25px;
-    text-align: left;
-    font-size: 14px;
-    padding: 0 0 0 110px;
-    color: red;
-}
-
-.row > span {
-    position: absolute;
-    padding: 12px 10px 0 110px;
-    margin: 0;
 }
 
 .row > .toggle {
@@ -322,7 +361,7 @@ fieldset > .row:last-child {
 .toggle {
     border: 1px solid #888888;
     -webkit-border-radius: 6px;
-    background: #FFFFFF url(toggle.png) repeat-x;
+    background: #FFFFFF url(img/toggle.png) repeat-x;
     font-size: 19px;
     font-weight: bold;
     line-height: 30px;
@@ -330,7 +369,7 @@ fieldset > .row:last-child {
 
 .toggle[toggled="true"] {
     border: 1px solid #143fae;
-    background: #194fdb url(toggleOn.png) repeat-x;
+    background: #194fdb url(img/toggleOn.png) repeat-x;
 }
 
 .toggleOn {
@@ -369,7 +408,7 @@ fieldset > .row:last-child {
     height: 28px;    
     border: 1px solid #888888;
     -webkit-border-radius: 6px;
-    background: #ffffff url(thumb.png) repeat-x;
+    background: #ffffff url(img/thumb.png) repeat-x;
 }
 
 .toggle[toggled="true"] > .thumb {
@@ -377,18 +416,21 @@ fieldset > .row:last-child {
     right: -1px;
 }
 
-.panel > h2 {
+.panel h2 {
     margin: 0 0 8px 14px;
     font-size: inherit;
     font-weight: bold;
-    color: #4d4d70;
-    text-shadow: rgba(255, 255, 255, 0.75) 2px 2px 0;
+    color: rgb(17, 20, 23, .5);
+    text-shadow: rgba(255, 255, 255, 0.75) 1px 1px 0;
 }
 
-/************************************************************************************************/
+.panel p a {
+	color: #4195ca;
+}
 
-#preloader {
-    display: none;
-    background-image: url(loading.gif), url(selection.png),
-        url(blueButton.png), url(listArrowSel.png), url(listGroup.png);
+#about {
+	background: rgb(17, 20, 23);
+	color: #ddd;
+    text-shadow: rgba(255, 255, 255, 0.3) 0px -1px 0;
+    font-size: 20px;
 }

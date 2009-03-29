@@ -1,41 +1,9 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-  <title>Galaxy</title>
-  <meta name="viewport" content="width=devicewidth; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
-  <meta name="apple-touch-fullscreen" content="YES" />
-  <style type="text/css" media="screen">@import "${h.url_for('/static/style/iphone.css')}";</style>
-  ## <script type="application/x-javascript" src="${h.url_for('/static/iui/iui.js')}"></script>
-  <style>
-    li > a > div {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    div.secondary {
-        font-size: 13px;
-        color: gray;
-    }
-    div.counts {
-        padding-top: 1px;
-        font-size: 13px;
-        color: gray;
-    }
-  </style>
-</head>
-
-<body>
-    <div class="toolbar masthead">
-        <h1><img style="vertical-align: -5px;" src="${h.url_for("/static/images/galaxyIcon_noText.png")}"> Galaxy mobile</h1>
-    </div>
+<div id="history_detail_${history.id}">
     <div class="toolbar">
-        <h1 id="pageTitle">${history.name}</h1>
-        <a id="backButton" class="button" href="${h.url_for( action='index', id=None )}" style="display: block;">Histories</a>
+        <h1>${history.name}</h1>
+        <a class="back button" href="#">Back</a>
     </div>
-
-    <ul selected="true">
+    <ul class="edgetoedge">
             
         %for data in history.active_datasets:
           %if data.visible:
@@ -55,7 +23,7 @@
                
                <a href="${h.url_for( action="dataset_detail", id=data.id )}">
               
-        <div class="primary">${hid}: ${data.display_name()}</div>
+        <div>${hid}: ${data.display_name()}</div>
         
         <div class="secondary">
         ## Body for history items, extra info and actions, data "peek"
@@ -95,4 +63,4 @@
         %endfor
               
     </ul>
-</body>
+</div>

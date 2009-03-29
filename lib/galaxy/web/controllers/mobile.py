@@ -3,58 +3,59 @@ from galaxy.web.base.controller import *
 class Mobile( BaseController ):
     @web.expose
     def index( self, trans, **kwargs ):
-        if trans.user is None:
-            return self.__login( trans, **kwargs )
-        else:
-            return self.history_list( trans, **kwargs )
+        return trans.fill_template( "mobile/index.mako" )
         
     @web.expose
     def history_list( self, trans ):
-        if trans.user is None: trans.response.send_redirect( url_for( action='index' ) )
         return trans.fill_template( "mobile/history/list.mako" )
         
     @web.expose
     def history_detail( self, trans, id ):
-        if trans.user is None: trans.response.send_redirect( url_for( action='index' ) )
         history = trans.app.model.History.get( id )
         assert history.user == trans.user
         return trans.fill_template( "mobile/history/detail.mako", history=history )
 
     @web.expose
     def dataset_detail( self, trans, id ):
-        if trans.user is None: trans.response.send_redirect( url_for( action='index' ) )
         dataset = trans.app.model.HistoryDatasetAssociation.get( id )
         assert dataset.history.user == trans.user
         return trans.fill_template( "mobile/dataset/detail.mako", dataset=dataset )
 
     @web.expose
     def dataset_peek( self, trans, id ):
-        if trans.user is None: trans.response.send_redirect( url_for( action='index' ) )
         dataset = trans.app.model.HistoryDatasetAssociation.get( id )
         assert dataset.history.user == trans.user
-        yield "<html><body>"
-        yield dataset.display_peek()
-        yield "</body></html>"
+        return trans.fill_template( "mobile/dataset/peek.mako", dataset=dataset )
         
-    def __login( self, trans, email="", password="" ):
-        email_error = password_error = None
-        if email or password:
-            user = model.User.filter( model.User.table.c.email==email ).first()
-            if not user:
-                email_error = "No such user"
-            elif user.deleted:
-                email_error = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
-            elif user.external:
-                email_error = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-            elif not user.check_password( password ):
-                password_error = "Invalid password"
+    @web.expose
+    def settings( self, trans, email=None, password=None ):
+        message = None
+        if email is not None and password is not None:
+            if email == "":
+                self.__logout( trans )
+                message = "Logged out"
             else:
-                trans.handle_user_login( user )
-                trans.log_event( "User logged in" )
-                trans.response.send_redirect( url_for( action='index' ) )
-        form = web.FormBuilder( web.url_for(), "Login", submit_text="Login" ) \
-                .add_text( "email", "Email", value=email, error=email_error ) \
-                .add_password( "password", "Password", value='', error=password_error, 
-                                help="<a href='%s'>Forgot password? Reset here</a>" % web.url_for( action='reset_password' ) )
-        return trans.show_form( form, template="mobile/form.mako" )
+                error = self.__login( trans, email, password )
+                message = error or "Login changed"
+        return trans.fill_template( "mobile/settings.mako", message=message )
+        
+    def __logout( self, trans ):
+        trans.log_event( "User logged out" )
+        trans.handle_user_logout()
+
+    def __login( self, trans, email="", password="" ):
+        error = password_error = None
+        user = model.User.filter( model.User.table.c.email==email ).first()
+        if not user:
+            error = "No such user"
+        elif user.deleted:
+            error = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
+        elif user.external:
+            error = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
+        elif not user.check_password( password ):
+            error = "Invalid password"
+        else:
+            trans.handle_user_login( user )
+            trans.log_event( "User logged in" )
+        return error
         
