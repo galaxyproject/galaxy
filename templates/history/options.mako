@@ -22,5 +22,5 @@
     <li><a href="${h.url_for( action='history_set_default_permissions' )}">Change default permissions</a> for the current history</li>
 %endif
     <li><a href="${h.url_for( controller='root', action='history', show_deleted=True)}" target="galaxy_history">Show deleted</a> datasets in history</li>
-    <li><a href="${h.url_for( controller='history', action='list', operation="delete", id=history.id )}" confirm="Are you sure you want to delete the current history?">Delete</a> current history</div>
+    <li><a href="${h.url_for( controller='history', action='delete_current' )}" confirm="Are you sure you want to delete the current history?">Delete</a> current history</div>
 </ul>

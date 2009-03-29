@@ -197,6 +197,22 @@ class HistoryController( BaseController ):
         return self._list_grid( trans, *args, **kwargs )
     
     @web.expose
+    def delete_current( self, trans ):
+        """
+        Delete just the active history -- this does not require a logged
+        in user.
+        """
+        history = trans.get_history()
+        if not history.deleted:
+            history.deleted = True
+            history.flush()
+            trans.log_event( "History id %d marked as deleted" % history.id )
+        # Regardless of whether it was previously deleted, we make a new
+        # history active 
+        trans.new_history()
+        return trans.show_ok_message( "History deleted, a new history is active" )
+    
+    @web.expose
     def rename_async( self, trans, id=None, new_name=None ):
         history = model.History.get( id )
         # Check that the history exists, and is either owned by the current
