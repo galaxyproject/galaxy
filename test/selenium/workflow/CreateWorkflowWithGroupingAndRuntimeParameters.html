@@ -12,13 +12,8 @@
 <tr><td rowspan="1" colspan="3">Create Workflow With Grouping And Runtime Parameters</td></tr>
 </thead><tbody>
 <tr>
-	<td>setSpeed</td>
-	<td>100</td>
-	<td></td>
-</tr>
-<tr>
-	<td>clickAndWait</td>
-	<td>link=Workflow</td>
+	<td>open</td>
+	<td>/workflow</td>
 	<td></td>
 </tr>
 <tr>
@@ -52,23 +47,18 @@
 	<td></td>
 </tr>
 <tr>
-	<td>waitForNotVisible</td>
-	<td>overlay</td>
+	<td>click</td>
+	<td>//div[@id='title___workflow__input__']/a/span</td>
 	<td></td>
 </tr>
 <tr>
 	<td>click</td>
-	<td>//div[@id='title_group']/a/span</td>
-	<td></td>
-</tr>
-<tr>
-	<td>click</td>
-	<td>link-Grouping1</td>
+	<td>link=Input dataset</td>
 	<td></td>
 </tr>
 <tr>
 	<td>waitForElementPresent</td>
-	<td>wf-node-step-1</td>
+	<td>//div[@id='wf-node-step-1']/div[1]</td>
 	<td></td>
 </tr>
 <tr>
@@ -88,7 +78,17 @@
 </tr>
 <tr>
 	<td>click</td>
-	<td>link-Grouping1</td>
+	<td>//div[@id='title_bxops']/a/span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>link-gops_complement_1</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForElementPresent</td>
+	<td>//div[@id='wf-node-step-2']/div[1]</td>
 	<td></td>
 </tr>
 <tr>
@@ -108,7 +108,17 @@
 </tr>
 <tr>
 	<td>click</td>
-	<td>link-Grouping1</td>
+	<td>//div[@id='title_plots']/a/span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>link-build_ucsc_custom_track_1</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForElementPresent</td>
+	<td>//div[@id='wf-node-step-3']/div[1]</td>
 	<td></td>
 </tr>
 <tr>
@@ -127,103 +137,38 @@
 	<td>300,300</td>
 </tr>
 <tr>
-	<td>clickAt</td>
-	<td>//div[@id='wf-node-step-1']/div[1]</td>
+	<td>click</td>
+	<td>tracks_add</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForElementPresent</td>
+	<td>//div[@name='tracks_0|input']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>click</td>
-	<td>popup-arrow-for-row-groupcol</td>
+	<td>popup-arrow-for-row-tracks_0|name</td>
 	<td></td>
 </tr>
 <tr>
 	<td>click</td>
-	<td>//div[@id='popup-arrow-for-row-groupcol-menu']/div</td>
+	<td>//div[@id='popup-arrow-for-row-tracks_0|name-menu']/div</td>
 	<td></td>
 </tr>
 <tr>
-	<td>waitForText</td>
-	<td>//div[@id='right-content']/div/div[2]/form/div[2]/div[1]/i</td>
+	<td>verifyText</td>
+	<td>//div[@id='row-tracks_0|name']/div[1]/i</td>
 	<td>To be set at runtime</td>
 </tr>
 <tr>
 	<td>click</td>
-	<td>operations_add</td>
-	<td></td>
-</tr>
-<tr>
-	<td>click</td>
-	<td>tool-form-save-button</td>
-	<td></td>
-</tr>
-<tr>
-	<td>clickAt</td>
-	<td>//div[@id='wf-node-step-2']/div[1]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>click</td>
-	<td>operations_add</td>
-	<td></td>
-</tr>
-<tr>
-	<td>waitForText</td>
-	<td>//div[@id='right-content']/div/div[2]/form/div[3]/div[2]/div[1]/b</td>
-	<td>Operation 1</td>
-</tr>
-<tr>
-	<td>type</td>
-	<td>operations_0|opcol</td>
-	<td>3</td>
-</tr>
-<tr>
-	<td>click</td>
-	<td>operations_add</td>
-	<td></td>
-</tr>
-<tr>
-	<td>waitForText</td>
-	<td>//div[@id='right-content']/div/div[2]/form/div[3]/div[3]/div[1]/b</td>
-	<td>Operation 2</td>
-</tr>
-<tr>
-	<td>type</td>
-	<td>operations_1|opcol</td>
-	<td>4</td>
-</tr>
-<tr>
-	<td>click</td>
-	<td>tool-form-save-button</td>
-	<td></td>
-</tr>
-<tr>
-	<td>verifyValue</td>
-	<td>operations_0|opcol</td>
-	<td>3</td>
-</tr>
-<tr>
-	<td>verifyValue</td>
-	<td>operations_1|opcol</td>
-	<td>4</td>
-</tr>
-<tr>
-	<td>click</td>
-	<td>operations_0_remove</td>
-	<td></td>
-</tr>
-<tr>
-	<td>verifyValue</td>
-	<td>operations_1|opcol</td>
-	<td>4</td>
-</tr>
-<tr>
-	<td>click</td>
 	<td>tool-form-save-button</td>
 	<td></td>
 </tr>
 <tr>
 	<td>mouseDownAt</td>
-	<td>//div[@id='wf-node-step-1']/div[2]/div[3]/div</td>
+	<td>//div[@id='wf-node-step-1']/div[2]/div[2]/div</td>
 	<td></td>
 </tr>
 <tr>
@@ -238,7 +183,7 @@
 </tr>
 <tr>
 	<td>mouseDownAt</td>
-	<td>//div[@id='wf-node-step-1']/div[2]/div[3]/div</td>
+	<td>//div[@id='wf-node-step-2']/div[2]/div[3]/div</td>
 	<td></td>
 </tr>
 <tr>
@@ -257,14 +202,14 @@
 	<td></td>
 </tr>
 <tr>
-	<td>click</td>
-	<td>close-button</td>
+	<td>waitForNotVisible</td>
+	<td>overlay</td>
 	<td></td>
 </tr>
 <tr>
-	<td>verifyText</td>
-	<td>//div[@id='right-content']/div/div[2]/form/div[3]/div[2]/div[1]/b</td>
-	<td>Operation 1</td>
+	<td>clickAndWait</td>
+	<td>close-button</td>
+	<td></td>
 </tr>
 
 </tbody></table>
