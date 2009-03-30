@@ -147,7 +147,7 @@ function Node( element ) {
 }
 $.extend( Node.prototype, {
     enable_input_terminal : function( elements, name, types ) {
-        node = this;
+        var node = this;
         $(elements).each( function() {
             var terminal = this.terminal = new InputTerminal( this, types );
             terminal.node = node;
@@ -186,12 +186,12 @@ $.extend( Node.prototype, {
         })
     },
     enable_output_terminal : function( elements, name, type ) {
-        node = this;
+        var node = this;
         $(elements).each( function() {
             var terminal_element = this;
-                terminal = this.terminal = new OutputTerminal( this, type ); 
-		terminal.node = node;
-		terminal.name = name;
+            var terminal = this.terminal = new OutputTerminal( this, type );
+            terminal.node = node;
+            terminal.name = name;
             $(this).bind( "dragstart", function( e ) { 
                     var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' ).appendTo( "#canvas-container" ).get(0);
                     h.terminal = new OutputTerminal( h );
