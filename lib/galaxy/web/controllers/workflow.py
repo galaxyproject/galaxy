@@ -530,7 +530,7 @@ class WorkflowController( BaseController ):
                             if isinstance( input, DataToolParameter ):
                                 if prefixed_name in step.input_connections_by_name:
                                     conn = step.input_connections_by_name[ prefixed_name ]
-                                    input_values[ input.name ] = outputs[ conn.output_step.id ][ conn.output_name ]
+                                    return outputs[ conn.output_step.id ][ conn.output_name ]
                         visit_input_values( tool.inputs, step.state.inputs, callback )
                         # Execute it
                         outputs[ step.id ] = tool.execute( trans, step.state.inputs )
