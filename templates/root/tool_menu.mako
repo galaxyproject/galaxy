@@ -86,6 +86,7 @@
     <body class="toolMenuPage">
         <div class="toolMenu">
             <div class="toolSectionList">
+                
                 %for key, val in toolbox.tool_panel.items():
                     %if key.startswith( 'tool' ):
                         ${render_tool( val, False )}
@@ -114,6 +115,33 @@
                     %endif
                     <div class="toolSectionPad"></div>
                 %endfor
+                
+                ## Link to workflow management. The location of this may change, but eventually
+                ## at least some workflows will appear here (the user should be able to
+                ## configure which of their stored workflows appear in the tools menu). 
+                
+                %if t.user:
+                    <div class="toolSectionPad"></div>
+                    <div class="toolSectionPad"></div>
+                    <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+                      <span>Workflows</span>
+                    </div>
+                    <div id="XXinternalXXworkflow" class="toolSectionBody">
+                        <div class="toolSectionBg">
+                            %if t.user.stored_workflow_menu_entries:
+                                %for m in t.user.stored_workflow_menu_entries:
+                                    <div class="toolTitle">
+                                        <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${m.stored_workflow.name}</a>
+                                    </div>
+                                %endfor
+                            %endif
+                            <div class="toolTitle">
+                                <a href="${h.url_for( controller='workflow', action='list_for_run')}" target="galaxy_main">All workflows</a>
+                            </div>
+                        </div>
+                    </div>
+                %endif
+                
             </div>
         </div>
     </body>
