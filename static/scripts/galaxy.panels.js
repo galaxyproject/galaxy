@@ -159,11 +159,19 @@ function make_right_panel( panel_el, center_el, border_el ) {
 // Modal dialog boxes
 
 function hide_modal() {
-    $(".dialog-box-container" ).fadeOut( function() { $("#overlay").hide(); } );
+    $(".dialog-box-container" ).fadeOut( function() {
+        $("#overlay").hide();
+        $( ".dialog-box" ).find( ".body" ).children().remove();
+    } );
 };
 
 function show_modal( title, body, buttons, extra_buttons ) {
-    $( ".dialog-box" ).find( ".title" ).html( title );
+    if ( title ) {
+        $( ".dialog-box" ).find( ".title" ).html( title );
+        $( ".dialog-box" ).find( ".unified-panel-header" ).show(); 
+    } else {
+        $( ".dialog-box" ).find( ".unified-panel-header" ).hide();   
+    }
     var b = $( ".dialog-box" ).find( ".buttons" ).html( "" );
     if ( buttons ) {
         $.each( buttons, function( name, value ) {
@@ -193,6 +201,17 @@ function show_modal( title, body, buttons, extra_buttons ) {
         $(".dialog-box-container").fadeIn()
     }
 };
+    
+function show_in_overlay( options ) {
+    var width = options.width || '600';
+    var height = options.height || '400';
+    var scroll = options.scroll || 'auto';
+    $("#overlay-background").bind( "click.overlay", function() {
+        hide_modal();
+        $("#overlay-background").unbind( "click.overlay" );
+    });
+    show_modal( null, $("<div style='margin: -5px;'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) );
+}
     
 // Tab management
 	

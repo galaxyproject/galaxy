@@ -216,6 +216,9 @@
 	style="display: none;"
     %endif
     >
+	##
+	<div id="overlay-background" style="position: absolute; width: 100%; height: 100%;"></div>
+	
 	## Need a table here for centering in IE6
 	<table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"
 	%if not self.overlay_visible:
