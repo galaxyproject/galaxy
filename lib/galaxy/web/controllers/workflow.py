@@ -84,7 +84,6 @@ class WorkflowController( BaseController ):
                 mtype = "error"
                 msg = ( "Workflow already shared with '%s'" % email )
             else:
-                
                 share = model.StoredWorkflowUserShareAssociation()
                 share.stored_workflow = stored
                 share.user = other
@@ -98,6 +97,52 @@ class WorkflowController( BaseController ):
                                     messagetype = mtype,
                                     stored=stored,
                                     email=email )
+    
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def sharing( self, trans, id, **kwargs ):
+        session = trans.sa_session
+        stored = get_stored_workflow( trans, id )
+        if 'enable_import_via_link' in kwargs:
+            stored.importable = True
+            stored.flush()
+        elif 'disable_import_via_link' in kwargs:
+            stored.importable = False
+            stored.flush()
+        elif 'unshare_user' in kwargs:
+            user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
+            if not user:
+                error( "User not found for provided id" )
+            association = session.query( model.StoredWorkflowUserShareAssociation ) \
+                                 .filter_by( user=user, stored_workflow=stored ).one()
+            session.delete( association )
+            session.flush()
+        return trans.fill_template( "workflow/sharing.mako",
+                                    stored=stored )
+        
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def imp( self, trans, id, **kwargs ):
+        session = trans.sa_session
+        stored = get_stored_workflow( trans, id, check_ownership=False )
+        if stored.importable == False:
+            error( "The owner of this workflow has disabled imports via this link" )
+        elif stored.user == trans.user:
+            error( "You are already the ownder of this workflow, can't import" )
+        elif stored.deleted:
+            error( "This workflow has been deleted, can't import" )
+        elif session.query( model.StoredWorkflowUserShareAssociation ) \
+                    .filter_by( user=trans.user, stored_workflow=stored ).count() > 0:
+            error( "This workflow is already shared with you" )
+        else:
+            share = model.StoredWorkflowUserShareAssociation()
+            share.stored_workflow = stored
+            share.user = trans.user
+            session = trans.sa_session
+            session.save_or_update( share )
+            session.flush()
+            # Redirect to load galaxy frames.
+            return trans.response.send_redirect( url_for( controller='workflow' ) )
     
     @web.expose
     @web.require_login( "use Galaxy workflows" )

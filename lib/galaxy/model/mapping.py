@@ -454,6 +454,7 @@ StoredWorkflow.table = Table( "stored_workflow", metadata,
             ForeignKey( "workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk' ), index=True ),
     Column( "name", TEXT ),
     Column( "deleted", Boolean, default=False ),
+    Column( "importable", Boolean, default=False ),
     )
 
 Workflow.table = Table( "workflow", metadata,
@@ -855,7 +856,7 @@ assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
 
 assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserShareAssociation.table,
     properties=dict( user=relation( User, backref='workflows_shared_by_others' ),
-                     stored_workflow=relation( StoredWorkflow )
+                     stored_workflow=relation( StoredWorkflow, backref='users_shared_with' )
                    ) )
 
 assign_mapper( context, StoredWorkflowMenuEntry, StoredWorkflowMenuEntry.table,

@@ -48,6 +48,7 @@
                     <a class="action-button" href="${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(workflow.id) )}" target="_parent">Run</a>
                     <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(workflow.id) )}">Rename</a>
                     <a class="action-button" href="${h.url_for( action='share', id=trans.security.encode_id(workflow.id) )}">Share</a>
+                    <a class="action-button" href="${h.url_for( action='sharing', id=trans.security.encode_id(workflow.id) )}">Manage sharing</a>
                     <a class="action-button" confirm="Are you sure you want to delete workflow '${workflow.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">Delete</a>
                     </div>
                 </td>
