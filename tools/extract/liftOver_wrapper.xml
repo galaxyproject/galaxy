@@ -1,6 +1,6 @@
 <tool id="liftOver1" name="Convert genome coordinates">
   <description> between assemblies and genomes</description>
-  <command interpreter="python">liftOver_wrapper.py $input "$out_file1" "$out_file2" $dbkey $to_dbkey</command>
+  <command interpreter="python">liftOver_wrapper.py $input "$out_file1" "$out_file2" $dbkey $to_dbkey $minMatch</command>
   <inputs>
     <param format="interval" name="input" type="data" label="Convert coordinates of">
       <validator type="unspecified_build" />
@@ -14,6 +14,7 @@
         <filter type="data_meta" ref="input" key="dbkey" column="0" />
       </options>
     </param> 
+    <param name="minMatch" size="10" type="float" value="0.10" label="Minimum ratio of bases that must remap" />
   </inputs>
   <outputs>
     <data format="input" name="out_file1" />
@@ -27,6 +28,7 @@
     <test>
       <param name="input" value="5.bed" dbkey="hg18" ftype="bed" />
       <param name="to_dbkey" value="/depot/data2/galaxy/hg18/liftOver/hg18ToPanTro2.over.chain" />
+      <param name="misMatch" value="0.95" />
       <output name="out_file1" file="5_liftover_mapped.bed"/>
       <output name="out_file2" file="5_liftover_unmapped.bed"/>
     </test>
