@@ -14,42 +14,17 @@ threadpool_workers = 10
 
 # Specifies the factory for the universe WSGI application
 paste.app_factory = galaxy.web.buildapp:app_factory
-log_level = DEBUG
 
-# Log memory usage
-log_memory_usage = False
-
-# Log events
-log_events = True
-
-# Should jobs be tracked through the database, rather than in memory
-## track_jobs_in_database = true
-
-# Enable job recovery (if Galaxy is restarted while cluster jobs are running,
-# it can "recover" them when it starts).  This is not safe to use if you are
-# running more than one Galaxy server using the same database.
-#enable_job_recovery = True
-
-# Number of concurrent jobs to run (local runner)
-local_job_queue_workers = 5
-
-# Job scheduling policy to be used. 
-# module/package name and classname should be in "module:classname" format.
-# Comment / uncomment the following policies depending upon which is to be used.
-#job_scheduler_policy = FIFO
-job_scheduler_policy = galaxy.jobs.schedulingpolicy.roundrobin:UserRoundRobin
-
-# Job queue cleanup interval in minutes. Currently only used by RoundRobin
-job_queue_cleanup_interval = 30
-
-# Database connection
+# By default, Galaxy uses a SQLite database found here
 database_file = database/universe.sqlite
-# You may use a SQLAlchemy connection string to specify an external database instead
-## database_connection = postgres:///galaxy
-## database_engine_option_echo = true
-## database_engine_option_echo_pool = true
-## database_engine_option_pool_size = 10
-## database_engine_option_max_overflow = 20
+
+# You may use a SQLAlchemy connection string to specify an external database
+# instead.  PostgreSQL and MySQL are supported.
+#database_connection = postgres:///galaxy
+#database_engine_option_echo = true
+#database_engine_option_echo_pool = true
+#database_engine_option_pool_size = 10
+#database_engine_option_max_overflow = 20
 
 # Where dataset files are saved
 file_path = database/files
@@ -65,6 +40,11 @@ tool_data_path = tool-data
 datatype_converters_config_file = datatype_converters_conf.xml
 datatype_converters_path = %(here)s/lib/galaxy/datatypes/converters
 
+# Datatype indexers
+datatype_indexers_path = %(here)s/lib/galaxy/datatypes/indexers
+# Metadata
+set_metadata_externally = False
+
 # Session support (beaker)
 use_beaker_session = True
 session_type = file
@@ -75,36 +55,15 @@ session_secret = changethisinproduction
 # Galaxy session security
 id_secret = changethisinproductiontoo
 
-# Use user provided in an upstream server's $REMOTE_USER variable
-## use_remote_user = False
-# If use_remote_user is enabled and your external authentication
-# method just returns bare usernames, set a default mail domain
-## remote_user_maildomain = example.org
-
-# Configuration for debugging middleware
-debug = true
-use_lint = false
-
-# NEVER enable this on a public site (even test or QA)
-use_interactive = true
-
-# Admin Password
-admin_pass = galaxy
+# Files in directories under this directory can be directly imported through
+# the library admin's "add dataset" tool
+#library_import_dir = /var/opt/galaxy/import
 
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
 
 # Address to join mailing list
 mailing_join_addr = galaxy-user-join@bx.psu.edu
-
-# Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
-## use_heartbeat = True
-
-# Enable the memory debugging interface (careful, negatively impacts server performance)
-## use_memdump = True
-
-# Profiling middleware (cProfile based)
-## use_profile = True
 
 # For use by 'report this error' link on error-state datasets
 #smtp_server = smtp.example.org
@@ -137,7 +96,80 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 #wiki_url = /path/to/my/local/wiki
 #bugs_email = mailto:galaxy-bugs@example.org
 
-# ---- Job Runners ----------------------------------------------------------
+# ---- Logging and Debugging ------------------------------------------------
+
+# Verbosity of log messages
+log_level = DEBUG
+
+# Log memory usage
+log_memory_usage = False
+
+# Log events
+log_events = True
+
+# Configuration for debugging middleware
+debug = True
+use_lint = False
+
+# Interactive debugging - NEVER enable this on a public site
+use_interactive = True
+
+# Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
+#use_heartbeat = False
+
+# Enable the memory debugging interface (careful, negatively impacts server performance)
+#use_memdump = False
+
+# Profiling middleware (cProfile based)
+#use_profile = False
+
+# ---- Users and Security ---------------------------------------------------
+
+# User authentication can be delegated to an upstream proxy server (usually
+# Apache).  This is explained on the Galaxy wiki:
+#
+# http://g2.trac.bx.psu.edu/wiki/HowToInstall/ApacheProxy
+
+# Use user provided in an upstream server's $REMOTE_USER variable
+#use_remote_user = False
+
+# If use_remote_user is enabled and your external authentication
+# method just returns bare usernames, set a default mail domain
+#remote_user_maildomain = example.org
+
+# this should be a comma-separated list of valid Galaxy users
+#admin_users = user1@example.org,user2@example.org
+
+# Force everyone to log in (disable anonymous access)
+#require_login = False
+
+# Can users register new accounts?
+#allow_user_creation = True
+
+# Can an admin user delete user accounts?
+#allow_user_deletion = False
+
+# ---- Job Execution --------------------------------------------------------
+
+# Number of concurrent jobs to run (local job runner)
+#local_job_queue_workers = 5
+
+# Should jobs be tracked through the database, rather than in memory
+#track_jobs_in_database = False
+
+# Enable job recovery (if Galaxy is restarted while cluster jobs are running,
+# it can "recover" them when it starts).  This is not safe to use if you are
+# running more than one Galaxy server using the same database.
+#enable_job_recovery = True
+
+# Job scheduling policy to be used. 
+# module/package name and classname should be in "module:classname" format.
+# Comment / uncomment the following policies depending upon which is to be used.
+#job_scheduler_policy = FIFO
+job_scheduler_policy = galaxy.jobs.schedulingpolicy.roundrobin:UserRoundRobin
+
+# Job queue cleanup interval in minutes. Currently only used by RoundRobin
+job_queue_cleanup_interval = 30
 
 # Clustering Galaxy is not a straightforward process and requires a lot of
 # pre-configuration.  See the ClusteringGalaxy Wiki before attempting to set
@@ -148,23 +180,21 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 # If running normally (without a cluster), do not change anything in this
 # section.
 
-# start_job_runners: Comma-separated list of job runners to start.  local is
-# always started.  If left commented, no jobs will be run on the cluster, even
-# if a cluster URL is explicitly defined in the [galaxy:tool_runners] section
-# below.  The runners currently available are 'pbs' and 'sge'.
+# Comma-separated list of job runners to start.  local is always started.  If
+# left commented, no jobs will be run on the cluster, even if a cluster URL is
+# explicitly defined in the [galaxy:tool_runners] section below.  The runners
+# currently available are 'pbs' and 'sge'.
 #start_job_runners = pbs
 
-# default_cluster_job_runner: The URL for the default runner to use when a tool
-# doesn't explicity define a runner below.  For help on the cluster URL format,
-# see the ClusteringGalaxy Wiki.  Leave commented if not using a cluster job
-# runner.
+# The URL for the default runner to use when a tool doesn't explicity define a
+# runner below.  For help on the cluster URL format, see the ClusteringGalaxy
+# Wiki.  Leave commented if not using a cluster job runner.
 #default_cluster_job_runner = pbs:///
 
-# cluster_job_queue_workers: The cluster runners have their own thread pools
-# used to prepare and finish jobs (so that these operations do not block normal
-# queue operation).  The value here is the number of worker threads available
-# to each runner.
-#cluster_job_queue_workers = 5
+# The cluster runners have their own thread pools used to prepare and finish
+# jobs (so that these operations do not block normal queue operation).  The
+# value here is the number of worker threads available to each runner.
+#cluster_job_queue_workers = 3
 
 # The PBS options are described in detail in the Galaxy Configuration section of
 # the ClusteringGalaxy Wiki, and are only necessary when using file staging.

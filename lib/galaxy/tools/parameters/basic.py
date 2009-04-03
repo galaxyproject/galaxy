@@ -3,17 +3,14 @@ Basic tool parameters.
 """
 
 import logging, string, sys, os, os.path
-
 from elementtree.ElementTree import XML, Element
-
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
 from galaxy.util.bunch import Bunch
-
 import validation, dynamic_options
-
 # For BaseURLToolParameter
 from galaxy.web import url_for
+import galaxy.model
 
 log = logging.getLogger(__name__)
 
@@ -97,12 +94,18 @@ class ToolParameter( object ):
         return value
         
     def value_to_basic( self, value, app ):
+        if isinstance( value, RuntimeValue ):
+            return { "__class__": "RuntimeValue" }
         return self.to_string( value, app )
         
     def value_from_basic( self, value, app, ignore_errors=False ):
         # HACK: Some things don't deal with unicode well, psycopg problem?
         if type( value ) == unicode:
             value = str( value )
+        # Handle Runtime values (valid for any parameter?)
+        if isinstance( value, dict ) and '__class__' in value and value['__class__'] == "RuntimeValue":
+            return RuntimeValue()
+        # Delegate to the 'to_python' method
         if ignore_errors:
             try:
                 return self.to_python( value, app )
@@ -286,6 +289,9 @@ class FileToolParameter( ToolParameter ):
     blah
     >>> print p.get_html()
     <input type="file" name="blah">
+    >>> p = FileToolParameter( None, XML( '<param name="blah" type="file" ajax-upload="true"/>' ) )
+    >>> print p.get_html()
+    <input type="file" name="blah" galaxy-ajax-upload="true">
     """
     def __init__( self, tool, elem ):
         """
@@ -293,8 +299,9 @@ class FileToolParameter( ToolParameter ):
         """
         ToolParameter.__init__( self, tool, elem )
         self.name = elem.get( 'name' )
+        self.ajax = str_bool( elem.get( 'ajax-upload' ) )
     def get_html_field( self, trans=None, value=None, other_values={}  ):
-        return form_builder.FileField( self.name )
+        return form_builder.FileField( self.name, self.ajax )
     def from_html( self, value, trans=None, other_values={} ):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
@@ -444,10 +451,12 @@ class SelectToolParameter( ToolParameter ):
     >>> print p.name
     blah
     >>> print p.get_html()
+    <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
     <div><input type="checkbox" name="blah" value="x">I am X</div>
     <div class="odd_row"><input type="checkbox" name="blah" value="y" checked>I am Y</div>
     <div><input type="checkbox" name="blah" value="z" checked>I am Z</div>
     >>> print p.get_html( value=["x","y"])
+    <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
     <div><input type="checkbox" name="blah" value="x" checked>I am X</div>
     <div class="odd_row"><input type="checkbox" name="blah" value="y" checked>I am Y</div>
     <div><input type="checkbox" name="blah" value="z">I am Z</div>
@@ -494,12 +503,11 @@ class SelectToolParameter( ToolParameter ):
         elif self.dynamic_options:
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
         else:
-            return self.legal_values
-    def get_html_field( self, trans=None, value=None, other_values={} ):
+            return self.legal_values   
+    def get_html_field( self, trans=None, value=None, context={} ):
         # Dynamic options are not yet supported in workflow, allow 
         # specifying the value as text for now.
-        if self.is_dynamic and trans.workflow_building_mode \
-           and ( self.options is None or self.options.has_dataset_dependencies ):
+        if self.need_late_validation( trans, context ):
             assert isinstance( value, UnvalidatedValue )
             value = value.value
             if self.multiple:
@@ -513,7 +521,7 @@ class SelectToolParameter( ToolParameter ):
         if value is not None:
             if not isinstance( value, list ): value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change )
-        options = self.get_options( trans, other_values )
+        options = self.get_options( trans, context )
         for text, optval, selected in options:
             if isinstance( optval, UnvalidatedValue ):
                 optval = optval.value
@@ -522,15 +530,18 @@ class SelectToolParameter( ToolParameter ):
                 selected = ( optval in value )
             field.add_option( text, optval, selected )
         return field
-    def from_html( self, value, trans=None, other_values={} ):
-        # HACK: trans may be None here if doing late validation, this is
-        # treated the same as not being in workflow mode
-        if self.is_dynamic and ( trans and trans.workflow_building_mode ) \
-           and ( self.options is None or self.options.has_dataset_dependencies ):
+    def from_html( self, value, trans=None, context={} ):
+        if self.need_late_validation( trans, context ):
             if self.multiple:
-                value = value.split( "\n" )
+                #While it is generally allowed that a select value can be '', 
+                #we do not allow this to be the case in a dynamically generated multiple select list being set in workflow building mode
+                #we instead treat '' as 'No option Selected' (None)
+                if value == '':
+                    value = None
+                else:
+                    value = value.split( "\n" )
             return UnvalidatedValue( value )
-        legal_values = self.get_legal_values( trans, other_values )
+        legal_values = self.get_legal_values( trans, context )
         if isinstance( value, list ):
             if not(self.repeat):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
@@ -558,16 +569,44 @@ class SelectToolParameter( ToolParameter ):
     def value_to_basic( self, value, app ):
         if isinstance( value, UnvalidatedValue ):
             return { "__class__": "UnvalidatedValue", "value": value.value }
-        return value
+        return super( SelectToolParameter, self ).value_to_basic( value, app )
     def value_from_basic( self, value, app, ignore_errors=False ):
-        if isinstance( value, dict ):
-            assert value["__class__"] == "UnvalidatedValue"
+        if isinstance( value, dict ) and value["__class__"] == "UnvalidatedValue":
             return UnvalidatedValue( value["value"] )
-        return value
+        return super( SelectToolParameter, self ).value_from_basic( value, app )
+    def need_late_validation( self, trans, context ):
+        """
+        Determine whether we need to wait to validate this parameters value
+        given the current state. For parameters with static options this is
+        always false (can always validate immediately). For parameters with
+        dynamic options, we need to check whether the other parameters which
+        determine what options are valid have been set. For the old style
+        dynamic options which do not specify dependencies, this is always true
+        (must valiate at runtime).
+        """
+        # Option list is statically defined, never need late validation
+        if not self.is_dynamic:
+            return False
+        # Old style dynamic options, no dependency information so there isn't
+        # a lot we can do: if we're dealing with workflows, have to assume
+        # late validation no matter what.
+        if self.dynamic_options is not None:
+            return ( trans is None or trans.workflow_building_mode )
+        # If we got this far, we can actually look at the dependencies
+        # to see if their values will not be available until runtime.
+        for dep_name in self.get_dependencies():
+            dep_value = context[ dep_name ]
+            # Dependency on a dataset that does not yet exist
+            if isinstance( dep_value, DummyDataset ):
+                return True
+            # Dependency on a value that does not yet exist
+            if isinstance( dep_value, RuntimeValue ):
+                return True
+        # Dynamic, but all dependenceis are known and have values
+        return False 
     def get_initial_value( self, trans, context ):
         # More working around dynamic options for workflow
-        if self.is_dynamic and trans.workflow_building_mode \
-           and ( self.options is None or self.options.has_dataset_dependencies ):
+        if self.need_late_validation( trans, context ):
             # Really the best we can do?
             return UnvalidatedValue( None )
         options = list( self.get_options( trans, context ) )
@@ -736,7 +775,7 @@ class ColumnListParameter( SelectToolParameter ):
         return [ self.data_ref ]
 
 
-class DrillDownSelectToolParameter( ToolParameter ):
+class DrillDownSelectToolParameter( SelectToolParameter ):
     """
     Parameter that takes on one (or many) of a specific set of values.
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
@@ -878,11 +917,11 @@ class DrillDownSelectToolParameter( ToolParameter ):
         Optionally attempt to retain the current value specific by 'value'
         """        
         return self.get_html_field( trans, value, other_values ).get_html()
-    
+                
     def get_html_field( self, trans=None, value=None, other_values={} ):
         # Dynamic options are not yet supported in workflow, allow 
         # specifying the value as text for now.
-        if self.is_dynamic and trans.workflow_building_mode:
+        if self.need_late_validation( trans, other_values ):
             if value is not None:
                 assert isinstance( value, UnvalidatedValue )
                 value = value.value
@@ -897,7 +936,7 @@ class DrillDownSelectToolParameter( ToolParameter ):
         return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, self.get_options( trans, value, other_values ), value )
     
     def from_html( self, value, trans=None, other_values={} ):
-        if self.is_dynamic and ( trans and trans.workflow_building_mode ):
+        if self.need_late_validation( trans, other_values ):
             if self.multiple:
                 value = value.split( "\n" )
             return UnvalidatedValue( value )
@@ -944,15 +983,6 @@ class DrillDownSelectToolParameter( ToolParameter ):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
         return self.separator.join( rval )
     
-    def value_to_basic( self, value, app ):
-        if isinstance( value, UnvalidatedValue ):
-            return { "__class__": "UnvalidatedValue", "value": value.value }
-        return value
-    def value_from_basic( self, value, app, ignore_errors=False ):
-        if isinstance( value, dict ):
-            assert value["__class__"] == "UnvalidatedValue"
-            return UnvalidatedValue( value["value"] )
-        return value
     def get_initial_value( self, trans, context ):
         def recurse_options( initial_values, options ):
             for option in options:
@@ -960,7 +990,7 @@ class DrillDownSelectToolParameter( ToolParameter ):
                     initial_values.append( option['value'] )
                 recurse_options( initial_values, option['options'] )
         # More working around dynamic options for workflow
-        if self.is_dynamic and trans.workflow_building_mode:
+        if self.need_late_validation( trans, other_values ):
             # Really the best we can do?
             return UnvalidatedValue( None )
         initial_values = []
@@ -997,38 +1027,27 @@ class DrillDownSelectToolParameter( ToolParameter ):
             for val in value:
                 rval.append( get_option_display( val, self.options ) or val )
         return "\n".join( rval ) + suffix
+        
     def get_dependencies( self ):
         """
         Get the *names* of the other params this param depends on.
         """
         return self.filtered.keys()
 
+class DummyDataset( object ):
+    pass
 
 class DataToolParameter( ToolParameter ):
+    # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
+    # components.  Add as many additional tests as necessary.
     """
     Parameter that takes on one (or many) or a specific set of values.
 
     TODO: There should be an alternate display that allows single selects to be 
           displayed as radio buttons and multiple selects as a set of checkboxes
 
-    >>> # Mock up a history (not connected to database)
-    >>> from galaxy.model import History, HistoryDatasetAssociation
-    >>> from galaxy.util.bunch import Bunch
-    >>> hist = History()
-    >>> hist.flush()
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='txt', create_dataset=True ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=2, extension='bed', create_dataset=True ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=3, extension='fasta', create_dataset=True ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=4, extension='png', create_dataset=True ) )
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=5, extension='interval', create_dataset=True ) )
-    >>> p = DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
-    >>> print p.name
-    blah
-    >>> print p.get_html( trans=Bunch( history=hist ) )
-    <select name="blah">
-    <option value="2">2: Unnamed dataset</option>
-    <option value="5" selected>5: Unnamed dataset</option>
-    </select>
+    TODO: The following must be fixed to test correctly for the new security_check tag in the DataToolParameter ( the last test below is broken )
+    Nate's next passs at the dataset security stuff will dramatically alter this anyway.
     """
 
     def __init__( self, tool, elem ):
@@ -1051,8 +1070,9 @@ class DataToolParameter( ToolParameter ):
         self.multiple = str_bool( elem.get( 'multiple', False ) )
         # Optional DataToolParameters are used in tools like GMAJ and LAJ
         self.optional = str_bool( elem.get( 'optional', False ) )
-        #TODO: Enhance dynamic options for DataToolParameters
-        #Currently, only the special case key='build' of type='data_meta' is a valid filter
+        # TODO: Enhance dynamic options for DataToolParameters. Currently,
+        #       only the special case key='build' of type='data_meta' is
+        #       a valid filter
         options = elem.find( 'options' )
         if options is None:
             self.options = None
@@ -1075,28 +1095,38 @@ class DataToolParameter( ToolParameter ):
                 value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change )
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
-        def dataset_collector( datasets, parent_hid ):
-            for i, data in enumerate( datasets ):
+        def dataset_collector( hdas, parent_hid ):
+            for i, hda in enumerate( hdas ):
                 if parent_hid is not None:
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
-                    hid = str( data.hid )
-                if not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED] and data.visible:
-                    if self.options and data.get_dbkey() != filter_value:
+                    hid = str( hda.hid )
+                if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
+                    hda.visible and \
+                    trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
+                    # If we are sending data to an external application, then we need to make sure there are no roles
+                    # associated with the dataset that restrict it's access from "public".  We determine this by sending
+                    # None as the user to the allow_action method.
+                    if self.tool and self.tool.tool_type == 'data_destination':
+                        if not trans.app.security_agent.allow_action( None, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
+                            continue
+                    if self.options and hda.get_dbkey() != filter_value:
                         continue
-                    if isinstance( data.datatype, self.formats):
-                        selected = ( value and ( data in value ) )
-                        field.add_option( "%s: %s" % ( hid, data.name[:30] ), data.id, selected )
+                    if isinstance( hda.datatype, self.formats):
+                        selected = ( value and ( hda in value ) )
+                        field.add_option( "%s: %s" % ( hid, hda.name[:30] ), hda.id, selected )
                     else:
-                        target_ext, converted_dataset = data.find_conversion_destination( self.formats, converter_safe = self.converter_safe( other_values, trans ) )
+                        target_ext, converted_dataset = hda.find_conversion_destination( self.formats, converter_safe = self.converter_safe( other_values, trans ) )
                         if target_ext:
                             if converted_dataset:
-                                data = converted_dataset
-                            selected = ( value and ( data in value ) )
-                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, data.name[:30] ), data.id, selected )
+                                hda = converted_dataset
+                            if not trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=hda.dataset ):
+                                continue
+                            selected = ( value and ( hda in value ) )
+                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda.name[:30] ), hda.id, selected )
                 # Also collect children via association object
-                dataset_collector( data.children, hid )
-        dataset_collector( history.datasets, None )
+                dataset_collector( hda.children, hid )
+        dataset_collector( history.active_datasets, None )
         some_data = bool( field.options )
         if some_data:
             if value is None or len( field.options ) == 1:
@@ -1120,7 +1150,7 @@ class DataToolParameter( ToolParameter ):
         """
         # Can't look at history in workflow mode
         if trans.workflow_building_mode:
-            return None
+            return DummyDataset()
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.history
         assert history is not None, "DataToolParameter requires a history"
@@ -1155,7 +1185,8 @@ class DataToolParameter( ToolParameter ):
             return ''
 
     def from_html( self, value, trans, other_values={} ):
-        # Can't look at history in workflow mode, skip validation and such
+        # Can't look at history in workflow mode, skip validation and such,
+        # although, this should never be called in workflow mode right?
         if trans.workflow_building_mode:
             return None
         if not value:
@@ -1169,25 +1200,19 @@ class DataToolParameter( ToolParameter ):
         else:
             return trans.app.model.HistoryDatasetAssociation.get( value )
 
-    def value_to_basic( self, value, app ):
+    def to_string( self, value, app ):
         if value is None or isinstance( value, str ):
             return value
+        elif isinstance( value, DummyDataset ):
+            return None
         return value.id
 
-    def value_from_basic( self, value, app, ignore_errors=False ):
-        """
-        Both of these values indicate that no dataset is selected.  However, 'None' 
-        indicates that the dataset is optional, while '' indicates that it is not.
-        """
+    def to_python( self, value, app ):
+        # Both of these values indicate that no dataset is selected.  However, 'None' 
+        # indicates that the dataset is optional, while '' indicates that it is not.
         if value is None or value == '' or value == 'None':
             return value
-        try:
-            return app.model.HistoryDatasetAssociation.get( int( value ) )
-        except:
-            if ignore_errors:
-                return value
-            else:
-                raise
+        return app.model.HistoryDatasetAssociation.get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):
         if value is None: return "None"
@@ -1289,6 +1314,14 @@ class UnvalidatedValue( object ):
     """
     def __init__( self, value ):
         self.value = value
+        
+class RuntimeValue( object ):
+    """
+    Wrapper to note a value that is not yet set, but will be required at
+    runtime.
+    """
+    pass
+    
 
 def str_bool(in_str):
     """

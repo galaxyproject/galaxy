@@ -44,7 +44,7 @@ def __main__():
     options, args = doc_optparse.parse( __doc__ )
     mincols = 0
     strand_col = -1
-   
+    
     if options.dbkey:
         primary_species = options.dbkey
     else:
@@ -53,17 +53,15 @@ def __main__():
         stop_err( "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file." )
     
     include_primary = True
-    if options.species:
-        secondary_species = options.species.split( ',' )
-        if "None" in secondary_species:
-            secondary_species = None
-            species = None
+    secondary_species = maf_utilities.parse_species_option( options.species )
+    if secondary_species:
+        species = list( secondary_species ) # make copy of species list
+        if primary_species in secondary_species:
+            secondary_species.remove( primary_species )
         else:
-            try:
-                secondary_species.remove( primary_species )
-            except:
-                include_primary = False
-            species = [primary_species] + secondary_species
+            include_primary = False
+    else:
+        species = None
     
     if options.interval_file:
         interval_file = options.interval_file
@@ -90,10 +88,10 @@ def __main__():
             end_col = int( options.endCol ) - 1
         else: 
             stop_err( "End column not set, click the pencil icon in the history item to set the metadata attributes." )
-
+        
         if options.strandCol:
             strand_col = int( options.strandCol ) - 1
-
+    
     mafIndexFile = "%s/maf_index.loc" % options.mafIndexFileDir
     #Finish parsing command line
         

@@ -18,12 +18,14 @@ from galaxy import util, jobs, model
 from elementtree import ElementTree
 from parameters import *
 from parameters.grouping import *
+from parameters.validation import LateValidationError
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.model import directory_hash_id
 from galaxy.util.none_like import NoneDataset
 from galaxy.datatypes import sniff
+from cgi import FieldStorage
 
 log = logging.getLogger( __name__ )
 
@@ -786,7 +788,7 @@ class Tool:
             params = state.inputs
         # Did the user actually click next / execute or is this just
         # a refresh?
-        if 'runtool_btn' in incoming or 'URL' in incoming:
+        if 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming:
             # If there were errors, we stay on the same page and display 
             # error messages
             if errors:
@@ -803,11 +805,44 @@ class Tool:
                 self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
                 return 'tool_form.mako', dict( errors=errors, tool_state=state )
         else:
-            # Just a refresh, render the form with updated state and errors.
-            return 'tool_form.mako', dict( errors=errors, tool_state=state )
+            if filter( lambda x: isinstance( x, FieldStorage ) and x.file, state.inputs.values() ):
+                # If inputs contain a file it won't persist.  Most likely this
+                # is an interrupted upload.  We should probably find a more
+                # standard method of determining an incomplete POST.
+                return self.handle_interrupted( trans, state.inputs )
+            else:
+                # Just a refresh, render the form with updated state and errors.
+                return 'tool_form.mako', dict( errors=errors, tool_state=state )
       
+    def handle_interrupted( self, trans, inputs ):
+        """
+        Upon handling inputs, if it appears that we have received an incomplete
+        form, do some cleanup or anything else deemed necessary.  Currently
+        this is only likely during file uploads, but this method could be
+        generalized and a method standardized for handling other tools.
+        """
+        # If the async upload tool has uploading datasets, we need to error them.
+        if 'async_datasets' in inputs and inputs['async_datasets'] not in [ 'None', '', None ]:
+            for id in inputs['async_datasets'].split(','):
+                try:
+                    data = trans.model.HistoryDatasetAssociation.get( int( id ) )
+                except:
+                    log.exception( 'Unable to load precreated dataset (%s) sent in upload form' % id )
+                    continue
+                if trans.user is None and trans.galaxy_session.current_history != data.history:
+                    log.error( 'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)' % ( data.id, trans.galaxy_session.id ) ) 
+                elif data.history.user != trans.user:
+                    log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)' % ( data.id, trans.user.id ) )
+                else:
+                    data.state = data.states.ERROR
+                    data.info = 'Upload of this dataset was interrupted.  Please try uploading again or'
+                    data.flush()
+        # It's unlikely the user will ever see this.
+        return 'message.mako', dict( message_type='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
+
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
-                      update_only=False, old_errors={}, changed_dependencies={} ):
+                      update_only=False, old_errors={}, changed_dependencies=None,
+                      item_callback=None ):
         """
         Update the tool state in `state` using the user input in `incoming`. 
         This is designed to be called recursively: `inputs` contains the
@@ -826,6 +861,9 @@ class Tool:
         errors = dict()     
         # Push this level onto the context stack
         context = ExpressionContext( state, context )
+        # Initialize dict for changed dependencies (since we write to it)
+        if changed_dependencies is None:
+            changed_dependencies = {}
         # Iterate inputs and update (recursively)
         for input in inputs.itervalues():
             key = prefix + input.name
@@ -861,7 +899,8 @@ class Tool:
                                                     context=context,
                                                     update_only=update_only,
                                                     old_errors=rep_old_errors,
-                                                    changed_dependencies=changed_dependencies )
+                                                    changed_dependencies=changed_dependencies,
+                                                    item_callback=item_callback )
                     if rep_errors:
                         any_group_errors = True
                         group_errors.append( rep_errors )
@@ -918,7 +957,8 @@ class Tool:
                                                       context=context,
                                                       update_only=update_only,
                                                       old_errors=group_old_errors,
-                                                      changed_dependencies=changed_dependencies )
+                                                      changed_dependencies=changed_dependencies,
+                                                      item_callback=item_callback )
                 if test_param_error:
                     group_errors[ input.test_param.name ] = test_param_error
                 if group_errors:
@@ -937,6 +977,7 @@ class Tool:
                     if input.name in old_errors:
                         errors[ input.name ] = old_errors[ input.name ]
                 else:
+                    # FIXME: This is complicated and buggy.
                     # SelectToolParameters and DataToolParameters whose options are dynamically
                     # generated based on the current value of a dependency parameter require special
                     # handling.  When the dependency parameter's value is changed, the form is
@@ -944,7 +985,8 @@ class Tool:
                     # "dependent" parameter's value has not been reset ( dynamically generated based 
                     # on the new value of its dependency ) prior to reaching this point, so we need 
                     # to regenerate it before it is validated in check_param().
-                    incoming_value_generated = False
+                    value_generated = False
+                    value = None
                     if not( 'runtool_btn' in incoming or 'URL' in incoming ):
                         # Form must have been refreshed, probably due to a refresh_on_change
                         try:
@@ -958,21 +1000,26 @@ class Tool:
                                         changed_params = {}
                                         changed_params[dependency_name] = dependency_value
                                         changed_params[input.name] = input
-                                        incoming_value = input.get_initial_value( trans, changed_params )
-                                        incoming_value_generated = True
+                                        value = input.get_initial_value( trans, changed_params )
+                                        error = None
+                                        value_generated = True
                                         # Delete the dependency_param from chagned_dependencies since its
                                         # dependent param has been generated based its new value.
-                                        del changed_dependencies[dependency_name]
+                                        ## Actually, don't do this. What if there is more than one dependent?
+                                        ## del changed_dependencies[dependency_name]
                                         break
                         except:
                             pass
-                    if not incoming_value_generated:
+                    if not value_generated:
                         incoming_value = get_incoming_value( incoming, key, None )
-                    value, error = check_param( trans, input, incoming_value, context )
+                        value, error = check_param( trans, input, incoming_value, context )
+                    # Should we note a changed dependency?
                     if input.dependent_params and state[ input.name ] != value:
-                        # We need to keep track of changed dependency parametrs ( parameters
-                        # that have dependent parameters whose options are dynamically generated )
-                        changed_dependencies[ input.name ] = value
+                        changed_dependencies[ input.name ] = value  
+                    # If a callback was provided, allow it to process the value
+                    if item_callback:
+                        old_value = state.get( input.name, None )
+                        value, error = item_callback( trans, key, input, value, error, old_value, context )                                          
                     if error:
                         errors[ input.name ] = error
                     state[ input.name ] = value
@@ -1020,30 +1067,59 @@ class Tool:
             return
         self.handle_unvalidated_param_values_helper( self.inputs, input_values, app )
 
-    def handle_unvalidated_param_values_helper( self, inputs, input_values, app, context=None ):
+    def handle_unvalidated_param_values_helper( self, inputs, input_values, app, context=None, prefix="" ):
         """
         Recursive helper for `handle_unvalidated_param_values`
         """
         context = ExpressionContext( input_values, context )
         for input in inputs.itervalues():
             if isinstance( input, Repeat ):  
-                for d in input_values[ input.name ]:
-                    self.handle_unvalidated_param_values_helper( input.inputs, d, app, context )
+                for i, d in enumerate( input_values[ input.name ] ):
+                    rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
+                    self.handle_unvalidated_param_values_helper( input.inputs, d, app, context, rep_prefix )
             elif isinstance( input, Conditional ):
                 values = input_values[ input.name ]
                 current = values["__current_case__"]
-                self.handle_unvalidated_param_values_helper( input.cases[current].inputs, values, app, context )
+                # NOTE: The test param doesn't need to be checked since
+                #       there would be no way to tell what case to use at
+                #       workflow build time. However I'm not sure if we are
+                #       actually preventing such a case explicately.
+                self.handle_unvalidated_param_values_helper( input.cases[current].inputs, values, app, context, prefix )
             else:
                 # Regular tool parameter
                 value = input_values[ input.name ]
                 if isinstance( value, UnvalidatedValue ):
-                    if value.value is None: #if value.value is None, it could not have been submited via html form and therefore .from_html can't be guaranteed to work
-                        value = None
-                    else:
-                        value = input.from_html( value.value, None, context )
-                    # Then do any further validation on the value
-                    input.validate( value, None )
+                    try:
+                        # Convert from html representation
+                        if value.value is None:
+                            # If value.value is None, it could not have been
+                            # submited via html form and therefore .from_html
+                            # can't be guaranteed to work
+                            value = None
+                        else:
+                            value = input.from_html( value.value, None, context )
+                        # Do any further validation on the value
+                        input.validate( value, None )
+                    except Exception, e:
+                        # Wrap an re-raise any generated error so we can
+                        # generate a more informative message
+                        v = input.value_to_display_text( value, self.app )
+                        message = "Failed runtime validation of %s%s (%s)" \
+                            % ( prefix, input.label, e )
+                        raise LateValidationError( message )
                     input_values[ input.name ] = value
+    
+    def handle_job_failure_exception( self, e ):
+        """
+        Called by job.fail when an exception is generated to allow generation
+        of a better error message (returning None yields the default behavior)
+        """
+        message = None
+        # If the exception was generated by late validation, use its error
+        # message (contains the parameter name and value)
+        if isinstance( e, LateValidationError ):
+            message = e.message
+        return message
     
     def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths ):
         """
@@ -1194,7 +1270,7 @@ class Tool:
         redirect_url_params = redirect_url_params.replace( "\n", " " ).replace( "\r", " " )
         return redirect_url_params
 
-    def parse_redirect_url( self, inp_data, param_dict ):
+    def parse_redirect_url( self, data, param_dict ):
         """Parse the REDIRECT_URL tool param"""
         # Tools that send data to an external application via a redirect must include the following 3 tool params:
         # REDIRECT_URL - the url to which the data is being sent
@@ -1213,9 +1289,6 @@ class Tool:
             rup_dict[ p_name ] = p_val
         DATA_URL = param_dict.get( 'DATA_URL', None )
         assert DATA_URL is not None, "DATA_URL parameter missing in tool config."
-        # Get the dataset - there should only be 1
-        for name in inp_data.keys():
-            data = inp_data[ name ]
         DATA_URL += "/%s/display" % str( data.id )
         redirect_url += "?DATA_URL=%s" % DATA_URL
         # Add the redirect_url_params to redirect_url
@@ -1328,6 +1401,7 @@ class Tool:
                 else: visible = False
                 ext = fields.pop(0).lower()
                 child_dataset = self.app.model.HistoryDatasetAssociation( extension=ext, parent_id=outdata.id, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
+                self.app.security_agent.copy_dataset_permissions( outdata.dataset, child_dataset.dataset )
                 # Move data from temp location to dataset location
                 shutil.move( filename, child_dataset.file_name )
                 child_dataset.flush()
@@ -1364,6 +1438,7 @@ class Tool:
                 ext = fields.pop(0).lower()
                 # Create new primary dataset
                 primary_data = self.app.model.HistoryDatasetAssociation( extension=ext, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
+                self.app.security_agent.copy_dataset_permissions( outdata.dataset, primary_data.dataset )
                 primary_data.flush()
                 # Move data from temp location to dataset location
                 shutil.move( filename, primary_data.file_name )

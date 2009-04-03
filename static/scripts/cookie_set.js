@@ -1,7 +1,7 @@
 function CookieSet( cookie_name ) {
     this.cookie_name = cookie_name;
     this.store = store = {};
-    q.each( ( q.cookie( cookie_name)  || "" ).split( "|" ), function( k, v ) {
+    jQuery.each( ( jQuery.cookie( cookie_name)  || "" ).split( "|" ), function( k, v ) {
         store[ v ] = true;
     });
 };
@@ -25,6 +25,6 @@ CookieSet.prototype.save = function() {
     for ( key in this.store ) { 
         if ( key != "" ) { t.push( key ) }
     }
-    q.cookie( this.cookie_name, t.join( "|" ) );
+    jQuery.cookie( this.cookie_name, t.join( "|" ) );
     return this;
 };

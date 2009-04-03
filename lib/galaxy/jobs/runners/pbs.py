@@ -27,6 +27,7 @@ if [ "$GALAXY_LIB" != "None" ]; then
 fi
 cd %s
 %s
+%s
 """
 
 pbs_symlink_template = """#!/bin/sh
@@ -176,11 +177,14 @@ class PBSJobRunner( object ):
         ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
 
+        
+        output_fnames = job_wrapper.get_output_fnames()
+        
         # If an application server is set, we're staging
         if self.app.config.pbs_application_server:
             pbs_ofile = self.app.config.pbs_application_server + ':' + ofile
             pbs_efile = self.app.config.pbs_application_server + ':' + efile
-            output_files = [ str( o ) for o in job_wrapper.get_output_fnames() ]
+            output_files = [ str( o ) for o in output_fnames ]
             stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + output_files, symlink=True )
             stageout = self.get_stage_in_out( output_files )
             job_attrs = pbs.new_attropl(5)
@@ -206,9 +210,13 @@ class PBSJobRunner( object ):
 
         # write the job script
         if self.app.config.pbs_stage_path != '':
-            script = pbs_symlink_template % (job_wrapper.galaxy_lib_dir, " ".join(job_wrapper.get_input_fnames() + job_wrapper.get_output_fnames()), self.app.config.pbs_stage_path, exec_dir, command_line)
+            script = pbs_symlink_template % (job_wrapper.galaxy_lib_dir, " ".join(job_wrapper.get_input_fnames() + output_fnames), self.app.config.pbs_stage_path, exec_dir, command_line)
         else:
-            script = pbs_template % (job_wrapper.galaxy_lib_dir, exec_dir, command_line)
+            if self.app.config.set_metadata_externally:
+                external_metadata_script = job_wrapper.setup_external_metadata( exec_dir = exec_dir, tmp_dir = self.app.config.new_file_path, dataset_files_path = self.app.model.Dataset.file_path, output_fnames = output_fnames, kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+            else:
+                external_metadata_script = ""
+            script = pbs_template % ( job_wrapper.galaxy_lib_dir, exec_dir, command_line, external_metadata_script )
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         fh = file(job_file, "w")
         fh.write(script)

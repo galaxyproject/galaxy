@@ -54,12 +54,12 @@ class RegionAlignment( object ):
     
     #sets a position for a species
     def set_position( self, index, species, base ):
-        if len( base ) != 1: raise "A genomic position can only have a length of 1."
+        if len( base ) != 1: raise Exception( "A genomic position can only have a length of 1." )
         return self.set_range( index, species, base )
     #sets a range for a species
     def set_range( self, index, species, bases ):
-        if index >= self.size or index < 0: raise "Your index (%i) is out of range (0 - %i)." % ( index, self.size - 1 )
-        if len( bases ) == 0: raise "A set of genomic positions can only have a positive length."
+        if index >= self.size or index < 0: raise Exception( "Your index (%i) is out of range (0 - %i)." % ( index, self.size - 1 ) )
+        if len( bases ) == 0: raise Exception( "A set of genomic positions can only have a positive length." )
         if species not in self.sequences.keys(): self.add_species( species )
         self.sequences[species].seek( index )
         self.sequences[species].write( bases )
@@ -141,7 +141,7 @@ def maf_index_by_uid( maf_uid, index_location_file ):
                     maf_files = fields[4].replace( "\n", "" ).replace( "\r", "" ).split( "," )
                     return bx.align.maf.MultiIndexed( maf_files, keep_open = True, parse_e_rows = False )
                 except Exception, e:
-                    raise 'MAF UID (%s) found, but configuration appears to be malformed: %s' % ( maf_uid, e )
+                    raise Exception( 'MAF UID (%s) found, but configuration appears to be malformed: %s' % ( maf_uid, e ) )
         except:
             pass
     return None
@@ -296,7 +296,7 @@ def get_starts_ends_fields_from_gene_bed( line ):
     fields = line.split()
     #Requires atleast 12 BED columns
     if len(fields) < 12:
-        raise Exception, "Not a proper 12 column BED line (%s)." % line
+        raise Exception( "Not a proper 12 column BED line (%s)." % line )
     chrom     = fields[0]
     tx_start  = int( fields[1] )
     tx_end    = int( fields[2] )
@@ -343,11 +343,18 @@ def get_species_in_maf( maf_filename ):
         except:
             return []
 
-
+def parse_species_option( species ):
+    if species:
+        species = species.split( ',' )
+        if 'None' not in species:
+            return species
+    return None #provided species was '', None, or had 'None' in it
 
 def remove_temp_index_file( index_filename ):
     try: os.unlink( index_filename )
     except: pass
+
+#Below are methods to deal with FASTA files
 
 def get_fasta_header( component, attributes = {}, suffix = None ):
     header = ">%s(%s):%i-%i|" % ( component.src, component.strand, component.get_forward_strand_start(), component.get_forward_strand_end() )

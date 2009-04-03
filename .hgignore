@@ -1,0 +1,22 @@
+syntax: glob
+
+# Downloaded and locally built eggs
+eggs
+scripts/scramble/build
+scripts/scramble/lib
+scripts/scramble/archives
+
+# Database stuff
+database/beaker_sessions
+database/compiled_templates
+database/files
+database/*.sqlite
+
+# Python bytecode
+*.pyc
+
+# Config files
+universe_wsgi.ini
+reports_wsgi.ini
+datatypes_conf.xml
+tool_conf.xml

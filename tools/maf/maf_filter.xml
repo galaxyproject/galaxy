@@ -1,9 +1,24 @@
-<tool id="MAF_filter" name="Filter MAF">
+<tool id="MAF_filter" name="Filter MAF" version="1.0.1">
   <description>by specified attributes</description>
-  <command interpreter="python">maf_filter.py $maf_filter_file $input1 $out_file1 $out_file1.files_path</command>
+  <command interpreter="python">maf_filter.py $maf_filter_file $input1 $out_file1 $out_file1.files_path $species $min_size $max_size $min_species_per_block $exclude_incomplete_blocks ${input1.metadata.species}</command>
   <inputs>
     <page>
       <param name="input1" type="data" format="maf" label="MAF File"/>
+      <param name="min_size" label="Minimum Size" value="0" type="integer"/>
+      <param name="max_size" label="Maximum Size" value="0" type="integer" help="A maximum size less than 1 indicates no limit"/>
+      <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
+        <options>
+          <filter type="data_meta" ref="input1" key="species" />
+        </options>
+      </param>
+      <param name="min_species_per_block" type="select" label="Exclude blocks which have only one species" >
+        <option value="2">Yes</option>
+        <option value="1" selected="True">No</option>
+      </param>
+      <param name="exclude_incomplete_blocks" type="select" label="Exclude blocks which have missing species" >
+        <option value="1">Yes</option>
+        <option value="0" selected="True">No</option>
+      </param>
       <repeat name="maf_filters" title="Filter">
         <param name="species1" type="select" label="When Species" multiple="false">
           <options>
@@ -131,6 +146,26 @@ ret_val = maf_block_pass_filter( maf_block )
   <outputs>
     <data format="maf" name="out_file1" />
   </outputs>
+<!--
+  <tests>
+    <test>
+      <param name="input1" value="4.maf"/>
+      <param name="species" value="bosTau2,canFam2,hg17,panTro1,rheMac2,rn3"/>
+      <param name="exclude_incomplete_blocks" value="0"/>
+      <param name="min_species_per_block" value="1"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="species1" value="hg17"/>
+      <param name="species2" value="hg17"/>
+      <param name="species1_attribute_type" value="attribute_chr"/>
+      <param name="species1_is_isnot" value="in"/>
+      <param name="species1_attribute" value="chr1"/>
+      <param name="filter_condition"/> Test will ERROR when this is set or when it is not set.
+      
+      <output name="out_file1" file="cf_maf_limit_to_species.dat"/>
+    </test>
+  </tests>
+-->
 <help>
 This tool allows you to build complex filters to be applied to each alignment block of a MAF file. You can define restraints on species based upon chromosome and strand. You can specify comma separated lists of chromosomes where appropriate.
 
@@ -143,6 +178,18 @@ For example, this tool is useful to restrict a set of alignments to only those b
 .. class:: warningmark
 
 If a species is not found in a particular block, all filters on that species are ignored.
+
+-----
+
+This tool allows the user to remove any undesired species from a MAF file. If no species are specified then all species will be kept. If species are specified, columns which contain only gaps are removed. The options for this are:
+
+ * **Exclude blocks which have missing species** - suppose you want to restrict an 8-way alignment to human, mouse, and rat.  The tool will first remove all other species. Next, if this option is set to **YES** the tool WILL NOT return MAF blocks, which do not include human, mouse, or rat. This means that all alignment blocks returned by the tool will have exactly three sequences in this example.
+
+ * **Exclude blocks which have only one species** - if this option is set to **YES** all single sequence alignment blocks WILL NOT be returned.
+
+-----
+
+You can also provide a size range and limit your output to the MAF blocks which fall within the specified range.
 
 </help>
 </tool>

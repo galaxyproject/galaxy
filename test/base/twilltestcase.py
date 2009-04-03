@@ -9,7 +9,7 @@ import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm
 pkg_resources.require( "elementtree" )
 from elementtree import ElementTree
-
+  
 buffer = StringIO.StringIO()
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
@@ -31,7 +31,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.set_history()
 
-    """Functions associated with files"""
+    # Functions associated with files
     def files_diff( self, file1, file2 ):
         """Checks the contents of 2 files for differences"""
         if not filecmp.cmp( file1, file2 ):
@@ -83,7 +83,7 @@ class TwillTestCase( unittest.TestCase ):
             errmsg += str( err )
             raise AssertionError( errmsg )
 
-    """Functions associated with histories"""
+    # Functions associated with histories
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
         self.visit_page( "history" )
@@ -107,10 +107,10 @@ class TwillTestCase( unittest.TestCase ):
         history_list = self.get_histories()
         self.assertTrue( history_list )
         if id is None:
-            history = history_list[-1]
+            history = history_list[0]
             id = history.get( 'id' )
         id = str( id )
-        self.visit_page( "history_delete?id=%s" %(id) )
+        self.visit_page( "history/list?operation=delete&id=%s" %(id) )
 
     def get_histories( self ):
         """Returns all histories"""
@@ -135,7 +135,7 @@ class TwillTestCase( unittest.TestCase ):
     def histories_as_xml_tree( self ):
         """Returns a parsed xml object of all histories"""
         self.home()
-        self.visit_page( 'history_available?as_xml=True' )
+        self.visit_page( 'history/list_as_xml' )
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
@@ -164,7 +164,7 @@ class TwillTestCase( unittest.TestCase ):
         old_name = elem.get( 'name' )
         self.assertTrue( old_name )
         id = str( id )
-        self.visit_page( "history_rename?id=%s&name=%s" %(id, name) )
+        self.visit_page( "history/rename?id=%s&name=%s" %(id, name) )
         return id, old_name, name
 
     def set_history( self ):
@@ -173,10 +173,8 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_page( "history?id=%s" % self.history_id )
         else:
             self.new_history()
-
     def share_history( self, id=None, email='test2@bx.psu.edu' ):
         """Share a history with a different user"""
-        self.create( email=email, password='testuser', confirm='testuser' )
         history_list = self.get_histories()
         self.assertTrue( history_list )
         if id is None: # take last id
@@ -190,9 +188,29 @@ class TwillTestCase( unittest.TestCase ):
         id = str( id )
         name = elem.get( 'name' )
         self.assertTrue( name )
-        self.visit_page( "history_share?id=%s&email=%s" %(id, email) )
+        self.visit_url( "%s/history/share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, id, email ) )
         return id, name, email
-
+    def share_history_containing_private_datasets( self, history_id, email='test@bx.psu.edu' ):
+        """Attempt to share a history containing private datasets with a different user"""
+        self.visit_url( "%s/history/share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, history_id, email ) )
+        self.last_page()
+        self.check_page_for_string( "The history or histories you've chosen to share contain datasets" )
+        self.check_page_for_string( "How would you like to proceed?" )
+        self.home()
+    def make_datasets_public( self, history_id, email='test@bx.psu.edu' ):
+        """Make private datasets public in order to share a history with a different user"""
+        self.visit_url( "%s/history/share?id=%s&email=%s&action=public&submit=Ok" % ( self.url, history_id, email ) )
+        self.last_page()
+        check_str = "History (Unnamed history) has been shared with: %s" % email
+        self.check_page_for_string( check_str )
+        self.home()
+    def privately_share_dataset( self, history_id, email='test@bx.psu.edu' ):
+        """Make private datasets public in order to share a history with a different user"""
+        self.visit_url( "%s/history/share?id=%s&email=%s&action=private&submit=Ok" % ( self.url, history_id, email ) )
+        self.last_page()
+        check_str = "History (Unnamed history) has been shared with: %s" % email
+        self.check_page_for_string( check_str )
+        self.home()
     def switch_history( self, hid=None ):
         """Switches to a history in the current list of histories"""
         data_list = self.get_histories()
@@ -205,12 +223,12 @@ class TwillTestCase( unittest.TestCase ):
         hid = str(hid)
         elems = [ elem for elem in data_list if elem.get('hid') == hid ]
         self.assertEqual(len(elems), 1)
-        self.visit_page( "history_switch?id=%s" % elems[0].get('id') )
+        self.visit_page( "history/list?operation=switch&id=%s" % elems[0].get('id') )
 
     def view_stored_histories( self ):
-        self.visit_page( "history_available" )
+        self.visit_page( "history/list" )
 
-    """Functions associated with datasets (history items) and meta data"""
+    # Functions associated with datasets (history items) and meta data
     def get_job_stderr( self, id ):
         self.visit_page( "dataset/stderr?id=%s" % id )
         return self.last_page()
@@ -361,27 +379,64 @@ class TwillTestCase( unittest.TestCase ):
         genome_build = elem.get('dbkey')
         self.assertTrue( genome_build == dbkey )
 
-    """Functions associated with user accounts"""
-    def create( self, email='test@bx.psu.edu', password='testuser', confirm='testuser' ):
-        self.visit_page( "user/create?email=%s&password=%s&confirm=%s" %(email, password, confirm) )
-        try:
-            self.check_page_for_string( "User with that email already exists" )
-        except:
-            self.check_page_for_string( "Now logged in as %s" %email )
-        self.home() #Reset our URL for future tests
-        
-    def login( self, email='test@bx.psu.edu', password='testuser'):
-        self.create( email=email, password=password, confirm=password )
-        self.visit_page( "user/login?email=%s&password=%s" % (email, password) )
+    # Functions associated with user accounts
+    def create( self, email='test@bx.psu.edu', password='testuser' ):
+        self.home()
+        self.visit_page( "user/create?email=%s&password=%s&confirm=%s" % ( email, password, password ) )
         self.check_page_for_string( "Now logged in as %s" %email )
-        self.home() #Reset our URL for future tests
-
+        self.home()
+        # Make sure a new private role was created for the user
+        self.visit_page( "user/set_default_permissions" )
+        self.check_page_for_string( email )
+        self.home()
+    def user_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=2 ): # role.id = 2 is Private Role for test2@bx.psu.edu 
+        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
+        # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
+        # /user/set_default_permissions method.
+        url = "user/set_default_permissions?update_roles_button=Save&id=None"
+        for po in permissions_out:
+            key = '%s_out' % po
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        for pi in permissions_in:
+            key = '%s_in' % pi
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        self.home()
+        self.visit_url( "%s/%s" % ( self.url, url ) )
+        self.last_page()
+        self.check_page_for_string( 'Default new history permissions have been changed.' )
+        self.home()
+    def history_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=3 ): # role.id = 3 is Private Role for test3@bx.psu.edu 
+        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
+        # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
+        # /user/set_default_permissions method.
+        url = "root/history_set_default_permissions?update_roles_button=Save&id=None&dataset=True"
+        for po in permissions_out:
+            key = '%s_out' % po
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        for pi in permissions_in:
+            key = '%s_in' % pi
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        self.home()
+        self.visit_url( "%s/%s" % ( self.url, url ) )
+        self.check_page_for_string( 'Default history permissions have been changed.' )
+        self.home()
+    def login( self, email='test@bx.psu.edu', password='testuser' ):
+        # test@bx.psu.edu is configured as an admin user
+        try:
+            self.create( email=email, password=password )
+        except:
+            self.home()
+            self.visit_page( "user/login?email=%s&password=%s" % ( email, password ) )
+            self.check_page_for_string( "Now logged in as %s" %email )
+            self.home()
     def logout( self ):
+        self.home()
         self.visit_page( "user/logout" )
         self.check_page_for_string( "You are no longer logged in" )
-        self.home() #Reset our URL for future tests
-
-    """Functions associated with browsers, cookies, HTML forms and page visits"""
+        self.home()
+    # Functions associated with browsers, cookies, HTML forms and page visits
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""
         page = self.last_page()
@@ -499,7 +554,10 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( button )
 
     def visit_page( self, page ):
-        tc.go("./%s" % page)
+        # tc.go("./%s" % page)
+        if not page.startswith( "/" ):
+            page = "/" + page 
+        tc.go( self.url + page )
         tc.code( 200 )
 
     def visit_url( self, url ):
@@ -545,3 +603,326 @@ class TwillTestCase( unittest.TestCase ):
             else:
                 break
         self.assertNotEqual(count, maxiter)
+
+    # Dataset Security stuff
+    # Tests associated with users
+    def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser' ):
+        """Create a new account for another user"""
+        self.home()
+        self.visit_url( "%s/admin/create_new_user?email=%s&password=%s&confirm=%s&user_create_button=%s" \
+                        % ( self.url, email, password, password, 'Create' ) )
+        try:
+            self.check_page_for_string( "Created new user account" )
+            previously_created = False
+        except:
+            # May have created the account in a previous test run...
+            self.check_page_for_string( "User with that email already exists" )
+            previously_created = True
+        self.home()
+        return previously_created
+    def reset_password_as_admin( self, user_id=4, password='testreset' ):
+        """Reset a user password"""
+        self.home()
+        self.visit_url( "%s/admin/reset_user_password?user_id=%s" % ( self.url, str( user_id ) ) )
+        tc.fv( "1", "password", password )
+        tc.fv( "1", "confirm", password )
+        tc.submit( "reset_user_password_button" )
+        self.check_page_for_string( "Password reset" )
+        self.home()
+    def mark_user_deleted( self, user_id=4, email='' ):
+        """Mark a user as deleted"""
+        self.home()
+        self.visit_url( "%s/admin/mark_user_deleted?user_id=%s" % ( self.url, str( user_id ) ) )
+        check_str = "User '%s' has been marked as deleted." % email
+        self.check_page_for_string( check_str )
+        self.home()
+    def undelete_user( self, user_id=4, email='' ):
+        """Undelete a user"""
+        self.home()
+        self.visit_url( "%s/admin/undelete_user?user_id=%s" % ( self.url, user_id ) )
+        check_str = "User '%s' has been marked as not deleted" % email
+        self.check_page_for_string( check_str )
+        self.home()
+    def purge_user( self, user_id, email ):
+        """Purge a user account"""
+        self.home()
+        self.visit_url( "%s/admin/purge_user?user_id=%s" % ( self.url, user_id ) )
+        check_str = "User '%s' has been marked as purged." % email
+        self.check_page_for_string( check_str )
+        self.home()
+    def associate_roles_and_groups_with_user( self, user_id, email, role_ids=[], group_ids=[] ):
+        self.home()
+        url = "%s/admin/user?user_id=%s&user_roles_groups_edit_button=Save" % ( self.url, user_id )
+        if role_ids:
+            url += "&in_roles=%s" % ','.join( role_ids )
+        if group_ids:
+            url += "&in_groups=%s" % ','.join( group_ids )
+        self.visit_url( url )
+        check_str = "User '%s' has been updated with %d associated roles and %d associated groups" % ( email, len( role_ids ), len( group_ids ) )
+        self.check_page_for_string( check_str )
+        self.home()
+
+    # Tests associated with roles
+    def create_role( self, name='Role One', description="This is Role One", in_user_ids=[], in_group_ids=[], private_role='' ):
+        """Create a new role"""
+        url = "%s/admin/create_role?create_role_button=Save&name=%s&description=%s" % ( self.url, name.replace( ' ', '+' ), description.replace( ' ', '+' ) )
+        if in_user_ids:
+            url += "&in_users=%s" % ','.join( in_user_ids )
+        if in_group_ids:
+            url += "&in_groups=%s" % ','.join( in_group_ids )
+        self.home()
+        self.visit_url( url )
+        check_str = "Role '%s' has been created with %d associated users and %d associated groups" % ( name, len( in_user_ids ), len( in_group_ids ) ) 
+        self.check_page_for_string( check_str )
+        if private_role:
+            # Make sure no private roles are displayed
+            try:
+                self.check_page_for_string( private_role )
+                errmsg = 'Private role %s displayed on Roles page' % private_role
+                raise AssertionError( errmsg )
+            except AssertionError:
+                # Reaching here is the behavior we want since no private roles should be displayed
+                pass
+        self.home()
+        self.visit_url( "%s/admin/roles" % self.url )
+        self.check_page_for_string( name )
+        self.home()
+    def rename_role( self, role_id, name='Role One Renamed', description='This is Role One Re-described' ):
+        """Rename a role"""
+        self.home()
+        self.visit_url( "%s/admin/role?rename=True&role_id=%s" % ( self.url, role_id ) )
+        self.check_page_for_string( 'Change role name and description' )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", description )
+        tc.submit( "rename_role_button" )
+        self.home()
+    def mark_role_deleted( self, role_id, role_name ):
+        """Mark a role as deleted"""
+        self.home()
+        self.visit_url( "%s/admin/mark_role_deleted?role_id=%s" % ( self.url, role_id ) )
+        check_str = "Role '%s' has been marked as deleted" % role_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def undelete_role( self, role_id, role_name ):
+        """Undelete an existing role"""
+        self.home()
+        self.visit_url( "%s/admin/undelete_role?role_id=%s" % ( self.url, role_id ) )
+        check_str = "Role '%s' has been marked as not deleted" % role_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def purge_role( self, role_id, role_name ):
+        """Purge an existing role"""
+        self.home()
+        self.visit_url( "%s/admin/purge_role?role_id=%s" % ( self.url, role_id ) )
+        check_str = "The following have been purged from the database for role '%s': " % role_name
+        check_str += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, DatasetPermissionss."
+        self.check_page_for_string( check_str )
+        self.home()
+    def associate_users_and_groups_with_role( self, role_id, role_name, user_ids=[], group_ids=[] ):
+        self.home()
+        url = "%s/admin/role?role_id=%s&role_members_edit_button=Save" % ( self.url, role_id )
+        if user_ids:
+            url += "&in_users=%s" % ','.join( user_ids )
+        if group_ids:
+            url += "&in_groups=%s" % ','.join( group_ids )
+        self.visit_url( url )
+        check_str = "Role '%s' has been updated with %d associated users and %d associated groups" % ( role_name, len( user_ids ), len( group_ids ) )
+        self.check_page_for_string( check_str )
+        self.home()
+
+    # Tests associated with groups
+    def create_group( self, name='Group One', in_user_ids=[], in_role_ids=[] ):
+        """Create a new group"""
+        url = "%s/admin/create_group?create_group_button=Save&name=%s" % ( self.url, name.replace( ' ', '+' ) )
+        if in_user_ids:
+            url += "&in_users=%s" % ','.join( in_user_ids )
+        if in_role_ids:
+            url += "&in_roles=%s" % ','.join( in_role_ids )
+        self.home()
+        self.visit_url( url )
+        check_str = "Group '%s' has been created with %d associated users and %d associated roles" % ( name, len( in_user_ids ), len( in_role_ids ) ) 
+        self.check_page_for_string( check_str )
+        self.home()
+        self.visit_url( "%s/admin/groups" % self.url )
+        self.check_page_for_string( name )
+        self.home()
+    def rename_group( self, group_id, name='Group One Renamed' ):
+        """Rename a group"""
+        self.home()
+        self.visit_url( "%s/admin/group?rename=True&group_id=%s" % ( self.url, group_id ) )
+        self.check_page_for_string( 'Change group name' )
+        tc.fv( "1", "name", name )
+        tc.submit( "rename_group_button" )
+        self.home()
+    def associate_users_and_roles_with_group( self, group_id, group_name, user_ids=[], role_ids=[] ):
+        self.home()
+        url = "%s/admin/group?group_id=%s&group_roles_users_edit_button=Save" % ( self.url, group_id )
+        if user_ids:
+            url += "&in_users=%s" % ','.join( user_ids )
+        if role_ids:
+            url += "&in_roles=%s" % ','.join( role_ids )
+        self.visit_url( url )
+        check_str = "Group '%s' has been updated with %d associated roles and %d associated users" % ( group_name, len( role_ids ), len( user_ids ) )
+        self.check_page_for_string( check_str )
+        self.home()
+    def mark_group_deleted( self, group_id, group_name ):
+        """Mark a group as deleted"""
+        self.home()
+        self.visit_url( "%s/admin/mark_group_deleted?group_id=%s" % ( self.url, group_id ) )
+        check_str = "Group '%s' has been marked as deleted" % group_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def undelete_group( self, group_id, group_name ):
+        """Undelete an existing group"""
+        self.home()
+        self.visit_url( "%s/admin/undelete_group?group_id=%s" % ( self.url, group_id ) )
+        check_str = "Group '%s' has been marked as not deleted" % group_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def purge_group( self, group_id, group_name ):
+        """Purge an existing group"""
+        self.home()
+        self.visit_url( "%s/admin/purge_group?group_id=%s" % ( self.url, group_id ) )
+        check_str = "The following have been purged from the database for group '%s': UserGroupAssociations, GroupRoleAssociations." % group_name
+        self.check_page_for_string( check_str )
+        self.home()
+
+    # Utility methods to test removal of associations
+    def remove_role_from_group( self, role_id, role_name, group_id, group_name ):
+        """Remove a role from a group"""
+        self.home()
+        self.visit_url( "%s/admin/remove_role_from_group?role_id=%s&group_id=%s" % ( self.url, role_id, group_id ) )
+        check_str = "Role '%s' removed from group '%s'" % ( role_name, group_name )
+        self.check_page_for_string( check_str )
+        self.home()
+    def remove_user_from_group( self, user_id, email, group_id, group_name ):
+        """Remove a user from a group"""
+        self.home()
+        self.visit_url( "%s/admin/remove_user_from_group?user_id=%s&group_id=%s" % ( self.url, user_id, group_id ) )
+        check_str = "User '%s' removed from group '%s'" % ( email, group_name )
+        self.check_page_for_string( check_str )
+        self.home()
+    def remove_user_from_role( self, user_id, email, role_id, role_name ):
+        """Remove a user from a role"""
+        self.home()
+        self.visit_url( "%s/admin/remove_user_from_role?user_id=%s&role_id=%s" % ( self.url, user_id, role_id ) )
+        check_str = "User '%s' removed from role '%s'" % ( email, role_name )
+        self.check_page_for_string( check_str )
+        self.home()
+
+    # Library stuff
+    def create_library( self, name='Library One', description='This is Library One' ):
+        """Create a new library"""
+        self.home()
+        self.visit_url( "%s/admin/library?new=True" % self.url )
+        self.check_page_for_string( 'Create a new library' )
+        tc.fv( "1", "1", name ) # form field 1 is the field named name...
+        tc.fv( "1", "2", description ) # form field 1 is the field named name...
+        tc.submit( "create_library_button" )
+        self.home()
+    def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described' ):
+        """Rename a library"""
+        self.home()
+        self.visit_url( "%s/admin/library?manage=True&id=%s" % ( self.url, library_id ) )
+        self.check_page_for_string( 'Change library name and description' )
+        # Since twill barfs on the form submisson, we ar forced to simulate it
+        url = "%s/admin/library?manage=True&id=%s&rename_library_button=Save&description=%s&name=%s" % \
+        ( self.url, library_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
+        self.home()
+        self.visit_url( url )
+        check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
+        self.check_page_for_string( check_str )
+        self.home()
+    def add_folder( self, library_id, folder_id, name='Folder One', description='NThis is Folder One' ):
+        """Create a new folder"""
+        self.home()
+        self.visit_url( "%s/admin/folder?library_id=%s&id=%s&new=True" % ( self.url, library_id, folder_id ) )
+        self.check_page_for_string( 'Create a new folder' )
+        tc.fv( "1", "name", name ) # form field 1 is the field named name...
+        tc.fv( "1", "description", description ) # form field 2 is the field named description...
+        tc.submit( "new_folder_button" )
+        self.home()
+    def rename_folder( self, library_id, folder_id, old_name, name='Folder One Renamed', description='This is Folder One Re-described' ):
+        """Rename a Folder"""
+        self.home()
+        self.visit_url( "%s/admin/folder?library_id=%s&manage=True&id=%s" % ( self.url, library_id, folder_id ) )
+        self.check_page_for_string( 'Edit folder name and description' )
+        # Since twill barfs on the form submisson, we ar forced to simulate it
+        url = "%s/admin/folder?library_id=%s&manage=True&id=%s&rename_folder_button=Save&description=%s&name=%s" % \
+        ( self.url, library_id, folder_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
+        self.home()
+        self.visit_url( url )
+        check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
+        self.check_page_for_string( check_str )
+        self.home()
+    def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles=[], message='', root=False ):
+        """Add a dataset to a folder"""
+        filename = self.get_filename( filename )
+        self.home()
+        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % ( self.url, library_id, folder_id, message ) )
+        self.check_page_for_string( 'Upload files' )
+        tc.fv( "1", "folder_id", folder_id )
+        tc.formfile( "1", "file_data", filename )
+        tc.fv( "1", "file_format", file_format )
+        tc.fv( "1", "dbkey", dbkey )
+        for role_id in roles:
+            tc.fv( "1", "roles", role_id ) # form field 7 is the select list named out_groups, note the buttons...
+        tc.submit( "new_dataset_button" )
+        if root:
+            check_str = "Added 1 datasets to the library '%s' ( each is selected )." % folder_name
+        else:
+            check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def add_history_datasets_to_library( self, library_id, folder_id, folder_name, hda_id, root=False ):
+        """Copy a dataset from the current history to a library folder"""
+        self.home()
+        self.visit_url( "%s/admin/add_history_datasets_to_library?library_id=%s&folder_id=%s&hda_ids=%s&add_history_datasets_to_library_button=Add+selected+datasets" % \
+                        ( self.url, library_id, folder_id, hda_id ) )
+        if root:
+            check_str = "Added 1 datasets to the library '%s' ( each is selected )." % folder_name
+        else:
+            check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def add_datasets_from_library_dir( self, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles_tuple=[], root=False ):
+        """Add a directory of datasets to a folder"""
+        # roles is a list of tuples: [ ( role_id, role_description ) ]
+        self.home()
+        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
+        self.check_page_for_string( 'Upload a directory of files' )
+        tc.fv( "1", "folder_id", folder_id )
+        tc.fv( "1", "file_format", file_format )
+        tc.fv( "1", "dbkey", dbkey )
+        library_dir = "%s" % self.file_dir
+        tc.fv( "1", "server_dir", "library" )
+        for role_tuple in roles_tuple:
+            tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role name
+        tc.submit( "new_dataset_button" )
+        if root:
+            check_str = "Added 3 datasets to the library '%s' ( each is selected )." % folder_name
+        else:
+            check_str = "Added 3 datasets to the folder '%s' ( each is selected )." % folder_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def mark_library_deleted( self, library_id, library_name ):
+        """Mark a library as deleted"""
+        self.home()
+        self.visit_url( "%s/admin/library?id=%s&delete=True" % ( self.url, library_id ) )
+        check_str = "Library '%s' and all of its contents have been marked deleted" % library_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def undelete_library( self, library_id, library_name ):
+        """Mark a library as not deleted"""
+        self.home()
+        self.visit_url( "%s/admin/undelete_library?id=%s" % ( self.url, library_id ) )
+        check_str = "Library '%s' and all of its contents have been marked not deleted" % library_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def purge_library( self, library_id, library_name ):
+        """Purge a library"""
+        self.home()
+        self.visit_url( "%s/admin/purge_library?id=%s" % ( self.url, library_id ) )
+        check_str = "Library '%s' and all of its contents have been purged" % library_name
+        self.check_page_for_string( check_str )
+        self.home()

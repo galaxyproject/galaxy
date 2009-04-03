@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head profile="http://selenium-ide.openqa.org/profiles/test-case">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="selenium.base" href="" />
+<title>Verify / Run Simple Workflow</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">Verify / Run Simple Workflow</td></tr>
+</thead><tbody>
+<tr>
+	<td>setSpeed</td>
+	<td>100</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>relative=up</td>
+	<td></td>
+</tr>
+<tr>
+	<td>open</td>
+	<td>/</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>galaxy_tools</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>//div[@id='title_getext']/a/span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>link-upload1</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>relative=up</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>galaxy_main</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>file_data</td>
+	<td>/Users/james/projects/galaxy/code/galaxy-security/test-data/1.bed</td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>//form[@id='tool_form']/div[8]/input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>relative=up</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>galaxy_history</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForTextPresent</td>
+	<td>exact:Info: uploaded bed file</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>relative=up</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>link=Workflow</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>galaxy_main</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>wf-0-popup</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//div[@id='wf-0-popup-menu']/div[2]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>galaxy_main</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//form[@id='tool_form']/div[2]/div[2]/div[1]/div[1]</td>
+	<td>Output dataset 'output' from step 1</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//form[@id='tool_form']/div[2]/div[2]/div[2]/div[1]</td>
+	<td>1 (value not yet validated)</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//form[@id='tool_form']/div[2]/div[2]/div[5]/div[1]</td>
+	<td>Yes</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//form[@id='tool_form']/div[2]/div[2]/div[6]/div[1]</td>
+	<td>No</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>run_workflow</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>relative=up</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>galaxy_history</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForElementPresent</td>
+	<td>css=div.historyItemWrapper b</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>Join two Queries on</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForTextPresent</td>
+	<td>245 regions</td>
+	<td></td>
+</tr>
+
+</tbody></table>
+</body>
+</html>

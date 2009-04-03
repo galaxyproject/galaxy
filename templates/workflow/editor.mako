@@ -1,6 +1,19 @@
 <%inherit file="/base_panels.mako"/>
 
-<%def name="title()">Galaxy Workflow Editor</%def>
+<%def name="init()">
+<%
+    self.active_view="workflow"
+    self.message_box_visible=True
+    self.message_box_class="warning"
+    self.overlay_visible=True
+%>
+</%def>
+
+<%def name="message_box_content()">
+    Workflow support is currently in <b><i>beta</i></b> testing.
+    Workflows may not work with all tools, may fail unexpectedly, and may
+    not be compatible with future updates to <b>Galaxy</b>.
+</%def>
 
 <%def name="late_javascripts()">
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.panels.js')}"> </script>
@@ -8,6 +21,7 @@
         ensure_dd_helper();
         make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
         make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
+        ensure_popup_helper();
         ## handle_minwidth_hint = rp.handle_minwidth_hint;
     </script>
 </%def>
@@ -20,12 +34,13 @@
     <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"> </script>
     <![endif]-->
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.ui.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.ui.scrollPanel.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.hoverIntent.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.drag.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.drop.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.hover.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.json.js')}"> </script>
 
+    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.base.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.workflow_editor.canvas.js')}"> </script>
     
     <!--[if lt IE 7]>
@@ -94,19 +109,20 @@
         }
         
         // Drag/scroll canvas
-        $("#canvas-container").draggable({
-            drag: function( _, ui ) {
-                x = ui.position.left;
-                y = ui.position.top;
-                // Limit range
-                x = Math.min( x, 0 );
-                y = Math.min( y, 0 );
-                x = Math.max( x, - ( $(this).width() - $(this).parent().width() ) )
-                y = Math.max( y, - ( $(this).width() - $(this).parent().width() ) )
-                // Constrain position
-                ui.position.left = x;
-                ui.position.top = y;
-            }
+        $("#canvas-container").each( function() {
+            this.scroll_panel = new ScrollPanel( this );
+        }).bind( "drag", function( e ) {
+            var p = $(this).parent(),
+                po = p.offset(),
+                x = e.offsetX - po.left,
+                y = e.offsetY - po.top;
+            // Limit range
+            x = Math.min( x, 0 );
+            y = Math.min( y, 0 );
+            x = Math.max( x, - ( $(this).width() - p.width() ) )
+            y = Math.max( y, - ( $(this).height() - p.height() ) )
+            // Constrain position
+            $(this).css( { left: x, top: y } );
         });
         
         // Tool menu
@@ -155,7 +171,7 @@
     
     // Add a new step to the workflow by tool id
     function add_node_for_tool( id, title ) {
-        node = prebuild_node( 'tool', title, id );
+        var node = prebuild_node( 'tool', title, id );
         workflow.add_node( node );
         workflow.activate_node( node );
         $.ajax( {
@@ -198,14 +214,7 @@
     };
 
     function show_form_for_tool( text, node ) {
-        // $("#overlay, #modalwrapper" ).show();
-        //$("#modal iframe").attr( 'src', "${h.url_for( action='tool_form' )}?tool_id=" + tool_id ).load( function () {
-        //    $("#modalloadwrapper").hide();
-        //});
-        // $("#right-content").load( "${h.url_for( action='tool_form' )}", { tool_id: tool_id }, function () {
-        //     
-        // });
-        $("#right-content").html( text );
+        $("#right-content").html( text );    
         $("#right-content").find( "form" ).ajaxForm( {
             type: 'POST',
             dataType: 'json',
@@ -225,11 +234,26 @@
             $(this).find( "select[refresh_on_change='true']").change( function() {
                 $(form).submit();
             });
+            $(this).find( ".popupmenu" ).each( function() {
+                var id = $(this).parents( "div.form-row" ).attr( 'id' );
+                var b = $('<a class="popup-arrow" id="popup-arrow-for-' + id + '">&#9660;</a>');
+                var options = {};
+                $(this).find( "button" ).each( function() {
+                    var name = $(this).attr( 'name' );
+                    var value = $(this).attr( 'value' );
+                    options[ $(this).text() ] = function() {
+                        $(form).append( "<input type='hidden' name='"+name+"' value='"+value+"' />" ).submit();
+                    }
+                });
+                b.insertAfter( this );
+                $(this).remove();
+                make_popupmenu( b, options );
+            });
         });
     }
     
     var close_editor = function() {
-        <% next_url = h.url_for( controller='root', m_c='workflow' ) %>
+        <% next_url = h.url_for( controller='workflow', action='index' ) %>
         if ( workflow && workflow.has_changes ) {
             do_close = function() {
                 window.onbeforeunload = undefined;
@@ -301,10 +325,11 @@
 
 <%def name="stylesheets()">
 
-    ${parent.stylesheets()}
-    
-    ## Also include "base.css" for styling tool menu and forms (details)
+    ## Include "base.css" for styling tool menu and forms (details)
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
+
+    ## But make sure styles for the layout take precedence
+    ${parent.stylesheets()}    
 
     <style type="text/css">
     body { margin: 0; padding: 0; overflow: hidden; }
@@ -396,8 +421,8 @@
     
     canvas { position: absolute; z-index: 10; } 
     canvas.dragging { position: absolute; z-index: 1000; }
-    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 0; left: -16px; z-index: 1500; }
-    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 0; right: -16px; z-index: 1500; }
+    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; left: -6px; z-index: 1500; }
+    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; right: -6px; z-index: 1500; }
     .drag-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_drag.png')}); position: absolute; z-index: 1500; }
     .input-terminal-active { background: url(${h.url_for('/static/style/workflow_circle_green.png')}); }
     ## .input-terminal-hover { background: yellow; border: solid black 1px; }
@@ -437,8 +462,6 @@
     }
     div.form-row {
       position: relative;
-      margin-top: 0.5em;
-      margin-bottom: 0.5em;
     }
     
     div.tool-node-error div.toolFormTitle {
@@ -459,8 +482,8 @@
     .form-row {
         
     }
-    .form-row-body {
-    
+    div.toolFormInCanvas div.toolFormBody {
+        padding: 0;
     }
     .form-row-clear {
         clear: both;
@@ -470,6 +493,7 @@
         height: 0;
         border: none;
         border-bottom: dotted black 1px;
+        margin: 0 5px;
     }
     
     .callout {
@@ -524,28 +548,9 @@
     <div class="toolSectionPad"></div>
 </%def>
 
-<div id="overlay">
-    ## Need a table here for centering in IE6
-    <table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"><tr><td>
-    <div class="dialog-box-wrapper">
-        <div class="dialog-box">
-            <div class="unified-panel-header">
-                <div class="unified-panel-header-inner"><span class='title'>Loading workflow editor...</span></div>
-            </div>
-            <div class="body" style="max-height: 500px; overflow: auto;"><img src="${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}" /></div>
-            <div>
-                <div class="buttons" style="display: none; float: right;"></div>
-                <div class="extra_buttons" style="display: none; padding: 5px;"></div>
-                <div style="clear: both;"></div>
-            </div>
-        </div>
-    </div>
-    </td></tr></table>
-</div>
-
-<%def name="masthead()">
-    <div style="float: right; color: black; padding: 3px;"><div class="warningmessagesmall" style="display: inline-block; min-height: 15px;">Workflow support is currently in <b><i>beta</i></b></div></div>
-    <div class="title"><b>Galaxy workflow editor</b></div>
+<%def name="overlay()">
+    ${parent.overlay( "Loading workflow editor...",
+                      "<img src='" + h.url_for('/static/images/yui/rel_interstitial_loading.gif') + "'/>" )}
 </%def>
 
 <%def name="left_panel()">
@@ -613,7 +618,7 @@
 
     <div class="unified-panel-body">
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden;">
-            <div id="canvas-container" style="height: 5000px; width: 5000px; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;"></div>
+            <div id="canvas-container" style="position: absolute; height: 5000px; width: 5000px; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;"></div>
             ## <div id="canvas-map" style="height: 100px; width: 100px; border: solid red 1px; background: white; position: absolute; right: 0; bottom: 0;">
             ##     <canvas width="100" height="100" style="width: 100%; height: 100%" id="canvas-map-canvas"></canvas>
             ## </div>

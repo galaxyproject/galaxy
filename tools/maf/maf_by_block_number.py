@@ -8,12 +8,12 @@ blocks specified by number.
 import sys
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
+from galaxy.tools.util import maf_utilities
 import bx.align.maf
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
-
     input_block_filename = sys.argv[1].strip()
     input_maf_filename = sys.argv[2].strip()
     output_filename1 = sys.argv[3].strip()
@@ -21,6 +21,7 @@ def __main__():
     if block_col < 0:
         print >> sys.stderr, "Invalid column specified"
         sys.exit(0)
+    species = maf_utilities.parse_species_option( sys.argv[5].strip() )
     
     maf_writer = bx.align.maf.Writer( open( output_filename1, 'w' ) )
     #we want to maintain order of block file and write blocks as many times as they are listed
@@ -34,6 +35,8 @@ def __main__():
         try:
             for count, block in enumerate( bx.align.maf.Reader( open( input_maf_filename, 'r' ) ) ):
                 if count == block_wanted:
+                    if species:
+                        block = block.limit_to_species( species )
                     maf_writer.write( block )
                     break
         except:

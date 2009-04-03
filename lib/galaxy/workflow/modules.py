@@ -1,12 +1,13 @@
 from elementtree.ElementTree import Element
 
 from galaxy import web
-from galaxy.tools.parameters import DataToolParameter, check_param
+from galaxy.tools.parameters import DataToolParameter, DummyDataset, RuntimeValue, check_param, visit_input_values
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.grouping import Repeat, Conditional
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import from_json_string, to_json_string
-        
+       
+
 class WorkflowModule( object ):
     
     def __init__( self, trans ):
@@ -145,7 +146,7 @@ class InputDataModule( WorkflowModule ):
     def execute( self, trans, state ):
         return dict( output=state.inputs['input'])
     
-class ToolModule( object ):
+class ToolModule( WorkflowModule ):
     
     type = "tool"
     
@@ -196,24 +197,13 @@ class ToolModule( object ):
 
     def get_data_inputs( self ):
         data_inputs = []
-        def visitor( inputs, input_values, name_prefix, label_prefix ):
-            for input in inputs.itervalues():
-                if isinstance( input, Repeat ):  
-                    for i, d in enumerate( input_values[ input.name ] ):
-                        index = d['__index__']
-                        new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
-                        new_label_prefix = label_prefix + "%s %d > " % ( input.title, i + 1 )
-                        visitor( input.inputs, d, new_name_prefix, new_label_prefix )
-                elif isinstance( input, Conditional ):
-                    values = input_values[ input.name ]
-                    current = values["__current_case__"]
-                    label_prefix = label_prefix
-                    name_prefix = name_prefix + "|" + input.name
-                    visitor( input.cases[current].inputs, values, name_prefix, label_prefix )
-                else:
-                    if isinstance( input, DataToolParameter ):
-                        data_inputs.append( dict( name=name_prefix+input.name, label=label_prefix+input.label, extensions=input.extensions ) )
-        visitor( self.tool.inputs, self.state.inputs, "", "" )
+        def callback( input, value, prefixed_name, prefixed_label ):
+            if isinstance( input, DataToolParameter ):
+                data_inputs.append( dict(
+                    name=prefixed_name,
+                    label=prefixed_label,
+                    extensions=input.extensions ) )
+        visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs
     def get_data_outputs( self ):
         data_outputs = []
@@ -221,16 +211,46 @@ class ToolModule( object ):
             data_outputs.append( dict( name=name, extension=format ) )
         return data_outputs
     def get_config_form( self ):
-        def as_html( param, value, trans, prefix ):
-            if type( param ) is DataToolParameter:
-                return "Data input '" + param.name + "' (" + ( " or ".join( param.extensions ) ) + ")"
-            else:
-                return param.get_html_field( trans, value ).get_html( prefix )
+        self.add_dummy_datasets()
         return self.trans.fill_template( "workflow/editor_tool_form.mako", 
-            tool=self.tool, as_html=as_html, values=self.state.inputs, errors=( self.errors or {} ) )
-    def update_state( self, incoming ):
-        errors = self.tool.update_state( self.trans, self.tool.inputs, self.state.inputs, incoming )
-        self.errors = errors or None
+            tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
+    def update_state( self, incoming ):       
+        # Build a callback that handles setting an input to be required at
+        # runtime. We still process all other parameters the user might have
+        # set. We also need to make sure all datasets have a dummy value
+        # for dependencies to see
+        make_runtime_key = incoming.get( 'make_runtime', None )
+        make_buildtime_key = incoming.get( 'make_buildtime', None )
+        def item_callback( trans, key, input, value, error, old_value, context ):
+            # Dummy value for Data parameters
+            if isinstance( input, DataToolParameter ):
+                return DummyDataset(), None
+            # Deal with build/runtime (does not apply to Data parameters)
+            if key == make_buildtime_key:
+                return input.get_initial_value( trans, context ), None
+            elif isinstance( old_value, RuntimeValue ):
+                return old_value, None
+            elif key == make_runtime_key:
+                return RuntimeValue(), None
+            else:
+                return value, error
+        # Update state using incoming values
+        errors = self.tool.update_state( self.trans, self.tool.inputs, self.state.inputs, incoming, item_callback=item_callback )
+        self.errors = errors or None    
+    def add_dummy_datasets( self, connections=None):
+        if connections:
+            # Store onnections by input name
+            input_connections_by_name = \
+                dict( ( conn.input_name, conn ) for conn in connections )
+        else:
+            input_connections_by_name = {}
+        # Any connected input needs to have value DummyDataset (these
+        # are not persisted so we need to do it every time)
+        def callback( input, value, prefixed_name, prefixed_label ):
+            if isinstance( input, DataToolParameter ):
+                if connections is None or prefixed_name in input_connections_by_name:
+                    return DummyDataset()
+        visit_input_values( self.tool.inputs, self.state.inputs, callback ) 
     
     
 class WorkflowModuleFactory( object ):

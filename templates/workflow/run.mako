@@ -1,19 +1,28 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<%inherit file="/base.mako"/>
 
-<head>
-<link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
-<style type="text/css">
-div.toolForm{
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-</style>
-</head>
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    <script type="text/javascript">        
+        $( function() {
+            $( "select[refresh_on_change='true']").change( function() {
+                $( "#tool_form" ).submit();
+            });
+        });
+    </script>
+</%def>
+
+<%def name="stylesheets()">
+    <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
+    <style type="text/css">
+    div.toolForm{
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    </style>
+</%def>
 
 <%
-from galaxy.tools.parameters import DataToolParameter
+from galaxy.tools.parameters import DataToolParameter, RuntimeValue
 %>
 
 <%def name="do_inputs( inputs, values, errors, prefix, step, other_values = None )">
@@ -43,10 +52,10 @@ from galaxy.tools.parameters import DataToolParameter
     %elif input.type == "conditional":
       <% group_values = values[input.name] %>
       <% current_case = group_values['__current_case__'] %>
-      <% prefix = prefix + input.name + "|" %>
+      <% new_prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step )}
-      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, prefix + input.name + "|", step, other_values )}
+      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values )}
     %else:
       ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step )}
     %endif
@@ -70,9 +79,28 @@ from galaxy.tools.parameters import DataToolParameter
                     %>
                     Output dataset '${conn.output_name}' from step ${int(conn.output_step.order_index)+1}
                 %else:
-                    ${param.get_html_field( t, dict(), other_values ).get_html( str(step.id) + "|" + prefix )}
+                    ## FIXME: Initialize in the controller
+                    <%
+                    if value is None:
+                        value = other_values[ param.name ] = param.get_initial_value( t, other_values )
+                    %>
+                    ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                     <input type="hidden" name="${step.id}|__force_update__${prefix}${param.name}" value="true" />
                 %endif
+            %elif isinstance( value, RuntimeValue ) or \
+                  ( str(step.id) + '|__runtime__' + prefix + param.name ) in incoming:
+                ## On the first load we may see a RuntimeValue, so we write
+                ## an input field using the initial value for the param.
+                ## Subsequents posts will no longer have the runtime value
+                ## (since an actualy value will be posted) so we add a hidden
+                ## field so we know to continue drawing form for this param.
+                ## FIXME: This logic shouldn't be in the template. The
+                ## controller should go through the inputs on the first
+                ## load, fill in initial values where needed, and mark
+                ## all that are runtime modifiable in some way.
+                <% value = other_values[ param.name ] = param.get_initial_value( t, other_values ) %>
+                ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
             %else:
                 ${param.value_to_display_text( value, app )}
             %endif
@@ -86,31 +114,30 @@ from galaxy.tools.parameters import DataToolParameter
     </div>
 </%def>
 
-<body>
-    <h2>Running workflow "${workflow.name}"</h2>
-    <form method="POST">
-    ## <input type="hidden" name="workflow_name" value="${workflow.name | h}" />
-    %for i, step in enumerate( steps ):
-        %if step.type == 'tool' or step.type is None:
-          <% tool = app.toolbox.tools_by_id[step.tool_id] %>
-          <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
-          <div class="toolForm">
-              <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
-              <div class="toolFormBody">
-                  ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
-              </div>
+<h2>Running workflow "${workflow.name}"</h2>
+
+<form id="tool_form" name="tool_form" method="POST">
+## <input type="hidden" name="workflow_name" value="${workflow.name | h}" />
+%for i, step in enumerate( steps ):    
+    %if step.type == 'tool' or step.type is None:
+      <% tool = app.toolbox.tools_by_id[step.tool_id] %>
+      <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
+      <div class="toolForm">
+          <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
+          <div class="toolFormBody">
+              ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
           </div>
-        %else:
-        <% module = step.module %>
-          <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
-          <div class="toolForm">
-              <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${module.name}</div>
-              <div class="toolFormBody">
-                  ${do_inputs( module.get_runtime_inputs(), step.state.inputs, errors.get( step.id, dict() ), "", step )}
-              </div>
+      </div>
+    %else:
+    <% module = step.module %>
+      <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
+      <div class="toolForm">
+          <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${module.name}</div>
+          <div class="toolFormBody">
+              ${do_inputs( module.get_runtime_inputs(), step.state.inputs, errors.get( step.id, dict() ), "", step )}
           </div>
-        %endif
-    %endfor
-    <input type="submit" value="Run workflow" />
-    </form>
-</body>
+      </div>
+    %endif
+%endfor
+<input type="submit" name="run_workflow" value="Run workflow" />
+</form>

@@ -5,7 +5,7 @@
 <div class="toolForm">
   <div class="toolFormTitle">${_('Rename History')}</div>
   <div class="toolFormBody">
-  <form action="${h.url_for( action='history_rename' )}" method="post" >
+  <form action="${h.url_for( controller='history', action='rename' )}" method="post" >
     <table>
         <tr><th>${_('Current Name')}</th><th>${_('New Name')}</th></tr>
         %for history in histories:

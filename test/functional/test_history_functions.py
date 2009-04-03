@@ -16,7 +16,7 @@ class TestHistory( TwillTestCase ):
         if len(self.get_history()) > 0:
             raise AssertionError("test_new_history_then_delete failed")
         self.delete_history()
-        self.check_page_for_string( 'History deleted:' )
+        self.check_page_for_string( 'Deleted 1 histories' )
     def test_10_history_options_when_logged_in( self ):
         """Testing history options when logged in"""
         self.history_options()
@@ -31,11 +31,11 @@ class TestHistory( TwillTestCase ):
     def test_15_history_view( self ):
         """Testing viewing previously stored histories"""
         self.view_stored_histories()
-        self.check_page_for_string( 'Stored Histories' )
-        self.check_page_for_string( '<input type=checkbox name="id" value=' )
-        self.check_page_for_string( 'history_rename?id' )
-        self.check_page_for_string( 'history_switch?id' )
-        self.check_page_for_string( 'history_delete?id' )
+        self.check_page_for_string( 'Stored histories' )
+        self.check_page_for_string( '<input type="checkbox" name="id" value=' )
+        self.check_page_for_string( 'operation=Rename&id' )
+        self.check_page_for_string( 'operation=Switch&id' )
+        self.check_page_for_string( 'operation=Delete&id' )
     def test_20_delete_history_item( self ):
         """Testing deleting history item"""
         self.upload_file('1.bed', dbkey='hg15')
@@ -48,6 +48,7 @@ class TestHistory( TwillTestCase ):
         """Testing sharing a history with another user"""
         self.upload_file('1.bed', dbkey='hg18')
         id, name, email = self.share_history()
+        self.last_page()
         self.check_page_for_string( 'History (%s) has been shared with: %s' %(name, email) )
         self.logout()
         self.login( email='test2@bx.psu.edu' )

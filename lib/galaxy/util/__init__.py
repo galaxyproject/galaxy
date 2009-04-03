@@ -3,7 +3,18 @@ Utility functions used systemwide.
 
 """
 import logging
-import threading, sets, random, string, md5, re, binascii, pickle, time, datetime, math, re, os
+import threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys
+
+# Older py compatibility
+try:
+    set()
+except:
+    from sets import Set as set
+
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import new as md5
 
 import pkg_resources
 
@@ -80,11 +91,11 @@ def unique_id(KEY_SIZE=128):
     Genenerates a unique ids
     
     >>> ids = [ unique_id() for i in range(1000) ]
-    >>> len(sets.Set(ids))
+    >>> len(set(ids))
     1000
     """
     id  = str( random.getrandbits( KEY_SIZE ) )
-    return md5.new(id).hexdigest()
+    return md5(id).hexdigest()
 
 def parse_xml(fname):
     """Returns an parsed xml tree"""
@@ -97,7 +108,7 @@ def xml_to_string(elem):
     return text
 
 # characters that are valid
-valid_chars  = sets.Set(string.letters + string.digits + " -=_.()/+*^,:?!")
+valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
 mapped_chars = { '>' :'__gt__', 
@@ -108,6 +119,7 @@ mapped_chars = { '>' :'__gt__',
                  ']' :'__cb__',
                  '{' :'__oc__',
                  '}' :'__cc__',
+                 '@' : '__at__'
                  }
 
 def restore_text(text):
@@ -146,7 +158,7 @@ class Params:
     
     Operates on string or list values only (HTTP parameters).
     
-    >>> values = { 'status':'on', 'symbols':[  'alpha', '<>', '$rm&#@!' ]  }
+    >>> values = { 'status':'on', 'symbols':[  'alpha', '<>', '$rm&#!' ]  }
     >>> par = Params(values)
     >>> par.status
     'on'
@@ -155,9 +167,9 @@ class Params:
     >>> par.get('price', 0)
     0
     >>> par.symbols            # replaces unknown symbols with X
-    ['alpha', '__lt____gt__', 'XrmXXX!']
+    ['alpha', '__lt____gt__', 'XrmXX!']
     >>> par.flatten()          # flattening to a list
-    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmXXX!')]
+    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmXX!')]
     """
     
     # HACK: Need top prevent sanitizing certain parameter types. The 
@@ -287,6 +299,20 @@ def string_as_bool( string ):
     else:
         return False
 
+def listify( item ):
+    """
+    Make a single item a single item list, or return a list if passed a
+    list.  Passing a None returns an empty list.
+    """
+    if not item:
+        return []
+    elif isinstance( item, list ):
+        return item
+    elif isinstance( item, basestring ) and item.count( ',' ):
+        return item.split( ',' )
+    else:
+        return [ item ]
+
 def commaify(amount):
     orig = amount
     new = re.sub("^(-?\d+)(\d{3})", '\g<1>,\g<2>', amount)
@@ -383,6 +409,50 @@ def read_build_sites(filename):
     except:
         print "ERROR: Unable to read builds for site file %s" %filename
     return build_sites
+
+def relpath( path, start = None ):
+    """Return a relative version of a path"""
+    #modified from python 2.6.1 source code
+    
+    #version 2.6+ has it built in, we'll use the 'official' copy
+    if sys.version_info[:2] >= ( 2, 6 ):
+        if start is not None:
+            return os.path.relpath( path, start )
+        return os.path.relpath( path )
+    
+    #we need to initialize some local parameters
+    curdir = os.curdir
+    pardir = os.pardir
+    sep = os.sep
+    commonprefix = os.path.commonprefix
+    join = os.path.join
+    if start is None:
+        start = curdir
+    
+    #below is the unedited (but formated) relpath() from posixpath.py of 2.6.1
+    #this will likely not function properly on non-posix systems, i.e. windows
+    if not path:
+        raise ValueError( "no path specified" )
+    
+    start_list = os.path.abspath( start ).split( sep )
+    path_list = os.path.abspath( path ).split( sep )
+    
+    # Work out how much of the filepath is shared by start and path.
+    i = len( commonprefix( [ start_list, path_list ] ) )
+    
+    rel_list = [ pardir ] * ( len( start_list )- i ) + path_list[ i: ]
+    if not rel_list:
+        return curdir
+    return join( *rel_list )
+
+def stringify_dictionary_keys( in_dict ):
+    #returns a new dictionary
+    #changes unicode keys into strings, only works on top level (does not recurse)
+    #unicode keys are not valid for expansion into keyword arguments on method calls
+    out_dict = {}
+    for key, value in in_dict.iteritems():
+        out_dict[ str( key ) ] = value
+    return out_dict
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) ) #this list is used in edit attributes and the upload tool

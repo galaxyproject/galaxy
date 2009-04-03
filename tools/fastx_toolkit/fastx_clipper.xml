@@ -1,0 +1,109 @@
+<tool id="cshl_fastx_clipper" name="Clip" version="1.0.1" >
+  <description>adapter sequences</description>
+  <command>
+    zcat -f $input | fastx_clipper -s $maxmismatches -l $minlength -a $clip_source.clip_sequence -d $keepdelta -o $output -v $KEEP_N $DISCARD_OPTIONS
+  </command>
+  
+  <inputs>
+    <param format="fasta,fastqsolexa" name="input" type="data" label="Library to clip" />
+    
+    <param name="maxmismatches" size="4" type="integer" value="2">
+      <label>Maximum number of mismatches allowed (when matching the adapter sequence)</label>
+    </param>
+  
+    <param name="minlength" size="4" type="integer" value="15">
+      <label>Minimum sequence length (after clipping, sequences shorter than this length will be discarded)</label>
+    </param>
+
+	<conditional name="clip_source">
+		<param name="clip_source_list" type="select" label="Source">
+			<option value="prebuilt" selected="true">Standard (select from the list below)</option>
+			<option value="user">Enter custom sequence</option>
+		</param>
+
+		<when value="user">
+			<param name="clip_sequence" size="30" label="Enter custom clipping sequence" type="text" value="AATTGGCC" />
+		</when>
+
+		<when value="prebuilt">
+			<param name="clip_sequence" type="select" label="Choose Adapter">
+				<options from_file="fastx_clipper_sequences.txt">
+					<column name="name" index="1"/>
+					<column name="value" index="0"/>
+				</options>
+			</param> 
+		</when>
+	</conditional>
+
+	<param name="keepdelta" size="2" type="integer" value="0">
+		<label>enter non-zero value to keep the adapter sequence and x bases that follow it</label>
+		<help>use this for hairpin barcoding. keep at 0 unless you know what you're doing.</help>
+	</param>
+
+	<param name="KEEP_N" type="select" label="Discard sequences with unknown (N) bases">
+		<option value="">Yes</option>
+		<option value="-n">No</option>
+	</param>
+
+	<param name="DISCARD_OPTIONS" type="select" label="Output options">
+		<option value="-c">Output only clipped seqeunces (i.e. sequences which contained the adapter)</option>
+		<option value="-C">Output only non-clipped seqeunces (i.e. sequences which did not contained the adapter)</option>
+		<option value="">Output both clipped and non-clipped sequences</option>
+	</param>
+
+  </inputs>
+
+	<tests>
+		<test>
+			<!-- Clip a FASTQ file -->
+			<param name="input" value="fastx_clipper1.fastq" />
+			<param name="maxmismatches" value="2" />
+			<param name="minlength" value="15" />
+			<param name="clip_source.clip_source_list" value="user" />
+			<param name="clip_source.clip_sequence" value="CAATTGGTTAATCCCCCTATATA" />
+			<param name="keepdelta" value="0" />
+			<param name="KEEP_N" value="-n" />
+			<param name="DISCARD_OPTIONS" value="-c" />
+			<output name="output" file="fastx_clipper1a.out" />
+		</test>
+	</tests>
+
+  <outputs>
+    <data format="input" name="output" metadata_source="input" />
+  </outputs>
+  
+<help>
+**What it does**
+
+This tool clips adapters from the 3'-end of the sequences in a FASTA/FASTQ file.
+
+--------
+
+
+**Clipping Illustration:**
+
+.. image:: ../static/fastx_icons/fastx_clipper_illustration.png 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+**Clipping Example:**
+
+.. image:: ../static/fastx_icons/fastx_clipper_example.png 
+
+
+    
+**In the above example:**
+
+* Sequence no. 1 was discarded since it wasn't clipped (i.e. didn't contain the adapter sequence). (**Output** parameter).
+* Sequence no. 5 was discarded --- it's length (after clipping) was shorter than 15 nt (**Minimum Sequence Length** parameter).
+
+
+
+    
+</help>
+</tool>

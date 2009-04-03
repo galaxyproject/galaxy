@@ -14,7 +14,7 @@ from galaxy.util.expressions import ExpressionContext
 <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.js')}"> </script>
 <script type="text/javascript">
 $( function() {
-    $( "select[@refresh_on_change='true']").change( function() {
+    $( "select[refresh_on_change='true']").change( function() {
         $( "#tool_form" ).submit();
     });
 });
@@ -23,6 +23,18 @@ $( function() {
         location.replace( '${h.url_for( controller='root', action='index', tool_id=tool.id )}' );
     }
 %endif
+function checkUncheckAll( name, check )
+{
+    if ( check == 0 )
+    {
+        $("input[name=" + name + "][type='checkbox']").attr('checked', false);
+    }
+    else
+    {
+        $("input[name=" + name + "][type='checkbox']").attr('checked', true );
+    }
+}
+
 </script>
 </head>
 
@@ -84,10 +96,10 @@ $( function() {
         field = param.get_html_field( trans, parent_state[ param.name ], other_values )
         field.refresh_on_change = param.refresh_on_change
         %>
-        <div style="float: left; width: 250px; margin-right: 10px;">${field.get_html( prefix )}</div>
+        <div class="form-row-input">${field.get_html( prefix )}</div>
         %if parent_errors.has_key( param.name ):
-        <div style="float: left; color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">
-            <div style="width: 300px;"><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${parent_errors[param.name]}</span></div>
+        <div class="form-row-error-message">
+            <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${parent_errors[param.name]}</span></div>
         </div>
         %endif
         
@@ -169,6 +181,7 @@ $( function() {
 </body>
 
 <script type="text/javascript">
+##For Drilldown Parameters adds expand/collapse buttons and collapses collapsed elements
    $( function() {
        $( 'li > ul' ).each( function( i ) {
            if ( $( this )[0].className == 'toolParameterExpandableCollapsable' )
@@ -189,6 +202,14 @@ $( function() {
            }
        });
    });
+
+##inserts the Select All / Unselect All buttons for checkboxes
+$( function() {
+    $("div.checkUncheckAllPlaceholder").each( function( i ) {
+        $( this )[0].innerHTML = '<a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', 1 );"><span>Select All</span></a> <a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', 0 );"><span>Unselect All</span></a>';
+    });
+});
+
 </script>
 
 </html>

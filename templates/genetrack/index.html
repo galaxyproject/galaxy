@@ -1,0 +1,75 @@
+## index.html
+<%inherit file="base.html"/>
+<%def name="title()">
+    Index
+</%def>
+
+<h1 align="center">${conf.TITLE}</h1>
+	
+<form action="" method="get">
+
+<table align="center" cellpadding="2" cellspacing="1" width="100%">
+	
+
+	% if form.errors():
+		<tr class="error"><td align="center">
+			% for ekey, evalue in form.errors().items():
+				<b>ERROR:</b> &nbsp;&nbsp; ${ekey}: &nbsp;&nbsp; ${evalue}<br>
+			% endfor
+		</td></tr>
+	% endif
+
+	<tr class="grey">
+		<td colspan="4" align="center">
+        <a href="javascript:toggle('options')">More</a><img src="/static/images/thumbtack_icon.png" align="absmiddle" border="0">
+
+		Chromosome: ${form.chrom.tag()}&nbsp;&nbsp;
+        Feature: ${form.feature.tag()}&nbsp;&nbsp;
+        Width: ${form.zoom.tag()}&nbsp;&nbsp;
+		Plot: ${form.plot.tag()}&nbsp;&nbsp;
+        <input type="submit" name="submit" value="Display!">
+		<div id="options" style="display:none" class="selected">
+           <table cellpadding="3">
+              <tr>
+                 <td>
+					<!-- Nucleosome:${form.nuc_track.tag()} &nbsp;&nbsp;
+					ORF:${form.orf_track.tag()} &nbsp;&nbsp;
+					-->
+					Fit threshold: ${form.min_fit.tag()} &nbsp;&nbsp;
+					Image width: ${form.img_size.tag()} &nbsp;&nbsp;
+                 </td>
+              </tr>
+           </table>
+        </div>
+
+		</td>
+	</tr>
+	
+	<tr>
+		<td align="center">
+			<input type="submit" name="move_left" value="<< Move Left">
+			&nbsp;&nbsp;&nbsp;
+			<input type="submit" name="zoom_out" value="Shrink -">
+			&nbsp;&nbsp;&nbsp;
+			<input type="submit" name="zoom_in" value="Magnify +">
+			&nbsp;&nbsp;&nbsp;
+			<input type="submit" name="move_right" value="Move Right >>">
+		</td>
+	</tr>
+
+	<tr>
+		<td align="center">
+			<img src="${h.url_for('/static/genetrack/plots/' + param.fname)}" align="center" border="0">
+		</td>
+	</tr>
+
+	<tr>
+		<td align="center">
+			<!-- <a href='/search'>Search</a>  -->
+		</td>
+	</tr>
+
+</table>
+
+<input type="hidden" id="dataset_id" name="dataset_id" value="${dataset_id}" />
+</form>

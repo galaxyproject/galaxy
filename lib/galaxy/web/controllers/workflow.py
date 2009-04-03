@@ -13,12 +13,17 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
+from galaxy.model.orm import *
 
 class WorkflowController( BaseController ):
     
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
     def index( self, trans ):
+        return trans.fill_template( "workflow/index.mako" )
+                                   
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def list( self, trans ):
         """
         Render workflow main page (management of existing workflows)
         """
@@ -33,7 +38,29 @@ class WorkflowController( BaseController ):
             .filter( model.StoredWorkflow.c.deleted == False ) \
             .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
             .all()
-        return trans.fill_template( "workflow/index.mako",
+        return trans.fill_template( "workflow/list.mako",
+                                    workflows = workflows,
+                                    shared_by_others = shared_by_others )
+    
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def list_for_run( self, trans ):
+        """
+        Render workflow list for analysis view (just allows running workflow
+        or switching to management view)
+        """
+        user = trans.get_user()
+        workflows = trans.sa_session.query( model.StoredWorkflow ) \
+            .filter_by( user=user, deleted=False ) \
+            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+            .all()
+        shared_by_others = trans.sa_session \
+            .query( model.StoredWorkflowUserShareAssociation ) \
+            .filter_by( user=user ) \
+            .filter( model.StoredWorkflow.c.deleted == False ) \
+            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+            .all()
+        return trans.fill_template( "workflow/list_for_run.mako",
                                     workflows = workflows,
                                     shared_by_others = shared_by_others )
     
@@ -44,7 +71,8 @@ class WorkflowController( BaseController ):
         # Load workflow from database
         stored = get_stored_workflow( trans, id )
         if email:
-            other = model.User.filter_by( email=email ).first()
+            other = model.User.filter( and_( model.User.table.c.email==email,
+                                             model.User.table.c.deleted==False ) ).first()
             if not other:
                 mtype = "error"
                 msg = ( "User '%s' does not exist" % email )
@@ -56,20 +84,65 @@ class WorkflowController( BaseController ):
                 mtype = "error"
                 msg = ( "Workflow already shared with '%s'" % email )
             else:
-                
                 share = model.StoredWorkflowUserShareAssociation()
                 share.stored_workflow = stored
                 share.user = other
                 session = trans.sa_session
-                session.save( share )
+                session.save_or_update( share )
                 session.flush()
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
-                return self.index( trans )
+                return self.list( trans )
         return trans.fill_template( "workflow/share.mako",
                                     message = msg,
                                     messagetype = mtype,
                                     stored=stored,
                                     email=email )
+    
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def sharing( self, trans, id, **kwargs ):
+        session = trans.sa_session
+        stored = get_stored_workflow( trans, id )
+        if 'enable_import_via_link' in kwargs:
+            stored.importable = True
+            stored.flush()
+        elif 'disable_import_via_link' in kwargs:
+            stored.importable = False
+            stored.flush()
+        elif 'unshare_user' in kwargs:
+            user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
+            if not user:
+                error( "User not found for provided id" )
+            association = session.query( model.StoredWorkflowUserShareAssociation ) \
+                                 .filter_by( user=user, stored_workflow=stored ).one()
+            session.delete( association )
+            session.flush()
+        return trans.fill_template( "workflow/sharing.mako",
+                                    stored=stored )
+        
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def imp( self, trans, id, **kwargs ):
+        session = trans.sa_session
+        stored = get_stored_workflow( trans, id, check_ownership=False )
+        if stored.importable == False:
+            error( "The owner of this workflow has disabled imports via this link" )
+        elif stored.user == trans.user:
+            error( "You are already the ownder of this workflow, can't import" )
+        elif stored.deleted:
+            error( "This workflow has been deleted, can't import" )
+        elif session.query( model.StoredWorkflowUserShareAssociation ) \
+                    .filter_by( user=trans.user, stored_workflow=stored ).count() > 0:
+            error( "This workflow is already shared with you" )
+        else:
+            share = model.StoredWorkflowUserShareAssociation()
+            share.stored_workflow = stored
+            share.user = trans.user
+            session = trans.sa_session
+            session.save_or_update( share )
+            session.flush()
+            # Redirect to load galaxy frames.
+            return trans.response.send_redirect( url_for( controller='workflow' ) )
     
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -79,7 +152,7 @@ class WorkflowController( BaseController ):
             stored.name = new_name
             trans.sa_session.flush()
             trans.set_message( "Workflow renamed to '%s'." % new_name )
-            return self.index( trans )
+            return self.list( trans )
         else:
             return form( url_for( id=trans.security.encode_id(stored.id) ), "Rename workflow", submit_text="Rename" ) \
                 .add_text( "new_name", "Workflow Name", value=stored.name )
@@ -104,11 +177,11 @@ class WorkflowController( BaseController ):
         new_stored.user = user
         # Persist
         session = trans.sa_session
-        session.save( new_stored )
+        session.save_or_update( new_stored )
         session.flush()
         # Display the management page
         trans.set_message( 'Clone created with name "%s"' % new_stored.name )
-        return self.index( trans )
+        return self.list( trans )
     
     @web.expose
     @web.require_login( "create workflows" )
@@ -129,11 +202,11 @@ class WorkflowController( BaseController ):
             stored_workflow.latest_workflow = workflow
             # Persist
             session = trans.sa_session
-            session.save( stored_workflow )
+            session.save_or_update( stored_workflow )
             session.flush()
             # Display the management page
             trans.set_message( "Workflow '%s' created" % stored_workflow.name )
-            return self.index( trans )
+            return self.list( trans )
         else:
             return form( url_for(), "Create new workflow", submit_text="Create" ) \
                 .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" )
@@ -150,7 +223,7 @@ class WorkflowController( BaseController ):
         stored.flush()
         # Display the management page
         trans.set_message( "Workflow '%s' deleted" % stored.name )
-        return self.index( trans )
+        return self.list( trans )
         
     @web.expose
     @web.require_login( "edit workflows" )
@@ -430,11 +503,10 @@ class WorkflowController( BaseController ):
             stored.name = workflow_name
             workflow.stored_workflow = stored
             stored.latest_workflow = workflow
-            trans.sa_session.save( stored )
+            trans.sa_session.save_or_update( stored )
             trans.sa_session.flush()
             # Index page with message
-            trans.template_context['message'] = "Workflow '%s' created" % workflow_name
-            return self.index( trans )
+            return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
             ## return trans.show_ok_message( "<p>Workflow '%s' created.</p><p><a target='_top' href='%s'>Click to load in workflow editor</a></p>"
             ##     % ( workflow_name, web.url_for( action='editor', id=trans.security.encode_id(stored.id) ) ) )       
         
@@ -463,18 +535,23 @@ class WorkflowController( BaseController ):
             # If kwargs were provided, the states for each step should have
             # been POSTed
             for step in workflow.steps:
+                # Connections by input name
+                step.input_connections_by_name = \
+                    dict( ( conn.input_name, conn ) for conn in step.input_connections ) 
                 # Extract just the arguments for this step by prefix
                 p = "%s|" % step.id
                 l = len(p)
                 step_args = dict( ( k[l:], v ) for ( k, v ) in kwargs.iteritems() if k.startswith( p ) )
                 step_errors = None
                 if step.type == 'tool' or step.type is None:
+                    module = module_factory.from_workflow_step( trans, step )
+                    # Any connected input needs to have value DummyDataset (these
+                    # are not persisted so we need to do it every time)
+                    module.add_dummy_datasets( connections=step.input_connections )    
                     # Get the tool
-                    tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
+                    tool = module.tool
                     # Get the state
-                    state = DefaultToolState()
-                    state.decode( step_args.pop("tool_state"), tool, trans.app )
-                    step.state = state
+                    step.state = state = module.state
                     # Get old errors
                     old_errors = state.inputs.pop( "__errors__", {} )
                     # Update the state
@@ -485,38 +562,22 @@ class WorkflowController( BaseController ):
                     state = step.state = module.decode_runtime_state( trans, step_args.pop( "tool_state" ) )
                     step_errors = module.update_runtime_state( trans, state, step_args )
                 if step_errors:
-                    errors[step.id] = state.inputs["__errors__"] = step_errors
-                # Connections by input name
-                step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )    
-            if not errors:
+                    errors[step.id] = state.inputs["__errors__"] = step_errors   
+            if 'run_workflow' in kwargs and not errors:
                 # Run each step, connecting outputs to inputs
                 outputs = odict()
-                for step in workflow.steps:
+                for i, step in enumerate( workflow.steps ):
                     if step.type == 'tool' or step.type is None:
                         tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
                         input_values = step.state.inputs
                         # Connect up
-                        # TODO: Generalize out visitor
-                        def visitor( inputs, input_values, prefix ):
-                            for input in inputs.itervalues():
-                                if isinstance( input, Repeat ):  
-                                    for i, d in enumerate( input_values[ input.name ] ):
-                                        index = d['__index__']
-                                        new_prefix = prefix + "%s_%d|" % ( input.name, index )
-                                        visitor( input.inputs, d, new_prefix)
-                                elif isinstance( input, Conditional ):
-                                    values = input_values[ input.name ]
-                                    current = values["__current_case__"]
-                                    prefix = prefix + "|" + input.name
-                                    visitor( input.cases[current].inputs, values, prefix )
-                                else:
-                                    if isinstance( input, DataToolParameter ):
-                                        prefixed_name = prefix + input.name
-                                        if prefixed_name in step.input_connections_by_name:
-                                            conn = step.input_connections_by_name[ prefixed_name ]
-                                            input_values[ input.name ] = outputs[ conn.output_step.id ][ conn.output_name ]
-                        visitor( tool.inputs, input_values, "" )
-                        # Execute it                  
+                        def callback( input, value, prefixed_name, prefixed_label ):
+                            if isinstance( input, DataToolParameter ):
+                                if prefixed_name in step.input_connections_by_name:
+                                    conn = step.input_connections_by_name[ prefixed_name ]
+                                    return outputs[ conn.output_step.id ][ conn.output_name ]
+                        visit_input_values( tool.inputs, step.state.inputs, callback )
+                        # Execute it
                         outputs[ step.id ] = tool.execute( trans, step.state.inputs )
                     else:
                         outputs[ step.id ] = step.module.execute( trans, step.state )
@@ -527,14 +588,15 @@ class WorkflowController( BaseController ):
         else:
             for step in workflow.steps:
                 if step.type == 'tool' or step.type is None:
-                    # Build a new tool state for the step
-                    tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
-                    state = DefaultToolState()
-                    state.inputs = tool.params_from_strings( step.tool_inputs, trans.app )
+                    # Restore the tool state for the step
+                    module = module_factory.from_workflow_step( trans, step )
+                    # Any connected input needs to have value DummyDataset (these
+                    # are not persisted so we need to do it every time)
+                    module.add_dummy_datasets( connections=step.input_connections )                  
                     # Store state with the step
-                    step.state = state
-                    # This should never actually happen since we don't allow
-                    # running workflows with errors (yet?)
+                    step.module = module
+                    step.state = module.state
+                    # Error dict
                     if step.tool_errors:
                         errors[step.id] = step.tool_errors
                 else:
@@ -548,7 +610,8 @@ class WorkflowController( BaseController ):
                     "workflow/run.mako", 
                     steps=workflow.steps,
                     workflow=stored,
-                    errors=errors )
+                    errors=errors,
+                    incoming=kwargs )
     
     @web.expose
     def configure_menu( self, trans, workflow_ids=None ):

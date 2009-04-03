@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head profile="http://selenium-ide.openqa.org/profiles/test-case">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="selenium.base" href="" />
+<title>Create Simple Workflow</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">Create Simple Workflow</td></tr>
+</thead><tbody>
+<tr>
+	<td>setSpeed</td>
+	<td>100</td>
+	<td></td>
+</tr>
+<tr>
+	<td>open</td>
+	<td>/workflow</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>galaxy_main</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>workflow_name</td>
+	<td>Test workflow</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//input[@value='Create']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>wf-0-popup</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//div[@id='wf-0-popup-menu']/div[1]</td>
+	<td></td>
+</tr>
+<!--Now in workflow editor-->
+<tr>
+	<td>waitForNotVisible</td>
+	<td>overlay</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>//div[@id='title___workflow__input__']/a/span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>link=Input dataset</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForElementPresent</td>
+	<td>//div[@id='wf-node-step-1']/div[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//div[@id='wf-node-step-1']/div[1]</td>
+	<td>Input Dataset</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//div[@id='wf-node-step-1']/div[2]/div[2]</td>
+	<td>output</td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>//div[@id='title_group']/a/span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>link-join1</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForElementPresent</td>
+	<td>//div[@id='wf-node-step-2']/div[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//div[@id='wf-node-step-2']/div[1]</td>
+	<td>Join two Queries</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//div[@id='wf-node-step-2']/div[2]/div[3]</td>
+	<td>out_file1</td>
+</tr>
+<tr>
+	<td>assertElementPresent</td>
+	<td>//div[@id='wf-node-step-1']/div[2]/div[2]/div</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertElementPresent</td>
+	<td>//div[@id='wf-node-step-2']/div[2]/div[1]/div[1]/div</td>
+	<td></td>
+</tr>
+<tr>
+	<td>mouseDownAt</td>
+	<td>//div[@id='wf-node-step-1']/div[2]/div[2]/div</td>
+	<td>0,0</td>
+</tr>
+<tr>
+	<td>mouseMoveAt</td>
+	<td>//div[@id='wf-node-step-2']/div[2]/div[1]/div[1]/div</td>
+	<td>0,0</td>
+</tr>
+<tr>
+	<td>mouseUpAt</td>
+	<td>//div[@id='wf-node-step-2']/div[2]/div[1]/div[1]/div</td>
+	<td>0,0</td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>//div[@id='wf-node-step-2']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>field1</td>
+	<td>1</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>field2</td>
+	<td>1</td>
+</tr>
+<tr>
+	<td>select</td>
+	<td>unmatched</td>
+	<td>label=Yes</td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>tool-form-save-button</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForAttribute</td>
+	<td>tool-form-save-button@value</td>
+	<td>Save</td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>close-button</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//div[@id='overlay']/table/tbody/tr/td/div/div/div[3]/div[1]/button[2]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>selectFrame</td>
+	<td>galaxy_main</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//td[2]</td>
+	<td>2</td>
+</tr>
+
+</tbody></table>
+</body>
+</html>
