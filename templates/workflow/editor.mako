@@ -511,7 +511,7 @@
         padding-right: 5px;
         border-right: solid gray 1px;
     }
-    
+        
     </style>
 </%def>
 
