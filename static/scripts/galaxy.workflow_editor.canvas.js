@@ -442,6 +442,79 @@ $.extend( Workflow.prototype, {
             // Reactive with new form_html
             parent.show_form_for_tool( node.form_html, node );
         }
+    },
+    layout : function () {
+        // Prepare predecessor / successor tracking
+        var n_pred = {};
+        var successors = {};
+        $.each( this.nodes, function( i, node ) {
+            $.each( node.input_terminals, function ( j, t ) {
+                $.each( t.connectors, function ( k, c ) {
+                    // A connection exists from `other` to `node`
+                    var other = c.handle1.node;
+                    // Init all tracking arrays
+                    if ( n_pred[other.id] === undefined ) { n_pred[other.id] = 0; }
+                    if ( n_pred[node.id] === undefined ) { n_pred[node.id] = 0; }
+                    if ( successors[other.id] === undefined ) { successors[other.id] = []; }
+                    if ( successors[node.id] === undefined ) { successors[node.id] = []; }
+                    // node gains a predecessor
+                    n_pred[node.id] += 1;
+                    // other gains a successor
+                    successors[other.id].push( node.id );
+                });
+            });
+        });
+        // Assemble order, tracking levels
+        node_ids_by_level = []
+        while ( true ) {
+            // Everything without a predecessor
+            level_parents = []
+            $.each( n_pred, function( k, v ) {
+                if ( v == 0 ) {
+                    level_parents.push( k );
+                }
+            });            
+            if ( level_parents.length == 0 ) {
+                break;
+            }
+            node_ids_by_level.push( level_parents )
+            // Remove the parents from this level, and decrement the number
+            // of predecessors for each successor
+            $.each( level_parents, function( k, v ) {
+                delete n_pred[v];
+                $.each( successors[v], function( sk, sv ) {
+                    n_pred[sv] -= 1;
+                });
+            });
+        }
+        if ( n_pred.length ) {
+            // ERROR: CYCLE! Currently we do nothing
+            return
+        }
+        // Layout each level
+        var all_nodes = this.nodes;
+        var h_pad = 80; v_pad = 30;
+        var left = h_pad;        
+        $.each( node_ids_by_level, function( i, ids ) {
+            // We keep nodes in the same order in a level to give the user
+            // some control over ordering
+            ids.sort( function( a, b ) {
+                return $(all_nodes[a].element).position().top - $(all_nodes[b].element).position().top
+            });
+            // Position each node
+            var max_width = 0;
+            var top = v_pad;
+            $.each( ids, function( j, id ) {
+                var node = all_nodes[id];
+                var element = $(node.element);
+                $(element).css( { top: top, left: left } );
+                max_width = Math.max( max_width, $(element).width() );
+                top += $(element).height() + v_pad;
+            });
+            left += max_width + h_pad;
+        });
+        // Need to redraw all connectors
+        $.each( all_nodes, function( _, node ) { node.redraw() } );
     }
 });
 
