@@ -211,6 +211,8 @@ $.extend( Node.prototype, {
                         y = e.offsetY - po.top;
                     $(e.dragProxy).css( { left: x, top: y } );
                     e.dragProxy.terminal.redraw();
+                    // FIXME: global
+                    canvas_manager.update_viewport_overlay();
                 }
                 onmove();
                 $("#canvas-container").get(0).scroll_panel.test( e, onmove );
@@ -338,7 +340,8 @@ $.extend( Node.prototype, {
     }
 } );
 
-function Workflow() {
+function Workflow( canvas_container ) {
+    this.canvas_container = canvas_container;
     this.id_counter = 0;
     this.nodes = {}
     this.name = null;
@@ -516,9 +519,67 @@ $.extend( Workflow.prototype, {
         });
         // Need to redraw all connectors
         $.each( all_nodes, function( _, node ) { node.redraw() } );
+    },
+    bounds_for_all_nodes: function() {
+        var xmin = Infinity, xmax = -Infinity,
+            ymin = Infinity, ymax = -Infinity,
+            p;
+        $.each( this.nodes, function( id, node ) {
+            e = $(node.element);
+            p = e.position()
+            xmin = Math.min( xmin, p.left );
+            xmax = Math.max( xmax, p.left + e.width() );
+            ymin = Math.min( ymin, p.top );
+            ymax = Math.max( ymax, p.top + e.width() );
+        });
+        return  { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
+    },
+    fit_canvas_to_nodes: function() {
+        // Span of all elements
+        var bounds = this.bounds_for_all_nodes();
+        var position = this.canvas_container.position();
+        var parent = this.canvas_container.parent();
+        // Determine amount we need to expand on top/left
+        var xmin_delta = fix_delta( bounds.xmin, 100 );
+        var ymin_delta = fix_delta( bounds.ymin, 100 );
+        // May need to expand farther to fill viewport
+        xmin_delta = Math.max( xmin_delta, position.left );
+        ymin_delta = Math.max( ymin_delta, position.top );
+        var left = position.left - xmin_delta;
+        var top = position.top - ymin_delta;
+        // Same for width/height
+        var width = round_up( bounds.xmax + 100, 100 ) + xmin_delta;
+        var height = round_up( bounds.ymax + 100, 100 ) + ymin_delta;
+        width = Math.max( width, - left + parent.width() );
+        height = Math.max( height, - top + parent.height() );
+        // Grow the canvas container
+        this.canvas_container.css( {
+            left: left,
+            top: top,
+            width: width,
+            height: height,
+        });
+        // Move elements back if needed
+        this.canvas_container.children().each( function() {
+            var p = $(this).position()
+            $(this).css( "left", p.left + xmin_delta );
+            $(this).css( "top", p.top + ymin_delta );
+        });
     }
 });
 
+function fix_delta( x, n ) {
+    if ( x < n|| x > 3*n ) {
+        new_pos = ( Math.ceil( ( ( x % n ) ) / n ) + 1 ) * n;
+        return ( - ( x - new_pos ) );
+    }
+    return 0;
+}
+    
+function round_up( x, n ) {
+    return Math.ceil( x / n ) * n;
+}
+     
 function prebuild_node( type, title_text, tool_id ) {
     var f = $("<div class='toolForm toolFormInCanvas'></div>");
     var node = new Node( f );
@@ -547,8 +608,10 @@ function prebuild_node( type, title_text, tool_id ) {
     f.appendTo( "#canvas-container" );
     // Position in container
     var o = $("#canvas-container").position();
-    f.css( { left: ( - o.left ) + 10, top: ( - o.top ) + 10 } );
+    var p = $("#canvas-container").parent();
     var width = f.width();
+    var height = f.height();
+    f.css( { left: ( - o.left ) + ( p.width() / 2 ) - ( width / 2 ), top: ( - o.top ) + ( p.height() / 2 ) - ( height / 2 ) } );
     buttons.prependTo( title );
     width += ( buttons.width() + 10 );
     f.css( "width", width );
@@ -556,6 +619,8 @@ function prebuild_node( type, title_text, tool_id ) {
         workflow.activate_node( node );
     }).bind( "dragend", function() {
         workflow.node_changed( this );
+        workflow.fit_canvas_to_nodes();
+        canvas_manager.draw_overview();
     }).bind( "dragclickonly", function() {
        workflow.activate_node( node ); 
     }).bind( "drag", function( e ) {
@@ -587,6 +652,8 @@ function populate_datatype_info( data ) {
     type_to_type = data.class_to_classes;
 };
 
+// FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
+
 function ScrollPanel( panel ) {
     this.panel = panel;
 }
@@ -611,10 +678,10 @@ $.extend( ScrollPanel.prototype, {
             max_x = min_x + viewport.width(),
             max_y = min_y + viewport.height(),
             // Legal panel range
-            p_min_x = - ( panel_w - viewport_w ),
-            p_min_y = - ( panel_h - viewport_h ),
-            p_max_x = 0,
-            p_max_y = 0,
+            p_min_x = - ( panel_w - ( viewport_w / 2 ) ),
+            p_min_y = - ( panel_h - ( viewport_h / 2 )),
+            p_max_x = ( viewport_w / 2 ),
+            p_max_y = ( viewport_h / 2 ),
             // Did the panel move?
             moved = false,
             // Constants
@@ -656,3 +723,144 @@ $.extend( ScrollPanel.prototype, {
         clearTimeout( this.timeout );
     }
 });
+
+function CanvasManager( canvas_viewport, overview ) {
+    this.cv = canvas_viewport;
+    this.cc = this.cv.find( "#canvas-container" );
+    this.oc = overview.find( "#overview-canvas" );
+    this.ov = overview.find( "#overview-viewport" );
+    // Make overview box draggable
+    this.init_drag();
+}
+$.extend( CanvasManager.prototype, {
+    init_drag : function () {
+        var self = this;
+        var move = function( x, y ) {
+            x = Math.min( x, self.cv.width() / 2 );
+            x = Math.max( x, - self.cc.width() + self.cv.width() / 2 );
+            y = Math.min( y, self.cv.height() / 2 );
+            y = Math.max( y, - self.cc.height() + self.cv.height() / 2 );
+            self.cc.css( {
+                left: x,
+                top: y
+            });
+            self.update_viewport_overlay();
+        }
+        // Dragging within canvas background
+        this.cc.each( function() {
+            this.scroll_panel = new ScrollPanel( this );
+        });
+        var x_adjust, y_adjust;
+        this.cv.bind( "dragstart", function( e ) {
+            var o = $(this).offset();
+            var p = self.cc.position();
+            y_adjust = p.top - o.top;
+            x_adjust = p.left - o.left;
+        }).bind( "drag", function( e ) {
+            move( e.offsetX + x_adjust, e.offsetY + y_adjust );
+        }).bind( "dragend", function() {
+            workflow.fit_canvas_to_nodes();
+            self.draw_overview();
+        });
+        // Dragging for overview pane
+        this.ov.bind( "drag", function( e ) {
+            var in_w = self.cc.width();
+            var in_h = self.cc.height()
+            var o_w = self.oc.width();
+            var o_h = self.oc.height();
+            var p = $(this).offsetParent().offset();
+            var new_x_offset = e.offsetX - p.left;
+            var new_y_offset = e.offsetY - p.top;
+            move( - ( new_x_offset / o_w * in_w ),
+                  - ( new_y_offset / o_h * in_h ) );
+        }).bind( "dragend", function() {
+            workflow.fit_canvas_to_nodes();
+            self.draw_overview();
+        });
+        // Dragging for overview border (resize)
+        $("#overview-border").bind( "drag", function( e ) {
+            var op = $(this).offsetParent();
+            var opo = op.offset();
+            var new_size = Math.max( op.width() - ( e.offsetX - opo.left ),
+                                     op.height() - ( e.offsetY - opo.top ) );
+            $(this).css( {
+                width: new_size,
+                height: new_size
+            });
+            self.draw_overview();
+        });
+        
+    },
+    update_viewport_overlay: function() {
+        var cc = this.cc;
+        var cv = this.cv;
+        var oc = this.oc;
+        var ov = this.ov;
+        var in_w = cc.width();
+        var in_h = cc.height()
+        var o_w = oc.width();
+        var o_h = oc.height();
+        var cc_pos = cc.position()        
+        ov.css( {
+            left: - ( cc_pos.left / in_w * o_w ),
+            top: - ( cc_pos.top / in_h * o_h ),
+            // Subtract 2 to account for borders (maybe just change box sizing style instead?)
+            width: ( cv.width() / in_w * o_w ) - 2,
+            height: ( cv.height() / in_h * o_h ) - 2
+        });
+    },
+    draw_overview: function() {
+        var canvas_el = $("#overview-canvas");
+        var size = canvas_el.parent().parent().width()
+        var c = canvas_el.get(0).getContext("2d");
+        var in_w = $("#canvas-container").width();
+        var in_h = $("#canvas-container").height()
+        var o_h, shift_h, o_w, shift_w;
+        // Fit canvas into overview area
+        var cv_w = this.cv.width();
+        var cv_h = this.cv.height();
+        if ( in_w < cv_w && in_h < cv_h ) {
+            // Canvas is smaller than viewport
+            o_w = in_w / cv_w * size;
+            shift_w = ( size - o_w ) / 2;
+            o_h = in_h / cv_h * size;
+            shift_h = ( size - o_h ) / 2;
+        } else if ( in_w < in_h ) {
+            // Taller than wide
+            shift_h = 0;
+            o_h = size;
+            o_w = Math.ceil( o_h * in_w / in_h );
+            shift_w = ( size - o_w ) / 2;
+        } else {
+            // Wider than tall
+            o_w = size;
+            shift_w = 0;
+            o_h = Math.ceil( o_w * in_h / in_w );
+            shift_h = ( size - o_h ) / 2;
+        }
+        console.log( "~~", shift_w, shift_h );
+        canvas_el.parent().css( {
+           left: shift_w,
+           top: shift_h,
+           width: o_w,
+           height: o_h
+        });
+        canvas_el.attr( "width", o_w );
+        canvas_el.attr( "height", o_h );
+        // Draw overview
+        c.fillStyle = "#D2C099";
+        c.strokeStyle = "#D8B365";
+        c.lineWidth = 1;
+        $.each( workflow.nodes, function( id, node ) {
+            var node_element = $(node.element);
+                position = node_element.position(),
+                x = position.left / in_w * o_w,
+                y = position.top / in_h * o_h,
+                w = node_element.width() / in_w * o_w,
+                h = node_element.height() / in_h * o_h;
+            c.fillRect( x, y, w, h );
+            c.strokeRect( x, y, w, h );
+        });
+        this.update_viewport_overlay();
+    }
+})

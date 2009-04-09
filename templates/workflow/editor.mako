@@ -50,6 +50,10 @@
     <![endif]-->
     
     <script type='text/javascript'>
+    // Globals
+    workflow = null;
+    canvas_manager = null;
+    // jQuery onReady
     $( function() {
         if ( window.lt_ie_7 ) {
             show_modal(
@@ -58,6 +62,8 @@
             );
             return;
         }
+        // Canvas overview management
+        canvas_manager = new CanvasManager( $("#canvas-viewport"), $("#overview") );
         // Initialize workflow state
         reset();
         // Load the datatype info
@@ -77,7 +83,9 @@
                          reset();
                          workflow.from_simple( data );
                          workflow.has_changes = false;
+                         workflow.fit_canvas_to_nodes();
                          scroll_to_nodes();
+                         canvas_manager.draw_overview();
                          hide_modal();
                      },
                      beforeSubmit: function( data ) {
@@ -103,7 +111,9 @@
         
         $("#layout-button").click( function() {
             workflow.layout();
+            workflow.fit_canvas_to_nodes();
             scroll_to_nodes();
+            canvas_manager.draw_overview();
         });
         
         // Unload handler
@@ -111,24 +121,7 @@
             if ( workflow && workflow.has_changes ) {
                 return "There are unsaved changes to your workflow which will be lost.";
             }
-        }
-        
-        // Drag/scroll canvas
-        $("#canvas-container").each( function() {
-            this.scroll_panel = new ScrollPanel( this );
-        }).bind( "drag", function( e ) {
-            var p = $(this).parent(),
-                po = p.offset(),
-                x = e.offsetX - po.left,
-                y = e.offsetY - po.top;
-            // Limit range
-            x = Math.min( x, 0 );
-            y = Math.min( y, 0 );
-            x = Math.max( x, - ( $(this).width() - p.width() ) )
-            y = Math.max( y, - ( $(this).height() - p.height() ) )
-            // Constrain position
-            $(this).css( { left: x, top: y } );
-        });
+        };
         
         // Tool menu
         $( "div.toolSectionBody" ).hide();
@@ -150,34 +143,37 @@
         });
     });
 
-    var workflow = null;
-    
     // Global state for the whole workflow
     function reset() {
         if ( workflow ) {
             workflow.remove_all();
         }
-        workflow = new Workflow();
+        workflow = new Workflow( $("#canvas-container") );
     }
-    
+        
     function scroll_to_nodes() {
-        // Scroll to the top left node
-        if ( $("div.toolFormInCanvas").length > 0 ) {
-            var x = 5000, y = 5000;
-            $("div.toolFormInCanvas").each( function() {
-                x = Math.min( x, $(this).position().left );
-                y = Math.min( y, $(this).position().top );
-            });
-            x = Math.min( - x + 20, 0 );
-            y = Math.min( - y + 20, 0 );
-            $("#canvas-container").css( { left: x, top: y } );
+        var cv = $("#canvas-vieport");
+        var cc = $("#canvas-container")
+        var top, left;
+        if ( cc.width() < cv.width() ) {
+            left = ( cv.width() - cc.width() ) / 2;
+        } else {
+            left = 0;
         }
+        if ( cc.height() < cv.height() ) {
+            top = ( cv.height() - cc.height() ) / 2;
+        } else {
+            top = 0;
+        }
+        cc.css( { left: left, top: top } );
     }
     
     // Add a new step to the workflow by tool id
     function add_node_for_tool( id, title ) {
         var node = prebuild_node( 'tool', title, id );
         workflow.add_node( node );
+        workflow.fit_canvas_to_nodes();
+        canvas_manager.draw_overview();
         workflow.activate_node( node );
         $.ajax( {
             url: "${h.url_for( action='get_new_module_info' )}", 
@@ -200,6 +196,8 @@
     function add_node_for_module( type, title ) {
         node = prebuild_node( type, title );
         workflow.add_node( node );
+        workflow.fit_canvas_to_nodes();
+        canvas_manager.draw_overview();
         workflow.activate_node( node );
         $.ajax( {
             url: "${h.url_for( action='get_new_module_info' )}", 
@@ -316,14 +314,6 @@
             }
         });
     }
-    
-    ## var update_canvas_map = function() {
-    ##     var c = $("#canvas-map-canvas").get(0).getContext("2d");
-    ##     var cp = $("#canvas-container").position();
-    ##     c.clearRect( 0, 0, 100, 100 );
-    ##     c.strokeStyle = "rgb(200,0,0)";
-    ##     c.strokeRect ( -cp.left / 50, -cp.top / 50, $("#canvas-viewport").width() / 50, $("#canvas-viewport").height() / 50 );
-    ## }
     
     </script>
 </%def>
@@ -444,7 +434,7 @@
     div.toolFormInCanvas {
         z-index: 100;
         position: absolute;
-        min-width: 130px;
+        ## min-width: 130px;
         margin: 6px;
     }
     
@@ -631,11 +621,16 @@
     </div>
 
     <div class="unified-panel-body">
-        <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden;">
-            <div id="canvas-container" style="position: absolute; height: 5000px; width: 5000px; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;"></div>
-            ## <div id="canvas-map" style="height: 100px; width: 100px; border: solid red 1px; background: white; position: absolute; right: 0; bottom: 0;">
-            ##     <canvas width="100" height="100" style="width: 100%; height: 100%" id="canvas-map-canvas"></canvas>
-            ## </div>
+        <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden; background: #EEEEEE; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;">
+            <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
+        </div>
+        <div id="overview-border" style="position: absolute; width: 150px; height: 150px; right: 0; bottom: 0; border-top: solid gray 1px; border-left: solid grey 1px; padding: 7px 0 0 7px; background: #EEEEEE; z-index: 50000; overflow: hidden;">
+            <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
+                <div id="overview" style="position: absolute;">
+                    <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>
+                    <div id="overview-viewport" style="position: absolute; width: 0px; height: 0px; border: solid blue 1px; z-index: 10;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
