@@ -101,6 +101,11 @@
         $("#save-button").click( function() { save_current_workflow(); } );
         $("#close-button").click( function() { close_editor(); } );
         
+        $("#layout-button").click( function() {
+            workflow.layout();
+            scroll_to_nodes();
+        });
+        
         // Unload handler
         window.onbeforeunload = function() {
             if ( workflow && workflow.has_changes ) {
@@ -501,6 +506,12 @@
         z-index: 10000;
     }
     
+    .panel-header-button-group {
+        margin-right: 5px;
+        padding-right: 5px;
+        border-right: solid gray 1px;
+    }
+        
     </style>
 </%def>
 
@@ -608,6 +619,9 @@
 
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
+            <span class="panel-header-button-group">
+            <a id="layout-button" class="panel-header-button">Layout</a>
+            </span>
             <a id="save-button" class="panel-header-button">Save</a>
             <a id="close-button" class="panel-header-button">Close</a>
         </div>

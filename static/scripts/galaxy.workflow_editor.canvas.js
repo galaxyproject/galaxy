@@ -218,6 +218,7 @@ $.extend( Node.prototype, {
                 e.dragProxy.terminal.connectors[0].destroy();
                 $(e.dragProxy).remove();
                 $.dropManage().removeClass( "input-terminal-active" );
+                $("#canvas-container").get(0).scroll_panel.stop();
             });
             node.output_terminals[name] = terminal;
         });
@@ -442,6 +443,79 @@ $.extend( Workflow.prototype, {
             // Reactive with new form_html
             parent.show_form_for_tool( node.form_html, node );
         }
+    },
+    layout : function () {
+        // Prepare predecessor / successor tracking
+        var n_pred = {};
+        var successors = {};
+        $.each( this.nodes, function( i, node ) {
+            $.each( node.input_terminals, function ( j, t ) {
+                $.each( t.connectors, function ( k, c ) {
+                    // A connection exists from `other` to `node`
+                    var other = c.handle1.node;
+                    // Init all tracking arrays
+                    if ( n_pred[other.id] === undefined ) { n_pred[other.id] = 0; }
+                    if ( n_pred[node.id] === undefined ) { n_pred[node.id] = 0; }
+                    if ( successors[other.id] === undefined ) { successors[other.id] = []; }
+                    if ( successors[node.id] === undefined ) { successors[node.id] = []; }
+                    // node gains a predecessor
+                    n_pred[node.id] += 1;
+                    // other gains a successor
+                    successors[other.id].push( node.id );
+                });
+            });
+        });
+        // Assemble order, tracking levels
+        node_ids_by_level = []
+        while ( true ) {
+            // Everything without a predecessor
+            level_parents = []
+            $.each( n_pred, function( k, v ) {
+                if ( v == 0 ) {
+                    level_parents.push( k );
+                }
+            });            
+            if ( level_parents.length == 0 ) {
+                break;
+            }
+            node_ids_by_level.push( level_parents )
+            // Remove the parents from this level, and decrement the number
+            // of predecessors for each successor
+            $.each( level_parents, function( k, v ) {
+                delete n_pred[v];
+                $.each( successors[v], function( sk, sv ) {
+                    n_pred[sv] -= 1;
+                });
+            });
+        }
+        if ( n_pred.length ) {
+            // ERROR: CYCLE! Currently we do nothing
+            return
+        }
+        // Layout each level
+        var all_nodes = this.nodes;
+        var h_pad = 80; v_pad = 30;
+        var left = h_pad;        
+        $.each( node_ids_by_level, function( i, ids ) {
+            // We keep nodes in the same order in a level to give the user
+            // some control over ordering
+            ids.sort( function( a, b ) {
+                return $(all_nodes[a].element).position().top - $(all_nodes[b].element).position().top
+            });
+            // Position each node
+            var max_width = 0;
+            var top = v_pad;
+            $.each( ids, function( j, id ) {
+                var node = all_nodes[id];
+                var element = $(node.element);
+                $(element).css( { top: top, left: left } );
+                max_width = Math.max( max_width, $(element).width() );
+                top += $(element).height() + v_pad;
+            });
+            left += max_width + h_pad;
+        });
+        // Need to redraw all connectors
+        $.each( all_nodes, function( _, node ) { node.redraw() } );
     }
 });
 
@@ -578,83 +652,7 @@ $.extend( ScrollPanel.prototype, {
             this.timeout = setTimeout( function() { panel.test( e, onmove ); }, 50 );
         }
     },
-    drag: function( e, ui ) {
-        clearTimeout( this.timeout );
-        var element = e.dragProxy,
-            panel = this.panel,
-            panel_pos = panel.position(),
-            panel_w = panel.width(),
-            panel_h = panel.height()
-            viewport = panel.parent();
-            viewport_w = viewport.width(),
-            viewport_h = viewport.height(),
-            element_w = element.width(),
-            element_h = element.height(),
-            moved = false,
-            close_dist = 5,
-            nudge = 23,
-            // Legal panel range
-            p_min_x = - ( panel_w - viewport_w ),
-            p_min_y = - ( panel_h - viewport_h ),
-            p_max_x = 0,
-            p_max_y = 0,
-            // Visible
-            min_vis_x = - panel_pos.left,
-            max_vis_x = min_vis_x + viewport_w,
-            min_vis_y = - panel_pos.top,
-            max_vis_y = min_vis_y + viewport_h,
-            // Mouse
-            mouse_x = ui.position.left + instance.offset.click.left;
-            mouse_y = ui.position.top + instance.offset.click.top;
-        // Move it
-        if ( ( panel_pos.left < p_max_x ) && ( mouse_x - close_dist < min_vis_x ) ) {
-            var t = Math.min( nudge, p_max_x - panel_pos.left );
-            panel.css( "left", panel_pos.left + t );
-            moved = true;
-            instance.offset.parent.left += t;
-            ui.position.left -= t
-        }
-        if ( ( ! moved ) && ( panel_pos.left > p_min_x ) && ( mouse_x + close_dist > max_vis_x ) ) {
-            var t = Math.min( nudge, panel_pos.left  - p_min_x );
-            panel.css( "left", panel_pos.left - t );
-            moved = true;
-            instance.offset.parent.left -= t;
-            ui.position.left += t;      
-        }
-        if ( ( ! moved ) && ( panel_pos.top < p_max_y ) && ( mouse_y - close_dist < min_vis_y ) ) {
-            var t = Math.min( nudge, p_max_y - panel_pos.top );
-            panel.css( "top", panel_pos.top + t );
-            // Firefox sometimes moves by less, so we need to check. Yuck.
-            var amount_moved = panel.position().top - panel_pos.top;
-            instance.offset.parent.top += amount_moved;
-            ui.position.top -= amount_moved;
-            moved = true;
-        }
-        if ( ( ! moved ) && ( panel_pos.top > p_min_y ) && ( mouse_y + close_dist > max_vis_y ) ) {
-            var t = Math.min( nudge, panel_pos.top  - p_min_x );
-            panel.css( "top", ( panel_pos.top - t ) + "px" );
-            // Firefox sometimes moves by less, so we need to check. Yuck.
-            var amount_moved = panel_pos.top - panel.position().top;   
-            instance.offset.parent.top -= amount_moved;
-            ui.position.top += amount_moved;
-            moved = true;
-        }
-        // Still contain in panel
-        ui.position.left = Math.max( ui.position.left, 0 );
-        ui.position.top = Math.max( ui.position.top, 0 );
-        ui.position.left = Math.min( ui.position.left, panel_w - element_w );
-        ui.position.top = Math.min( ui.position.top, panel_h - element_h );
-        // Update offsets
-        if ( moved ) {
-            $.ui.ddmanager.prepareOffsets( instance, e );
-        }
-        // Keep moving even if mouse doesn't move
-        if ( moved ) {
-            this.timeout = setTimeout( function() { instance.mouseMove( e ) }, 50 );
-        }
-    },
     stop: function( e, ui ) {
-        var instance = $(this).data("draggable");
-        clearTimeout( instance.timeout );
+        clearTimeout( this.timeout );
     }
 });
