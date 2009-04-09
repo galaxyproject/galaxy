@@ -124,7 +124,7 @@ class Data( object ):
                 line = line.strip()
                 if not line:
                     continue
-                out.append( '<tr><td>%s</td></tr>' % escape( unicode( line, 'utf-8' ) ) )
+                out.append( '<tr><td>%s</td></tr>' % escape( unicode( line ) ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception, exc:

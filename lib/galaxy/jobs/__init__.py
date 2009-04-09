@@ -494,7 +494,10 @@ class JobWrapper( object ):
                         #the metadata that was stored to disk for use via the external process, 
                         #and the changes made by the user will be lost, without warning or notice
                         dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset ).filename_out )
-                    dataset.set_peek()
+                    if self.tool.is_multi_byte:
+                        dataset.set_multi_byte_peek()
+                    else:
+                        dataset.set_peek()
                 else:
                     dataset.blurb = "empty"
                 dataset.flush()
@@ -730,3 +733,4 @@ class NoopQueue( object ):
         return
     def shutdown( self ):
         return
+
