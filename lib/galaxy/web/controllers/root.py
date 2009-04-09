@@ -104,7 +104,7 @@ class RootController( BaseController ):
                 if data.state != state:
                     rval[id] = {
                         "state": data.state,
-                        "html": trans.fill_template( "root/history_item.mako", data=data, hid=data.hid )
+                        "html": unicode( trans.fill_template( "root/history_item.mako", data=data, hid=data.hid ), 'utf-8' )
                     }
         return rval
 

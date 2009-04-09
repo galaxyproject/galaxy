@@ -472,7 +472,10 @@ class JobWrapper( object ):
                 elif dataset.has_data():
                     # Only set metadata values if they are missing...
                     dataset.set_meta( overwrite = False )
-                    dataset.set_peek()
+                    if self.tool.is_multi_byte:
+                        dataset.set_multi_byte_peek()
+                    else:
+                        dataset.set_peek()
                 else:
                     dataset.blurb = "empty"
                 dataset.flush()

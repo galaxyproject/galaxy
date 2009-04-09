@@ -288,6 +288,8 @@ class Tool:
         if not self.version: 
             # For backward compatibility, some tools may not have versions yet.
             self.version = "1.0.0"
+        # Support multi-byte tools
+        self.is_multi_byte = util.string_as_bool( root.get( "is_multi_byte", False ) )
         # Type of tool
         self.tool_type = root.get( "tool_type", None )
         # data_source tool
