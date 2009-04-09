@@ -451,16 +451,17 @@ $.extend( Workflow.prototype, {
         // Prepare predecessor / successor tracking
         var n_pred = {};
         var successors = {};
-        $.each( this.nodes, function( i, node ) {
+        // First pass to initialize arrays even for nodes with no connections
+        $.each( this.nodes, function( id, node ) {
+            if ( n_pred[id] === undefined ) { n_pred[id] = 0; }
+            if ( successors[id] === undefined ) { successors[id] = []; }
+        });
+        // Second pass to count predecessors and successors
+        $.each( this.nodes, function( id, node ) {
             $.each( node.input_terminals, function ( j, t ) {
                 $.each( t.connectors, function ( k, c ) {
                     // A connection exists from `other` to `node`
                     var other = c.handle1.node;
-                    // Init all tracking arrays
-                    if ( n_pred[other.id] === undefined ) { n_pred[other.id] = 0; }
-                    if ( n_pred[node.id] === undefined ) { n_pred[node.id] = 0; }
-                    if ( successors[other.id] === undefined ) { successors[other.id] = []; }
-                    if ( successors[node.id] === undefined ) { successors[node.id] = []; }
                     // node gains a predecessor
                     n_pred[node.id] += 1;
                     // other gains a successor
@@ -838,7 +839,6 @@ $.extend( CanvasManager.prototype, {
             o_h = Math.ceil( o_w * in_h / in_w );
             shift_h = ( size - o_h ) / 2;
         }
-        console.log( "~~", shift_w, shift_h );
         canvas_el.parent().css( {
            left: shift_w,
            top: shift_h,
