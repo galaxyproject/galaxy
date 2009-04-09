@@ -162,7 +162,7 @@ class PBSJobRunner( object ):
             return
         
         # Check for deletion before we change state
-        if job_wrapper.get_state() == 'deleted':
+        if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
             job_wrapper.cleanup()
             return
@@ -223,7 +223,7 @@ class PBSJobRunner( object ):
         fh.close()
 
         # job was deleted while we were preparing it
-        if job_wrapper.get_state() == 'deleted':
+        if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
             pbs.pbs_disconnect(c)
             self.cleanup( ( ofile, efile, job_file ) )

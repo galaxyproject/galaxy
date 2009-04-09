@@ -1,4 +1,5 @@
-import shutil, StringIO, operator, urllib, gzip, tempfile, sets
+import shutil, StringIO, operator, urllib, gzip, tempfile, sets, string
+from datetime import datetime, timedelta
 from galaxy import util, datatypes
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
@@ -2096,3 +2097,46 @@ class Admin( BaseController ):
             breadcrumb += ".theone"
             heap = heap.theone
         return trans.fill_template( '/admin/memdump.mako', heap = heap, ids = ids, sorts = sorts, breadcrumb = breadcrumb, msg = msg )
+
+    @web.expose
+    @web.require_admin
+    def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, **kwd ):
+        deleted = []
+        msg = None
+        messagetype = None
+        job_ids = util.listify( stop )
+        if job_ids and stop_msg in [ None, '' ]:
+            msg = 'Please enter an error message to display to the user describing why the job was terminated'
+            messagetype = 'error'
+        elif job_ids:
+            if stop_msg[-1] not in string.punctuation:
+                stop_msg += '.'
+            for job_id in job_ids:
+                trans.app.job_manager.job_stop_queue.put( job_id, error_msg="This job was stopped by an administrator: %s  For more information or help" % stop_msg )
+                deleted.append( str( job_id ) )
+        if deleted:
+            msg = 'Queued job'
+            if len( deleted ) > 1:
+                msg += 's'
+            msg += ' for deletion: '
+            msg += ', '.join( deleted )
+            messagetype = 'done'
+        cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
+        jobs = trans.app.model.Job.filter(
+            and_( trans.app.model.Job.table.c.update_time < cutoff_time,
+                or_( trans.app.model.Job.c.state == trans.app.model.Job.states.NEW,
+                     trans.app.model.Job.c.state == trans.app.model.Job.states.QUEUED,
+                     trans.app.model.Job.c.state == trans.app.model.Job.states.RUNNING,
+                     trans.app.model.Job.c.state == trans.app.model.Job.states.UPLOAD,
+                )
+            )
+        ).order_by(trans.app.model.Job.c.update_time.desc()).all()
+        last_updated = {}
+        for job in jobs:
+            delta = datetime.utcnow() - job.update_time
+            if delta > timedelta( minutes=60 ):
+                last_updated[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
+            else:
+                last_updated[job.id] = '%s minutes' % int( delta.seconds / 60 )
+        return trans.fill_template( '/admin/jobs.mako', jobs = jobs, last_updated = last_updated, cutoff = cutoff, msg = msg, messagetype = messagetype )
+

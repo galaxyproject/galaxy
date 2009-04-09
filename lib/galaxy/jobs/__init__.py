@@ -16,7 +16,7 @@ from Queue import Queue, Empty
 log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
-JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED = 'wait', 'error', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted'
+JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED = 'wait', 'error', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted', 'admin_deleted'
 
 class JobManager( object ):
     """
@@ -211,6 +211,9 @@ class JobQueue( object ):
                     msg = "job %d deleted by user while still queued" % job.job_id
                     job.info = msg
                     log.debug( msg )
+                elif job_state == JOB_ADMIN_DELETED:
+                    job.fail( job_entity.info )
+                    log.info( "job %d deleted by admin while still queued" % job.job_id )
                 else:
                     msg = "unknown job state '%s' for job %d" % ( job_state, job.job_id )
                     job.info = msg
@@ -247,6 +250,10 @@ class JobQueue( object ):
         job can be dispatched. Otherwise, return JOB_WAIT indicating that input
         datasets are still being prepared.
         """
+        if job.state == model.Job.states.DELETED:
+            return JOB_DELETED
+        elif job.state == model.Job.states.ERROR:
+            return JOB_ADMIN_DELETED
         for dataset_assoc in job.input_datasets:
             idata = dataset_assoc.dataset
             if not idata:
@@ -262,8 +269,6 @@ class JobQueue( object ):
             elif idata.state != idata.states.OK:
                 # need to requeue
                 return JOB_WAIT
-        if job.state == model.Job.states.DELETED:
-            return JOB_DELETED
         return JOB_READY
             
     def put( self, job_id, tool ):
@@ -453,10 +458,13 @@ class JobWrapper( object ):
         # default post job setup
         mapping.context.current.clear()
         job = model.Job.get( self.job_id )
-        # TODO: change PBS to use fail() instead of finish()
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED:
             self.cleanup()
+            return
+        elif job.state == job.states.ERROR:
+            # Job was deleted by an administrator
+            self.fail( job.info )
             return
         if stderr:
             job.state = "error"
@@ -695,23 +703,33 @@ class JobStopQueue( object ):
         jobs = []
         try:
             while 1:
-                job = self.queue.get_nowait()
-                if job is self.STOP_SIGNAL:
+                ( job_id, error_msg ) = self.queue.get_nowait()
+                if job_id is self.STOP_SIGNAL:
                     return
                 # Append to watch queue
-                jobs.append( job )
+                jobs.append( ( job_id, error_msg ) )
         except Empty:
             pass  
 
-        for job in jobs:
-            # job is in JobQueue or FooJobRunner, will be dequeued due to state change above
-            if job.job_runner_name is None:
-                return
-            # tell the dispatcher to stop the job
-            self.dispatcher.stop( job )
+        for job_id, error_msg in jobs:
+            job = model.Job.get( job_id )
+            job.refresh()
+            # if desired, error the job so we can inform the user.
+            if error_msg is not None:
+                job.state = job.states.ERROR
+                job.info = error_msg
+            else:
+                job.state = job.states.DELETED
+            job.flush()
+            # if job is in JobQueue or FooJobRunner's put method,
+            # job_runner_name will be unset and the job will be dequeued due to
+            # state change above
+            if job.job_runner_name is not None:
+                # tell the dispatcher to stop the job
+                self.dispatcher.stop( job )
 
-    def put( self, job ):
-        self.queue.put( job )
+    def put( self, job_id, error_msg=None ):
+        self.queue.put( ( job_id, error_msg ) )
 
     def shutdown( self ):
         """Attempts to gracefully shut down the worker thread"""
@@ -721,7 +739,7 @@ class JobStopQueue( object ):
         else:
             log.info( "sending stop signal to worker thread" )
             self.running = False
-            self.queue.put( self.STOP_SIGNAL )
+            self.queue.put( ( self.STOP_SIGNAL, None ) )
             self.sleeper.wake()
             log.info( "job stopper stopped" )
 
