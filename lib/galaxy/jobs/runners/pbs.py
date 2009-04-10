@@ -313,7 +313,7 @@ class PBSJobRunner( object ):
                     log.debug("(%s/%s) job state changed from %s to %s" % ( galaxy_job_id, job_id, old_state, state ) )
                 if state == "R" and not pbs_job_state.running:
                     pbs_job_state.running = True
-                    pbs_job_state.job_wrapper.change_state( "running" )
+                    pbs_job_state.job_wrapper.change_state( model.Job.states.RUNNING )
                 if self.app.config.output_size_limit > 0 and state == "R" and (pbs_job_state.check_count % 10) == 0:
                     # Every 10th time a job is checked, check the size of its outputs.
                     fail = False
@@ -433,9 +433,8 @@ class PBSJobRunner( object ):
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
-        #self.queue_job( job_wrapper )
         # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state( 'queued' )
+        job_wrapper.change_state( model.Job.states.QUEUED )
         self.work_queue.put( ( 'queue', job_wrapper ) )
     
     def shutdown( self ):

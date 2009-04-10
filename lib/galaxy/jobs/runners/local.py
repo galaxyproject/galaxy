@@ -69,6 +69,7 @@ class LocalJobRunner( object ):
                                          env = env,
                                          preexec_fn = os.setpgrp )
                 job_wrapper.set_runner( 'local:///', proc.pid )
+                job_wrapper.change_state( model.Job.states.RUNNING )
                 if self.app.config.output_size_limit > 0:
                     sleep_time = 1
                     while proc.poll() is None:
@@ -124,7 +125,7 @@ class LocalJobRunner( object ):
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
         # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state( 'running' )
+        job_wrapper.change_state( model.Job.states.QUEUED )
         self.queue.put( job_wrapper )
     
     def shutdown( self ):

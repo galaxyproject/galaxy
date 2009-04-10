@@ -120,13 +120,13 @@ class SGEJobRunner( object ):
             return
         
         # Check for deletion before we change state
-        if job_wrapper.get_state() == 'deleted':
+        if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the SGE queue" % job_wrapper.job_id )
             job_wrapper.cleanup()
             return
 
         # Change to queued state immediately
-        job_wrapper.change_state( 'queued' )
+        job_wrapper.change_state( model.Job.states.QUEUED )
         
         if self.determine_sge_cell( runner_url ) != self.default_cell:
             # TODO: support multiple cells
@@ -150,7 +150,7 @@ class SGEJobRunner( object ):
         os.chmod( jt.remoteCommand, 0750 )
 
         # job was deleted while we were preparing it
-        if job_wrapper.get_state() == 'deleted':
+        if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the SGE queue" % job_wrapper.job_id )
             self.cleanup( ( ofile, efile, jt.remoteCommand ) )
             job_wrapper.cleanup()
@@ -235,7 +235,7 @@ class SGEJobRunner( object ):
                 log.debug("(%s/%s) state change: %s" % ( galaxy_job_id, job_id, DRMAA_state[state] ) )
             if state == DRMAA.Session.RUNNING and not sge_job_state.running:
                 sge_job_state.running = True
-                sge_job_state.job_wrapper.change_state( "running" )
+                sge_job_state.job_wrapper.change_state( model.Job.states.RUNNING )
             if state == DRMAA.Session.DONE:
                 self.finish_job( sge_job_state )
                 continue
