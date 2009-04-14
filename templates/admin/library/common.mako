@@ -18,7 +18,7 @@
     %>
     <div class="historyItemWrapper historyItem historyItem-${ldda.state}" id="libraryItem-${ldda.id}">
         ## Header row for library items (name, state, action buttons)
-        <div style="overflow: hidden;" class="historyItemTitleBar">     
+        <div class="historyItemTitleBar">     
             <table cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                     <td width="*">
