@@ -19,7 +19,7 @@ class RBACAgent:
     permitted_actions = Bunch(
         DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Role members can manage the roles associated with this dataset", "grant" ),
         DATASET_ACCESS = Action( "access", "Role members can import this dataset into their history for analysis", "restrict" ),
-        LIBRARY_ADD = Action( "add library item", "Role members can add library items to this folder", "grant" ),
+        LIBRARY_ADD = Action( "add library item", "Role members can add library items to this library item", "grant" ),
         LIBRARY_MODIFY = Action( "modify library item", "Role members can modify this library item", "grant" ),
         LIBRARY_MANAGE = Action( "manage library permissions", "Role members can manage roles associated with this library item", "grant" )
     )

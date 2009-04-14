@@ -162,7 +162,7 @@ class Admin( BaseController ):
                             .all():
                 root_found = False
                 folder_path = ''
-                folder = ldda.folder
+                folder = ldda.library_dataset.folder
                 while not root_found:
                     folder_path = '%s / %s' % ( folder.name, folder_path )
                     if not folder.parent:
