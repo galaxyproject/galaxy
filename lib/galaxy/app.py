@@ -3,7 +3,6 @@ import sys, os, atexit
 from galaxy import config, jobs, util, tools, web
 from galaxy.web import security
 import galaxy.model
-import galaxy.model.mapping
 import galaxy.datatypes.registry
 
 class UniverseApplication( object ):
@@ -22,11 +21,14 @@ class UniverseApplication( object ):
             db_url = self.config.database_connection
         else:
             db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
+        # Initialize database / check for appropriate schema version
+        from galaxy.model.migrate.check import create_or_verify_database
+        create_or_verify_database( db_url, self.config.database_engine_options )
         # Setup the database engine and ORM
-        self.model = galaxy.model.mapping.init( self.config.file_path,
-                                                db_url,
-                                                self.config.database_engine_options,
-                                                create_tables = True )
+        from galaxy.model import mapping
+        self.model = mapping.init( self.config.file_path,
+                                   db_url,
+                                   self.config.database_engine_options )
         # Security helper
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Initialize the tools
