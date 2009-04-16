@@ -46,7 +46,7 @@ def nextval( table, col='id' ):
 
 def localtimestamp():
    if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
-       return "LOCALTIMESTAMP %s"
+       return "LOCALTIMESTAMP"
    elif migrate_engine.name == 'sqlite':
        return "current_date || ' ' || current_time"
    else:
@@ -477,7 +477,7 @@ def upgrade():
                 "email AS name," + \
                 "email AS description," + \
                 "'private' As type," + \
-                "%d AS deleted " + \
+                "%s AS deleted " + \
                 "FROM galaxy_user " + \
                 "ORDER BY id;"
             cmd = cmd % ( nextval('role'), localtimestamp(), localtimestamp(), boolean_false() )
@@ -523,7 +523,7 @@ def upgrade():
                 "user_role_association.role_id AS role_id " + \
                 "FROM history " + \
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
-                "WHERE history.purged = %d AND history.user_id IS NOT NULL;"
+                "WHERE history.purged = %s AND history.user_id IS NOT NULL;"
             cmd = cmd % ( nextval('default_history_permissions'), boolean_false() )
             db_session.execute( cmd )
             # Create "manage permissions" dataset_permissions for all activate-able datasets
@@ -539,7 +539,7 @@ def upgrade():
                 "JOIN history_dataset_association ON history_dataset_association.history_id = history.id " + \
                 "JOIN dataset ON history_dataset_association.dataset_id = dataset.id " + \
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
-                "WHERE dataset.purged = %d AND history.user_id IS NOT NULL;"
+                "WHERE dataset.purged = %s AND history.user_id IS NOT NULL;"
             cmd = cmd % ( nextval('dataset_permissions'), localtimestamp(), localtimestamp(), boolean_false() )
             db_session.execute( cmd )
 
