@@ -13,6 +13,7 @@
       }
       .current-quickie {
 	    width: 100%;
+	    background: black;
       }
       .quickie .head {
 	    font-size: 200%;
@@ -35,10 +36,12 @@
       .previous .quickie .head {
       	    font-size: 120%;
 	    padding: 10px 10px;
+	    text-decoration: none;
       }
       .previous .quickie .sub {
 	    font-size: 100%;
 	    padding: 10px 10px;
+	    text-decoration: none;
       }
       #screencasts {
 	    max-width: 50em;
@@ -62,7 +65,7 @@
 <div id="screencasts">
 
 <h2>Introducing Galactic Quickies</h2>
-
+<hr>
 <p>
     Galactic quickies are <i>super-short</i> screencasts that are <i>always</i> under 5 minutes. We thought it may be a good way to spread the word about Galaxy's functionality while keeping the &quot;annoyance factor&quot; to the minimum. The quickies will be updated weekly.
 </p>
@@ -70,13 +73,10 @@
 <div class="current-quickie">
       <table border="0" cellpadding="0" cellspacing="0" width="100%">
       <tr>
-      <td>
-			
-      <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie3_Intervals/min.html',width:640,height:496,scroll:'no'})">
-	  <div class="quickie">
-		<div class="head">A word about interval data</div>
-		<div class="sub">Galactic quickie #3</div>
-	  </div>
+      <td align="center">
+      <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie4_whatsnew/flow.html',width:640,height:500,scroll:'no'})"> 
+          <img src="images/qk/quickie4.jpg" border="0">
+       <br>
       </a>
 
       </td>
@@ -85,27 +85,36 @@
 </div>
 
 <h3>Previous Quickies:</h3>
+<hr>
 
 <div class="previous">
       <table border="0" cellpadding="0" cellspacing="0" width="100%">
       <tr>
-      <td width="50%" style="border-right: solid white 25px;">
-      <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie1_TabSeq/min.html',width:640,height:496,scroll:'no'})">
+          <td width="33%" style="border-right: solid white 20px; text-decoration:none;">
+      <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie1_TabSeq/flow.html',width:640,height:500,scroll:'no'})">
 	  <div class="quickie">
-		<div class="head">Sequences as tab data</div>
-		<div class="sub">Galactic quickie #1</div>
+          <img src="images/qk/quickie1_small.png" border="0">
 	  </div>
       </a>
       </td>
-      <td width="50%">
-      <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/min.html',width:640,height:496,scroll:'no'})">
+      <td width="33%" style="border: solid white 10px;">
+      <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/flow.html',width:640,height:500,scroll:'no'})">
 	  <div class="quickie">
-		<div class="head">Grouping</div>
-		<div class="sub">Galactic quickie #2</div>
+         <img src="images/qk/quickie2_small.png" border="0">
+
 	  </div>
       </a>
       </div>
       </td>
+      <td width="33%" style="border-left: solid white 20px;" >
+      <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie3_Intervals/flow.html',width:640,height:500,scroll:'no'})">
+	  <div class="quickie">
+         <img src="images/qk/quickie3_small.png" border="0">
+
+	  </div>
+      </a>
+      </td>
+
       </tr>
       </table>
 </div>
@@ -118,7 +127,7 @@
 
 <p><a target="_blank" class="reference" href="http://g2.trac.bx.psu.edu/wiki/GalaxyTeam">The Galaxy team</a> is a part of <a target="_blank" class="reference" href="http://www.bx.psu.edu">BX</a> at <a target="_blank" class="reference" href="http://www.psu.edu">Penn State</a>.</p>
 
-This project is supported in part by <a target="_blank" class="reference" href="http://www.nsf.gov">NSF</a> and <a target="_blank" class="reference" href="http://www.huck.psu.edu">the Huck Institutes of the Life Sciences</a>.
+This project is supported in part by <a target="_blank" class="reference" href="http://www.nsf.gov">NSF</a>, <a target="_blank" class="reference" href="http://www.genome.gov">NHGRI</a>, and <a target="_blank" class="reference" href="http://www.huck.psu.edu">the Huck Institutes of the Life Sciences</a>.
 <p><small>Galaxy build: <b>$Rev 1733:a4214de3752e$</b></small></p>
 </div>
 </div>
