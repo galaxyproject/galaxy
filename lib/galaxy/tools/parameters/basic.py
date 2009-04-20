@@ -990,7 +990,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     initial_values.append( option['value'] )
                 recurse_options( initial_values, option['options'] )
         # More working around dynamic options for workflow
-        if self.need_late_validation( trans, other_values ):
+        if self.need_late_validation( trans, context ):
             # Really the best we can do?
             return UnvalidatedValue( None )
         initial_values = []
