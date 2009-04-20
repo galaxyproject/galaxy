@@ -76,7 +76,7 @@ class WorkflowController( BaseController ):
             if not other:
                 mtype = "error"
                 msg = ( "User '%s' does not exist" % email )
-            if other == trans.get_user():
+            elif other == trans.get_user():
                 mtype = "error"
                 msg = ( "You cannot share a workflow with yourself" )
             elif trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
