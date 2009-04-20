@@ -3,16 +3,8 @@
 <%def name="init()">
 <%
     self.active_view="workflow"
-    self.message_box_visible=True
-    self.message_box_class="warning"
     self.overlay_visible=True
 %>
-</%def>
-
-<%def name="message_box_content()">
-    Workflow support is currently in <b><i>beta</i></b> testing.
-    Workflows may not work with all tools, may fail unexpectedly, and may
-    not be compatible with future updates to <b>Galaxy</b>.
 </%def>
 
 <%def name="late_javascripts()">

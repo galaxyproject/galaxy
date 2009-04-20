@@ -5,15 +5,8 @@
     self.has_left_panel=False
     self.has_right_panel=False
     self.active_view="workflow"
-    self.message_box_visible=True
-    self.message_box_class="warning"
+    self.message_box_visible=False
 %>
-</%def>
-
-<%def name="message_box_content()">
-    Workflow support is currently in <b><i>beta</i></b> testing.
-    Workflows may not work with all tools, may fail unexpectedly, and may
-    not be compatible with future updates to <b>Galaxy</b>.
 </%def>
 
 <%def name="center_panel()">
