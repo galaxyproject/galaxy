@@ -569,7 +569,7 @@ class SelectToolParameter( ToolParameter ):
     def value_to_basic( self, value, app ):
         if isinstance( value, UnvalidatedValue ):
             return { "__class__": "UnvalidatedValue", "value": value.value }
-        return super( SelectToolParameter, self ).value_to_basic( value, app )
+        return value
     def value_from_basic( self, value, app, ignore_errors=False ):
         if isinstance( value, dict ) and value["__class__"] == "UnvalidatedValue":
             return UnvalidatedValue( value["value"] )
