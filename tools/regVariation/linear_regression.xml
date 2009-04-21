@@ -1,4 +1,4 @@
-<tool id="LinearRegression1" name="Perform Linear Regression">
+<tool id="LinearRegression1" name="Perform Linear Regression" version="1.0.1">
   <description> </description>
   <command interpreter="python">
     linear_regression.py 
@@ -48,7 +48,7 @@ This tool uses the 'lm' function from R statistical package to perform linear re
 
 **Note**
 
-- This tool currently treats all predictor and response variables as continuous variables. 
+- This tool currently treats all predictor and response variables as continuous variables. Running the tool on categorical variables might result in incorrect results.
 
 - Rows containing non-numeric (or missing) data in any of the chosen columns will be skipped from the analysis.
 

@@ -108,10 +108,15 @@ print >>fout, "Sigma\t%s" %(summary.get('sigma','NA'))
 r.pdf( outfile2, 8, 8 )
 if len(x_vals) == 1:    #Simple linear  regression case with 1 predictor variable
     sub_title =  "Slope = %s; Y-int = %s" %(slope,yintercept)
-    r.plot(x=x_vals[0], y=y_vals, xlab="X", ylab="Y", sub=sub_title, main="Scatterplot with regression")
-    r.abline(a=yintercept, b=slope, col="red")
+    try:
+        r.plot(x=x_vals[0], y=y_vals, xlab="X", ylab="Y", sub=sub_title, main="Scatterplot with regression")
+        r.abline(a=yintercept, b=slope, col="red")
+    except:
+        pass
 else:
     r.pairs(dat, main="Scatterplot Matrix", col="blue")
-
-r.plot(linear_model)
+try:
+    r.plot(linear_model)
+except:
+    pass
 r.dev_off()

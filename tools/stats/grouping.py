@@ -3,7 +3,7 @@
 """
 This tool provides the SQL "group by" functionality.
 """
-import sys, string, re, commands, tempfile, random
+import sys, string, re, commands, tempfile, random, sets
 from rpy import *
 
 def stop_err(msg):
@@ -48,7 +48,7 @@ def main():
     
     for k,col in enumerate(cols):
         col = int(col)-1
-        if ops[k] not in ['c', 'length', 'unique', 'random']:
+        if ops[k] not in ['c', 'length', 'unique', 'random', 'cuniq']:
             # We'll get here only if the user didn't choose 'Concatenate' or 'Count' or 'Count Distinct' or 'pick randmly', which are the
             # only aggregation functions that can be used on columns containing strings.
             try:
@@ -104,7 +104,7 @@ def main():
                             valid = True
                             # Before appending the current value, make sure it is numeric if the
                             # operation for the column requires it.
-                            if ops[i] not in ['c','length', 'unique','random']:
+                            if ops[i] not in ['c','length', 'unique','random','cuniq']:
                                 try:
                                     float( fields[col].strip())
                                 except:
@@ -125,13 +125,18 @@ def main():
                         out_str = prev_item
     
                         for i, op in enumerate( ops ):
-                            rfunc = "r." + op 
-                            if op not in ['c','length','unique','random']:
+                            if op == 'cuniq':
+                                rfunc = "r.c"
+                            else:
+                                rfunc = "r." + op 
+                            if op not in ['c','length','unique','random','cuniq']:
                                 for j, elem in enumerate( prev_vals[i] ):
                                     prev_vals[i][j] = float( elem )
-                                rout = "%g" %( eval( rfunc )( prev_vals[i] ))
+                                rout = eval( rfunc )( prev_vals[i] )
                                 if rounds[i] == 'yes':
                                     rout = int(round(float(rout)))
+                                else:
+                                    rout = '%g' %(float(rout))
                             else:
                                 if op != 'random':
                                     rout = eval( rfunc )( prev_vals[i] )
@@ -142,8 +147,14 @@ def main():
                             if op == 'unique':
                                 rfunc = "r.length" 
                                 rout = eval( rfunc )( rout )
-                            out_str += "\t" + str(rout)
-    
+                            if op in ['c', 'cuniq']:
+                                if op == 'c':
+                                    out_str += "\t" + ','.join(rout)
+                                else:
+                                    out_str += "\t" + ','.join(list(set(rout)))
+                            else:
+                                out_str += "\t" + str(rout)
+                                
                         print >>fout, out_str
     
                         prev_item = item   
@@ -175,14 +186,19 @@ def main():
     out_str = prev_item
     
     for i, op in enumerate(ops):
-        rfunc = "r." + op 
+        if op == 'cuniq':
+            rfunc = "r.c"
+        else:
+            rfunc = "r." + op 
         try:
-            if op not in ['c','length','unique','random']:
+            if op not in ['c','length','unique','random','cuniq']:
                 for j, elem in enumerate( prev_vals[i] ):
                     prev_vals[i][j] = float( elem )
-                rout = '%g' %( eval( rfunc )( prev_vals[i] ))
+                rout = eval( rfunc )( prev_vals[i] )
                 if rounds[i] == 'yes':
                     rout = int(round(float(rout)))
+                else:
+                    rout = '%g' %(float(rout))
             else:
                 if op != 'random':
                     rout = eval( rfunc )( prev_vals[i] )
@@ -192,8 +208,14 @@ def main():
                     
             if op == 'unique':
                 rfunc = "r.length" 
-                rout = eval( rfunc )( rout )    
-            out_str += "\t" + str( rout )
+                rout = eval( rfunc )( rout )  
+            if op in ['c','cuniq']:
+                if op == 'c':
+                    out_str += "\t" + ','.join(rout)
+                else:
+                    out_str += "\t" + ','.join(list(set(rout)))
+            else:
+                out_str += "\t" + str( rout )
         except:
             skipped_lines += 1
             if not first_invalid_line:
@@ -212,6 +234,8 @@ def main():
             op = 'count_distinct'
         elif op == 'random':
             op = 'randomly_pick'
+        elif op == 'cuniq':
+            op = 'concat_distinct'
         msg += op + "[c" + cols[i] + "] "
     if skipped_lines > 0:
         msg+= "--skipped %d invalid lines starting with line %d.  Value '%s' in column %d is not numeric." % ( skipped_lines, first_invalid_line, invalid_value, invalid_column )
