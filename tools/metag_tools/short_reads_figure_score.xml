@@ -78,7 +78,7 @@ Every box on the plot shows the following values::
        |
        |
       -+-    &lt;---- Lower Extreme Value that is no more
-                   that box length away from the box
+                   than box length away from the box
        o     &lt;---- Outlier
  
  
