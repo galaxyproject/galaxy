@@ -6,12 +6,11 @@
 
 <%def name="datatype( dataset, datatypes )">
     <select name="datatype">
-        ## $datatypes.sort()
         %for ext in datatypes:
             %if dataset.ext == ext:
-                <option value="${ext}" selected="yes">${_(ext)}}</option>
+                <option value="${ext}" selected="yes">${_(ext)}</option>
             %else:
-                <option value="${ext}">${_(ext)}}</option>
+                <option value="${ext}">${_(ext)}</option>
             %endif
         %endfor
     </select>

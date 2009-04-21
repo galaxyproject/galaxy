@@ -10,14 +10,6 @@
     <tool file="data_source/encode_db.xml" />
     <tool file="data_source/epigraph_import.xml" />
   </section>
-  <section name="Get ENCODE Data" id="encode">
-    <tool file="data_source/encode_import_chromatin_and_chromosomes.xml"/>
-    <tool file="data_source/encode_import_genes_and_transcripts.xml"/>
-    <tool file="data_source/encode_import_multi-species_sequence_analysis.xml"/>
-    <tool file="data_source/encode_import_transcription_regulation.xml"/>
-    <tool file="data_source/encode_import_all_latest_datasets.xml" />
-    <tool file="data_source/encode_import_gencode.xml" />
-  </section>
   <section name="Send Data" id="send">
     <tool file="data_destination/epigraph.xml" />
   </section>
@@ -42,17 +34,6 @@
     <tool file="filters/headWrapper.xml" />
     <tool file="filters/tailWrapper.xml" />
   </section>
-  <section name="Filter and Sort" id="filter">
-    <tool file="stats/filtering.xml" />
-    <tool file="filters/sorter.xml" />
-    <tool file="filters/grep.xml" />
-  </section>
-  <section name="Join, Subtract and Group" id="group">
-    <tool file="filters/joiner.xml" />
-    <tool file="filters/compare.xml"/>
-    <tool file="new_operations/subtract_query.xml"/>
-    <tool file="stats/grouping.xml" />   
-  </section>
   <section name="Convert Formats" id="convert">
     <tool file="filters/bed2gff.xml" />
     <tool file="fasta_tools/fasta_to_tabular.xml" />
@@ -68,15 +49,21 @@
     <tool file="fasta_tools/fasta_to_tabular.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
   </section>
+  <section name="Filter and Sort" id="filter">
+    <tool file="stats/filtering.xml" />
+    <tool file="filters/sorter.xml" />
+    <tool file="filters/grep.xml" />
+  </section>
+  <section name="Join, Subtract and Group" id="group">
+    <tool file="filters/joiner.xml" />
+    <tool file="filters/compare.xml"/>
+    <tool file="new_operations/subtract_query.xml"/>
+    <tool file="stats/grouping.xml" />   
+  </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
     <tool file="extract/extract_GFF_Features.xml" />
   </section>
-  <!--  
-  <section name="Pattern-Matching" id="patmat">
-    <tool file="patmat/findcluster_mysql.xml" />
-  </section> 
-  -->
   <section name="Fetch Sequences" id="fetchSeq">
     <tool file="extract/extract_genomic_dna.xml" />
   </section>
@@ -149,12 +136,19 @@
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
     <tool file="hyphy/hyphy_dnds_wrapper.xml" />
  </section>
- <section name="Taxonomy manipulation" id="tax_manipulation">
+ <section name="Metagenomic analyses" id="tax_manipulation">
     <tool file="taxonomy/gi2taxonomy.xml" />
     <tool file="taxonomy/t2t_report.xml" />
     <tool file="taxonomy/t2ps_wrapper.xml" />
     <tool file="taxonomy/find_diag_hits.xml" />
+    <tool file="taxonomy/lca.xml" />
     <tool file="taxonomy/poisson2test.xml" />
+  </section>
+  <section name="Short Read Analysis" id="short_read_analysis">
+    <tool file="metag_tools/short_reads_figure_score.xml" />
+    <tool file="metag_tools/short_reads_trim_seq.xml" />
+    <tool file="metag_tools/megablast_wrapper.xml" />
+    <tool file="metag_tools/megablast_xml_parser.xml" /> 
   </section>
   <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss_5/emboss_antigenic.xml" />
@@ -264,11 +258,5 @@
     <tool file="emboss_5/emboss_wobble.xml" />
     <tool file="emboss_5/emboss_wordcount.xml" />
     <tool file="emboss_5/emboss_wordmatch.xml" /> 
-  </section>
-  <section name="Short Read Analysis" id="short_read_analysis">
-    <tool file="metag_tools/short_reads_figure_score.xml" />
-    <tool file="metag_tools/short_reads_trim_seq.xml" />
-    <tool file="metag_tools/megablast_wrapper.xml" />
-    <tool file="metag_tools/megablast_xml_parser.xml" /> 
   </section>
 </toolbox>
