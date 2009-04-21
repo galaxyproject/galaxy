@@ -2,6 +2,7 @@ import logging, threading, sys, os, time, subprocess, string, tempfile, re, trac
 
 from galaxy import util, model
 from galaxy.model import mapping
+from galaxy.model.orm import lazyload
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
 from galaxy.datatypes import metadata
@@ -158,7 +159,7 @@ class JobQueue( object ):
         # Pull all new jobs from the queue at once
         new_jobs = []
         if self.track_jobs_in_database:
-            for j in session.query( model.Job ).filter( model.Job.c.state == model.Job.states.NEW ).all():
+            for j in session.query( model.Job ).options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ).filter( model.Job.c.state == model.Job.states.NEW ).all():
                 job = JobWrapper( j, self.app.toolbox.tools_by_id[ j.tool_id ], self )
                 new_jobs.append( job )
         else:
