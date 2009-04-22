@@ -382,7 +382,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 permissions[role_assoc.action] = [ role_assoc.role ]
         self.set_all_library_permissions( target_library_item, permissions )
         if user:
-            # Make sure user's private role is included
+            # The user passed will be the current Galaxy user.  Make sure user's private role is included
             item_class = None
             for item_class, permission_class, info_association_class in self.library_item_assocs:
                 if isinstance( target_library_item, item_class ):
@@ -396,7 +396,6 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 raise 'Invalid class (%s) specified for target_library_item (%s)' % ( target_library_item.__class__, target_library_item.__class__.__name__ )
     def show_library_item( self, user, library_item ):
-        # TODO: possibly needs to support other library item types
         if self.allow_action( user, self.permitted_actions.LIBRARY_MODIFY, library_item=library_item ) or \
             self.allow_action( user, self.permitted_actions.LIBRARY_MANAGE, library_item=library_item ) or \
             self.allow_action( user, self.permitted_actions.LIBRARY_ADD, library_item=library_item ):

@@ -137,7 +137,7 @@ class Library( BaseController ):
                 trans.app.security_agent.set_all_library_permissions( library, permissions )
                 library.refresh()
                 # Copy the permissions to the root folder
-                trans.app.security_agent.copy_library_permissions( library, library.root_folder, user=trans.get_user() )
+                trans.app.security_agent.copy_library_permissions( library, library.root_folder )
                 msg = "Permissions updated for library '%s'" % library.name
                 return trans.response.send_redirect( web.url_for( controller='library',
                                                                   action='library',
@@ -934,7 +934,7 @@ class Library( BaseController ):
                 folder.add_folder( new_folder )
                 new_folder.flush()
                 # New folders default to having the same permissions as their parent folder
-                trans.app.security_agent.copy_library_permissions( folder, new_folder, user=trans.get_user() )
+                trans.app.security_agent.copy_library_permissions( folder, new_folder )
                 msg = "New folder named '%s' has been added to the library" % new_folder.name
                 return trans.response.send_redirect( web.url_for( controller='library',
                                                                   action='browse_library',
