@@ -39,7 +39,15 @@
         The following users will see this workflow in thier workflow list, and be
         able to run it or create their own copy of it:
     </p>
-
+    
+        <ul class="manage-table-actions">
+        <li>
+            <a class="action-button" href="${h.url_for( action='share', id=trans.security.encode_id(stored.id) )}">
+                <span>Share with another user</span>
+            </a>
+        </li>
+    </ul>
+        
     <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <th>Email</th>
@@ -60,8 +68,13 @@
             </tr>    
         %endfor
     </table>
+
 %else:
 
-    You have not shared this workflow with any users.
-
+    <p>You have not shared this workflow with any users.</p>
+    
+    <a class="action-button" href="${h.url_for( action='share', id=trans.security.encode_id(stored.id) )}">
+        <span>Share with another user</span>
+    </a>
+    
 %endif

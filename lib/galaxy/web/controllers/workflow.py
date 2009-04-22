@@ -91,7 +91,7 @@ class WorkflowController( BaseController ):
                 session.save_or_update( share )
                 session.flush()
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
-                return self.list( trans )
+                return trans.response.send_redirect( url_for( controller='workflow', action='sharing', id=id ) )
         return trans.fill_template( "workflow/share.mako",
                                     message = msg,
                                     messagetype = mtype,
