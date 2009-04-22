@@ -494,6 +494,8 @@ class Admin( BaseController ):
             else:
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
+                if trans.app.config.use_remote_user:
+                    user.external = True
                 user.flush()
                 trans.app.security_agent.create_private_user_role( user )
                 trans.app.security_agent.user_set_default_permissions( user, history=False, dataset=False )
