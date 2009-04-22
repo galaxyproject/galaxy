@@ -43,7 +43,7 @@ def build_mysql():
         print "build_mysql(): Installing mysql (make install) failed"
         sys.exit( 1 )
     # pack
-    print "build_mysql(): Creating binary mysql archive for future builds of psycopg2"
+    print "build_mysql(): Creating binary mysql archive for future builds of MySQL_python"
     t = tarfile.open( MYSQL_BINARY_ARCHIVE, "w:bz2" )
     t.add( "mysql/bin/mysql_config" )
     t.add( "mysql/include" )
@@ -57,14 +57,10 @@ if os.path.dirname( sys.argv[0] ) != "":
 # find setuptools
 scramble_lib = os.path.join( "..", "..", "..", "lib" )
 sys.path.append( scramble_lib )
-try:
-    from setuptools import *
-    import pkg_resources
-except:
-    from ez_setup import use_setuptools
-    use_setuptools( download_delay=8, to_dir=scramble_lib )
-    from setuptools import *
-    import pkg_resources
+from ez_setup import use_setuptools
+use_setuptools( download_delay=8, to_dir=scramble_lib )
+from setuptools import *
+import pkg_resources
 
 # get the tag
 if os.access( ".galaxy_tag", os.F_OK ):
@@ -100,7 +96,7 @@ unpack_prebuilt_mysql()
 
 # patch
 file = "site.cfg"
-print "scramble_it(): Patching", file
+print "scramble(): Patching", file
 if not os.access( "%s.orig" %file, os.F_OK ):
     shutil.copyfile( file, "%s.orig" %file )
 i = open( "%s.orig" %file, "r" )
@@ -111,6 +107,23 @@ for line in i.readlines():
     print >>o, line,
 i.close()
 o.close()
+
+if pkg_resources.get_platform() == 'macosx-10.5-i386':
+    file = "_mysql.c"
+    print "scramble(): Patching", file
+    if not os.access( "%s.orig" %file, os.F_OK ):
+        shutil.copyfile( file, "%s.orig" %file )
+    i = open( "%s.orig" %file, "r" )
+    o = open( file, "w" )
+    for line in i:
+        if line == '#ifndef uint\n':
+            # skip 3 lines
+            i.next()
+            i.next()
+            line = i.next()
+        print >>o, line,
+    i.close()
+    o.close()
 
 # tag
 me = sys.argv[0]
