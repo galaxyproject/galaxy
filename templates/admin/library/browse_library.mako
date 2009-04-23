@@ -93,7 +93,7 @@ def name_sorted( l ):
     %>
     %if not root_folder:
         <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
-            <div class="rowTitle">
+            <div class="rowTitle libraryItemDeleted-${parent.deleted}">
                 <img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
                 ${parent.name}
                 %if parent.description:
@@ -101,7 +101,7 @@ def name_sorted( l ):
                 %endif
                 <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             </div>
-            %if not deleted:
+            %if not parent.deleted:
                 <%
                     library_item_ids = {}
                     library_item_ids[ 'folder' ] = parent.id
@@ -117,10 +117,11 @@ def name_sorted( l ):
                         <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, folder_id=parent.id, new_template=True )}">Add an information template to this folder</a>
                     %endif
                     <a class="action-button" href="${h.url_for( controller='admin', action='folder', permissions=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
-                    ## TODO: need to revamp the way folders and contained LibraryDatasets are deleted
-                    ##%if subfolder:
-                    ##    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( action='folder', delete=True, id=parent.id, library_id=library_id )}">Remove this folder and its contents from the library</a>
-                    ##%endif
+                    <a class="action-button" confirm="Click OK to delete the folder '${parent.name}'" href="${h.url_for( controller='admin', action='delete_library_item', library_id=library_id, library_item_id=parent.id, library_item_type='folder' )}">Remove this folder and its contents from the library</a>
+                </div>
+            %else:
+                <div popupmenu="folder-${parent.id}-popup">
+                    <a class="action-button" href="${h.url_for( controller='admin', action='undelete_library_item', library_id=library_id, library_item_id=parent.id, library_item_type='folder' )}">Undelete this folder</a>
                 </div>
             %endif
         </li>
@@ -130,10 +131,10 @@ def name_sorted( l ):
     %else:
         <ul>
     %endif
-        %if library.deleted:
+        %if deleted:
             <%
-                parent_folders = parent.folders
-                parent_datasets = parent.datasets
+                parent_folders = parent.activatable_folders
+                parent_datasets = parent.activatable_datasets
             %>
         %else:
             <%
@@ -142,7 +143,7 @@ def name_sorted( l ):
             %>
         %endif
         %for folder in name_sorted( parent_folders ):
-            ${render_folder( folder, pad, library.deleted, created_ldda_ids, library.id )}
+            ${render_folder( folder, pad, deleted, created_ldda_ids, library.id )}
         %endfor    
         %for library_dataset in name_sorted( parent_datasets ):
             <%
@@ -182,17 +183,20 @@ def name_sorted( l ):
                 <table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle">
                     <th width="*">
                         <img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
-                        ${library.name}
-                        %if library.description:
-                            <i>- ${library.description}</i>
-                        %endif
+                        <span class="libraryItemDeleted-${library.deleted}">
+                            ${library.name}
+                            %if library.description:
+                                <i>- ${library.description}</i>
+                            %endif
+                        </span>
                         <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        <div popupmenu="library-${library.id}-popup">
                         %if not library.deleted:
                             <%
                                 library_item_ids = {}
                                 library_item_ids[ 'library' ] = library.id
                             %>
-                            <div popupmenu="library-${library.id}-popup">
+                            
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, information=True )}">Edit this library's information</a>
                                 %if library.library_info_template_associations:
                                     <% template = library.get_library_item_info_templates( template_list=[], restrict=False )[0] %>
@@ -201,15 +205,16 @@ def name_sorted( l ):
                                     <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
                                 %endif
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, permissions=True )}">Edit this library's permissions</a>
-                                ## TODO: need to revamp the way libraries, folders, and contained LibraryDatasets are deleted
-                                ##<a class="action-button" confirm="Current state will not be saved, so undeleting the library will restore all of its contents.  Click OK to delete the library named '${library.name}'?" href="${h.url_for( controller='admin', action='library', delete=True, id=library.id )}">Delete this library and its contents</a>
-                            </div>
-                        ##%else:
-                        ##    <div popupmenu="library-${library.id}-popup">
-                        ##        <a class="action-button" href="${h.url_for( controller='admin', action='undelete_library', id=library.id )}">Undelete this library and its contents</a>
-                        ##        <a class="action-button" href="${h.url_for( controller='admin', action='purge_library', id=library.id )}">Purge this library and its contents</a>
-                        ##    </div>
+                                <a class="action-button" confirm="Current state will not be saved, so undeleting the library will restore all of its contents.  Click OK to delete the library named '${library.name}'?" href="${h.url_for( controller='admin', action='delete_library_item', library_item_type='library', library_item_id=library.id )}">Delete this library and its contents</a>
+                                %if show_deleted:
+                                	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=False )}">Hide deleted library items</a>
+                                %else:
+                                	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=True )}">Show deleted library items</a>
+                                %endif
+                        %elif not library.purged:
+                              <a class="action-button" href="${h.url_for( controller='admin', action='undelete_library_item', library_item_type='library', library_item_id=library.id )}">Undelete this library</a>
                         %endif
+                        </div>
                     </th>
                     <th width="300">Information</th>
                     <th width="150">Uploaded By</th>
@@ -218,7 +223,7 @@ def name_sorted( l ):
             </div>
         </li>
         <ul>
-            ${render_folder( library.root_folder, 0, library.deleted, created_ldda_ids, library.id )}
+            ${render_folder( library.root_folder, 0, library.deleted or show_deleted, created_ldda_ids, library.id )}
         </ul>
         <br/>
     </ul>

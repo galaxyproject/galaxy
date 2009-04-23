@@ -146,7 +146,7 @@ def sanitize_param(value):
     elif isinstance( value, list ):
         return map(sanitize_text, value)
     else:
-        raise Exception, 'Unknown parameter type'
+        raise Exception, 'Unknown parameter type (%s)' % ( type( value ) )
 
 class Params:
     """
