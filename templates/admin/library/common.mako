@@ -1,6 +1,6 @@
 <% from time import strftime %>
 
-<%def name="render_dataset( library_dataset, selected, library )">
+<%def name="render_dataset( library_dataset, selected, library, show_deleted = False )">
     <%
         ## The received data must always be a LibraryDataset object, but the object id passed to methods from the drop down menu
         ## should be the underlying ldda id to prevent id collision ( which could happen when displaying children, which are always
@@ -27,13 +27,15 @@
                         %else:
                             <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
                         %endif
-                        <a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, info=True )}"><b>${ldda.name[:50]}</b></a>
-                        %if not library.deleted:
+                        <span class="libraryItemDeleted-${library_dataset.deleted}">
+                            <a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, info=True )}"><b>${ldda.name[:50]}</b></a>
+                        </span>
+                        <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        %if not library_dataset.deleted:
                             <%
                                 library_item_ids = {}
                                 library_item_ids[ 'ldda' ] = ldda.id
                             %>
-                            <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                             <div popupmenu="dataset-${ldda.id}-popup">
                                 <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
                                 ## We're disabling the ability to add templates at the LDDA and LibraryDataset level, but will leave this here for possible future use
@@ -46,7 +48,11 @@
                                     <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
                                 %endif
                                 ##TODO: need to revamp the way we remove datasets from disk.
-                                ##<a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, delete=True )}">Remove this dataset from the library</a>
+                                <a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='delete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='dataset' )}">Remove this dataset from the library</a>
+                            </div>
+                        %else:
+                            <div popupmenu="dataset-${ldda.id}-popup">
+                                <a class="action-button" href="${h.url_for( controller='admin', action='undelete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='dataset' )}">Undelete this dataset</a>
                             </div>
                         %endif
                     </td>

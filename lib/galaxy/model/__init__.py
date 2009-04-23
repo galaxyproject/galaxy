@@ -229,7 +229,7 @@ class History( object ):
         return des
     @property
     def activatable_datasets( self ):
-        return [ hda for hda in self.datasets if not hda.dataset.purged ] #this needs to be a list
+        return [ hda for hda in self.datasets if not hda.dataset.deleted ] #this needs to be a list
 
 class UserRoleAssociation( object ):
     def __init__( self, user, role ):
@@ -707,6 +707,12 @@ class LibraryFolder( object ):
     @property
     def active_components( self ):
         return list( self.active_folders ) + list( self.active_datasets )
+    @property
+    def activatable_datasets( self ):
+        return [ ld for ld in self.datasets if not ld.library_dataset_dataset_association.dataset.deleted ] #this needs to be a list
+    @property #make this a relation
+    def activatable_folders( self ):
+        return [ folder for folder in self.folders if not folder.purged ] #this needs to be a list
 
 class LibraryDataset( object ):
     # This class acts as a proxy to the currently selected LDDA
@@ -743,6 +749,14 @@ class LibraryDataset( object ):
     name = property( get_name, set_name )
     def display_name( self ):
         self.library_dataset_dataset_association.display_name()
+    def get_purged( self ):
+        return self.library_dataset_dataset_association.dataset.purged
+    def set_purged( self, purged ):
+        if purged:
+            raise Exception( "Not implemented" )
+        if not purged and self.purged:
+            raise Exception( "Cannot unpurge once purged" )
+    purged = property( get_purged, set_purged )
     def get_library_item_info_templates( self, template_list=[], restrict=False ):
         # If restrict is True, we'll return only those templates directly associated with this LibraryDataset
         if self.library_dataset_info_template_associations:
@@ -750,7 +764,7 @@ class LibraryDataset( object ):
         if restrict not in [ 'True', True ]:
             self.folder.get_library_item_info_templates( template_list, restrict )
         return template_list
-    
+
 class LibraryDatasetDatasetAssociation( DatasetInstance ):
     def __init__( self,
                   copied_from_history_dataset_association=None,

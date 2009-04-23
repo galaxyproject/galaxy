@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, time, ConfigParser
+import sys, os, time, ConfigParser, shutil
 from datetime import datetime, timedelta
 from time import strftime
 from optparse import OptionParser
@@ -15,7 +15,7 @@ import pkg_resources
         
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 
-from galaxy.model.orm import *
+from galaxy.model.orm import and_, eagerload
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -23,271 +23,172 @@ def main():
     parser = OptionParser()
     parser.add_option( "-d", "--days", dest="days", action="store", type="int", help="number of days (60)", default=60 )
     parser.add_option( "-r", "--remove_from_disk", action="store_true", dest="remove_from_disk", help="remove datasets from disk when purged", default=False )
-    parser.add_option( "-1", "--info_delete_userless_histories", action="store_true", dest="info_delete_userless_histories", default=False, help="info about the histories and datasets that will be affected by delete_userless_histories()" )
-    parser.add_option( "-2", "--delete_userless_histories", action="store_true", dest="delete_userless_histories", default=False, help="delete userless histories and datasets" )
-    parser.add_option( "-3", "--info_purge_histories", action="store_true", dest="info_purge_histories", default=False, help="info about histories and datasets that will be affected by purge_histories()" )
-    parser.add_option( "-4", "--purge_histories", action="store_true", dest="purge_histories", default=False, help="purge deleted histories" )
-    parser.add_option( "-5", "--info_purge_datasets", action="store_true", dest="info_purge_datasets", default=False, help="info about the datasets that will be affected by purge_datasets()" )
-    parser.add_option( "-6", "--purge_datasets", action="store_true", dest="purge_datasets", default=False, help="purge deleted datasets" )
+    parser.add_option( "-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False )
+    
+    parser.add_option( "-1", "--delete_userless_histories", action="store_true", dest="delete_userless_histories", default=False, help="delete userless histories and datasets" )
+    
+    parser.add_option( "-2", "--purge_histories", action="store_true", dest="purge_histories", default=False, help="purge deleted histories" )
+    
+    parser.add_option( "-3", "--purge_datasets", action="store_true", dest="purge_datasets", default=False, help="purge deleted datasets" )
+    
+    parser.add_option( "-4", "--purge_libraries", action="store_true", dest="purge_libraries", default=False, help="purge deleted libraries" )
+    
+    parser.add_option( "-5", "--purge_folders", action="store_true", dest="purge_folders", default=False, help="purge deleted library folders" )
+    
+    
     ( options, args ) = parser.parse_args()
     ini_file = args[0]
     
-    if not ( options.info_delete_userless_histories ^ options.delete_userless_histories ^ \
-             options.info_purge_histories ^ options.purge_histories ^ \
-             options.info_purge_datasets ^ options.purge_datasets ):
+    if not ( options.purge_folders ^ options.delete_userless_histories ^ \
+             options.purge_libraries ^ options.purge_histories ^ \
+             options.purge_datasets ):
         parser.print_help()
         sys.exit(0)
+    
+    if options.remove_from_disk and options.info_only:
+        parser.error( "remove_from_disk and info_only are mutually exclusive" )
     
     conf_parser = ConfigParser.ConfigParser( {'here':os.getcwd()} )
     conf_parser.read( ini_file )
     configuration = {}
     for key, value in conf_parser.items( "app:main" ):
         configuration[key] = value
-    database_connection = configuration['database_connection']
+    
+    if 'database_connection' in configuration:
+        database_connection = configuration['database_connection']
+    else:
+        database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % configuration["database_file"]
     file_path = configuration['file_path']
     app = CleanupDatasetsApplication( database_connection=database_connection, file_path=file_path )
-    h = app.model.History
-    d = app.model.Dataset
-    m = app.model.MetadataFile
     cutoff_time = datetime.utcnow() - timedelta( days=options.days )
     now = strftime( "%Y-%m-%d %H:%M:%S" )
-
+    
     print "\n# %s - Handling stuff older than %i days\n" % ( now, options.days )
-
-    if options.info_delete_userless_histories:
-        info_delete_userless_histories( h, cutoff_time )
-    elif options.delete_userless_histories:
-        delete_userless_histories( h, d, cutoff_time )
-    if options.info_purge_histories:
-        info_purge_histories( h, d, cutoff_time )
+    
+    if options.info_only:
+        print "# Displaying info only ( --info_only )\n"
+    elif options.remove_from_disk:
+        print "# Datasets will be removed from disk.\n"
+    else:
+        print "# Datasets will NOT be removed from disk.\n"
+    
+    if options.delete_userless_histories:
+        delete_userless_histories( app, cutoff_time, info_only = options.info_only )
     elif options.purge_histories:
-        if options.remove_from_disk:
-            print "# Datasets will be removed from disk...\n"
-        else:
-            print "# Datasets will NOT be removed from disk...\n"
-        purge_histories( h, d, m, cutoff_time, options.remove_from_disk )
-    elif options.info_purge_datasets:
-        info_purge_datasets( d, cutoff_time )
+        purge_histories( app, cutoff_time, options.remove_from_disk, info_only = options.info_only )
     elif options.purge_datasets:
-        if options.remove_from_disk:
-            print "# Datasets will be removed from disk...\n"
-        else:
-            print "# Datasets will NOT be removed from disk...\n"
-        purge_datasets( d, m, cutoff_time, options.remove_from_disk )
+        purge_datasets( app, cutoff_time, options.remove_from_disk, info_only = options.info_only )
+    elif options.purge_libraries:
+        purge_libraries( app, cutoff_time, options.remove_from_disk, info_only = options.info_only )
+    elif options.purge_folders:
+        purge_folders( app, cutoff_time, options.remove_from_disk, info_only = options.info_only )
+    
     sys.exit(0)
 
-def info_delete_userless_histories( h, cutoff_time ):
-    # Provide info about the histories and datasets that will be affected if the delete_userless_histories function is executed.
-    history_count = 0
-    dataset_count = 0
-    histories = h.filter( and_( h.table.c.user_id==None,
-                                h.table.c.deleted==False,
-                                h.table.c.update_time < cutoff_time ) ) \
-                 .options( eagerload( 'active_datasets' ) ).all()
-
-    print '# The following datasets and associated userless histories will be deleted'
-    start = time.clock()
-    for history in histories:
-        for dataset_assoc in history.active_datasets:
-            if not dataset_assoc.deleted:
-                # This check is not necessary since 'active_datasets' are not
-                # deleted, but just being cautious
-                print "dataset_%d" %dataset_assoc.dataset_id
-                dataset_count += 1
-        print "%d" % history.id
-        history_count += 1
-    stop = time.clock()
-    print "# %d histories ( including a total of %d datasets ) will be deleted\n" %( history_count, dataset_count )
-    print "Elapsed time: ", stop - start, "\n"
-
-def delete_userless_histories( h, d, cutoff_time ):
+def delete_userless_histories( app, cutoff_time, info_only = False ):
     # Deletes userless histories whose update_time value is older than the cutoff_time.
-    # The datasets associated with each history are also deleted.  Nothing is removed from disk.
+    # The purge history script will handle marking DatasetInstances as deleted. 
+    # Nothing is removed from disk yet.
     history_count = 0
-    dataset_count = 0
-
     print '# The following datasets and associated userless histories have been deleted'
     start = time.clock()
-    histories = h.filter( and_( h.table.c.user_id==None,
-                                h.table.c.deleted==False,
-                                h.table.c.update_time < cutoff_time ) ) \
-                 .options( eagerload( 'active_datasets' ) ).all()
+    histories = app.model.History.filter( and_( app.model.History.table.c.user_id==None,
+                                app.model.History.table.c.deleted==False,
+                                app.model.History.table.c.update_time < cutoff_time ) ).all()# \
     for history in histories:
-        for dataset_assoc in history.active_datasets:
-            if not dataset_assoc.deleted:
-                # Mark all datasets as deleted
-                datasets = d.filter( d.table.c.id==dataset_assoc.dataset_id ).all()
-                for dataset in datasets:
-                    if not dataset.deleted:
-                        dataset.deleted = True
-                        dataset.flush()
-                # Mark the history_dataset_association as deleted
-                dataset_assoc.deleted = True
-                dataset_assoc.clear_associated_files()
-                dataset_assoc.flush()
-                print "dataset_%d" % dataset_assoc.dataset_id
-                dataset_count += 1
-        history.deleted = True
-        history.flush()
+        if not info_only:
+            history.deleted = True
         print "%d" % history.id
         history_count += 1
+    app.model.flush()
     stop = time.clock()
-    print "# Deleted %d histories ( including a total of %d datasets )\n" %( history_count, dataset_count )
+    print "# Deleted %d histories.\n" % ( history_count )
     print "Elapsed time: ", stop - start, "\n"
     
-def info_purge_histories( h, d, cutoff_time ):
-    # Provide info about the histories and datasets that will be affected if the purge_histories function is executed.
+
+def purge_histories( app, cutoff_time, remove_from_disk, info_only = False ):
+    # Purges deleted histories whose update_time is older than the cutoff_time.
+    # The dataset associations of each history are also marked as deleted.
+    # The Purge Dataset method will purge each Dataset as necessary
+    # history.purged == True simply means that it can no longer be undeleted
+    # i.e. all associated datasets are marked as deleted
     history_count = 0
-    dataset_count = 0
-    disk_space = 0
-    print '# The following datasets and associated deleted histories will be purged'
+    print '# The following datasets and associated deleted histories have been purged'
     start = time.clock()
-    histories = h.filter( and_( h.table.c.deleted==True,
-                                h.table.c.purged==False,
-                                h.table.c.update_time < cutoff_time ) ) \
+    histories = app.model.History.filter( and_( app.model.History.table.c.deleted==True,
+                                app.model.History.table.c.purged==False,
+                                app.model.History.table.c.update_time < cutoff_time ) ) \
                  .options( eagerload( 'datasets' ) ).all()
     for history in histories:
         for dataset_assoc in history.datasets:
-            # Datasets can only be purged if their HistoryDatasetAssociation has been deleted.
-            if dataset_assoc.deleted:
-                datasets = d.filter( d.table.c.id==dataset_assoc.dataset_id ).all()
-                for dataset in datasets:
-                    if dataset.purgable and not dataset.purged:
-                        print "%s" % dataset.file_name
-                        dataset_count += 1
-                        try:
-                            disk_space += dataset.file_size
-                        except:
-                            pass
+            _purge_dataset_instance( dataset_assoc, app, remove_from_disk, info_only = info_only ) #mark a DatasetInstance as deleted, clear associated files, and mark the Dataset as deleted if it is deletable
+        if not info_only:
+            history.purged = True
         print "%d" % history.id
         history_count += 1
+    app.model.flush()
     stop = time.clock()
-    print '# %d histories ( including a total of %d datasets ) will be purged.  Freed disk space: ' %( history_count, dataset_count ), disk_space, '\n'
+    print '# Purged %d histories.' % ( history_count ), '\n'
     print "Elapsed time: ", stop - start, "\n"
 
-def purge_histories( h, d, m, cutoff_time, remove_from_disk ):
-    # Purges deleted histories whose update_time is older than the cutoff_time.
-    # The datasets associated with each history are also purged.
-    history_count = 0
-    dataset_count = 0
-    disk_space = 0
-    file_size = 0
-    errors = False
-    print '# The following datasets and associated deleted histories have been purged'
+def purge_libraries( app, cutoff_time, remove_from_disk, info_only = False ):
+    # Purges deleted libraries whose update_time is older than the cutoff_time.
+    # The dataset associations of each library are also marked as deleted.
+    # The Purge Dataset method will purge each Dataset as necessary
+    # library.purged == True simply means that it can no longer be undeleted
+    # i.e. all associated LibraryDatasets/folders are marked as deleted
+    library_count = 0
+    print '# The following libraries and associated folders have been purged'
     start = time.clock()
-    histories = h.filter( and_( h.table.c.deleted==True,
-                                h.table.c.purged==False,
-                                h.table.c.update_time < cutoff_time ) ) \
-                 .options( eagerload( 'datasets' ) ).all()    
-    for history in histories:
-        errors = False
-        for dataset_assoc in history.datasets:
-            if dataset_assoc.deleted:
-                datasets = d.filter( d.table.c.id==dataset_assoc.dataset_id ).all()
-                for dataset in datasets:
-                    if dataset.purgable and not dataset.purged:
-                        file_size = dataset.file_size
-                        dataset.deleted = True
-                        dataset.file_size = 0
-                        if remove_from_disk:
-                            dataset.flush()
-                            errmsg = purge_dataset( dataset, d, m )
-                            if errmsg:
-                                errors = True
-                                print errmsg
-                        else:
-                            dataset.purged = True
-                            dataset.flush()
-                            print "%s" % dataset.file_name
-                            # Mark all associated MetadataFiles as deleted and purged
-                            print "The following metadata files associated with dataset '%s' have been marked purged" % dataset.file_name
-                            for hda in dataset.history_associations:
-                                for metadata_file in m.filter( m.table.c.hda_id==hda.id ).all():
-                                    metadata_file.deleted = True
-                                    metadata_file.purged = True
-                                    metadata_file.flush()
-                                    print "%s" % metadata_file.file_name()
-                            for lda in dataset.library_associations:
-                                for metadata_file in m.filter( m.table.c.lda_id==lda.id ).all():
-                                    metadata_file.deleted = True
-                                    metadata_file.purged = True
-                                    metadata_file.flush()
-                                    print "%s" % metadata_file.file_name()
-                        dataset_count += 1
-                        try:
-                            disk_space += file_size
-                        except:
-                            pass
-        if not errors:
-            history.purged = True
-            history.flush()
-            print "%d" % history.id
-            history_count += 1
+    libraries = app.model.Library.filter( and_( app.model.Library.table.c.deleted==True,
+                                app.model.Library.table.c.purged==False,
+                                app.model.Library.table.c.update_time < cutoff_time ) ).all()
+    for library in libraries:
+        _purge_folder( library.root_folder, app, remove_from_disk, info_only = info_only )
+        if not info_only:
+            library.purged = True
+        print "%d" % library.id
+        library_count += 1
+    app.model.flush()
     stop = time.clock()
-    print '# Purged %d histories ( including a total of %d datasets ).  Freed disk space: ' %( history_count, dataset_count ), disk_space, '\n'
+    print '# Purged %d libraries .' % ( library_count ), '\n'
     print "Elapsed time: ", stop - start, "\n"
 
-def info_purge_datasets( d, cutoff_time ):
-    # Provide info about the datasets that will be affected if the purge_datasets function is executed.
-    dataset_count = 0
-    disk_space = 0
-    print '# The following deleted datasets will be purged'    
+def purge_folders( app, cutoff_time, remove_from_disk, info_only = False ):
+    # Purges deleted folders whose update_time is older than the cutoff_time.
+    # The dataset associations of each folder are also marked as deleted.
+    # The Purge Dataset method will purge each Dataset as necessary
+    # libraryFolder.purged == True simply means that it can no longer be undeleted
+    # i.e. all associated LibraryDatasets/folders are marked as deleted
+    folder_count = 0
+    print '# The following folders have been purged'
     start = time.clock()
-    datasets = d.filter( and_( d.table.c.deleted==True,
-                               d.table.c.purgable==True,
-                               d.table.c.purged==False,
-                               d.table.c.update_time < cutoff_time ) ).all()
-    for dataset in datasets:
-        print "%s" % dataset.file_name
-        dataset_count += 1
-        try:
-            disk_space += dataset.file_size
-        except:
-            pass
+    folders = app.model.LibraryFolder.filter( and_( app.model.LibraryFolder.table.c.deleted==True,
+                                app.model.LibraryFolder.table.c.purged==False,
+                                app.model.LibraryFolder.table.c.update_time < cutoff_time ) ).all()
+    for folder in folders:
+        _purge_folder( folder, app, remove_from_disk, info_only = info_only )
+        print "%d" % folder.id
+        folder_count += 1
     stop = time.clock()
-    print '# %d datasets will be purged.  Freed disk space: ' %dataset_count, disk_space, '\n'
+    print '# Purged %d folders.' % ( folder_count ), '\n'
     print "Elapsed time: ", stop - start, "\n"
 
-def purge_datasets( d, m, cutoff_time, remove_from_disk ):
+def purge_datasets( app, cutoff_time, remove_from_disk, info_only = False ):
     # Purges deleted datasets whose update_time is older than cutoff_time.  Files may or may
     # not be removed from disk.
     dataset_count = 0
     disk_space = 0
-    file_size = 0
     print '# The following deleted datasets have been purged'
     start = time.clock()
-    datasets = d.filter( and_( d.table.c.deleted==True,
-                               d.table.c.purgable==True,
-                               d.table.c.purged==False,
-                               d.table.c.update_time < cutoff_time ) ).all()
+    datasets = app.model.Dataset.filter( and_( app.model.Dataset.table.c.deleted==True,
+                               app.model.Dataset.table.c.purgable==True,
+                               app.model.Dataset.table.c.purged==False,
+                               app.model.Dataset.table.c.update_time < cutoff_time ) ).all()
     for dataset in datasets:
         file_size = dataset.file_size
-        if remove_from_disk:
-            errmsg = purge_dataset( dataset, d, m )
-            if errmsg:
-               print errmsg
-            else:
-                dataset_count += 1
-        else:
-            dataset.purged = True
-            dataset.file_size = 0
-            dataset.flush()
-            print "%s" % dataset.file_name
-            # Mark all associated MetadataFiles as deleted and purged
-            print "The following metadata files associated with dataset '%s' have been marked purged" % dataset.file_name
-            for hda in dataset.history_associations:
-                for metadata_file in m.filter( m.table.c.hda_id==hda.id ).all():
-                    metadata_file.deleted = True
-                    metadata_file.purged = True
-                    metadata_file.flush()
-                    print "%s" % metadata_file.file_name()
-            for lda in dataset.library_associations:
-                for metadata_file in m.filter( m.table.c.lda_id==lda.id ).all():
-                    metadata_file.deleted = True
-                    metadata_file.purged = True
-                    metadata_file.flush()
-                    print "%s" % metadata_file.file_name()
-            dataset_count += 1
+        _purge_dataset( dataset, remove_from_disk, info_only = info_only )
+        dataset_count += 1
         try:
             disk_space += file_size
         except:
@@ -298,68 +199,90 @@ def purge_datasets( d, m, cutoff_time, remove_from_disk ):
         print '# Freed disk space: ', disk_space, '\n'
     print "Elapsed time: ", stop - start, "\n"
 
-def purge_dataset( dataset, d, m ):
-    # Removes the file from disk and updates the database accordingly.
-    if dataset.deleted:
-        purgable = True
-        # Remove files from disk and update the database
-        try:
-            # See if the dataset has been shared
-            if dataset.external_filename:
-                # This check handles the pre-history_dataset_association approach to sharing.
-                shared_data = d.filter( and_( d.table.c.external_filename==dataset.external_filename,
-                                              d.table.c.deleted==False ) ).all()
-                if shared_data:
-                    purgable = False
-            if purgable:
-                # This check handles the history_dataset_association approach to sharing.
-                for shared_data in dataset.history_associations:
-                    # Check to see if another dataset is using this file.  This happens when a user shares 
-                    # their history with another user.  In this case, a new record is created in the dataset
-                    # table for each dataset, but the dataset records point to the same data file on disk.  So
-                    # if 1 of the 2 users deletes the dataset from their history but the other doesn't, we need
-                    # to keep the dataset on disk for the 2nd user.
-                    if not shared_data.deleted:
-                        purgable = False
-                        break
-            if purgable:
-                # This check handles the library_dataset_dataset_association approach to sharing.
-                for shared_data in dataset.library_associations:
-                    if not shared_data.deleted:
-                        purgable = False
-                        break
-            if purgable:
-                dataset.purged = True
-                dataset.file_size = 0
-                dataset.flush()
-                # Remove dataset file from disk
-                os.unlink( dataset.file_name )
-                print "%s" % dataset.file_name
-                # Mark all associated MetadataFiles as deleted and purged and remove them from disk
-                print "The following metadata files associated with dataset '%s' have been purged" % dataset.file_name
-                for hda in dataset.history_associations:
-                    for metadata_file in m.filter( m.table.c.hda_id==hda.id ).all():
-                        os.unlink( metadata_file.file_name() )
-                        metadata_file.deleted = True
-                        metadata_file.purged = True
-                        metadata_file.flush()
-                        print "%s" % metadata_file.file_name()
-                for lda in dataset.library_associations:
-                    for metadata_file in m.filter( m.table.c.lda_id==lda.id ).all():
-                        metadata_file.deleted = True
-                        metadata_file.purged = True
-                        metadata_file.flush()
-                        print "%s" % metadata_file.file_name()
-                try:
-                    # Remove associated extra files from disk if they exist
-                    os.unlink( dataset.extra_files_path )
-                except:
-                    pass
-        except Exception, exc:
-            return "# Error, exception: %s caught attempting to purge %s\n" %( str( exc ), dataset.file_name )
+
+def _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children = True, info_only = False ):
+    #purging a dataset instance marks the instance as deleted, 
+    #and marks the dataset as deleted if it is not associated with another DatsetInstance that is not deleted
+    if not info_only:
+        dataset_instance.mark_deleted( include_children = include_children )
+        dataset_instance.clear_associated_files()
+        dataset_instance.flush()
+        dataset_instance.dataset.refresh()
+    if _dataset_is_deletable( dataset_instance.dataset ):
+        _delete_dataset( dataset_instance.dataset, app, remove_from_disk, info_only = info_only )
+    #need to purge children here
+    if include_children:
+        for child in dataset_instance.children:
+            _purge_dataset_instance( child, app, remove_from_disk, include_children = include_children, info_only = info_only )
+
+def _dataset_is_deletable( dataset ):
+    #a dataset is deletable when it no longer has any non-deleted associations
+    return not bool( dataset.active_history_associations or dataset.active_library_associations )
+
+def _delete_dataset( dataset, app, remove_from_disk, info_only = False ):
+    #marks a base dataset as deleted, hdas/ldas associated with dataset can no longer be undeleted
+    #metadata files attached to associated dataset Instances is removed now
+    if not _dataset_is_deletable( dataset ):
+        print "# This Dataset (%i) is not deletable, associated Metadata Files will not be removed.\n" % ( dataset.id )
     else:
-        return "# Error: '%s' has not previously been deleted, so it cannot be purged\n" %dataset.file_name
-    return ""
+        # Mark all associated MetadataFiles as deleted and purged and remove them from disk
+        print "The following metadata files attached to associations of Dataset '%s' have been purged:" % dataset.id
+        metadata_files = []
+        #lets create a list of metadata files, then perform actions on them
+        for hda in dataset.history_associations:
+            for metadata_file in app.model.MetadataFile.filter( app.model.MetadataFile.table.c.hda_id==hda.id ).all():
+                metadata_files.append( metadata_file )
+        for lda in dataset.library_associations:
+            for metadata_file in app.model.MetadataFile.filter( app.model.MetadataFile.table.c.lda_id==lda.id ).all():
+                metadata_files.append( metadata_file )
+        for metadata_file in metadata_files:
+            if not info_only:
+                if remove_from_disk:
+                    try:
+                        os.unlink( metadata_file.file_name )
+                    except Exception, e:
+                        print "# Error, exception: %s caught attempting to purge metadata file %s\n" %( str( e ), metadata_file.file_name )
+                    metadata_file.purged = True
+                metadata_file.deleted = True
+                #metadata_file.flush()
+            print "%s" % metadata_file.file_name
+        print
+        dataset.deleted = True
+        #dataset.flush()
+        app.model.flush()
+
+def _purge_dataset( dataset, remove_from_disk, info_only = False ):
+    if dataset.deleted:
+        try:
+            if dataset.purgable and _dataset_is_deletable( dataset ):
+                print "%s" % dataset.file_name
+                if not info_only:
+                    # Remove files from disk and update the database
+                    if remove_from_disk:
+                        os.unlink( dataset.file_name )
+                        # Remove associated extra files from disk if they exist
+                        if dataset.extra_files_path and os.path.exists( dataset.extra_files_path ):
+                            shutil.rmtree( dataset.extra_files_path ) #we need to delete the directory and its contents; os.unlink would always fail on a directory
+                    dataset.purged = True
+            else:
+                print "# This dataset (%i) is not purgable, the file (%s) will not be removed.\n" % ( dataset.id, dataset.file_name )
+        except Exception, exc:
+            print "# Error, exception: %s caught attempting to purge %s\n" %( str( exc ), dataset.file_name )
+    else:
+        print "# Error: '%s' has not previously been deleted, so it cannot be purged\n" % dataset.file_name
+    print ""
+
+def _purge_folder( folder, app, remove_from_disk, info_only = False ):
+    """Purges a folder and its contents, recursively"""
+    for ld in folder.datasets:
+        ld.deleted = True
+        for ldda in [ld.library_dataset_dataset_association] + ld.expired_datasets:
+            _purge_dataset_instance( ldda, app, remove_from_disk, info_only = info_only ) #mark a DatasetInstance as deleted, clear associated files, and mark the Dataset as deleted if it is deletable
+    for sub_folder in folder.folders:
+        _purge_folder( sub_folder, app, remove_from_disk, info_only = info_only )
+    if not info_only:
+        folder.purged = True
+        folder.flush()
 
 class CleanupDatasetsApplication( object ):
     """Encapsulates the state of a Universe application"""
