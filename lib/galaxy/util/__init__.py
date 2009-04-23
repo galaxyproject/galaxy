@@ -37,9 +37,8 @@ def is_multi_byte( chars ):
     for char in chars:
         try:
             char = unicode( char )
-        except Exception, e:
+        except UnicodeDecodeError, e:
             # Probably binary
-            log.exception( e )
             return False
         if wchartype.is_asian( char ) or \
             wchartype.is_full_width( char ) or \

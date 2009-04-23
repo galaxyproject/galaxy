@@ -69,7 +69,10 @@ class UploadLibraryDataset( BaseController ):
                     ext = file_format
             if not data_type:
                 if self.check_binary( temp_name ):
-                    ext = file_name.split( "." )[1].strip().lower()
+                    try:
+                        ext = name.split( "." )[1].strip().lower()
+                    except:
+                        ext = ''
                     if not( ext == 'ab1' or ext == 'scf' ):
                         raise BadFileException( "you attempted to upload an inappropriate file." )
                     if ext == 'ab1' and file_format != 'ab1':
