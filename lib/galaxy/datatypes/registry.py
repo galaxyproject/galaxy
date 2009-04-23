@@ -3,7 +3,7 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 """
 import os
 import logging
-import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks
+import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo
 import galaxy.util
 from galaxy.util.odict import odict
 

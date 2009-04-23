@@ -85,7 +85,10 @@ body {
 }
 
 .loading {
-    background: #DDDDDD;
+    background-image: url("/static/images/loading_large_white_bg.gif");
+    background-position: center center;
+    background-repeat: no-repeat;
+    min-height: 100px;
 }
 
 .label-track .label {

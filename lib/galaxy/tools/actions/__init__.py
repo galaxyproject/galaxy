@@ -107,6 +107,7 @@ class DefaultToolAction( object ):
         out_data = {}
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
+
         # Deal with input dataset names, 'dbkey' and types
         input_names = []
         input_ext = 'data'
@@ -119,6 +120,16 @@ class DefaultToolAction( object ):
                 data = NoneDataset( datatypes_registry = trans.app.datatypes_registry )
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
+
+        # Collect chromInfo dataset and add as parameters to incoming
+        db_datasets = {}
+        db_dataset = trans.db_dataset_for( input_dbkey )
+        if db_dataset:
+            db_datasets[ "chromInfo" ] = db_dataset
+            incoming[ "chromInfo" ] = db_dataset.file_name
+        else:
+            incoming[ "chromInfo" ] = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
+        inp_data.update( db_datasets )
         
         # Determine output dataset permission/roles list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]

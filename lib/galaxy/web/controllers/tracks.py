@@ -1,13 +1,11 @@
-from mako import exceptions
-from mako.template import Template
-from mako.lookup import TemplateLookup
+import math
+
+import mimeparse
+from galaxy.tracks import messages
+from galaxy.util.json import to_json_string
 from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson
-from galaxy import web
-from galaxy.tracks import messages
-import mimeparse
-from galaxy.util.json import to_json_string
-import math
+
 
 class MultiResponse(object):
     """
@@ -82,18 +80,19 @@ class WebRoot( BaseController ):
     def build( self, trans, **kwargs ):
         trans.session["track_sets"] = list(kwargs.keys())
         trans.session.save()
-        waiting = False
-        for id, value in kwargs.items():
-            status = self.data_handler( trans, id )
-            if status == messages.PENDING:
-                waiting = True
-        if not waiting:
-            return trans.response.send_redirect( web.url_for( controller='tracks', action='chroms', dbkey=trans.session["track_dbkey"]) )
-        return trans.fill_template( 'tracks/build.mako' )
+        #waiting = False
+        #for id, value in kwargs.items():
+        #    status = self.data_handler( trans, id )
+        #    if status == messages.PENDING:
+        #        waiting = True
+        #if not waiting:
+        return trans.response.send_redirect( web.url_for( controller='tracks/', action='index', chrom="" ) )
+        #return trans.fill_template( 'tracks/build.mako' )
         
     @web.expose
     def index(self, trans, **kwargs):
         tracks = []
+        dbkey = ""
         for track in trans.session["track_sets"]:
             dataset = trans.app.model.HistoryDatasetAssociation.get( track )
             tracks.append({
@@ -101,17 +100,23 @@ class WebRoot( BaseController ):
                     "name": dataset.name,
                     "id": dataset.id
                     })
+            dbkey = dataset.dbkey
         chrom = kwargs.get("chrom","")
         LEN = self.chroms_handler(trans, trans.session["track_dbkey"]).get(chrom,0)
         return trans.fill_template( 'tracks/index.mako', 
-                                    tracks=tracks, chrom=chrom, 
+                                    tracks=tracks, chrom=chrom, dbkey=dbkey,
                                     LEN=LEN )
 
     def chroms_handler(self, trans, dbkey ):
-        db_manifest = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % dbkey )
+        db_manifest = trans.db_dataset_for( dbkey )
+        if not db_manifest:
+            db_manifest = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % dbkey )
+        else:
+            db_manifest = db_manifest.file_name
         manifest = {}
         if os.path.exists( db_manifest ):
             for line in open( db_manifest ):
+                if line.startswith("#"): continue
                 line = line.rstrip("\r\n")
                 fields = line.split("\t")
                 manifest[fields[0]] = int(fields[1])

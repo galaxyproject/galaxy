@@ -21,7 +21,7 @@ class UploadToolAction( object ):
     def execute( self, tool, trans, incoming={}, set_output_hid = True ):
         data_file = incoming['file_data']
         file_type = incoming['file_type']
-        dbkey = incoming['dbkey']
+        dbkey = incoming['other_dbkey'] or incoming['dbkey']
         url_paste = incoming['url_paste']
         is_multi_byte = False
         space_to_tab = False 

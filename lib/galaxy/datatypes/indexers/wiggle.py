@@ -18,6 +18,8 @@ pkg_resources.require("numpy>=1.2.1")
 from numpy import *
 import tempfile
 import os
+from galaxy.tracks.store import sanitize_name
+
 
 def write_chrom(max, out_base, instream):
    
@@ -35,7 +37,7 @@ def write_chrom(max, out_base, instream):
     os.rename( fname+".npy", fname )
 
     # Write average
-    for window in 10, 100, 1000, 10000:
+    for window in 10, 100, 1000, 10000, 100000:
         input = scores.copy()
         size = len( input )
         input.resize( ( ( size / window ), window ) )
@@ -60,7 +62,7 @@ def main():
         LEN[chrom] = max2( LEN.get(chrom,0), pos+1 )
     for chrom, stream in chroms.items():
         stream.seek(0)
-        prefix = os.path.join(sys.argv[2], chrom)
+        prefix = os.path.join(sys.argv[2], sanitize_name(chrom))
         write_chrom( LEN[chrom], prefix, stream )
 
     manifest_file = open( os.path.join( sys.argv[2], "manifest.tab" ),"w" )

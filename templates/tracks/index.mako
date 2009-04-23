@@ -17,18 +17,19 @@ ${parent.stylesheets()}
 ${parent.late_javascripts()}
 <script type="text/javascript" src="/static/scripts/jquery.event.drag.js"></script>
 <script type="text/javascript" src="/static/scripts/trackster.js"></script>
-<script>
+<script type="text/javascript">
 
-    var view = new View( "${chrom}", ${LEN}, 0, ${LEN} );
+    var view = new View( "${chrom}", ${LEN}, 0, ${max(LEN,1)} );
     var tracks = new TrackLayout( view );
-
+    var dbkey = "${dbkey}";
+    
     $(function() {
         
         tracks.add( new LabelTrack( view, $("#viewport" ) ) );
     %for track in tracks:
         tracks.add( new ${track["type"]}( "${track["name"]}", view, $("#viewport" ), ${track["id"]} ) );
     %endfor
-                
+        
         $(document).bind( "redraw", function( e ) {
             tracks.redraw();
         });
@@ -56,9 +57,43 @@ ${parent.late_javascripts()}
             view.high = new_high;
             tracks.redraw();
         });
-
         tracks.redraw();
+        load_chroms();
     });
+
+    var load_chroms = function () {
+      var fetcher = function (ref) {
+	return function () {
+	  $.getJSON( "chroms", { dbkey: dbkey }, function ( data ) {
+	    // Hacky - check length of "object"
+	    var chrom_length = 0;
+	    for (key in data) chrom_length++;
+	    if( chrom_length == 0 ) {
+	      setTimeout( fetcher, 5000 );
+	    } else {
+	      var chrom_options = '';
+	      for (key in data) {
+                if( key == view.chr ) {
+                  chrom_options += '<option value="' + key + '" selected="true">' + key + '</option>';                  
+                } else {
+                  chrom_options += '<option value="' + key + '">' + key + '</option>';
+                }
+	      }
+	      $("#chrom").html(chrom_options);
+              $("#chrom").bind( "change", function ( e ) {
+		$("#chr").submit();
+	      });
+              if( view.chr == "" ) {
+	       $("#chrom option:first").attr("selected", true);
+	       $("#chrom").trigger( "change" );
+              }
+	    }
+	  });
+	};
+      }(this);
+      fetcher();
+    };
+
 </script>
 </%def>
 
@@ -79,11 +114,14 @@ ${parent.late_javascripts()}
     <div id="nav">
 
         <div id="nav-controls">
+	<form name="chr" id="chr" method="GET">
         <a href="#" onclick="javascript:view.left(5);tracks.redraw();">&lt;&lt;</a>
         <a href="#" onclick="javascript:view.left(2);tracks.redraw();">&lt;</a>
-    
-        <span style="display: inline-block; width: 30em; text-align: center;">Viewing ${chrom}:<span id="low">0</span>-<span id="high">180857866</span></span>
-
+	  <span style="display: inline-block; width: 30em; text-align: center;">Viewing
+	    <select id="chrom" name="chrom">
+	      <option value="">loading</option>
+	    </select>
+	    <span id="low">0</span>-<span id="high">180857866</span></span>
         <span style="display: inline-block; width: 10em;">
         <a href="#" onclick="javascript:view.zoom_in(2);tracks.redraw();">+</a>
         <a href="#" onclick="javascript:view.zoom_out(2);tracks.redraw();">-</a>
@@ -91,6 +129,7 @@ ${parent.late_javascripts()}
 
         <a href="#" onclick="javascript:view.right(2);tracks.redraw();">&gt;</a>
         <a href="#" onclick="javascript:view.right(5);tracks.redraw();">&gt;&gt;</a>
+	</form>
         </div>
         
     </div>

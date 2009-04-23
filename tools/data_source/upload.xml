@@ -21,6 +21,7 @@
       </options>
     </param>
     <param name="dbkey" type="genomebuild" label="Genome" />
+    <param name="other_dbkey" type="text" label="Or user-defined Genome" />
   </inputs>
   <help>
   

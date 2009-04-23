@@ -8,6 +8,9 @@
       <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
     </datatype>
     <datatype extension="binseq.zip" type="galaxy.datatypes.images:Binseq" mimetype="application/zip" display_in_upload="true"/>
+    <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
+      <!-- no converters yet -->
+    </datatype>
     <datatype extension="coverage" type="galaxy.datatypes.coverage:LastzCoverage" display_in_upload="true">
       <indexer file="coverage.xml" />
     </datatype>
@@ -31,7 +34,7 @@
     <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
-      <indexer file="interval.xml" />
+      <indexer file="interval_awk.xml" />
     </datatype>
     <datatype extension="jpg" type="galaxy.datatypes.images:Image" mimetype="image/jpeg"/>
     <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>

@@ -37,7 +37,7 @@ def write_chrom(max, out_base, instream):
     os.rename( fname+".npy", fname )
 
     # Write average
-    for window in 10, 100, 1000, 10000:
+    for window in 10, 100, 1000, 10000, 100000:
         input = scores.copy()
         size = len( input )
         input.resize( ( ( size / window ), window ) )
