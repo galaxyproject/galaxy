@@ -1495,9 +1495,36 @@ class Admin( BaseController ):
             if action == 'permissions':
                 if params.get( 'update_roles_button', False ):
                     permissions = {}
+                    accessible = False
                     for k, v in trans.app.model.Dataset.permitted_actions.items():
                         in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
-                        permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                        # At least 1 user must have every role associated with this dataset, or the dataset is inaccessible
+                        if v == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
+                            if len( in_roles ) > 1:
+                                # Get the set of all users that are being associated with the dataset
+                                in_roles_set = sets.Set()
+                                for role in in_roles:
+                                    in_roles_set.add( role )
+                                users_set = sets.Set()
+                                for role in in_roles:
+                                    for ura in role.users:
+                                        users_set.add( ura.user )
+                                # Make sure that at least 1 user has every role being associated with the dataset
+                                for user in users_set:
+                                    user_roles_set = sets.Set()
+                                    for ura in user.roles:
+                                        user_roles_set.add( ura.role )
+                                    if in_roles_set.issubset( user_roles_set ):
+                                        accessible = True
+                                        break
+                            else:
+                                accessible = True
+                        if not accessible and v == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
+                            # Don't set the permissions for DATASET_ACCESS if inaccessbile, but set all other permissions
+                            # TODO: keep access permissions as they originally were, rather than automatically making public
+                            permissions[ trans.app.security_agent.get_action( v.action ) ] = []
+                        else:
+                            permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                     for ldda in lddas:
                         # Set the DATASET permissions on the Dataset
                         trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
@@ -1514,7 +1541,13 @@ class Admin( BaseController ):
                         # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
                         trans.app.security_agent.set_all_library_permissions( ldda, permissions )
                         ldda.refresh()
-                    msg = 'Permissions and roles have been updated on %d datasets' % len( lddas )
+                    if not accessible:
+                        msg = "At least 1 user must have every role associated with accessing these %d datasets. " % len( lddas )
+                        msg += "The roles you attempted to associate for access would make these datasets inaccessible by everyone, "
+                        msg += "so access permissions were not set.  All other permissions were updated for the datasets."
+                        messagetype = 'error'
+                    else:
+                        msg = "Permissions have been updated on %d datasets" % len( lddas )
                     return trans.fill_template( "/admin/library/ldda_permissions.mako",
                                                 ldda=lddas,
                                                 library_id=library_id,

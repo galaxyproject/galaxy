@@ -125,19 +125,20 @@ class DatasetInterface( BaseController ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
     
     def _undelete( self, trans, id ):
-        history = trans.get_history()
-        data = self.app.model.HistoryDatasetAssociation.get( id )
-        if data and data.undeletable:
-            # Walk up parent datasets to find the containing history
-            topmost_parent = data
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
-            assert topmost_parent in history.datasets, "Data does not belong to current history"
-            # Mark undeleted
-            data.mark_undeleted()
-            self.app.model.flush()
-            trans.log_event( "Dataset id %s has been undeleted" % str(id) )
-            return True
+        if isinstance( id, type( 1 ) ):
+            history = trans.get_history()
+            data = self.app.model.HistoryDatasetAssociation.get( id )
+            if data and data.undeletable:
+                # Walk up parent datasets to find the containing history
+                topmost_parent = data
+                while topmost_parent.parent:
+                    topmost_parent = topmost_parent.parent
+                assert topmost_parent in history.datasets, "Data does not belong to current history"
+                # Mark undeleted
+                data.mark_undeleted()
+                self.app.model.flush()
+                trans.log_event( "Dataset id %s has been undeleted" % str(id) )
+                return True
         return False
     
     @web.expose

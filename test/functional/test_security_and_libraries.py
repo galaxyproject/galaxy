@@ -737,7 +737,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         url = build_url( permissions, role_one )
         self.home()
         self.visit_url( url )
-        self.check_page_for_string( 'Permissions and roles have been updated on 3 datasets' )
+        self.check_page_for_string( 'Permissions have been updated on 3 datasets' )
         def check_edit_page1( lddas ):
             # Make sure the permissions have been correctly updated for the 3 datasets.  Permissions should 
             # be all of the above on any of the 3 datasets that are imported into a history
@@ -785,7 +785,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         url = build_url( permissions, role_one )
         self.home()
         self.visit_url( url )
-        self.check_page_for_string( 'Permissions and roles have been updated on 3 datasets' )
+        self.check_page_for_string( 'Permissions have been updated on 3 datasets' )
         def check_edit_page2( lddas ):
             # Make sure the permissions have been correctly updated for the 3 datasets.  Permissions should 
             # be all of the above on any of the 3 datasets that are imported into a history
