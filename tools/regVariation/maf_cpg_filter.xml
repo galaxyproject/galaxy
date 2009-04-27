@@ -1,11 +1,16 @@
-<tool id="cpgFilter" name="Mask CpG sites">
+<tool id="cpgFilter" name="Mask CpG/non-CpG sites" version="1.0.0">
   <description> from MAF file</description>
   <command interpreter="python">
   	maf_cpg_filter.py 
-  	$input 
-  	$out_file1 
-  	$definition
-  	-m $mask_char
+    $input 
+    $out_file1 
+    $masksite.type
+    #if $masksite.type == "CpG":
+     $masksite.definition
+    #else:
+     "NA"
+   #end if
+    -m $mask_char
   </command>
   <inputs>
     <page>
@@ -17,10 +22,19 @@
           	<option value="3">*</option>
           	<option value="4">?</option>
         </param>
-        <param name="definition" size="5" type="select" label="Definition">
-    		<option value="0" selected="true">Inclusive</option>
-          	<option value="1">Restricted</option>
-         </param>
+        <conditional name="masksite">
+            <param name="type" size="5" type="select" label="Sites to be masked">
+                <option value="CpG" selected="true">CpG sites</option>
+                <option value="nonCpG">non-CpG sites</option>
+             </param>
+            <when value="CpG">
+                <param name="definition" size="5" type="select" label="Definition">
+                    <option value="0" selected="true">Inclusive</option>
+                    <option value="1">Restricted</option>
+                 </param>
+            </when>
+            <when value="nonCpG" />
+        </conditional>
     </page>
   </inputs>
   <outputs>
@@ -33,8 +47,16 @@
     <test>
       <param name="input" value="6.maf"/>
       <param name="mask_char" value="0"/>
+      <param name="type" value="CpG" />
       <param name="definition" value="0" />
       <output name="out_file1" file="6_mask_cpg.maf"/>
+    </test>
+    <test>
+      <param name="input" value="6.maf"/>
+      <param name="mask_char" value="0"/>
+      <param name="type" value="nonCpG" />
+      <param name="definition" value="NA" />
+      <output name="out_file1" file="6_mask_noncpg.maf"/>
     </test>
   </tests>
  <help> 

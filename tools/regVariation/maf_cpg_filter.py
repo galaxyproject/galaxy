@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+#Guruprasad Ananda
 #Adapted from bx/scripts/maf_mask_cpg.py
 """
 Mask out potential CpG sites from a maf. Restricted or inclusive definition
@@ -27,12 +27,11 @@ assert sys.version_info[:2] >= ( 2, 4 )
 def main():
     options, args = doc_optparse.parse( __doc__ )
     try:
-        inp_file, out_file, definition = args
+        inp_file, out_file, sitetype, definition = args
         if options.mask:
             mask = int(options.mask)
         else:
             mask = 0
-        definition = int(definition)
     except:
         print >> sys.stderr, "Tool initialization error."
         sys.exit()
@@ -43,14 +42,19 @@ def main():
     mask_chr_dict = {0:'#', 1:'$', 2:'^', 3:'*', 4:'?'}
     mask = mask_chr_dict[mask]
     
-    if definition == 1:
-        cpgfilter = bx.align.sitemask.cpg.Restricted( mask=mask )
-        defn = "Restricted"
+    if sitetype == "CpG":
+        if int(definition) == 1:
+            cpgfilter = bx.align.sitemask.cpg.Restricted( mask=mask )
+            defn = "CpG-Restricted"
+        else:
+            cpgfilter = bx.align.sitemask.cpg.Inclusive( mask=mask )
+            defn = "CpG-Inclusive"
     else:
-        cpgfilter = bx.align.sitemask.cpg.Inclusive( mask=mask )
-        defn = "Inclusive"
+        cpgfilter = bx.align.sitemask.cpg.nonCpG( mask=mask )
+        defn = "non-CpG"
     cpgfilter.run( reader, writer.write )
     
     print "%2.2f percent bases masked; Mask character = %s, Definition = %s" %(float(cpgfilter.masked)/float(cpgfilter.total) * 100, mask, defn)
+
 if __name__ == "__main__":
     main()
