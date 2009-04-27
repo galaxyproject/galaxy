@@ -2,7 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 ## Render a row
-<%def name="render_row( group, members, roles, ctr, anchored, curr_anchor )">
+<%def name="render_row( group, ctr, anchored, curr_anchor )">
     %if ctr % 2 == 1:
         <tr class="odd_row">
     %else:
@@ -18,34 +18,10 @@
             </div>
         </td>
         <td>
-            <ul>
-                %for user in members:
-                    <li>
-                        <a href="${h.url_for( controller='admin', action='user', user_id=user.id )}">${user.email}</a>
-                        <a id="user-${user.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                        <div popupmenu="user-${user.id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='admin', action='remove_user_from_group', group_id=group.id, user_id=user.id )}">Remove user from group</a>
-                        </div>
-                    </li>
-                %endfor
-            </ul>
+            ${len( group.members )}
         </td>
         <td>
-            <ul>
-                %for role in roles:
-                    <li>
-                        %if not role.type == trans.app.model.Role.types.PRIVATE:
-                            <a href="${h.url_for( controller='admin', action='role', role_id=role.id )}">${role.name}</a>
-                            <a id="role-${role.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                            <div popupmenu="role-${role.id}-popup">
-                                <a class="action-button" href="${h.url_for( controller='admin', action='remove_role_from_group', group_id=group.id, role_id=role.id )}">Remove role from group</a>
-                            </div>
-                        %else:
-                            ${role.name}
-                        %endif
-                    </li>
-                %endfor
-            </ul>
+            ${len( group.roles )}
             %if not anchored:
                 <a name="${curr_anchor}"></a>
                 <div style="float: right;"><a href="#TOP">top</a></div>
@@ -65,12 +41,12 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if len( groups_members_roles ) == 0:
+%if len( groups ) == 0:
     There are no Galaxy groups
 %else:
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <% 
-            render_quick_find = len( groups_members_roles ) > 50
+            render_quick_find = len( groups ) > 50
             ctr = 0
         %>
         %if render_quick_find:
@@ -91,34 +67,29 @@
         %endif
         <tr class="header">
             <td>Name</td>
-            <td>Associated Users</td>
-            <td>Associated Roles</td>
+            <td>Users</td>
+            <td>Roles</td>
         </tr>
-        %for ctr, group_tuple in enumerate( groups_members_roles ):
-            <%
-                group = group_tuple[0]
-                members = group_tuple[1]
-                roles = group_tuple[2]
-            %>
+        %for ctr, group in enumerate( groups ):
             %if render_quick_find and not group.name.upper().startswith( curr_anchor ):
                 <% anchored = False %>
             %endif
             %if render_quick_find and group.name.upper().startswith( curr_anchor ):
                 %if not anchored:
-                    ${render_row( group, members, roles, ctr, anchored, curr_anchor )}
+                    ${render_row( group, ctr, anchored, curr_anchor )}
                     <% anchored = True %>
                 %else:
-                    ${render_row( group, members, roles, ctr, anchored, curr_anchor )}
+                    ${render_row( group, ctr, anchored, curr_anchor )}
                 %endif
             %elif render_quick_find:
                 %for anchor in anchors[ anchor_loc: ]:
                     %if group.name.upper().startswith( anchor ):
                         %if not anchored:
                             <% curr_anchor = anchor %>
-                            ${render_row( group, members, roles, ctr, anchored, curr_anchor )}
+                            ${render_row( group, ctr, anchored, curr_anchor )}
                             <%  anchored = True %>
                         %else:
-                            ${render_row( group, members, roles, ctr, anchored, curr_anchor )}
+                            ${render_row( group, ctr, anchored, curr_anchor )}
                         %endif
                         <% 
                             anchor_loc = anchors.index( anchor )
@@ -127,7 +98,7 @@
                     %endif
                 %endfor
             %else:
-                ${render_row( group, members, roles, ctr, True, '' )}
+                ${render_row( group, ctr, True, '' )}
             %endif
         %endfor
     </table>

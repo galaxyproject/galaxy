@@ -13,10 +13,6 @@ def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
 
-data_err = "This tool can only be used with tab-delimited data."
-columns_err = "Missing or invalid 'columns' metadata value, click the pencil icon in the history item and select the Auto-detect option to correct it.  "
-column_types_err = "Missing or invalid 'column_types' metadata value, click the pencil icon in the history item and select the Auto-detect option to correct it.  "
-invalid_metadata_err = "The 'columns' metadata setting does not conform to the 'column_types' metadata setting, click the pencil icon in the history item and select the Auto-detect option to correct it.  "
 inp_file = sys.argv[1]
 out_file = sys.argv[2]
 expr = sys.argv[3]
@@ -24,16 +20,16 @@ round = sys.argv[4]
 try:
     in_columns = int( sys.argv[5] )
 except:
-    stop_err( columns_err + data_err )
+    stop_err( "Missing or invalid 'columns' metadata value, click the pencil icon in the history item and select the Auto-detect option to correct it.  This tool can only be used with tab-delimited data." )
 if in_columns < 2:
     # To be considered tabular, data must fulfill requirements of the sniff.is_column_based() method.
-    stop_err( columns_err + data_err )
+    stop_err( "Missing or invalid 'columns' metadata value, click the pencil icon in the history item and select the Auto-detect option to correct it.  This tool can only be used with tab-delimited data." )
 try:
     in_column_types = sys.argv[6].split( ',' )
 except:
-    stop_err( column_types_err + data_err )
+    stop_err( "Missing or invalid 'column_types' metadata value, click the pencil icon in the history item and select the Auto-detect option to correct it.  This tool can only be used with tab-delimited data." )
 if len( in_column_types ) != in_columns:
-    stop_err( invalid_metadata_err + data_err )
+    stop_err( "The 'columns' metadata setting does not conform to the 'column_types' metadata setting, click the pencil icon in the history item and select the Auto-detect option to correct it.  This tool can only be used with tab-delimited data." )
     
 # Unescape if input has been escaped
 mapped_str = {

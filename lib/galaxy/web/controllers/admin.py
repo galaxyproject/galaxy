@@ -280,23 +280,12 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        # Build a list of tuples which are groups followed by lists of members and roles
-        # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
-        groups_members_roles = []
         groups = trans.app.model.Group.query() \
             .filter( trans.app.model.Group.table.c.deleted==False ) \
             .order_by( trans.app.model.Group.table.c.name ) \
             .all()
-        for group in groups:
-            members = []
-            for uga in group.members:
-                members.append( trans.app.model.User.get( uga.user_id ) )
-            roles = []
-            for gra in group.roles:
-                roles.append( trans.app.model.Role.get( gra.role_id ) )
-            groups_members_roles.append( ( group, members, roles ) )
         return trans.fill_template( '/admin/dataset_security/groups.mako', 
-                                    groups_members_roles=groups_members_roles, 
+                                    groups=groups, 
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -647,20 +636,9 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        # Build a list of tuples which are users followed by lists of groups and roles
-        # [ ( user, [ group, group, group ], [ role, role ] ), ( user, [ group, group ], [ role ] ) ]
-        users_groups_roles = []
         users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all()
-        for user in users:
-            groups = []
-            for uga in user.groups:
-                groups.append( trans.app.model.Group.get( uga.group_id ) )
-            roles = []
-            for ura in user.non_private_roles:
-                roles.append( trans.app.model.Role.get( ura.role_id ) )
-            users_groups_roles.append( ( user, groups, roles ) )
         return trans.fill_template( '/admin/dataset_security/users.mako',
-                                    users_groups_roles=users_groups_roles,
+                                    users=users,
                                     allow_user_deletion=trans.app.config.allow_user_deletion,
                                     msg=msg,
                                     messagetype=messagetype )
@@ -702,91 +680,6 @@ class Admin( BaseController ):
                                     out_groups=out_groups,
                                     msg=msg,
                                     messagetype=messagetype )
-    # Utility methods to enable removal of associations - redirects are key
-    @web.expose
-    @web.require_admin
-    def remove_group_from_role( self, trans, **kwd ):
-        params = util.Params( kwd )
-        group_id = int( params.group_id )
-        group = trans.app.model.Group.get( group_id )
-        role_id = int( params.role_id )
-        role = trans.app.model.Role.get( role_id )
-        gra = trans.app.model.GroupRoleAssociation.filter( and_( trans.app.model.GroupRoleAssociation.table.c.group_id==group_id,
-                                                                 trans.app.model.GroupRoleAssociation.table.c.role_id==role_id ) ).first()
-        gra.delete()
-        gra.flush()
-        msg = "Group '%s' removed from role '%s'" % ( group.name, role.name )
-        trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
-    @web.expose
-    @web.require_admin
-    def remove_group_from_user( self, trans, **kwd ):
-        params = util.Params( kwd )
-        group_id = int( params.group_id )
-        group = trans.app.model.Group.get( group_id )
-        user_id = int( params.user_id )
-        user = trans.app.model.User.get( user_id )
-        uga = trans.app.model.UserGroupAssociation.filter( and_( trans.app.model.UserGroupAssociation.table.c.group_id==group_id,
-                                                                 trans.app.model.UserGroupAssociation.table.c.user_id==user_id ) ).first()
-        uga.delete()
-        uga.flush()
-        msg = "Group '%s' removed from user '%s'" % ( group.name, user.email )
-        trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='done' ) )
-    @web.expose
-    @web.require_admin
-    def remove_role_from_group( self, trans, **kwd ):
-        params = util.Params( kwd )
-        role_id = int( params.role_id )
-        role = trans.app.model.Role.get( role_id )
-        group_id = int( params.group_id )
-        group = trans.app.model.Group.get( group_id )
-        gra = trans.app.model.GroupRoleAssociation.filter( and_( trans.app.model.GroupRoleAssociation.table.c.role_id==role_id,
-                                                                 trans.app.model.GroupRoleAssociation.table.c.group_id==group_id ) ).first()
-        gra.delete()
-        gra.flush()
-        msg = "Role '%s' removed from group '%s'" % ( role.name, group.name )
-        trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
-    @web.expose
-    @web.require_admin
-    def remove_role_from_user( self, trans, **kwd ):
-        params = util.Params( kwd )
-        user_id = int( params.user_id )
-        user = trans.app.model.User.get( user_id )
-        role_id = int( params.role_id )
-        role = trans.app.model.Role.get( role_id )
-        ura = trans.app.model.UserRoleAssociation.filter( and_( trans.app.model.UserRoleAssociation.table.c.user_id==user_id,
-                                                                trans.app.model.UserRoleAssociation.table.c.role_id==role_id ) ).first()
-        ura.delete()
-        ura.flush()
-        msg = "Role '%s' removed from user '%s'" % ( role.name, user.email )
-        trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='done' ) )
-    @web.expose
-    @web.require_admin
-    def remove_user_from_group( self, trans, **kwd ):
-        params = util.Params( kwd )
-        user_id = int( params.user_id )
-        user = trans.app.model.User.get( user_id )
-        group_id = int( params.group_id )
-        group = trans.app.model.Group.get( group_id )
-        uga = trans.app.model.UserGroupAssociation.filter( and_( trans.app.model.UserGroupAssociation.table.c.user_id==user_id,
-                                                                 trans.app.model.UserGroupAssociation.table.c.group_id==group_id ) ).first()
-        uga.delete()
-        uga.flush()
-        msg = "User '%s' removed from group '%s'" % ( user.email, group.name )
-        trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
-    @web.expose
-    @web.require_admin
-    def remove_user_from_role( self, trans, **kwd ):
-        params = util.Params( kwd )
-        user_id = int( params.user_id )
-        user = trans.app.model.User.get( user_id )
-        role_id = int( params.role_id )
-        role = trans.app.model.Role.get( role_id )
-        ura = trans.app.model.UserRoleAssociation.filter( and_( trans.app.model.UserRoleAssociation.table.c.user_id==user_id,
-                                                                trans.app.model.UserRoleAssociation.table.c.role_id==role_id ) ).first()
-        ura.delete()
-        ura.flush()
-        msg = "User '%s' removed from role '%s'" % ( user.email, role.name )
-        trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
 
     # Galaxy Library Stuff
     @web.expose

@@ -787,29 +787,6 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
 
-    # Utility methods to test removal of associations
-    def remove_role_from_group( self, role_id, role_name, group_id, group_name ):
-        """Remove a role from a group"""
-        self.home()
-        self.visit_url( "%s/admin/remove_role_from_group?role_id=%s&group_id=%s" % ( self.url, role_id, group_id ) )
-        check_str = "Role '%s' removed from group '%s'" % ( role_name, group_name )
-        self.check_page_for_string( check_str )
-        self.home()
-    def remove_user_from_group( self, user_id, email, group_id, group_name ):
-        """Remove a user from a group"""
-        self.home()
-        self.visit_url( "%s/admin/remove_user_from_group?user_id=%s&group_id=%s" % ( self.url, user_id, group_id ) )
-        check_str = "User '%s' removed from group '%s'" % ( email, group_name )
-        self.check_page_for_string( check_str )
-        self.home()
-    def remove_user_from_role( self, user_id, email, role_id, role_name ):
-        """Remove a user from a role"""
-        self.home()
-        self.visit_url( "%s/admin/remove_user_from_role?user_id=%s&role_id=%s" % ( self.url, user_id, role_id ) )
-        check_str = "User '%s' removed from role '%s'" % ( email, role_name )
-        self.check_page_for_string( check_str )
-        self.home()
-
     # Library stuff
     def create_library( self, name='Library One', description='This is Library One' ):
         """Create a new library"""
