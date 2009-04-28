@@ -6,7 +6,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Create account</div>
+    <div class="toolFormTitle">Create user account</div>
     <div class="toolFormBody">
         <form name="form" action="${h.url_for( controller='admin', action='create_new_user' )}" method="post" >
             <div class="form-row">

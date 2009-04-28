@@ -52,28 +52,29 @@ $().ready(function() {
     <div class="toolFormBody">
         <form name="associate_group_role_user" id="associate_group_role_user" action="${h.url_for( action='create_group' )}" method="post" >
             <div class="form-row">
-                Name: <input  name="name" type="textfield" value="" size=40"/>
+                <label>Name:</label>
+                <input  name="name" type="textfield" value="" size=40"/>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    Groups associated with new role<br/>
+                    <label>Groups associated with new role</label>
                     ${render_select( "in_roles", in_roles )}<br/>
                     <input type="submit" id="roles_remove_button" value=">>"/>
                 </div>
                 <div>
-                    Groups not associated with new role<br/>
+                    <label>Groups not associated with new role</label>
                     ${render_select( "out_roles", out_roles )}<br/>
                     <input type="submit" id="roles_add_button" value="<<"/>
                 </div>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    Users associated with new role<br/>
+                    <label>Users associated with new role</label>
                     ${render_select( "in_users", in_users )}<br/>
                     <input type="submit" id="users_remove_button" value=">>"/>
                 </div>
                 <div>
-                    Users not associated with new role<br/>
+                    <label>Users not associated with new role</label>
                     ${render_select( "out_users", out_users )}<br/>
                     <input type="submit" id="users_add_button" value="<<"/>
                 </div>

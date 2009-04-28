@@ -53,24 +53,24 @@ $().ready(function() {
         <form name="associate_user_role_group" id="associate_user_role_group" action="${h.url_for( action='user', user_id=user.id )}" method="post" >
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    Roles associated with '${user.email}'<br/>
+                    <label>Roles associated with '${user.email}'</label>
                     ${render_select( "in_roles", in_roles )}<br/>
                     <input type="submit" id="roles_remove_button" value=">>"/>
                 </div>
                 <div>
-                    Roles not associated with '${user.email}'<br/>
+                    <label>Roles not associated with '${user.email}'</label>
                     ${render_select( "out_roles", out_roles )}<br/>
                     <input type="submit" id="roles_add_button" value="<<"/>
                 </div>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    Groups associated with '${user.email}'<br/>
+                    <label>Groups associated with '${user.email}'</label>
                     ${render_select( "in_groups", in_groups )}<br/>
                     <input type="submit" id="groups_remove_button" value=">>"/>
                 </div>
                 <div>
-                    Groups not associated with '${user.email}'<br/>
+                    <label>Groups not associated with '${user.email}'</label>
                     ${render_select( "out_groups", out_groups )}<br/>
                     <input type="submit" id="groups_add_button" value="<<"/>
                 </div>

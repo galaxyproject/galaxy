@@ -60,6 +60,7 @@ class Admin( BaseController ):
             description = util.restore_text( params.description )
             in_users = util.listify( params.get( 'in_users', [] ) )
             in_groups = util.listify( params.get( 'in_groups', [] ) )
+            create_group_for_role = params.get( 'create_group_for_role', 'no' )
             if not name or not description:
                 msg = "Enter a valid name and a description"
             elif trans.app.model.Role.filter( trans.app.model.Role.table.c.name==name ).first():
@@ -76,7 +77,14 @@ class Admin( BaseController ):
                 for group in [ trans.app.model.Group.get( x ) for x in in_groups ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     gra.flush()
-                msg = "Role '%s' has been created with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
+                if create_group_for_role == 'yes':
+                    # Create the group
+                    group = trans.app.model.Group( name=name )
+                    group.flush()
+                    msg = "Group '%s' has been created, and role '%s' has been created with %d associated users and %d associated groups" % \
+                    ( group.name, role.name, len( in_users ), len( in_groups ) )
+                else:
+                    msg = "Role '%s' has been created with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
                 trans.response.send_redirect( web.url_for( controller='admin', action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
             trans.response.send_redirect( web.url_for( controller='admin', action='create_role', msg=util.sanitize_text( msg ), messagetype='error' ) )
         out_users = []
@@ -201,23 +209,12 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        # Build a list of tuples which are roles followed by lists of groups and users
-        # [ ( role, [ group, group, group ], [ user, user ] ), ( role, [ group, group ], [ user ] ) ]
-        roles_groups_users = []
         roles = trans.app.model.Role.query() \
             .filter( trans.app.model.Role.table.c.deleted==True ) \
             .order_by( trans.app.model.Role.table.c.name ) \
             .all()
-        for role in roles:
-            groups = []
-            for gra in role.groups:
-                groups.append( trans.app.model.Group.get( gra.group_id ) )
-            users = []
-            for ura in role.users:
-                users.append( trans.app.model.User.get( ura.user_id ) )
-            roles_groups_users.append( ( role, groups, users ) )
         return trans.fill_template( '/admin/dataset_security/deleted_roles.mako', 
-                                    roles_groups_users=roles_groups_users, 
+                                    roles=roles, 
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -398,23 +395,12 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        # Build a list of tuples which are groups followed by lists of members and roles
-        # [ ( group, [ member, member, member ], [ role, role ] ), ( group, [ member, member ], [ role ] ) ]
-        groups_members_roles = []
         groups = trans.app.model.Group.query() \
             .filter( trans.app.model.Group.table.c.deleted==True ) \
             .order_by( trans.app.model.Group.table.c.name ) \
             .all()
-        for group in groups:
-            members = []
-            for uga in group.members:
-                members.append( trans.app.model.User.get( uga.user_id ) )
-            roles = []
-            for gra in group.roles:
-                roles.append( trans.app.model.Role.get( gra.role_id ) )
-            groups_members_roles.append( ( group, members, roles ) )
         return trans.fill_template( '/admin/dataset_security/deleted_groups.mako', 
-                                    groups_members_roles=groups_members_roles, 
+                                    groups=groups, 
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -627,8 +613,8 @@ class Admin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         users = trans.app.model.User.filter( and_( trans.app.model.User.table.c.deleted==True, trans.app.model.User.table.c.purged==False ) ) \
-                                 .order_by( trans.app.model.User.table.c.email ) \
-                                 .all()
+                                    .order_by( trans.app.model.User.table.c.email ) \
+                                    .all()
         return trans.fill_template( '/admin/user/deleted_users.mako', users=users, msg=msg, messagetype=messagetype )
     @web.expose
     @web.require_admin

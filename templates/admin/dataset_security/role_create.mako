@@ -52,32 +52,39 @@ $().ready(function() {
     <div class="toolFormBody">
         <form name="associate_role_group_user" id="associate_role_group_user" action="${h.url_for( action='create_role' )}" method="post" >
             <div class="form-row">
-                Name: <input  name="name" type="textfield" value="" size=40"/>
-                Description: <input  name="description" type="textfield" value="" size=40"/>
+                <label>Name:</label>
+                <input  name="name" type="textfield" value="" size=40"/>
+            </div>
+            <div class="form-row">
+                <label>Description:</label>
+                <input  name="description" type="textfield" value="" size=40"/>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    Groups associated with new role<br/>
+                    <label>Groups associated with new role</label>
                     ${render_select( "in_groups", in_groups )}<br/>
                     <input type="submit" id="groups_remove_button" value=">>"/>
                 </div>
                 <div>
-                    Groups not associated with new role<br/>
+                    <label>Groups not associated with new role</label>
                     ${render_select( "out_groups", out_groups )}<br/>
                     <input type="submit" id="groups_add_button" value="<<"/>
                 </div>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    Users associated with new role<br/>
+                    <label>Users associated with new role</label>
                     ${render_select( "in_users", in_users )}<br/>
                     <input type="submit" id="users_remove_button" value=">>"/>
                 </div>
                 <div>
-                    Users not associated with new role<br/>
+                    <label>Users not associated with new role</label>
                     ${render_select( "out_users", out_users )}<br/>
                     <input type="submit" id="users_add_button" value="<<"/>
                 </div>
+            </div>
+            <div class="form-row">
+                <input type="checkbox" name="create_group_for_role" value="yes" />Create a new group of the same name for this role
             </div>
             <div class="form-row">
                 <input type="submit" name="create_role_button" value="Save"/>

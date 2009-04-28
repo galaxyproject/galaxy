@@ -2,7 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 ## Render a row
-<%def name="render_row( role, groups, users, ctr, anchored, curr_anchor )">
+<%def name="render_row( role, ctr, anchored, curr_anchor )">
     %if ctr % 2 == 1:
         <tr class="odd_row">
     %else:
@@ -16,19 +16,13 @@
                 <a class="action-button" href="${h.url_for( action='purge_role', role_id=role.id )}">Purge</a>
             </div>
         </td>
+        <td>${role.description}</td>
+        <td>${role.type}</td>
         <td>
-            <ul>
-                %for group in groups:
-                    <li>${group.name}</li>
-                %endfor
-            </ul>
+            ${len( role.users )}
         </td>
         <td>
-            <ul>
-                %for user in users:
-                    <li>${user.email}</li>
-                %endfor
-            </ul>
+            ${len( role.groups )}
             %if not anchored:
                 <a name="${curr_anchor}"></a>
                 <div style="float: right;"><a href="#TOP">top</a></div>
@@ -43,12 +37,12 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if len( roles_groups_users ) == 0:
+%if len( roles ) == 0:
     There are no deleted Galaxy roles
 %else:
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <% 
-            render_quick_find = len( roles_groups_users ) > 50
+            render_quick_find = len( roles ) > 50
             ctr = 0
         %>
         %if render_quick_find:
@@ -69,34 +63,31 @@
         %endif
         <tr class="header">
             <td>Name</td>
-            <td>Associated Groups</td>
-            <td>Associated Users</td>
+            <td>Description</td>
+            <td>Type</td>
+            <td>Users</td>
+            <td>Groups</td>
         </tr>
-        %for ctr, role_tuple in enumerate( roles_groups_users ):
-            <%
-                role = role_tuple[0]
-                groups = role_tuple[1]
-                users = role_tuple[2]
-            %>
+        %for ctr, role in enumerate( roles ):
             %if render_quick_find and not role.name.upper().startswith( curr_anchor ):
                 <% anchored = False %>
             %endif
             %if render_quick_find and role.name.upper().startswith( curr_anchor ):
                 %if not anchored:
-                    ${render_row( role, groups, users, ctr, anchored, curr_anchor )}
+                    ${render_row( role, ctr, anchored, curr_anchor )}
                     <% anchored = True %>
                 %else:
-                    ${render_row( role, groups, users, ctr, anchored, curr_anchor )}
+                    ${render_row( role, ctr, anchored, curr_anchor )}
                 %endif
             %elif render_quick_find:
                 %for anchor in anchors[ anchor_loc: ]:
                     %if role.name.upper().startswith( anchor ):
                         %if not anchored:
                             <% curr_anchor = anchor %>
-                            ${render_row( role, groups, users, ctr, anchored, curr_anchor )}
+                            ${render_row( role, ctr, anchored, curr_anchor )}
                             <%  anchored = True %>
                         %else:
-                            ${render_row( role, groups, users, ctr, anchored, curr_anchor )}
+                            ${render_row( role, ctr, anchored, curr_anchor )}
                         %endif
                         <% 
                             anchor_loc = anchors.index( anchor )
@@ -105,7 +96,7 @@
                     %endif
                 %endfor
             %else:
-                ${render_row( role, groups, users, ctr, True, '' )}
+                ${render_row( role, ctr, True, '' )}
             %endif
         %endfor
     </table>
