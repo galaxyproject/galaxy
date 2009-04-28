@@ -686,12 +686,12 @@ class Tool:
                 # to determine the current case
                 test_value = input.test_param.get_initial_value( trans, context )
                 current_case = input.get_current_case( test_value, trans )
-                # Recursively fill in state for selected case
-                self.fill_in_new_state( trans, input.cases[current_case].inputs, s, context )
                 # Store the current case in a special value
                 s['__current_case__'] = current_case
                 # Store the value of the test element
                 s[ input.test_param.name ] = test_value
+                # Recursively fill in state for selected case
+                self.fill_in_new_state( trans, input.cases[current_case].inputs, s, context )
             else:
                 # `input` is just a plain parameter, get its default value
                 state[ input.name ] = input.get_initial_value( trans, context )

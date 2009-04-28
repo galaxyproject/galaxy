@@ -569,6 +569,11 @@ class SelectToolParameter( ToolParameter ):
     def value_to_basic( self, value, app ):
         if isinstance( value, UnvalidatedValue ):
             return { "__class__": "UnvalidatedValue", "value": value.value }
+        elif isinstance( value, RuntimeValue ):
+            # Need to handle runtime value's ourself since delegating to the
+            # parent method causes the value to be turned into a string, which
+            # breaks multiple selection
+            return { "__class__": "RuntimeValue" }
         return value
     def value_from_basic( self, value, app, ignore_errors=False ):
         if isinstance( value, dict ) and value["__class__"] == "UnvalidatedValue":
@@ -598,6 +603,9 @@ class SelectToolParameter( ToolParameter ):
             dep_value = context[ dep_name ]
             # Dependency on a dataset that does not yet exist
             if isinstance( dep_value, DummyDataset ):
+                return True
+            # Dependency on a value that has not been checked
+            if isinstance( dep_value, UnvalidatedValue ):
                 return True
             # Dependency on a value that does not yet exist
             if isinstance( dep_value, RuntimeValue ):
