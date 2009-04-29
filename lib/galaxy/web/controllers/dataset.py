@@ -1,7 +1,7 @@
-import logging, os, mimetypes, smtplib
+import logging, os, sets, string, shutil, re, socket, mimetypes, smtplib
 
 from galaxy.web.base.controller import *
-from galaxy import web, model
+from galaxy import util, datatypes, jobs, web, model
 from cgi import escape, FieldStorage
 
 from email.MIMEText import MIMEText
@@ -89,8 +89,8 @@ class DatasetInterface( BaseController ):
             s.sendmail( frm, [ to ], msg.as_string() )
             s.close()
             return trans.show_ok_message( "Your error report has been sent" )
-        except:
-            return trans.show_error_message( "An error occurred sending the report by email" )
+        except Exception, e:
+            return trans.show_error_message( "An error occurred sending the report by email: %s" % str( e ) )
     
     @web.expose
     def default(self, trans, dataset_id=None, **kwd):
