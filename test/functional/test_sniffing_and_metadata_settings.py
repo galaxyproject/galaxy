@@ -114,6 +114,18 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_history_for_string( 'NCBI Blast XML data' )
         self.check_history_for_string( 'format: <span class="blastxml">blastxml</span>' )
         self.delete_history_item( 1 )
+    def test_65_qualsolid_datatype( self ):
+        """Testing correctly sniffing qualsolid data type upon upload"""
+        self.upload_file( 'qualscores.qualsolid' )        
+        self.verify_dataset_correctness('qualscores.qualsolid')
+        self.check_history_for_string('qualscores.qualsolid format: <span class="qualsolid">qualsolid</span>, database: \? Info: uploaded qualsolid file')
+        self.delete_history_item( 1 )
+    def test_70_qual454_datatype( self ):
+        """Testing correctly sniffing qual454 data type upon upload"""
+        self.upload_file( 'qualscores.qual454' )        
+        self.verify_dataset_correctness('qualscores.qual454')
+        self.check_history_for_string('qualscores.qual454 format: <span class="qual454">qual454</span>, database: \? Info: uploaded qual454 file')
+        self.delete_history_item( 1 )
     def test_9999_clean_up( self ):
         self.delete_history()
         self.logout()

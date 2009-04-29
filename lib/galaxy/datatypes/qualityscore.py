@@ -152,35 +152,4 @@ class QualityScoreSolexa ( data.Text ):
         except:
             return "Solexa Quality score file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
-    def sniff( self, filename ):
-        """
-        >>> fname = get_test_fname( 'sequence.fasta' )
-        >>> QualityScoreSolexa().sniff( fname )
-        False
-        >>> fname = get_test_fname( 'sequence.qualsolexa' )
-        >>> QualityScoreSolexa().sniff( fname )
-        True
-        """
-        try:
-            fh = open( filename )
-            readlen = None
-            while True:
-                line = fh.readline()
-                if not line:
-                    break #EOF
-                line = line.strip()
-                if line and not line.startswith( '#' ):
-                    if len(line.split('\t')) > 1:
-                        break
-                    try:
-                        [ int( x ) for x in line.split() ]
-                        if not(readlen):
-                            readlen = len(line.split())
-                        assert len(line.split()) == readlen    #Solexa reads should be of the same length
-                    except:
-                        break
-                
-        except:
-            pass
-        return False
-
+    

@@ -188,7 +188,6 @@
     <sniffer type="galaxy.datatypes.sequence:Maf"/>
     <sniffer type="galaxy.datatypes.sequence:Lav"/>
     <sniffer type="galaxy.datatypes.sequence:csFasta"/>
-    <sniffer type="galaxy.datatypes.qualityscore:QualityScoreSolexa"/>
     <sniffer type="galaxy.datatypes.qualityscore:QualityScoreSOLiD"/>
     <sniffer type="galaxy.datatypes.qualityscore:QualityScore454"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
