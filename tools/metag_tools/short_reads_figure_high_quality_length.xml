@@ -5,7 +5,7 @@
 
 <inputs>
 <page>
-    <param name="input1" type="data" format="qual,txtseq.zip" label="Quality score file" help="No dataset? Read tip below"/>
+    <param name="input1" type="data" format="qualsolexa,qual454,txtseq.zip" label="Quality score file" help="No dataset? Read tip below"/>
     <param name="input2" type="integer" size="5" value="20" label="Quality score threshold" />
 </page>
 </inputs>
@@ -17,12 +17,12 @@
 </requirements>
 <tests>
 	<test>
-		<param name="input1" value="solexa.qual" ftype="qual" />
+		<param name="input1" value="solexa.qual" ftype="qualsolexa" />
 		<param name="input2" value="5" />
   		<output name="output1" file="solexa_high_quality_hist.pdf" ftype="pdf"/>
 	</test>
 	<test>
-		<param name="input1" value="454.qual" ftype="qual" />
+		<param name="input1" value="454.qual" ftype="qual454" />
 		<param name="input2" value="5" />
 		<output name="output1" file="454_high_quality_hist.pdf" ftype="pdf"/>
 	</test>

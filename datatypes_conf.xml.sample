@@ -19,7 +19,7 @@
     </datatype>
     <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true">
       <converter file="fastqsolexa_to_fasta_converter.xml" target_datatype="fasta"/>
-      <converter file="fastqsolexa_to_qual_converter.xml" target_datatype="qual"/>
+      <converter file="fastqsolexa_to_qual_converter.xml" target_datatype="qualsolexa"/>
     </datatype>
     <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack"/>
     <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true">
@@ -42,7 +42,9 @@
     </datatype>
     <datatype extension="pdf" type="galaxy.datatypes.images:Image" mimetype="application/pdf"/>
     <datatype extension="png" type="galaxy.datatypes.images:Image" mimetype="image/png"/>
-    <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" display_in_upload="true"/>
+    <datatype extension="qualsolexa" type="galaxy.datatypes.qualityscore:QualityScoreSolexa" display_in_upload="true"/>
+    <datatype extension="qualsolid" type="galaxy.datatypes.qualityscore:QualityScoreSOLiD" display_in_upload="true"/>
+    <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
     <datatype extension="scf" type="galaxy.datatypes.images:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
@@ -186,7 +188,9 @@
     <sniffer type="galaxy.datatypes.sequence:Maf"/>
     <sniffer type="galaxy.datatypes.sequence:Lav"/>
     <sniffer type="galaxy.datatypes.sequence:csFasta"/>
-    <sniffer type="galaxy.datatypes.qualityscore:QualityScore"/>
+    <sniffer type="galaxy.datatypes.qualityscore:QualityScoreSolexa"/>
+    <sniffer type="galaxy.datatypes.qualityscore:QualityScoreSOLiD"/>
+    <sniffer type="galaxy.datatypes.qualityscore:QualityScore454"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSolexa"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>

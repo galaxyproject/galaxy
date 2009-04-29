@@ -7,7 +7,7 @@
 <inputs>
 <page>
     <param name="input1" type="data" format="fasta,txtseq.zip" label="Reads" />
-    <param name="input2" type="data" format="qual,txtseq.zip" label="Quality scores" />
+    <param name="input2" type="data" format="qualsolexa,qual454,txtseq.zip" label="Quality scores" />
 	<param name="trim" type="integer" size="5" value="20" label="Minimal quality score" help="bases scoring below this value will trigger splitting"/>
     <param name="length" type="integer" size="5" value="100" label="Minimal length of contiguous segment" help="report all high quality segments above this length. Setting this option to '0' will cause the program to return a single longest run of high quality bases per read" />
     <conditional name="sequencing_method_choice">
@@ -36,7 +36,7 @@
 	<test>
 		<param name="sequencer" value="454" />
 		<param name="input1" value="454.fasta" ftype="fasta" />
-		<param name="input2" value="454.qual" ftype="qual" />
+		<param name="input2" value="454.qual" ftype="qual454" />
 		<param name="input3" value="no" />
 		<param name="trim" value="20" />
 		<param name="length" value="0" />
@@ -45,7 +45,7 @@
 	<test>
 		<param name="sequencer" value="Solexa" />
 		<param name="input1" value="solexa.fasta" ftype="fasta" />
-		<param name="input2" value="solexa.qual" ftype="qual" />
+		<param name="input2" value="solexa.qual" ftype="qualsolexa" />
 		<param name="input3" value="0" />
 		<param name="trim" value="20" />
 		<param name="length" value="0" />

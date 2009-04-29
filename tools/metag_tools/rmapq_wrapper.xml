@@ -13,7 +13,7 @@
 			</options>
         </param>
         <param name="input_seq" type="data" format="fasta" label="Sequence file"/>
-        <param name="input_score" type="data" format="qual" label="Quality score file"/>
+        <param name="input_score" type="data" format="qualsolexa" label="Quality score file"/>
         <param name="high_score" type="float" size="15" value="40" label="Minimum score for high-quality base (-q)"/>
         <param name="high_len" type="integer" size="15" value="36" label="Minimal high-quality bases (-M)"/>
         <param name="align_len" type="integer" size="15" value="11" label="Minimal length of a hit (-h)" help="seed"/>
@@ -46,7 +46,7 @@
         <test>
             <param name="database" value="/depot/data2/galaxy/faseq/test" />
             <param name="input_seq" value="rmapq_wrapper_test1.fasta" ftype="fasta"/>
-            <param name="input_score" value="rmapq_wrapper_test1.qual" ftype="qual" />
+            <param name="input_score" value="rmapq_wrapper_test1.qual" ftype="qualsolexa" />
             <param name="high_score" value="40" />
             <param name="high_len" value="36" />
             <param name="read_len" value="36" />

@@ -4,7 +4,7 @@
     <param format="fastqsolexa" name="input1" type="data" label="Choose Fastqsolexa file"/>
   </inputs>
   <outputs>
-    <data format="qual" name="output1" />
+    <data format="qualsolexa" name="output1" />
   </outputs>
   <help>
   </help>

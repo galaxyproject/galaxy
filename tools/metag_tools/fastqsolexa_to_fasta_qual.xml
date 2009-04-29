@@ -6,7 +6,7 @@
   </inputs>
   <outputs>
     <data name="output1" format="fasta"/>
-    <data name="output2" format="qual"/>
+    <data name="output2" format="qualsolexa"/>
   </outputs>
   <tests>
     <!-- NOTE: this tool generates 2 output files, but our functional tests currently only handle the last one generated -->
