@@ -255,6 +255,7 @@ $.extend( Node.prototype, {
         if ( data.type ) {
             this.type = data.type;
         }
+        this.name = data.name;
         this.form_html = data.form_html;
         this.tool_state = data.tool_state;
         this.tool_errors = data.tool_errors;

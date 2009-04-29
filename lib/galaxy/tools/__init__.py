@@ -676,25 +676,7 @@ class Tool:
         """
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
-            if isinstance( input, Repeat ):
-                # Repeat elements are always initialized to have 0 units.
-                state[ input.name ] = []
-            elif isinstance( input, Conditional ):
-                # State for a conditional is a plain dictionary. 
-                s = state[ input.name ] = {}
-                # Get the default value for the 'test element' and use it
-                # to determine the current case
-                test_value = input.test_param.get_initial_value( trans, context )
-                current_case = input.get_current_case( test_value, trans )
-                # Store the current case in a special value
-                s['__current_case__'] = current_case
-                # Store the value of the test element
-                s[ input.test_param.name ] = test_value
-                # Recursively fill in state for selected case
-                self.fill_in_new_state( trans, input.cases[current_case].inputs, s, context )
-            else:
-                # `input` is just a plain parameter, get its default value
-                state[ input.name ] = input.get_initial_value( trans, context )
+            state[ input.name ] = input.get_initial_value( trans, context )
 
     def get_param_html_map( self, trans, page=0, other_values={} ):
         """
@@ -1057,6 +1039,41 @@ class Tool:
         
     def params_from_strings( self, params, app, ignore_errors=False ):
         return params_from_strings( self.inputs, params, app, ignore_errors )
+        
+            
+    def check_and_update_param_values( self, values, trans ):
+        """
+        Check that all parameters have values, and fill in with default
+        values where neccesary. This could be called after loading values
+        from a database in case new parameters have been added. 
+        """
+        messages = []
+        self.check_and_update_param_values_helper( self.inputs, values, trans, messages )
+        return messages
+        
+    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="" ):
+        """
+        Recursive helper for `check_and_update_param_values_helper`
+        """
+        context = ExpressionContext( values, context )
+        for input in inputs.itervalues():
+            # No value, insert the default
+            if input.name not in values:
+                messages.append( prefix + input.label )
+                values[input.name] = input.get_initial_value( trans, context )
+            # Value, visit recursively as usual
+            else:
+                if isinstance( input, Repeat ):
+                    for i, d in enumerate( values[ input.name ] ):
+                        rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
+                        self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix )
+                elif isinstance( input, Conditional ):
+                    group_values = values[ input.name ]
+                    current = group_values["__current_case__"]
+                    self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix )
+                else:
+                    # Regular tool parameter, no recursion needed
+                    pass        
     
     def handle_unvalidated_param_values( self, input_values, app ):
         """

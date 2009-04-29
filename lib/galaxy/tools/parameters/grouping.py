@@ -3,6 +3,7 @@ Constructs for grouping tool parameters
 """
 
 from basic import ToolParameter
+from galaxy.util.expressions import ExpressionContext
 
 class Group( object ):
     def __init__( self ):
@@ -19,6 +20,11 @@ class Group( object ):
         into the preferred value form.
         """
         return value
+    def get_initial_value( self, trans, context ):
+        """
+        Return the initial state/value for this group
+        """
+        raise TypeError( "Not implemented" )
         
 class Repeat( Group ):
     type = "repeat"
@@ -65,7 +71,9 @@ class Repeat( Group ):
                 if isinstance( input, ToolParameter ):
                     callback( new_prefix, input, d[input.name], parent = d )
                 else:
-                    input.visit_inputs( new_prefix, d[input.name], callback )  
+                    input.visit_inputs( new_prefix, d[input.name], callback )
+    def get_initial_value( self, trans, context ):
+        return []
         
 class Conditional( Group ):
     type = "conditional"
@@ -109,6 +117,22 @@ class Conditional( Group ):
                 callback( prefix, input, value[input.name], parent = value )
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
+    def get_initial_value( self, trans, context ):
+        # State for a conditional is a plain dictionary. 
+        rval = {}
+        # Get the default value for the 'test element' and use it
+        # to determine the current case
+        test_value = self.test_param.get_initial_value( trans, context )
+        current_case = self.get_current_case( test_value, trans )
+        # Store the current case in a special value
+        rval['__current_case__'] = current_case
+        # Store the value of the test element
+        rval[ self.test_param.name ] = test_value
+        # Fill in state for selected case
+        child_context = ExpressionContext( rval, context )
+        for child_input in self.cases[current_case].inputs.itervalues():
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
+        return rval
                          
 class ConditionalWhen( object ):
     def __init__( self ):

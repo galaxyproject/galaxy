@@ -60,6 +60,13 @@ class WorkflowModule( object ):
         pass
     def get_config_form( self ):
         raise TypeError( "Abstract method" )
+        
+    def check_and_update_state( self ):
+        """
+        If the state is not in sync with the current implementation of the
+        module, try to update. Returns a list of messages to be displayed
+        """
+        pass
     
     ## ---- Run time ---------------------------------------------------------
     
@@ -236,7 +243,11 @@ class ToolModule( WorkflowModule ):
                 return value, error
         # Update state using incoming values
         errors = self.tool.update_state( self.trans, self.tool.inputs, self.state.inputs, incoming, item_callback=item_callback )
-        self.errors = errors or None    
+        self.errors = errors or None
+        
+    def check_and_update_state( self ):
+        return self.tool.check_and_update_param_values( self.state.inputs, self.trans )
+        
     def add_dummy_datasets( self, connections=None):
         if connections:
             # Store onnections by input name

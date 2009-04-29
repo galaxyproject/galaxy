@@ -78,7 +78,18 @@
                          workflow.fit_canvas_to_nodes();
                          scroll_to_nodes();
                          canvas_manager.draw_overview();
-                         hide_modal();
+                         // Determine if any parameters were 'upgraded' and provide message
+                         upgrade_message = ""
+                         $.each( data['upgrade_messages'], function( k, v ) {
+                            upgrade_message += ( "<li>Step " + ( parseInt(k) + 1 ) + ": " + workflow.nodes[k].name + " -- " + v.join( ", " ) );
+                         });
+                         if ( upgrade_message ) {
+                            show_modal( "Workflow loaded with changes",
+                                        "Values were not found for the following parameters (possibly a result of tool upgrades), <br/> default values have been used. Please review the following parameters and then save.<ul>" + upgrade_message + "</ul>",
+                                        { "Continue" : hide_modal } );
+                         } else {
+                            hide_modal();
+                         }
                      },
                      beforeSubmit: function( data ) {
                          show_modal( "Loading workflow", "progress" );
@@ -88,7 +99,9 @@
         });
         
         $(document).ajaxError( function ( e, x ) {
-            show_modal( "Server error", x.responseText, { "Ignore error" : hide_modal } );
+            console.log( e, x );
+            var message = x.responseText || x.statusText || "Could not connect to server";
+            show_modal( "Server error", message, { "Ignore error" : hide_modal } );
             return false;
         });
         

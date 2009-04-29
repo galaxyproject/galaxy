@@ -300,9 +300,16 @@ class WorkflowController( BaseController ):
         data = {}
         data['name'] = workflow.name
         data['steps'] = {}
+        data['upgrade_messages'] = {}
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
+            # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
+            # Fix any missing parameters
+            upgrade_message = module.check_and_update_state()
+            if upgrade_message:
+                data['upgrade_messages'][step.order_index] = upgrade_message
+            # Pack atrributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
                 'type': module.type,
@@ -312,7 +319,7 @@ class WorkflowController( BaseController ):
                 'tool_errors': module.get_errors(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
-                'form_html': module.get_config_form()
+                'form_html': module.get_config_form(),
             }
             # Connections
             input_conn_dict = {}
@@ -324,6 +331,7 @@ class WorkflowController( BaseController ):
             step_dict['position'] = step.position
             # Add to return value
             data['steps'][step.order_index] = step_dict
+        print data['upgrade_messages']
         return data
 
     @web.json

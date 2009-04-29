@@ -6,6 +6,7 @@
     #end if
   </command>
   <inputs>
+    <param type="text" name="TEST" label="Test" />
     <param format="interval" name="input1" type="data" label="Choose intervals">
       <validator type="unspecified_build" />
     </param>
