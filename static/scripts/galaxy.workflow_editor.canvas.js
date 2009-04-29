@@ -645,7 +645,7 @@ var type_to_type = null;
 function issubtype( child, parent ) {
     child = ext_to_type[child];
     parent = ext_to_type[parent];
-    return ( parent in type_to_type[child] );
+    return ( type_to_type[child] ) && ( parent in type_to_type[child] );
 };
 
 function populate_datatype_info( data ) {
