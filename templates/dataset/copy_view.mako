@@ -1,5 +1,8 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="javascripts" />
 <%def name="title()">Copy History Items</%def>
+
+${javascripts()}
 
 %if error_msg:
 <p>

@@ -157,6 +157,7 @@ class DatasetInterface( BaseController ):
         user = trans.get_user()
         history = trans.get_history()
         create_new_history = False
+        refresh_frames = []
         if source_dataset_ids:
             if not isinstance( source_dataset_ids, list ):
                 source_dataset_ids = source_dataset_ids.split( "," )
@@ -203,6 +204,8 @@ class DatasetInterface( BaseController ):
                     else:
                         for hist in target_histories:
                             hist.add_dataset( data.copy( copy_children = True ) )
+                if history in target_histories:
+                    refresh_frames = ['history']
                 trans.app.model.flush()
                 done_msg = "%i datasets copied to %i histories." % ( len( source_dataset_ids ) - invalid_datasets, len( target_histories ) )
                 history.refresh()
@@ -220,4 +223,5 @@ class DatasetInterface( BaseController ):
                                     target_histories = target_histories,
                                     new_history_name = new_history_name,
                                     done_msg = done_msg,
-                                    error_msg = error_msg )
+                                    error_msg = error_msg,
+                                    refresh_frames = refresh_frames )
