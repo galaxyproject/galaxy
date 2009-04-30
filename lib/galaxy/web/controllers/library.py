@@ -175,9 +175,7 @@ class Library( BaseController ):
             history = trans.get_history()
             for ldda_id in ldda_ids:
                 ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
-                hda = ldda.to_history_dataset_association( target_history=history )
-                history.add_dataset( hda )
-                hda.flush()
+                hda = ldda.to_history_dataset_association( target_history=history, add_to_history = True )
             history.flush()
             msg = "%i dataset(s) have been imported into your history" % len( ldda_ids )
             return trans.response.send_redirect( web.url_for( controller='library',
