@@ -102,10 +102,10 @@ class InRangeValidator( Validator ):
     @classmethod
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ), elem.get( 'min' ), elem.get( 'max' ) )
-    def __init__( self, message, min, max ):
-        self.message = message or ( "Value must be between %f and %f" % ( min, max ) )
-        self.min = float( min )
-        self.max = float( max )    
+    def __init__( self, message, range_min, range_max ):
+        self.message = message or ( "Value must be between %f and %f" % ( range_min, range_max ) )
+        self.min = float( range_min )
+        self.max = float( range_max )    
     def validate( self, value, history=None ):
         if not( self.min <= float( value ) <= self.max ):
             raise ValueError( self.message )   
@@ -134,14 +134,14 @@ class LengthValidator( Validator ):
     @classmethod
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ), elem.get( 'min', None ), elem.get( 'max', None ) )
-    def __init__( self, message, min, max ):
+    def __init__( self, message, length_min, length_max ):
         self.message = message
-        if min is not None: 
-            min = int( min )
-        if max is not None:
-            max = int( max )
-        self.min = min
-        self.max = max
+        if length_min is not None: 
+            length_min = int( length_min )
+        if length_max is not None:
+            length_max = int( length_max )
+        self.min = length_min
+        self.max = length_max
     def validate( self, value, history=None ):
         if self.min is not None and len( value ) < self.min:
             raise ValueError( self.message or ( "Must have length of at least %d" % self.min ) )
