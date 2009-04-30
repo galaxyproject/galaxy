@@ -17,7 +17,7 @@ outfile2 = sys.argv[5]
 
 print "Predictor columns: %s; Response column: %d" %(x_cols,y_col+1)
 fout = open(outfile,'w')
-
+elems = []
 for i, line in enumerate( file ( infile )):
     line = line.rstrip('\r\n')
     if len( line )>0 and not line.startswith( '#' ):
