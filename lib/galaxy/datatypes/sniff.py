@@ -30,9 +30,11 @@ def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
             if zipfile.is_zipfile( temp_name ):
                 is_compressed = True
             else:
-                magic_check = chunk[:2]
-                if magic_check == util.gzip_magic:
-                    is_compressed = True
+                try:
+                    if unicode( chunk[:2] ) == unicode( util.gzip_magic ):
+                        is_compressed = True
+                except:
+                    pass
             if not is_compressed:
                 # See if we have a multi-byte character file
                 chars = chunk[:100]

@@ -82,6 +82,18 @@ class TwillTestCase( unittest.TestCase ):
             errmsg = 'The file doesn\'t exsit. Please check' % file
             errmsg += str( err )
             raise AssertionError( errmsg )
+    def upload_url_paste( self, url_paste, ftype='auto', dbkey='unspecified (?)' ):
+        """Pasted data in the upload utility"""
+        self.visit_page( "tool_runner/index?tool_id=upload1" )
+        try: 
+            tc.fv( "1", "file_type", ftype )
+            tc.fv( "1", "dbkey", dbkey )
+            tc.fv( "1", "url_paste", url_paste )
+            tc.submit( "runtool_btn" )
+            self.home()
+        except Exception, e:
+            errmsg = "Problem executing upload utility using url_paste: %s" % str( e )
+            raise AssertionError( e )
 
     # Functions associated with histories
     def check_history_for_errors( self ):
@@ -663,16 +675,23 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Tests associated with roles
-    def create_role( self, name='Role One', description="This is Role One", in_user_ids=[], in_group_ids=[], private_role='' ):
+    def create_role( self, name='Role One', description="This is Role One", in_user_ids=[], in_group_ids=[], create_group_for_role='no', private_role='' ):
         """Create a new role"""
         url = "%s/admin/create_role?create_role_button=Save&name=%s&description=%s" % ( self.url, name.replace( ' ', '+' ), description.replace( ' ', '+' ) )
         if in_user_ids:
             url += "&in_users=%s" % ','.join( in_user_ids )
         if in_group_ids:
             url += "&in_groups=%s" % ','.join( in_group_ids )
+        if create_group_for_role == 'yes':
+            url += '&create_group_for_role=yes'
         self.home()
         self.visit_url( url )
-        check_str = "Role '%s' has been created with %d associated users and %d associated groups" % ( name, len( in_user_ids ), len( in_group_ids ) ) 
+        if create_group_for_role == 'yes':
+            check_str = "Group '%s' has been created, and role '%s' has been created with %d associated users and %d associated groups" % \
+                ( name, name, len( in_user_ids ), len( in_group_ids ) )
+        else:
+            check_str = "Role '%s' has been created with %d associated users and %d associated groups" % \
+                ( name, len( in_user_ids ), len( in_group_ids ) ) 
         self.check_page_for_string( check_str )
         if private_role:
             # Make sure no private roles are displayed
@@ -800,16 +819,35 @@ class TwillTestCase( unittest.TestCase ):
     def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described' ):
         """Rename a library"""
         self.home()
-        self.visit_url( "%s/admin/library?manage=True&id=%s" % ( self.url, library_id ) )
+        self.visit_url( "%s/admin/library?information=True&id=%s" % ( self.url, library_id ) )
         self.check_page_for_string( 'Change library name and description' )
         # Since twill barfs on the form submisson, we ar forced to simulate it
-        url = "%s/admin/library?manage=True&id=%s&rename_library_button=Save&description=%s&name=%s" % \
+        url = "%s/admin/library?information=True&id=%s&rename_library_button=Save&description=%s&name=%s" % \
         ( self.url, library_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
         self.home()
         self.visit_url( url )
         check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
+    def add_library_info_template( self, library_id, library_name ):
+        """Add a new info template to a library"""
+        self.home()
+        url = "%s/admin/info_template?library_id=%s&new_template=True&num_fields=2&create_info_template_button=Go" % ( self.url, library_id )
+        self.home()
+        self.visit_url( url )
+        check_str = "Create a new information template for library '%s'" % library_name
+        self.check_page_for_string ( check_str )
+        # TODO: finish this...
+    def add_folder_info_template( self, library_id, library_name, folder_id, folder_name ):
+        """Add a new info template to a folder"""
+        self.home()
+        url = "%s/admin/info_template?library_id=%s&folder_id=%s&new_template=True&num_fields=2&create_info_template_button=Go" % \
+            ( self.url, library_id, folder_id )
+        self.home()
+        self.visit_url( url )
+        check_str = "Create a new information template for folder '%s'" % folder_name
+        self.check_page_for_string ( check_str ) 
+        # TODO: finish this...
     def add_folder( self, library_id, folder_id, name='Folder One', description='NThis is Folder One' ):
         """Create a new folder"""
         self.home()

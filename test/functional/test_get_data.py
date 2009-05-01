@@ -3,7 +3,6 @@ from base.twilltestcase import TwillTestCase
 """ Tests are executed in order, sorted by name"""
 
 class UploadData( TwillTestCase ):
-
     def test_00_multi_upload( self ):
         """test_get_data.test_multi_upload: Testing multiple uploads"""
         self.login()
@@ -19,12 +18,20 @@ class UploadData( TwillTestCase ):
         self.verify_dataset_correctness('1.scf')
         self.upload_file('1.scf.zip', ftype='binseq.zip')
         self.verify_dataset_correctness('1.scf.zip')
+        self.upload_url_paste( 'hello world' )
+        self.check_history_for_string( 'Pasted Entry' )
+        self.check_history_for_string( 'hello world' )
         self.delete_history_item( 1 )
         self.delete_history_item( 2 )
         self.delete_history_item( 3 )
         self.delete_history_item( 4 )
         self.delete_history_item( 5 )
         self.delete_history_item( 6 )
+        self.delete_history_item( 7 )
+        self.upload_url_paste( u'hello world' )
+        self.check_history_for_string( 'Pasted Entry' )
+        self.check_history_for_string( 'hello world' )
+        self.delete_history_item( 8 )
     def test_9999_clean_up( self ):
         self.delete_history()
         self.logout()
